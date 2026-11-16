@@ -38,9 +38,10 @@ import {
   previewReady,
   readingBehaviour,
   recentRail,
+  scoreShares,
   recommendationsPage,
-  reviews,
   searchDefaults,
+  seriesReviews,
   seedTitles,
   sideInterestRails,
   signalOverrides,
@@ -120,6 +121,7 @@ export function feedbackMutation(id: number, action: string, medium?: string): F
  */
 export const discoverHandlers: HttpHandler[] = [
   http.get(api('/recommendations/discover'), () => HttpResponse.json(discoverRails)),
+  http.get(api('/recommendations/score-shares'), () => HttpResponse.json(scoreShares)),
   http.get(api('/recommendations/discover/recent'), () => HttpResponse.json(recentRail)),
   http.get(api('/recommendations/discover/side-interests'), () => HttpResponse.json(sideInterestRails)),
   http.get(api('/recommendations/discover/genres'), () => HttpResponse.json(genreRails)),
@@ -174,7 +176,7 @@ export const discoverHandlers: HttpHandler[] = [
   }),
   http.get(api('/recommendations/tags'), () => HttpResponse.json(tagOptions)),
   http.get(api('/recommendations/detail/:id'), ({ params }) => HttpResponse.json(detailFor(String(params.id)))),
-  http.get(api('/recommendations/reviews/:malId'), () => HttpResponse.json(reviews)),
+  http.get(api('/recommendations/reviews'), () => HttpResponse.json(seriesReviews)),
 
   http.get(api('/recommendations/taste-profile'), () => HttpResponse.json(tasteProfile)),
   http.get(api('/recommendations/taste-insights'), () => HttpResponse.json(tasteInsights)),
@@ -299,7 +301,7 @@ const pendingRequest = (body: CreateSeriesRequestBody): SeriesRequest => ({
 export const discoverPageHandlers: HttpHandler[] = [
   // The series mock registers its own detail and reviews globally, ahead of this file.
   http.get(api('/recommendations/detail/:id'), ({ params }) => HttpResponse.json(detailFor(String(params.id)))),
-  http.get(api('/recommendations/reviews/:malId'), () => HttpResponse.json(reviews)),
+  http.get(api('/recommendations/reviews'), () => HttpResponse.json(seriesReviews)),
   http.get(api('/series'), () => HttpResponse.json(librarySeries)),
   http.post(api('/series'), () =>
     HttpResponse.json({ ...librarySeries[0], id: 77, warnings: [] } satisfies SeriesDto & { warnings: string[] }),

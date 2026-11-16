@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { Thumb } from './ui/Thumb'
 import { ActionIcon, Box, Button, Group, Popover, Progress, ScrollArea, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconDownload } from '../lib/icons'
@@ -6,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useQueue, useQueuePause, useQueueSummary } from '../api/hooks'
-import { isHeldByPause, queueItemLabel } from '../api/queue'
+import { queueHold, queueItemLabel } from '../api/queue'
 import type { QueueItemDto } from '../api/types'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
@@ -145,7 +146,7 @@ function ActivityDropdown({ active, onClose }: { active: number; onClose: () => 
               <ActivityRow
                 key={item.id}
                 item={item}
-                held={isHeldByPause(pause, item.sourceName)}
+                held={queueHold(pause, item)}
                 onOpen={() => go(`/series/${item.seriesId}`)}
               />
             ))}
@@ -173,7 +174,7 @@ function ActivityRow({
   onOpen,
 }: {
   item: QueueItemDto
-  held: boolean
+  held: 'paused' | 'disk' | null
   onOpen: () => void
 }) {
   const { t } = useLingui()
@@ -181,17 +182,20 @@ function ActivityRow({
   const sourceLabel = useSourceLabel()
   const working = WORKING.has(item.status)
   const waiting = item.status === 'Queued' || item.status === 'RateLimited'
-  const status = waiting && held ? t`Paused` : renderLabel(queueStatusVisual(item.status).label)
+  const status =
+    waiting && held === 'paused'
+      ? t`Paused`
+      : waiting && held === 'disk'
+        ? t`Waiting for disk space`
+        : renderLabel(queueStatusVisual(item.status).label)
   const source = item.status === 'Resolving' ? null : sourceLabel(item.sourceName)
 
   return (
     <UnstyledButton onClick={onOpen} px="sm" py={8} className="inbox-row">
       <Group gap="xs" wrap="nowrap" align="flex-start">
-        <Box className="inbox-cover" data-series-cover={item.seriesId} mt={2} style={{ width: 26, height: 38 }}>
-          {item.seriesCoverUrl && <img src={item.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
-        </Box>
+        <Thumb src={item.seriesCoverUrl} size="sm" data-series-cover={item.seriesId} style={{ marginTop: 2 }} />
         <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-          <Text size="xs" fw={650} lineClamp={1}>
+          <Text className="series-title">
             {item.seriesTitle}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={1}>
@@ -202,8 +206,6 @@ function ActivityRow({
               <Progress
                 value={(item.pagesDone / item.pagesTotal) * 100}
                 style={{ flex: 1 }}
-                size="sm"
-                radius="xl"
                 animated={item.status === 'Downloading'}
                 aria-label={t`Download progress`}
               />

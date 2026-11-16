@@ -354,9 +354,25 @@ public class AccountController(
     }
 
     /// <summary>
-    /// Requires the account password when there is one, or a sign-in within the last ten minutes when
-    /// there is not: a key outlives the session that minted it, through a password change and "sign
-    /// out everywhere" alike.
+    /// What minting an API key or OPDS token will ask this account for, so the forms can show a
+    /// password field or say a fresh sign-in is needed before anyone presses Create.
+    /// </summary>
+    [HttpGet("mint-proof")]
+    public async Task<IActionResult> GetMintProof()
+    {
+        var user = await LoadAsync();
+        if (user is null) return Unauthorized();
+
+        return Ok(new MintProofDto(
+            await AccountCredentials.MintProofForAsync(userManager, oidc, user),
+            (int)AccountCredentials.RecentSignInLeft(user, clock).TotalSeconds,
+            await IsOidcLinkedAsync(user)));
+    }
+
+    /// <summary>
+    /// Requires the account password when it can sign in with one, or a sign-in within the last ten
+    /// minutes when it cannot: a key outlives the session that minted it, through a password change
+    /// and "sign out everywhere" alike.
     /// </summary>
     [HttpPost("apikeys")]
     [LoginRateLimit]
@@ -385,7 +401,7 @@ public class AccountController(
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
-        if (await AccountCredentials.ConfirmForMintAsync(userManager, signInManager, user, request.Password, clock)
+        if (await AccountCredentials.ConfirmForMintAsync(userManager, signInManager, oidc, user, request.Password, clock)
             is { } refusal)
         {
             return refusal == AccountCredentials.RecentSignInRequiredKey

@@ -127,6 +127,28 @@ public class DownloadQueueRecoveryTests : IDisposable
         Assert.Equal(id, await queue.ClaimNextAsync());
     }
 
+    [Fact]
+    public async Task A_chapter_waiting_out_early_access_is_claimed_again_once_it_should_unlock()
+    {
+        var clock = new StoppedClock(T0);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), clock, Sources.SingleChapterResolver(null, "fake"),
+            NullLogger<DownloadQueueService>.Instance);
+        var id = SeedItem(QueueStatus.Waiting, withMapping: true);
+        using (var db = _db.NewContext())
+        {
+            var row = db.DownloadQueue.Single(q => q.Id == id);
+            row.NextAttempt = T0.UtcDateTime.AddHours(4);
+            row.ErrorKey = ChapterDownloadProcessor.EarlyAccessKey;
+            db.SaveChanges();
+        }
+
+        Assert.Null(await queue.ClaimNextAsync());
+
+        clock.Now = T0.AddHours(5);
+        Assert.Equal(id, await queue.ClaimNextAsync());
+    }
+
     [Theory]
     [InlineData(QueueStatus.FetchingPages)]
     [InlineData(QueueStatus.Downloading)]

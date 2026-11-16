@@ -6,11 +6,13 @@ import type {
   HiddenContent,
   MangaBakaDetail,
   MangaReview,
+  SeriesReviews,
   ReadingBehaviour,
   RecommendationDefaults,
   RecommendationIndexStatus,
   RecommendationItem,
   RecommendationsResult,
+  ScoreShares,
   SearchDefaults,
   TagOption,
   TasteFacet,
@@ -247,6 +249,8 @@ export function detailFor(providerId: string): MangaBakaDetail {
         tags: owned.tags.map((name, i) => ({ name, weight: i === 0 ? 'core' : 'defining', description: null, isSpoiler: false })),
         links: [{ site: 'mangabaka', url: `https://mangabaka.example/series/${providerId}` }],
         malId: null,
+        aniListId: null,
+        kitsuId: null,
         hasAnime: false,
         animeStart: null,
         animeEnd: null,
@@ -286,13 +290,32 @@ export function detailFor(providerId: string): MangaBakaDetail {
           { site: 'myanimelist', url: 'https://myanimelist.example/manga/1' },
         ],
         malId: 5000 + seedIndex,
+        aniListId: 7000 + seedIndex,
+        kitsuId: 9000 + seedIndex,
         hasAnime: false,
         animeStart: null,
         animeEnd: null,
         readerHint: null,
         animeResume: null,
       }
-  return { ...base, ...detailExtras[providerId] }
+  return { ...base, scoreStanding: standingFor(base.type, base.rating), ...detailExtras[providerId] }
+}
+
+/** The popular fifth of manga from the real dump, binned the way the server bins it. */
+const POPULAR_MANGA_HISTOGRAM = [158, 826, 3997, 8742, 6856, 2296, 512, 63, 3, 0]
+
+/**
+ * A believable standing for a fixture score: the share of the real dump's popular manga that score
+ * beats, read off the same histogram, so a story's word, line and marker agree with each other.
+ */
+export function standingFor(type: string | null, rating: number | null): MangaBakaDetail['scoreStanding'] {
+  if (rating == null) return null
+  const total = POPULAR_MANGA_HISTOGRAM.reduce((a, b) => a + b, 0)
+  const bin = Math.min(9, Math.max(0, Math.floor((rating - 50) / 5)))
+  const below = POPULAR_MANGA_HISTOGRAM.slice(0, bin).reduce((a, b) => a + b, 0)
+  const within = rating < 50 ? 0 : (POPULAR_MANGA_HISTOGRAM[bin] * ((rating - 50) % 5)) / 5
+  const group = type && ['manga', 'manhwa', 'manhua', 'other'].includes(type) ? type : 'all'
+  return { group, groupSize: total, percentile: (100 * (below + within)) / total, histogram: POPULAR_MANGA_HISTOGRAM }
 }
 
 /** The first card of the rich variants: one with an anime, one with a reader-cohort hint. */
@@ -329,13 +352,37 @@ detailExtras[NO_SYNOPSIS_PROVIDER_ID] = {
   links: [],
   sourceRatings: [],
   malId: null,
+  aniListId: null,
+  kitsuId: null,
 }
 
 export const reviews: MangaReview[] = [
-  { author: 'quietpageturner', score: 9, tags: ['Recommended'], date: daysAgo(40), url: 'https://myanimelist.example/review/1', text: 'The pacing is unhurried but it never wastes a chapter. By the halfway mark every side character has earned a scene, and the ending lands because of them.\n\nThe art is clean and the panel flow is easy to follow, even in the busy sequences.' },
-  { author: 'nightowl_reads', score: 7, tags: ['Mixed feelings'], date: daysAgo(120), url: null, text: 'Lovely first third, then a long stretch that circles the same ideas. I stayed for the last arc and was glad I did.' },
-  { author: 'mapmaker99', score: 10, tags: ['Preliminary'], date: daysAgo(9), url: 'https://myanimelist.example/review/3', text: 'Short and to the point: read it.' },
+  { source: 'myanimelist', author: 'quietpageturner', score: 9, tags: ['Recommended'], date: daysAgo(40), url: 'https://myanimelist.example/review/1', title: null, likes: null, text: 'The pacing is unhurried but it never wastes a chapter. By the halfway mark every side character has earned a scene, and the ending lands because of them.\n\nThe art is clean and the panel flow is easy to follow, even in the busy sequences.' },
+  { source: 'anilist', author: 'lanternlit', score: 8.5, tags: [], date: daysAgo(60), url: 'https://anilist.example/review/7', title: 'A slow burn that earns its ending', likes: 214, text: 'It takes four volumes to show its hand, and every one of them matters once it does. The quiet chapters are the reason the loud ones hit.' },
+  { source: 'myanimelist', author: 'nightowl_reads', score: 7, tags: ['Mixed feelings'], date: daysAgo(120), url: null, title: null, likes: null, text: 'Lovely first third, then a long stretch that circles the same ideas. I stayed for the last arc and was glad I did.' },
+  { source: 'anilist', author: 'mapmaker99', score: 10, tags: [], date: daysAgo(9), url: 'https://anilist.example/review/3', title: 'Read it', likes: 1, text: 'Short and to the point: read it.' },
 ]
+
+export const quickTakes: MangaReview[] = [
+  { source: 'kitsu', author: 'Josh', score: 10, tags: [], date: daysAgo(300), url: null, title: null, likes: 98, text: 'A well-crafted story of quiet grief. Not as painful, however, as waiting for the next volume.' },
+  { source: 'kitsu', author: 'Reposer', score: null, tags: [], date: daysAgo(420), url: null, title: null, likes: 12, text: 'Comfort reading with teeth.' },
+]
+
+export const seriesReviews: SeriesReviews = { reviews, quickTakes, unavailable: [] }
+
+/** Shaped like the real popular-series curve: most score 6.5 to 8, a thin tail above. */
+const SHARE_ANCHORS: [number, number][] = [[0, 100], [50, 99], [60, 97], [65, 90], [70, 66], [75, 31.5], [80, 8], [85, 1], [90, 0.2], [100, 0]]
+
+export const scoreShares = {
+  groupSize: 32000,
+  atOrAbove: Array.from({ length: 101 }, (_, point) => {
+    const upper = SHARE_ANCHORS.findIndex(([at]) => at >= point)
+    const [x1, y1] = SHARE_ANCHORS[upper]
+    if (x1 === point || upper === 0) return y1
+    const [x0, y0] = SHARE_ANCHORS[upper - 1]
+    return y0 + ((y1 - y0) * (point - x0)) / (x1 - x0)
+  }),
+} satisfies ScoreShares
 
 export const tagOptions: TagOption[] = [
   { name: 'Found Family', path: '', count: 812, hasSubtags: false },

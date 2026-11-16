@@ -32,12 +32,18 @@ namespace Maki.Api.Services;
 /// alone decides, with Volume left above on its own: torrents are scored before anything is
 /// measured, so inside the group a volume would almost never win.
 /// </para>
+/// <para>
+/// The descriptions were later cut to fit two lines of the Discover add card. Under
+/// <see cref="ShortDescriptionsMarkerKey"/>, a starter still carrying one of its old descriptions
+/// word for word gets the short one; any other text is the admin's and stays.
+/// </para>
 /// </remarks>
 public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder> logger)
 {
     public const string MarkerKey = "upgrades.seeded.v3";
     public const string PreviousMarkerKey = "upgrades.seeded.v2";
     public const string AnySourceMarkerKey = "upgrades.seeded.anysource";
+    public const string ShortDescriptionsMarkerKey = "upgrades.described.short";
 
     public const int MeasuredWeight = 10;
     public const int MaxTierScoreDrop = 10;
@@ -73,19 +79,47 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
     private static readonly Starter[] Profiles =
     [
         new(NeverUpgrade, null, QualityTier.Aggregator, false,
-            "Keeps whatever was downloaded first. Pin a series to this to keep it out of upgrades while another profile is the default."),
+            "Keeps the first copy. Pin a series here to skip upgrades."),
         new(ReplaceAggregatorCopies, "Balanced", QualityTier.Scanlator, true,
-            "Swaps chapters from aggregator sites for a copy from a scanlator or an official source, then stops. Scanlations you already have are kept."),
+            "Takes a scanlator or official copy, then stops."),
         new(UpgradeToOfficial, "Official releases", QualityTier.Official, true,
-            "Keeps upgrading until each chapter comes from an official source such as MANGA Plus or Webtoons, replacing scanlations once an official copy exists."),
+            "Replaces scanlations once MANGA Plus or Webtoons has it."),
         new(UpgradeToVolumes, "Digital volumes", QualityTier.Volume, true,
-            "Keeps upgrading until chapters are covered by a digital volume release. Needs an indexer (Prowlarr or Jackett) and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers.")
+            "Needs an indexer and a torrent client. Volumes lag by months.")
     ];
+
+    private const string AnySourceDescription = "Takes the sharpest copy from any site and keeps looking.";
+
+    private static readonly Dictionary<string, string[]> LongDescriptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [NeverUpgrade] =
+        [
+            "Keeps whatever was downloaded first. Pin a series to this to keep it out of upgrades while another profile is the default."
+        ],
+        [ReplaceAggregatorCopies] =
+        [
+            "Swaps chapters from aggregator sites for a copy from a scanlator or an official source, then stops. Scanlations you already have are kept."
+        ],
+        [UpgradeToOfficial] =
+        [
+            "Keeps upgrading until each chapter comes from an official source such as MANGA Plus or Webtoons, replacing scanlations once an official copy exists."
+        ],
+        [UpgradeToVolumes] =
+        [
+            "Keeps upgrading until chapters are covered by a digital volume release. Needs an indexer (Prowlarr or Jackett) and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers.",
+            "Keeps upgrading until chapters are covered by a digital volume release. Needs Prowlarr and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers."
+        ],
+        [BestCopyFromAnySource] =
+        [
+            "Ignores where a chapter came from and keeps whichever copy scores highest on sharpness, compression and formats, so it never stops looking for a better one. A digital volume still wins outright."
+        ]
+    };
 
     public async Task RunOnceAsync(CancellationToken ct = default)
     {
         await SeedStartersAsync(ct);
         await AddAnySourceAsync(ct);
+        await ShortenDescriptionsAsync(ct);
     }
 
     private async Task SeedStartersAsync(CancellationToken ct)
@@ -166,9 +200,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
                 .Where(s => formats.ContainsKey(s.Format))
                 .Select(s => new FormatScore(formats[s.Format].Id, s.Score))
                 .ToList();
-            var profile = NewProfile(BestCopyFromAnySource,
-                "Ignores where a chapter came from and keeps whichever copy scores highest on sharpness, compression and formats, so it never stops looking for a better one. A digital volume still wins outright.",
-                QualityTier.Official, true, scores);
+            var profile = NewProfile(BestCopyFromAnySource, AnySourceDescription, QualityTier.Official, true, scores);
             profile.UpgradeUntilScore = NeverStopScore;
             profile.Tiers =
             [
@@ -197,6 +229,29 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
         }
 
         db.AppConfig.Add(new AppConfigEntry { Key = AnySourceMarkerKey, Value = DateTime.UtcNow.ToString("O") });
+        await db.SaveChangesAsync(ct);
+    }
+
+    private async Task ShortenDescriptionsAsync(CancellationToken ct)
+    {
+        if (await db.AppConfig.AnyAsync(c => c.Key == ShortDescriptionsMarkerKey, ct))
+        {
+            return;
+        }
+
+        var shortText = Profiles.ToDictionary(p => p.Name, p => p.Description, StringComparer.OrdinalIgnoreCase);
+        shortText[BestCopyFromAnySource] = AnySourceDescription;
+        foreach (var profile in await db.UpgradeProfiles.ToListAsync(ct))
+        {
+            if (profile.Description is { } text
+                && LongDescriptions.TryGetValue(profile.Name, out var old)
+                && old.Contains(text, StringComparer.Ordinal))
+            {
+                profile.Description = shortText[profile.Name];
+            }
+        }
+
+        db.AppConfig.Add(new AppConfigEntry { Key = ShortDescriptionsMarkerKey, Value = DateTime.UtcNow.ToString("O") });
         await db.SaveChangesAsync(ct);
     }
 

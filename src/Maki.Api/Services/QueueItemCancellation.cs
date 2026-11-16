@@ -34,7 +34,7 @@ internal static class QueueItemCancellation
             queue.CancelWork(item.Id);
             await batches.DiscardAsync(item.SeriesId, item.Id);
 
-            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
+            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving or QueueStatus.Waiting)
             {
                 db.DownloadQueue.Remove(item);
             }

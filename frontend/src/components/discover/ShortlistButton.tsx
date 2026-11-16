@@ -13,18 +13,23 @@ export function ShortlistButton({
   providerId,
   title,
   source,
+  compact = false,
 }: {
   providerId: string
   title: string
   source?: ShortlistSource
+  /** The quiet footer variant: no border until pressed, sized to its label. */
+  compact?: boolean
 }) {
   const { saved, usable, toggle } = useShortlistToggle(providerId, title, source)
   if (!usable) return null
   return (
     <Button
       className="shortlist-button"
-      variant={saved ? 'light' : 'default'}
-      fullWidth
+      data-compact={compact || undefined}
+      variant={saved ? 'light' : compact ? 'subtle' : 'default'}
+      size={compact ? 'sm' : undefined}
+      fullWidth={!compact}
       aria-pressed={saved}
       leftSection={saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
       onClick={toggle}

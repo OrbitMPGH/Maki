@@ -1,4 +1,5 @@
-﻿using Maki.Api.Services;
+﻿using Maki.Api.Dtos;
+using Maki.Api.Services;
 using Maki.Api.Controllers;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -246,8 +247,8 @@ public sealed class ProgressTests : IDisposable
         await Achievements(db).EvaluateAsync(UserId);
 
         Assert.DoesNotContain(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
-        Assert.NotEmpty(_db.NewContext().UserSettings
-            .Where(s => s.UserId == UserId && s.Key == SettingKeys.ProgressLastNotifiedLevel));
+        Assert.True(int.TryParse(await new TestUserSettingsStore(_db).GetAsync(
+            UserId, SettingKeys.ProgressLastNotifiedLevel), out _));
     }
 
     [Fact]
@@ -282,11 +283,21 @@ public sealed class ProgressTests : IDisposable
         Assert.DoesNotContain(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
     }
 
+    /// <summary>Runs the first evaluation with nothing read, so the next one is an ordinary one.</summary>
+    private async Task SeedBaselineAsync()
+    {
+        using var db = _db.NewContext();
+        await Achievements(db).EvaluateAsync(UserId);
+        _inbox.Raised.Clear();
+        _cache.Remove($"metrics:{UserId}");
+    }
+
     [Fact]
     public async Task UnlocksAreAnnouncedOncePerAchievementNotOncePerTier()
     {
         // The evaluator awards every rung up to the one earned; three rows saying Bronze, Silver,
         // Gold of the same badge is a worse record of the same fact.
+        await SeedBaselineAsync();
         SeedRead(null, 3000, Now);
 
         using var db = _db.NewContext();
@@ -300,6 +311,57 @@ public sealed class ProgressTests : IDisposable
         var named = unlocks.Select(u => u.Message.Params?["achievement"]).ToList();
         Assert.Equal(unlocks.Count, named.Distinct().Count());
         Assert.Contains("reader", named);
+    }
+
+    [Fact]
+    public async Task TheFirstEvaluationAwardsSilently()
+    {
+        // Somebody with years of history would otherwise get a notification for every badge at once.
+        SeedRead(null, 3000, Now);
+
+        using var db = _db.NewContext();
+        var unlocked = await Achievements(db).EvaluateAsync(UserId);
+
+        Assert.NotEmpty(unlocked);
+        Assert.NotEmpty(_db.NewContext().UserAchievements.Where(a => a.UserId == UserId));
+        Assert.Empty(_inbox.Raised);
+    }
+
+    [Fact]
+    public async Task SwitchingProgressBackOnAwardsTheBacklogSilentlyThenAnnouncesAsBefore()
+    {
+        await SeedBaselineAsync();
+        var store = new TestUserSettingsStore(_db);
+        await store.SetAsync(UserId, SettingKeys.UserGamification,
+            ProgressSpec.Serialize(new ProgressSpec(Enabled: false)));
+
+        SeedRead(null, 3000, Now);
+        using (var off = _db.NewContext())
+        {
+            await Achievements(off).EvaluateAsync(UserId);
+        }
+
+        await store.SetAsync(UserId, SettingKeys.UserGamification, ProgressSpec.Serialize(new ProgressSpec()));
+        using (var reset = _db.NewContext())
+        {
+            await Achievements(reset).ResetNotificationBaselineAsync(UserId);
+        }
+
+        using (var back = _db.NewContext())
+        {
+            Assert.NotEmpty(await Achievements(back).EvaluateAsync(UserId));
+        }
+
+        Assert.Empty(_inbox.Raised);
+
+        SeedReadingTime(null, 400 * 3600, Now);
+        _cache.Remove($"metrics:{UserId}");
+        using (var later = _db.NewContext())
+        {
+            Assert.NotEmpty(await Achievements(later).EvaluateAsync(UserId));
+        }
+
+        Assert.Contains(_inbox.Raised, r => r.Type == InboxEventType.AchievementUnlocked);
     }
 
     [Fact]
@@ -627,6 +689,79 @@ public sealed class ProgressTests : IDisposable
             service.NotifyLevelAsync(UserId, snapshot, [], default));
 
         Assert.Single(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+    }
+
+    [Fact]
+    public void HiddenAchievementsJoinTheBadgeTotalOnlyOnceEarned()
+    {
+        var hidden = AchievementCatalog.All.Where(a => a.Hidden).ToList();
+        Assert.NotEmpty(hidden);
+        var visibleTiers = AchievementCatalog.All.Where(a => !a.Hidden).Sum(a => a.Tiers.Count);
+
+        var (noneEarned, noneTotal) = ProgressController.BadgeCounts([]);
+        Assert.Equal(0, noneEarned);
+        Assert.Equal(visibleTiers, noneTotal);
+
+        var secret = hidden[0];
+        var (earned, total) = ProgressController.BadgeCounts(
+            [new UserAchievement { UserId = UserId, Key = secret.Key, Tier = 1, UnlockedAt = Now }]);
+        Assert.Equal(1, earned);
+        Assert.Equal(visibleTiers + secret.Tiers.Count, total);
+    }
+
+    private ProgressController Controller(MakiDbContext db, int userId = UserId)
+    {
+        var currentUser = new TestCurrentUser(userId);
+        return new ProgressController(new TestLocalizer(), db, Metrics(db), Achievements(db),
+            new UserSettingsService(db, currentUser), new TestUserSettingsStore(_db), currentUser,
+            new UserViewResolver(currentUser), _clock);
+    }
+
+    [Fact]
+    public async Task TheLeaderboardLeavesOutTheStreakOfSomebodyWhoHidStreaks()
+    {
+        var other = _db.SeedUser("second");
+        _db.SetUserConfig(UserId, (SettingKeys.UserGamification,
+            ProgressSpec.Serialize(new ProgressSpec(ShowStreaks: false, ShowOnLeaderboard: true))));
+        _db.SetUserConfig(other, (SettingKeys.UserGamification,
+            ProgressSpec.Serialize(new ProgressSpec(ShowOnLeaderboard: true))));
+        SeedRead(null, 5, Now, UserId);
+        SeedRead(null, 5, Now, other);
+
+        using var db = _db.NewContext(other);
+        var result = await Controller(db, other).Leaderboard(default);
+
+        var rows = Assert.IsAssignableFrom<IEnumerable<LeaderboardRowDto>>(
+            Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(result).Value).ToList();
+        Assert.Null(rows.Single(r => r.UserId == UserId).CurrentStreak);
+        Assert.NotNull(rows.Single(r => r.UserId == other).CurrentStreak);
+    }
+
+    [Fact]
+    public async Task TurningProgressBackOnForgetsTheNotificationBaseline()
+    {
+        await SeedBaselineAsync();
+        _db.SetUserConfig(UserId, (SettingKeys.UserGamification,
+            ProgressSpec.Serialize(new ProgressSpec(Enabled: false))));
+
+        using (var db = _db.NewContext(UserId))
+        {
+            await Controller(db).SaveSettings(new ProgressController.ProgressSettingsDto(true, true, false, ""), default);
+        }
+
+        // The real store deletes the row on null; this one writes it blank. Either reads back as unseeded.
+        Assert.False(int.TryParse(await new TestUserSettingsStore(_db).GetAsync(
+            UserId, SettingKeys.ProgressLastNotifiedLevel), out _));
+
+        // Saving again while already on leaves it alone, or every settings change would silence the next unlock.
+        await SeedBaselineAsync();
+        using (var db = _db.NewContext(UserId))
+        {
+            await Controller(db).SaveSettings(new ProgressController.ProgressSettingsDto(true, false, false, ""), default);
+        }
+
+        Assert.True(int.TryParse(await new TestUserSettingsStore(_db).GetAsync(
+            UserId, SettingKeys.ProgressLastNotifiedLevel), out _));
     }
 
     [Fact]

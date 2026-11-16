@@ -263,4 +263,48 @@ public class QBittorrentClientTests
 
         Assert.Equal(TorrentClientFailure.LoginFailed, ex.Failure);
     }
+
+    [Fact]
+    public async Task Listed_torrents_carry_connected_peers_ratio_and_seeding_time()
+    {
+        var handler = new RecordingHandler
+        {
+            Torrents = """
+                [{"hash":"AAA","name":"seeding","state":"stalledUP","progress":1.0,"content_path":"/dl/a","added_on":1700000000,
+                  "category":"maki","ratio":1.25,"seeding_time":5400,"num_seeds":0,"num_leechs":2},
+                 {"hash":"bbb","name":"magnet","state":"metaDL","progress":0,"content_path":"/dl/b","added_on":1700000000,
+                  "category":"maki","ratio":0,"seeding_time":0,"num_seeds":0,"num_leechs":0},
+                 {"hash":"ccc","name":"old","state":"downloading","progress":0.5,"content_path":"/dl/c","added_on":1700000000,
+                  "category":"maki"}]
+                """,
+        };
+
+        var torrents = await new QBittorrentClient(handler).ListAsync(Settings());
+
+        var seeding = torrents.Single(t => t.Hash == "aaa");
+        Assert.Equal(2, seeding.Peers);
+        Assert.Equal(1.25, seeding.Ratio);
+        Assert.Equal(TimeSpan.FromMinutes(90), seeding.SeedingTime);
+        var magnet = torrents.Single(t => t.Hash == "bbb");
+        Assert.False(magnet.IsHeld);
+        Assert.Equal(0, magnet.Peers);
+        var old = torrents.Single(t => t.Hash == "ccc");
+        Assert.Null(old.Peers);
+        Assert.Null(old.Ratio);
+        Assert.Null(old.SeedingTime);
+    }
+
+    [Theory]
+    [InlineData("""{"max_ratio_enabled":true,"max_ratio":2,"max_seeding_time_enabled":true,"max_seeding_time":1440}""", 2.0, 1440)]
+    [InlineData("""{"max_ratio_enabled":false,"max_ratio":2,"max_seeding_time_enabled":true,"max_seeding_time":60}""", null, 60)]
+    [InlineData("""{"max_ratio_enabled":true,"max_ratio":-1,"max_seeding_time_enabled":false,"max_seeding_time":-1}""", null, null)]
+    public async Task Seed_limits_come_from_the_switched_on_preferences(string preferences, double? ratio, int? minutes)
+    {
+        var handler = new RecordingHandler { Torrents = preferences };
+
+        var limits = await new QBittorrentClient(handler).GetSeedLimitsAsync(Settings());
+
+        Assert.Equal(new TorrentSeedLimits(ratio, minutes), limits);
+        Assert.Contains("/api/v2/app/preferences", handler.Paths);
+    }
 }

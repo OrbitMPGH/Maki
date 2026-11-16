@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
-import type { ReaderManifest, ServerPageState } from '../../api/reader'
+import type { ReaderCredits, ReaderManifest, ServerPageState } from '../../api/reader'
 import ReaderPage from './ReaderPage'
+import { clampToCut, cutHeight, tailCut } from './creditWindow'
 import type { ReaderPrefs } from './prefs'
 
 const meta = {
@@ -189,6 +190,303 @@ export const ContinuousTapMovesAScreen: Story = {
     await expect(canvasElement.querySelector('.reader-bar-bottom')).toHaveAttribute('data-visible', 'false')
     await userEvent.keyboard('{Shift>} {/Shift}')
     await waitFor(() => expect(Math.abs(surface.scrollTop - start)).toBeLessThan(4))
+  },
+}
+
+const recapEndsAt = http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: 4, offset: 0.5 }))
+
+/** A chapter opening with the previous chapter's last pages offers to skip them, and scrolls past them when asked. */
+export const ContinuousSkipRecap: Story = {
+  parameters: { ...open(3040), msw: [recapEndsAt] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Skip recap' }))
+    const target = canvasElement.querySelector<HTMLElement>('[data-page="4"]')!
+    await waitFor(() => expect(Math.abs(target.getBoundingClientRect().top + target.offsetHeight * 0.5 - surface.getBoundingClientRect().top)).toBeLessThan(4))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Skip recap' })).toBeNull())
+  },
+}
+
+/** With the setting on, the reader skips by itself and says so. */
+export const ContinuousRecapSkippedAutomatically: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [recapEndsAt, withManifest({ ...chapters[3040], prefs: { ...chapters[3040].prefs, autoSkipRecap: true } })],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Recap skipped')).toBeVisible()
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(surface.clientHeight))
+    await expect(canvas.queryByRole('button', { name: 'Skip recap' })).toBeNull()
+  },
+}
+
+const creditsAt = (found: Omit<ReaderCredits, 'pageVersion'>, wait = 0) =>
+  http.get(api('/reader/chapter/:id/credits'), async () => {
+    if (wait) await delay(wait)
+    return HttpResponse.json({ ...found, pageVersion: 'v1' } satisfies ReaderCredits)
+  })
+const hidingCredits = (chapterId: number) =>
+  withManifest({ ...chapters[chapterId], resumePage: 0, prefs: { ...chapters[chapterId].prefs, hideCredits: true } })
+const creditPages = [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0 }), hidingCredits(1132)]
+
+// Each write keeps its chapter id: the previous story's flush on unmount can land after this one's reset.
+const creditWrites: { chapterId: number; pageIndex: number; completed?: boolean }[] = []
+const recordCreditWrites = http.put(api('/reader/chapter/:id/progress'), async ({ params, request }) => {
+  creditWrites.push({ chapterId: Number(params.id), ...((await request.json()) as { pageIndex: number; completed?: boolean }) })
+  return new HttpResponse(null, { status: 204 })
+})
+
+/** A credit page at the start and two notices at the end are left out: the chapter opens on its second page and counts 15. */
+export const CreditPagesHidden: Story = {
+  parameters: { ...open(1132), msw: creditPages },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await userEvent.keyboard('{End}')
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
+    await expect(await canvas.findByText('Page 15 of 15')).toBeInTheDocument()
+  },
+}
+
+/** The last page shown records the chapter's real last page, so it completes as the real last page would. */
+export const LastShownPageCompletesTheChapter: Story = {
+  parameters: { ...open(1132), msw: [...creditPages, recordCreditWrites] },
+  beforeEach: () => {
+    creditWrites.length = 0
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })
+    await userEvent.keyboard('{End}')
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
+    await waitFor(() => expect(creditWrites.some((write) => write.chapterId === 1132 && write.pageIndex === 17)).toBe(true))
+  },
+}
+
+/** Opening on the first page shown, past a hidden credit page, is still opening at the start: nothing is written. */
+export const OpeningPastHiddenPagesWritesNothing: Story = {
+  parameters: {
+    ...open(7710),
+    msw: [
+      creditsAt({ headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0 }),
+      withManifest({ ...chapters[1132], chapterId: 7710, resumePage: 0, prefs: { ...chapters[1132].prefs, hideCredits: true } }),
+      recordCreditWrites,
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await expect(creditWrites.filter((write) => write.chapterId === 7710)).toHaveLength(0)
+  },
+}
+
+/** An answer that comes after the reader stopped waiting, while it is still on the credit page, skips it then, and writes nothing. */
+export const LateCreditAnswerSkipsTheStart: Story = {
+  parameters: {
+    ...open(7711),
+    msw: [
+      creditsAt({ headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0 }, 2500),
+      withManifest({ ...chapters[1132], chapterId: 7711, resumePage: 0, prefs: { ...chapters[1132].prefs, hideCredits: true } }),
+      recordCreditWrites,
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await expect(creditWrites.filter((write) => write.chapterId === 7711)).toHaveLength(0)
+  },
+}
+
+let creditSearches = 0
+const countCreditSearches = http.get(api('/reader/chapter/:id/credits'), async ({ params }) => {
+  // The next chapter is asked for ahead as soon as this one's answer is known; only this chapter counts.
+  if (Number(params.id) === 1132) creditSearches++
+  await delay(10_000)
+  return HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0, tailOffset: 0, pageVersion: 'v1' } satisfies ReaderCredits)
+})
+
+/** An answer the background scan already stored comes with the manifest: the chapter opens trimmed and never asks for a search. */
+export const StoredCreditsOpenTrimmed: Story = {
+  parameters: {
+    ...open(1132),
+    msw: [
+      countCreditSearches,
+      withManifest({
+        ...chapters[1132],
+        resumePage: 0,
+        prefs: { ...chapters[1132].prefs, hideCredits: true },
+        credits: { headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0 },
+      }),
+    ],
+  },
+  beforeEach: () => {
+    creditSearches = 0
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await expect(canvas.queryByRole('img', { name: 'Chapter 132 - page 1' })).toBeNull()
+    await expect(creditSearches).toBe(0)
+  },
+}
+
+/** A late answer after the reader has moved past the credit page trims only the end, so the page on screen never moves. */
+export const LateCreditAnswerAfterMovingOnTrimsOnlyTheEnd: Story = {
+  parameters: { ...open(1132), msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0 }, 2500), hidingCredits(1132)] },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(await canvas.findByText('Page 2 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 2 of 16')).toBeInTheDocument()
+    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+  },
+}
+
+/** The settings panel says how many pages were left out, and shows them again for this visit. */
+export const HiddenCreditPagesShownAgain: Story = {
+  parameters: { ...open(1132), msw: creditPages },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: /^Chapters/ }))
+    const line = await body.findByText('3 pages hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(await body.findByRole('button', { name: 'Show' }))
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await expect(body.queryByText('3 pages hidden in this chapter')).toBeNull()
+  },
+}
+
+/** In Continuous the strip starts at the first page shown, below the banner fused into its top. */
+export const ContinuousOpensBelowCreditPages: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 2, headOffset: 0.4, tailPages: 0, tailOffset: 0 }), hidingCredits(3040)] },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 3' })
+    await expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 1' })).toBeNull()
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const target = canvasElement.querySelector<HTMLElement>('[data-page="0"]')!
+    await waitFor(() =>
+      expect(Math.abs(target.getBoundingClientRect().top + target.offsetHeight * 0.4 - surface.getBoundingClientRect().top)).toBeLessThan(4),
+    )
+  },
+}
+
+const tailBanner = creditsAt({ headPages: 0, headOffset: 0, tailPages: 1, tailOffset: 0.3 })
+
+/** In Continuous a banner fused into the bottom of the last page shown is cut off: the strip ends at the cut. */
+export const ContinuousEndsAtTheTailCut: Story = {
+  parameters: { ...open(3040), msw: [tailBanner, hidingCredits(3040)] },
+  play: async ({ canvas, canvasElement }) => {
+    const credits = { headPages: 0, headOffset: 0, tailPages: 1, tailOffset: 0.3, pageVersion: 'v1' }
+    await expect(tailCut(30, credits, { first: 0, last: 28 }, true)).toBe(0.3)
+    await expect(tailCut(30, credits, { first: 0, last: 28 }, false)).toBe(0)
+    await expect(tailCut(30, credits, { first: 0, last: 29 }, true)).toBe(0)
+    await expect(clampToCut(0.9, 0.3)).toBeCloseTo(0.7)
+    await expect(clampToCut(0.9, 0)).toBe(0.9)
+    await expect(cutHeight(1000, 0.3)).toBe(700)
+
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
+    await expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull()
+    const box = image.closest<HTMLElement>('.reader-strip-page')!
+    await waitFor(() => expect(box).toHaveAttribute('data-cut'))
+    await waitFor(() => expect(Math.abs(box.offsetHeight - image.getBoundingClientRect().height * 0.7)).toBeLessThan(2))
+    // At the very end of the strip, the cut line is the bottom of the screen: what is below it cannot be reached.
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    surface.scrollTo({ top: surface.scrollHeight })
+    await waitFor(() => {
+      const page = image.getBoundingClientRect()
+      expect(Math.abs(page.top + page.height * 0.7 - surface.getBoundingClientRect().bottom)).toBeLessThan(4)
+    })
+  },
+}
+
+/** A late answer still cuts the end while the reader is far from it. */
+export const LateAnswerStillCutsTheEnd: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 0, headOffset: 0, tailPages: 1, tailOffset: 0.3 }, 2500), hidingCredits(3040)] },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    await waitFor(() => expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull(), { timeout: 5000 })
+    const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
+    await waitFor(() => expect(image.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+  },
+}
+
+/** A late answer that trims the last page keeps the page that becomes the last one: the same image, never reloaded. */
+export const LateTailTrimKeepsTheImage: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 0, headOffset: 0, tailPages: 1, tailOffset: 0.3 }, 2500), hidingCredits(3040)] },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    const before = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
+    await waitFor(() => expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull(), { timeout: 5000 })
+    await waitFor(() => expect(before.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+    await expect(before.isConnected).toBe(true)
+    await expect(canvas.getByRole('img', { name: 'Chapter 40 - page 29' })).toBe(before)
+  },
+}
+
+/** A chapter that only cuts its last page says so in the reading settings, and Show brings the cut back on the same image. */
+export const ACutAloneCanBeShownAgain: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 0, headOffset: 0, tailPages: 0, tailOffset: 0.3 }), hidingCredits(3040)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    await waitFor(() => expect(image.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: /^Chapters/ }))
+    const line = await body.findByText('End of the last page hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(await body.findByRole('button', { name: 'Show' }))
+    await waitFor(() => expect(image.closest('.reader-strip-page')).not.toHaveAttribute('data-cut'))
+    await expect(canvas.getByRole('img', { name: 'Chapter 40 - page 30' })).toBe(image)
+    await expect(body.queryByText('End of the last page hidden in this chapter')).toBeNull()
+  },
+}
+
+/** A late answer leaves the last page whole while the reader is looking at where the cut would be. */
+export const LateAnswerSparesACutOnScreen: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [
+      creditsAt({ headPages: 0, headOffset: 0, tailPages: 0, tailOffset: 0.3 }, 4000),
+      withManifest({ ...chapters[3040], resumePage: 29, prefs: { ...chapters[3040].prefs, hideCredits: true } }),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(surface.clientHeight))
+    // A wheel turn is the reader taking over from the resume landing, which would otherwise scroll back to it.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 10 }))
+    surface.scrollTo({ top: surface.scrollHeight })
+    await waitFor(() => expect(surface.scrollHeight - surface.scrollTop - surface.clientHeight).toBeLessThan(2))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
+    await expect(image.closest('.reader-strip-page')).not.toHaveAttribute('data-cut')
+  },
+}
+
+/** The paged layouts cannot cut a page, so the last page shown stays whole. */
+export const PagedShowsTheCutPageWhole: Story = {
+  parameters: {
+    ...open(1132),
+    msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2, tailOffset: 0.4 }), hidingCredits(1132)],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })
+    await userEvent.keyboard('{End}')
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
+    await expect(await canvas.findByText('Page 15 of 15')).toBeInTheDocument()
+    await expect(canvasElement.querySelector('.reader-strip-page[data-cut]')).toBeNull()
   },
 }
 
@@ -836,10 +1134,28 @@ export const ServerEnhanceAutoStretched: Story = {
       http.get(api('/reader/chapter/7715/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
     ],
   },
+  beforeEach: () => {
+    stretchedAsked.length = 0
+  },
   play: async ({ canvas }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
-    await waitFor(() => expect(stretchedAsked[0]?.[0]).toBe(5))
+    // A chapter's first request goes out even when empty; on a slow runner it can beat the measurement.
+    await waitFor(() => expect(stretchedAsked.find((pages) => pages.length > 0)?.[0]).toBe(5))
     await waitFor(() => expect(stretchedAsked.flat()).toContain(6))
     await waitFor(() => expect(stretchedAsked.every((pages) => pages.length <= 12 && pages.every((page) => page >= 5))).toBe(true))
+  },
+}
+
+export const BookmarkKeysStepBetweenBookmarks: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    // The fixture bookmarks pages 4 and 10; the reader resumes on 6.
+    await userEvent.keyboard('.')
+    await expect(await canvas.findByText('Page 10 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('.')
+    await expect(canvas.getByText('Page 10 of 18')).toBeInTheDocument()
+    await userEvent.keyboard(',')
+    await expect(await canvas.findByText('Page 4 of 18')).toBeInTheDocument()
   },
 }

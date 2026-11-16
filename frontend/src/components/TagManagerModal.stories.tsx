@@ -31,7 +31,7 @@ export const Empty: Story = {
   parameters: { msw: [http.get(api('/tags'), () => HttpResponse.json([])), ...libraryHandlers] },
   play: async ({ canvasElement }) => {
     const dialog = await dialogIn(canvasElement)
-    await expect(await within(dialog).findByText(/No tags yet\./)).toBeVisible()
+    await expect(await within(dialog).findByText('No tags yet')).toBeVisible()
   },
 }
 

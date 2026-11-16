@@ -86,12 +86,61 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void A_model_that_returns_only_the_interior_is_stitched_without_a_shift()
+    {
+        using var upscaler = NewUpscaler("identity-2x-crop12.onnx", UpscaleModelId.Maki2x);
+        var info = _catalog.Get(UpscaleModelId.Maki2x);
+        // 10 columns of 90 or 91 px and 14 rows of 93 or 94 px: contexts of 115 and 118 round up to 116 and 120.
+        var source = Pattern(901, 1307);
+
+        var grey = Pattern(901, 1307, grey: true);
+
+        var page = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
+        var luma = upscaler.Run(grey, info, threads: 2, luma: true, CancellationToken.None);
+
+        AssertNearest2x(source, page);
+        Assert.Equal((1, 1802, 2614), (luma.Bands, luma.Width, luma.Height));
+        for (var y = 0; y < luma.Height; y++)
+        for (var x = 0; x < luma.Width; x++)
+        {
+            if (luma.Pixels[y * luma.Width + x] != grey[x / 2, y / 2].R)
+            {
+                Assert.Fail($"Luma pixel ({x}, {y}) is {luma.Pixels[y * luma.Width + x]}, expected {grey[x / 2, y / 2].R}.");
+            }
+        }
+    }
+
+    [Fact]
+    public async Task A_model_cropped_past_the_tile_pad_fails_to_load()
+    {
+        using var upscaler = NewUpscaler("identity-2x-crop16.onnx", UpscaleModelId.Maki2x);
+
+        var result = await upscaler.UpscaleAsync(Pattern(200, 200).EncodePng(), "maki-2x", CancellationToken.None);
+
+        Assert.Equal((UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable), (result.Outcome, result.Reason));
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.Maki2x));
+    }
+
+    [Fact]
+    public void The_bundled_maki_2x_is_cropped_for_the_tile_pad()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, "maki-2x.onnx");
+        using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(path);
+
+        Assert.Equal(UpscaleTiling.ContextPad.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            session.ModelMetadata.CustomMetadataMap[OnnxPageUpscaler.ContextCropKey]);
+    }
+
+    [Fact]
     public void Workers_are_capped_by_the_memory_budget()
     {
         var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();
 
-        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile));
-        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }));
+        var span = _catalog.Get(UpscaleModelId.SpanS);
+
+        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile, span));
+        Assert.Equal(18, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2x)));
+        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }, span));
     }
 
     [Fact]
@@ -105,6 +154,41 @@ public class OnnxPageUpscalerTests : IDisposable
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 16, luma: false, CancellationToken.None);
 
         Assert.Equal([0, 1, 2, 3], tiles.Order());
+        AssertNearest2x(source, page);
+    }
+
+    [Fact]
+    public void A_narrow_run_takes_half_the_workers_and_gives_the_same_pixels()
+    {
+        using var upscaler = NewUpscaler();
+        var source = Pattern(900, 1300);
+        var info = _catalog.Get(UpscaleModelId.SpanS);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+
+        var full = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None);
+        var fullWorkers = workers;
+        workers = 0;
+        var narrow = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None, new UpscaleRun { Narrow = true });
+
+        Assert.Equal((6, 3), (fullWorkers, workers));
+        Assert.Equal(full.Pixels, narrow.Pixels);
+    }
+
+    [Fact]
+    public void A_narrow_run_starts_the_other_workers_once_widened()
+    {
+        using var upscaler = NewUpscaler();
+        using var widen = new CancellationTokenSource();
+        var source = Pattern(900, 1300);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+        upscaler.TileCompleted = _ => widen.Cancel();
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 6, luma: false, CancellationToken.None,
+            new UpscaleRun { Narrow = true, Widen = widen.Token });
+
+        Assert.Equal(6, workers);
         AssertNearest2x(source, page);
     }
 
@@ -163,6 +247,29 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void Flat_areas_inside_an_inferred_tile_are_snapped_to_their_exact_value()
+    {
+        var source = new Raster(40, 40, new Rgba(0, 0, 0), bands: 3);
+        for (var y = 0; y < 40; y++)
+        {
+            source[20, y] = new Rgba(255, 255, 255);
+        }
+
+        var tile = UpscaleTiling.Plan(40, 40, multiple: 4).Single();
+        var output = new byte[80 * 80 * 3];
+        Array.Fill(output, (byte)1);
+
+        OnnxPageUpscaler.SnapFlat(source, _catalog.Get(UpscaleModelId.Maki2x), tile, 2, output, 80, 3);
+
+        for (var x = 0; x < 80; x++)
+        {
+            var o = (30 * 80 + x) * 3;
+            var nearLine = x / 2 is >= 19 and <= 21;
+            Assert.Equal(nearLine ? (byte)1 : (byte)0, output[o]);
+        }
+    }
+
+    [Fact]
     public void A_4x_model_is_halved_per_tile_like_halving_the_whole_page()
     {
         using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
@@ -215,24 +322,64 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var rgb = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
         var luma = upscaler.Run(source, info, threads: 2, luma: true, CancellationToken.None);
-        var (original, _, _) = ImageCodec.ResizeRgb(source.Pixels, source.Width, source.Height, 2.0);
-        UpscalePixels.TakeColourFrom(rgb.Pixels, original);
+        UpscalePixels.TakeColourFrom(rgb.Pixels, rgb.Width, rgb.Height, source.Pixels, source.Width, source.Height, 2);
 
         Assert.Equal((1, rgb.Width, rgb.Height), (luma.Bands, luma.Width, luma.Height));
         Assert.Equal(UpscalePixels.ToSingleBand(rgb.Pixels), luma.Pixels);
     }
 
     [Fact]
-    public async Task A_colour_page_comes_back_as_a_three_band_webp_at_twice_the_size()
+    public async Task A_colour_page_comes_back_three_band_at_twice_the_size_as_jpeg_xl_unless_turned_off()
     {
         using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
 
-        var result = await upscaler.UpscaleAsync(Pattern(400, 500).EncodePng(), "span-s", CancellationToken.None);
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        _settings.Set(SettingKeys.UpscalingJpegXl, "false");
+        var webp = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
 
         Assert.Equal(UpscaleOutcome.Ready, result.Outcome);
-        Assert.Equal(("webp", 800, 1000), (result.Extension, result.Width, result.Height));
-        using var decoded = NetVips.Image.NewFromBuffer(result.Bytes!);
+        Assert.Equal((JpegXl.IsAvailable ? "jxl" : "webp", 800, 1000), (result.Extension, result.Width, result.Height));
+        Assert.Equal(("webp", 800, 1000), (webp.Extension, webp.Width, webp.Height));
+        using var decoded = NetVips.Image.NewFromBuffer(webp.Bytes!);
         Assert.Equal((3, 800, 1000), (decoded.Bands, decoded.Width, decoded.Height));
+        if (JpegXl.IsAvailable)
+        {
+            Assert.Equal((800, 1000, 3), JpegXl.Decode(result.Bytes!, 1_000_000) is var (_, w, h, b) ? (w, h, b) : default);
+        }
+    }
+
+    [Fact]
+    public async Task A_colour_page_nobody_can_show_as_jpeg_xl_is_encoded_as_webp_asked_at_the_encode()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+        var asked = 0;
+
+        var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
+            new UpscaleRun { JpegXl = () => ++asked < 0 }, CancellationToken.None);
+        Assert.Equal(0, asked);
+        var result = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(1, asked);
+        Assert.Equal((UpscaleOutcome.Ready, "webp"), (result.Outcome, result.Extension));
+        Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+    }
+
+    [Fact]
+    public async Task Two_stages_give_the_same_bytes_as_one_call_and_the_session_is_free_in_between()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+
+        var whole = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", UpscaleRun.Default, CancellationToken.None);
+        upscaler.ReleaseModel(UpscaleModelId.SpanS);
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
+        var staged = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(UpscaleOutcome.Ready, staged.Outcome);
+        Assert.Equal(whole.Bytes, staged.Bytes);
     }
 
     [Fact]
@@ -259,15 +406,19 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
-    public async Task An_output_taller_than_webp_allows_is_a_jpeg()
+    public async Task An_output_taller_than_webp_allows_is_a_jpeg_or_jpeg_xl_which_has_no_edge_limit()
     {
         using var upscaler = NewUpscaler();
+        var png = Pattern(40, 8200).EncodePng();
 
-        var result = await upscaler.UpscaleAsync(Pattern(40, 8200).EncodePng(), "span-s", CancellationToken.None);
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        _settings.Set(SettingKeys.UpscalingJpegXl, "false");
+        var jpeg = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
 
         Assert.Equal(UpscaleOutcome.Ready, result.Outcome);
-        Assert.Equal(("jpg", 80, 16400), (result.Extension, result.Width, result.Height));
-        Assert.Equal(ImageFormat.Jpeg, ImageCodec.DetectFormat(result.Bytes!));
+        Assert.Equal((JpegXl.IsAvailable ? "jxl" : "jpg", 80, 16400), (result.Extension, result.Width, result.Height));
+        Assert.Equal(("jpg", 80, 16400), (jpeg.Extension, jpeg.Width, jpeg.Height));
+        Assert.Equal(ImageFormat.Jpeg, ImageCodec.DetectFormat(jpeg.Bytes!));
     }
 
     [Fact]

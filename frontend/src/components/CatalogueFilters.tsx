@@ -4,7 +4,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
-import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
+import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '../lib/icons'
 import {
   allowedContentRatings,
@@ -21,6 +21,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { formatFixedDecimal } from '../format'
 import { MetaList } from './ui/MetaList'
+import { MinRatingSlider } from './MinRatingSlider'
 
 /** {@link BROWSE_SORTS} as `Select` data in the current language. */
 export function useBrowseSortOptions() {
@@ -512,26 +513,7 @@ export function CatalogueFilters({
               mb="lg"
             />
           </div>
-          <div>
-            <Text size="sm" fw={500} mb={4}>
-              <Trans>Minimum rating: {ratingLabel}</Trans>
-            </Text>
-            <Slider
-              thumbLabel={t`Minimum rating`}
-              min={0}
-              max={9.5}
-              step={0.5}
-              value={minRating}
-              onChange={setMinRating}
-              label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
-              marks={[
-                { value: 0, label: t`any` },
-                { value: 7, label: '7' },
-                { value: 9, label: '9' },
-              ]}
-              mb="lg"
-            />
-          </div>
+          <MinRatingSlider value={minRating} onChange={setMinRating} />
         </SimpleGrid>
       </Disclosure>
     </div>

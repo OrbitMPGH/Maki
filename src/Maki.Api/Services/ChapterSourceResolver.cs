@@ -1,3 +1,4 @@
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
@@ -6,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, string SourceChapterId);
+/// <param name="Locked">The source lists the chapter as still behind early access or a paywall.</param>
+public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, string SourceChapterId, bool Locked = false);
 
 /// <summary>No enabled mapping could hand over this chapter. The message lists what each source said.</summary>
 public sealed class ChapterUnavailableException(string key, string message) : InvalidOperationException(message)
@@ -35,7 +37,8 @@ public class ChapterSourceResolver(
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     SourceOrderService sourceOrder,
-    ChapterListingSchedule? listingSchedule = null)
+    ChapterListingSchedule? listingSchedule = null,
+    IAppSettings? appSettings = null)
 {
     /// <summary>Best first under the series' <see cref="SourceOrderMode"/>. See <see cref="SourceOrderService"/>.</summary>
     public async Task<IReadOnlyList<SourceMapping>> OrderAsync(
@@ -93,6 +96,7 @@ public class ChapterSourceResolver(
 
         var errors = new List<string>();
         SourceRateLimitedException? rateLimited = null;
+        ResolvedChapterSource? locked = null;
         foreach (var mapping in mappings)
         {
             var source = sourceRegistry.Find(mapping.SourceName);
@@ -103,10 +107,17 @@ public class ChapterSourceResolver(
 
             try
             {
-                var sourceChapterId = await ResolveSourceChapterIdAsync(db, source, mapping, chapter, ct, requireExactMatch);
-                if (sourceChapterId != null)
+                var listed = await ResolveSourceChapterAsync(db, source, mapping, chapter, ct, requireExactMatch);
+                if (listed is { Locked: true })
                 {
-                    return new ResolvedChapterSource(mapping, source, sourceChapterId);
+                    // Another source may have it free now; a locked copy is only the answer when none does.
+                    locked ??= new ResolvedChapterSource(mapping, source, listed.SourceChapterId, Locked: true);
+                    continue;
+                }
+
+                if (listed != null)
+                {
+                    return new ResolvedChapterSource(mapping, source, listed.SourceChapterId);
                 }
 
                 errors.Add($"{source.Name}: chapter not listed");
@@ -126,6 +137,11 @@ public class ChapterSourceResolver(
             {
                 errors.Add($"{source.Name}: {ex.Message}");
             }
+        }
+
+        if (locked is not null)
+        {
+            return locked;
         }
 
         if (rateLimited is not null)
@@ -185,7 +201,7 @@ public class ChapterSourceResolver(
     /// older link may name a re-uploaded id, and the processor's 404 path never lists again.
     /// </para>
     /// </summary>
-    private async Task<string?> ResolveSourceChapterIdAsync(
+    private async Task<SourceChapter?> ResolveSourceChapterAsync(
         MakiDbContext db, ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct,
         bool requireExactMatch = false)
     {
@@ -203,21 +219,48 @@ public class ChapterSourceResolver(
                 .FirstOrDefaultAsync(ct);
             if (!string.IsNullOrEmpty(stored))
             {
-                return stored;
+                return new SourceChapter(source.Name, mapping.SourceSeriesId, stored, chapter.NumberRaw,
+                    chapter.Number, chapter.Volume, chapter.Title, chapter.Language, chapter.ReleaseDate);
             }
         }
 
-        return Match(await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct),
-            chapter, requireExactMatch);
+        return Match(await ListingAsync(db, source, mapping, chapter.SeriesId, ct), chapter, requireExactMatch);
     }
 
-    private static string? Match(IReadOnlyList<SourceChapter> chapters, Chapter chapter, bool requireExactMatch)
+    /// <summary>The mapping's listing through the cache, under the series' scanlation group preference.</summary>
+    private async Task<IReadOnlyList<SourceChapter>> ListingAsync(
+        MakiDbContext db, ISource source, SourceMapping mapping, int seriesId, CancellationToken ct)
+    {
+        var groups = appSettings is null
+            ? null
+            : await ScanlationGroupSettings.ForSeriesAsync(appSettings, db, source, seriesId, ct);
+        return await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, groups, ct);
+    }
+
+    /// <summary>
+    /// Whether the source's current listing marks this chapter as still behind early access, for a
+    /// source declaring <see cref="SourceCapabilities.ListsLockedChapters"/>. The download asks before
+    /// fetching pages, since such a site serves a locked chapter's page without its images.
+    /// </summary>
+    public async Task<bool> ListedAsLockedAsync(
+        MakiDbContext db, ISource source, SourceMapping mapping, string sourceChapterId, CancellationToken ct)
+    {
+        if (!source.Capabilities.HasFlag(SourceCapabilities.ListsLockedChapters))
+        {
+            return false;
+        }
+
+        var listing = await ListingAsync(db, source, mapping, mapping.SeriesId, ct);
+        return listing.Any(c => c.Locked && c.SourceChapterId == sourceChapterId);
+    }
+
+    private static SourceChapter? Match(IReadOnlyList<SourceChapter> chapters, Chapter chapter, bool requireExactMatch)
     {
         if (requireExactMatch)
         {
             var exact = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language) &&
                 (chapter.Number != null ? c.Number == chapter.Number && (chapter.Volume == null || c.Volume == chapter.Volume) : c.Number == null && c.Title == chapter.Title)).ToList();
-            return exact.Count == 1 ? exact[0].SourceChapterId : null;
+            return exact.Count == 1 ? exact[0] : null;
         }
 
         // A mapping listing two languages carries both under one number, so language is part of every
@@ -229,6 +272,6 @@ public class ChapterSourceResolver(
             : sameLanguage.FirstOrDefault(c => c.Number is null &&
                 string.Equals(c.Title, chapter.Title, StringComparison.OrdinalIgnoreCase));
 
-        return match?.SourceChapterId;
+        return match;
     }
 }

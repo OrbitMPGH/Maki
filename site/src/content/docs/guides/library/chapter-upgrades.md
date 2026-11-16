@@ -100,5 +100,5 @@ Replaced files wait in `.maki-trash/<SeriesId>/` in the root folder for **Trash 
 
 :::tip
 Converting a file to WebP or AVIF does not make it look like a worse copy. Maki scores it as the copy
-it was downloaded as. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+it was downloaded as. See [Page conversion](/Maki/guides/library/page-conversion/).
 :::

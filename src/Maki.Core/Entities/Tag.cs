@@ -49,6 +49,12 @@ public class SavedFilter : IUserOwned
     public DateTime Created { get; set; }
 
     /// <summary>
+    /// The Library preset that applies when the owner opens the Library with nothing remembered.
+    /// At most one per user among <see cref="LibraryScope"/> rows.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>
     /// What the row is: a <see cref="LibraryScope"/> or <see cref="DiscoverScope"/> preset, or a custom
     /// rail placed on Home (<see cref="HomeRailScope"/>) or Discover (<see cref="DiscoverRailScope"/>).
     /// Each scope has its own spec shape, so a row never crosses between them.

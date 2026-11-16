@@ -324,4 +324,26 @@ public class UpgradesControllerTests : IDisposable
         Assert.Equal("error.upgrades.chapterHasNoFile", Code(noFile));
         Assert.Equal("error.upgrades.chapterHasNoFile", Code(missing));
     }
+
+    [Fact]
+    public async Task Unblocking_a_declined_release_expires_it_so_it_blocks_nothing()
+    {
+        var declined = Proposal(_world.SeriesId, "stalled", Maki.Core.Entities.TorrentProposalStatus.Dismissed);
+        var pending = Proposal(_world.SeriesId, "open");
+
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.IsType<NoContentResult>(await Controller(db).UnblockProposal(declined, CancellationToken.None));
+            Assert.IsType<ConflictObjectResult>(await Controller(db).UnblockProposal(pending, CancellationToken.None));
+            Assert.IsType<NotFoundObjectResult>(await Controller(db).UnblockProposal(9999, CancellationToken.None));
+        }
+
+        using var check = _world.Db.NewContext();
+        var row = check.TorrentProposals.Single(p => p.Id == declined);
+        Assert.Equal(Maki.Core.Entities.TorrentProposalStatus.Expired, row.Status);
+        Assert.NotNull(row.ResolvedAtUtc);
+        var attribute = typeof(UpgradesController).GetMethod(nameof(UpgradesController.UnblockProposal))!
+            .GetCustomAttribute<AuthorizeAttribute>()!;
+        Assert.Equal(Policies.DownloadChapters, attribute.Policy);
+    }
 }

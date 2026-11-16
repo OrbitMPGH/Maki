@@ -17,7 +17,9 @@ public class ReaderService(
     ReadingProgressService progress,
     KavitaProgressPusher kavitaPush,
     ReadingSessionService sessions,
-    ILogger<ReaderService> logger)
+    ILogger<ReaderService> logger,
+    ReadingAwareQueueBump? queueBump = null,
+    Upscaling.UpscalePrepareService? prepareAhead = null)
 {
     /// <summary>Where a chapter lives inside its backing archive.</summary>
     public record ChapterSlice(
@@ -29,9 +31,36 @@ public class ReaderService(
         IReadOnlyList<string> Pages,
         int StartPage,
         int PageCount,
-        long ArchiveStamp = 0)
+        long ArchiveStamp = 0,
+        string? EdgeKey = null,
+        IReadOnlyList<Maki.Core.Reading.PageEntry>? Entries = null)
     {
         public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
+
+    /// <summary>
+    /// What the credit page search's answer for a slice is keyed on: the page count and the checksum and
+    /// size of every page an edge strip can take (<see cref="Maki.Core.Images.CreditDetector.EdgePages"/>
+    /// from each end), as the zip directory records them. Unlike <see cref="ChapterSlice.ArchiveVersion"/>
+    /// it survives a ComicInfo rewrite, which copies every page unchanged. Null for a PDF.
+    /// </summary>
+    internal static string? EdgeKeyOf(ReaderArchiveCache.ArchiveInfo info, int start, int count)
+    {
+        if (info.Entries is not { } entries || count <= 0 || start < 0 || start + count > entries.Count)
+        {
+            return null;
+        }
+
+        var edge = Math.Min(Maki.Core.Images.CreditDetector.EdgePages, count);
+        var text = new System.Text.StringBuilder().Append(count);
+        foreach (var index in Enumerable.Range(0, edge).Concat(Enumerable.Range(count - edge, edge)).Distinct())
+        {
+            var entry = entries[start + index];
+            text.Append('|').Append(entry.Crc.ToString("x8")).Append(':').Append(entry.Length);
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text.ToString()));
+        return Convert.ToHexStringLower(hash.AsSpan(0, 10));
     }
 
     /// <summary>
@@ -90,7 +119,8 @@ public class ReaderService(
         var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
-            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp, EdgeKeyOf(info, start, count),
+            info.Entries);
     }
 
     /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
@@ -208,7 +238,8 @@ public class ReaderService(
 
             var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
-                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp);
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp,
+                EdgeKeyOf(info, start, count), info.Entries);
         }
 
         return slices;
@@ -281,7 +312,7 @@ public class ReaderService(
     /// names. When those markers don't name this chapter the whole archive is served rather than
     /// a guessed range — showing extra pages is recoverable, silently skipping them is not.
     /// </summary>
-    private static (int Start, int Count) SliceBounds(
+    internal static (int Start, int Count) SliceBounds(
         ReaderArchiveCache.ArchiveInfo info, decimal? chapterNumber, bool sharesFile)
     {
         if (!sharesFile || chapterNumber is not { } number || info.Boundaries.Count == 0)
@@ -322,19 +353,98 @@ public class ReaderService(
     /// <summary>The previous/next downloaded chapter of the same series and language.</summary>
     public async Task<(int? Previous, int? Next)> NeighboursAsync(Chapter chapter, CancellationToken ct)
     {
+        var ordered = await ReadingOrderAsync(chapter, ct);
+        var at = ordered.IndexOf(chapter.Id);
+        return at < 0
+            ? (null, null)
+            : (at > 0 ? ordered[at - 1] : null,
+                at + 1 < ordered.Count ? ordered[at + 1] : null);
+    }
+
+    /// <summary>
+    /// Up to <paramref name="each"/> readable chapters on each side of <paramref name="chapter"/> in
+    /// reading order, nearest first, leaving out any <paramref name="usable"/> turns down. The nearest
+    /// candidates on both sides resolve in one <see cref="SlicesAsync"/>; a side only asks again when
+    /// some of them could not be read or used. Only the nearest <see cref="NearbyScanFactor"/> times
+    /// <paramref name="each"/> chapters on a side are tried, so a series whose older files are gone
+    /// does not cost a query and an archive open per chapter.
+    /// </summary>
+    private const int NearbyScanFactor = 4;
+
+    public async Task<(List<ChapterSlice> Before, List<ChapterSlice> After)> NearbySlicesAsync(
+        Chapter chapter, int each, Func<ChapterSlice, bool> usable, CancellationToken ct)
+    {
+        var ordered = await ReadingOrderAsync(chapter, ct);
+        var at = ordered.IndexOf(chapter.Id);
+        if (at < 0)
+        {
+            return ([], []);
+        }
+
+        var reach = each * NearbyScanFactor;
+        var before = ordered[Math.Max(0, at - reach)..at];
+        before.Reverse();
+        var after = ordered[(at + 1)..Math.Min(ordered.Count, at + 1 + reach)];
+        var found = (Before: new List<ChapterSlice>(), After: new List<ChapterSlice>());
+        var (b, a) = (0, 0);
+        while ((found.Before.Count < each && b < before.Count) || (found.After.Count < each && a < after.Count))
+        {
+            var askBefore = before.Skip(b).Take(each - found.Before.Count).ToList();
+            var askAfter = after.Skip(a).Take(each - found.After.Count).ToList();
+            b += askBefore.Count;
+            a += askAfter.Count;
+            var slices = await SlicesAsync([.. askBefore, .. askAfter], ct);
+            found.Before.AddRange(askBefore.Select(slices.GetValueOrDefault).OfType<ChapterSlice>().Where(usable));
+            found.After.AddRange(askAfter.Select(slices.GetValueOrDefault).OfType<ChapterSlice>().Where(usable));
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// What <see cref="NearbySlicesAsync"/> answers, worked out over slices already resolved in reading
+    /// order (null where a chapter cannot be read), for a caller that holds a whole series. The two
+    /// must agree, or the background credit scan and the reader compare against different chapters.
+    /// </summary>
+    internal static (List<ChapterSlice> Before, List<ChapterSlice> After) NearbyOf(
+        IReadOnlyList<ChapterSlice?> ordered, int at, int each, Func<ChapterSlice, bool> usable)
+    {
+        var reach = each * NearbyScanFactor;
+        var before = new List<ChapterSlice>();
+        for (var i = at - 1; i >= Math.Max(0, at - reach) && before.Count < each; i--)
+        {
+            if (ordered[i] is { } slice && usable(slice))
+            {
+                before.Add(slice);
+            }
+        }
+
+        var after = new List<ChapterSlice>();
+        for (var i = at + 1; i < Math.Min(ordered.Count, at + 1 + reach) && after.Count < each; i++)
+        {
+            if (ordered[i] is { } slice && usable(slice))
+            {
+                after.Add(slice);
+            }
+        }
+
+        return (before, after);
+    }
+
+    /// <summary>The downloaded chapters of the chapter's series and language, in reading order.</summary>
+    private Task<List<int>> ReadingOrderAsync(Chapter chapter, CancellationToken ct) =>
+        ReadingOrderAsync(chapter.SeriesId, chapter.Language, ct);
+
+    /// <summary>The downloaded chapters of a series in one language, in reading order.</summary>
+    public async Task<List<int>> ReadingOrderAsync(int seriesId, string language, CancellationToken ct)
+    {
         var siblings = await db.Chapters
             .AsNoTracking()
-            .Where(c => c.SeriesId == chapter.SeriesId && c.Language == chapter.Language && c.ChapterFileId != null)
+            .Where(c => c.SeriesId == seriesId && c.Language == language && c.ChapterFileId != null)
             .Select(c => new { c.Id, c.Number, c.Volume })
             .ToListAsync(ct);
 
-        var ordered = ChapterOrder.Sort(siblings, c => c.Number, c => c.Volume, c => c.Id);
-
-        var at = ordered.FindIndex(c => c.Id == chapter.Id);
-        return at < 0
-            ? (null, null)
-            : (at > 0 ? ordered[at - 1].Id : null,
-                at + 1 < ordered.Count ? ordered[at + 1].Id : null);
+        return [.. ChapterOrder.Sort(siblings, c => c.Number, c => c.Volume, c => c.Id).Select(c => c.Id)];
     }
 
     /// <summary>
@@ -358,6 +468,14 @@ public class ReaderService(
         saved is null || saved.Completed || saved.PageIndex < 0 || saved.PageIndex >= pageCount
             ? 0
             : saved.PageIndex;
+
+    /// <summary>How far down the resume page the strip opens, only where <see cref="ResumePageFor"/> keeps the saved page.</summary>
+    public static double ResumeOffsetFor(ChapterProgress? saved, int pageCount) =>
+        saved is { Completed: false } && IsPageInRange(saved.PageIndex, pageCount) ? ClampOffset(saved.PageOffset) : 0;
+
+    /// <summary>A reported offset within a page, as stored: a share from 0 to 1, and 0 for anything unusable.</summary>
+    public static double ClampOffset(double? offset) =>
+        offset is { } value && double.IsFinite(value) ? Math.Clamp(value, 0, 1) : 0;
 
     public static bool IsPageInRange(int pageIndex, int pageCount) => pageIndex >= 0 && pageIndex < pageCount;
 
@@ -417,18 +535,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct, DateTime? clientTime = null, string? opId = null)
+        TimeReport time, CancellationToken ct, DateTime? clientTime = null, string? opId = null, double? pageOffset = null)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, pageOffset, ct);
         }
         catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, pageOffset, ct);
         }
     }
 
@@ -476,7 +594,7 @@ public class ReaderService(
         Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, DateTime? clientTime, string? opId, CancellationToken ct)
+        TimeReport time, DateTime? clientTime, string? opId, double? pageOffset, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -517,6 +635,7 @@ public class ReaderService(
         {
             // The resume position is free to move backwards; completion is not.
             row.PageIndex = ClampPage(pageIndex, slice.PageCount);
+            row.PageOffset = ClampOffset(pageOffset);
             row.UpdatedAt = at;
         }
 
@@ -572,10 +691,16 @@ public class ReaderService(
         var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, at, ct);
         await SaveWithSessionAsync(sessionStaged, ct);
 
+        if (!stale)
+        {
+            queueBump?.Notify(chapter.SeriesId, chapter.Id);
+        }
+
         if (justCompleted)
         {
             await OnChapterCompletedAsync(slice.Series, chapter, row, at, CancellationToken.None);
             await ArmRatingCheckpointAsync(slice.Series, chapter);
+            prepareAhead?.Nudge();
         }
 
         return justCompleted;
@@ -807,7 +932,7 @@ public class ReaderService(
                 c.Id,
                 c.SeriesId,
                 c.Number,
-                MeasuredPages = c.ChapterFile!.PageCount,
+                MeasuredPages = c.ChapterFile!.SplitPageCount ?? c.ChapterFile.PageCount,
                 SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
             })
             .ToListAsync(ct);
@@ -949,6 +1074,7 @@ public class ReaderService(
         row.BulkMarked = false;
         row.Watched = false;
         row.PageIndex = 0;
+        row.PageOffset = 0;
         row.UnreadAt = now;
         row.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
@@ -973,6 +1099,7 @@ public class ReaderService(
             row.BulkMarked = false;
             row.Watched = false;
             row.PageIndex = 0;
+            row.PageOffset = 0;
             row.UnreadAt = now;
             row.UpdatedAt = now;
         }

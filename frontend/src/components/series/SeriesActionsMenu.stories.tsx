@@ -78,6 +78,47 @@ export const Admin: Story = {
   },
 }
 
+export const PrepareAhead: Story = {
+  args: { prepareAhead: { chapters: null, defaultChapters: 1, days: 14 }, onSetPrepareAhead: fn() },
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await expect(await page.findByRole('group', { name: 'Monitor' })).toBeVisible()
+    await expect(await page.findByRole('menuitem', { name: /Prepare ahead/ })).toHaveTextContent('Default')
+    await ctx.userEvent.click(await page.findByRole('menuitem', { name: /Prepare ahead/ }))
+    await expect(await page.findByText('1 chapter for each reader who read it in the last 14 days.')).toBeVisible()
+    await ctx.userEvent.click(await page.findByRole('menuitemradio', { name: '10 chapters' }))
+    await waitFor(() => expect(ctx.args.onSetPrepareAhead).toHaveBeenCalledWith(10))
+  },
+}
+
+export const PrepareAheadHiddenWhileOff: Story = {
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await expect(await page.findByRole('group', { name: 'Incognito' })).toBeVisible()
+    await expect(page.queryByRole('menuitem', { name: /Prepare ahead/ })).toBeNull()
+  },
+}
+
+/** Prepare ahead is a series setting: a reader without edit rights never sees it. */
+export const ReaderCannotSetPrepareAhead: Story = {
+  args: {
+    canEdit: false,
+    canCleanUpReadFiles: false,
+    canSetPageConversion: false,
+    canScanUpgrades: false,
+    canArchive: false,
+    canRemove: false,
+    prepareAhead: { chapters: 5, defaultChapters: 1, days: 14 },
+    onSetPrepareAhead: fn(),
+  },
+  play: async (ctx) => {
+    const page = await openAt(ctx)
+    await expect(await page.findByRole('group', { name: 'Notify' })).toBeVisible()
+    await expect(page.queryByRole('menuitem', { name: 'Automation' })).toBeNull()
+    await expect(page.queryByRole('menuitem', { name: /Prepare ahead/ })).toBeNull()
+  },
+}
+
 export const PickMonitorMode: Story = {
   play: async (ctx) => {
     const page = await openAt(ctx, 'Automation')
@@ -300,5 +341,31 @@ export const RefreshRunning: Story = {
     await waitFor(() => expect(page.getByRole('menuitem', { name: 'Refresh chapters' })).toBeDisabled())
     await ctx.userEvent.click(await page.findByRole('menuitem', { name: 'Edit metadata' }))
     await waitFor(() => expect(ctx.args.onEditMetadata).toHaveBeenCalledOnce())
+  },
+}
+
+/** A scan in the Files group shows a pulsing dot on the group row at the root. */
+export const GroupBusy: Story = {
+  args: { rescanning: true },
+  play: async (ctx) => {
+    await openAt(ctx)
+    await waitFor(() => expect(document.querySelectorAll('.status-dot[data-live]').length).toBeGreaterThan(0))
+  },
+}
+
+export const ScanlationGroups: Story = {
+  args: { onScanlationGroups: fn() },
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await ctx.userEvent.click(await page.findByRole('menuitem', { name: 'Scanlation groups...' }))
+    await waitFor(() => expect(ctx.args.onScanlationGroups).toHaveBeenCalledOnce())
+  },
+}
+
+export const ScanlationGroupsHiddenWithoutAChoice: Story = {
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await expect((await page.findAllByRole('menuitemradio', { name: /^All/ })).length).toBeGreaterThan(0)
+    await expect(page.queryByRole('menuitem', { name: 'Scanlation groups...' })).toBeNull()
   },
 }

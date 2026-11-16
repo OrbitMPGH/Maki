@@ -1,0 +1,25 @@
+name: libjxl cache
+
+# A PR can only restore a cache saved on its own branch, its base branch or main. CI runs on PRs and
+# main, so without this every new PR into dev built libjxl from scratch once. Saving it on dev whenever
+# the build script changes lets every PR after that take it from the cache.
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'distribution/libjxl/build.sh'
+      - '.github/actions/libjxl/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/libjxl
+        with:
+          save: 'true'

@@ -31,9 +31,14 @@ namespace Maki.Api.Controllers;
 /// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
 /// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
 /// </para>
+/// <para>
+/// <paramref name="PageOffset"/> is how far down the page the continuous strip is (0 to 1), so a tall
+/// slice resumes mid-page. Absent means the top of the page.
+/// </para>
 /// </summary>
 public record SaveProgressRequest(
-    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null,
+    double? PageOffset = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -54,12 +59,15 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 /// <summary>
 /// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
 /// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
-/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
+/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window,
+/// and queues every page of <c>NextChapterId</c> after it.
 /// <c>NotWanted</c> names pages of this chapter the reader shows plain (Enhance on Auto), dropped from
 /// whatever an earlier request queued. <c>Session</c> names the reader tab, so two tabs on one account
 /// keep separate queues. <c>Window</c> is how many leading <c>Pages</c> are the reading window (the rest
 /// is the whole chapter's backlog), and <c>Visible</c> false marks a request from a hidden tab, which
-/// does not make that tab active; absent means visible. See <see cref="ReaderController.Enhance"/>.
+/// does not make that tab active; absent means visible. <c>JpegXl</c> is whether the tab's browser decodes
+/// JPEG XL: false lets pages nobody else wants be encoded as WebP straight away; absent (an older client)
+/// counts as true. See <see cref="ReaderController.Enhance"/>.
 /// </summary>
 public record EnhancePagesRequest(
     string? Model,
@@ -70,7 +78,8 @@ public record EnhancePagesRequest(
     int[]? NotWanted = null,
     string? Session = null,
     int? Window = null,
-    bool? Visible = null);
+    bool? Visible = null,
+    bool? JpegXl = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -184,7 +193,12 @@ public class ReaderController(
     }
 
     [HttpGet("chapter/{id:int}")]
-    public async Task<IActionResult> Manifest(int id, [FromServices] EnhanceAvailability enhanceAvailability, CancellationToken ct)
+    public async Task<IActionResult> Manifest(
+        int id,
+        [FromServices] EnhanceAvailability enhanceAvailability,
+        [FromServices] CreditStore creditStore,
+        [FromServices] ReadingTimeEstimateService estimates,
+        CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -202,32 +216,26 @@ public class ReaderController(
         // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
         // stale within the chapter, which is exactly right: they only move when a chapter is
         // finished, and finishing one refetches this.
-        var seriesReadCount = await ReadCounts.Read(db)
-            .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
+        var ending = await EndingAsync(slice.Series.Id, next, ct);
 
-        // seriesWantedCount is how long the series actually is, which the downloaded count can't say.
-        // Same rule the series page's denominator uses. The toolbar shows it as a trailing hint so
-        // someone reading a series that downloads in batches can tell there is more coming.
-        var counts = await db.Chapters
-            .Where(c => c.SeriesId == slice.Series.Id)
-            .GroupBy(_ => 1)
-            .Select(g => new
-            {
-                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
-                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
-            })
-            .FirstOrDefaultAsync(ct);
-        var seriesChapterCount = counts?.Downloaded ?? 0;
-        var seriesWantedCount = counts?.Wanted ?? 0;
+        // Whether finishing this chapter finishes the series, so the end screen can ask for the final
+        // rating without waiting for the write that sets the flag. Only a completed series can end.
+        // Finished is sticky, so a series whose status left Completed would still say so; only a completed one can end here.
+        var seriesFinished = slice.Series.Status == SeriesStatus.Completed &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, slice.Series.Id, ct);
+        var finishesSeries = false;
+        if (slice.Series.Status == SeriesStatus.Completed && slice.Chapter.Number is { } thisNumber)
+        {
+            var highest = await SeriesFinishRule.HighestNumberAsync(db, slice.Series.Id, ct);
+            finishesSeries = SeriesFinishRule.Closes(slice.Series.Status, (double)thisNumber, highest);
+        }
 
-        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
-        // continuation from a jump over chapters that were never downloaded.
-        var nextChapter = next is int nextId
-            ? await db.Chapters.AsNoTracking()
-                .Where(c => c.Id == nextId)
-                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
-                .FirstOrDefaultAsync(ct)
-            : null;
+        // The same median the series page's time to finish uses, so the two never disagree about
+        // pace. The total is that page's too: what the series is meant to hold, or what is wanted.
+        var pace = await estimates.PaceAsync(
+            slice.Series.Id, ReadingTimeEstimateService.ModeFor(slice.Series.Type, resolved), ct);
+        var paceTotal = Math.Max(slice.Series.TotalChapters ?? 0,
+            ending.WantedCount > 0 ? ending.WantedCount : ending.ChapterCount);
 
         var enhanceServer = await enhanceAvailability.GetAsync(ct);
         var tier = await db.ChapterFiles.AsNoTracking()
@@ -239,6 +247,10 @@ public class ReaderController(
             .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
             .Select(n => n.PageIndex)
             .ToListAsync(ct);
+        // A stored answer rides along, so the first paint is already trimmed and nothing waits for it.
+        var credits = resolved.Prefs.HideCredits && ReaderCreditsCache.Applies(slice)
+            ? await creditStore.GetAsync(slice, ct)
+            : null;
 
         return Ok(new
         {
@@ -248,17 +260,21 @@ public class ReaderController(
             label = ChapterLabel.For(slice.Chapter),
             number = slice.Chapter.Number,
             pageCount = slice.PageCount,
-            seriesChapterCount,
-            seriesReadCount,
-            seriesWantedCount,
+            seriesChapterCount = ending.ChapterCount,
+            seriesReadCount = ending.ReadCount,
+            seriesWantedCount = ending.WantedCount,
+            finishesSeries,
+            seriesFinished,
+            readingPace = pace is null
+                ? null
+                : new { chapterSeconds = (int)Math.Round(pace.MedianSeconds), style = pace.Style, totalChapters = paceTotal },
             resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
+            resumeOffset = ReaderService.ResumeOffsetFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            nextChapterLabel = nextChapter is null
-                ? null
-                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
-            nextChapterNumber = nextChapter?.Number,
+            nextChapterLabel = ending.NextLabel,
+            nextChapterNumber = ending.NextNumber,
             seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
@@ -266,11 +282,102 @@ public class ReaderController(
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            credits = credits is null
+                ? null
+                : new { headPages = credits.HeadPages, headOffset = credits.HeadOffset, tailPages = credits.TailPages, tailOffset = credits.TailOffset },
             tier = QualitySnapshot.TierName(tier),
             enhanceServer,
             noteCount = notePages.Count,
             notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
+    }
+
+    /// <summary>
+    /// What the end screen shows that changes while it is open: the next chapter, the counts, and
+    /// where the final rating stands. The manifest is not refetched for it, because a refetch moves
+    /// the reader's position and remounts pages.
+    /// </summary>
+    [HttpGet("chapter/{id:int}/ending")]
+    public async Task<IActionResult> Ending(
+        int id, CancellationToken ct, [FromServices] ReleaseOutlookService? outlooks = null)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => new { Chapter = c, Completed = c.Series!.Status == SeriesStatus.Completed })
+            .FirstOrDefaultAsync(ct);
+        var chapter = row?.Chapter;
+        if (chapter is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        var (_, next) = await reader.NeighboursAsync(chapter, ct);
+        var ending = await EndingAsync(chapter.SeriesId, next, ct);
+        var state = await db.UserSeriesStates
+            .Where(s => s.SeriesId == chapter.SeriesId)
+            .Select(s => new { s.Rating, s.ProvisionalRating, s.RateHintDismissedAt })
+            .FirstOrDefaultAsync(ct);
+        return Ok(new
+        {
+            nextChapterId = next,
+            nextChapterLabel = ending.NextLabel,
+            nextChapterNumber = ending.NextNumber,
+            seriesChapterCount = ending.ChapterCount,
+            seriesReadCount = ending.ReadCount,
+            seriesWantedCount = ending.WantedCount,
+            completed = (await reader.ProgressAsync(id, ct))?.Completed ?? false,
+            finished = row!.Completed && await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, chapter.SeriesId, ct),
+            rating = state?.Rating,
+            provisionalRating = state?.ProvisionalRating,
+            rateHintDismissed = state?.RateHintDismissedAt != null,
+            leftOutToComplete = next is null && row.Completed
+                ? await SeriesCompletion.AskAsync(
+                    db, currentUser.UserId, await db.Series.AsNoTracking().FirstAsync(s => s.Id == chapter.SeriesId, ct),
+                    async () => outlooks is not null &&
+                                ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(chapter.SeriesId, ct)),
+                    await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct), ct, chapter)
+                : null,
+        });
+    }
+
+    private sealed record EndingState(
+        int ChapterCount, int ReadCount, int WantedCount, string? NextLabel, decimal? NextNumber);
+
+    private async Task<EndingState> EndingAsync(int seriesId, int? next, CancellationToken ct)
+    {
+        // Out of the chapters on disk, which is what ChapterCount counts: this screen's unread figure is
+        // what is left to read here, so a chapter read without a file stays out of it.
+        var readCount = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == seriesId &&
+            db.Chapters.Any(c => c.Id == p.ChapterId && (c.ChapterFileId != null || c.FileRemovedAt != null)), ct);
+
+        // WantedCount is how long the series actually is, which the downloaded count can't say.
+        // Same rule the series page's denominator uses.
+        var counts = await db.Chapters
+            .Where(c => c.SeriesId == seriesId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
+                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
+        // continuation from a jump over chapters that were never downloaded.
+        var nextChapter = next is int nextId
+            ? await db.Chapters.AsNoTracking()
+                .Where(c => c.Id == nextId)
+                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
+                .FirstOrDefaultAsync(ct)
+            : null;
+        return new EndingState(
+            counts?.Downloaded ?? 0,
+            readCount,
+            counts?.Wanted ?? 0,
+            nextChapter is null
+                ? null
+                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
+            nextChapter?.Number);
     }
 
     [HttpGet("chapter/{id:int}/page/{page:int}")]
@@ -283,8 +390,14 @@ public class ReaderController(
         }
 
         var entry = slice.Pages[slice.StartPage + page];
+        var jpegXl = JpegXlPages.IsJpegXl(entry);
+        var (contentType, representation) = JpegXlPages.Representation(entry, jpegXl && JpegXlPages.Accepts(Request));
+        if (jpegXl)
+        {
+            Response.Headers.Vary = "Accept";
+        }
 
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}{representation}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -309,7 +422,20 @@ public class ReaderController(
         }
 
         SetPageCacheControl(slice);
-        return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+        if (jpegXl && contentType != JpegXlPages.MediaType)
+        {
+            var (bytes, type) = await JpegXlPages.TranscodeAsync(stream, ct);
+            if (type == JpegXlPages.MediaType)
+            {
+                // The page did not convert, so this is not the WebP the ETag names; never let it be kept.
+                Response.Headers.CacheControl = "no-store";
+                return File(bytes, type);
+            }
+
+            return File(bytes, type, lastModified: null, entityTag: etag);
+        }
+
+        return File(stream, contentType, lastModified: null, entityTag: etag);
     }
 
     private static string PageVersion(int chapterFileId, string archiveVersion) => $"{chapterFileId}-{archiveVersion}";
@@ -330,8 +456,9 @@ public class ReaderController(
     /// reader's pending work, replacing what they had pending for another chapter or model. Each one
     /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
     /// Pages of the next chapter queue after them in whatever room is left under the cap, so the next
-    /// chapter opens on pages already upscaled. They are not answered here; that chapter's own request
-    /// picks them up.
+    /// chapter opens on pages already upscaled: the ones named, or with <c>WholeChapter</c> all of them.
+    /// None are queued when the next chapter's file tier is one the series' settings skip. They are not
+    /// answered here; that chapter's own request picks them up.
     /// </summary>
     [HttpPost("chapter/{id:int}/enhance")]
     public async Task<IActionResult> Enhance(
@@ -389,12 +516,15 @@ public class ReaderController(
 
         var items = wanted.Select(w => w.Item).ToList();
         var room = cap - items.Count;
-        if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
-            && await reader.PageSliceAsync(nextId, ct) is { } next)
+        if (request.NextChapterId is { } nextId && nextId != id && room > 0
+            && (request.NextPages is { Length: > 0 } || request.WholeChapter)
+            && await reader.PageSliceAsync(nextId, ct) is { } next
+            && !await SkipsEnhanceAsync(nextId, ct))
         {
             // Two chapters served from one whole archive share keys; the page asked for as this chapter's keeps its waiter.
             var asked = items.Select(item => item.Key).ToHashSet();
-            items.AddRange(nextPages
+            items.AddRange((request.NextPages ?? [])
+                .Concat(request.WholeChapter ? Enumerable.Range(0, next.PageCount) : [])
                 .Distinct()
                 .Where(page => page >= 0 && page < next.PageCount)
                 .Select(page => new UpscaleRequestItem(
@@ -410,7 +540,8 @@ public class ReaderController(
             .ToHashSet();
         int? window = request.WholeChapter && request.Window is { } shown ? wanted.Count(w => w.Index < shown) : null;
         var queued = queue.Replace(
-            currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session), window, request.Visible ?? true);
+            currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session), window, request.Visible ?? true,
+            request.JpegXl);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";
@@ -429,14 +560,38 @@ public class ReaderController(
 
     private static string? EnhanceSession(string? session) => session is { Length: > 0 and <= 64 } ? session : null;
 
-    /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>
+    /// <summary>Whether the reader's settings for the chapter's series turn Enhance off for its file tier.</summary>
+    private async Task<bool> SkipsEnhanceAsync(int chapterId, CancellationToken ct)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == chapterId)
+            .Select(c => new { c.SeriesId, Tier = c.ChapterFile == null ? QualityTier.Unknown : c.ChapterFile.Tier })
+            .FirstOrDefaultAsync(ct);
+        if (row is null)
+        {
+            return true;
+        }
+
+        var prefs = (await profiles.ResolveAsync(row.SeriesId, ct)).Prefs;
+        return (prefs.EnhanceSkipTiers ?? ReaderPrefsSpec.DefaultEnhanceSkipTiers).Contains(QualitySnapshot.TierName(row.Tier));
+    }
+
+    /// <summary>
+    /// A server upscale from the cache. 404 until it is there; this never queues one. A page cached as
+    /// JPEG XL is sent as it is only when <paramref name="jxl"/> is "1" (the reader decoded a test
+    /// image); otherwise it is converted to WebP on the way out, since Edge and older browsers cannot
+    /// decode it. HEAD answers without converting.
+    /// </summary>
     [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]
+    [HttpHead("chapter/{id:int}/page/{page:int}/enhanced")]
     public async Task<IActionResult> EnhancedPage(
         int id,
         int page,
         [FromQuery] string? model,
+        [FromQuery] string? jxl,
         [FromServices] UpscaleModelStore store,
         [FromServices] UpscaleCache cache,
+        [FromServices] ILogger<ReaderController> logger,
         CancellationToken ct)
     {
         var (refusal, modelId) = await EnhanceAvailability.CheckAsync(appSettings, store, model, ct);
@@ -458,8 +613,10 @@ public class ReaderController(
             return NotFound();
         }
 
+        var convert = UpscaleCache.IsJpegXl(cached) && jxl != "1";
+        var representation = UpscaleCache.IsJpegXl(cached) ? convert ? "-webp" : "-jxl" : "";
         var etag = new EntityTagHeaderValue(
-            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}\"");
+            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}{representation}\"");
         SetPageCacheControl(slice);
         // A pipeline change raises the generation; a URL without the current one must not be kept for a year.
         if (Request.Query["g"] != UpscaleCache.Generation)
@@ -469,6 +626,55 @@ public class ReaderController(
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (convert)
+        {
+            // The hub-down poller only asks whether the page is there; a conversion would be thrown away.
+            if (HttpMethods.IsHead(Request.Method))
+            {
+                Response.Headers.ETag = etag.ToString();
+                Response.ContentType = "image/webp";
+                return Ok();
+            }
+
+            byte[] bytes;
+            try
+            {
+                bytes = await System.IO.File.ReadAllBytesAsync(cached, ct);
+            }
+            catch (IOException)
+            {
+                // Evicted since TryGet: the reader's next request queues it again.
+                return NotFound();
+            }
+
+            UpscaledImage converted;
+            try
+            {
+                // A conversion peaks at about 7 bytes a pixel (49 MB for a 7.5 MP page), twice what the
+                // gate's pixel budget assumes.
+                var (width, height) = JpegXl.ReadSize(bytes);
+                converted = await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(ImageCodec.TranscodeUpscaledJpegXl(bytes)), 2 * ImageWorkGate.Weigh(width, height), ct);
+            }
+            catch (JpegXlException ex)
+            {
+                // Dropped, or the reader would read the 404 as an eviction, ask again, find the same file
+                // cached and loop. Without it the page is made again.
+                logger.LogInformation(ex, "Dropped the unreadable upscaled page {Path}", cached);
+                cache.Discard(cached);
+                return NotFound();
+            }
+            catch (NetVips.VipsException ex)
+            {
+                logger.LogInformation(ex, "Converting the upscaled page {Path} to WebP failed", cached);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            PageCache.DropAfterScan(cached);
+            return File(converted.Bytes, converted.Extension == "webp" ? "image/webp" : "image/jpeg",
+                lastModified: null, entityTag: etag);
         }
 
         // The browser keeps the page as immutable, so the server rarely reads it again; without this its
@@ -500,6 +706,96 @@ public class ReaderController(
         return PhysicalFile(cached, "image/jpeg");
     }
 
+    /// <summary>
+    /// Where the chapter's recap of the previous chapter ends, for the reader's "Skip recap". Both
+    /// fields are null when there is no previous chapter on disk or no recap was found. The search
+    /// decodes about 35 pages the first time, so the reader asks ahead while the previous chapter ends.
+    /// </summary>
+    [HttpGet("chapter/{id:int}/recap")]
+    public async Task<IActionResult> Recap(int id, [FromServices] ReaderRecapCache recaps, CancellationToken ct)
+    {
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        var (previousId, _) = await reader.NeighboursAsync(slice.Chapter, ct);
+        var previous = previousId is int before ? await reader.SliceAsync(before, ct) : null;
+        var end = previous is null ? null : await recaps.FindAsync(slice, previous, ct);
+        return Ok(new { page = end?.Page, offset = end?.Offset });
+    }
+
+    /// <summary>
+    /// The credit, recruitment and notice pages the reader leaves out of the chapter: whole pages at
+    /// its start and end, and how far down the first page it shows a banner fused into that page ends.
+    /// All zero when nothing repeats at the chapter's edges. The first search decodes the edges of up
+    /// to seven chapters, so the reader asks ahead while the previous chapter ends. The manifest's
+    /// <c>pageVersion</c> comes back too: the answer belongs to that file, and a replaced file needs its own.
+    /// </summary>
+    [HttpGet("chapter/{id:int}/credits")]
+    public async Task<IActionResult> Credits(int id, [FromServices] ReaderCreditsCache credits,
+        [FromServices] CreditStore store, CancellationToken ct)
+    {
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        var found = CreditPages.None;
+        if (ReaderCreditsCache.Applies(slice))
+        {
+            found = await store.GetAsync(slice, ct) ?? await SearchCreditsAsync(slice, credits, ct);
+        }
+
+        return Ok(new
+        {
+            headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages, tailOffset = found.TailOffset,
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+        });
+    }
+
+    private async Task<CreditPages> SearchCreditsAsync(ReaderService.ChapterSlice slice, ReaderCreditsCache credits, CancellationToken ct)
+    {
+        var (before, after) = await reader.NearbySlicesAsync(
+            slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
+        return await credits.FindAsync(slice, [.. before, .. after], ct);
+    }
+
+    /// <summary>
+    /// Starts the credit page search for a chapter the reader is likely to open next (the series
+    /// page's and Home's Continue), when the admin turned the background credit scan on, the series'
+    /// resolved settings hide credit pages, no answer is stored yet and no other warm-up is running, and
+    /// returns at once (202 when one started). The reader's own <see cref="Credits"/> request then finds
+    /// the answer ready or joins the run. The settings are resolved here because the client only
+    /// learns them from the manifest.
+    /// </summary>
+    [HttpPost("chapter/{id:int}/credits/warm")]
+    public async Task<IActionResult> WarmCredits(int id, [FromServices] ReaderCreditsCache credits,
+        [FromServices] CreditStore store, [FromServices] CreditScanWorker scan, CancellationToken ct)
+    {
+        if (!scan.Enabled)
+        {
+            return NoContent();
+        }
+
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null || !ReaderCreditsCache.Applies(slice) || !(await profiles.ResolveAsync(slice.Series.Id, ct)).Prefs.HideCredits)
+        {
+            return NoContent();
+        }
+
+        if (await store.GetAsync(slice, ct) is not null)
+        {
+            return NoContent();
+        }
+
+        var (before, after) = await reader.NearbySlicesAsync(
+            slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
+        return credits.Warm(slice, [.. before, .. after]) ? Accepted() : NoContent();
+    }
+
     [HttpPut("chapter/{id:int}/progress")]
     public async Task<IActionResult> SaveProgress(int id, [FromBody] SaveProgressRequest request,
         CancellationToken ct)
@@ -525,7 +821,7 @@ public class ReaderController(
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
-            request.ClientTime, request.OpId);
+            request.ClientTime, request.OpId, request.PageOffset);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.
@@ -610,6 +906,36 @@ public class ReaderController(
         }
 
         return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
+    }
+
+    public record SetSeriesStateRequest(string State);
+
+    /// <summary>
+    /// Marks every chapter of a series read or unread, for the Library's bulk action. Read is the
+    /// chapter table's silent tick, so only chapters with a file are marked.
+    /// </summary>
+    [HttpPost("series/{seriesId:int}/state")]
+    public async Task<IActionResult> SetSeriesState(int seriesId, SetSeriesStateRequest req, CancellationToken ct)
+    {
+        var state = (req.State ?? string.Empty).ToLowerInvariant();
+        if (state is not ("read" or "unread"))
+        {
+            return this.Fail(localizer, "error.reader.invalidState");
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var ids = await db.Chapters.Where(c => c.SeriesId == seriesId).Select(c => c.Id).ToListAsync(ct);
+        if (state == "unread")
+        {
+            await reader.ClearProgressAsync(ids, ct);
+            return Ok(new { updated = ids.Count });
+        }
+
+        return Ok(new { updated = await reader.MarkReadAsync(ids, ct) });
     }
 
     /// <summary>Largest set one <see cref="ChapterVersions"/> call answers.</summary>
@@ -727,6 +1053,17 @@ public class ReaderController(
             db.ReaderBookmarks.Remove(existing);
             await db.SaveChangesAsync(ct);
             return Ok(new { chapterId = id, page, bookmarked = false });
+        }
+
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        if (!ReaderService.IsPageInRange(page, slice.PageCount))
+        {
+            return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
 
         db.ReaderBookmarks.Add(new ReaderBookmark

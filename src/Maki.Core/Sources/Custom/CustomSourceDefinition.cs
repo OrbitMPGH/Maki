@@ -166,6 +166,16 @@ public sealed record CustomChapters
     public FieldExtractor? Volume { get; init; }
     public DateExtractor? Date { get; init; }
     public FieldExtractor? NextPage { get; init; }
+
+    /// <summary>
+    /// Marks a chapter still behind early access or a paywall, such as a coin or lock icon: a match means
+    /// locked (<c>CustomExtractor.Matches</c>). Such a chapter is listed, but downloads wait for it to unlock
+    /// or take it from another source instead of fetching an empty page.
+    /// </summary>
+    public FieldExtractor? Locked { get; init; }
+
+    /// <summary>The scanlation group credited on the row, which becomes the chapter's group.</summary>
+    public FieldExtractor? Group { get; init; }
 }
 
 public sealed record CustomPages

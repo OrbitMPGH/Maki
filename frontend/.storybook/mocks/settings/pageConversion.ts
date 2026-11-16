@@ -12,6 +12,8 @@ import type {
   PageConversionScope,
   PageConversionScopeRequest,
   PageConversionStop,
+  PageSplitPreview,
+  RowSamplesRequest,
 } from '../../../src/api/pageConversion'
 import { api } from '../api'
 import { seriesById } from '../shared'
@@ -54,6 +56,20 @@ export const sampleHeaviest = {
   reason: 'heaviest',
   tier: 'scanlator',
   fileSize: 31_457_280,
+} satisfies PageConversionSample
+
+/** A second colour page, so the colour sheet has more than one to pick from. */
+export const sampleColourSecond = {
+  fileId: 6240,
+  chapterId: 6240,
+  seriesId: 6,
+  seriesTitle: 'Ashen Crown Regression',
+  chapterLabel: 'Ch.24',
+  page: 30,
+  pageCount: 58,
+  reason: 'colour',
+  tier: 'aggregator',
+  fileSize: 10_485_760,
 } satisfies PageConversionSample
 
 export const pageConversionSamples = {
@@ -105,9 +121,11 @@ const noBucket = {
   files: 0,
   bytes: 0,
   sampledFiles: 0,
+  expected: 0,
   expectedLow: 0,
   expectedHigh: 0,
   hardlinkedBytes: 0,
+  seconds: 0,
   secondsLow: 0,
   secondsHigh: 0,
 } satisfies EstimateBucket
@@ -117,6 +135,9 @@ export const estimateSkipBucket = {
   skip: true,
   files: 1527,
   bytes: Math.round(18.1 * GB),
+  expected: Math.round(18.1 * GB),
+  expectedLow: Math.round(18.1 * GB),
+  expectedHigh: Math.round(18.1 * GB),
 } satisfies EstimateBucket
 
 export const estimateConvertBucket = {
@@ -124,11 +145,13 @@ export const estimateConvertBucket = {
   files: 365,
   bytes: Math.round(73.8 * GB),
   sampledFiles: 12,
-  expectedLow: Math.round(48 * GB),
-  expectedHigh: Math.round(53 * GB),
+  expected: Math.round(50.4 * GB),
+  expectedLow: Math.round(48.6 * GB),
+  expectedHigh: Math.round(52.2 * GB),
   hardlinkedBytes: Math.round(32.9 * GB),
-  secondsLow: 35 * 60,
-  secondsHigh: 70 * 60,
+  seconds: 48 * 60,
+  secondsLow: 41 * 60,
+  secondsHigh: 55 * 60,
 } satisfies EstimateBucket
 
 export const estimateDefaultBucket = {
@@ -136,16 +159,18 @@ export const estimateDefaultBucket = {
   files: 94,
   bytes: Math.round(1.9 * GB),
   sampledFiles: 12,
-  expectedLow: Math.round(1.2 * GB),
-  expectedHigh: Math.round(1.4 * GB),
-  secondsLow: 4 * 60,
-  secondsHigh: 9 * 60,
+  expected: Math.round(1.3 * GB),
+  expectedLow: Math.round(1.24 * GB),
+  expectedHigh: Math.round(1.36 * GB),
+  seconds: 6 * 60,
+  secondsLow: 5 * 60,
+  secondsHigh: 7 * 60,
 } satisfies EstimateBucket
 
 export const estimateResult = {
   rules: [estimateSkipBucket, estimateConvertBucket],
   default: estimateDefaultBucket,
-  overrides: { ...noBucket, files: 18, bytes: Math.round(2.1 * GB), sampledFiles: 6, expectedLow: Math.round(1.1 * GB), expectedHigh: Math.round(1.3 * GB), secondsLow: 90, secondsHigh: 240 },
+  overrides: { ...noBucket, files: 18, bytes: Math.round(2.1 * GB), sampledFiles: 6, expected: Math.round(1.2 * GB), expectedLow: Math.round(1.12 * GB), expectedHigh: Math.round(1.28 * GB), seconds: 150, secondsLow: 120, secondsHigh: 180 },
   passedOver: {
     hardlinkedFiles: 143,
     hardlinkedBytes: Math.round(32.9 * GB),
@@ -169,6 +194,17 @@ export const estimateResult = {
   ],
   convertedWithOriginalInTrash: 37,
   msPerMegapixel: 410,
+  total: {
+    files: 477,
+    bytes: Math.round(77.8 * GB),
+    sampled: true,
+    expected: Math.round(52.9 * GB),
+    expectedLow: Math.round(51.1 * GB),
+    expectedHigh: Math.round(54.7 * GB),
+    seconds: 56 * 60 + 30,
+    secondsLow: 49 * 60,
+    secondsHigh: 64 * 60,
+  },
 } satisfies NonNullable<PageConversionEstimate['result']>
 
 const stamp = '2026-10-19T11:50:00Z'
@@ -230,12 +266,35 @@ export const startedEstimate = { ...estimateRunning, done: 0 } satisfies PageCon
 export const ORIGINAL_BYTES = 1_240_000
 
 /** Median page's share of the original per stop, from the design doc's calibration. */
-const SHARE: Record<'webp' | 'avif', Record<PageConversionStop, number>> = {
+const SHARE: Record<'webp' | 'avif' | 'jxl', Record<PageConversionStop, number>> = {
+  jxl: { smallest: 0.38, compact: 0.45, balanced: 0.53, high: 0.71, lossless: 1 },
   webp: { smallest: 0.37, compact: 0.45, balanced: 0.54, high: 0.8, lossless: 1 },
   avif: { smallest: 0.27, compact: 0.38, balanced: 0.43, high: 0.62, lossless: 1 },
 }
 
 const BLUR: Record<PageConversionStop, number> = { smallest: 1.4, compact: 0.9, balanced: 0.5, high: 0.15, lossless: 0 }
+
+/** A colour page: flat fills and a gradient sky, where colour artefacts show. */
+function colourSvg(blur: number, hue: number): string {
+  const filter = blur > 0 ? `<filter id="soft"><feGaussianBlur stdDeviation="${blur}"/></filter>` : ''
+  const apply = blur > 0 ? ' filter="url(#soft)"' : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1300" viewBox="0 0 900 1300">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="hsl(${hue} 60% 22%)"/><stop offset="1" stop-color="hsl(${(hue + 40) % 360} 70% 68%)"/></linearGradient>
+${filter}
+</defs>
+<rect width="900" height="1300" fill="#fbfaf6"/>
+<g${apply}>
+<rect x="60" y="60" width="780" height="560" fill="url(#sky)" stroke="#1d1b22" stroke-width="3"/>
+<circle cx="640" cy="230" r="90" fill="hsl(${(hue + 180) % 360} 80% 70%)"/>
+<path d="M60 620 L320 380 L520 560 L700 420 L840 620 Z" fill="hsl(${(hue + 120) % 360} 35% 30%)"/>
+<rect x="60" y="660" width="380" height="580" fill="hsl(${(hue + 20) % 360} 55% 58%)" stroke="#1d1b22" stroke-width="3"/>
+<circle cx="250" cy="900" r="110" fill="#f2d2b6" stroke="#1d1b22" stroke-width="2"/>
+<rect x="470" y="660" width="370" height="580" fill="hsl(${(hue + 210) % 360} 40% 82%)" stroke="#1d1b22" stroke-width="3"/>
+<g stroke="#1d1b22" stroke-width="1">${Array.from({ length: 18 }, (_, i) => `<line x1="490" y1="${700 + i * 14}" x2="${820 - (i % 4) * 40}" y2="${700 + i * 14}"/>`).join('')}</g>
+</g>
+</svg>`
+}
 
 /** A page with screentone and thin lines, which is where the stops differ; softer the lower the stop. */
 function pageSvg(blur: number, hue: number): string {
@@ -265,10 +324,18 @@ ${filter}
 
 const fileHue = (fileId: number) => (fileId * 47) % 360
 
-const sizeHeaders = (encoded: number, keptReason?: string) => ({
+/** The suggested colour page and the tall strip are in colour; every other mock page is black and white. */
+const isColourFile = (fileId: number) =>
+  fileId === sampleColour.fileId || fileId === sampleColourSecond.fileId || fileId === TALL_FILE_ID
+
+const pageFor = (fileId: number, blur: number) =>
+  isColourFile(fileId) ? colourSvg(blur, fileHue(fileId)) : pageSvg(blur, fileHue(fileId))
+
+const sizeHeaders = (encoded: number, keptReason?: string, colour = false) => ({
   'Content-Type': 'image/svg+xml',
   'X-Maki-Original-Bytes': String(ORIGINAL_BYTES),
   'X-Maki-Encoded-Bytes': String(encoded),
+  'X-Maki-Colour': colour ? '1' : '0',
   ...(keptReason ? { 'X-Maki-Kept': '1', 'X-Maki-Kept-Reason': keptReason } : {}),
 })
 
@@ -280,7 +347,67 @@ export const keptPreviewHandler = (reason: string) =>
     return new HttpResponse(pageSvg(0, hue), { headers: sizeHeaders(ORIGINAL_BYTES, original ? undefined : reason) })
   })
 
+export const TALL_FILE_ID = 7300
+const TALL_WIDTH = 720
+const TALL_HEIGHT = 15200
+/** Gutters between panels in the mock strip, as [top, bottom] rows. */
+const TALL_GUTTERS = [1700, 3900, 6300, 8800, 11200, 13600].map((top) => [top, top + 140])
+
+/** A webtoon strip: coloured panels with white gutters at TALL_GUTTERS. */
+function stripSvg(): string {
+  const panels: string[] = []
+  let top = 0
+  TALL_GUTTERS.forEach(([start, end], i) => {
+    panels.push(`<rect x="0" y="${top}" width="${TALL_WIDTH}" height="${start - top}" fill="hsl(${(i * 53) % 360} 45% 62%)"/>`)
+    top = end
+  })
+  panels.push(`<rect x="0" y="${top}" width="${TALL_WIDTH}" height="${TALL_HEIGHT - top}" fill="hsl(300 45% 62%)"/>`)
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${TALL_WIDTH}" height="${TALL_HEIGHT}" viewBox="0 0 ${TALL_WIDTH} ${TALL_HEIGHT}">
+<rect width="${TALL_WIDTH}" height="${TALL_HEIGHT}" fill="#ffffff"/>${panels.join('')}</svg>`
+}
+
+/** The cuts the server would plan: the last gutter that starts within 40% above each height step. */
+export function splitFor(height: number): PageSplitPreview {
+  const cuts: number[] = []
+  let start = 0
+  while (TALL_HEIGHT - start > height) {
+    const target = start + height
+    const gutter = [...TALL_GUTTERS].reverse().find(([top]) => top <= target && top >= target - height * 0.4)
+    const cut = gutter ? Math.min(Math.floor((gutter[0] + gutter[1]) / 2), target) : target
+    if (TALL_HEIGHT - cut < height / 5) break
+    cuts.push(cut)
+    start = cut
+  }
+  return {
+    sample: {
+      fileId: TALL_FILE_ID,
+      chapterId: TALL_FILE_ID,
+      seriesId: 7,
+      seriesTitle: 'Tower of the Long Night',
+      chapterLabel: 'Ch.41',
+      page: 3,
+      pageCount: 9,
+      reason: 'tall',
+      tier: 'aggregator',
+      fileSize: 31_457_280,
+    },
+    width: TALL_WIDTH,
+    height: TALL_HEIGHT,
+    cuts,
+  }
+}
+
+export const splitHandlers: HttpHandler[] = [
+  http.get(api('/pageconversion/split'), ({ request }) =>
+    HttpResponse.json(splitFor(Number(new URL(request.url).searchParams.get('height') ?? 5000))),
+  ),
+  http.get(api(`/pageconversion/preview/${TALL_FILE_ID}/:page`), () =>
+    new HttpResponse(stripSvg(), { headers: sizeHeaders(ORIGINAL_BYTES) }),
+  ),
+]
+
 export const pageConversionHandlers: HttpHandler[] = [
+  ...splitHandlers,
   http.put(api('/pageconversion/plan'), async ({ request }) => {
     const { settings } = (await request.json()) as { settings: PageConversionSettings }
     return HttpResponse.json({ ...pageConversionIdle, settings } satisfies PageConversionStatus)
@@ -298,6 +425,12 @@ export const pageConversionHandlers: HttpHandler[] = [
     HttpResponse.json(estimateFor((await request.json()) as PageConversionPlanRequest)),
   ),
   http.get(api('/pageconversion/samples'), () => HttpResponse.json(pageConversionSamples)),
+  http.post(api('/pageconversion/samples/row'), async ({ request }) => {
+    const { kind } = (await request.json()) as RowSamplesRequest
+    return HttpResponse.json({
+      samples: kind === 'colour' ? [sampleColour, sampleColourSecond] : [sampleGreyscale, sampleHeaviest],
+    } satisfies PageConversionSamples)
+  }),
   http.get(api('/pageconversion/samples/:fileId'), ({ params }) => {
     const fileId = Number(params.fileId)
     const series = seriesById(Math.floor(fileId / 1000))
@@ -317,14 +450,17 @@ export const pageConversionHandlers: HttpHandler[] = [
   http.get(api('/pageconversion/preview/:fileId/:page'), ({ params, request }) => {
     const fileId = Number(params.fileId)
     const query = new URL(request.url).searchParams
-    const hue = fileHue(fileId)
+    const colour = isColourFile(fileId)
     if (query.get('original') === 'true') {
-      return new HttpResponse(pageSvg(0, hue), { headers: sizeHeaders(ORIGINAL_BYTES) })
+      return new HttpResponse(pageFor(fileId, 0), { headers: sizeHeaders(ORIGINAL_BYTES, undefined, colour) })
     }
     const stop = (query.get('stop') ?? 'high') as PageConversionStop
-    const format = query.get('format') === 'avif' ? 'avif' : 'webp'
-    if (stop === 'lossless') return new HttpResponse(pageSvg(0, hue), { headers: sizeHeaders(ORIGINAL_BYTES, 'lossless') })
+    const asked = query.get('format')
+    const format = asked === 'avif' || asked === 'jxl' ? asked : 'webp'
+    if (stop === 'lossless') {
+      return new HttpResponse(pageFor(fileId, 0), { headers: sizeHeaders(ORIGINAL_BYTES, 'lossless', colour) })
+    }
     const encoded = Math.round(ORIGINAL_BYTES * SHARE[format][stop])
-    return new HttpResponse(pageSvg(BLUR[stop], hue), { headers: sizeHeaders(encoded) })
+    return new HttpResponse(pageFor(fileId, BLUR[stop]), { headers: sizeHeaders(encoded, undefined, colour) })
   }),
 ]

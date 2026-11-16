@@ -45,6 +45,18 @@ export const Ongoing: Story = {
   },
 }
 
+export const ReadingStatus: Story = {
+  args: { series: seriesDto(1, { readingStatus: 'OnHold', readingStatusAuto: true }), onSetReadingStatus: fn() },
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const chip = await canvas.findByRole('button', { name: 'Reading status: On hold' })
+    await expect(chip).toBeVisible()
+    await userEvent.click(chip)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Dropped' }))
+    await waitFor(() => expect(args.onSetReadingStatus).toHaveBeenCalledWith('Dropped'))
+  },
+}
+
 export const Completed: Story = {
   args: { series: seriesDto(2) },
 }
@@ -99,6 +111,31 @@ export const LockedTitleAndManyAltTitles: Story = {
   },
 }
 
+const longTitle =
+  'Exiled From the Lantern Guild on My Very First Night: My Childhood Friends Left Me in the Fog, But Thanks to a Cursed Teapot I Brewed a LVL 999 Tea Ceremony and Now the Whole Kingdom Wants a Cup'
+
+/** A light novel title at the length they really run to: it shrinks toward three lines, and the alt titles stop at two. */
+export const VeryLongTitle: Story = {
+  args: {
+    series: seriesDto(1, {
+      title: longTitle,
+      displayTitle: longTitle,
+      altTitles: [
+        { title: '初夜にランタン組合を追放された僕、呪いの急須でレベル999の茶会を開いたら王国中が一杯欲しがるようになりました', language: 'ja' },
+        { title: 'Exiled From the Lantern Guild: My Friends Left Me in the Fog, But My Cursed Teapot Brews LVL 999 Tea', language: 'en' },
+        { title: 'My Cursed Teapot Is LVL 999', language: 'en' },
+        { title: 'Cursed Teapot: Exiled From the Lantern Guild, I Brew for the Kingdom Now!', language: 'en' },
+        { title: 'Lantern Guild Exile', language: 'en' },
+      ],
+    }),
+  },
+  play: async ({ canvas }) => {
+    const heading = await canvas.findByRole('heading', { level: 1, name: /Exiled From the Lantern Guild/ })
+    await expect(heading).toHaveAttribute('data-length', 'long')
+    await expect(await canvas.findByText('+1 more')).toBeInTheDocument()
+  },
+}
+
 export const WithAnimeAdaptation: Story = {
   args: { series: seriesDto(1, { hasAnime: true, animeName: 'Lanterns Over Kasumi (TV)' }) },
 }
@@ -150,7 +187,7 @@ export const ChapterCountsExplained: Story = {
     await userEvent.keyboard('{Enter}')
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
     await waitFor(() => expect(Array.from(dialog.querySelectorAll('p')).map((p) => p.textContent)).toEqual([
-      '42 chapters are listed, the count on the Chapters tab and under Chapters known.',
+      '42 chapters are listed, the count on the Chapters tab and under Listed.',
       '2 of them have a decimal number or none, like extras or specials.',
       'Downloads counts the 41 chapters you want or already have. 1 more is listed but not wanted.',
       'Your sources go up to ch. 40.',
@@ -159,6 +196,65 @@ export const ChapterCountsExplained: Story = {
     ]))
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'))
+  },
+}
+
+/** On disk counts the chapters wanted: 43 of the 45 listed, whatever MangaBaka's 56 says. */
+export const ProgressAgainstWantedChapters: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 45,
+      wantedChapterCount: 43,
+      chapterFileCount: 43,
+      readChapterCount: 43,
+      totalChapters: 56,
+      progressTotal: 43,
+      progressHave: 43,
+      progressRead: 43,
+      progressSkipped: 2,
+      listedSpecials: 2,
+    }),
+    readUpTo: 43,
+  },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(chaptersFor(1, { limit: 40, specials: [10.5, 20.5], trailingMissing: 0 })),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await waitFor(() => expect(canvas.getAllByText('43 / 43 chapters')).toHaveLength(2))
+    expect(canvas.queryByText('43 / 56 chapters')).toBeNull()
+    const button = await canvas.findByRole('button', { name: 'How these chapter counts add up' })
+    await userEvent.click(button)
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
+    await waitFor(() =>
+      expect(within(dialog).getByText('Downloads counts the 43 chapters you want or already have. 2 more are listed but not wanted.')).toBeVisible(),
+    )
+    await waitFor(() => expect(within(dialog).getByText('MangaBaka lists 56 chapters.')).toBeVisible())
+  },
+}
+
+/** Smart mode keeps a few chapters on disk: Read counts those ten, On disk says 207 are wanted. */
+export const SmartModeReadsWhatIsDownloaded: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 207,
+      wantedChapterCount: 207,
+      chapterFileCount: 10,
+      readChapterCount: 10,
+      progressTotal: 207,
+      progressHave: 10,
+      progressRead: 10,
+    }),
+  },
+  parameters: {
+    msw: seriesMsw(http.get(api('/chapter'), () => HttpResponse.json(chaptersFor(1, { limit: 40, trailingMissing: 0 })))),
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByText('10 / 10 chapters')
+    await canvas.findByText('10 / 207 chapters')
   },
 }
 

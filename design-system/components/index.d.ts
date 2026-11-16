@@ -212,6 +212,15 @@ export declare function ConfirmDialog(props: {
   loading?: boolean
 }): JSX.Element
 
+/** A utility modal's title with one line saying what the dialog is for. Pass as the Modal's `title`. */
+export declare function ModalHeading(props: { title: ReactNode; description?: ReactNode }): JSX.Element
+
+/** The pinned bar at a utility modal's foot: a status line left, the actions right. The body's last child. */
+export declare function ModalFooter(props: { status?: ReactNode; children?: ReactNode }): JSX.Element
+
+/** One line inside a dialog that needs attention: a tone icon, then the words. */
+export declare function ModalNote(props: { tone?: 'warn' | 'info'; children: ReactNode }): JSX.Element
+
 /** The app-wide delegated tooltip. Mount once; any element with data-tip gets one. */
 export declare function TipLayer(): JSX.Element
 
@@ -254,3 +263,117 @@ export declare function MonoValue(props: {
   fz?: CSSProperties['fontSize']
   c?: CSSProperties['color']
 }): JSX.Element
+
+/** A drill panel's row: the setting's icon in the accent, its name, its current value, a chevron. Opens a sub-page. */
+export declare function DrillRow(props: {
+  icon: ComponentType<{ size?: number; className?: string }>
+  label: ReactNode
+  value?: ReactNode
+  /** A value the user set reads in the accent. */
+  active?: boolean
+  /** Off for a row that runs an action rather than opening a page. */
+  chevron?: boolean
+  onClick: () => void
+}): JSX.Element
+
+/** A drill panel sub-page's header: back, and the page's name. */
+export declare function DrillBack(props: {
+  title: ReactNode
+  onBack: () => void
+  /** Replaces the panel spacing, for a panel whose content is not inset like rows are. */
+  className?: string
+}): JSX.Element
+
+/** One choice from a list, each with a hint under it; the current one carries the check. */
+export declare function DrillChoices(props: {
+  /** Names the group for a screen reader. */
+  label: string
+  /** A visible name over the list, for a page that splits its choices into groups. */
+  heading?: ReactNode
+  value: string
+  options: { value: string; label: ReactNode; hint?: ReactNode; disabled?: boolean }[]
+  onPick: (value: string) => void
+}): JSX.Element
+
+/** A setting changed in place: icon and name over the control, one line under it on the current pick. */
+export declare function DrillField(props: {
+  icon: ComponentType<{ size?: number }>
+  title: ReactNode
+  help?: ReactNode
+  children: ReactNode
+}): JSX.Element
+
+/** Rows of a drill panel's first page under a plain heading. */
+export declare function DrillGroup(props: { heading: ReactNode; children: ReactNode }): JSX.Element
+
+/** Any number of choices from a list; each is a checkbox drawn as a box in the check slot. */
+export declare function DrillMultiChoices(props: {
+  label: string
+  heading?: ReactNode
+  value: string[]
+  options: { value: string; label: ReactNode; hint?: ReactNode; disabled?: boolean }[]
+  onChange: (value: string[]) => void
+  disabled?: boolean
+}): JSX.Element
+
+/** Choices to include or leave out: one tap includes, a second leaves out, a third clears. */
+export declare function DrillTriChoices(props: {
+  label: string
+  include: string[]
+  exclude: string[]
+  options: { value: string; label: ReactNode; hint?: ReactNode; disabled?: boolean }[]
+  onChange: (include: string[], exclude: string[]) => void
+  disabled?: boolean
+}): JSX.Element
+
+/** The search box over a long list of choices. */
+export declare function DrillSearch(props: { label: string; placeholder?: string; value: string; onChange: (value: string) => void }): JSX.Element
+
+/** Two number boxes in a field; an empty box leaves that end open. */
+export declare function DrillNumberRange(props: {
+  icon: ComponentType<{ size?: number }>
+  title: ReactNode
+  help?: ReactNode
+  from: { label: string; placeholder: string; value: number | null; onChange: (value: number | null) => void }
+  to: { label: string; placeholder: string; value: number | null; onChange: (value: number | null) => void }
+  children?: ReactNode
+}): JSX.Element
+
+/** A range on two single sliders, From over To, each with its value beside it. `DrillSliderLines` is the same without the field. */
+export declare function DrillSliderRange(props: {
+  icon: ComponentType<{ size?: number }>
+  title: ReactNode
+  help?: ReactNode
+  min: number
+  max: number
+  step: number
+  value: [number, number]
+  onChange: (value: [number, number]) => void
+  fromLabel: string
+  toLabel: string
+  format: (n: number) => string
+}): JSX.Element
+
+/** An on or off setting with its hint, the switch at the end of the row. */
+export declare function DrillSwitch(props: { label: ReactNode; hint?: ReactNode; checked: boolean; onChange: (checked: boolean) => void }): JSX.Element
+
+/** Pinned under a drill panel that fills a drawer: Reset on the left, a live status and Done on the right. */
+export declare function DrillFooter(props: { onReset: () => void; resetDisabled?: boolean; status?: ReactNode; onDone: () => void }): JSX.Element
+
+/** Slides between a drill panel's pages and eases its height. Keyed on `page`; `depth` picks the direction. */
+export declare function DrillPanes(props: { page: string; depth: number; bleed?: number; easeHeight?: boolean; children: ReactNode }): JSX.Element
+
+/** The current page, its depth, `open`/`back`, and the refs that put focus back where it was. */
+export declare function useDrillPages<P extends string>(
+  root: P,
+  parents: Record<P, P>,
+): {
+  page: P
+  depth: number
+  open: (to: P) => void
+  back: () => void
+  /** Straight back to the first page without moving focus, for a panel that is reopening. */
+  reset: () => void
+  backRef: { current: HTMLButtonElement | null }
+  rowRef: (p: P) => (node: HTMLButtonElement | null) => void
+}

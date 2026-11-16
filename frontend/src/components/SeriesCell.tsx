@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
+import { Thumb } from './ui/Thumb'
 
 /**
  * The series a table row belongs to: its cover, its title and, under it, the chapter, release or
@@ -20,25 +21,23 @@ export function SeriesCell({
   small?: boolean
 }) {
   const href = seriesId != null ? `/series/${seriesId}` : null
-  const cover = coverUrl && <img src={coverUrl} alt="" loading="lazy" decoding="async" />
+  const cover = <Thumb src={coverUrl} size={small ? 'sm' : 'md'} aria-hidden />
   return (
     <div className="series-cell" data-small={small || undefined}>
       {href ? (
-        <Link to={href} className="series-cell-cover" tabIndex={-1} aria-hidden>
+        <Link to={href} className="series-cell-link" tabIndex={-1} aria-hidden>
           {cover}
         </Link>
       ) : (
-        <span className="series-cell-cover" aria-hidden>
-          {cover}
-        </span>
+        cover
       )}
       <div className="series-cell-text">
         {href ? (
-          <Text component={Link} to={href} className="series-cell-title" lineClamp={2}>
+          <Text component={Link} to={href} className="series-title" lineClamp={2}>
             {title}
           </Text>
         ) : (
-          <Text className="series-cell-title" lineClamp={2}>
+          <Text className="series-title" lineClamp={2}>
             {title}
           </Text>
         )}

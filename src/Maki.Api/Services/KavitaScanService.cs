@@ -26,14 +26,20 @@ public class KavitaScanService(
     /// <summary>Kavita runs scan-folder scans ~1 minute after they're requested.</summary>
     private static readonly TimeSpan PushDelay = TimeSpan.FromSeconds(60);
     private const int MaxPushAttempts = 8;
+    /// <summary>A failed scan request is retried after 1, 2 and 4 minutes, then dropped.</summary>
+    internal static readonly TimeSpan ScanRetryBase = TimeSpan.FromMinutes(1);
+    internal const int MaxScanAttempts = 4;
 
     private sealed record PushWork(string SeriesFolder, DateTime NotBefore, int AttemptsLeft);
 
-    private readonly ConcurrentDictionary<string, int> _pendingScans = new(StringComparer.OrdinalIgnoreCase);
+    private sealed record ScanWork(int SeriesId, DateTime NotBefore, int Attempts);
+
+    private readonly ConcurrentDictionary<string, ScanWork> _pendingScans = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<int, PushWork> _pendingPushes = new();
 
     /// <summary>Queue a series folder (Maki-side absolute path) for a Kavita scan + metadata push on the next flush.</summary>
-    public void QueueScan(string seriesFolderPath, int seriesId) => _pendingScans[seriesFolderPath] = seriesId;
+    public void QueueScan(string seriesFolderPath, int seriesId) =>
+        _pendingScans[seriesFolderPath] = new ScanWork(seriesId, DateTime.MinValue, 0);
 
     internal IReadOnlyCollection<string> PendingScans => [.. _pendingScans.Keys];
 
@@ -69,8 +75,9 @@ public class KavitaScanService(
         }
     }
 
-    private async Task FlushAsync(CancellationToken ct)
+    internal async Task FlushAsync(CancellationToken ct, DateTime? at = null)
     {
+        var now = at ?? DateTime.UtcNow;
         var url = await settings.GetAsync(SettingKeys.KavitaUrl, ct);
         var apiKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
@@ -83,25 +90,40 @@ public class KavitaScanService(
         var mapFrom = await settings.GetAsync(SettingKeys.KavitaPathMapFrom, ct);
         var mapTo = await settings.GetAsync(SettingKeys.KavitaPathMapTo, ct);
 
-        foreach (var (folder, seriesId) in _pendingScans.ToList())
+        foreach (var (folder, scan) in _pendingScans.ToList())
         {
-            _pendingScans.TryRemove(folder, out _);
+            if (scan.NotBefore > now || !_pendingScans.TryRemove(new KeyValuePair<string, ScanWork>(folder, scan)))
+            {
+                continue;
+            }
+
             var mapped = PathRemapper.Map(folder, mapFrom, mapTo);
             try
             {
                 await kavita.ScanFolderAsync(url, apiKey, mapped, ct);
                 logger.LogInformation("Asked Kavita to scan {Folder}", mapped);
-                _pendingPushes[seriesId] = new PushWork(folder, DateTime.UtcNow + PushDelay, MaxPushAttempts);
+                _pendingPushes[scan.SeriesId] = new PushWork(folder, now + PushDelay, MaxPushAttempts);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
-                logger.LogWarning(ex, "Kavita scan-folder failed for {Folder}", mapped);
+                var attempts = scan.Attempts + 1;
+                if (attempts < MaxScanAttempts)
+                {
+                    var wait = ScanRetryBase * Math.Pow(2, attempts - 1);
+                    logger.LogWarning(ex, "Kavita scan-folder failed for {Folder}; retrying in {Wait}", mapped, wait);
+                    _pendingScans.TryAdd(folder, scan with { NotBefore = now + wait, Attempts = attempts });
+                }
+                else
+                {
+                    logger.LogWarning(ex, "Kavita scan-folder failed for {Folder} after {Attempts} attempts; giving up",
+                        mapped, attempts);
+                }
             }
         }
 
         foreach (var (seriesId, work) in _pendingPushes.ToList())
         {
-            if (work.NotBefore > DateTime.UtcNow)
+            if (work.NotBefore > now)
             {
                 continue;
             }

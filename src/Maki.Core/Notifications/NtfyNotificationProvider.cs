@@ -28,7 +28,7 @@ public class NtfyNotificationProvider(IHttpClientFactory httpClientFactory) : IN
         var serverUrl = fields.Require("serverUrl").TrimEnd('/');
         var topic = fields.Require("topic");
         var token = fields["token"];
-        var priority = fields.Int("priority") ?? (message.Level == NotificationLevel.Error ? 4 : 3);
+        var priority = fields.Int("priority") ?? DefaultPriority(message);
 
         var payload = new Dictionary<string, object?>
         {
@@ -72,24 +72,37 @@ public class NtfyNotificationProvider(IHttpClientFactory httpClientFactory) : IN
         return string.Join('\n', lines);
     }
 
-    private static string TagFor(NotificationMessage message)
-    {
-        if (message.Level == NotificationLevel.Error)
-        {
-            return "x";
-        }
-        if (message.Level == NotificationLevel.Warning)
-        {
-            return "warning";
-        }
+    /// <summary>ntfy's 1 to 5 scale: 4 makes a failure or health problem buzz, 3 is ntfy's default.</summary>
+    internal static int DefaultPriority(NotificationMessage message) =>
+        message.Level == NotificationLevel.Error ||
+        message.EventType is NotificationEventType.DownloadFailed or NotificationEventType.HealthIssue
+            ? 4
+            : 3;
 
-        return message.EventType switch
-        {
-            NotificationEventType.ChapterDownloaded => "inbox_tray",
-            NotificationEventType.NewChapterAvailable => "new",
-            NotificationEventType.ImportCompleted => "package",
-            NotificationEventType.UpdateAvailable => "rocket",
-            _ => "bell"
-        };
-    }
+    private static string TagFor(NotificationMessage message) => message.Level switch
+    {
+        NotificationLevel.Error => "x",
+        NotificationLevel.Warning => "warning",
+        _ => EventTag(message.EventType)
+    };
+
+    /// <summary>ntfy turns a tag that names an emoji short code into that emoji in front of the title.</summary>
+    internal static string EventTag(NotificationEventType eventType) => eventType switch
+    {
+        NotificationEventType.Test => "bell",
+        NotificationEventType.ChapterDownloaded => "inbox_tray",
+        NotificationEventType.DownloadFailed => "x",
+        NotificationEventType.NewChapterAvailable => "new",
+        NotificationEventType.ImportCompleted => "package",
+        NotificationEventType.HealthIssue => "warning",
+        NotificationEventType.UpdateAvailable => "rocket",
+        NotificationEventType.SeriesAdded => "heavy_plus_sign",
+        NotificationEventType.SeriesRemoved => "wastebasket",
+        NotificationEventType.RequestSubmitted => "raising_hand",
+        NotificationEventType.RequestResolved => "white_check_mark",
+        NotificationEventType.ManualMatchNeeded => "mag",
+        NotificationEventType.SeriesStatusChanged => "arrows_counterclockwise",
+        NotificationEventType.SeriesArchived => "card_file_box",
+        _ => "bell"
+    };
 }

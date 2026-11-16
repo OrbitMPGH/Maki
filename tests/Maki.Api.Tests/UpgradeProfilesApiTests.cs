@@ -548,7 +548,6 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         new TestLocalizer(),
         db,
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
-        new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new SourceRegistry([]),
         new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
@@ -688,6 +687,33 @@ public sealed class UpgradeProfilesApiTests : IDisposable
             Assert.Equal(2, renamed.Version);
             Assert.Null(profiles["Official releases"].Description);
             Assert.Equal(2, db.QualityFormats.Count());
+        }
+    }
+
+    [Fact]
+    public async Task Starters_with_their_old_long_description_get_the_short_one_and_edited_text_stays()
+    {
+        const string oldVolumes =
+            "Keeps upgrading until chapters are covered by a digital volume release. Needs Prowlarr and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers.";
+        using (var db = _db.NewContext())
+        {
+            db.UpgradeProfiles.AddRange(
+                new UpgradeProfile { Name = UpgradeProfileSeeder.UpgradeToVolumes, Cutoff = QualityTier.Volume, Description = oldVolumes },
+                new UpgradeProfile { Name = UpgradeProfileSeeder.NeverUpgrade, Cutoff = QualityTier.Aggregator, Description = "My own words." });
+            db.AppConfig.AddRange(
+                new AppConfigEntry { Key = UpgradeProfileSeeder.MarkerKey, Value = "x" },
+                new AppConfigEntry { Key = UpgradeProfileSeeder.AnySourceMarkerKey, Value = "x" });
+            db.SaveChanges();
+
+            await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
+            Assert.Equal("Needs an indexer and a torrent client. Volumes lag by months.",
+                profiles[UpgradeProfileSeeder.UpgradeToVolumes].Description);
+            Assert.Equal("My own words.", profiles[UpgradeProfileSeeder.NeverUpgrade].Description);
         }
     }
 

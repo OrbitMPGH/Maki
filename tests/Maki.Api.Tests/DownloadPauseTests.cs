@@ -269,7 +269,7 @@ public class DownloadPauseTests : IDisposable
         _db.SeedUser("gone", Maki.Core.Security.MakiPermission.ManageDownloadQueue, configure: u => u.Disabled = true);
         var hub = new RecordingHubContext();
 
-        await new Maki.Api.Hubs.EventBroadcaster(hub, _db.ScopeFactory()).QueuePauseChanged(new { });
+        await new Maki.Api.Hubs.EventBroadcaster(hub, _db.ScopeFactory()).QueuePauseChanged();
 
         Assert.Equal(
             new[] { Maki.Api.Hubs.EventsHub.UserGroup(admin), Maki.Api.Hubs.EventsHub.UserGroup(manager) }.Order(),

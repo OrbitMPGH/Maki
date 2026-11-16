@@ -307,19 +307,17 @@ public class SeriesRequestsController(
         {
             if (request.Kind == SeriesRequestKind.NewSeries && request.SeriesId is null)
             {
-                if (body.RootFolderId is not int rootFolderId)
-                {
-                    await ReleaseClaimAsync(request);
-                    return this.Fail(localizer, "error.requests.rootFolderRequired");
-                }
-
                 // Inside the claim-release try: a throw from CreateAsync (provider call, folder
                 // naming, first save) used to leave the request in Processing for the whole 30-minute
                 // stale window with nothing to release it early.
+                // No folder chosen: the root folder rules pick one among those the approving admin can use.
                 var result = await seriesCreation.CreateAsync(
-                    request.MetadataProviderId!, rootFolderId, monitored: true, body.MonitorNewItems, ct,
+                    request.MetadataProviderId!, body.RootFolderId, monitored: true, body.MonitorNewItems, ct,
                     attributedUserId: request.UserId, addedFrom: "request", originatingRequest: request,
-                    clientMutationId: SeriesCreationResult.MutationIdFor(request));
+                    clientMutationId: SeriesCreationResult.MutationIdFor(request),
+                    usableRootFolderIds: currentUser.AllRootFolders || currentUser.Has(MakiPermission.Admin)
+                        ? null
+                        : currentUser.RootFolderIds);
 
                 if (result.Series is null)
                 {
@@ -337,8 +335,9 @@ public class SeriesRequestsController(
                         await ReleaseClaimAsync(request);
                         return result.Error switch
                         {
-                            SeriesCreationError.RootFolderNotFound =>
-                                this.Fail(localizer, "error.requests.rootFolderNotFound"),
+                            SeriesCreationError.RootFolderNotFound => this.Fail(localizer, body.RootFolderId is null
+                                ? "error.requests.rootFolderRequired"
+                                : "error.requests.rootFolderNotFound"),
                             SeriesCreationError.MetadataNotFound =>
                                 this.Fail(localizer, "error.requests.metadataNotFound"),
                             // An earlier approval of this request committed a series that has since

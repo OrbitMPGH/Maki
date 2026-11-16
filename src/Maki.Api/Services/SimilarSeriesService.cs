@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
@@ -23,17 +24,20 @@ namespace Maki.Api.Services;
 /// </para>
 ///
 /// <para>
-/// <b>Content channels only.</b> The three crowd channels — co-recommendation, co-read and the
-/// behavioural taste vectors — are switched off here, and unlike everywhere else in the app that is
-/// not a setting the instance can turn back on. They answer "who else read this", which is the
-/// question Discover's rails and the reader-cohort rail exist for; this rail answers "what reads like
-/// this one", and a pick that is here because a crowd paired the two titles is off-topic on it
-/// however good a recommendation it is. Leaving them on also let cards print "Readers like you also
-/// finished this" under a heading promising the opposite. What remains is feel (the text embedding),
-/// genres, tags and author — everything that comes from the works themselves.
+/// <b>The two pair graphs are off; the taste vectors are on.</b> Co-recommendation and co-read answer
+/// "who else read this", which is the question Discover's rails and the reader-cohort rail exist
+/// for, and they are off here whatever the instance settings say. The behavioural taste vectors
+/// were off as well until the rail was graded on its own. On a judged panel of 300 seeds the
+/// content-only list was the less story-alike one: 1.45 against 1.57 with the vectors on, for
+/// "similar story, tone and feel" on a 0 to 3 scale, and 8% of its picks were unrelated against
+/// 3% (<c>distribution/CLAUDE.md</c>, "v7").
+/// A series' description and tags say less about how it reads than what its readers went on to
+/// read, so the vectors stay on and follow the instance's <c>recommendations.tastevectors</c>
+/// switch.
 /// </para>
 /// </summary>
-public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarSeriesService> logger)
+public class SimilarSeriesService(
+    SemanticRecommender semantic, IAppSettings settings, ILogger<SimilarSeriesService> logger)
 {
     /// <summary>
     /// Matches <c>RecommendationService.CacheFor</c>. The dump only changes when a new one is
@@ -118,10 +122,12 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
             return [];
         }
 
-        // No channel flags in the key: the crowd channels are off unconditionally here, so the
-        // instance-wide switches cannot change what this rail returns.
+        var taste = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}", _ => new Entry());
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}", _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -143,7 +149,7 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
             await _scans.WaitAsync(ct);
             try
             {
-                results = await semantic.GetSimilarAsync(
+                var picks = await semantic.GetSimilarAsync(
                     [mangaBakaId],
                     [],
                     PoolSize,
@@ -153,8 +159,12 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
                     diversity: Diversity,
                     coGraph: false,
                     coRead: false,
-                    taste: false,
+                    taste: taste,
                     ct: ct);
+
+                // The card reads TasteMatch as "Close to your taste". This pool is shared by every
+                // viewer and is about the seed, so that line would be false here.
+                results = picks.Select(p => p.TasteMatch ? p with { TasteMatch = false } : p).ToList();
             }
             finally
             {

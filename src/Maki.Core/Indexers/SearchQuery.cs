@@ -35,7 +35,9 @@ public static class SearchQuery
     /// <see cref="Candidates"/> for the title, then up to <paramref name="maxExtra"/> full-title queries from the
     /// original and alternate titles for when those find nothing. English titles come first, then
     /// romanized ones, then other Latin-script titles, then everything else; duplicates and titles too
-    /// short to search on are dropped.
+    /// short to search on are dropped. The original title always gets a query of its own after the
+    /// <paramref name="maxExtra"/> others: it ranks last among them, and the releases written in a
+    /// series' own language are usually filed under it.
     /// </summary>
     public static IReadOnlyList<string> WithFallbacks(
         string title, string? originalTitle, IEnumerable<LocalizedTitle> altTitles, int maxExtra = 3)
@@ -58,9 +60,19 @@ public static class SearchQuery
             .OrderBy(t => t.Rank)
             .Select(t => t.Query)
             .Where(seen.Add)
-            .Take(maxExtra);
+            .Take(maxExtra)
+            .ToList();
 
         queries.AddRange(extras);
+        if (!string.IsNullOrWhiteSpace(originalTitle))
+        {
+            var original = NormalizePunctuation(originalTitle);
+            if (original.Length >= MinFallbackLength && seen.Add(original))
+            {
+                queries.Add(original);
+            }
+        }
+
         return queries;
     }
 

@@ -1,3 +1,4 @@
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,9 @@ public sealed class ReadingProgressGate
 public class ReadingProgressService(
     MakiDbContext db,
     ReadingProgressGate gate,
-    ILogger<ReadingProgressService> logger)
+    ILogger<ReadingProgressService> logger,
+    IAppSettings? appSettings = null,
+    ReleaseOutlookService? outlooks = null)
 {
     private static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(10);
 
@@ -75,6 +78,7 @@ public class ReadingProgressService(
                     state.Finished |= await IsSeriesFinishedAsync(seriesId, state.MaxChapter, ct);
                     state.UpdatedAt = now;
                     await db.SaveChangesAsync(ct);
+                    await CompleteIfReadThroughAsync(userId, state, ct);
                     logger.LogInformation(
                         "Adopted native reading state for '{Title}' into Kavita series {KavitaId} at chapter {Chapter}",
                         title, kavitaSeriesId, state.MaxChapter);
@@ -99,6 +103,7 @@ public class ReadingProgressService(
                     UpdatedAt = now
                 });
                 await db.SaveChangesAsync(ct);
+                await CompleteIfDoneAsync(userId, seriesId, maxChapter, ct);
                 return new Marks(maxChapter, maxVolume);
             }
 
@@ -217,6 +222,7 @@ public class ReadingProgressService(
                     UpdatedAt = now
                 });
                 await db.SaveChangesAsync(ct);
+                await CompleteIfDoneAsync(userId, seriesId, maxChapter, ct);
                 return true;
             }
 
@@ -233,6 +239,11 @@ public class ReadingProgressService(
             state.Finished |= await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct);
             state.UpdatedAt = now;
             await db.SaveChangesAsync(ct);
+
+            // Every caller runs once per change, never on a timer (mark read or watched, an import, an
+            // anime tick, a volume handed over to its chapters), so filling in the chapters before the
+            // mark completes the series too.
+            await CompleteIfReadThroughAsync(userId, state, ct);
             return true;
         }, ct);
 
@@ -352,6 +363,7 @@ public class ReadingProgressService(
             }
         }
 
+        var moved = maxChapter > state.MaxChapter;
         if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
         {
             state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
@@ -364,9 +376,22 @@ public class ReadingProgressService(
 
         state.SeriesId = seriesId ?? state.SeriesId;
 
-        if (!state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct))
+        var firstFinish = !state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct);
+        if (firstFinish)
         {
             state.Finished = true;
+        }
+
+        // A reread: Finished is sticky, so a native completion that closes a whole new pass counts
+        // again. The recomputed mark, not the stored one, because the stored mark never comes back
+        // down and would call the first chapter of a reread a finish.
+        var rereadFinish = !firstFinish && state.Finished && nativeCompletions is not null && !fullIncognito &&
+                           state.SeriesId is int rereadId &&
+                           await IsSeriesFinishedAsync(rereadId, maxChapter, ct) &&
+                           await IsNewPassAsync(userId, rereadId, ct);
+
+        if (firstFinish || rereadFinish)
+        {
             if (!fullIncognito)
             {
                 db.StatsEvents.Add(new StatsEvent
@@ -385,7 +410,87 @@ public class ReadingProgressService(
         state.Title = title;
         state.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
+
+        // Every native completion asks, since the chapters before the mark may be the last ones
+        // filled in. Kavita reports the same series every tick, so its path asks only when the mark
+        // moved, or a reader who set a finished series back to Reading would be overruled each tick.
+        if (nativeCompletions is not null || moved || firstFinish)
+        {
+            await CompleteIfReadThroughAsync(userId, state, ct);
+        }
+
         return new Marks(state.MaxChapter, state.MaxVolume);
+    }
+
+    private Task CompleteIfReadThroughAsync(int userId, ReadingState state, CancellationToken ct) =>
+        state.Finished ? CompleteIfDoneAsync(userId, state.SeriesId, state.MaxChapter, ct) : Task.CompletedTask;
+
+    /// <summary>
+    /// Moves a finished series to <see cref="ReadingStatus.Completed"/> once every chapter its progress
+    /// total counts is read (<see cref="SeriesCompletion.ReadThroughAsync"/>) and no further chapter is
+    /// expected; the series page asks later when one was. Runs after the save, so
+    /// the save hook's Reading promotion for the same read is already in. A failure only logs: the
+    /// status must never cost the progress write.
+    /// </summary>
+    private async Task CompleteIfDoneAsync(int userId, int? seriesId, double mark, CancellationToken ct)
+    {
+        if (seriesId is not int sid || !await IsSeriesFinishedAsync(sid, mark, ct))
+        {
+            return;
+        }
+
+        try
+        {
+            var series = await db.Series.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid, ct);
+            var unmonitorSpecials = appSettings is not null &&
+                                    await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct);
+            if (series is not null &&
+                await SeriesCompletion.ReadThroughAsync(db, userId, series, unmonitorSpecials, ct) &&
+                !(outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(sid, ct))))
+            {
+                await db.PromoteToCompletedAsync(userId, sid, ct);
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Could not mark series {SeriesId} completed for user {UserId}", sid, userId);
+        }
+    }
+
+    /// <summary>
+    /// Whether every read chapter of the series was completed again since its last finish, so the
+    /// completion just saved closes a new pass. Re-marking only the last chapter leaves the rest
+    /// dated before that finish and does not count. Chapters whose file was removed on purpose stay
+    /// in the set, so cleaning up read files cannot shrink a pass to its last chapter. Duplicate
+    /// chapters sharing a number count once, by their latest completion.
+    /// <para>
+    /// A series finished without an event (an import, a first sighting, incognito) has no date to
+    /// compare against, so the pass has to be a genuine read in Maki throughout instead.
+    /// </para>
+    /// </summary>
+    private async Task<bool> IsNewPassAsync(int userId, int seriesId, CancellationToken ct)
+    {
+        var lastFinish = await db.StatsEvents.IgnoreQueryFilters()
+            .Where(e => e.UserId == userId && e.SeriesId == seriesId && e.Type == StatsEventType.SeriesFinished)
+            .MaxAsync(e => (DateTime?)e.Timestamp, ct);
+
+        var rows = await (
+                from p in db.ChapterProgress.IgnoreQueryFilters()
+                join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
+                where p.UserId == userId && p.SeriesId == seriesId && p.Completed && c.Number != null &&
+                      (c.ChapterFileId != null || c.FileRemovedAt != null)
+                select new { c.Number, p.CompletedAt, p.Watched, p.External, p.BulkMarked, p.PageCount })
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        if (rows.Count == 0)
+        {
+            return false;
+        }
+
+        return rows.GroupBy(r => r.Number).All(g => lastFinish is DateTime last
+            ? g.Max(r => r.CompletedAt) > last
+            : g.Any(r => !r.Watched && !r.External && !r.BulkMarked && r.PageCount > 0));
     }
 
     private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>
@@ -440,12 +545,8 @@ public class ReadingProgressService(
             return false;
         }
 
-        var highest = await db.Chapters
-            .Where(c => c.SeriesId == sid && c.Number != null)
-            .OrderByDescending(c => c.Number)
-            .Select(c => c.Number)
-            .FirstOrDefaultAsync(ct);
-        return highest is { } h && h > 0 && Math.Floor(maxChapter) >= Math.Floor((double)h);
+        var highest = await SeriesFinishRule.HighestNumberAsync(db, sid, ct);
+        return SeriesFinishRule.Closes(status, maxChapter, highest);
     }
 
     /// <summary>

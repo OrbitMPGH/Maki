@@ -8,7 +8,7 @@ import { inboxPrefsQuery, type InboxPush } from './inbox'
 import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import { createSeriesListRefresher } from './seriesListPatch'
-import type { ChapterDto, QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
+import type { ChapterDto, QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -154,6 +154,16 @@ function subscribe(cb: (conn: HubConnection) => void): () => void {
   }
 }
 
+/** Subscribes to a single hub event outside React, until the returned function is called. */
+export function onHubEvent<T>(event: string, handler: (payload: T) => void): () => void {
+  const listener = (payload: T) => handler(payload)
+  const unsubscribe = subscribe((conn) => conn.on(event, listener))
+  return () => {
+    unsubscribe()
+    connection?.off(event, listener)
+  }
+}
+
 /** Subscribes to a single hub event while the calling component is mounted. */
 export function useHubEvent<T>(event: string, handler: (payload: T) => void) {
   const handlerRef = useRef(handler)
@@ -219,7 +229,7 @@ export function useLiveEvents() {
         releaseHeld(
           a,
           [...items.values()].filter((q) => {
-            const chapter = byId.get(q.chapterId)
+            const chapter = q.chapterId == null ? undefined : byId.get(q.chapterId)
             return !chapter || chapter.hasFile
           }).map((q) => q.id),
         )
@@ -250,6 +260,7 @@ export function useLiveEvents() {
       for (const id of ids) {
         void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-ending', id] })
       }
       if (ids.length > 0) {
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
@@ -351,8 +362,17 @@ export function useLiveEvents() {
         }
       })
 
-      listen(conn, 'queuePauseChanged', (pause: QueuePauseDto) => {
-        queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
+      // Refetched rather than taken from the push: the paused series' titles are filtered to what this
+      // viewer may see, and the push is one payload for every manager.
+      listen(conn, 'queuePauseChanged', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
+        void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
+      })
+
+      // Rows moved to the front for a reader nearing the end of a series. No row changed state, so
+      // queueUpdated never fires and the lists would keep the old order.
+      listen(conn, 'queueReordered', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue'] })
       })
 
       // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which
@@ -369,6 +389,7 @@ export function useLiveEvents() {
       listen(conn, 'sourceMatchFinished', ({ seriesId, failedSources }: { seriesId: number; failedSources?: string[] }) => {
         queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         // The scout-on-match run is registered before this push goes out; the refetch sees it running
         // and starts the source order's progress polling.

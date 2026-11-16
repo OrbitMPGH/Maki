@@ -65,7 +65,23 @@ public class Series
 
     /// <summary>Overrides the page conversion rules for this series' files; see <c>PageConversionPlan</c>.</summary>
     public PageConversionOverride PageConversion { get; set; }
+
+    /// <summary>
+    /// How many chapters "Prepare chapters ahead" keeps upscaled in this series for each reader who has
+    /// it set to Reading. Null follows the instance setting, 0 never prepares it, and a number keeps that
+    /// many ready however long ago it was read. Set by an editor, not per reader.
+    /// </summary>
+    public int? PrepareChapters { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
+
+    /// <summary>
+    /// Scanlation groups this series prefers, in order, on a source that lists several uploads of a
+    /// chapter. Empty takes the global list from <c>SettingKeys.ScanlationGroups</c>.
+    /// </summary>
+    public List<string> PreferredGroups { get; set; } = [];
+
+    /// <summary>Scanlation groups never taken for this series, on top of the globally blocked ones.</summary>
+    public List<string> BlockedGroups { get; set; } = [];
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>
     public SourceOrderMode? SourceOrderMode { get; set; }
@@ -99,6 +115,13 @@ public class Series
     /// <see cref="ChapterSourceLink.FirstSeenAt"/>: what it finds was released while nobody looked.
     /// </summary>
     public DateTime? RestoredAt { get; set; }
+
+    /// <summary>
+    /// A series an import list or another bulk add brought in with nothing on disk, waiting for the
+    /// volume search job to look for a volume release first. Source downloads wait for it for at most
+    /// <c>VolumeFirstGate.SearchDueHold</c>; the job clears it once it has searched.
+    /// </summary>
+    public DateTime? VolumeFirstPendingAt { get; set; }
 
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }

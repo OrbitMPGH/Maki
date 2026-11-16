@@ -78,6 +78,20 @@ export const WithActiveFilters: Story = {
   },
 }
 
+/** A preset saved at 5.0, from before the uneven stops, keeps its value until the slider moves. */
+export const RatingStops: Story = {
+  parameters: { initial: { minRating: 50 } satisfies RecommendationFilters },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /Length, year and rating/ }))
+    await expect(await canvas.findByText('Minimum rating: ★ 5.0')).toBeVisible()
+    const thumb = await canvas.findByRole('slider', { name: 'Minimum rating' })
+    thumb.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(await canvas.findByText('Minimum rating: ★ 6.8')).toBeVisible()
+    await expect(await canvas.findByText('Top 76% of popular series')).toBeVisible()
+  },
+}
+
 export const ActionsIdle: StoryObj = {
   render: () => <CatalogueFilterActions isCustomized={false} onReset={() => {}} onApply={() => {}} onSaveAsDefault={() => {}} />,
   play: async ({ canvas }) => {

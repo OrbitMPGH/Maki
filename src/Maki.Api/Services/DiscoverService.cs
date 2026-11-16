@@ -196,6 +196,12 @@ public class DiscoverService(
     /// <summary>The same cap <c>SemanticSearcher</c> puts on its own results.</summary>
     private const int MaxSearchLimit = 200;
 
+    /// <summary>
+    /// How long a query waits for an unloaded index and model to reload before the title index
+    /// answers it. Both reload in about 0.1 s; the client's next poll is two seconds away.
+    /// </summary>
+    private static readonly TimeSpan QuickReloadWait = TimeSpan.FromSeconds(1);
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     /// <summary>
@@ -900,7 +906,8 @@ public class DiscoverService(
         // exclude. Only while the model can load, though: waiting on one that can't answers nothing.
         var narrowed = Narrows(request.Filters);
         if (!request.WantsTitleOnly &&
-            (searcher.IsReady() || (narrowed && searcher.IsAvailable() && searcher.CanEmbed())))
+            ((narrowed && searcher.IsAvailable() && searcher.CanEmbed())
+                || await searcher.IsReadyWithinAsync(QuickReloadWait, ct)))
         {
             var outcome = await searcher.SearchAsync(query, request.Filters, limit, ct);
             if (outcome.Items.Count > 0)

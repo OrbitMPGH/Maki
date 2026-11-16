@@ -358,6 +358,59 @@ msgstr "Unsupported feedback sort"
 msgid "error.feedback.unsupportedState"
 msgstr "Unsupported feedback state"
 
+#. ASP.NET Identity's own errors, joined with "; " when several apply at once.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.defaultError"
+msgstr "Something went wrong. Try again."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.concurrencyFailure"
+msgstr "Someone else changed this account at the same time. Reload and try again."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordMismatch"
+msgstr "Incorrect password."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidToken"
+msgstr "This link or code is no longer valid."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.recoveryCodeRedemptionFailed"
+msgstr "That recovery code did not work."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.loginAlreadyAssociated"
+msgstr "This sign-in is already linked to an account."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidUserName"
+msgstr "The username {userName} is not allowed. Use letters, digits and - . _ @ + only."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidEmail"
+msgstr "The email address {email} is not valid."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateUserName"
+msgstr "The username {userName} is already taken."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateEmail"
+msgstr "The email address {email} is already in use."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userAlreadyHasPassword"
+msgstr "This account already has a password."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userLockoutNotEnabled"
+msgstr "Lockout is not enabled for this account."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordTooShort"
+msgstr "Passwords must be at least {length} characters."
+
 #: src/Maki.Api/Controllers/ImportListsController.cs
 msgid "error.importLists.unknownService"
 msgstr "Unknown tracker"
@@ -412,6 +465,30 @@ msgstr "Name is required"
 #: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 msgid "error.discoverFilters.tooMany"
 msgstr "You can keep at most {max} saved filters"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noticeNotFound"
+msgstr "That credit notice no longer exists"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameTooLong"
+msgstr "A group name can be at most 100 characters"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameRequired"
+msgstr "Enter a group name"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.siteHasNoGroup"
+msgstr "A site ad cannot name a release group"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.invalidValue"
+msgstr "That value is not one Maki knows"
+
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noNotices"
+msgstr "Pick at least one credit notice"
 
 #: src/Maki.Api/Controllers/CustomRailsController.cs
 msgid "error.customRails.nameRequired"
@@ -683,6 +760,10 @@ msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "The sample chapter URL is not in the chapter list."
 
 #: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr "The sample chapter is listed as locked. Pick a free chapter as the sample."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
 msgid "error.customSource.test.notAnImage"
 msgstr "The first page did not come back as an image."
 
@@ -702,6 +783,11 @@ msgstr "Folder no longer exists"
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "This folder already belongs to another series in the library"
+
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+msgid "error.import.holdsRootFolder"
+msgstr "This folder is a library root folder or contains one, so Maki won't import from it"
 
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNeedsDump"
@@ -851,6 +937,23 @@ msgid "error.metadata.invalidStatus"
 msgstr "Unknown status."
 
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidYear"
+msgstr "The year must be between {minYear} and {maxYear}."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr "The provider rates this series above your content rating limit, so its rating can't be reset."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownType"
+msgstr "Unknown series type."
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverFetchFailed"
+msgstr "{reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}"
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.noFields"
 msgstr "Choose at least one field."
 
@@ -980,7 +1083,12 @@ msgstr "Webhook URL is required"
 
 #: src/Maki.Api/Controllers/PageConversionController.cs
 msgid "error.pageConversion.formatInvalid"
-msgstr "Choose WebP, AVIF or off"
+msgstr "Choose WebP, AVIF, JPEG XL or off"
+
+#. A plan or rule picked JPEG XL, but libjxl did not load beside Maki (missing or older than 0.11).
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.jpegXlUnavailable"
+msgstr "JPEG XL needs libjxl, which this install does not have. Choose WebP or AVIF"
 
 #. Starting the library pass while page conversion is switched off.
 #: src/Maki.Api/Controllers/PageConversionController.cs
@@ -995,6 +1103,9 @@ msgstr "One of the rules is not valid. Check its conditions and what it does."
 #: src/Maki.Api/Controllers/PageConversionController.cs
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
+
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr "Choose a split height from {min} to {max} pixels"
 
 #. {max} is the server's core count.
 #: src/Maki.Api/Controllers/PageConversionController.cs
@@ -1274,6 +1385,11 @@ msgstr "The original location is outside the root folder or behind a link, so th
 msgid "error.release.grabFailed"
 msgstr "Could not send the release to the download client. Details are in the server log."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr "The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library."
+
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
 msgstr "This release has no download link"
@@ -1398,6 +1514,11 @@ msgstr "Unknown user"
 msgid "error.requests.unknownKind"
 msgstr "Unknown request kind"
 
+#. A root folder's free-space threshold for holding downloads was below zero.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr "The free space to keep must be zero or more"
+
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.alreadyExists"
 msgstr "Root folder already exists"
@@ -1424,6 +1545,14 @@ msgstr "Maki can't read this folder: {path}"
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"
+
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr "A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value"
+
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr "That root folder no longer exists"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.aniListNotConfigured"
@@ -1652,6 +1781,16 @@ msgstr "Unknown mode: {mode}"
 msgid "error.series.unknownNotificationMode"
 msgstr "Unknown mode: {mode}"
 
+#. Shown when a client sends a reading status that is not Reading, PlanToRead, OnHold or Dropped.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownReadingStatus"
+msgstr "Unknown reading status: {status}"
+
+#. {max} is the largest number of days either reading status rule accepts.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.readingStatusDays"
+msgstr "Days must be between 1 and {max}."
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unsupportedAddOrigin"
@@ -1660,6 +1799,12 @@ msgstr "Unsupported add origin"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unknownTagIds"
 msgstr "One or more tag ids do not exist"
+
+#. Recorded against the series a bulk Library action stopped at, when the account that queued it was
+#. disabled, removed or lost the permission or root folder it needs.
+#: src/Maki.Api/Services/SeriesBulkWorker.cs
+msgid "error.seriesBulk.accessRevoked"
+msgstr "Stopped here: your account can no longer run this action"
 
 #. Shown as warnings after the series row is already saved. The cause is in the server log.
 #: src/Maki.Api/Services/SeriesCreationService.cs
@@ -1921,6 +2066,10 @@ msgstr "This sign-in mode needs a username."
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later."
 
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+msgid "error.autoTagRules.invalidConditions"
+msgstr "A rule needs between 1 and 20 conditions, each with a known field and a valid value"
+
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
 msgid "error.tags.labelExists"
@@ -2145,6 +2294,14 @@ msgid "error.upscaling.invalidCache"
 msgstr "The cache size must be between {min} and {max} MB."
 
 #: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr "One of the Prepare chapters ahead values is out of range."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPrepareChapters"
+msgstr "Prepare ahead takes between 0 and {max} chapters."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.invalidThreads"
 msgstr "Threads must be between {min} and {max}."
 
@@ -2235,6 +2392,21 @@ msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes
 msgid "error.settings.bulkHoldRange"
 msgstr "Bulk hold must be between 0 (off) and {max} chapters"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr "The stall limit must be between 0 (off) and {max} hours"
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr "The seed ratio must be between 0 and {max}"
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr "The seeding time must be between 0 and {max} minutes"
+
 #. {mode} is the value that was sent and is never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.torrentRemovalModeInvalid"
@@ -2284,6 +2456,10 @@ msgstr "Volume searches per run must be between {min} and {max}"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "Proposal expiry must be between {min} and {max} days"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr "Minimum seeders must be between {min} and {max}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.backupsToKeepRange"
@@ -2382,6 +2558,15 @@ msgstr "FlareSolverr did not respond"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki has no volume or chapter words for the language \"{language}\""
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.allTokensOptional"
+msgstr "Format needs at least one token outside a <...> block, or a name could come out empty"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.angleInsideToken"
+msgstr "Format has a \"<\" or \">\" inside a token"
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.braceInsideToken"
@@ -2413,6 +2598,11 @@ msgstr "Format cannot be empty"
 msgid "error.naming.formatInvalid"
 msgstr "{field}: {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.nestedOptional"
+msgstr "Format has a <...> block inside another one"
+
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.noPadding"
 msgstr "{token} does not take a padding pattern"
@@ -2420,6 +2610,11 @@ msgstr "{token} does not take a padding pattern"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.noTokens"
 msgstr "Format must contain at least one token, or every series would get the same name"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.optionalWithoutToken"
+msgstr "{block} has no token in it, so it would always show"
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -2436,8 +2631,16 @@ msgid "error.naming.unknownToken"
 msgstr "Unknown token: {token}"
 
 #: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseAngle"
+msgstr "Format has a \">\" with no matching \"<\""
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "Format has a \"}\" with no matching \"{\""
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenAngle"
+msgstr "Format has a \"<\" with no matching \">\""
 
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.unmatchedOpenBrace"
@@ -2465,8 +2668,16 @@ msgid "naming.token.anilistid.description"
 msgstr "AniList id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterreleasedate.description"
+msgstr "Release date as 2024-05-17; blank when the source gives none"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.chaptergroup.description"
 msgstr "Scanlation group, e.g. Group Name. Blank when the file has none"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptersource.description"
+msgstr "The source the file was downloaded from, e.g. MangaDex. Blank for an imported file"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.chapterlanguage.description"
@@ -2501,6 +2712,10 @@ msgid "naming.token.malid.description"
 msgstr "MyAnimeList id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.qualitytier.description"
+msgstr "Official, Scanlator, Aggregator or Volume; blank when unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.mangabakaid.description"
 msgstr "MangaBaka id; blank when unmatched"
 
@@ -2513,6 +2728,10 @@ msgid "naming.token.mangaupdatesid.description"
 msgstr "MangaUpdates id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesauthor.description"
+msgstr "The story author, or the artist when no author is known. Several are joined with a comma"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriescleantitle.description"
 msgstr "Title with punctuation removed: letters, digits and spaces only"
 
@@ -2521,8 +2740,16 @@ msgid "naming.token.seriesoriginaltitle.description"
 msgstr "The native-language title; blank when the provider has none"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriespublisher.description"
+msgstr "The original publisher, the first one listed; blank when unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriessorttitle.description"
 msgstr "The sort title, e.g. leading article moved to the end"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesstatus.description"
+msgstr "Ongoing, Completed, Hiatus or Cancelled; blank when unknown"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriestitle.description"
@@ -3178,6 +3405,23 @@ msgstr "New from creators you follow"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# new title} other {# new titles}} in the catalogue."
 
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.title"
+msgstr "{kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.body"
+msgstr "{kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.title"
+msgstr "New sequels and spin-offs"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.body"
+msgstr "{count, plural, one {# new work} other {# new works}} related to series you read."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
 msgstr "Update available"
@@ -3490,6 +3734,19 @@ msgstr "The torrent is in the download client, but another download for {series}
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in the download client"
+
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentStalled"
+msgstr "The torrent made no progress within the stall limit"
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
+msgstr "No seeds or peers connected to the torrent within the stall limit"
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
@@ -3838,6 +4095,16 @@ msgstr "Rated {score}/10"
 msgid "scrobble.log.ratingPushFailed"
 msgstr "Could not send the rating: {detail}"
 
+#. {status} is one of the scrobble.status.* words, already rendered. Sent when the reader changed the series' status in Maki.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushed"
+msgstr "Moved to {status}"
+
+#. {detail} is the tracker's own error text and is not translated.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushFailed"
+msgstr "Could not send the reading status: {detail}"
+
 #. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
 #. own shelves, so translate them the way those sites do in this language.
 #: src/Maki.Api/Services/ScrobbleService.cs
@@ -3855,6 +4122,14 @@ msgstr "plan to read"
 #: src/Maki.Api/Services/ScrobbleService.cs
 msgid "scrobble.status.other"
 msgstr "other"
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.paused"
+msgstr "on hold"
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.dropped"
+msgstr "dropped"
 
 #. Confirmations shown after a tracker action on the series page.
 msgid "scrobble.action.syncRunning"
@@ -3971,6 +4246,10 @@ msgstr "The file's contents changed, or it was not fully scanned. Rescan first."
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.operationActive"
 msgstr "Another operation on this file is in progress."
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr "This job is already running."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.downloadsActive"
@@ -4148,6 +4427,10 @@ msgid "health.check.databaseCurrent"
 msgstr "Database is reachable and up to date"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.databaseNewer"
+msgstr "This database was written by a newer version of Maki (migration {latest}). Running this older version against it can corrupt data. Upgrade again, or restore the backup taken before the upgrade."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
 msgstr "A previous startup migration failed. Check the startup logs."
 
@@ -4204,7 +4487,7 @@ msgstr "Notification connection {name} failed to deliver {count} times in a row"
 msgid "health.check.notificationDelivering"
 msgstr "Notification connection {name} is delivering again"
 
-#. {job} is the scheduler's own name for the job and is not translated.
+#. {job} is one of the health.job.* names below, already translated.
 #: src/Maki.Api/Services/HealthJobListener.cs
 msgid "health.check.jobSucceeded"
 msgstr "{job}: last run succeeded"
@@ -4212,6 +4495,159 @@ msgstr "{job}: last run succeeded"
 #: src/Maki.Api/Services/HealthJobListener.cs
 msgid "health.check.jobFailed"
 msgstr "{job}: last run failed, see the logs"
+
+#. The name of a scheduled background job, shown on the Health page and in job notifications.
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.animeSignals"
+msgstr "Anime list sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.artifactIdleUnload"
+msgstr "Unload idle recommendation data"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.browserIdleShutdown"
+msgstr "Close the idle browser"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterFileMeasure"
+msgstr "Measure chapter files"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.checkForUpdates"
+msgstr "Check for updates"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.coRead"
+msgstr "Install the co-read graph"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.completedDownloads"
+msgstr "Import completed downloads"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceHealth"
+msgstr "Check custom sources"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceRepositories"
+msgstr "Update custom source repositories"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.discoverCacheWarm"
+msgstr "Prepare Discover"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.dropFolder"
+msgstr "Check the drop folder"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embedderIdleUnload"
+msgstr "Unload the idle text model"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embeddingIndex"
+msgstr "Build the search index"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.followedCreatorReleases"
+msgstr "Check followed creators for new series"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readingStatusRules"
+msgstr "Put idle series on hold or drop them"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.healthCheck"
+msgstr "Health checks"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.housekeeping"
+msgstr "Housekeeping"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.imageCacheRebuild"
+msgstr "Rebuild the image cache"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.importLists"
+msgstr "Import lists"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.koreaderDocumentIndex"
+msgstr "Index files for KOReader sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaDumpRefresh"
+msgstr "Update the MangaBaka database"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaTableBackfill"
+msgstr "Prepare MangaBaka database tables"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.metadataRefresh"
+msgstr "Refresh metadata"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.prebuiltIndex"
+msgstr "Install the prebuilt search index"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readFileCleanup"
+msgstr "Remove read chapter files"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readerCohorts"
+msgstr "Install reader cohorts"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.recoGraph"
+msgstr "Install the recommendation graph"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.refreshMonitored"
+msgstr "Check monitored series for new chapters"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.relatedWorkWatch"
+msgstr "Look for new sequels and spin-offs"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.retryFailedDownloads"
+msgstr "Retry failed downloads"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scheduledBackup"
+msgstr "Scheduled backup"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scrobble"
+msgstr "Scrobble sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.smartDownload"
+msgstr "Smart Download"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.tasteVectors"
+msgstr "Install taste vectors"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.torrentRemoval"
+msgstr "Remove finished torrents"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeScan"
+msgstr "Upgrade scan"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeVolumeSearch"
+msgstr "Volume upgrade search"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upscalerIdleUnload"
+msgstr "Unload the idle upscaler"
 
 #. Problems found in the library itself, shown on the same page as the checks above.
 #. {detail} is the source's own error text and is not translated.
@@ -4467,7 +4903,7 @@ msgstr "Health recovered"
 msgid "inbox.health.recovered.body"
 msgstr "Resolved: {detail}"
 
-#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. A scheduled background job changed state. {job} is one of the health.job.* names, already
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
 #. inbox copy, worded per reader.
 #: src/Maki.Api/Services/HealthJobListener.cs

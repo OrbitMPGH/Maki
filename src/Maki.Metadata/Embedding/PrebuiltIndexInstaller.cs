@@ -202,6 +202,8 @@ public class PrebuiltIndexInstaller(
             // Checked against the manifest above; recorded in the file so the next freshness check
             // can tell this model's vectors from another's.
             EmbeddingStore.StampModelVersion(staging, options.ModelVersion);
+            // Validation just counted it, so the live file never has to.
+            EmbeddingStore.StampVectorCount(staging, rows);
             if (!await cache.SwapDatabaseAsync(staging, ct))
             {
                 return new PrebuiltIndexResult(false, "install.prebuiltIndex.indexingRunning");

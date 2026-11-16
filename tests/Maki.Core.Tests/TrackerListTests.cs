@@ -400,6 +400,23 @@ public class TrackerListTests
     }
 
     [Fact]
+    public async Task MangaBaka_rereading_reads_as_repeating_and_survives_a_push()
+    {
+        var handler = new Handler()
+            .OnUrl("/v2/series/42", """{"status":200,"data":{"id":42,"title":"Again"}}""")
+            .OnUrl("/v1/my/library/42", """{"status":200,"data":{"state":"rereading","progress_chapter":3}}""");
+        var tracker = MangaBaka(handler);
+
+        var entry = await tracker.GetEntryAsync(UserId, "42");
+        Assert.Equal((ScrobbleStatus.Reading, true), (entry.Status, entry.Repeating));
+
+        await tracker.UpdateAsync(UserId, "42", 4, 0, ScrobbleStatus.Reading, keepStatus: entry.Repeating);
+        var patch = handler.Requests.Last();
+        Assert.Contains("\"state\":\"rereading\"", patch.Body);
+        Assert.Contains("\"progress_chapter\":4", patch.Body);
+    }
+
+    [Fact]
     public async Task MangaBaka_401_is_a_tracker_exception()
     {
         var handler = new Handler().Always(HttpStatusCode.Unauthorized, """{"message":"No session found","status":401}""");
@@ -450,7 +467,7 @@ public class TrackerListTests
     }
 
     [Fact]
-    public async Task MangaUpdates_other_reads_the_unfinished_and_on_hold_lists()
+    public async Task MangaUpdates_reads_the_unfinished_list_as_dropped_and_on_hold_as_paused()
     {
         var handler = new Handler()
             .On((url, _) => url.EndsWith("/lists/3/search"),
@@ -458,9 +475,9 @@ public class TrackerListTests
             .On((url, _) => url.EndsWith("/lists/4/search"),
                 $$"""{"total_hits":1,"results":[{{MuRow(1295, "Paused")}}]}""");
 
-        var list = await MangaUpdates(handler).ListAsync(UserId, [ScrobbleStatus.Other]);
+        var list = await MangaUpdates(handler).ListAsync(UserId, [ScrobbleStatus.Dropped, ScrobbleStatus.Paused]);
 
-        Assert.Equal([ScrobbleStatus.Other, ScrobbleStatus.Other], list.Select(e => e.Status));
+        Assert.Equal([ScrobbleStatus.Dropped, ScrobbleStatus.Paused], list.Select(e => e.Status));
         Assert.Equal(["Dropped", "Paused"], list.Select(e => e.Title));
     }
 

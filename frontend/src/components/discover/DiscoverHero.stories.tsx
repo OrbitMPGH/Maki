@@ -21,7 +21,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ args, canvas, userEvent }) => {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByText('Feels like Lanterns Over Kasumi')).toBeVisible()
+    await waitFor(() => expect(canvasElement.querySelector('.discover-hero .score-figure')).not.toBeNull())
     await userEvent.click(await canvas.findByRole('button', { name: 'More like this' }))
     await waitFor(() => expect(args.onRecommend).toHaveBeenCalledWith(args.items[0]))
   },

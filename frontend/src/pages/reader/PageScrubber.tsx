@@ -7,7 +7,10 @@ const MIN_SEGMENT_WITH_GAP = 6
 const PREVIEW_HALF_WIDTH = 64
 
 export interface PageScrubberProps {
+  /** Segments shown: the pages from `first` on that the reader shows. */
   count: number
+  /** The chapter index of the first segment, past any credit pages left out. Every other index here is the chapter's. */
+  first?: number
   /** The first page on screen. */
   page: number
   /** The last page on screen; every segment up to it is lit. */
@@ -20,6 +23,8 @@ export interface PageScrubberProps {
   upscaling?: ReadonlySet<number>
   /** Pages carrying at least one note; each gets a dot above its segment. */
   noted?: ReadonlySet<number>
+  /** Bookmarked pages; each gets a flag above its segment. */
+  bookmarked?: ReadonlySet<number>
   /** Thumbnail URL per page, shown above the segment under the pointer. */
   thumbs: string[]
 }
@@ -31,13 +36,15 @@ export interface PageScrubberProps {
  */
 export default function PageScrubber({
   count,
-  page,
-  shownTo,
+  first = 0,
+  page: pageIndex,
+  shownTo: shownToIndex,
   rtl,
   onSeek,
   enhanced,
   upscaling,
   noted,
+  bookmarked,
   thumbs,
 }: PageScrubberProps) {
   const { t } = useLingui()
@@ -45,6 +52,9 @@ export default function PageScrubber({
   const track = useRef<HTMLDivElement>(null)
   const [hover, setHover] = useState<number | null>(null)
   const [drag, setDrag] = useState<number | null>(null)
+  // Segments count from the first page shown; the chapter's own index is `first` plus the segment.
+  const page = pageIndex - first
+  const shownTo = shownToIndex - first
 
   const pageAt = (clientX: number) => {
     const rect = track.current?.getBoundingClientRect()
@@ -52,7 +62,7 @@ export default function PageScrubber({
     const slot = Math.min(count - 1, Math.max(0, Math.floor(((clientX - rect.left) / rect.width) * count)))
     return rtl ? count - 1 - slot : slot
   }
-  const seek = (target: number) => onSeek(Math.min(count - 1, Math.max(0, target)))
+  const seek = (target: number) => onSeek(first + Math.min(count - 1, Math.max(0, target)))
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     const forward = rtl ? 'ArrowLeft' : 'ArrowRight'
@@ -119,10 +129,11 @@ export default function PageScrubber({
             className="reader-scrub-segment"
             data-lit={index <= to || undefined}
             data-current={(index >= from && index <= to) || undefined}
-            data-ready={(index > to && enhanced?.has(index)) || undefined}
-            data-upscaling={(index > to && upscaling?.has(index)) || undefined}
+            data-ready={(index > to && enhanced?.has(first + index)) || undefined}
+            data-upscaling={(index > to && upscaling?.has(first + index)) || undefined}
             data-hover={index === hover || undefined}
-            data-noted={noted?.has(index) || undefined}
+            data-noted={noted?.has(first + index) || undefined}
+            data-bookmarked={bookmarked?.has(first + index) || undefined}
           />
         ))}
       </div>
@@ -135,7 +146,7 @@ export default function PageScrubber({
           }}
           aria-hidden
         >
-          {thumbs[shown] && <img src={thumbs[shown]} alt="" decoding="async" draggable={false} />}
+          {thumbs[first + shown] && <img src={thumbs[first + shown]} alt="" decoding="async" draggable={false} />}
           <span>
             {shown + 1} / {count}
           </span>

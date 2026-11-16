@@ -134,6 +134,32 @@ public static class QualityScorer
         IsUpgrade(profile, WithoutMeasured(current), current.Score, null, trusted, WithoutMeasured(candidate),
             candidateWidth: 1, candidatePageCount: null);
 
+    /// <summary>
+    /// Whether an unmeasured candidate is at least as good as the current file: a higher tier (within
+    /// <see cref="UpgradeProfile.MaxTierScoreDrop"/>), or the same tier and no lower a score. Unlike an
+    /// upgrade it ignores the cutoff and the minimum delta, so a release Maki approved itself may replace
+    /// a file that already met the cutoff with an equal copy. A protected file never qualifies.
+    /// </summary>
+    public static bool IsUnmeasuredAtLeastAsGood(UpgradeProfile profile, QualityScore current, bool trusted, QualityScore candidate)
+    {
+        if (trusted || !Allows(profile, candidate.Tier) ||
+            current.Tier == QualityTier.Unknown && !profile.AllowReplacingUnknown)
+        {
+            return false;
+        }
+
+        var candidateScore = WithoutMeasured(candidate).Score;
+        var currentScore = WithoutMeasured(current).Score;
+        var candidateRank = Rank(profile, candidate.Tier);
+        var currentRank = Rank(profile, current.Tier);
+        if (candidateRank > currentRank)
+        {
+            return profile.MaxTierScoreDrop is not { } maxDrop || candidateScore >= currentScore - maxDrop;
+        }
+
+        return candidateRank == currentRank && candidateScore >= currentScore;
+    }
+
     private static QualityScore WithoutMeasured(QualityScore score) => score with
     {
         Score = score.Score - score.ResolutionPoints - score.CompressionPoints,

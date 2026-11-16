@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Box, Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
@@ -34,10 +34,14 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { ConnectionTestLine } from '../../components/ConnectionSettingsCardStatus'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
-import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { TorrentLifecycleFields } from '../../components/settings/TorrentLifecycleFields'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
+import { useTorrentLifecycleForm } from '../../components/settings/useTorrentLifecycleForm'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
 
@@ -141,19 +145,23 @@ export function SourcePrioritySection() {
   const save = useSaveDownloadSettings()
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
   const [scoutOnMatch, setScoutOnMatch] = useState(false)
+  const [volumeFirst, setVolumeFirst] = useState(false)
+  const volumeFirstMark = useNewControlMark('volume-first')
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
-    settings && { sourceOrder: settings.sourceOrder, scoutOnMatch: settings.scoutOnMatch },
+    settings && { sourceOrder: settings.sourceOrder, scoutOnMatch: settings.scoutOnMatch, volumeFirst: settings.volumeFirst },
     (slice) => {
       setSourceOrder(slice.sourceOrder)
       setScoutOnMatch(slice.scoutOnMatch)
+      setVolumeFirst(slice.volumeFirst)
     },
     discarded,
   )
 
   const dirty =
-    settings !== undefined && (sourceOrder !== settings.sourceOrder || scoutOnMatch !== settings.scoutOnMatch)
+    settings !== undefined &&
+    (sourceOrder !== settings.sourceOrder || scoutOnMatch !== settings.scoutOnMatch || volumeFirst !== settings.volumeFirst)
 
   const byName = new Map((sources ?? []).map((s) => [s.name, s]))
   const enabled = priority
@@ -178,26 +186,41 @@ export function SourcePrioritySection() {
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
-      onSave={() => save.mutate({ sourceOrder, scoutOnMatch }, { onSuccess: savedToast })}
+      onSave={() => save.mutate({ sourceOrder, scoutOnMatch, volumeFirst }, { onSuccess: savedToast })}
     >
-      <Select
-        label={t`Pick a source by`}
-        data={[
-          { value: 'manual', label: t`Your priority order` },
-          { value: 'quality', label: t`Best measured quality` },
-        ]}
-        value={sourceOrder}
-        onChange={(value) => value && setSourceOrder(value as SourceOrderMode)}
-        allowDeselect={false}
-        mb="sm"
-      />
+      <Input.Wrapper label={t`Pick a source by`} mb="sm">
+        <SegmentedControl
+          mt={4}
+          aria-label={t`Pick a source by`}
+          data={[
+            { value: 'manual', label: t`Your priority order` },
+            { value: 'quality', label: t`Best measured quality` },
+          ]}
+          value={sourceOrder}
+          onChange={(value) => setSourceOrder(value as SourceOrderMode)}
+        />
+      </Input.Wrapper>
       <Switch
         label={t`Measure sources when a series is added`}
         description={t`Samples a few pages from every linked source.`}
         checked={scoutOnMatch}
         onChange={(e) => setScoutOnMatch(e.currentTarget.checked)}
-        mb="lg"
+        mb="sm"
       />
+      <div id="setting-volume-first" {...volumeFirstMark}>
+        <Switch
+          label={
+            <>
+              {t`Look for volume releases first`}
+              <NewSettingPill id="volume-first" />
+            </>
+          }
+          description={t`Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held.`}
+          checked={volumeFirst}
+          onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
+          mb="lg"
+        />
+      </div>
       {(sources || priority) && (
         <Group gap={14} wrap="wrap">
           {enabledCount > 0 && (
@@ -456,70 +479,6 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The finished-torrent switches inside the download client card. Part of the download settings record, saved on change. */
-function FinishedTorrentFields() {
-  const { t } = useLingui()
-  const { data: settings } = useDownloadSettings()
-  const save = useSaveDownloadSettings()
-  const pending = save.isPending ? save.variables : undefined
-  const useHardlinks = pending?.useHardlinks ?? settings?.useHardlinks ?? true
-  const removeCompleted = (pending?.removeCompleted ?? settings?.removeCompleted ?? 'never') === 'afterimport'
-  const removeData = pending?.removeData ?? settings?.removeData ?? true
-
-  return (
-    <Stack gap={0} mt="lg">
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Finished torrents</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
-      </SettingsHelp>
-      <Switch
-        label={t`Hardlink imported torrents when possible`}
-        checked={useHardlinks}
-        disabled={!settings}
-        onChange={(e) => {
-          save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
-        }}
-      />
-      <Switch
-        mt="md"
-        label={t`Remove torrents from the download client after import`}
-        checked={removeCompleted}
-        disabled={!settings}
-        onChange={(e) => {
-          save.mutate(
-            { removeCompleted: e.currentTarget.checked ? 'afterimport' : 'never' },
-            { onSuccess: savedToast },
-          )
-        }}
-      />
-      <Group gap={8} wrap="nowrap" align="flex-start">
-        <Box
-          aria-hidden
-          w={10}
-          h={22}
-          ml={18}
-          style={{
-            borderInlineStart: '2px solid var(--border-strong)',
-            borderBottom: '2px solid var(--border-strong)',
-            borderEndStartRadius: 4,
-          }}
-        />
-        <Switch
-          mt={10}
-          label={t`Also delete the downloaded files`}
-          checked={removeData}
-          disabled={!settings || !removeCompleted}
-          onChange={(e) => {
-            save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
-          }}
-        />
-      </Group>
-    </Stack>
-  )
-}
-
 export function FlareSolverrCard() {
   const { t } = useLingui()
   return (
@@ -535,13 +494,15 @@ export function FlareSolverrCard() {
 export function DownloadClientCard() {
   const { t } = useLingui()
   const fields = useDownloadClientFields()
+  const lifecycle = useTorrentLifecycleForm()
   return (
     <ConnectionSettingsCard
       name="downloadclient"
       title={t`Download client`}
       fields={fields}
+      extra={lifecycle.group}
     >
-      <FinishedTorrentFields />
+      <TorrentLifecycleFields form={lifecycle} />
     </ConnectionSettingsCard>
   )
 }
@@ -731,10 +692,21 @@ export function VolumeReleasesSection() {
   const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number>(3)
   const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number>(10)
   const [proposalExpiryDays, setProposalExpiryDays] = useState<number>(30)
+  const [autoApprove, setAutoApprove] = useState(false)
+  const [autoApproveMb, setAutoApproveMb] = useState<number>(12288)
+  const [missingSearch, setMissingSearch] = useState(true)
+  const [minSeeders, setMinSeeders] = useState<number>(1)
+  const missingMark = useNewControlMark('missing-chapter-search')
+  const seedersMark = useNewControlMark('minimum-seeders')
+  const autoApproveMark = useNewControlMark('auto-approve-volumes')
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
     settings && {
+      missingSearch: settings.missingSearch,
+      torrentMinSeeders: settings.torrentMinSeeders,
+      autoApprove: settings.autoApprove,
+      autoApproveMaxBytes: settings.autoApproveMaxBytes,
       volumeSearch: settings.volumeSearch,
       torrentAutoGrabMaxBytes: settings.torrentAutoGrabMaxBytes,
       volumeMissingTolerance: settings.volumeMissingTolerance,
@@ -747,11 +719,16 @@ export function VolumeReleasesSection() {
       setVolumeMissingTolerance(slice.volumeMissingTolerance)
       setVolumeSearchesPerRun(slice.volumeSearchesPerRun)
       setProposalExpiryDays(slice.proposalExpiryDays)
+      setAutoApprove(slice.autoApprove)
+      setAutoApproveMb(slice.autoApproveMaxBytes / BYTES_PER_MB)
+      setMissingSearch(slice.missingSearch)
+      setMinSeeders(slice.torrentMinSeeders)
     },
     discarded,
   )
 
   const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
+  const autoApproveBytes = Math.round(Number(autoApproveMb) * BYTES_PER_MB)
 
   const dirty =
     settings !== undefined &&
@@ -759,7 +736,11 @@ export function VolumeReleasesSection() {
       autoGrabBytes !== settings.torrentAutoGrabMaxBytes ||
       Number(volumeMissingTolerance) !== settings.volumeMissingTolerance ||
       Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
-      Number(proposalExpiryDays) !== settings.proposalExpiryDays)
+      Number(proposalExpiryDays) !== settings.proposalExpiryDays ||
+      autoApprove !== settings.autoApprove ||
+      autoApproveBytes !== settings.autoApproveMaxBytes ||
+      missingSearch !== settings.missingSearch ||
+      Number(minSeeders) !== settings.torrentMinSeeders)
 
   return (
     <SettingsSection
@@ -777,18 +758,55 @@ export function VolumeReleasesSection() {
             volumeMissingTolerance: Number(volumeMissingTolerance),
             volumeSearchesPerRun: Number(volumeSearchesPerRun),
             proposalExpiryDays: Number(proposalExpiryDays),
+            autoApprove,
+            autoApproveMaxBytes: autoApproveBytes,
+            missingSearch,
+            torrentMinSeeders: Number(minSeeders),
           },
           { onSuccess: savedToast },
         )
       }
     >
-      <Switch
-        label={t`Search torrents for volume releases`}
-        description={t`Also needs the daily scan on.`}
-        checked={volumeSearch}
-        onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
-        mb="md"
-      />
+      <div {...autoApproveMark}>
+        <Switch
+          label={t`Search torrents for volume releases`}
+          description={t`Also needs the daily scan on.`}
+          checked={volumeSearch}
+          onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+          mb="md"
+        />
+      </div>
+      <div id="setting-missing-chapter-search" {...missingMark}>
+        <Switch
+          label={
+            <>
+              {t`Search torrents for chapters no source has`}
+              <NewSettingPill id="missing-chapter-search" />
+            </>
+          }
+          description={t`For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off.`}
+          checked={missingSearch}
+          onChange={(e) => setMissingSearch(e.currentTarget.checked)}
+          mb="md"
+        />
+      </div>
+      <div id="setting-minimum-seeders" {...seedersMark}>
+        <SettingsNumberInput
+          label={
+            <>
+              {t`Minimum seeders`}
+              <NewSettingPill id="minimum-seeders" />
+            </>
+          }
+          description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
+          min={1}
+          max={10000}
+          decimalScale={0}
+          value={minSeeders}
+          onChange={setMinSeeders}
+          mb="md"
+        />
+      </div>
       <Group grow mb="md" align="flex-start">
         <SettingsNumberInput
           label={t`Auto-grab size limit`}
@@ -829,6 +847,32 @@ export function VolumeReleasesSection() {
           disabled={!volumeSearch}
         />
       </Group>
+      <div id="setting-auto-approve-volumes" {...autoApproveMark}>
+        <Switch
+          label={
+            <>
+              {t`Approve volume releases automatically`}
+              <NewSettingPill id="auto-approve-volumes" />
+            </>
+          }
+          description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now.`}
+          checked={autoApprove}
+          onChange={(e) => setAutoApprove(e.currentTarget.checked)}
+          disabled={!volumeSearch}
+          mt="md"
+          mb="sm"
+        />
+        <SettingsNumberInput
+          label={t`Automatic approval size ceiling (MB)`}
+          description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
+          min={100}
+          max={204800}
+          decimalScale={0}
+          value={autoApproveMb}
+          onChange={setAutoApproveMb}
+          disabled={!volumeSearch || !autoApprove}
+        />
+      </div>
     </SettingsSection>
   )
 }
@@ -899,7 +943,10 @@ export function IndexerSection() {
         options.reset()
       }}
     >
-      <IndexerFieldRow form={form} />
+      <IndexerFieldRow
+        form={form}
+        status={<ConnectionTestLine testKey={form.selected ? `indexer:${form.selected}` : undefined} />}
+      />
       {form.switching ? (
         <Text size="sm" c="var(--ink-3)" mt="md">
           <Trans>Save to switch to {selectedName}.</Trans>

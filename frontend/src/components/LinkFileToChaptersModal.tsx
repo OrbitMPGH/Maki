@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ActionIcon,
+  
   Badge,
   Button,
   Checkbox,
   Group,
-  Loader,
   Modal,
   ScrollArea,
   Stack,
   Text,
-  TextInput,
+  
+  Skeleton,
   UnstyledButton,
 } from '@mantine/core'
-import { IconFileZip, IconSearch, IconX } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconCheck, IconFileZip } from '../lib/icons'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
+import { Panel } from './ui/Panel'
+import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -21,6 +25,7 @@ import { chapterLabel as houseChapterLabel, serverChapterLabel } from '../format
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 import { displayChapterTitle } from '../lib/chapterTitle'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 function chapterLabel(c: ChapterDto): string {
   if (!c.isOneShot && c.number === null && c.volume !== null) return serverChapterLabel(`Vol.${c.volume}`)
@@ -117,14 +122,24 @@ export function LinkFileToChaptersModal({
   const confirm = async () => {
     if (!file) return
     const { fileName } = file
-    const linkedPhrase = plural(selected.size, { one: '# chapter', other: '# chapters' })
-    const unlinkedPhrase = plural(removed.length, { one: '# chapter', other: '# chapters' })
+    const linkedPhrase = plural(selected.size, {
+      one: '# chapter',
+      other: '# chapters',
+    })
+    const unlinkedPhrase = plural(removed.length, {
+      one: '# chapter',
+      other: '# chapters',
+    })
     try {
       if (removed.length > 0) {
         await unlink.mutateAsync(removed)
         setInitial(new Set(selected))
       }
-      if (selected.size > 0) await link.mutateAsync({ chapterIds: [...selected], relativePath: file.relativePath })
+      if (selected.size > 0)
+        await link.mutateAsync({
+          chapterIds: [...selected],
+          relativePath: file.relativePath,
+        })
     } catch {
       return
     }
@@ -143,60 +158,69 @@ export function LinkFileToChaptersModal({
   const missingCount = visible.filter((c) => !c.hasFile).length
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Link chapters to this file`} size="lg">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Link chapters to this file`}
+          description={
+            <Trans>Shift-click for a range. Unticking a chapter unlinks it.</Trans>
+          }
+        />
+      }
+      size={MODAL_SIZE.default}
+    >
       <Stack gap="sm">
         {file && (
-          <Group gap="xs" wrap="nowrap">
-            <IconFileZip size={16} style={{ flexShrink: 0 }} />
-            <Text size="sm" fw={600} style={{ wordBreak: 'break-all' }}>
-              {file.fileName}
-            </Text>
-            {file.parsedLabel && (
-              <Badge size="sm" variant="light" color={file.isVolume ? 'var(--volume)' : 'var(--neutral)'} className="tnum">
-                {file.parsedLabel}
-              </Badge>
-            )}
-          </Group>
+          <Panel p="xs">
+            <Group gap="xs" wrap="nowrap">
+              <IconFileZip size={16} style={{ flexShrink: 0 }} />
+              <span className="modal-mono" title={file.fileName}>
+                {file.fileName}
+              </span>
+              {file.parsedLabel && (
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color={file.isVolume ? 'var(--volume)' : 'var(--neutral)'}
+                  className="tnum"
+                >
+                  {file.parsedLabel}
+                </Badge>
+              )}
+            </Group>
+          </Panel>
         )}
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Tick every chapter contained in this file. An omnibus or compilation usually covers a
-            range: click the first chapter, then shift-click the last.
-          </Trans>
-        </Text>
         {isLoading ? (
-          <Group py="md" gap="xs">
-            <Loader size="sm" />
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Loading chapters…</Trans>
-            </Text>
-          </Group>
+          <div className="modal-list" aria-busy="true" aria-label={t`Loading chapters…`}>
+            {[52, 64, 40, 58].map((w) => (
+              <div key={w} className="modal-list-row">
+                <Skeleton h={16} w={16} />
+                <Skeleton h={12} w={`${w}%`} />
+              </div>
+            ))}
+          </div>
         ) : sorted.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>This series has no chapters yet. Add a source mapping first so Maki knows what to link.</Trans>
-          </Text>
+          <EmptyState
+            compact
+            mood="asking"
+            title={t`This series has no chapters yet. Add a source mapping first so Maki knows what to link.`}
+          />
         ) : (
           <>
             <Group gap="xs" wrap="wrap">
-              <TextInput
-                size="xs"
+              <SearchInput
                 style={{ flex: 1, minWidth: 160 }}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
-                leftSection={<IconSearch size={16} />}
-                rightSection={
-                  query ? (
-                    <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>
-                      <IconX size={12} />
-                    </ActionIcon>
-                  ) : null
-                }
+                onClear={() => setQuery('')}
                 placeholder={t`Filter by chapter number or title`}
                 aria-label={t`Filter chapters`}
               />
               <Button
                 size="xs"
-                variant="subtle"
+                variant="default"
                 disabled={missingCount === 0}
                 onClick={() =>
                   setSelected((prev) => {
@@ -208,77 +232,92 @@ export function LinkFileToChaptersModal({
               >
                 <Trans>Select missing ({missingCount})</Trans>
               </Button>
-              <Button size="xs" variant="subtle" disabled={selected.size === 0} onClick={() => setSelected(new Set())}>
+              <Button
+                size="xs"
+                variant="subtle"
+                color="var(--neutral)"
+                disabled={selected.size === 0}
+                onClick={() => setSelected(new Set())}
+              >
                 <Trans>Clear</Trans>
               </Button>
             </Group>
             <ScrollArea.Autosize mah="min(400px, 45dvh)">
-              <Stack gap={2}>
+              <div className="modal-list">
                 {visible.map((c) => {
                   const checked = selected.has(c.id)
                   const onOtherFile = c.hasFile && c.filePath !== file?.relativePath
+                  const linkedHere = c.hasFile && !onOtherFile
                   return (
                     <UnstyledButton
                       key={c.id}
+                      className="modal-list-row"
+                      data-active={checked || undefined}
                       onClick={(e) => toggle(c.id, e.shiftKey)}
                       disabled={pending}
-                      px="xs"
-                      py={6}
                       aria-pressed={checked}
-                      style={{
-                        borderRadius: 'var(--radius-thumb)',
-                        background: checked ? 'color-mix(in srgb, var(--brand) 12%, transparent)' : undefined,
-                        userSelect: 'none',
-                      }}
+                      style={{ userSelect: 'none' }}
                     >
-                      <Group justify="space-between" wrap="nowrap" gap="xs">
-                        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                          <Checkbox.Indicator checked={checked} size="xs" />
-                          <Text size="sm" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                            {chapterLabel(c)}
-                          </Text>
-                          {!c.isOneShot && displayChapterTitle(c) && (
-                            <Text size="sm" c="var(--ink-3)" truncate>
-                              {displayChapterTitle(c)}
-                            </Text>
-                          )}
-                        </Group>
-                        {onOtherFile ? (
-                          <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
-                            <Trans>On another file</Trans>
-                          </Badge>
-                        ) : !c.hasFile ? (
-                          <Badge size="sm" variant="light" color="var(--neutral)" style={{ flexShrink: 0 }}>
-                            <Trans>Missing</Trans>
-                          </Badge>
-                        ) : null}
-                      </Group>
+                      <Checkbox.Indicator checked={checked} size="xs" />
+                      <Text
+                        size="sm"
+                        fw={500}
+                        c="var(--ink-hi)"
+                        className="tnum"
+                        style={{ whiteSpace: 'nowrap', minWidth: 56 }}
+                      >
+                        {chapterLabel(c)}
+                      </Text>
+                      {!c.isOneShot && displayChapterTitle(c) ? (
+                        <Text size="sm" c="var(--ink-3)" truncate style={{ flex: 1, minWidth: 0 }}>
+                          {displayChapterTitle(c)}
+                        </Text>
+                      ) : (
+                        <span style={{ flex: 1 }} />
+                      )}
+                      {onOtherFile ? (
+                        <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
+                          <Trans>On another file</Trans>
+                        </Badge>
+                      ) : linkedHere ? (
+                        <Badge
+                          size="sm"
+                          variant="light"
+                          color="var(--ok)"
+                          leftSection={<IconCheck size={11} />}
+                          style={{ flexShrink: 0 }}
+                        >
+                          <Trans>Linked here</Trans>
+                        </Badge>
+                      ) : (
+                        <Badge size="sm" variant="light" color="var(--neutral)" style={{ flexShrink: 0 }}>
+                          <Trans>Missing</Trans>
+                        </Badge>
+                      )}
                     </UnstyledButton>
                   )
                 })}
                 {visible.length === 0 && (
-                  <Text size="sm" c="var(--ink-3)" py="sm">
-                    <Trans>No chapters match that filter.</Trans>
-                  </Text>
+                  <EmptyState compact mood="asleep" title={t`No chapters match that filter.`} />
                 )}
-              </Stack>
+              </div>
             </ScrollArea.Autosize>
           </>
         )}
-        <Group justify="space-between" mt="xs">
-          <Text size="sm" c="var(--ink-3)" className="tnum">
-            {plural(selected.size, { one: '# chapter selected', other: '# chapters selected' })}
-          </Text>
-          <Group gap="xs">
-            <Button variant="default" onClick={onClose} disabled={pending}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button disabled={selected.size === 0 && removed.length === 0} loading={pending} onClick={() => void confirm()}>
-              {selected.size === 0 ? <Trans>Unlink</Trans> : <Trans>Link</Trans>}
-            </Button>
-          </Group>
-        </Group>
       </Stack>
+      <ModalFooter
+        status={plural(selected.size, {
+          one: '# chapter selected',
+          other: '# chapters selected',
+        })}
+      >
+        <Button variant="default" onClick={onClose} disabled={pending}>
+          <Trans>Cancel</Trans>
+        </Button>
+        <Button disabled={selected.size === 0 && removed.length === 0} loading={pending} onClick={() => void confirm()}>
+          {selected.size === 0 ? <Trans>Unlink</Trans> : <Trans>Link</Trans>}
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }

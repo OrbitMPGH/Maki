@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ActionIcon, Anchor, Button, Group, Modal, Stack, Text } from '@mantine/core'
-import { IconBell, IconChevronRight, IconSettings, IconX } from '../../lib/icons'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Anchor, Button, Group, Modal, Stack, Text } from '@mantine/core'
+import { IconBell, IconChevronRight, IconSettings } from '../../lib/icons'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useDiscoverFeed, type CatalogueCredit, type DiscoverRail, type RecommendationItem } from '../../api/hooks'
 import {
   FOLLOWING_RAIL_KEY,
@@ -15,8 +15,11 @@ import {
 import { CREDIT_ROLE_LABELS } from '../CreditPicker'
 import { DiscoverRailRow, type OpenItem } from '../ui/DiscoverRail'
 import { sectionSource } from '../../api/shortlist'
+import { EmptyState } from '../ui/EmptyState'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { RailSkeleton } from '../ui/RailSkeleton'
 import { SectionHeader } from '../ui/SectionHeader'
+import { TagChip } from '../ui/TagChip'
 import { useLabel } from '../../i18n-context'
 
 export function creatorHref(c: CatalogueCredit) {
@@ -119,39 +122,51 @@ function FollowingManager({
   const save = useSaveFollowedCreators()
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Creators you follow`}>
-      <Stack gap="xs">
-        {creators.length === 0 && (
-          <Text c="var(--ink-3)" size="sm">
-            <Trans>You follow nobody yet. Open a creator or studio and press Follow.</Trans>
-          </Text>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading title={t`Creators you follow`} />
+      }
+    >
+      <Stack gap="sm">
+        {creators.length === 0 ? (
+          <EmptyState
+            compact
+            mood="asleep"
+            title={t`No creators followed`}
+            description={<Trans>Follow one from a creator page.</Trans>}
+          />
+        ) : (
+          <div className="modal-list">
+            {creators.map((c) => {
+              const name = c.name
+              return (
+                <div key={`${c.role ?? ''}/${name}`} className="modal-list-row">
+                  <Anchor component={Link} to={creatorHref(c)} onClick={onClose} size="sm" fw={600} style={{ flex: 1, minWidth: 0 }}>
+                    {name}
+                  </Anchor>
+                  {c.role && <TagChip size="sm" style={{ flex: 'none' }}>{renderLabel(CREDIT_ROLE_LABELS[c.role] ?? c.role)}</TagChip>}
+                  <Button
+                    variant="subtle"
+                    color="var(--neutral)"
+                    size="compact-sm"
+                    aria-label={t`Unfollow ${name}`}
+                    disabled={save.isPending}
+                    onClick={() => save.mutate(creators.filter((other) => !sameCredit(other, c)))}
+                  >
+                    <Trans>Unfollow</Trans>
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
         )}
-        {creators.map((c) => {
-          const name = c.name
-          return (
-            <Group key={`${c.role ?? ''}/${name}`} justify="space-between" wrap="nowrap">
-              <Anchor component={Link} to={creatorHref(c)} onClick={onClose} size="sm">
-                {name}
-                {c.role && (
-                  <Text span c="var(--ink-3)" size="sm">
-                    {' '}
-                    ({renderLabel(CREDIT_ROLE_LABELS[c.role] ?? c.role)})
-                  </Text>
-                )}
-              </Anchor>
-              <ActionIcon
-                variant="subtle"
-                color="var(--neutral)"
-                aria-label={t`Unfollow ${name}`}
-                title={t`Unfollow`}
-                disabled={save.isPending}
-                onClick={() => save.mutate(creators.filter((other) => !sameCredit(other, c)))}
-              >
-                <IconX size={16} />
-              </ActionIcon>
-            </Group>
-          )
-        })}
+        <ModalFooter status={<Plural value={creators.length} one="# creator" other="# creators" />}>
+          <Button variant="default" onClick={onClose}>
+            <Trans>Close</Trans>
+          </Button>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

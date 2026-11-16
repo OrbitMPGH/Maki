@@ -17,6 +17,7 @@ import {
 } from '../../.storybook/mocks/series'
 import { noteCounts, readerNotes } from '../../.storybook/mocks/notes'
 import SeriesDetailPage from './SeriesDetailPage'
+import type { QueueItemDto } from '../api/types'
 import { monoText } from '../../.storybook/monoText'
 
 const at = (id: number, query = '') => ({ router: { path: '/series/:id', initialEntries: [`/series/${id}${query}`] } })
@@ -36,6 +37,22 @@ export const Ongoing: Story = {
     await expect(await canvas.findByText('Synopsis')).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('tab', { name: /details/i })).toHaveAttribute('aria-selected', 'true'))
     await expect(await canvas.findByRole('heading', { name: 'Sources' })).toBeVisible()
+  },
+}
+
+export const YourReading: Story = {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Your reading' })).toBeVisible()
+    await expect(canvas.getByText('11h 44m')).toBeVisible()
+  },
+}
+
+/** Read in another app: the built-in reader recorded no time, so there is no panel at all. */
+export const NoReadingTimeRecorded: Story = {
+  parameters: at(2),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Metadata' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: 'Your reading' })).toBeNull()
   },
 }
 
@@ -196,7 +213,84 @@ export const ChapterFilterMissing: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: /^Not downloaded/ }))
-    await expect(await canvas.findByText(/Ch\. 17\b/)).toBeVisible()
+    await expect((await canvas.findAllByText(/Ch\. 17\b/))[0]).toBeVisible()
+  },
+}
+
+export const ChapterColumnsHidden: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByRole('columnheader', { name: /^Source/ })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    const picker = body(canvasElement)
+    await userEvent.click(await picker.findByRole('checkbox', { name: 'Source' }))
+    await userEvent.click(picker.getByRole('checkbox', { name: 'Released' }))
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(canvas.queryByRole('columnheader', { name: /^Source/ })).toBeNull())
+    await expect(canvas.queryByRole('columnheader', { name: /^Released/ })).toBeNull()
+    await expect(canvas.getByRole('columnheader', { name: /^Status/ })).toBeVisible()
+  },
+}
+
+export const ChapterSortedByReleaseDate: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    await userEvent.click(await body(canvasElement).findByRole('radio', { name: 'Release date' }))
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort newest release first' }))
+    const newest = Math.max(...chaptersFor(1, scenarios[1].shape).map((c) => c.number ?? 0))
+    await waitFor(() => expect(canvas.getAllByRole('row')[1]).toHaveTextContent(new RegExp(`Ch\\. ${newest}(?![\\d.])`)))
+  },
+}
+
+export const ChaptersGroupedByVolume: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, userEvent }) => {
+    const header = await canvas.findByRole('button', { name: 'Collapse Vol. 1' })
+    await expect(header).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Collapse Vol. 2' })).toBeVisible()
+    await userEvent.click(header)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Expand Vol. 1' })).toHaveAttribute('aria-expanded', 'false'))
+    await expect(canvas.queryByText('Chapter 2')).toBeNull()
+  },
+}
+
+export const ChaptersUngroupedByRelease: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    const picker = body(canvasElement)
+    await userEvent.click(await picker.findByRole('radio', { name: 'Release date' }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+    await expect(await picker.findByText(/grouping is off while sorting by release date/)).toBeVisible()
+  },
+}
+
+export const ChaptersGroupingOff: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    await userEvent.click(await body(canvasElement).findByRole('switch', { name: 'Group by volume' }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+  },
+}
+
+export const VolumeShiftRangeAcrossGroups: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
+    const rows = await canvas.findAllByRole('row', { selected: false })
+    const first = rows.find((r) => /Ch\. 8(?![\d.])/.test(r.textContent ?? ''))!
+    const last = rows.find((r) => /Ch\. 11(?![\d.])/.test(r.textContent ?? ''))!
+    await userEvent.click(first)
+    await userEvent.keyboard('{Shift>}')
+    await userEvent.click(last)
+    await userEvent.keyboard('{/Shift}')
+    // 8, 9, 10, the 10.5 special and 11: the range runs through the Vol. 2 header.
+    await waitFor(() => expect(canvas.getByText(/^\d+ selected$/).textContent).toBe('5 selected'))
   },
 }
 
@@ -380,6 +474,62 @@ export const PendingTorrentProposal: Story = {
   },
 }
 
+const torrentRow = (id: number, over: Partial<QueueItemDto>): QueueItemDto => ({
+  id,
+  chapterId: null,
+  seriesId: 1,
+  seriesTitle: '',
+  releaseTitle: null,
+  chapterTitle: null,
+  chapterVolume: null,
+  chapterNumber: null,
+  sourceName: 'torrent:Nyaa Mirror',
+  status: 'Downloading',
+  pagesTotal: 100,
+  pagesDone: 0,
+  retryCount: 0,
+  nextAttempt: null,
+  errorKey: null,
+  errorParams: null,
+  errorMessage: null,
+  queuedAt: hoursAgo(1),
+  completedAt: null,
+  origin: 'manual',
+  upgrade: null,
+  seriesCoverUrl: null,
+  ...over,
+})
+
+/** Torrent grabs have no chapter row, so the page lists them under the hero on every tab. */
+export const TorrentDownloads: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/queue'), () =>
+        HttpResponse.json({
+          items: [
+            torrentRow(901, { releaseTitle: 'Series v01-v04 (2021) (Digital) (1r0n)', pagesDone: 42 }),
+            torrentRow(902, { releaseTitle: 'Series v05 (2022) (Digital) (LuCaZ)', status: 'AwaitingImport', pagesDone: 100 }),
+            torrentRow(903, {
+              releaseTitle: 'Series v06 (2023) (Digital) (danke-Empire)',
+              status: 'Failed',
+              errorKey: 'error.download.torrentRemoved',
+            }),
+          ],
+          total: 3,
+          page: 1,
+          pageSize: 200,
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Series v01-v04 (2021) (Digital) (1r0n)')).toBeVisible()
+    await expect(await canvas.findByText('42%')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Review' })).toBeVisible()
+    await expect(await canvas.findByText('The torrent is no longer in the download client')).toBeVisible()
+  },
+}
+
 export const NumberingClash: Story = {
   parameters: {
     msw: seriesMsw(
@@ -520,7 +670,7 @@ export const EditMetadataDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Edit metadata' }))
-    await waitFor(() => expect(body(canvasElement).getByRole('textbox', { name: /title/i })).toHaveValue('Lanterns Over Kasumi'))
+    await waitFor(() => expect(body(canvasElement).getByRole('textbox', { name: /^title/i })).toHaveValue('Lanterns Over Kasumi'))
   },
 }
 

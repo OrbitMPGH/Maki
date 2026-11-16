@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Anchor, Group, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Button, Group, Stack, Text, ThemeIcon } from '@mantine/core'
 import {
   IconChecks,
-  IconClockPause,
+  IconBan,
   IconPlus,
   IconTrash,
   type Icon,
@@ -57,7 +57,7 @@ const KIND: Record<FeedKind, { label: MessageDescriptor; icon: Icon; color: stri
   finished: { label: msg`Finished`, icon: IconChecks, color: 'var(--ok)' },
   added: { label: msg`Added`, icon: IconPlus, color: 'var(--brand)' },
   removed: { label: msg`Removed`, icon: IconTrash, color: 'var(--danger)' },
-  dropped: { label: msg`Stalled`, icon: IconClockPause, color: 'var(--warn)' },
+  dropped: { label: msg`Dropped`, icon: IconBan, color: 'var(--neutral)' },
 }
 
 /**
@@ -141,8 +141,8 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
           providerId: null,
           title: d.title,
           coverUrl: d.coverUrl,
-          at: d.lastProgressAt,
-          note: now`ch ${maxChapter}`,
+          at: d.droppedAt,
+          note: maxChapter > 0 ? now`ch ${maxChapter}` : undefined,
         }
       }),
     ]
@@ -199,13 +199,13 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
         })}
       </Stack>
       {entries.length > PAGE && (
-        <Anchor component="button" type="button" size="xs" mt="sm" onClick={() => setExpanded((v) => !v)}>
+        <Button variant="subtle" size="compact-xs" mt="sm" onClick={() => setExpanded((v) => !v)}>
           {expanded ? (
             <Trans>Show less</Trans>
           ) : (
             <Plural value={entries.length} one="Show all #" other="Show all #" />
           )}
-        </Anchor>
+        </Button>
       )}
       <DiscoverDetailModal
         item={selectedRemoved}

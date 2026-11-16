@@ -88,6 +88,8 @@ public class PageConversionWorker(
     private readonly Lock _sync = new();
     private PageConversionPassTotals? _current;
     private string? _currentFile;
+    private (string Path, DateTime StartedAtUtc)? _working;
+    private int? _workingFileId;
     private PageConversionHold _hold;
 
     // Bumped by every start and pause, so a run that outlives one (busy on a file while the wizard
@@ -99,6 +101,42 @@ public class PageConversionWorker(
 
     public sealed record Snapshot(
         PageConversionPassState State, PageConversionHold Hold, string? CurrentFile, PageConversionPassTotals? Pass);
+
+    /// <summary>The file being converted right now, by the pass or the queue, or null.</summary>
+    public (string Path, DateTime StartedAtUtc)? Working
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _working;
+            }
+        }
+    }
+
+    /// <summary>The id of the file being converted right now, or null.</summary>
+    public int? WorkingFileId
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _workingFileId;
+            }
+        }
+    }
+
+    /// <summary>Totals of the pass in progress, or null when none is running.</summary>
+    public PageConversionPassTotals? CurrentPass
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _current;
+            }
+        }
+    }
 
     public async Task<Snapshot> SnapshotAsync(CancellationToken ct)
     {
@@ -320,6 +358,7 @@ public class PageConversionWorker(
                     {
                         if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                         using var fileScope = scopes.CreateScope();
+                        using var converting = Converting(file.Id, file.RelativePath);
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                             .ConvertAsync(file.Id, plan, cache, ct);
                     }
@@ -441,6 +480,7 @@ public class PageConversionWorker(
                 {
                     if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                     using var fileScope = scopes.CreateScope();
+                    using var converting = Converting(file.Id, file.RelativePath);
                     result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                         .ConvertAsync(file.Id, plan, cache, ct, queued: true);
                 }
@@ -459,6 +499,29 @@ public class PageConversionWorker(
                 {
                     await Task.Delay(DelayBetweenFiles, ct);
                 }
+            }
+        }
+    }
+
+    private Releaser Converting(int fileId, string path)
+    {
+        lock (_sync)
+        {
+            _working = (path, DateTime.UtcNow);
+            _workingFileId = fileId;
+        }
+
+        return new Releaser(this);
+    }
+
+    private readonly struct Releaser(PageConversionWorker worker) : IDisposable
+    {
+        public void Dispose()
+        {
+            lock (worker._sync)
+            {
+                worker._working = null;
+                worker._workingFileId = null;
             }
         }
     }

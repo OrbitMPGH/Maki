@@ -65,4 +65,10 @@ public static class SeriesMetadataMapper
 
         return lowered;
     }
+
+    /// <summary>
+    /// A sort title typed by hand, lowercased like <see cref="SortTitleFor"/> since every sort over
+    /// the column is an ordinal one. The article is kept: someone who typed it meant it.
+    /// </summary>
+    public static string SortTitleFromUser(string sortTitle) => sortTitle.Trim().ToLowerInvariant();
 }

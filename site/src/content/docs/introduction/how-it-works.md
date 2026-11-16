@@ -18,6 +18,9 @@ a series goes quiet: every 30 minutes for six hours after a new chapter, every t
 weeks, every six hours up to 60 days, then once a day. Completed series get the daily check after
 two weeks. New chapters are queued on their own, and you can follow the queue under **Activity**.
 
+With an indexer and a download client connected, Maki can also fetch chapters no source has from
+torrents, and grab whole volume releases. See [Torrents](/Maki/guides/sources/torrents/).
+
 ## 3. Save
 
 Each chapter is downloaded page by page and written as a CBZ file with ComicInfo.xml metadata
@@ -28,7 +31,7 @@ Mihon and other comic readers can open the same folder.
 
 Read in Maki's own reader, over [OPDS and the Komga-compatible API](/Maki/guides/reading/opds-apps/),
 or in [KOReader](/Maki/guides/reading/koreader/). Progress from every app is merged and sent to
-your trackers.
+your trackers, along with your reading status, such as On hold, Dropped or Completed.
 
 ## Where the data lives
 

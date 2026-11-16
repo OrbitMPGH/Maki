@@ -65,6 +65,13 @@ public class TagService(MakiDbContext db)
         }
     }
 
+    /// <summary>The labels of the series' user tags, for ComicInfo's SeriesGroup.</summary>
+    public static Task<List<string>> LabelsForSeriesAsync(MakiDbContext db, int seriesId, CancellationToken ct) =>
+        db.SeriesTags
+            .Where(st => st.SeriesId == seriesId)
+            .Join(db.Tags, st => st.TagId, t => t.Id, (_, t) => t.Label)
+            .ToListAsync(ct);
+
     // Not string.GetHashCode: it is salted per process, so the colour would change on restart.
     private static int ColorSlot(string label)
     {

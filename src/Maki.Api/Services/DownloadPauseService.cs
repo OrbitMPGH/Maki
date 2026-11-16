@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Maki.Core.Configuration;
 
 namespace Maki.Api.Services;
@@ -8,15 +9,27 @@ public sealed record DownloadPauseEntry(DateTime? Until);
 
 /// <param name="All">A pause on every scraper download.</param>
 /// <param name="Sources">Paused sources by name; the same names the queue and source settings use.</param>
-public sealed record DownloadPauseState(DownloadPauseEntry? All, IReadOnlyDictionary<string, DownloadPauseEntry> Sources)
+/// <param name="Series">Paused series by id. Null in a pause stored before series could be paused.</param>
+public sealed record DownloadPauseState(
+    DownloadPauseEntry? All,
+    IReadOnlyDictionary<string, DownloadPauseEntry> Sources,
+    IReadOnlyDictionary<int, DownloadPauseEntry>? Series = null)
 {
-    public static readonly DownloadPauseState None = new(null, new Dictionary<string, DownloadPauseEntry>());
+    private static readonly IReadOnlyDictionary<int, DownloadPauseEntry> NoSeries = new Dictionary<int, DownloadPauseEntry>();
 
-    public bool IsEmpty => All is null && Sources.Count == 0;
+    public static readonly DownloadPauseState None = new(null, new Dictionary<string, DownloadPauseEntry>(), NoSeries);
+
+    [JsonIgnore]
+    public IReadOnlyDictionary<int, DownloadPauseEntry> PausedSeries => Series ?? NoSeries;
+
+    [JsonIgnore]
+    public bool IsEmpty => All is null && Sources.Count == 0 && PausedSeries.Count == 0;
 
     private static bool Lapsed(DownloadPauseEntry entry, DateTime now) => entry.Until is { } until && until <= now;
 
-    public bool HasLapsed(DateTime now) => (All is { } all && Lapsed(all, now)) || Sources.Values.Any(e => Lapsed(e, now));
+    public bool HasLapsed(DateTime now) =>
+        (All is { } all && Lapsed(all, now)) || Sources.Values.Any(e => Lapsed(e, now)) ||
+        PausedSeries.Values.Any(e => Lapsed(e, now));
 
     /// <summary>This state with every pause whose resume time has passed dropped; the same instance when none has.</summary>
     public DownloadPauseState WithoutLapsed(DateTime now) =>
@@ -24,7 +37,8 @@ public sealed record DownloadPauseState(DownloadPauseEntry? All, IReadOnlyDictio
             ? this
             : new DownloadPauseState(
                 All is { } all && !Lapsed(all, now) ? all : null,
-                Sources.Where(pair => !Lapsed(pair.Value, now)).ToDictionary(pair => pair.Key, pair => pair.Value));
+                Sources.Where(pair => !Lapsed(pair.Value, now)).ToDictionary(pair => pair.Key, pair => pair.Value),
+                PausedSeries.Where(pair => !Lapsed(pair.Value, now)).ToDictionary(pair => pair.Key, pair => pair.Value));
 }
 
 /// <summary>
@@ -60,6 +74,33 @@ public class DownloadPauseService(IAppSettings settings, TimeProvider time)
             state = source is null
                 ? state with { All = entry }
                 : state with { Sources = new Dictionary<string, DownloadPauseEntry>(state.Sources) { [source] = entry } };
+            await SaveAsync(state, ct);
+            return state;
+        }
+        finally
+        {
+            _write.Release();
+        }
+    }
+
+    /// <summary>Holds one series' queued rows, replacing any earlier pause of that series.</summary>
+    public Task<DownloadPauseState> PauseSeriesAsync(int seriesId, DateTime? until, CancellationToken ct = default) =>
+        ChangeSeriesAsync(seriesId, new DownloadPauseEntry(until), ct);
+
+    /// <summary>Lifts one series' pause.</summary>
+    public Task<DownloadPauseState> ResumeSeriesAsync(int seriesId, CancellationToken ct = default) =>
+        ChangeSeriesAsync(seriesId, null, ct);
+
+    private async Task<DownloadPauseState> ChangeSeriesAsync(int seriesId, DownloadPauseEntry? entry, CancellationToken ct)
+    {
+        await _write.WaitAsync(ct);
+        try
+        {
+            var state = (await LoadAsync(ct)).WithoutLapsed(Now);
+            var series = new Dictionary<int, DownloadPauseEntry>(state.PausedSeries);
+            if (entry is null) series.Remove(seriesId);
+            else series[seriesId] = entry;
+            state = state with { Series = series };
             await SaveAsync(state, ct);
             return state;
         }
@@ -141,7 +182,9 @@ public class DownloadPauseService(IAppSettings settings, TimeProvider time)
         try
         {
             var state = JsonSerializer.Deserialize<DownloadPauseState>(raw, Json);
-            return state is null ? DownloadPauseState.None : state with { Sources = state.Sources ?? DownloadPauseState.None.Sources };
+            return state is null
+                ? DownloadPauseState.None
+                : state with { Sources = state.Sources ?? DownloadPauseState.None.Sources, Series = state.PausedSeries };
         }
         catch (JsonException)
         {

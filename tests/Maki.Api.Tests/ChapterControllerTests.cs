@@ -41,7 +41,6 @@ public class ChapterControllerTests : IDisposable
         new TestLocalizer(),
         db,
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
-        new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         // Only the re-download action reaches these; nothing here exercises it.
         new SourceRegistry([]),

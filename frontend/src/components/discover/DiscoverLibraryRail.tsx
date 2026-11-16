@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
+import { Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '../../lib/icons'
+import { IconArrowRight, IconClock, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -13,6 +14,7 @@ import {
 } from '../../api/hooks'
 import { ApiError, archivedExistsSeriesId } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
+import { useRootFolderRoute } from '../../api/rootFolderRules'
 import { useCreateSeriesRequest, useSeriesRequests, type SeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
@@ -21,8 +23,24 @@ import { RequestForm } from '../RequestForm'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
-import { MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
+import { INCOGNITO_HELP, MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
+import { PanelTitle } from '../ui/PanelTitle'
+import { DrillPanes } from '../ui/DrillPanes'
+import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages } from '../ui/DrillPanel'
+import { formatBytes } from '../../format'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
+import { Callout } from '../ui/Callout'
+
+/** The add card's pages: Folder, Incognito and Automation open from the first; Quality from Automation. */
+type AddPage = 'main' | 'folder' | 'incognito' | 'automation' | 'quality'
+const ADD_PARENTS: Record<AddPage, AddPage> = {
+  main: 'main',
+  folder: 'main',
+  incognito: 'main',
+  automation: 'main',
+  quality: 'automation',
+}
+const INSTANCE_DEFAULT = 'default'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -39,6 +57,8 @@ export function DiscoverLibraryRail({
   rootFolders,
   onClose,
   addedFrom,
+  barSlot,
+  onDeepChange,
 }: {
   item: RecommendationItem
   /** Undefined until the detail request lands; only the content rating is read from it. */
@@ -48,6 +68,10 @@ export function DiscoverLibraryRail({
   rootFolders: RootFolder[] | undefined
   onClose: () => void
   addedFrom?: 'recommendation' | 'library'
+  /** The modal's collapsed bar. When set, the panel's primary action is portalled into it too. */
+  barSlot?: HTMLElement | null
+  /** True while a page below the first is open, when the card hangs over the body below the band. */
+  onDeepChange?: (deep: boolean) => void
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -68,6 +92,12 @@ export function DiscoverLibraryRail({
   const { data: myRequests } = useSeriesRequests('all', !canAdd)
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  /** Set once the reader picks a folder, so a route that answers late can't overwrite the choice. */
+  const [rootFolderPinned, setRootFolderPinned] = useState(false)
+  const { data: route } = useRootFolderRoute(
+    canAdd && inLibrarySeriesId == null ? item.providerId : null,
+    addedFrom ?? 'library',
+  )
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
   /**
    * Null until the reader picks a mode, and then nothing is sent, so the server applies the
@@ -100,6 +130,14 @@ export function DiscoverLibraryRail({
       setRootFolderId(String(rootFolders[0].id))
     }
   }, [rootFolders, rootFolderId])
+
+  // A root folder rule that matches this series preselects its folder; the reader can still change it.
+  const routedFolderId = route?.rootFolderId
+  useEffect(() => {
+    if (!rootFolderPinned && routedFolderId != null && rootFolders?.some((f) => f.id === routedFolderId)) {
+      setRootFolderId(String(routedFolderId))
+    }
+  }, [routedFolderId, rootFolders, rootFolderPinned])
 
   // Auto-fill from Settings → Library ("Incognito by content rating"). The rating only arrives with
   // the detail response, so this can't be an initial state value.
@@ -202,19 +240,72 @@ export function DiscoverLibraryRail({
     )
   }
 
+  const pages = useDrillPages<AddPage>('main', ADD_PARENTS)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const deep = pages.depth > 0
+  const pageBack = useEffectEvent(() => pages.back())
+  const pageReset = useEffectEvent(() => pages.reset())
+
+  // Layout, not passive: the modal has to know before the card starts growing, or it takes the first
+  // frame of the new page's height for the band's.
+  useLayoutEffect(() => {
+    onDeepChange?.(deep)
+  }, [deep, onDeepChange])
+  useEffect(() => () => onDeepChange?.(false), [onDeepChange])
+
+  // A deeper page hangs over the synopsis like a popover, so it leaves like one: Escape steps back a
+  // page instead of closing the modal, and a press or focus anywhere else folds the card up.
+  useEffect(() => {
+    if (!deep) return
+    const card = panelRef.current?.closest('.discover-action-card') ?? panelRef.current
+    const outside = (e: Event) => {
+      if (card && e.target instanceof Node && !card.contains(e.target)) pageReset()
+    }
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) pageBack()
+    }
+    document.addEventListener('pointerdown', outside, true)
+    document.addEventListener('focusin', outside, true)
+    window.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', outside, true)
+      document.removeEventListener('focusin', outside, true)
+      window.removeEventListener('keydown', escape)
+    }
+  }, [deep])
+  const incognitoLabel = incognitoOptions.find((o) => o.value === (incognito ?? 'Off'))?.label
+  const profileName = upgradeProfiles?.find((p) => String(p.id) === upgradeProfileId)?.name
+  const monitorShort = renderLabel(MONITOR_SHORT[shownMonitorMode] ?? shownMonitorMode)
+  const automationValue = profileName ? t`${monitorShort}, ${profileName}` : monitorShort
+
+  // The bar repeats only a one-press action. A request needs its form, so it stays up in the card.
+  const barAction =
+    seriesId != null ? (
+      <Button size="sm" variant="light" rightSection={<IconArrowRight size={16} />} onClick={goToLibrary}>
+        {addedSeriesId != null ? <Trans>Go to series</Trans> : <Trans>View in library</Trans>}
+      </Button>
+    ) : canAdd && rootFolders !== undefined && rootFolders.length > 0 ? (
+      <Button
+        className="discover-bar-add"
+        size="sm"
+        leftSection={<IconPlus size={16} />}
+        onClick={add}
+        loading={addSeries.isPending}
+        disabled={!rootFolderId}
+      >
+        <Trans>Add to library</Trans>
+      </Button>
+    ) : null
+
   return (
-    <Paper
-      withBorder
-      radius="lg"
-      p="md"
-      className="series-hero-panel"
-    >
+    <div className="discover-add-panel" ref={panelRef}>
+      {barSlot && barAction && createPortal(barAction, barSlot)}
       {seriesId != null && archived ? (
         <>
           <Group gap="sm" justify="space-between" wrap="nowrap">
-            <Title order={2} size="h3" fz="var(--type-subhead)">
+            <PanelTitle order={2}>
               <Trans>In your library</Trans>
-            </Title>
+            </PanelTitle>
             <Badge color="gray" variant="light">
               <Trans context="series">Archived</Trans>
             </Badge>
@@ -233,9 +324,9 @@ export function DiscoverLibraryRail({
         </>
       ) : seriesId != null ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>In your library</Trans>
-          </Title>
+          </PanelTitle>
           <Button
             mt="md"
             fullWidth
@@ -251,122 +342,191 @@ export function DiscoverLibraryRail({
         // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
         // than leaving a dead Select and a disabled button.
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Add to library</Trans>
-          </Title>
-          <Alert color="var(--warn)" variant="light" mt="md">
+          </PanelTitle>
+          <Callout tone="warn" role="alert" mt="md">
             <Trans>
               You can add series, but no root folder has been granted to you yet. Ask an admin to
               grant you one, or to add this title.
             </Trans>
-          </Alert>
+          </Callout>
         </>
       ) : canAdd ? (
-        // Every control here carries its own meaning, so none of them gets a field label: the path
-        // reads as a path, and the monitor and incognito selects spell their own state.
-        // This panel sits inside the band beside the title, and four labels' worth of height is
-        // what pushed the band past the poster.
-        <Stack gap={10}>
-          {/* A root folder is an absolute host path, so it gets the panel's full width and still
-              truncates; the dropdown is where the whole path is legible. */}
-          <Select
-            aria-label={t`Root folder`}
-            placeholder={t`Root folder`}
-            leftSection={<IconFolder size={16} />}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-            value={rootFolderId}
-            onChange={setRootFolderId}
-            size="xs"
-            comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
-          />
-          <Select
-            aria-label={t`Quality profile`}
-            placeholder={t`Instance default`}
-            data={(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name }))}
-            value={upgradeProfileId}
-            onChange={setUpgradeProfileId}
-            clearable
-            size="xs"
-            comboboxProps={{ zIndex: 1001, position: 'bottom-end' }}
-          />
-          {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
-              rather than something to remember on every add. */}
-          <Tooltip
-            label={t`Keeps this series out of tracker pushes, and out of stats entirely on Full.`}
-            withArrow
-            zIndex={1001}
-          >
-            <Select
-              aria-label={t`Incognito`}
-              leftSection={<IconEyeOff size={16} />}
-              data={incognitoOptions.map(({ value, label: mode }) => ({
-                value,
-                // Deliberately not lower-cased. German capitalises nouns and Turkish has two
-                // different i's, so case-folding a translated label damages it. Named rather than
-                // `o.label` so the placeholder extracts as {mode} instead of {0}.
-                label: t`Incognito: ${mode}`,
-              }))}
-              value={incognito ?? 'Off'}
-              onChange={(value) => {
-                setIncognitoPinned(true)
-                setIncognito((value as IncognitoMode | null) ?? 'Off')
-              }}
-              size="xs"
-              comboboxProps={{ zIndex: 1001 }}
-            />
-          </Tooltip>
-          <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
-            <Select
-              aria-label={t`Monitor`}
-              leftSection={<IconBell size={16} />}
-              // The short name in the closed field, which is narrow here; the full one in the list.
-              data={MONITOR_OPTIONS.map(({ value }) => {
-                const mode = renderLabel(MONITOR_SHORT[value])
-                return { value, label: t`Monitor: ${mode}` }
-              })}
-              renderOption={({ option }) => {
-                const full = MONITOR_OPTIONS.find((o) => o.value === option.value)
-                return full ? renderLabel(full.label) : option.label
-              }}
-              value={shownMonitorMode}
-              onChange={(value) => value && setMonitorMode(value)}
-              allowDeselect={false}
-              size="xs"
-              comboboxProps={{ zIndex: 1001 }}
-            />
-          </Tooltip>
-          {animeResume && (
-            <AnimeWatchedSwitch
-              coveredTo={animeResume.coveredTo}
-              checked={markAnimeWatched}
-              onChange={setMarkAnimeWatched}
-            />
-          )}
+        // A drill panel like the series menu's: the settings people check on every add (where it
+        // goes, whether it stays private) are rows on the first page, and the ones usually left
+        // alone (monitoring, the quality profile) sit one level down under Automation.
+        <Stack gap={0}>
+          <div className="discover-add-pages">
+            <DrillPanes page={pages.page} depth={pages.depth} bleed={6}>
+              {pages.page === 'main' && (
+                <>
+                  <DrillRow
+                    ref={pages.rowRef('folder')}
+                    icon={IconFolder}
+                    label={<Trans>Folder</Trans>}
+                    value={rootFolders?.find((f) => String(f.id) === rootFolderId)?.path}
+                    onClick={() => pages.open('folder')}
+                  />
+                  <DrillRow
+                    ref={pages.rowRef('incognito')}
+                    icon={IconEyeOff}
+                    label={<Trans>Incognito</Trans>}
+                    value={incognitoLabel}
+                    onClick={() => pages.open('incognito')}
+                  />
+                  <DrillRow
+                    ref={pages.rowRef('automation')}
+                    icon={IconEye}
+                    label={<Trans>Automation</Trans>}
+                    value={automationValue}
+                    onClick={() => pages.open('automation')}
+                  />
+                  {animeResume && (
+                    <div className="discover-add-switch">
+                      <AnimeWatchedSwitch
+                        coveredTo={animeResume.coveredTo}
+                        checked={markAnimeWatched}
+                        onChange={setMarkAnimeWatched}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+              {pages.page === 'folder' && (
+                <>
+                  <DrillBack ref={pages.backRef} title={<Trans>Folder</Trans>} onBack={pages.back} />
+                  <div className="drill-scroll">
+                    <DrillChoices
+                      label={t`Folder`}
+                      value={rootFolderId ?? ''}
+                      options={(rootFolders ?? []).map((f) => {
+                        const free = formatBytes(f.freeSpace)
+                        return {
+                          value: String(f.id),
+                          label: f.path,
+                          hint: !f.accessible
+                            ? t`Not reachable right now`
+                            : f.freeSpace != null
+                              ? t`${free} free`
+                              : undefined,
+                        }
+                      })}
+                      onPick={(value) => {
+                        setRootFolderId(value)
+                        setRootFolderPinned(true)
+                        pages.back()
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              {pages.page === 'incognito' && (
+                <>
+                  <DrillBack ref={pages.backRef} title={<Trans>Incognito</Trans>} onBack={pages.back} />
+                  <DrillChoices
+                    label={t`Incognito`}
+                    value={incognito ?? 'Off'}
+                    options={incognitoOptions.map(({ value, label }) => ({
+                      value,
+                      label,
+                      hint: INCOGNITO_HELP[value] && renderLabel(INCOGNITO_HELP[value]),
+                    }))}
+                    onPick={(value) => {
+                      setIncognitoPinned(true)
+                      setIncognito(value as IncognitoMode)
+                      pages.back()
+                    }}
+                  />
+                  {/* Said where the choice is made, so a pre-filled mode is not a mystery. */}
+                  {!incognitoPinned && ratingRule && ratingRule !== 'Off' && (
+                    <Text size="xs" c="var(--ink-3)" px={10} pt={4} pb={6}>
+                      <Trans>Picked by your content rating rule in Settings.</Trans>
+                    </Text>
+                  )}
+                </>
+              )}
+              {pages.page === 'automation' && (
+                <>
+                  <DrillBack ref={pages.backRef} title={<Trans>Automation</Trans>} onBack={pages.back} />
+                  <DrillField
+                    icon={IconEye}
+                    title={<Trans>Monitor</Trans>}
+                    help={MONITOR_HELP[shownMonitorMode] && renderLabel(MONITOR_HELP[shownMonitorMode])}
+                  >
+                    <SegmentedControl
+                      aria-label={t`Monitor`}
+                      fullWidth
+                      size="xs"
+                      value={shownMonitorMode}
+                      onChange={setMonitorMode}
+                      data={MONITOR_OPTIONS.map(({ value }) => ({ value, label: renderLabel(MONITOR_SHORT[value]) }))}
+                    />
+                  </DrillField>
+                  <DrillRow
+                    ref={pages.rowRef('quality')}
+                    icon={IconRanking}
+                    label={<Trans>Quality profile</Trans>}
+                    value={profileName ?? t`Instance default`}
+                    onClick={() => pages.open('quality')}
+                  />
+                </>
+              )}
+              {pages.page === 'quality' && (
+                <>
+                  <DrillBack ref={pages.backRef} title={<Trans>Quality profile</Trans>} onBack={pages.back} />
+                  <div className="drill-scroll">
+                    <DrillChoices
+                      label={t`Quality profile`}
+                      value={upgradeProfileId ?? INSTANCE_DEFAULT}
+                      options={[
+                        {
+                          value: INSTANCE_DEFAULT,
+                          label: t`Instance default`,
+                          hint: t`Follows the default profile set in Settings.`,
+                        },
+                        ...(upgradeProfiles ?? []).map((p) => ({
+                          value: String(p.id),
+                          label: p.name,
+                          hint: p.description ?? undefined,
+                        })),
+                      ]}
+                      onPick={(value) => {
+                        setUpgradeProfileId(value === INSTANCE_DEFAULT ? null : value)
+                        pages.back()
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </DrillPanes>
+          </div>
           <Button
             fullWidth
-            mt={2}
-            leftSection={<IconPlus size={16} />}
+            mt="sm"
+            size="md"
+            leftSection={<IconPlus size={18} />}
             onClick={add}
             loading={addSeries.isPending}
             disabled={!rootFolderId}
           >
-            <Trans>Add</Trans>
+            <Trans>Add to library</Trans>
           </Button>
         </Stack>
       ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Requested</Trans>
-          </Title>
-          <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
+          </PanelTitle>
+          <Callout tone="warn" role="alert" icon={IconClock} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
-          </Alert>
+          </Callout>
         </>
       ) : (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Ask for this</Trans>
-          </Title>
+          </PanelTitle>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
             <Trans>
               You can't add series yourself. An admin decides where it lands and what gets
@@ -374,13 +534,13 @@ export function DiscoverLibraryRail({
             </Trans>
           </Text>
           {myRequest?.status === 'Rejected' && (
-            <Alert color="var(--warn)" variant="light" mt="sm">
+            <Callout tone="warn" role="alert" mt="sm">
               {resolutionNote ? (
                 <Trans>Your last request was rejected: {resolutionNote}</Trans>
               ) : (
                 <Trans>Your last request was rejected.</Trans>
               )}
-            </Alert>
+            </Callout>
           )}
           <RequestForm
             dense
@@ -395,8 +555,7 @@ export function DiscoverLibraryRail({
           />
         </>
       )}
-
-    </Paper>
+    </div>
   )
 }
 

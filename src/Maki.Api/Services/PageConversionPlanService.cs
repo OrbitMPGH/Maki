@@ -62,10 +62,11 @@ public class PageConversionPlanService(MakiDbContext db)
 
     /// <summary>
     /// Puts back in line every checked, unconverted file the plan now answers differently for, and
-    /// every one checked before answers were recorded. Converted files are never touched, nor files
-    /// stamped <see cref="PlanAction.HardSkipName"/>, which no plan converts, or
-    /// <see cref="PlanAction.UndoneName"/>, which an admin put back by hand; with conversion off
-    /// nothing is. Returns how many files were put back.
+    /// every one checked before answers were recorded. A converted file is put back only when the plan
+    /// splits tall pages at a height it was not checked at (<see cref="PageConversionPlan.ResolveConverted"/>),
+    /// since its pages are never converted again. Files stamped <see cref="PlanAction.HardSkipName"/>,
+    /// which no plan converts, or <see cref="PlanAction.UndoneName"/>, which an admin put back by hand,
+    /// are never touched; with conversion off nothing is. Returns how many files were put back.
     /// </summary>
     public Task<int> RecheckAsync(PageConversionPlan? plan, int? seriesId, CancellationToken ct) =>
         RecheckAsync(plan, seriesId is { } only ? db.ChapterFiles.Where(f => f.SeriesId == only) : null, ct);
@@ -81,14 +82,15 @@ public class PageConversionPlanService(MakiDbContext db)
             return 0;
         }
 
+        var splits = plan.SplitHeight is not null;
         var query = (scoped ?? db.ChapterFiles).IgnoreQueryFilters().AsNoTracking()
-            .Where(f => f.ConversionCheckedAtUtc != null && f.OriginalImageFormat == null &&
+            .Where(f => f.ConversionCheckedAtUtc != null && (splits || f.OriginalImageFormat == null) &&
                         f.CheckedWith != PlanAction.HardSkipName && f.CheckedWith != PlanAction.UndoneName);
         var rows = await query
             .Select(f => new
             {
                 f.Id, f.SeriesId, f.Tier, f.SourceName, f.ImageFormat, f.Size, f.PageCount, f.MedianWidth,
-                f.MedianHeight, f.CheckedWith
+                f.MedianHeight, f.CheckedWith, Converted = f.OriginalImageFormat != null
             })
             .ToListAsync(ct);
         if (rows.Count == 0)
@@ -98,17 +100,24 @@ public class PageConversionPlanService(MakiDbContext db)
 
         var series = await SeriesFactsAsync(db, scoped is null ? null : rows.Select(r => r.SeriesId).Distinct().ToList(), ct);
         var stale = rows
-            .Where(r => r.CheckedWith is null || plan.Resolve(Candidate(
-                new FileFacts(r.Id, r.SeriesId, r.Tier, r.SourceName, r.ImageFormat, r.Size, r.PageCount, r.MedianWidth,
-                    r.MedianHeight),
-                series.GetValueOrDefault(r.SeriesId, NoSeries))).Name != r.CheckedWith)
+            .Where(r =>
+            {
+                var candidate = Candidate(
+                    new FileFacts(r.Id, r.SeriesId, r.Tier, r.SourceName, r.ImageFormat, r.Size, r.PageCount, r.MedianWidth,
+                        r.MedianHeight),
+                    series.GetValueOrDefault(r.SeriesId, NoSeries));
+                return r.Converted
+                    ? plan.ResolveConverted(candidate) is PlanAction.Convert { Settings.SplitHeight: var height } &&
+                      PageConversionSettings.Parse(r.CheckedWith)?.SplitHeight != height
+                    : r.CheckedWith is null || plan.Resolve(candidate).Name != r.CheckedWith;
+            })
             .Select(r => r.Id)
             .ToList();
         foreach (var chunk in stale.Chunk(500))
         {
             await db.ChapterFiles.IgnoreQueryFilters()
-                .Where(f => chunk.Contains(f.Id) && f.ConversionCheckedAtUtc != null && f.OriginalImageFormat == null &&
-                            f.CheckedWith != PlanAction.UndoneName)
+                .Where(f => chunk.Contains(f.Id) && f.ConversionCheckedAtUtc != null &&
+                            (splits || f.OriginalImageFormat == null) && f.CheckedWith != PlanAction.UndoneName)
                 .ExecuteUpdateAsync(set => set
                     .SetProperty(f => f.ConversionCheckedAtUtc, (DateTime?)null)
                     .SetProperty(f => f.CheckedWith, (string?)null), ct);
@@ -177,7 +186,8 @@ public class PageConversionPlanService(MakiDbContext db)
         {
             PlanAction.Skip { Reason: "override" } or PlanAction.Convert { Source: "override" } =>
                 new Placement(Place.Override, -1, action),
-            PlanAction.Skip { Reason: "alreadycompact" } => new Placement(Place.AlreadyCompact, -1, action),
+            PlanAction.Skip { Reason: "alreadycompact" } or PlanAction.Convert { Source: "split" } =>
+                new Placement(Place.AlreadyCompact, -1, action),
             PlanAction.Skip { Reason: "rule" } or PlanAction.Convert { Source: "rule" } =>
                 new Placement(Place.Rule, rules.IndexOf(plan.MatchingRule(candidate)!), action),
             _ => new Placement(Place.Default, -1, action)

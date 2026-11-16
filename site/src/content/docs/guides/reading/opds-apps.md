@@ -14,7 +14,12 @@ it read.
 
 Each chapter entry shows the chapter's first page as its thumbnail. If that page will not render,
 the series cover is used instead. Archived series are left out of the feed. Restoring one brings it
-back. See [Archiving a series](/Maki/guides/library/archiving/).
+back. See [Archiving a series](/Maki/guides/library/archiving/). The on-deck shelf leaves out
+series you put On hold or Dropped, until you read them again.
+
+Streamed JPEG XL pages always go out as WebP, since most OPDS apps cannot decode JPEG XL. A CBZ an
+app downloads whole keeps its JPEG XL pages, so if you download for offline reading, keep page
+conversion on WebP or AVIF. See [Page conversion](/Maki/guides/library/page-conversion/).
 
 1. Turn on the OPDS catalogue under **Settings → Reading → OPDS catalogue**.
 2. Copy the feed URL it shows. It is shown once, right after you turn the catalogue on or regenerate

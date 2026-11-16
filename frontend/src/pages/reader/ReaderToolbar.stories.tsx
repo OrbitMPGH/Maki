@@ -98,6 +98,16 @@ export const Default: Story = {
   },
 }
 
+export const BookmarksOnTheSlider: Story = {
+  args: { bookmarkedPages: new Set([3, 9]) },
+  play: async ({ canvas }) => {
+    const slider = await canvas.findByRole('slider', { name: 'Page' })
+    await expect(slider.querySelectorAll('.reader-scrub-segment[data-bookmarked]')).toHaveLength(2)
+    // Reached from nowhere in particular, back is the series page.
+    await expect(canvas.getByRole('link', { name: 'Back to series' })).toHaveAttribute('href', '/series/1')
+  },
+}
+
 export const SettingsOpen: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))

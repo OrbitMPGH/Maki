@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { api } from '../../.storybook/mocks/api'
 import type { DumpProgress } from '../api/hooks'
 import { downloadingDump, idleDump } from '../../.storybook/mocks/shell/wizard'
@@ -11,7 +11,7 @@ const meta = {
   component: MetadataDumpProgress,
   tags: ['ai-generated'],
   parameters: { layout: 'padded' },
-  // The toast keeps one id, and Mantine ignores a show() for an id still in the store.
+  // The toast keeps one id, so a previous story's copy would be updated in place rather than shown fresh.
   beforeEach: () => {
     notifications.clean()
     return () => notifications.clean()

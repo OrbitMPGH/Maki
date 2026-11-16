@@ -47,12 +47,17 @@ compose file, use the service name, for example `http://flaresolverr:8191`.
 
 1. In **Settings → Downloads**, find the **FlareSolverr** card.
 2. Enter the URL, such as `http://flaresolverr:8191` (the placeholder shows `http://localhost:8191`).
-3. Select **Test** to check that Maki can reach it, then save.
+3. Select **Test** to check that Maki can reach it, then save. The card keeps the last result:
+   **Connected** or **Failed** with the reason and when it ran, or **Not tested**. Changing the
+   address puts it back to Not tested.
 
 :::caution
 Each solve opens a browser tab in FlareSolverr for up to 60 seconds. Maki runs at most two solves at
 once. On a small machine, FlareSolverr can run out of memory before Maki does, so give the container
 enough memory for two browser tabs.
+
+MangaFire and TopManhua also run a headless browser inside Maki for their requests. It closes after
+one idle minute, so the first search or sync after a quiet minute can take up to a second longer.
 :::
 
 ## When a source still fails

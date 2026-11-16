@@ -445,4 +445,56 @@ public class DelugeClientTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("<html></html>") });
     }
+
+    [Fact]
+    public async Task Listed_torrents_carry_connected_peers_ratio_and_seeding_time()
+    {
+        var (client, handler) = Create();
+        handler.Replies["web.update_ui"] = _ => new Reply(new
+        {
+            torrents = new Dictionary<string, object>
+            {
+                [Hash] = new
+                {
+                    hash = Hash, name = "Seeding", progress = 100.0, state = "Seeding", is_finished = true,
+                    download_location = "/dl", time_added = 1700000000, num_seeds = 1, num_peers = 2, ratio = 1.5,
+                    seeding_time = 7200,
+                },
+                ["feedfeedfeedfeedfeedfeedfeedfeedfeedfeed"] = new
+                {
+                    hash = "feedfeedfeedfeedfeedfeedfeedfeedfeedfeed", name = "Empty", progress = 0.0, state = "Downloading",
+                    is_finished = false, download_location = "/dl", time_added = 1700000000, num_seeds = 0, num_peers = 0,
+                    ratio = -1.0, seeding_time = 0,
+                },
+            },
+        });
+
+        var torrents = await client.ListAsync(Settings);
+
+        var seeding = torrents.Single(t => t.Hash == Hash);
+        Assert.Equal(3, seeding.Peers);
+        Assert.Equal(1.5, seeding.Ratio);
+        Assert.Equal(TimeSpan.FromHours(2), seeding.SeedingTime);
+        var empty = torrents.Single(t => t.Name == "Empty");
+        Assert.Equal(0, empty.Peers);
+        Assert.Null(empty.Ratio);
+        Assert.False(empty.IsHeld);
+    }
+
+    [Theory]
+    [InlineData(true, 2.0, 2.0)]
+    [InlineData(false, 2.0, null)]
+    public async Task The_share_ratio_stop_is_read_only_when_switched_on(bool stop, double ratio, double? expected)
+    {
+        var (client, handler) = Create();
+        handler.Replies["core.get_config_values"] = args =>
+        {
+            Assert.Equal("""[["stop_seed_at_ratio","stop_seed_ratio"]]""", args.GetRawText());
+            return new Reply(new Dictionary<string, object> { ["stop_seed_at_ratio"] = stop, ["stop_seed_ratio"] = ratio });
+        };
+
+        var limits = await client.GetSeedLimitsAsync(Settings);
+
+        Assert.Equal(new TorrentSeedLimits(expected, null), limits);
+    }
 }

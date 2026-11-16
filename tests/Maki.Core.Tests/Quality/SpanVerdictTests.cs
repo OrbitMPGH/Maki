@@ -36,9 +36,10 @@ public class SpanVerdictTests
         bool mappingKnown = true,
         long size = 200 * Mb,
         int tolerance = 3,
-        bool wholeSeries = false) =>
+        bool wholeSeries = false,
+        bool missingOnlyOk = false) =>
         SpanVerdicts.Evaluate(new SpanVerdictInput(
-            span ?? Volume3, titleMatched, mappingKnown, chapters, size, Budget, tolerance, wholeSeries));
+            span ?? Volume3, titleMatched, mappingKnown, chapters, size, Budget, tolerance, wholeSeries, missingOnlyOk));
 
     private static readonly ReleaseSpan NoSpan = new(null, []);
 
@@ -316,5 +317,52 @@ public class SpanVerdictTests
         var verdict = Evaluate(Volume3AllOnDisk(), NoSpan);
 
         Assert.Equal([SpanVerdictReasons.NoSpan], verdict.Reasons);
+    }
+
+    [Fact]
+    public void A_release_that_only_adds_chapters_is_ignored_for_an_upgrade_scan()
+    {
+        var verdict = Evaluate([.. Enumerable.Range(20, 2).Select(n => Missing(n, 3))]);
+
+        Assert.Equal(SpanOutcome.Ignore, verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.NothingToUpgrade], verdict.Reasons);
+    }
+
+    [Fact]
+    public void A_release_that_only_adds_a_few_chapters_is_grabbed_when_volume_first_is_on()
+    {
+        var verdict = Evaluate([.. Enumerable.Range(20, 2).Select(n => Missing(n, 3))], missingOnlyOk: true);
+
+        Assert.Equal(SpanOutcome.AutoGrab, verdict.Outcome);
+        Assert.Equal(2, verdict.MissingCount);
+    }
+
+    [Fact]
+    public void A_release_that_adds_a_whole_volume_of_chapters_still_waits_for_approval_when_volume_first_is_on()
+    {
+        var verdict = Evaluate([.. Enumerable.Range(20, 9).Select(n => Missing(n, 3))], missingOnlyOk: true);
+
+        Assert.Equal(SpanOutcome.Proposal, verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.AddsMissingChapters], verdict.Reasons);
+    }
+
+    [Fact]
+    public void Volume_first_does_not_make_a_release_with_nothing_in_it_worth_grabbing()
+    {
+        Assert.Equal(SpanOutcome.Ignore, Evaluate([Met(20, 3, 120)], missingOnlyOk: true).Outcome);
+    }
+
+    [Fact]
+    public void Volumes_that_cannot_be_mapped_to_chapters_wait_for_a_click_where_adding_is_welcome()
+    {
+        var span = new ReleaseSpan(new NumberRange(1, 8), []);
+
+        var ignored = Evaluate([], span, mappingKnown: false);
+        Assert.Equal(SpanOutcome.Ignore, ignored.Outcome);
+        Assert.Equal([SpanVerdictReasons.NothingToUpgrade], ignored.Reasons);
+
+        var verdict = Evaluate([], span, mappingKnown: false, missingOnlyOk: true);
+        Assert.Equal(SpanOutcome.Proposal, verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.VolumeSpanUnknown], verdict.Reasons);
     }
 }

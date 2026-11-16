@@ -9,11 +9,11 @@ using Quartz;
 
 namespace Maki.Api.Jobs;
 
-/// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
+/// <summary>Daily cleanup: orphaned page caches, old finished queue rows, old health history, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
 public class HousekeepingJob(
     MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, UpscaleCache upscaleCache,
-    ILogger<HousekeepingJob> logger) : IJob
+    ILogger<HousekeepingJob> logger, CreditNoticeStore? creditNotices = null) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
@@ -28,8 +28,8 @@ public class HousekeepingJob(
 
     /// <summary>
     /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
-    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
-    /// early-access date is still live work however old the row is.
+    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff is still
+    /// live work however old the row is.
     /// </summary>
     internal static IQueryable<DownloadQueueItem> SettledFailures(IQueryable<DownloadQueueItem> queue, DateTime now) =>
         queue.Where(q => q.Status == QueueStatus.Failed && (q.NextAttempt == null || q.NextAttempt <= now));
@@ -201,6 +201,55 @@ public class HousekeepingJob(
             }
         }
 
+        // Credit edge strips: a file whose edge key no stored answer names, a week after it was written,
+        // and any strip of an older strip version.
+        var creditStrips = CreditStrips.RootOf(paths);
+        if (Directory.Exists(creditStrips))
+        {
+            try
+            {
+                var named = (await db.ChapterCredits.IgnoreQueryFilters().Select(c => c.EdgeKey).ToListAsync(ct)).ToHashSet();
+                var stripCutoff = DateTime.UtcNow - CreditStrips.UnnamedLifetime;
+                var writing = DateTime.UtcNow - TimeSpan.FromHours(1);
+                foreach (var file in Directory.EnumerateFiles(creditStrips, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var written = File.GetLastWriteTimeUtc(file);
+                        var key = CreditStrips.KeyOf(Path.GetFileName(file));
+                        var stale = key is null
+                            ? written < writing
+                            : !named.Contains(key) && written < stripCutoff;
+                        if (stale)
+                        {
+                            File.Delete(file);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        logger.LogDebug(ex, "Could not delete the credit strip {File}", file);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not clean the credit strips");
+            }
+        }
+
+        // Credit notices no chapter links to any more.
+        if (creditNotices is not null)
+        {
+            try
+            {
+                await creditNotices.PruneAsync(ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not prune the credit notices");
+            }
+        }
+
         // Server upscales, under their own root. Same two kinds of garbage as the reader cache above,
         // then the size cap.
         if (Directory.Exists(upscaleCache.Root))
@@ -299,6 +348,12 @@ public class HousekeepingJob(
             logger.LogDebug("Housekeeping removed {Count} old health scans", prunedScans);
         }
 
+        var prunedHistory = await PruneHealthHistoryAsync(db, now - HealthHistoryRetention, ct);
+        if (prunedHistory > 0)
+        {
+            logger.LogDebug("Housekeeping removed {Count} old health history rows", prunedHistory);
+        }
+
         // 0x10002: consider every table, not only the ones this pooled connection happened to query.
         await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
         await db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);", ct);
@@ -312,6 +367,30 @@ public class HousekeepingJob(
         // consumer here opens with Pooling=False so the nightly artifact swaps can replace a file.
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         logger.LogDebug("Housekeeping complete");
+    }
+
+    /// <summary>How long the health page's History tab keeps a line of the audit trail.</summary>
+    internal static readonly TimeSpan HealthHistoryRetention = TimeSpan.FromDays(90);
+
+    /// <summary>The newest rows kept whatever their age (ten pages of the History tab), so a quiet instance still shows its last events.</summary>
+    internal const int HealthHistoryKeep = 300;
+
+    /// <summary>Health history rows written before <paramref name="cutoff"/>, except the newest <see cref="HealthHistoryKeep"/>.</summary>
+    internal static async Task<int> PruneHealthHistoryAsync(MakiDbContext db, DateTime cutoff, CancellationToken ct)
+    {
+        var oldestKept = await db.HealthHistory
+            .OrderByDescending(h => h.Id)
+            .Skip(HealthHistoryKeep - 1)
+            .Select(h => (long?)h.Id)
+            .FirstOrDefaultAsync(ct);
+        if (oldestKept is null)
+        {
+            return 0;
+        }
+
+        return await db.HealthHistory
+            .Where(h => h.Id < oldestKept && h.CreatedAt < cutoff)
+            .ExecuteDeleteAsync(ct);
     }
 
     /// <summary>Health scans that finished before <paramref name="cutoff"/>, except the ten newest, which is what the health page lists.</summary>

@@ -25,7 +25,10 @@ in Docker, also set the path mapping:
 Once Kavita is connected, none of this needs a switch:
 
 - After a download, import or move, Maki asks Kavita to scan that series folder. Kavita runs the scan
-  about a minute later.
+  about a minute later. If the request fails, Maki tries again after one, two and four minutes.
+- Chapter files carry your Maki tags in ComicInfo's SeriesGroup field, so Kavita can build
+  collections from them. Changing a tag rewrites no files: new downloads get the current tags, and
+  the ComicInfo bulk action brings existing files up to date.
 - Once Kavita has created the series, Maki sends the MangaBaka poster as its cover, the web links and
   the publication status.
 - Reading in Kavita is scrobbled to your trackers, checked every 30 minutes by default. **Sync now**

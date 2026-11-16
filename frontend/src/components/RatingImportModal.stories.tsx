@@ -49,7 +49,7 @@ export const SelectNone: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await body.findByText('6 of 6 selected')
-    await userEvent.click(await body.findByRole('checkbox', { name: /selected/ }))
+    await userEvent.click(await body.findByRole('checkbox', { name: 'Select all' }))
     await expect(await body.findByText('0 of 6 selected')).toBeVisible()
     await waitFor(() => expect(body.getByRole('button', { name: 'Apply' })).toBeDisabled())
   },
@@ -65,7 +65,7 @@ export const ReadingFromTracker: Story = {
 export const NothingDiffers: Story = {
   parameters: { msw: ratingImportHandlers(importEmpty) },
   play: async ({ canvasElement }) => {
-    await expect(await bodyOf(canvasElement).findByText(/Nothing to import/)).toBeVisible()
+    await expect(await bodyOf(canvasElement).findByText('Nothing to import')).toBeVisible()
   },
 }
 

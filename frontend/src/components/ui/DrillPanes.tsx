@@ -57,11 +57,14 @@ export function DrillPanes({
   page,
   depth,
   bleed = 0,
+  easeHeight = true,
   children,
 }: {
   page: string
   depth: number
   bleed?: number
+  /** Off inside a box of fixed height (a drawer), where the pages scroll instead. */
+  easeHeight?: boolean
   children: ReactNode
 }) {
   const reduce = useReducedMotion() ?? false
@@ -72,11 +75,11 @@ export function DrillPanes({
   const [height, setHeight] = useState<number>()
   useLayoutEffect(() => {
     const inner = innerRef.current
-    if (!inner) return
+    if (!inner || !easeHeight) return
     const observer = new ResizeObserver(() => setHeight(inner.offsetHeight))
     observer.observe(inner)
     return () => observer.disconnect()
-  }, [])
+  }, [easeHeight])
 
   return (
     <motion.div

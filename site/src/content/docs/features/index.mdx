@@ -27,7 +27,9 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
   reach Settings and Health.
 - **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to
   qBittorrent, Transmission or Deluge. Maki imports each one when it finishes, repacking anything
-  that is not already CBZ, and can remove the torrent from the client afterwards (off by default).
+  that is not already CBZ, and can remove the torrent from the client right after import or once it
+  has seeded (off by default). It also searches your indexers for chapters no source has, and
+  replaces a torrent that stalls with the next best release.
 - **Windows installer and Linux tarball.** The Windows installer adds a tray icon that keeps Maki
   running and installs updates. The Linux tarball runs where Docker is not an option. See
   [Windows](/Maki/installation/windows/) and [Linux](/Maki/installation/linux/).
@@ -37,9 +39,13 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 - **Archive finished series.** Archiving takes a series out of the active library and stops its
   downloads. Its chapters, history and ratings stay. See
   [Archiving a series](/Maki/guides/library/archiving/).
-- **WebP and AVIF pages.** Re-encode chapter pages as WebP or AVIF to save space, for new
-  downloads and files already on disk. It is off until you choose a format. See
-  [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+- **Smaller pages.** Re-encode chapter pages as WebP, AVIF or JPEG XL to save space, with separate
+  targets for black-and-white and colour pages, and split very tall webtoon pages for e-readers.
+  It works on new downloads and files already on disk, and is off until you choose a format. See
+  [Page conversion](/Maki/guides/library/page-conversion/).
+- **A library that organises itself.** Table, grid or list views, grouping, saved views you can
+  bookmark, and your own reading status on every series. Rules tag a new series and pick its root
+  folder as it is added. See [Files and library](/Maki/features/files-and-library/).
 - **Install it, read offline.** Install to a phone or desktop home screen, keep saved chapters
   on the device, and get push notifications for new chapters.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access

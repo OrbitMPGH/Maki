@@ -22,7 +22,9 @@ public enum UpscaleJobState
     Working
 }
 
-public sealed record UpscaleQueueSnapshot(int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States);
+public sealed record UpscaleQueueSnapshot(
+    int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States, int Background = 0,
+    int BackgroundWorking = 0);
 
 public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice)
 {
@@ -31,15 +33,29 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
     public ReaderService.PageSlice Slice { get; } = slice;
 
     private readonly CancellationTokenSource _abandon = new();
+    private readonly CancellationTokenSource _widen = new();
 
     internal Dictionary<UpscaleReader, UpscaleTarget> Waiters { get; } = [];
 
     internal bool Working { get; set; }
 
+    /// <summary>Taken from the prepare-ahead list: it runs with nobody waiting and is never abandoned for that.</summary>
+    internal bool Background { get; set; }
+
+    /// <summary>The users a prepare-ahead page was planned for, who will see it later.</summary>
+    internal IReadOnlySet<int> Owners { get; set; } = NoOwners;
+
+    internal static readonly IReadOnlySet<int> NoOwners = new HashSet<int>();
+
     /// <summary>Cancelled when every reader left this job while it ran.</summary>
     public CancellationToken Abandoned => _abandon.Token;
 
     internal void Abandon() => _abandon.Cancel();
+
+    /// <summary>Cancelled when a reader starts waiting on this job while it runs from the prepare-ahead list.</summary>
+    public CancellationToken Widen => _widen.Token;
+
+    internal void WidenNow() => _widen.Cancel();
 }
 
 /// <summary>
@@ -53,6 +69,11 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 /// before it starts. One already running finishes and lands in the cache, unless its last reader
 /// paged past it or moved to another chapter or model: then it is abandoned, so the page they
 /// turned to does not wait out one nobody will look at.
+/// <para>
+/// Below every reader sits the prepare-ahead list (<see cref="SetBackground"/>), pages of chapters
+/// nobody has open yet. It runs only when no reader has anything pending, and a running page from it
+/// is abandoned the moment a reader queues work, then put back at the front of the list.
+/// </para>
 /// </summary>
 public sealed class UpscaleQueue(TimeProvider? time = null)
 {
@@ -119,6 +140,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     private readonly Queue<(UpscaleWorkKey Key, long Seq)> _memoOrder = new();
     private long _memoSeq;
     private readonly SemaphoreSlim _signal = new(0);
+    private List<(UpscaleWorkKey Key, ReaderService.PageSlice Slice, IReadOnlySet<int> Owners)> _background = [];
+
+    // Whether a reader tab, and a user's last request, said its browser decodes JPEG XL. Absent is unknown.
+    private readonly Dictionary<UpscaleReader, bool> _decodes = [];
+    private readonly Dictionary<int, bool> _userDecodes = [];
 
     /// <summary>
     /// Makes <paramref name="items"/> this reader's pending work, current page first. Their pending
@@ -130,7 +156,8 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     /// items are taken, <see cref="MaxPendingPerUser"/> unless the reader asked for the whole chapter).
     /// The first <paramref name="window"/> items are the reader's window and the rest backlog; null
     /// makes them all window. A request from a hidden tab (<paramref name="visible"/> false) does not
-    /// make that tab active.
+    /// make that tab active. <paramref name="jpegXl"/> is whether the tab's browser decodes JPEG XL, null
+    /// when the client did not say (an older one), which counts as yes.
     /// </summary>
     public IReadOnlyList<UpscaleJobState> Replace(
         int userId,
@@ -141,12 +168,14 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         IReadOnlySet<UpscaleWorkKey>? notWanted = null,
         string? session = null,
         int? window = null,
-        bool visible = true)
+        bool visible = true,
+        bool? jpegXl = null)
     {
         notWanted ??= new HashSet<UpscaleWorkKey>();
         var taken = items.Take(cap).ToList();
         var states = new UpscaleJobState[taken.Count];
         var added = false;
+        var widen = new List<UpscaleJob>();
         lock (_gate)
         {
             var reader = ReaderFor(userId, session);
@@ -167,6 +196,24 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             else if (reader.Session is null)
             {
                 _sharedBy[userId] = session;
+            }
+
+            if (jpegXl is { } decodes)
+            {
+                _userDecodes[userId] = decodes;
+            }
+
+            // A tab folded into the shared lane says nothing for the others in it.
+            if (reader.Session == session)
+            {
+                if (jpegXl is { } own)
+                {
+                    _decodes[reader] = own;
+                }
+                else
+                {
+                    _decodes.Remove(reader);
+                }
             }
 
             var old = _lanes.TryGetValue(reader, out var lane) ? lane.Keys : [];
@@ -191,6 +238,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                 job.Waiters[reader] = item.Target;
                 if (job.Working)
                 {
+                    if (job.Background)
+                    {
+                        widen.Add(job);
+                    }
+
                     states[i] = UpscaleJobState.Working;
                     continue;
                 }
@@ -235,10 +287,18 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                     && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor || notWanted.Contains(job.Key)))
                 {
                     job.Waiters.Remove(reader);
-                    if (job.Waiters.Count == 0)
+                    if (job.Waiters.Count == 0 && !job.Background)
                     {
                         job.Abandon();
                     }
+                }
+            }
+
+            if (next.Count > 0)
+            {
+                foreach (var job in _jobs.Values.Where(j => j is { Working: true, Background: true, Waiters.Count: 0 }))
+                {
+                    job.Abandon();
                 }
             }
 
@@ -254,6 +314,12 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                     _turns.Enqueue(userId);
                 }
             }
+        }
+
+        // Outside the lock: widening starts the page's remaining tile workers from the callback.
+        foreach (var job in widen)
+        {
+            job.WidenNow();
         }
 
         if (added)
@@ -291,6 +357,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             }
 
             _touched.Remove(reader);
+            _decodes.Remove(reader);
             if (_lanes.Remove(reader, out var lane))
             {
                 foreach (var key in lane.Keys)
@@ -305,7 +372,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(reader)).ToList())
             {
                 job.Waiters.Remove(reader);
-                if (job.Waiters.Count == 0)
+                if (job.Waiters.Count == 0 && !job.Background)
                 {
                     job.Abandon();
                 }
@@ -335,14 +402,40 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         foreach (var idle in mine.Where(r => !_lanes.ContainsKey(r) && !_jobs.Values.Any(j => j.Waiters.ContainsKey(r))))
         {
             _touched.Remove(idle);
+            _decodes.Remove(idle);
         }
 
         return mine.Count(_touched.ContainsKey) < MaxSessionsPerUser ? reader : new UpscaleReader(userId, null);
     }
 
     /// <summary>
+    /// Replaces the prepare-ahead list, in the order the pages should run. Pages already cached or
+    /// already queued by a reader are cheap: the worker answers a cached page without running it.
+    /// <paramref name="owners"/> names the users each page was planned for; a page without any is
+    /// treated as wanted by a browser that decodes JPEG XL.
+    /// </summary>
+    public void SetBackground(
+        IReadOnlyList<(UpscaleWorkKey Key, ReaderService.PageSlice Slice)> items,
+        IReadOnlyDictionary<UpscaleWorkKey, IReadOnlySet<int>>? owners = null)
+    {
+        var seen = new HashSet<UpscaleWorkKey>();
+        var list = items.Where(i => seen.Add(i.Key))
+            .Select(i => (i.Key, i.Slice, owners?.GetValueOrDefault(i.Key) ?? UpscaleJob.NoOwners))
+            .ToList();
+        lock (_gate)
+        {
+            _background = list;
+        }
+
+        if (list.Count > 0)
+        {
+            Wake();
+        }
+    }
+
+    /// <summary>
     /// The next job: one page from the next user in turn, from the lane <see cref="NextReader"/> picks
-    /// among theirs. Null when nothing is waiting.
+    /// among theirs, else the next page of the prepare-ahead list. Null when nothing is waiting.
     /// </summary>
     public UpscaleJob? TryDequeue()
     {
@@ -371,7 +464,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
 
                     if (job.Waiters.Count == 0)
                     {
-                        _jobs.Remove(key);
+                        if (!job.Background)
+                        {
+                            _jobs.Remove(key);
+                        }
+
                         continue;
                     }
 
@@ -405,8 +502,55 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                 return picked;
             }
 
-            return null;
+            return NextBackground();
         }
+    }
+
+    /// <summary>The next prepare-ahead page that is not running or recently failed. Called under the lock.</summary>
+    private UpscaleJob? NextBackground()
+    {
+        var now = DateTime.UtcNow;
+        while (_background.Count > 0)
+        {
+            var (key, slice, owners) = _background[0];
+            _background.RemoveAt(0);
+            if (_memo.TryGetValue(key, out var memo) && now - memo.At <= MemoLifetime)
+            {
+                continue;
+            }
+
+            if (_jobs.TryGetValue(key, out var job))
+            {
+                if (job.Working || job.Abandoned.IsCancellationRequested)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                job = new UpscaleJob(key, slice);
+                _jobs[key] = job;
+            }
+
+            job.Background = true;
+            job.Owners = owners;
+            job.Working = true;
+            foreach (var other in job.Waiters.Keys)
+            {
+                if (_lanes.TryGetValue(other, out var otherLane))
+                {
+                    otherLane.Remove(key);
+                    if (otherLane.Keys.Count == 0)
+                    {
+                        _lanes.Remove(other);
+                    }
+                }
+            }
+
+            return job;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -452,6 +596,26 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         }
     }
 
+    /// <summary>
+    /// Whether anyone who will see <paramref name="job"/> may decode JPEG XL: a waiting tab that said so
+    /// or did not say, or, for a prepare-ahead page, a user it was planned for whose last request said
+    /// so or who never sent one. False only when every one of them is known not to, so the page can be
+    /// WebP from the start. A page made as WebP stays WebP for a browser that could show JPEG XL later.
+    /// </summary>
+    public bool DecodesJpegXl(UpscaleJob job)
+    {
+        lock (_gate)
+        {
+            if (job.Waiters.Count == 0 && job.Owners.Count == 0)
+            {
+                return true;
+            }
+
+            return job.Waiters.Keys.Any(r => _decodes.GetValueOrDefault(r, true))
+                   || job.Owners.Any(u => _userDecodes.GetValueOrDefault(u, true));
+        }
+    }
+
     /// <summary>Who is waiting on <paramref name="job"/> right now.</summary>
     public IReadOnlyList<KeyValuePair<int, UpscaleTarget>> WaitersOf(UpscaleJob job)
     {
@@ -476,6 +640,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             }
 
             job.Working = false;
+            if (job.Background && reason == UpscaleReasons.Abandoned && !_background.Any(b => b.Key == job.Key))
+            {
+                _background.Insert(0, (job.Key, job.Slice, job.Owners));
+            }
+
             if (outcome == UpscaleOutcome.Ready
                 || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel or UpscaleReasons.CacheWriteFailed
                     or UpscaleReasons.Abandoned)
@@ -538,7 +707,9 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             }
 
             _lanes.Clear();
+            _background = [];
             _touched.Clear();
+            _decodes.Clear();
             _lastServed.Clear();
             _sharedBy.Clear();
             _turns.Clear();
@@ -552,7 +723,8 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         {
             var states = _jobs.ToDictionary(j => j.Key, j => j.Value.Working ? UpscaleJobState.Working : UpscaleJobState.Queued);
             var working = states.Values.Count(s => s == UpscaleJobState.Working);
-            return new UpscaleQueueSnapshot(states.Count - working, working, states);
+            var backgroundWorking = _jobs.Values.Count(j => j.Working && j.Background && j.Waiters.Count == 0);
+            return new UpscaleQueueSnapshot(states.Count - working, working, states, _background.Count, backgroundWorking);
         }
     }
 
@@ -567,7 +739,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     private void Leave(UpscaleJob job, UpscaleReader reader)
     {
         job.Waiters.Remove(reader);
-        if (job.Waiters.Count == 0 && !job.Working)
+        if (job.Waiters.Count == 0 && !job.Working && !job.Background)
         {
             _jobs.Remove(job.Key);
         }

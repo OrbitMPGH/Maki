@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { IconCloudOff } from '../lib/icons'
 import { AuthFrame } from '../components/auth/AuthFrame'
 import { useConnectivity } from '../lib/connectivity'
 import { useAuth } from './AuthProvider'
@@ -27,15 +28,16 @@ export function OfflineStartPage() {
   }, [connectivity])
 
   return (
-    <AuthFrame title={t`You're offline`}>
+    <AuthFrame title={t`You're offline`} mood="asleep">
       <Stack>
         <Text size="sm" c="var(--ink-2)">
-          <Trans>
-            Maki can't reach the server, and nothing is saved on this device yet. Once the connection
-            is back, sign in and save chapters for offline reading.
-          </Trans>
+          <Trans>Nothing is saved on this device yet.</Trans>
         </Text>
-        <Button onClick={retry}>
+        <div className="auth-retry-line">
+          <IconCloudOff size={14} aria-hidden />
+          <Trans>Checking again every 30 seconds</Trans>
+        </div>
+        <Button onClick={retry} fullWidth>
           <Trans>Try again</Trans>
         </Button>
       </Stack>

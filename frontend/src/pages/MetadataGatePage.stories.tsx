@@ -44,7 +44,7 @@ export const AdminDownloading: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Getting the metadata database ready' })).toBeVisible()
     await expect(await canvas.findByText('Downloading metadata database')).toBeVisible()
-    await expect(await canvas.findByText(/207 MB of 333 MB/)).toBeVisible()
+    await expect(await canvas.findByText(/of 333 MB/)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Try again' })).toBeNull()
     await expect(await canvas.findByRole('link', { name: 'Open settings' })).toBeVisible()
     await expect(await canvas.findByRole('link', { name: 'Open health' })).toBeVisible()

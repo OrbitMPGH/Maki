@@ -211,7 +211,7 @@ export default function NoteThread({
               <Button
                 size="compact-xs"
                 variant="subtle"
-                color="gray"
+                color="var(--neutral)"
                 disabled={readOnly}
                 onClick={() => {
                   setError(null)
@@ -225,7 +225,7 @@ export default function NoteThread({
               <Button
                 size="compact-xs"
                 variant="subtle"
-                color="gray"
+                color="var(--danger)"
                 disabled={readOnly}
                 onClick={() => {
                   setError(null)
@@ -269,7 +269,7 @@ export default function NoteThread({
             />
           ) : (
             <div>
-              <Button size="compact-xs" variant="subtle" color="gray" disabled={readOnly} onClick={() => setReplying(true)}>
+              <Button size="compact-xs" variant="subtle" color="var(--neutral)" disabled={readOnly} onClick={() => setReplying(true)}>
                 <Trans>Reply</Trans>
               </Button>
             </div>

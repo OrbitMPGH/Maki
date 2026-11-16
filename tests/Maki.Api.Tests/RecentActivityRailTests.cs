@@ -212,7 +212,7 @@ public class RecentActivityRailTests : IDisposable
             { UserId = 1, ProviderId = 202, IgnoreAsSeed = true });
             db.RecommendationFeedback.Add(new RecommendationFeedback
             { UserId = 1, ProviderId = 303, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
-            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = lowRated, Rating = 2 });
+            db.UserSeriesStates.Single(s => s.UserId == 1 && s.SeriesId == lowRated).Rating = 2;
             db.SaveChanges();
         }
 
@@ -241,6 +241,7 @@ public class RecentActivityRailTests : IDisposable
             Enumerable.Range(100, RecentActivityRailService.SeedCount).Select(id => (long)id),
             recommender.Seen.Single().Order());
         Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
+        Assert.NotNull(result.SubtitleTitles);
         Assert.NotEmpty(result.SubtitleTitles);
         Assert.Equal(
             Enumerable.Range(100, result.SubtitleTitles.Count).Select(id => $"Series {id}"),

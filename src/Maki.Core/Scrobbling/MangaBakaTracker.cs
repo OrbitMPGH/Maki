@@ -31,6 +31,8 @@ public class MangaBakaTracker(
         ["rereading"] = ScrobbleStatus.Reading,
         ["completed"] = ScrobbleStatus.Completed,
         ["plan_to_read"] = ScrobbleStatus.PlanToRead,
+        ["paused"] = ScrobbleStatus.Paused,
+        ["dropped"] = ScrobbleStatus.Dropped,
     };
 
     private static readonly Dictionary<ScrobbleStatus, string> InternalToState = new()
@@ -38,6 +40,8 @@ public class MangaBakaTracker(
         [ScrobbleStatus.Reading] = "reading",
         [ScrobbleStatus.Completed] = "completed",
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
+        [ScrobbleStatus.Paused] = "paused",
+        [ScrobbleStatus.Dropped] = "dropped",
     };
 
     /// <summary>
@@ -212,6 +216,7 @@ public class MangaBakaTracker(
             Status: hasEntry
                 ? StateToInternal.GetValueOrDefault(GetString(entry, "state") ?? "", ScrobbleStatus.Other)
                 : null,
+            Repeating: hasEntry && GetString(entry, "state") == "rereading",
             TotalChapters: series.ValueKind == JsonValueKind.Object ? ToInt(series, "total_chapters") : null,
             TotalVolumes: series.ValueKind == JsonValueKind.Object ? ToInt(series, "final_volume") : null,
             Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
@@ -224,9 +229,10 @@ public class MangaBakaTracker(
         string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default,
         bool keepStatus = false)
     {
+        var state = keepStatus && status == ScrobbleStatus.Reading ? "rereading" : InternalToState[status];
         object body = volume > 0
-            ? new { state = InternalToState[status], progress_chapter = chapter, progress_volume = volume }
-            : new { state = InternalToState[status], progress_chapter = chapter };
+            ? new { state, progress_chapter = chapter, progress_volume = volume }
+            : new { state, progress_chapter = chapter };
 
         // PATCH updates an existing entry; 404 means it isn't on the list yet -> POST
         var response = await RequestAsync(userId, HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
@@ -257,7 +263,9 @@ public class MangaBakaTracker(
         ScrobbleStatus.Reading => ["reading", "rereading"],
         ScrobbleStatus.Completed => ["completed"],
         ScrobbleStatus.PlanToRead => ["plan_to_read"],
-        _ => ["paused", "dropped", "considering"],
+        ScrobbleStatus.Paused => ["paused"],
+        ScrobbleStatus.Dropped => ["dropped"],
+        _ => ["considering"],
     };
 
     /// <summary>

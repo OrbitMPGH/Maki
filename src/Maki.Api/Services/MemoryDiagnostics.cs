@@ -77,8 +77,13 @@ public sealed class MemoryDiagnostics(
                 generations = Generations(info),
                 serverGc = GCSettings.IsServerGC,
                 latencyMode = GCSettings.LatencyMode.ToString(),
-                gen2Collections = GC.CollectionCount(2)
+                gen2Collections = GC.CollectionCount(2),
+                // The GC's settings as it resolved them. The gen0 budget follows the host's L3
+                // cache unless capped, so two hosts on the same build can hold very different
+                // amounts of empty allocation space.
+                settings = GcSettings()
             },
+            processorCount = Environment.ProcessorCount,
             process = new
             {
                 workingSetBytes = process.WorkingSet64,
@@ -95,7 +100,7 @@ public sealed class MemoryDiagnostics(
                 current = NativeHeap.Read(),
                 beforeTrim,
                 trims = NativeHeap.Trims,
-                vipsTrackedBytes = ImageCodec.TrackedMemoryBytes
+                vipsTrackedBytes = ImageCodecMemory.TrackedBytes
             },
             artifacts = new object[]
             {
@@ -112,6 +117,23 @@ public sealed class MemoryDiagnostics(
             browsers = browsers
                 .Select(b => new { name = b.BrowserName, running = b.IsRunning })
                 .ToArray()
+        };
+    }
+
+    internal static object GcSettings()
+    {
+        var variables = GC.GetConfigurationVariables();
+        long? Number(string key) => variables.TryGetValue(key, out var value) && value is not null
+            ? Convert.ToInt64(value, CultureInfo.InvariantCulture)
+            : null;
+
+        return new
+        {
+            gen0MaxBudgetBytes = Number("GCGen0MaxBudget"),
+            conserveMemory = Number("GCConserveMem"),
+            heapHardLimitBytes = Number("GCHeapHardLimit"),
+            regionSizeBytes = Number("GCRegionSize"),
+            heapCount = Number("GCHeapCount")
         };
     }
 

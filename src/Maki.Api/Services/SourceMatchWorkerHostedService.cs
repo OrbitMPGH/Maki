@@ -1,6 +1,7 @@
 ﻿using Maki.Api.Hubs;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -185,9 +186,40 @@ public class SourceMatchWorkerHostedService(
 
     internal async Task MatchAsync(int seriesId, CancellationToken ct)
     {
+        var volumeFirst = new VolumeFirstHandoff();
+        try
+        {
+            await MatchCoreAsync(seriesId, volumeFirst, ct);
+        }
+        finally
+        {
+            if (volumeFirst.Hold is { } hold)
+            {
+                if (volumeFirst.Ready)
+                {
+                    StartVolumeFirstSearch(seriesId, hold, ct);
+                }
+                else
+                {
+                    hold.Dispose();
+                }
+            }
+        }
+    }
+
+    /// <summary>The volume-first hold a match took, and whether the match got far enough to search.</summary>
+    private sealed class VolumeFirstHandoff
+    {
+        public IDisposable? Hold { get; set; }
+        public bool Ready { get; set; }
+    }
+
+    private async Task MatchCoreAsync(int seriesId, VolumeFirstHandoff volumeFirst, CancellationToken ct)
+    {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
+        var paced = queue.TakeQueuedInBackground(seriesId);
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null)
         {
@@ -218,6 +250,30 @@ public class SourceMatchWorkerHostedService(
 
             if (mapped.Count > 0)
             {
+                // A series added with nothing on disk looks for a volume release first. One added on its
+                // own is searched once it no longer reads as matching (MatchAsync), with the hold taken
+                // before the sync so a Smart tick in between cannot start on the sources. A bulk add
+                // (import list, bulk re-match) is marked for the volume search job instead, so a long
+                // list does not hit the indexer all at once; the mark holds it from the save below.
+                // A series that cannot take a volume at all (no indexer or profile, upgrades off, a
+                // cutoff below Volume) is neither searched nor held, so it never waits for nothing.
+                if (await scope.ServiceProvider.GetRequiredService<IAppSettings>()
+                        .GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true" &&
+                    !await db.ChapterFiles.AnyAsync(f => f.SeriesId == series.Id, ct) &&
+                    await scope.ServiceProvider.GetRequiredService<TorrentUpgradeService>()
+                        .VolumeFirstCanTakeVolumesAsync(series.Id, ct))
+                {
+                    if (paced)
+                    {
+                        series.VolumeFirstPendingAt = DateTime.UtcNow;
+                        await db.SaveChangesAsync(ct);
+                    }
+                    else
+                    {
+                        volumeFirst.Hold = scope.ServiceProvider.GetRequiredService<VolumeFirstSearches>().Begin(series.Id);
+                    }
+                }
+
                 var sync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
                 await sync.SyncSeriesAsync(series.Id, ct);
                 var scouting = await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
@@ -263,6 +319,8 @@ public class SourceMatchWorkerHostedService(
             logger.LogInformation("Series {Id} was deleted during source matching", seriesId);
             return;
         }
+
+        volumeFirst.Ready = !failed;
 
         // Read fresh rather than off the entity: an import can register files into this series
         // while its match runs, and those still need the link stage.
@@ -558,6 +616,56 @@ public class SourceMatchWorkerHostedService(
             {
                 // Deliberately quiet: see the class summary.
             }
+        }
+    }
+
+    /// <summary>
+    /// Volume first: once a new series' sources are matched, ask the indexers for a volume release
+    /// before anything is downloaded from them. Automatic source downloads wait while it runs
+    /// (<see cref="VolumeFirstGate"/>). It runs off the match reader, so a slow indexer holds neither
+    /// the series page's matching state nor the next series in line. A series that came in on the
+    /// background lane (import lists, bulk re-match) waits for the volume search job instead. A
+    /// failure is the search's own business and never fails the match.
+    /// </summary>
+    private void StartVolumeFirstSearch(int seriesId, IDisposable hold, CancellationToken ct) =>
+        _ = Task.Run(() => RunVolumeFirstAsync(seriesId, hold, ct), CancellationToken.None);
+
+    private async Task RunVolumeFirstAsync(int seriesId, IDisposable hold, CancellationToken ct)
+    {
+        try
+        {
+            using (hold)
+            {
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                deadline.CancelAfter(VolumeFirstSearches.Deadline);
+                using var scope = scopeFactory.CreateScope();
+                try
+                {
+                    await scope.ServiceProvider.GetRequiredService<TorrentUpgradeService>()
+                        .SearchSeriesAsync(seriesId, deadline.Token, volumeFirst: true);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    logger.LogWarning("Volume-first search for series {SeriesId} ran past {Deadline}; sources take over",
+                        seriesId, VolumeFirstSearches.Deadline);
+                }
+            }
+
+            // Smart skipped the series while the search ran; with nothing pending it can start now.
+            using var after = scopeFactory.CreateScope();
+            var smart = await after.ServiceProvider.GetRequiredService<MakiDbContext>().Series
+                .AnyAsync(s => s.Id == seriesId && s.MonitorNewItems == NewChapterMonitorMode.Smart, ct);
+            if (smart && after.ServiceProvider.GetService<ISchedulerFactory>() is { } schedulerFactory)
+            {
+                await SmartDownloadJob.TriggerAsync(schedulerFactory, logger);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Volume-first search failed for series {SeriesId}", seriesId);
         }
     }
 }

@@ -5,6 +5,7 @@ import { readerSettingsQuery } from '../../api/reader'
 import type { PrefsSource, ReaderManifest, ResolvedReaderPrefs } from '../../api/reader'
 import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfiles'
 import type { QualityTierName } from '../../api/upgrades'
+import type { TapLayout } from './tapZones'
 
 export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
@@ -63,13 +64,38 @@ export interface ReaderPrefs {
   notesBeside: boolean
   /** With a server method, keep upscaling the rest of the open chapter behind the window. Leaving cancels what is left. */
   enhanceWholeChapter: boolean
+  /** Jump past the recap of the previous chapter at a chapter's start instead of offering a button. */
+  autoSkipRecap: boolean
+  /** In Continuous, show the chapter's progress as a rail down the screen's edge that can be dragged to seek. */
+  progressRail: boolean
+  /** How the page divides into tap zones in Single and Double. */
+  tapLayout: TapLayout
+  /** The side zones' share of the page, in percent. */
+  tapWidth: number
+  /** Swap the back and forward zones. */
+  tapInvert: boolean
+  /** Leave out the credit and notice pages that repeat at the start or end of a series' chapters. */
+  hideCredits: boolean
 }
 
-/** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
+/**
+ * The page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. Auto is
+ * not a colour: the reader paints the edge colour of the page on screen (`useReaderGround`).
+ */
 export const BACKGROUNDS = {
   dark: '#0a0a0b',
   oled: '#000000',
+  white: '#ffffff',
+  grey: '#8c8c90',
+  auto: 'auto',
 } as const
+
+export type BackgroundChoice = keyof typeof BACKGROUNDS
+
+/** Which background a stored value is; anything unknown reads as the default dark. */
+export function backgroundChoice(value: string): BackgroundChoice {
+  return (Object.keys(BACKGROUNDS) as BackgroundChoice[]).find((key) => BACKGROUNDS[key] === value) ?? 'dark'
+}
 
 /**
  * The fallback under everything, used only for the moment before the manifest arrives and as the
@@ -104,6 +130,12 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceProgress: 'line',
   notesBeside: true,
   enhanceWholeChapter: false,
+  autoSkipRecap: false,
+  progressRail: false,
+  tapLayout: 'sides',
+  tapWidth: 33,
+  tapInvert: false,
+  hideCredits: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

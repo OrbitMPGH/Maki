@@ -34,7 +34,7 @@ export const EditAProfile: Story = {
   play: async ({ canvas, userEvent }) => {
     // The first row is the fixed default, which has no name to edit.
     await canvas.findByText('Manga, right to left')
-    const [, edit] = await canvas.findAllByRole('button', { name: 'Edit profile' })
+    const [, edit] = await canvas.findAllByRole('button', { expanded: false })
     await userEvent.click(edit)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Name' })).toHaveValue('Manga, right to left'))
     await expect(await canvas.findByRole('button', { name: 'Cancel' })).toBeVisible()
@@ -54,12 +54,11 @@ export const NewProfile: Story = {
 export const EnhanceFields: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
-    const level = await canvas.findByLabelText('Enhance', { selector: 'input' })
-    await waitFor(() => expect(level).toHaveValue('Off'))
+    const level = await canvas.findByRole('radiogroup', { name: 'Enhance' })
+    await waitFor(() => expect(within(level).getByRole('radio', { name: 'Off' })).toBeChecked())
     await expect(canvas.queryByLabelText('Method', { selector: 'input' })).toBeNull()
 
-    await userEvent.click(level)
-    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'Always' }))
+    await userEvent.click(within(level).getByText('Always'))
     const method = await canvas.findByLabelText('Method', { selector: 'input' })
     await waitFor(() => expect(method).toHaveValue('Maki 2x'))
     await expect(
@@ -76,8 +75,8 @@ export const EnhanceFields: Story = {
 
 export const DeleteAProfile: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Manga, right to left')
-    const [remove] = await canvas.findAllByRole('button', { name: 'Delete profile' })
+    await userEvent.click(await canvas.findByRole('button', { name: /^Manga, right to left/ }))
+    const remove = await canvas.findByRole('button', { name: 'Delete profile' })
     await userEvent.click(remove)
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
@@ -89,7 +88,7 @@ export const NoProfiles: Story = {
   parameters: { msw: settingsMsw(http.get(api('/readingprofiles'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'New profile' })).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Edit profile' })).toHaveLength(1))
+    await waitFor(() => expect(canvas.getAllByRole('button', { expanded: false })).toHaveLength(1))
   },
 }
 
@@ -99,4 +98,15 @@ export const Loading: Story = {
 
 export const LoadFailed: Story = {
   parameters: { msw: settingsMsw(http.get(api('/readingprofiles'), () => failWith(500))) },
+}
+
+export const TapZoneFields: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
+    const layouts = await canvas.findByRole('radiogroup', { name: 'Tap zone layout' })
+    await userEvent.click(within(layouts).getByText('Edges'))
+    await expect(await canvas.findByText(/Both edges go forward/)).toBeVisible()
+    await userEvent.click(canvas.getByRole('switch', { name: /^Tap zones/ }))
+    await waitFor(() => expect(canvas.queryByRole('radiogroup', { name: 'Tap zone layout' })).toBeNull())
+  },
 }

@@ -19,6 +19,9 @@ public class ChapterSourceLink
     public DateTime? ReleaseDate { get; set; }
     public string? Group { get; set; }
 
+    /// <summary>The chapter's page on the source, when the source lists one. Written into ComicInfo's Notes.</summary>
+    public string? Url { get; set; }
+
     /// <summary>
     /// When a refresh first saw this chapter on this mapping, written once. Null for a mapping's
     /// first snapshot and for back-catalogue chapters a source adds later, because neither is a

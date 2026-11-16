@@ -128,6 +128,35 @@ export const SwitchSourceToCatalogue: Story = {
   },
 }
 
+/** A library rail can show one of your saved Library filters; its own filters and sort step aside. */
+export const FromSavedLibraryFilter: Story = {
+  play: async ({ canvasElement, userEvent, args }) => {
+    const modal = await dialog(canvasElement, 'New rail')
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await within(modal).findByRole('combobox', { name: 'Saved Library filter' }))
+    await userEvent.click(await body.findByRole('option', { name: 'Favourites' }))
+    await expect(await within(modal).findByText(/Series your saved Library filter shows/)).toBeVisible()
+    expect(within(modal).queryByRole('combobox', { name: 'Sort by' })).toBeNull()
+    await userEvent.type(await within(modal).findByRole('textbox', { name: 'Name' }), 'Bedtime')
+    await userEvent.click(await within(modal).findByRole('button', { name: 'Add rail' }))
+    await waitFor(() =>
+      expect(args.onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({ spec: expect.objectContaining({ source: 'library', libraryFilterId: 2 }) }),
+      ),
+    )
+  },
+}
+
+/** The rail's saved filter is gone: the editor says so and falls back to plain filters. */
+export const SavedLibraryFilterDeleted: Story = {
+  args: { rail: { ...customRails[0], spec: { source: 'library', libraryFilterId: 99 } }, draft: undefined },
+  play: async ({ canvasElement }) => {
+    const modal = await dialog(canvasElement, 'Edit rail')
+    await expect(await within(modal).findByText(/saved Library filter this rail used was deleted/)).toBeVisible()
+    await expect(await within(modal).findByText('Series you already have that match these filters.')).toBeVisible()
+  },
+}
+
 export const FormInDrawer: Story = {
   render: (args) => (
     <div style={{ maxWidth: 640 }}>

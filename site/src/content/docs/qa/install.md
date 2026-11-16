@@ -9,12 +9,12 @@ They set the user and group the container runs as. Maki chowns `/config` to that
 
 ### How much disk space does Maki need?
 
-The local MangaBaka database (`mangabaka.db`, which Discover and metadata lookups read) is about 350 MB to download and 3.5 GB on disk. Plan for that on the drive holding `/config`, on top of your library. See
+The local MangaBaka database (`mangabaka.db`, which Discover and metadata lookups read) is about 350 MB to download and 3.5 GB on disk. The first search by meaning adds about 110 MB for a memory-mapped copy of the search model (`MAKI_EMBED_MMAP=0` turns that off). Plan for that on the drive holding `/config`, on top of your library. See
 [Install with Docker Compose](/Maki/installation/docker-compose/#open-maki).
 
 ### Can I use my existing Kavita library?
 
-Yes. Maki writes plain CBZ files with ComicInfo.xml, so Kavita reads the same files. Add the folder to Maki under **Settings → Library → Root folders**. Optional read sync is under **Settings → Reading → Kavita read sync**.
+Yes. Maki writes plain CBZ files with ComicInfo.xml, so Kavita reads the same files, and your Maki tags go into ComicInfo's SeriesGroup so Kavita can build collections from them. Add the folder to Maki under **Settings → Library → Root folders**. Optional read sync is under **Settings → Reading → Kavita read sync**.
 
 ### How do I upgrade?
 
@@ -22,7 +22,7 @@ Docker and Unraid updates are manual. The Windows app checks for and installs up
 
 ### Does an upgrade change my data?
 
-Migrations only move forward. Maki takes a backup before any upgrade that applies one, and that backup is your way back. See [Backup and restore](/Maki/guides/running/backup-restore/).
+Migrations only move forward. Maki takes a backup before any upgrade that applies one, and that backup is your way back. If an older Maki starts on a newer database, the Health page says so. After an upgrade, **Settings** has a **New** tab listing the settings added since your last version. See [Backup and restore](/Maki/guides/running/backup-restore/).
 
 ### I am upgrading from a single-user Maki. What happens to my account?
 

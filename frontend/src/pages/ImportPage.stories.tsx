@@ -124,7 +124,7 @@ export const PreviewSelected: Story = {
     await scan(canvas, body, userEvent)
     await userEvent.click(await canvas.findByRole('button', { name: 'Preview 3 selected' }))
     const dialog = await body.findByRole('dialog', { name: 'Import preview' })
-    await waitFor(() => expect(within(dialog).getAllByText('Nothing has been changed. This is what importing would do.')).toHaveLength(1))
+    await waitFor(() => expect(within(dialog).getAllByText('Nothing has been changed yet.')).toHaveLength(1))
   },
 }
 

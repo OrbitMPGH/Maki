@@ -27,11 +27,12 @@ table headed MRR would be describing the wrong column.
 
 import csv
 import math
+import os
 import random
 import sys
 from pathlib import Path
 
-RESULTS = Path(".artifacts/eval")
+RESULTS = Path(os.environ.get("MAKI_ARTIFACTS_DIR", ".artifacts")) / "eval"
 BOOTSTRAP = 20000
 SEED = 20260803
 

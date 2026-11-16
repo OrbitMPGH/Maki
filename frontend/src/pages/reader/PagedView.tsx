@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { cropRegion, FULL_REGION, isFull, partOf, type PagePart, type Region } from './pageShape'
@@ -297,6 +297,7 @@ export default function PagedView({
   fit,
   direction,
   zoom,
+  zoomFocus,
   scale,
   tone,
   label,
@@ -316,6 +317,8 @@ export default function PagedView({
   fit: ReaderFit
   direction: ReaderDirection
   zoom: number
+  /** Client point a double tap zoomed on; consumed by the next zoom change. */
+  zoomFocus?: MutableRefObject<{ x: number; y: number } | null>
   /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
   scale: number
   /** CSS filter for the page images (dim and colour), from `toneFilter`. */
@@ -536,9 +539,20 @@ export default function PagedView({
     lastZoom.current = zoom
     if (!scroller || previous === zoom) return
     pinRight.current = false
+    const focus = zoomFocus?.current ?? null
+    if (zoomFocus) zoomFocus.current = null
+    const ratio = zoom / previous
+    if (focus) {
+      const box = scroller.getBoundingClientRect()
+      const x = focus.x - box.left
+      const y = focus.y - box.top
+      scroller.scrollLeft = (scroller.scrollLeft + x) * ratio - x
+      scroller.scrollTop = (scroller.scrollTop + y) * ratio - y
+      return
+    }
     const centre = scroller.clientWidth / 2
-    scroller.scrollLeft = (scroller.scrollLeft + centre) * (zoom / previous) - centre
-  }, [zoom])
+    scroller.scrollLeft = (scroller.scrollLeft + centre) * ratio - centre
+  }, [zoom, zoomFocus])
 
   return (
     <div

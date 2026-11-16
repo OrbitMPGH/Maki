@@ -49,6 +49,39 @@ public class UpgradeScanJobTests : IDisposable
         Assert.Equal(0, UpgradeRows());
     }
 
+    [Fact]
+    public async Task An_admin_stop_mid_scan_closes_the_day()
+    {
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        JobOutcome.MarkStopped("test");
+        try
+        {
+            await RunJobAsync(null, ct: cts.Token);
+        }
+        finally
+        {
+            JobOutcome.Unmark("test");
+        }
+
+        Assert.NotNull(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+    }
+
+    [Fact]
+    public async Task A_stopped_series_scan_ends_as_cancelled()
+    {
+        _tracker.Queued(_world.SeriesId);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await RunJobAsync(new JobDataMap { [UpgradeScanJob.SeriesKey] = _world.SeriesId }, ct: cts.Token);
+
+        var status = _tracker.Status(_world.SeriesId)!;
+        Assert.Equal("cancelled", status.State);
+        Assert.NotNull(status.FinishedAtUtc);
+    }
+
     private int UpgradeRows()
     {
         using var db = _world.Db.NewContext();

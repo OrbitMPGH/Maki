@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import { invalidateConnectionTests } from './hooks'
 
 export type SuwayomiAuthMode = 'none' | 'basic' | 'uilogin'
 
@@ -57,14 +58,17 @@ export function useSaveSuwayomiConnection() {
     onSuccess: (saved) => {
       queryClient.setQueryData(connectionKey, saved)
       invalidateSources(queryClient)
+      invalidateConnectionTests(queryClient)
     },
   })
 }
 
 export function useTestSuwayomiConnection() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: SuwayomiConnectionInput) =>
       api<SuwayomiTestResult>('/settings/suwayomi/test', { method: 'POST', body: JSON.stringify(value) }),
+    onSettled: () => invalidateConnectionTests(queryClient),
   })
 }
 

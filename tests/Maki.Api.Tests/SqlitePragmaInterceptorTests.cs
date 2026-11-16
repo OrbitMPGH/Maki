@@ -100,7 +100,8 @@ public sealed class SqlitePragmaInterceptorTests : IDisposable
         // The same shape as QueueController.List, minus the includes, which only add joins.
         var query = db.DownloadQueue
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
-            .OrderBy(q => q.SortOrder)
+            .OrderBy(q => q.Priority)
+            .ThenBy(q => q.SortOrder)
             .ThenBy(q => q.QueuedAt)
             .Take(200);
 
@@ -128,7 +129,7 @@ public sealed class SqlitePragmaInterceptorTests : IDisposable
                 plan.Add(reader.GetString(3));
         }
 
-        Assert.True(plan.Any(p => p.Contains("IX_DownloadQueue_SortOrder_QueuedAt", StringComparison.Ordinal)),
+        Assert.True(plan.Any(p => p.Contains("IX_DownloadQueue_Priority_SortOrder_QueuedAt", StringComparison.Ordinal)),
             string.Join(" | ", plan));
     }
 }

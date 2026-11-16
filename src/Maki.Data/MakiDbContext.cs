@@ -57,10 +57,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<HealthOperation> HealthOperations => Set<HealthOperation>();
     public DbSet<HealthHistory> HealthHistory => Set<HealthHistory>();
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
+    public DbSet<SourceNearMiss> SourceNearMisses => Set<SourceNearMiss>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
+    public DbSet<ConnectionTestResult> ConnectionTestResults => Set<ConnectionTestResult>();
     public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
     public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();
     public DbSet<ScrobbleSyncState> ScrobbleSyncStates => Set<ScrobbleSyncState>();
@@ -87,6 +89,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
+    public DbSet<AutoTagRule> AutoTagRules => Set<AutoTagRule>();
+    public DbSet<RootFolderRule> RootFolderRules => Set<RootFolderRule>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
@@ -103,6 +107,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<PageConversionRule> PageConversionRules => Set<PageConversionRule>();
     public DbSet<PageConversionHistory> PageConversionHistory => Set<PageConversionHistory>();
     public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
+    public DbSet<ChapterCredits> ChapterCredits => Set<ChapterCredits>();
+    public DbSet<CreditBankEntry> CreditBank => Set<CreditBankEntry>();
+    public DbSet<CreditNotice> CreditNotices => Set<CreditNotice>();
+    public DbSet<CreditNoticeRead> CreditNoticeReads => Set<CreditNoticeRead>();
+    public DbSet<ChapterCreditNotice> ChapterCreditNotices => Set<ChapterCreditNotice>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
@@ -110,14 +119,98 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     {
         StampOwner();
         StampFileAndCompletion();
-        return base.SaveChanges();
+        var reads = ReadsToPromote();
+        var saved = base.SaveChanges();
+        foreach (var (userId, seriesId) in reads)
+        {
+            Database.ExecuteSqlRaw(PromoteToReadingSql, userId, seriesId, DateTime.UtcNow);
+        }
+
+        return saved;
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {
         StampOwner();
         StampFileAndCompletion();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+        var reads = ReadsToPromote();
+        var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+        foreach (var (userId, seriesId) in reads)
+        {
+            await Database.ExecuteSqlRawAsync(PromoteToReadingSql, [userId, seriesId, DateTime.UtcNow], ct);
+        }
+
+        return saved;
+    }
+
+    /// <summary>
+    /// Moves a series to <see cref="ReadingStatus.Reading"/> for its reader, creating the state row when
+    /// there is none. An upsert after the save rather than a tracked entity before it: two first reads
+    /// racing on a missing row would otherwise fail the unique index and take the progress write down
+    /// with them.
+    /// </summary>
+    private const string PromoteToReadingSql = """
+        INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
+            "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
+        VALUES ({0}, {1}, 1, {2}, 0, {2}, 0, 0, 0, 0)
+        ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
+            "Status" = 1, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
+            "UpdatedAt" = excluded."UpdatedAt"
+        WHERE "Status" <> 1
+        """;
+
+    /// <summary>
+    /// Moves a series to <see cref="ReadingStatus.Completed"/> for its reader, the same upsert as the
+    /// Reading promotion. Run after the save that recorded the read, so it lands after that promotion.
+    /// Only from Plan to read or Reading: a watched tick or an import is not a read and does not undo
+    /// a series the reader put on hold or dropped.
+    /// </summary>
+    public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
+        Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
+
+    private const string PromoteToCompletedSql = """
+        INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
+            "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
+        VALUES ({0}, {1}, 4, {2}, 0, {2}, 0, 0, 0, 0)
+        ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
+            "Status" = 4, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
+            "UpdatedAt" = excluded."UpdatedAt"
+        WHERE "Status" IN (0, 1)
+        """;
+
+    /// <summary>
+    /// The readers and series a pending <see cref="ChapterProgress"/> write counts as reading for: a new
+    /// row that is completed or past its first page, a completion, a watched tick turned into a real
+    /// read, or a page turn. Watched ticks and mark-unread are not reading. Here rather than at each of
+    /// the read paths (reader, OPDS, Komga, KOReader, Kavita, Mihon), so a new one cannot forget it.
+    /// </summary>
+    private List<(int UserId, int SeriesId)> ReadsToPromote()
+    {
+        var reads = new HashSet<(int, int)>();
+        foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
+        {
+            var row = entry.Entity;
+            if (row.UserId == 0 || row.Watched)
+            {
+                continue;
+            }
+
+            var read = entry.State switch
+            {
+                EntityState.Added => row.Completed || row.PageIndex > 0,
+                EntityState.Modified =>
+                    (row.Completed && (!entry.Property(p => p.Completed).OriginalValue ||
+                                       entry.Property(p => p.Watched).OriginalValue)) ||
+                    (row.UnreadAt == null && row.PageIndex != entry.Property(p => p.PageIndex).OriginalValue),
+                _ => false,
+            };
+            if (read)
+            {
+                reads.Add((row.UserId, row.SeriesId));
+            }
+        }
+
+        return [.. reads];
     }
 
     /// <summary>
@@ -420,6 +513,16 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // exactly that).
         });
 
+        modelBuilder.Entity<AutoTagRule>(e =>
+        {
+            e.HasOne(r => r.Tag).WithMany().HasForeignKey(r => r.TagId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RootFolderRule>(e =>
+        {
+            e.HasOne(r => r.RootFolder).WithMany().HasForeignKey(r => r.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Series>(e =>
         {
             e.HasIndex(s => s.SortTitle);
@@ -429,6 +532,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.ArchivedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.PreferredGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.BlockedGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
@@ -576,6 +681,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(m => new { m.SeriesId, m.SourceName }).IsUnique();
         });
 
+        modelBuilder.Entity<SourceNearMiss>(e =>
+        {
+            e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
+            e.HasOne<Series>().WithMany().HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(m => new { m.SeriesId, m.SourceName, m.SourceSeriesId }).IsUnique();
+        });
+
         modelBuilder.Entity<ChapterSourceLink>(e =>
         {
             e.HasKey(l => new { l.ChapterId, l.SourceMappingId });
@@ -599,13 +711,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasIndex(q => q.Status);
 
-            // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
-            e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
+            // Covers ClaimNextAsync's filter and sort (Protocol, Status, Priority, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
+            e.HasIndex(q => new { q.Protocol, q.Status, q.Priority, q.SortOrder, q.QueuedAt });
 
-            // The active queue page, ORDER BY SortOrder, QueuedAt. SQLite only uses a partial index
-            // when the query repeats its filter term, and EF renders that page's two != checks as
+            // The active queue page, ORDER BY Priority, SortOrder, QueuedAt. SQLite only uses a partial
+            // index when the query repeats its filter term, and EF renders that page's two != checks as
             // exactly this NOT IN, in this order.
-            e.HasIndex(q => new { q.SortOrder, q.QueuedAt })
+            e.HasIndex(q => new { q.Priority, q.SortOrder, q.QueuedAt })
                 .HasFilter($"\"Status\" NOT IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Cancelled})");
             // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
             e.HasIndex(q => q.SortOrder);
@@ -680,6 +792,51 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<MakiUser>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
+        modelBuilder.Entity<ChapterCredits>(e =>
+        {
+            e.HasKey(c => c.ChapterId);
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => c.SeriesId);
+            e.Property(c => c.EdgeKey).HasMaxLength(32);
+            e.Property(c => c.ReferencesKey).HasMaxLength(32);
+            e.HasOne<Chapter>().WithOne().HasForeignKey<ChapterCredits>(c => c.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CreditBankEntry>(e =>
+        {
+            e.ToTable("CreditBank");
+            // The search reads it whole with filters off; never served to a reader as rows.
+            e.HasQueryFilter(b => _scope.Unrestricted || Series.Any(s => s.Id == b.SeriesId));
+            e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.SourceChapterId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Notices and their reads belong to no series: one is shared by every chapter that carries it.
+        modelBuilder.Entity<CreditNotice>(e =>
+        {
+            e.Property(n => n.GroupName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.SuggestedName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.Invite).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<CreditNoticeRead>(e =>
+        {
+            e.HasIndex(r => new { r.Crc, r.Length, r.Share, r.Bottom }).IsUnique();
+            e.HasIndex(r => r.NoticeId);
+            e.HasOne<CreditNotice>().WithMany().HasForeignKey(r => r.NoticeId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChapterCreditNotice>(e =>
+        {
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => c.ChapterId);
+            e.HasIndex(c => c.NoticeId);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(c => c.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<CreditNotice>().WithMany().HasForeignKey(c => c.NoticeId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<RecycleBinEntry>(e =>
         {
             e.ToTable("RecycleBin");
@@ -701,6 +858,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>
+        {
+            e.HasKey(c => c.Key);
+        });
+
+        modelBuilder.Entity<ConnectionTestResult>(e =>
         {
             e.HasKey(c => c.Key);
         });

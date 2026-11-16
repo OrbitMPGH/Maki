@@ -200,7 +200,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
       <Title order={1}>{t`Home`}</Title>
     </VisuallyHidden>
   )
-  const editingHeader = <PageHeader title={t`Home`} description={t`Arrange what Home shows.`} />
+  const editingHeader = <PageHeader title={t`Home`} />
 
   if (editing) {
     return (
@@ -277,7 +277,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         <EmptyState
           art="shelf"
           title={t`Nothing in your library yet`}
-          description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
+          description={t`Add a series and Maki starts tracking its chapters.`}
           actionLabel={can('AddSeries') ? t`Add series` : t`Request series`}
           actionTo="/add"
           actionIcon={<IconPlus size={16} />}
@@ -464,7 +464,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
       {visible.length === 0 ? (
         <EmptyState
           title={t`Every section is switched off`}
-          description={t`Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings.`}
+          description={t`Turn sections back on in the layout editor, or switch Home off in Settings.`}
           actionLabel={t`Edit layout`}
           onAction={enterEditing}
         />
@@ -476,7 +476,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         <AddRailButton placement="home" />
         <Button
           variant="subtle"
-          color="gray"
+          color="var(--neutral)"
           leftSection={<IconLayoutDashboard size={16} />}
           onClick={enterEditing}
         >
@@ -517,9 +517,7 @@ function StartReadingPrompt({ tracking }: { tracking: boolean }) {
       <EmptyState
         title={t`Nothing to pick up yet`}
         description={
-          tracking ? (
-            <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
-          ) : (
+          tracking ? undefined : (
             <Trans>
               Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking
               where you are.

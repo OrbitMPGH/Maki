@@ -281,8 +281,8 @@ public class LibraryPathsTests
             Assert.True(LibraryPaths.ContainsLink(Path.Combine(root, "Series")));
             Assert.Null(LibraryPaths.ResolveForDelete(root, Path.Combine("Series", "Volume 1", "linked", "ch1.cbz")));
             Assert.Equal(link, LibraryPaths.ResolveForDelete(root, Path.Combine("Series", "Volume 1", "linked")));
-            Assert.Empty(LibraryPaths.EnumerateDirectoriesNoLinks(Path.Combine(root, "Series"))
-                .Where(d => d.StartsWith(link, StringComparison.OrdinalIgnoreCase)));
+            Assert.DoesNotContain(LibraryPaths.EnumerateDirectoriesNoLinks(Path.Combine(root, "Series")),
+                d => d.StartsWith(link, StringComparison.OrdinalIgnoreCase));
         }
         finally
         {

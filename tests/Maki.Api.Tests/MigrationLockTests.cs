@@ -20,7 +20,9 @@ public sealed class MigrationLockTests : IDisposable
     private static Task Lock(MakiDbContext db, DateTimeOffset at)
     {
         var literal = db.GetService<IRelationalTypeMappingSource>().FindMapping(typeof(DateTimeOffset))!.GenerateSqlLiteral(at);
+        #pragma warning disable EF1003 // the literal comes from EF's own type mapping
         return db.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsLock\" (\"Id\", \"Timestamp\") VALUES (1, " + literal + ")");
+        #pragma warning restore EF1003
     }
 
     [Fact]

@@ -74,9 +74,12 @@ When a new version starts with unapplied migrations, Maki:
 The backup comes first because migrations are forward-only. There is no down migration, so once one
 has run, the only way back is a backup taken before it.
 
-If the database was written by a newer Maki than the one running, Maki logs an error. Running an
-older build against a newer database can corrupt data, so restore the pre-upgrade backup or upgrade
-again.
+If the database was written by a newer Maki than the one running, Maki logs an error and the Health
+page shows it, with a link to the backups. Running an older build against a newer database can
+corrupt data, so restore the pre-upgrade backup or upgrade again.
+
+After an upgrade, **Settings** has a **New** tab listing the settings added since the version you
+upgraded from. It stays until the next upgrade.
 
 ## Going back
 
@@ -88,6 +91,8 @@ To roll back to the version you had before:
    it on its next start. Something has to start it again: Docker's restart policy, systemd or the
    Windows app. A bare start stays down until you start it. See
    [Backup and restore](/Maki/guides/running/backup-restore/).
+
+The database you restored over is kept for 7 days next to the restored one, in case you need it back.
 
 Restoring a backup taken by a newer version is refused, so use the pre-upgrade backup. Some changes
 made after that backup are kept on restore, such as revoked API keys. Passwords, SSO links and other

@@ -54,10 +54,19 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// callers for the same key wait on the first one rather than each issuing their own request;
     /// a waiter whose own token is cancelled gives up without disturbing the others.
     /// </summary>
+    public Task<IReadOnlyList<SourceChapter>> GetAsync(
+        ISource source, string sourceSeriesId, string? languageFilter, CancellationToken ct = default) =>
+        GetAsync(source, sourceSeriesId, languageFilter, null, ct);
+
+    /// <param name="groups">
+    /// The series' scanlation group preference, for a source that lists several uploads of a chapter
+    /// (<see cref="IScanlationGroupSource"/>). Part of the key, since it changes which upload is listed.
+    /// </param>
     public async Task<IReadOnlyList<SourceChapter>> GetAsync(
-        ISource source, string sourceSeriesId, string? languageFilter, CancellationToken ct = default)
+        ISource source, string sourceSeriesId, string? languageFilter, ScanlationGroupPreference? groups,
+        CancellationToken ct = default)
     {
-        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time));
+        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter, groups), _ => new Entry(time));
         var now = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -70,7 +79,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
             () => (IsFresh(entry, time.GetUtcNow().UtcDateTime), entry.Chapters!),
             async token =>
             {
-                var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, token);
+                var chapters = await ScanlationGroupChoice.ListAsync(source, sourceSeriesId, languageFilter, groups, token);
                 Fill(entry, chapters);
                 return chapters;
             },
@@ -78,8 +87,9 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     }
 
     /// <summary>The cached listing while it is fresh, without fetching one.</summary>
-    public IReadOnlyList<SourceChapter>? TryGetFresh(ISource source, string sourceSeriesId, string? languageFilter) =>
-        _entries.TryGetValue(Key(source, sourceSeriesId, languageFilter), out var entry) &&
+    public IReadOnlyList<SourceChapter>? TryGetFresh(
+        ISource source, string sourceSeriesId, string? languageFilter, ScanlationGroupPreference? groups = null) =>
+        _entries.TryGetValue(Key(source, sourceSeriesId, languageFilter, groups), out var entry) &&
         IsFresh(entry, time.GetUtcNow().UtcDateTime)
             ? entry.Chapters
             : null;
@@ -92,8 +102,9 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// is seeded here instead: refresh stays honest, and resolution stays consistent with it.
     /// </summary>
     public void Store(
-        ISource source, string sourceSeriesId, string? languageFilter, IReadOnlyList<SourceChapter> chapters) =>
-        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time)), chapters);
+        ISource source, string sourceSeriesId, string? languageFilter, IReadOnlyList<SourceChapter> chapters,
+        ScanlationGroupPreference? groups = null) =>
+        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter, groups), _ => new Entry(time)), chapters);
 
     /// <summary>
     /// Forgets every listing of one source, for a source whose definition just changed: a listing the
@@ -111,8 +122,11 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
         }
     }
 
-    private static string Key(ISource source, string sourceSeriesId, string? languageFilter) =>
-        $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty}";
+    private static string Key(
+        ISource source, string sourceSeriesId, string? languageFilter, ScanlationGroupPreference? groups) =>
+        source is IScanlationGroupSource && groups is { IsEmpty: false }
+            ? $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty} {groups.Key}"
+            : $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty}";
 
     private void Fill(Entry entry, IReadOnlyList<SourceChapter> chapters)
     {

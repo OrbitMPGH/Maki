@@ -44,6 +44,13 @@ public class SeriesMetadataLockTests : IDisposable
         TotalVolumes = 12,
         Genres = ["Action"],
         CoverUrl = "https://example.test/cover.jpg",
+        Year = 1989,
+        AuthorStory = "Provider Writer",
+        AuthorArt = "Provider Artist",
+        Publisher = "Provider Press",
+        AltTitles = [new LocalizedTitle("Provider Alt", "en")],
+        Type = SeriesTypes.Manhwa,
+        ContentRating = "suggestive",
     };
 
     private static Series UserSeries(SeriesMetadataField locked) => new()
@@ -57,6 +64,13 @@ public class SeriesMetadataLockTests : IDisposable
         TotalChapters = 5,
         TotalVolumes = 1,
         Genres = ["Drama"],
+        Year = 2001,
+        AuthorStory = "My Writer",
+        AuthorArt = "My Artist",
+        Publisher = "My Press",
+        AltTitles = [new LocalizedTitle("My Alt", "ja")],
+        Type = SeriesTypes.Manga,
+        ContentRating = "safe",
         LockedFields = locked,
     };
 
@@ -64,6 +78,9 @@ public class SeriesMetadataLockTests : IDisposable
     [
         SeriesMetadataField.Title, SeriesMetadataField.Overview, SeriesMetadataField.Status,
         SeriesMetadataField.TotalChapters, SeriesMetadataField.TotalVolumes, SeriesMetadataField.Genres,
+        SeriesMetadataField.Year, SeriesMetadataField.AuthorStory, SeriesMetadataField.AuthorArt,
+        SeriesMetadataField.Publisher, SeriesMetadataField.AltTitles, SeriesMetadataField.Type,
+        SeriesMetadataField.ContentRating,
     ];
 
     public static TheoryData<SeriesMetadataField> LockableFields => new(Lockable);
@@ -76,6 +93,13 @@ public class SeriesMetadataLockTests : IDisposable
         SeriesMetadataField.TotalChapters => s.TotalChapters,
         SeriesMetadataField.TotalVolumes => s.TotalVolumes,
         SeriesMetadataField.Genres => string.Join(",", s.Genres),
+        SeriesMetadataField.Year => s.Year,
+        SeriesMetadataField.AuthorStory => s.AuthorStory,
+        SeriesMetadataField.AuthorArt => s.AuthorArt,
+        SeriesMetadataField.Publisher => s.Publisher,
+        SeriesMetadataField.AltTitles => string.Join(",", s.AltTitles.Select(t => $"{t.Title}:{t.Language}")),
+        SeriesMetadataField.Type => s.Type,
+        SeriesMetadataField.ContentRating => s.ContentRating,
         _ => throw new ArgumentOutOfRangeException(nameof(field))
     };
 
@@ -103,6 +127,166 @@ public class SeriesMetadataLockTests : IDisposable
         await Refresh(ProviderValues()).RefreshAsync(series, includeCover: false);
 
         Assert.Equal("my title", series.SortTitle);
+    }
+
+    [Fact]
+    public async Task A_locked_sort_title_survives_a_title_refresh()
+    {
+        var series = UserSeries(SeriesMetadataField.SortTitle);
+        series.SortTitle = "title, my";
+
+        await Refresh(ProviderValues()).RefreshAsync(series, includeCover: false);
+
+        Assert.Equal("Provider Title", series.Title);
+        Assert.Equal("title, my", series.SortTitle);
+    }
+
+    [Fact]
+    public async Task Restoring_the_sort_title_derives_it_from_the_current_title()
+    {
+        var series = UserSeries(SeriesMetadataField.Title);
+        series.SortTitle = "zzz";
+
+        await Refresh(ProviderValues()).RefreshAsync(series, includeCover: false, SeriesMetadataField.SortTitle);
+
+        Assert.Equal("My Title", series.Title);
+        Assert.Equal("my title", series.SortTitle);
+    }
+
+    [Fact]
+    public async Task Restored_details_take_an_empty_provider_value()
+    {
+        var series = UserSeries(SeriesMetadataField.None);
+        var empty = ProviderValues() with { Year = null, AuthorStory = null, Publisher = null, ContentRating = null };
+
+        await Refresh(empty).RefreshAsync(series, includeCover: false,
+            SeriesMetadataField.Year | SeriesMetadataField.AuthorStory | SeriesMetadataField.ContentRating);
+
+        Assert.Null(series.Year);
+        Assert.Null(series.AuthorStory);
+        Assert.Null(series.ContentRating);
+        Assert.Equal("My Press", series.Publisher);
+    }
+
+    [Fact]
+    public async Task Editing_the_details_sets_them_and_locks_each_one()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.ContentRating = "safe";
+        });
+        await using var db = _db.NewContext();
+
+        var result = await Controller(db, ProviderValues()).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+            ["year", "authorStory", "authorArt", "publisher", "altTitles", "sortTitle", "type", "contentRating"],
+            Year: 1989, AuthorStory: " Kentaro Miura ", AuthorArt: "", Publisher: "Hakusensha",
+            AltTitles: [new("ベルセルク", " JA "), new(" ", "en"), new("Berserk", null), new("berserk", "")],
+            SortTitle: "  Berserk, The ", Type: "Manga", ContentRating: "Suggestive"), CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        var series = await Reload(id);
+        Assert.Equal(1989, series.Year);
+        Assert.Equal("Kentaro Miura", series.AuthorStory);
+        Assert.Null(series.AuthorArt);
+        Assert.Equal("Hakusensha", series.Publisher);
+        Assert.Equal([new LocalizedTitle("ベルセルク", "ja"), new LocalizedTitle("Berserk", null)], series.AltTitles);
+        Assert.Equal("berserk, the", series.SortTitle);
+        Assert.Equal(SeriesTypes.Manga, series.Type);
+        Assert.Equal("suggestive", series.ContentRating);
+        Assert.Equal(
+            SeriesMetadataField.Year | SeriesMetadataField.AuthorStory | SeriesMetadataField.AuthorArt |
+            SeriesMetadataField.Publisher | SeriesMetadataField.AltTitles | SeriesMetadataField.SortTitle |
+            SeriesMetadataField.Type | SeriesMetadataField.ContentRating,
+            series.LockedFields);
+
+        await using var read = _db.NewContext();
+        var fields = await read.SeriesMetadataChanges.Where(c => c.SeriesId == id).Select(c => c.Field).ToListAsync();
+        Assert.Contains(SeriesMetadataField.SortTitle, fields);
+        Assert.Contains(SeriesMetadataField.AltTitles, fields);
+        Assert.Contains(SeriesMetadataField.ContentRating, fields);
+    }
+
+    [Fact]
+    public async Task A_title_edit_keeps_a_locked_sort_title()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.SortTitle = "berserk, the";
+            s.LockedFields = SeriesMetadataField.SortTitle;
+        });
+        await using var db = _db.NewContext();
+
+        await Controller(db, ProviderValues()).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+            ["title"], Title: "Berserk Deluxe"), CancellationToken.None);
+
+        Assert.Equal("berserk, the", (await Reload(id)).SortTitle);
+    }
+
+    [Theory]
+    [InlineData("year", 1700, null, null, null)]
+    [InlineData("year", 2200, null, null, null)]
+    [InlineData("sortTitle", null, " ", null, null)]
+    [InlineData("type", null, null, "webcomic", null)]
+    [InlineData("contentRating", null, null, null, "explicit")]
+    public async Task Editing_validates_the_details(string field, int? year, string? sortTitle, string? type, string? rating)
+    {
+        var id = _db.SeedSeries("Berserk", configure: s => s.ContentRating = "safe");
+        await using var db = _db.NewContext();
+
+        var result = await Controller(db, ProviderValues()).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+            [field], Year: year, SortTitle: sortTitle, Type: type, ContentRating: rating), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(SeriesMetadataField.None, (await Reload(id)).LockedFields);
+    }
+
+    [Theory]
+    [InlineData("safe", "pornographic")]
+    [InlineData("pornographic", "safe")]
+    [InlineData(null, "safe")]
+    [InlineData("safe", null)]
+    public async Task A_content_rating_edit_stays_within_the_editors_ceiling(string? current, string? requested)
+    {
+        var id = _db.SeedSeries("Berserk", configure: s => s.ContentRating = current);
+        await using var db = _db.NewContext();
+
+        var result = await Controller(db, ProviderValues()).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+            ["contentRating"], ContentRating: requested), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(current, (await Reload(id)).ContentRating);
+    }
+
+    [Fact]
+    public async Task An_unrestricted_editor_may_clear_a_content_rating()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s => s.ContentRating = "pornographic");
+        await using var db = _db.NewContext();
+
+        var result = await Controller(db, ProviderValues(), maxContentRating: "pornographic").Edit(id,
+            new SeriesMetadataController.EditMetadataRequest(["contentRating"], ContentRating: null), CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Null((await Reload(id)).ContentRating);
+    }
+
+    [Fact]
+    public async Task Resetting_a_content_rating_above_the_ceiling_is_refused()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.ContentRating = "pornographic";
+            s.LockedFields = SeriesMetadataField.ContentRating;
+        });
+        await using var db = _db.NewContext();
+
+        var result = await Controller(db, ProviderValues()).Reset(
+            id, new SeriesMetadataController.ResetMetadataRequest(["contentRating"]), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(SeriesMetadataField.ContentRating, (await Reload(id)).LockedFields);
     }
 
     [Fact]
@@ -147,7 +331,7 @@ public class SeriesMetadataLockTests : IDisposable
 
     [Theory]
     [InlineData("cover")]
-    [InlineData("year")]
+    [InlineData("tags")]
     [InlineData("4")]
     public async Task Editing_refuses_a_field_that_cannot_be_set_by_hand(string field)
     {
@@ -368,13 +552,14 @@ public class SeriesMetadataLockTests : IDisposable
         return await db.Series.AsNoTracking().SingleAsync(s => s.Id == id);
     }
 
-    private SeriesMetadataController Controller(MakiDbContext db, SeriesMetadata metadata, IHttpClientFactory? http = null)
+    private SeriesMetadataController Controller(
+        MakiDbContext db, SeriesMetadata metadata, IHttpClientFactory? http = null, string maxContentRating = "erotica")
     {
         var covers = http is null ? Covers() : new CoverService(http, _paths, new FakeAppSettings(), NullLogger<CoverService>.Instance);
         return new SeriesMetadataController(
             new TestLocalizer(), db, new SeriesMetadataRefreshService([new Provider(metadata)], covers),
             ChangeLog(db), new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),
-            new TestCurrentUser(1), Kavita());
+            new TestCurrentUser(1, maxContentRating: maxContentRating), Kavita());
     }
 
     private MediaCoverController CoverController(MakiDbContext db) =>

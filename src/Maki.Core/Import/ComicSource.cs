@@ -39,14 +39,22 @@ public enum ComicSourceKind
 /// The entry inside <paramref name="Path"/> when the comic is an archive nested in another one — a
 /// .cbr holding one .rar per chapter is a real scanlation shape.
 /// </param>
+/// <param name="Slice">
+/// Set when the comic is one volume of a multi-volume pack (<see cref="VolumePackSplitter"/>): the
+/// folder inside <paramref name="Path"/> whose pages make up this volume, with a trailing "/".
+/// </param>
 public sealed record ComicSource(
     string Name,
     ComicSourceKind Kind,
     string Path,
     long Size,
     IReadOnlyList<string> Pages,
-    string? Entry = null)
+    string? Entry = null,
+    string? Slice = null)
 {
-    /// <summary>Whether the file itself can be placed in the library, rather than rebuilt.</summary>
-    public bool IsReadyToPlace => Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip or ComicSourceKind.Pdf;
+    /// <summary>
+    /// Whether the file itself can be placed in the library, rather than rebuilt. A slice is one
+    /// volume of a multi-volume pack, so it is always rebuilt from the pack's pages.
+    /// </summary>
+    public bool IsReadyToPlace => Slice is null && Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip or ComicSourceKind.Pdf;
 }

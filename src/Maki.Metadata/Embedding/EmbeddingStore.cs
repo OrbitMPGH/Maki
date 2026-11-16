@@ -88,6 +88,19 @@ public class EmbeddingStore(EmbeddingOptions options)
             adopt.ExecuteNonQuery();
         }
 
+        // An empty table starts counted, so a store that wrote every row itself never counts them.
+        using (var seed = conn.CreateCommand())
+        {
+            seed.CommandText = """
+                INSERT OR IGNORE INTO meta (key, value)
+                SELECT $count, '0:' || COALESCE((SELECT value FROM meta WHERE key = $version), '')
+                WHERE NOT EXISTS (SELECT 1 FROM series_vectors)
+                """;
+            seed.Parameters.AddWithValue("$count", VectorCountKey);
+            seed.Parameters.AddWithValue("$version", ContentVersionKey);
+            seed.ExecuteNonQuery();
+        }
+
         MigrateFloat32Vectors(conn);
         AddTagVocabColumn(conn, "category");
         AddTagVocabColumn(conn, "name_path");
@@ -244,8 +257,15 @@ public class EmbeddingStore(EmbeddingOptions options)
 
     /// <summary>
     /// Rows in <c>series_vectors</c>. Every search and recommendation asks through <c>IsReady</c>,
-    /// and a fresh connection plus a count over the table cost 50 to 250 ms each time, so the answer
-    /// is kept until the file or its WAL changes, or this store writes.
+    /// so the answer is kept until the file or its WAL changes, or this store writes.
+    ///
+    /// <para>
+    /// Read from <c>meta</c> (<see cref="VectorCountKey"/>), never counted: the vectors are stored
+    /// inline, so <c>COUNT(*)</c> walks every leaf page of the table, 42 MB read into the page cache
+    /// on the first search of every process and left there for the dashboard to count. A file with no
+    /// valid stored count (an older version wrote it, or nothing has stamped it yet) is counted once
+    /// and the result stored.
+    /// </para>
     /// </summary>
     public int Count()
     {
@@ -260,12 +280,56 @@ public class EmbeddingStore(EmbeddingOptions options)
             return cached.Value;
         }
 
-        using var conn = OpenReadOnly();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM series_vectors";
-        var value = Convert.ToInt32(cmd.ExecuteScalar());
-        _count = new CachedCount(stamp, value);
+        int? stored;
+        using (var conn = OpenReadOnly())
+        {
+            stored = StoredVectorCount(conn);
+        }
+
+        var value = stored ?? CountAndStore();
+        // A stored count is cached under the stamp read before it, so a write landing in between
+        // reads as stale next time. CountAndStore wrote, which moved the stamp.
+        _count = new CachedCount(stored is null ? StampOf(DbPath) ?? stamp : stamp, value);
         return value;
+    }
+
+    /// <summary>
+    /// Counts the table and records the answer under the current content version, inside one write
+    /// transaction so no write can land between the two. A writer holding the database leaves the
+    /// count unrecorded and the next call tries again.
+    /// </summary>
+    private int CountAndStore()
+    {
+        try
+        {
+            Keeper.Attach();
+            using var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False;Default Timeout=1");
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+            var value = CountRows(conn, tx);
+            WriteVectorCount(conn, tx, value, ReadMeta(conn, tx, ContentVersionKey) ?? string.Empty);
+            tx.Commit();
+            return value;
+        }
+        catch (SqliteException)
+        {
+            using var conn = OpenReadOnly();
+            return CountRows(conn, null);
+        }
+        finally
+        {
+            // The count read the whole table; nothing reads it again until the next index build.
+            PageCache.DropAfterScan(DbPath);
+        }
+    }
+
+    private static int CountRows(SqliteConnection conn, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT COUNT(*) FROM series_vectors";
+        cmd.CommandTimeout = 600;
+        return Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private static FileStamp? StampOf(string path)
@@ -320,12 +384,28 @@ public class EmbeddingStore(EmbeddingOptions options)
         var pHash = cmd.Parameters.Add("$hash", SqliteType.Text);
         var pScale = cmd.Parameters.Add("$scale", SqliteType.Real);
         var pVec = cmd.Parameters.Add("$vec", SqliteType.Blob);
+
+        // INSERT OR REPLACE reports a change either way, so new rows are told apart by a primary
+        // key lookup first, and only while there is a stored count to keep right.
+        using var exists = conn.CreateCommand();
+        exists.Transaction = tx;
+        exists.CommandText = "SELECT EXISTS(SELECT 1 FROM series_vectors WHERE id = $id)";
+        var pExists = exists.Parameters.Add("$id", SqliteType.Integer);
+        var counting = StoredVectorCount(conn, tx) is not null;
+        var added = 0;
+
         var packed = Array.Empty<sbyte>();
         foreach (var (id, hash, vector) in rows)
         {
             if (packed.Length != vector.Length)
             {
                 packed = new sbyte[vector.Length];
+            }
+
+            if (counting)
+            {
+                pExists.Value = id;
+                added += Convert.ToInt64(exists.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture) == 0 ? 1 : 0;
             }
 
             pId.Value = id;
@@ -335,7 +415,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
-        BumpContentVersion(conn, tx);
+        BumpContentVersion(conn, tx, added);
         tx.Commit();
     }
 
@@ -606,14 +686,111 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// </summary>
     internal const string ContentVersionKey = "content_version";
 
-    private static void BumpContentVersion(SqliteConnection conn, SqliteTransaction? tx)
+    /// <summary>
+    /// Rows in <c>series_vectors</c>, stored as <c>count:content_version</c>. The count is only
+    /// believed while its version is the file's current one: every writer here moves both in one
+    /// transaction (<see cref="BumpContentVersion"/>), and a writer that does not know about the
+    /// count (an older Maki, a tool) still bumps the version, which is what retires a count it made
+    /// wrong.
+    /// </summary>
+    internal const string VectorCountKey = "vector_count";
+
+    private static void BumpContentVersion(SqliteConnection conn, SqliteTransaction? tx, int vectorDelta = 0)
+    {
+        var count = StoredVectorCount(conn, tx);
+        var version = Guid.NewGuid().ToString("N");
+        WriteMeta(conn, tx, ContentVersionKey, version);
+        if (count is { } known)
+        {
+            WriteVectorCount(conn, tx, Math.Max(0, known + vectorDelta), version);
+        }
+    }
+
+    /// <summary>
+    /// The stored row count when it was written under the file's current content version, else null.
+    /// One statement, so both keys come from the same read snapshot.
+    /// </summary>
+    internal static int? StoredVectorCount(SqliteConnection conn, SqliteTransaction? tx = null)
+    {
+        string? version = null, stored = null;
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = "SELECT key, value FROM main.meta WHERE key IN ($version, $count)";
+            cmd.Parameters.AddWithValue("$version", ContentVersionKey);
+            cmd.Parameters.AddWithValue("$count", VectorCountKey);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (reader.GetString(0) == ContentVersionKey)
+                {
+                    version = reader.GetString(1);
+                }
+                else
+                {
+                    stored = reader.GetString(1);
+                }
+            }
+        }
+        catch (SqliteException)
+        {
+            return null; // no meta table yet
+        }
+
+        var at = stored?.IndexOf(':') ?? -1;
+        if (at < 0 || !string.Equals(stored![(at + 1)..], version ?? string.Empty, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return int.TryParse(stored.AsSpan(0, at), System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out var count)
+            ? count
+            : null;
+    }
+
+    /// <summary>
+    /// Records the row count of a database that is not open through a store yet, such as a
+    /// downloaded artifact before it is swapped in, under whatever content version it carries.
+    /// </summary>
+    public static void StampVectorCount(string dbPath, long count)
+    {
+        using var conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)";
+            cmd.ExecuteNonQuery();
+        }
+
+        WriteVectorCount(conn, tx, checked((int)count), ReadMeta(conn, tx, ContentVersionKey) ?? string.Empty);
+        tx.Commit();
+    }
+
+    private static void WriteVectorCount(SqliteConnection conn, SqliteTransaction? tx, int count, string version) =>
+        WriteMeta(conn, tx, VectorCountKey,
+            count.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + version);
+
+    private static string? ReadMeta(SqliteConnection conn, SqliteTransaction? tx, string key)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT value FROM meta WHERE key = $key";
+        cmd.Parameters.AddWithValue("$key", key);
+        return cmd.ExecuteScalar() as string;
+    }
+
+    private static void WriteMeta(SqliteConnection conn, SqliteTransaction? tx, string key, string value)
     {
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = "INSERT INTO meta (key, value) VALUES ($key, $value) " +
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
-        cmd.Parameters.AddWithValue("$key", ContentVersionKey);
-        cmd.Parameters.AddWithValue("$value", Guid.NewGuid().ToString("N"));
+        cmd.Parameters.AddWithValue("$key", key);
+        cmd.Parameters.AddWithValue("$value", value);
         cmd.ExecuteNonQuery();
     }
 
@@ -822,7 +999,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             drop.ExecuteNonQuery();
         }
 
-        BumpContentVersion(conn, tx);
+        BumpContentVersion(conn, tx, -removed);
         tx.Commit();
         return removed;
     }

@@ -82,8 +82,32 @@ public class SearchQueryTests
 
         var queries = SearchQuery.WithFallbacks("Main", "Original", alts);
 
-        Assert.Equal(4, queries.Count);
-        Assert.Equal(["Main", "Alt 1", "Alt 2", "Alt 3"], queries);
+        Assert.Equal(["Main", "Alt 1", "Alt 2", "Alt 3", "Original"], queries);
+    }
+
+    [Fact]
+    public void The_original_title_always_gets_a_query_even_when_alternate_titles_crowd_it_out()
+    {
+        var queries = SearchQuery.WithFallbacks("The Witch and the Mercenary", "魔女と傭兵", [
+            new LocalizedTitle("마녀와 용병", "ko"),
+            new LocalizedTitle("La bruja y el mercenario", "es-la"),
+            new LocalizedTitle("La sorcière et le mercenaire", "fr"),
+            new LocalizedTitle("Majo to Youhei", "ja-latn"),
+            new LocalizedTitle("Majo to Yōhei", "ja"),
+            new LocalizedTitle("Witch and Mercenary", "en")
+        ]);
+
+        Assert.Equal(
+            ["The Witch and the Mercenary", "Witch and Mercenary", "Majo to Youhei", "La bruja y el mercenario", "魔女と傭兵"],
+            queries);
+    }
+
+    [Fact]
+    public void An_original_title_already_among_the_queries_is_not_repeated()
+    {
+        var queries = SearchQuery.WithFallbacks("Main", "進撃の巨人", [new LocalizedTitle("進撃の巨人", "ja")]);
+
+        Assert.Equal(["Main", "進撃の巨人"], queries);
     }
 
     [Fact]

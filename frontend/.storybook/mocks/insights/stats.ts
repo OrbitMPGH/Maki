@@ -83,8 +83,8 @@ export const feedRemoved: ActivitySeriesEvent[] = [12, 3].map((id, i) => ({
   providerId: `mb-${seriesById(id).mangaBakaId}`,
 }))
 export const feedDropped: ActivityDroppedSeries[] = [
-  { ...ref(7), lastProgressAt: daysAgo(21), maxChapter: 12 },
-  { ...ref(11), lastProgressAt: daysAgo(34), maxChapter: 20 },
+  { ...ref(7), droppedAt: daysAgo(14), lastProgressAt: daysAgo(21), maxChapter: 12 },
+  { ...ref(11), droppedAt: daysAgo(9), lastProgressAt: daysAgo(34), maxChapter: 20 },
 ]
 
 export function activityFor(from: string, to: string, kind: StatsKind): ActivityStats {

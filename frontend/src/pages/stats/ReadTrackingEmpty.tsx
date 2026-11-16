@@ -9,7 +9,7 @@ export function ReadTrackingEmpty() {
       compact
       mood="asleep"
       title={t`No reading tracked yet`}
-      description={t`Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way.`}
+      description={t`Read a chapter in Maki's reader to start tracking. An admin can also connect Kavita in Settings.`}
     />
   )
 }

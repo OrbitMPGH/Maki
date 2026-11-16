@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { MantineThemeProvider } from '@mantine/core'
-import { Notifications, notifications } from '@mantine/notifications'
+import { AppToaster, notifications } from '../src/lib/toast'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, type MemoryRouterProps, Route, Routes } from 'react-router-dom'
 import { ApiError } from '../src/api/client'
@@ -61,7 +61,7 @@ export function StoryProviders({
     <AppI18nProvider>
       <AppThemeProvider>
         <TestMotion real={realMotion}>
-          <Notifications autoClose={6000} zIndex={2000} />
+          <AppToaster />
           <QueryClientProvider client={client}>
             <MemoryRouter initialEntries={router?.initialEntries ?? (router?.path ? [router.path] : ['/'])}>
               <AuthProvider>

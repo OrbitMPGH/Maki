@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { Button, List, PasswordInput, Stack, TextInput } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
+import { IconAlertTriangle } from '../lib/icons'
 import { useSetup } from '../api/auth'
 
 /** Matches the server's Identity policy, so the failure is shown before a round trip. */
@@ -39,16 +40,16 @@ export function SetupAccountPage() {
       title={t`Create your account`}
       subtitle={
         <Trans>
-          Create the administrator account. Your library and reading history, if you have any, are
-          already attached to it.
+          This becomes the administrator account. Any existing library and history attach to it.
         </Trans>
       }
-      footer={
-        <div className="auth-note">
-          <Text fz="sm" fw={600} mb={6}>
+      cardFooter={
+        <div>
+          <div className="auth-card-note-title">
+            <IconAlertTriangle size={16} aria-hidden />
             <Trans>Before exposing Maki to the internet</Trans>
-          </Text>
-          <List fz="sm" c="var(--ink-3)" spacing={4}>
+          </div>
+          <List fz="sm" c="var(--ink-3)" spacing={4} size="sm">
             <List.Item>
               <Trans>Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS.</Trans>
             </List.Item>
@@ -77,7 +78,7 @@ export function SetupAccountPage() {
           />
           <PasswordInput
             label={t`Password`}
-            description={t`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+            description={t`At least ${MIN_PASSWORD_LENGTH} characters. No symbol rules.`}
             autoComplete="new-password"
             required
             error={tooShort ? t`Use at least ${MIN_PASSWORD_LENGTH} characters` : null}

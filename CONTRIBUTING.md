@@ -49,7 +49,41 @@ Every pull request targets `dev`, including fixes for bugs in a released version
 If `dev` moves on while your branch is open, merge or rebase `dev` into your branch so the pull
 request stays up to date.
 
+## Pull request titles
+
+PR titles follow the same [Conventional Commits](https://www.conventionalcommits.org/) format as
+commit messages, and the `PR title` check fails otherwise:
+
+```
+<type>(<scope>): <summary>
+```
+
+- **type:** `feat` (new capability), `fix` (bug fix), `perf`, `refactor` (no behaviour change),
+  `docs`, `test`, `build` (Dockerfile, deps, build scripts), `ci` (`.github/workflows/**`),
+  `style`, `revert`, `chore` (everything else). Add `!` before the colon for a breaking change.
+- **scope:** the feature area, lowercase, the same names the commit log uses: `reader`, `series`,
+  `library`, `discover`, `home`, `downloads`, `sources`, `import`, `upgrades`, `enhance`,
+  `metadata`, `recommendations`, `health`, `activity`, `settings`, `auth`, `opds`, `pwa`, `ui`,
+  `i18n`, `api`, `docker` and so on. Run `git log --format=%s | grep -oE '^[a-z]+\([^)]+\)'` to see
+  them. Leave it out when the change spans many areas.
+- **summary:** what the PR does, imperative, lowercase unless it starts with a name (`Jackett`,
+  `MangaDex`), no trailing period. A PR of many commits
+  gets a summary of the whole change, not of its first commit.
+
+Examples: `feat(ui): run toasts on Sonner, keeping Maki's toast look`,
+`feat(activity): group the history by series`,
+`fix(upgrades): judge a release's language before it replaces Japanese files`.
+
+Release PRs from `dev` to `main` are titled with the version alone (`v0.36.0`).
+
 ## Pull requests
+
+The description follows [the PR template](.github/pull_request_template.md). PRs here are reviewed
+by AI agents, which read the description first and then the diff, so the template asks for what a
+reviewer without your context needs: the intent, where to start reading, which `.claude/rules`
+files apply, what the change touches (migrations, files on disk, external API clients), and what
+you did and did not verify. `gh pr create` skips the template unless you pass it, so fill a copy
+and use `gh pr create --body-file`.
 
 - Keep one change per pull request. Small, focused changes are reviewed faster.
 - Describe what changed and why. Link the issue it fixes, if there is one.

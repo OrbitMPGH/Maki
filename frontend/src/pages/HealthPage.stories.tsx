@@ -18,6 +18,7 @@ import {
   sizeMismatchDetail,
   spareDuplicateDetail,
   runningScan,
+  runningWork,
   unlinkedNoSeries,
   unreadableDetail,
   unlinkedUnrecognized,
@@ -55,6 +56,54 @@ export const Healthy: Story = {
   },
 }
 
+export const RunningWork: Story = {
+  parameters: { msw: [http.get(api('/health/running'), () => HttpResponse.json(runningWork))] },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Refresh metadata', { selector: '.health-running-row *' })).toBeVisible()
+    await expect(await canvas.findByText('Preparing chapters ahead')).toBeVisible()
+    await expect(await canvas.findByText('Lighthouse Keeper/Lighthouse Keeper v03.cbz')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Pause pass' })).toBeVisible()
+    await expect(await canvas.findByText('Finding credit pages')).toBeVisible()
+    await expect(await canvas.findByText('2,210 chapters left')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Pause' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Pause downloads' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Stop' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Stopping' })).toBeDisabled())
+  },
+}
+
+export const NothingRunning: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Running now')).toBeVisible()
+    await expect(canvasElement.querySelector('.health-running-row')).toBeNull()
+  },
+}
+
+export const ScheduledJobs: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Scheduled jobs')).toBeVisible()
+    await expect(await canvas.findByText('Housekeeping')).toBeVisible()
+    await expect(canvas.queryByText('Import completed downloads')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 9 jobs' }))
+    await expect(await canvas.findByText('Import completed downloads')).toBeVisible()
+    const row = (await canvas.findByText('Housekeeping')).closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: 'Run now' }))
+    await expect(await within(canvas.getByText('Housekeeping').ownerDocument.body).findByText('Started Housekeeping')).toBeVisible()
+  },
+}
+
+export const RunHeavyJobAsksFirst: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 9 jobs' }))
+    const row = (await canvas.findByText('Build the search index')).closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: 'Run now' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText(/keep the processor busy for an hour or more/)).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Start building' }))
+    await expect(await body.findByText('Started Build the search index')).toBeVisible()
+  },
+}
+
 export const ShowPassingChecks: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: 'Show passing' }))
@@ -65,18 +114,19 @@ export const ShowPassingChecks: Story = {
 
 export const Warnings: Story = {
   parameters: { msw: [withOverview({ checks: warningChecks, openFindings: 4 })] },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('/library/manhwa has 38 GB free (9%), below the 10% warning level')).toBeVisible()
-    await expect(await canvas.findByText('3 need attention')).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.health-attention')).toHaveLength(3)
     await expect(await canvas.findByText(/Acknowledged, hidden from the header badge/)).toBeVisible()
   },
 }
 
 export const Errors: Story = {
   parameters: { msw: [withOverview({ checks: errorChecks, openFindings: 12 })] },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('The database reported a failed integrity check')).toBeVisible()
-    await expect(await canvas.findByText('5 need attention')).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.health-attention')).toHaveLength(5)
+    await expect(canvas.getByRole('button', { name: 'Acknowledge all' })).toBeVisible()
   },
 }
 
@@ -128,7 +178,7 @@ export const PartialScanError: Story = {
 export const NoChecksYet: Story = {
   parameters: { msw: [withOverview({ checks: [], files: 0 })] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No checks have run yet. Use Check now.')).toBeVisible()
+    await expect(await canvas.findByText('No checks yet')).toBeVisible()
   },
 }
 
@@ -180,7 +230,7 @@ export const FilesSearch: Story = {
 export const FilesEmpty: Story = {
   parameters: { ...tab('files'), msw: [http.get(api('/health/files'), () => HttpResponse.json(emptyList))] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No files match these filters. Run a scan to inventory the library.')).toBeVisible()
+    await expect(await canvas.findByText('No files match. Run a scan to inventory the library.')).toBeVisible()
   },
 }
 

@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
 import {
-  Badge,
   Button,
   Checkbox,
   Group,
-  Image,
   Pagination,
   Select,
   Stack,
@@ -22,6 +20,8 @@ import type { MihonParseResponse } from '../../api/mihonImport'
 import type { MetadataSearchResult } from '../../api/types'
 import { Panel } from '../ui/Panel'
 import { TagChip } from '../ui/TagChip'
+import { Thumb } from '../ui/Thumb'
+import { LightBadge } from '../series/lightMantine'
 import { okButtonVars } from '../ui/status'
 import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
 import { ImportMatchFinder } from './ImportMatchFinder'
@@ -40,8 +40,12 @@ import {
 
 const PAGE_SIZE = 100
 
+/** The folder picker's value for "let the root folder rules decide". */
+const BY_RULES = 'rules'
+
 export interface MihonImportOptions {
-  rootFolderId: number
+  /** Null lets the root folder rules pick a folder per series. */
+  rootFolderId: number | null
   monitored: boolean
   monitorNewItems: string | null
   applyTags: boolean
@@ -75,7 +79,9 @@ export function MihonReview({
   const [finderFor, setFinderFor] = useState<MihonRow | null>(null)
 
   const anyCategories = rows.some((r) => r.manga.categories.length > 0)
-  const effectiveRoot = rootFolderId ?? (rootFolders?.[0] ? String(rootFolders[0].id) : null)
+  // With more than one folder the default is the root folder rules, which fall back to the first.
+  const offerRules = (rootFolders?.length ?? 0) > 1
+  const effectiveRoot = rootFolderId ?? (offerRules ? BY_RULES : rootFolders?.[0] ? String(rootFolders[0].id) : null)
 
   const counts = useMemo(() => {
     const c: Record<MihonFilter, number> = { all: rows.length, matched: 0, needsReview: 0, notFound: 0, inLibrary: 0 }
@@ -121,7 +127,7 @@ export function MihonReview({
   const start = () => {
     if (!effectiveRoot || groups.length === 0) return
     onStart(groups, {
-      rootFolderId: Number(effectiveRoot),
+      rootFolderId: effectiveRoot === BY_RULES ? null : Number(effectiveRoot),
       monitored,
       monitorNewItems,
       applyTags: applyTags && canTag,
@@ -148,7 +154,10 @@ export function MihonReview({
         <Stack gap="sm">
           <Select
             label={t`Root folder`}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            data={[
+              ...(offerRules ? [{ value: BY_RULES, label: t`Picked by the root folder rules` }] : []),
+              ...(rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []),
+            ]}
             value={effectiveRoot}
             onChange={setRootFolderId}
             allowDeselect={false}
@@ -184,7 +193,7 @@ export function MihonReview({
           )}
           <Switch
             label={t`Mark chapters read in Mihon as read`}
-            description={t`Read ticks show in the chapter list. Series read counts only include downloaded chapters.`}
+            description={t`Series read counts only include downloaded chapters.`}
             checked={applyReadState}
             onChange={(e) => setApplyReadState(e.currentTarget.checked)}
           />
@@ -240,14 +249,10 @@ export function MihonReview({
         </Text>
       )}
 
-      {filtered.length === 0 ? (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>Nothing in this view.</Trans>
-        </Text>
-      ) : (
+      {filtered.length > 0 && (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={760}>
-            <Table className="panel-table import-table">
+            <Table className="panel-table ops-table import-table">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th w={40} />
@@ -316,18 +321,14 @@ export function MihonReview({
                             onChange={(v) => patch(row.manga.index, { picked: v ?? undefined, checked: v !== null })}
                             leftSection={
                               match?.coverUrl ? (
-                                <Image src={match.coverUrl} w={20} h={30} radius="xs" fit="cover" alt="" />
+                                <Thumb src={match.coverUrl} size="sm" width={20} />
                               ) : undefined
                             }
                             leftSectionWidth={match?.coverUrl ? 36 : undefined}
                           />
                         ) : match ? (
                           <Group wrap="nowrap" gap="xs">
-                            {match.coverUrl ? (
-                              <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" loading="lazy" />
-                            ) : (
-                              <div style={{ width: 32, height: 48 }} />
-                            )}
+                            <Thumb src={match.coverUrl} width={32} />
                             <div style={{ minWidth: 0 }}>
                               <Text size="sm" lineClamp={1}>
                                 {match.title}
@@ -335,18 +336,14 @@ export function MihonReview({
                               </Text>
                               <Group gap={4}>
                                 {matchedBy && !choice?.manual && (
-                                  <Badge size="xs" variant="light">
+                                  <LightBadge color="var(--neutral)">
                                     {label(MATCHED_BY_LABELS[matchedBy])}
-                                  </Badge>
+                                  </LightBadge>
                                 )}
                                 {library !== 'none' && (
-                                  <Badge
-                                    size="xs"
-                                    variant="light"
-                                    color={library === 'elsewhere' ? 'var(--warn)' : undefined}
-                                  >
+                                  <LightBadge color={library === 'elsewhere' ? 'var(--warn)' : 'var(--ok)'}>
                                     <Trans>In library</Trans>
-                                  </Badge>
+                                  </LightBadge>
                                 )}
                               </Group>
                             </div>

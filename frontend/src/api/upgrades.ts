@@ -190,6 +190,14 @@ export interface UpgradeSettings {
   volumeMissingTolerance: number
   volumeSearchesPerRun: number
   proposalExpiryDays: number
+  /** Grab a volume release proposal on its own when it is digital, within the ceiling and nothing about it is uncertain. */
+  autoApprove: boolean
+  /** Bytes on the wire; the settings page shows MB. */
+  autoApproveMaxBytes: number
+  /** Search torrents for wanted chapters no source lists, whatever the upgrade switches say. */
+  missingSearch: boolean
+  /** Fewest seeders a release needs before Maki grabs or approves it on its own (1..10000). */
+  torrentMinSeeders: number
 }
 
 /** A file's release tier and archive stats at one point in time, as carried on a queue/history row. */
@@ -459,6 +467,9 @@ export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
   no_span: msg`No volume or chapter range in the title`,
   no_profile: msg`No quality profile`,
   whole_series_pack: msg`Whole-series pack, needs your call`,
+  language_mismatch: msg`Written in a different language from your files`,
+  language_unknown: msg`The title doesn't say it's Japanese, needs your call`,
+  language_mixed: msg`Your files are in more than one language, needs your call`,
   trailing_number: msg`Release number may be a sequel, not a chapter`,
   upgrades_disabled: msg`Automatic upgrades are off, needs your call`,
   markers_off: msg`Uses volume or chapter words from a language that is off in Settings > Library > File name parsing`,
@@ -622,7 +633,7 @@ export interface ScoutSourceProgress {
 
 /** The latest scan of one series asked for since the server started. */
 export interface SeriesScanStatus {
-  state: 'queued' | 'running' | 'done' | 'busy' | 'failed'
+  state: 'queued' | 'running' | 'done' | 'busy' | 'failed' | 'cancelled'
   queuedAtUtc: string
   finishedAtUtc: string | null
   chaptersChecked: number

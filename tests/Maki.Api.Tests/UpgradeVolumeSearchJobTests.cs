@@ -38,6 +38,26 @@ public class UpgradeVolumeSearchJobTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bulk_added_series_is_searched_on_any_tick_while_volume_first_is_on()
+    {
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "false");
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+        _world.Chapter(2, withFile: false);
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single().VolumeFirstPendingAt = _clock.GetUtcNow().UtcDateTime;
+            db.SaveChanges();
+        }
+
+        await RunAsync();
+
+        Assert.Single(_releases.Queries);
+        Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastVolumeSearchDate));
+        using var after = _world.Db.NewContext();
+        Assert.Null(after.Series.Single().VolumeFirstPendingAt);
+    }
+
+    [Fact]
     public async Task A_shutdown_mid_search_leaves_the_day_open()
     {
         using var cts = new CancellationTokenSource();

@@ -1,4 +1,3 @@
-using System.Runtime;
 using Maki.Core.Io;
 
 namespace Maki.Api.Jobs;
@@ -38,10 +37,11 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     internal int Collections => Volatile.Read(ref _collections);
 
     /// <summary>
-    /// Completes once no artifact build holds the gate. Page conversion and health verifies wait on
-    /// it between files, so a dump install (a whole-file write plus index pass) never stacks with an
-    /// encoder or a verify. They are not artifact builds themselves: holding the gate for a whole
-    /// conversion pass would stall every build behind it for hours.
+    /// Completes once no artifact build holds the gate. Page conversion, health verifies and the
+    /// credit scan wait on it between files and chapters, so a dump install (a whole-file write plus
+    /// index pass) never stacks with an encoder, a verify or a credit search. They are not artifact
+    /// builds themselves: holding the gate for a whole conversion pass would stall every build behind
+    /// it for hours.
     /// </summary>
     public bool IsIdle
     {
@@ -129,10 +129,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     {
         if (Volatile.Read(ref _waiting) == 0 && Interlocked.Exchange(ref _built, 0) == 1)
         {
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            // Aggressive, so the freed regions are decommitted rather than kept for the next build.
-            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-            NativeHeap.Trim();
+            NativeHeap.CollectAndTrim();
             Interlocked.Increment(ref _collections);
         }
 

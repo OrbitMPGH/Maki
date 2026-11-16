@@ -129,12 +129,14 @@ public class RecommendationServiceTasteTests : IDisposable
     private void SeedRating(int seriesId, int rating)
     {
         using var db = _db.NewContext();
-        db.UserSeriesStates.Add(new Maki.Data.Identity.UserSeriesState
+        var state = db.UserSeriesStates.FirstOrDefault(s => s.UserId == 1 && s.SeriesId == seriesId);
+        if (state is null)
         {
-            UserId = 1,
-            SeriesId = seriesId,
-            Rating = rating
-        });
+            state = new Maki.Data.Identity.UserSeriesState { UserId = 1, SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.Rating = rating;
         db.SaveChanges();
     }
 

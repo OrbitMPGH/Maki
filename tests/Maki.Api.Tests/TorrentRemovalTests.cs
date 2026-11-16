@@ -50,7 +50,7 @@ public class TorrentRemovalTests : IDisposable
 
     private int SeedPending(
         bool deleteData = true, string? client = null, DateTime? pendingSince = null, string? contentPath = null,
-        string? hash = Hash)
+        string? hash = Hash, string mode = TorrentRemovalModes.AfterImport)
     {
         using var db = _db.NewContext();
         var item = new DownloadQueueItem
@@ -63,7 +63,7 @@ public class TorrentRemovalTests : IDisposable
             QueuedAt = DateTime.UtcNow.AddHours(-2),
             CompletedAt = DateTime.UtcNow.AddHours(-1),
             ClientRemovalPendingAt = pendingSince ?? DateTime.UtcNow.AddMinutes(-5),
-            ClientRemovalMode = TorrentRemovalModes.AfterImport,
+            ClientRemovalMode = mode,
             ClientRemovalDeleteData = deleteData,
             ClientRemovalClient = client ?? Fingerprint(),
         };
@@ -496,5 +496,175 @@ public class TorrentRemovalTests : IDisposable
         await RunAsync();
 
         Assert.Single(_client.Removed);
+    }
+
+    private void Seeding(double? ratio, TimeSpan? seeded, string hash = Hash) =>
+        _client.Torrents.Add(Torrent(hash) with { Ratio = ratio, SeedingTime = seeded });
+
+    private void SeedTargets(string? ratio, string? minutes)
+    {
+        _settings.Set(SettingKeys.DownloadClientRemoveCompleted, TorrentRemovalModes.AfterSeeding);
+        _settings.SetAsync(SettingKeys.DownloadClientSeedRatio, ratio).GetAwaiter().GetResult();
+        _settings.SetAsync(SettingKeys.DownloadClientSeedMinutes, minutes).GetAwaiter().GetResult();
+    }
+
+    [Fact]
+    public async Task An_import_under_afterseeding_is_marked_with_that_mode()
+    {
+        _settings.Set(SettingKeys.DownloadClientRemoveCompleted, TorrentRemovalModes.AfterSeeding);
+
+        var item = await MarkAsync(Imported());
+
+        Assert.NotNull(item.ClientRemovalPendingAt);
+        Assert.Equal(TorrentRemovalModes.AfterSeeding, item.ClientRemovalMode);
+    }
+
+    [Fact]
+    public async Task A_seeding_torrent_below_both_targets_stays_in_the_client()
+    {
+        SeedTargets("2", "1440");
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(1.2, TimeSpan.FromHours(3));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Theory]
+    [InlineData(2.0, 60)]
+    [InlineData(0.4, 1500)]
+    public async Task A_seeding_torrent_goes_once_either_target_is_met(double ratio, int seededMinutes)
+    {
+        SeedTargets("2", "1440");
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(ratio, TimeSpan.FromMinutes(seededMinutes));
+
+        await RunAsync();
+
+        Assert.Equal([(Hash, true)], _client.Removed);
+        Assert.Null(Reload(id).ClientRemovalPendingAt);
+        Assert.NotNull(Reload(id).ClientRemovedAt);
+    }
+
+    [Fact]
+    public async Task With_no_targets_a_seeding_torrent_waits()
+    {
+        SeedTargets(null, null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(50, TimeSpan.FromDays(60));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task Switching_to_afterseeding_holds_rows_imported_under_afterimport_until_a_target_is_met()
+    {
+        SeedTargets("1", null);
+        var id = SeedPending();
+        Seeding(0.5, TimeSpan.FromDays(2));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task Switching_to_afterimport_does_not_cut_a_seeding_row_short()
+    {
+        _settings.Set(SettingKeys.DownloadClientSeedRatio, "2");
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(0.5, null);
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task A_seeding_row_outwaits_the_import_give_up_while_it_waits_for_its_target()
+    {
+        SeedTargets("5", null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding,
+            pendingSince: DateTime.UtcNow - TorrentRemovalJob.GiveUpAfter - TimeSpan.FromDays(1));
+        Seeding(1, TimeSpan.FromDays(40));
+
+        await RunAsync();
+
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task A_seeding_row_whose_target_is_never_reached_settles_after_the_seed_give_up()
+    {
+        SeedTargets("5", null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding,
+            pendingSince: DateTime.UtcNow - TorrentRemovalJob.SeedGiveUpAfter - TimeSpan.FromDays(1));
+        Seeding(1, TimeSpan.FromDays(200));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.Null(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task With_no_seed_target_the_torrent_keeps_seeding_and_the_client_is_not_read()
+    {
+        SeedTargets(null, null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(10, TimeSpan.FromDays(10));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+        Assert.Equal(0, _client.ListCalls);
+    }
+
+    [Fact]
+    public async Task A_seeding_torrent_the_client_no_longer_lists_settles_through_the_removal()
+    {
+        SeedTargets("2", null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.Null(Reload(id).ClientRemovalPendingAt);
+        Assert.Null(Reload(id).ClientRemovedAt);
+    }
+
+    [Fact]
+    public async Task A_client_that_cannot_list_keeps_seeding_rows_waiting()
+    {
+        SeedTargets("2", null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(5, null);
+        _client.ListFailure = new HttpRequestException("down");
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public void Seed_targets_are_met_by_either_number_and_never_without_one()
+    {
+        var torrent = Torrent() with { Ratio = 1.5, SeedingTime = TimeSpan.FromMinutes(90) };
+
+        Assert.True(new TorrentSeedTargets(1.5, null).MetBy(torrent));
+        Assert.True(new TorrentSeedTargets(3, 90).MetBy(torrent));
+        Assert.False(new TorrentSeedTargets(3, 120).MetBy(torrent));
+        Assert.False(new TorrentSeedTargets(null, null).MetBy(torrent));
+        Assert.False(new TorrentSeedTargets(1, 10).MetBy(Torrent()));
+        Assert.True(new TorrentSeedTargets(100, null).MetBy(torrent with { Ratio = double.PositiveInfinity }));
     }
 }

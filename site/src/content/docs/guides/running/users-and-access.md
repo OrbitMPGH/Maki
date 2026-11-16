@@ -6,7 +6,7 @@ description: Per-user data, library access and Kavita.
 Each account has its own reading history, preferences and tracker connections. The library is shared:
 one copy of the files and one set of series and chapters, so a second reader costs no disk.
 
-- **Per user:** read state and resume position, bookmarks, ratings, reader defaults and per-series
+- **Per user:** read state and resume position, reading status, bookmarks, ratings, reader defaults and per-series
   overrides, saved filters, start page, Home layout, title language, series-page rails,
   content-rating ceiling, OPDS feed, and the tracker accounts (AniList, MyAnimeList, Kitsu,
   MangaUpdates, MangaBaka) your progress is sent to. Ratings land on *your* tracker profile.
@@ -19,6 +19,10 @@ one copy of the files and one set of series and chapters, so a second reader cos
 Access is granted per root folder under **Settings → Users & security**. An account with no grants
 sees an empty library. Series, chapters, covers, search, OPDS and KOReader sync all respect it, and
 the same grants decide where someone with the **Add series** permission may add a title.
+
+The **Import library** permission covers the library import and **Manual import**. Admins can browse
+anywhere on the server there. Other users with the permission can only browse inside the root
+folders they were granted.
 
 ## Single-user mode
 

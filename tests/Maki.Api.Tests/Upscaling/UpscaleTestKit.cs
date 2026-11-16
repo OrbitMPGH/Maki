@@ -73,8 +73,12 @@ internal sealed class RecordingBroadcaster() : EventBroadcaster(null!, null!)
         }
     }
 
+    /// <summary>Called on the sending thread before the push is recorded.</summary>
+    public Action<(int UserId, int ChapterId, int Page, string Model, string State)>? OnSent { get; set; }
+
     public override Task PageEnhanced(int userId, int chapterId, int page, string model, string state)
     {
+        OnSent?.Invoke((userId, chapterId, page, model, state));
         lock (_gate)
         {
             _sent.Add((userId, chapterId, page, model, state));

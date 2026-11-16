@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
-  Alert,
   Button,
   Group,
   Menu,
@@ -19,15 +18,14 @@ import {
   IconAlertCircle,
   IconBookmark,
   IconBookmarkFilled,
-  IconDots,
   IconExternalLink,
   IconEyeOff,
   IconHistory,
   IconPencil,
   IconPlus,
-  IconStarFilled,
   IconThumbDown,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -58,13 +56,15 @@ import { MetaList } from '../../components/ui/MetaList'
 import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { seriesStatusVisual, statusToken } from '../../components/ui/status'
+import { ScoreInline } from '../../components/ui/ScoreInline'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
-import { formatFixedDecimal, formatNumber } from '../../format'
+import { formatNumber } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { usePageState } from '../../lib/pageState'
 import { notifications } from '../../lib/toast'
 import { randomUUID } from '../../lib/uuid'
+import { Callout } from '../../components/ui/Callout'
 
 type Filter = 'all' | 'changed' | 'completed' | 'anime'
 type Sort = 'recent' | 'oldest' | 'score' | 'title'
@@ -236,10 +236,7 @@ function ShortlistRow({
             <span className="shortlist-title">{shown}</span>
           )}
           {item?.rating != null && (
-            <span className="shortlist-score tnum">
-              <IconStarFilled size={16} style={{ color: 'var(--rating)' }} />
-              {formatFixedDecimal(item.rating / 10, 1)}
-            </span>
+            <ScoreInline score={item.rating} size="md" />
           )}
         </div>
 
@@ -381,9 +378,7 @@ function ShortlistRow({
               }}
             >
               <Menu.Target>
-                <ActionIcon size="lg" variant="subtle" color="var(--neutral)" aria-label={t`More actions for ${title}`}>
-                  <IconDots size={18} />
-                </ActionIcon>
+                <OverflowButton aria-label={t`More actions for ${title}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => (editAfterMenu.current = true)}>
@@ -586,23 +581,23 @@ export function ShortlistTab() {
   if (isError) {
     const reason = errorText(error)
     return (
-      <Alert color="var(--danger)" variant="light" icon={<IconAlertCircle size={16} />} title={t`Could not load your shortlist`}>
+      <Callout tone="danger" role="alert" icon={IconAlertCircle} title={t`Could not load your shortlist`}>
         <Group gap="sm">
           <Text size="sm">{reason}</Text>
           <Button size="xs" variant="default" onClick={() => void refetch()}>
             <Trans>Retry</Trans>
           </Button>
         </Group>
-      </Alert>
+      </Callout>
     )
   }
   if (data?.catalogueAvailable === false) {
     return (
-      <Alert color="var(--warn)" variant="light" icon={<IconAlertCircle size={16} />} title={t`Discover's catalogue is not downloaded yet`}>
+      <Callout tone="warn" role="alert" icon={IconAlertCircle} title={t`Discover's catalogue is not downloaded yet`}>
         <Text size="sm">
           <Trans>Anything you saved is kept and shows up here once the catalogue is installed.</Trans>
         </Text>
-      </Alert>
+      </Callout>
     )
   }
   if (all.length === 0) return <EmptyShortlist />

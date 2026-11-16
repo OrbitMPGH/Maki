@@ -504,6 +504,85 @@ msgstr "Tri de retour non pris en charge"
 msgid "error.feedback.unsupportedState"
 msgstr "État de retour non pris en charge"
 
+#. ASP.NET Identity's own errors, joined with "; " when several apply at once.
+#. English: Something went wrong. Try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.defaultError"
+msgstr "Une erreur est survenue. Réessayez."
+
+#. English: Someone else changed this account at the same time. Reload and try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.concurrencyFailure"
+msgstr "Quelqu'un d'autre a modifié ce compte en même temps. Rechargez la page et réessayez."
+
+#. English: Incorrect password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.passwordMismatch"
+msgstr "Mot de passe incorrect."
+
+#. English: This link or code is no longer valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidToken"
+msgstr "Ce lien ou ce code n'est plus valide."
+
+#. English: That recovery code did not work.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.recoveryCodeRedemptionFailed"
+msgstr "Ce code de récupération n'a pas fonctionné."
+
+#. English: This sign-in is already linked to an account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.loginAlreadyAssociated"
+msgstr "Cette connexion est déjà liée à un compte."
+
+#. English: The username {userName} is not allowed. Use letters, digits and - . _ @ + only.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidUserName"
+msgstr "Le nom d'utilisateur {userName} n'est pas autorisé. Utilisez uniquement des lettres, des chiffres et - . _ @ +."
+
+#. English: The email address {email} is not valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidEmail"
+msgstr "L'adresse e-mail {email} n'est pas valide."
+
+#. English: The username {userName} is already taken.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.duplicateUserName"
+msgstr "Le nom d'utilisateur {userName} est déjà pris."
+
+#. English: The email address {email} is already in use.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.duplicateEmail"
+msgstr "L'adresse e-mail {email} est déjà utilisée."
+
+#. English: This account already has a password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.userAlreadyHasPassword"
+msgstr "Ce compte a déjà un mot de passe."
+
+#. English: Lockout is not enabled for this account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.userLockoutNotEnabled"
+msgstr "Le verrouillage n'est pas activé pour ce compte."
+
+#. English: Passwords must be at least {length} characters.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.passwordTooShort"
+msgstr "Les mots de passe doivent comporter au moins {length} caractères."
+
 #. English: Unknown tracker
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #, fuzzy
@@ -582,6 +661,42 @@ msgstr "Le nom est requis"
 #, fuzzy
 msgid "error.discoverFilters.tooMany"
 msgstr "Vous pouvez enregistrer au maximum {max} filtres"
+
+#. English: That credit notice no longer exists
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.noticeNotFound"
+msgstr "Cette mention de crédit n'existe plus"
+
+#. English: A group name can be at most 100 characters
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.nameTooLong"
+msgstr "Un nom de groupe peut comporter 100 caractères au maximum"
+
+#. English: Enter a group name
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.nameRequired"
+msgstr "Saisissez un nom de groupe"
+
+#. English: A site ad cannot name a release group
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.siteHasNoGroup"
+msgstr "Une publicité de site ne peut pas nommer un groupe de scantrad"
+
+#. English: That value is not one Maki knows
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.invalidValue"
+msgstr "Cette valeur n'est pas connue de Maki"
+
+#. English: Pick at least one credit notice
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.noNotices"
+msgstr "Choisissez au moins une mention de crédit"
 
 #. English: Name is required
 #: src/Maki.Api/Controllers/CustomRailsController.cs
@@ -968,6 +1083,12 @@ msgstr "Le modèle d'adresse des chapitres ne reconstruit pas les liens affiché
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "L'adresse du chapitre d'exemple ne figure pas dans la liste des chapitres."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+#, fuzzy
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr "Le chapitre d'exemple est répertorié comme verrouillé. Choisissez un chapitre gratuit comme exemple."
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
@@ -998,6 +1119,13 @@ msgstr "Le dossier n'existe plus"
 #, fuzzy
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Ce dossier appartient déjà à une autre série de la bibliothèque"
+
+#. English: This folder is a library root folder or contains one, so Maki won't import from it
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+#, fuzzy
+msgid "error.import.holdsRootFolder"
+msgstr "Ce dossier est un dossier racine de la bibliothèque ou en contient un, donc Maki n'importera rien depuis lui"
 
 #. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #: src/Maki.Api/Services/LibraryImportResolver.cs
@@ -1214,6 +1342,31 @@ msgstr "Le nombre de chapitres et de volumes doit être compris entre 0 et {max}
 msgid "error.metadata.invalidStatus"
 msgstr "Statut inconnu."
 
+#. English: The year must be between {minYear} and {maxYear}.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.invalidYear"
+msgstr "L'année doit être comprise entre {minYear} et {maxYear}."
+
+#. English: The provider rates this series above your content rating limit, so its rating can't be reset.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr "Le fournisseur classe cette série au-dessus de votre limite de classification de contenu, donc sa classification ne peut pas être réinitialisée."
+
+#. English: Unknown series type.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.unknownType"
+msgstr "Type de série inconnu."
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#. English: {reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+#, fuzzy
+msgid "error.metadata.coverFetchFailed"
+msgstr "{reason, select, refused {Maki ne récupère que les images d'adresses web publiques, il a donc ignoré {url}.} timeout {{url} a mis trop de temps à répondre.} status {{url} a répondu avec le code HTTP {status}.} redirects {{url} a redirigé trop de fois.} other {Maki n'a pas pu joindre {url}.}}"
+
 #. English: Choose at least one field.
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 #, fuzzy
@@ -1400,11 +1553,18 @@ msgstr "L'URL doit être une adresse complète en http:// ou https://"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "L'URL du webhook est requise"
 
-#. English: Choose WebP, AVIF or off
+#. English: Choose WebP, AVIF, JPEG XL or off
 #: src/Maki.Api/Controllers/PageConversionController.cs
 #, fuzzy
 msgid "error.pageConversion.formatInvalid"
 msgstr "Choisissez WebP, AVIF ou désactivé"
+
+#. A plan or rule picked JPEG XL, but libjxl did not load beside Maki (missing or older than 0.11).
+#. English: JPEG XL needs libjxl, which this install does not have. Choose WebP or AVIF
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#, fuzzy
+msgid "error.pageConversion.jpegXlUnavailable"
+msgstr "Le JPEG XL nécessite libjxl, que cette installation n'a pas. Choisissez WebP ou AVIF"
 
 #. Starting the library pass while page conversion is switched off.
 #. English: Choose a format for page conversion first
@@ -1425,6 +1585,11 @@ msgstr "L'une des règles n'est pas valide. Vérifiez ses conditions et ce qu'el
 #, fuzzy
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choisissez Le plus petit, Compact, Équilibré, Élevé ou Sans perte"
+
+#. English: Choose a split height from {min} to {max} pixels
+#, fuzzy
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr "Choisissez une hauteur de découpe entre {min} et {max} pixels"
 
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
@@ -1832,6 +1997,13 @@ msgstr "L'emplacement d'origine est en dehors du dossier racine ou derrière un 
 msgid "error.release.grabFailed"
 msgstr "Impossible d'envoyer la version à qBittorrent. Les détails sont dans le journal du serveur."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+#, fuzzy
+msgid "error.release.diskLow"
+msgstr "Le dossier de bibliothèque de cette série manque d'espace libre, donc les nouveaux téléchargements qui y vont sont en attente. Libérez de l'espace ou baissez le seuil dans Paramètres → Bibliothèque."
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2010,6 +2182,13 @@ msgstr "Utilisateur inconnu"
 msgid "error.requests.unknownKind"
 msgstr "Type de demande inconnu"
 
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#, fuzzy
+msgid "error.rootFolder.minFreeNegative"
+msgstr "L'espace libre à conserver doit être égal ou supérieur à zéro"
+
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #, fuzzy
@@ -2048,6 +2227,18 @@ msgstr "Maki ne peut pas lire ce dossier : {path}"
 #, fuzzy
 msgid "error.rootFolder.pathRequired"
 msgstr "Le chemin est requis"
+
+#. English: A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+#, fuzzy
+msgid "error.rootFolderRules.invalidConditions"
+msgstr "Une règle a besoin d'au moins une condition dans chaque groupe, de 10 groupes au maximum et de 20 conditions au maximum, chacune avec un champ connu et une valeur valide"
+
+#. English: That root folder no longer exists
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+#, fuzzy
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr "Ce dossier racine n'existe plus"
 
 #. English: Set the AniList client id/secret in Settings first
 #: src/Maki.Api/Controllers/ScrobbleController.cs
@@ -2376,6 +2567,20 @@ msgstr "Mode inconnu : {mode}"
 msgid "error.series.unknownNotificationMode"
 msgstr "Mode de notification inconnu : {mode}"
 
+#. Shown when a client sends a reading status that is not Reading, PlanToRead, OnHold or Dropped.
+#. English: Unknown reading status: {status}
+#: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
+msgid "error.series.unknownReadingStatus"
+msgstr "Statut de lecture inconnu : {status}"
+
+#. {max} is the largest number of days either reading status rule accepts.
+#. English: Days must be between 1 and {max}.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.readingStatusDays"
+msgstr "Le nombre de jours doit être compris entre 1 et {max}."
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2388,6 +2593,14 @@ msgstr "Origine d'ajout non prise en charge"
 #, fuzzy
 msgid "error.series.unknownTagIds"
 msgstr "Un ou plusieurs identifiants de tags n'existent pas"
+
+#. Recorded against the series a bulk Library action stopped at, when the account that queued it was
+#. disabled, removed or lost the permission or root folder it needs.
+#. English: Stopped here: your account can no longer run this action
+#: src/Maki.Api/Services/SeriesBulkWorker.cs
+#, fuzzy
+msgid "error.seriesBulk.accessRevoked"
+msgstr "Arrêté ici : votre compte ne peut plus lancer cette action"
 
 #. Shown as warnings after the series row is already saved. The cause is in the server log.
 #. English: Could not finish cover setup. Details are in the server log.
@@ -2767,6 +2980,12 @@ msgstr "Ce mode de connexion nécessite un nom d'utilisateur."
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} est trop ancien pour ce mode de connexion. Maki nécessite la version {minimum} ou ultérieure."
 
+#. English: A rule needs between 1 and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+#, fuzzy
+msgid "error.autoTagRules.invalidConditions"
+msgstr "Une règle a besoin de 1 à 20 conditions, chacune avec un champ connu et une valeur valide"
+
 #. {label} is the tag name the user typed in.
 #. English: A tag called "{label}" already exists
 #: src/Maki.Api/Controllers/TagsController.cs
@@ -3088,6 +3307,18 @@ msgstr "Le modèle n'a pas pu être téléchargé. Vérifiez que ce serveur peut
 msgid "error.upscaling.invalidCache"
 msgstr "La taille du cache doit être comprise entre {min} et {max} Mo."
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#, fuzzy
+msgid "error.upscaling.invalidPrepare"
+msgstr "Une des valeurs de Préparer les chapitres à l'avance est hors limites."
+
+#. English: Prepare ahead takes between 0 and {max} chapters.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
+msgid "error.series.invalidPrepareChapters"
+msgstr "Préparer à l'avance accepte entre 0 et {max} chapitres."
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy
@@ -3214,6 +3445,27 @@ msgstr "Le délai de téléchargement doit être 0 (aucune limite) ou compris en
 msgid "error.settings.bulkHoldRange"
 msgstr "Le seuil de mise en attente doit être compris entre 0 (désactivé) et {max} chapitres"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.stallHoursRange"
+msgstr "Le délai d'inactivité doit être compris entre 0 (désactivé) et {max} heures"
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.seedRatioRange"
+msgstr "Le ratio de partage doit être compris entre 0 et {max}"
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.seedMinutesRange"
+msgstr "La durée de partage doit être comprise entre 0 et {max} minutes"
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3287,6 +3539,12 @@ msgstr "Le nombre de recherches de volumes par exécution doit être compris ent
 #, fuzzy
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "L'expiration des propositions doit être comprise entre {min} et {max} jours"
+
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr "Le nombre minimum de seeders doit être compris entre {min} et {max}"
 
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3429,6 +3687,19 @@ msgstr "FlareSolverr n'a pas répondu"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki n'a pas de mots de volume ou de chapitre pour la langue « {language} »"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format needs at least one token outside a <...> block, or a name could come out empty
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.allTokensOptional"
+msgstr "Le format doit contenir au moins un jeton en dehors d'un bloc <...>, sinon un nom pourrait sortir vide"
+
+#. English: Format has a "<" or ">" inside a token
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.angleInsideToken"
+msgstr "Le format contient un « < » ou un « > » à l'intérieur d'un jeton"
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #. English: Format has a "{" inside a token
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3472,6 +3743,13 @@ msgstr "Le format ne peut pas être vide"
 msgid "error.naming.formatInvalid"
 msgstr "{field} : {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format has a <...> block inside another one
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.nestedOptional"
+msgstr "Le format contient un bloc <...> dans un autre"
+
 #. English: {token} does not take a padding pattern
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
@@ -3483,6 +3761,13 @@ msgstr "{token} n'accepte pas de motif de remplissage"
 #, fuzzy
 msgid "error.naming.noTokens"
 msgstr "Le format doit contenir au moins un jeton, sinon toutes les séries auraient le même nom"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#. English: {block} has no token in it, so it would always show
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.optionalWithoutToken"
+msgstr "{block} ne contient aucun jeton, il s'afficherait donc toujours"
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -3504,11 +3789,23 @@ msgstr "Le format ne peut pas contenir de séparateurs de chemin. Chaque nom ne 
 msgid "error.naming.unknownToken"
 msgstr "Jeton inconnu : {token}"
 
+#. English: Format has a ">" with no matching "<"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.unmatchedCloseAngle"
+msgstr "Le format contient un « > » sans « < » correspondant"
+
 #. English: Format has a "}" with no matching "{"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "Le format contient une accolade fermante sans accolade ouvrante correspondante"
+
+#. English: Format has a "<" with no matching ">"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.unmatchedOpenAngle"
+msgstr "Le format contient un « < » sans « > » correspondant"
 
 #. English: Format has a "{" with no matching "}"
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3545,11 +3842,23 @@ msgstr "Identifiant de série"
 msgid "naming.token.anilistid.description"
 msgstr "Identifiant AniList ; vide si aucune correspondance"
 
+#. English: Release date as 2024-05-17; blank when the source gives none
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.chapterreleasedate.description"
+msgstr "Date de publication au format 2024-05-17 ; vide lorsque la source n'en donne pas"
+
 #. English: Scanlation group, e.g. Group Name. Blank when the file has none
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.chaptergroup.description"
 msgstr "Groupe de scanlation, par exemple Group Name. Vide lorsque le fichier n'en a pas"
+
+#. English: The source the file was downloaded from, e.g. MangaDex. Blank for an imported file
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.chaptersource.description"
+msgstr "La source depuis laquelle le fichier a été téléchargé, par exemple MangaDex. Vide pour un fichier importé"
 
 #. English: BCP-47 language tag, e.g. en
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -3599,6 +3908,12 @@ msgstr "Identifiant Kitsu ; vide si aucune correspondance"
 msgid "naming.token.malid.description"
 msgstr "Identifiant MyAnimeList ; vide si aucune correspondance"
 
+#. English: Official, Scanlator, Aggregator or Volume; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.qualitytier.description"
+msgstr "Officiel, Scantrad, Agrégateur ou Volume ; vide quand c'est inconnu"
+
 #. English: MangaBaka id; blank when unmatched
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3617,6 +3932,12 @@ msgstr "UUID MangaDex ; vide si aucune correspondance"
 msgid "naming.token.mangaupdatesid.description"
 msgstr "Identifiant MangaUpdates ; vide si aucune correspondance"
 
+#. English: The story author, or the artist when no author is known. Several are joined with a comma
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriesauthor.description"
+msgstr "L'auteur de l'histoire, ou le dessinateur quand l'auteur est inconnu. Plusieurs noms sont séparés par une virgule"
+
 #. English: Title with punctuation removed: letters, digits and spaces only
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3629,11 +3950,23 @@ msgstr "Titre sans ponctuation : uniquement des lettres, chiffres et espaces"
 msgid "naming.token.seriesoriginaltitle.description"
 msgstr "Titre dans la langue d'origine ; vide si le fournisseur n'en indique aucun"
 
+#. English: The original publisher, the first one listed; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriespublisher.description"
+msgstr "L'éditeur d'origine, le premier listé ; vide quand c'est inconnu"
+
 #. English: The sort title, e.g. leading article moved to the end
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.seriessorttitle.description"
 msgstr "Titre de tri, par exemple avec l'article initial déplacé à la fin"
+
+#. English: Ongoing, Completed, Hiatus or Cancelled; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriesstatus.description"
+msgstr "En cours, Terminé, Pause ou Annulé ; vide quand c'est inconnu"
 
 #. English: The series title as Maki has it
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -4503,6 +4836,31 @@ msgstr "Nouveautés des créateurs que vous suivez"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# nouveau titre} many {# nouveaux titres} other {# nouveaux titres}} dans le catalogue."
 
+#. English: {kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWork.title"
+msgstr "{kind, select, sequel {Nouvelle suite} prequel {Nouvelle préquelle} spinOff {Nouveau spin-off} sideStory {Nouvelle histoire parallèle} mainStory {Nouvelle histoire principale} other {Nouvelle œuvre liée}}"
+
+#. {title} is a catalogue title and is not translated.
+#. English: {kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWork.body"
+msgstr "{kind, select, sequel {{title} est une nouvelle suite d'une série que vous lisez.} prequel {{title} est une nouvelle préquelle d'une série que vous lisez.} spinOff {{title} est un nouveau spin-off d'une série que vous lisez.} sideStory {{title} est une nouvelle histoire parallèle d'une série que vous lisez.} mainStory {{title} est l'histoire principale d'une série que vous lisez.} other {{title} est lié à une série que vous lisez.}}"
+
+#. English: New sequels and spin-offs
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWorks.title"
+msgstr "Nouvelles suites et spin-offs"
+
+#. English: {count, plural, one {# new work} other {# new works}} related to series you read.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWorks.body"
+msgstr "{count, plural, one {# nouvelle œuvre liée} many {# nouvelles œuvres liées} other {# nouvelles œuvres liées}} à des séries que vous lisez."
+
 #. English: Update available
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #, fuzzy
@@ -4955,6 +5313,23 @@ msgstr "Le torrent est dans le client de téléchargement, mais un autre téléc
 #, fuzzy
 msgid "error.download.torrentRemoved"
 msgstr "Le torrent n'est plus dans qBittorrent"
+
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#, fuzzy
+msgid "error.download.torrentStalled"
+msgstr "Le torrent n'a fait aucun progrès dans le délai d'inactivité"
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#, fuzzy
+msgid "error.download.torrentNoPeers"
+msgstr "Aucun seeder ni pair connecté au torrent dans le délai d'inactivité"
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #. English: The download client reports an error on this torrent
@@ -5423,6 +5798,20 @@ msgstr "Note envoyée : {score}/10"
 msgid "scrobble.log.ratingPushFailed"
 msgstr "Impossible d'envoyer la note : {detail}"
 
+#. {status} is one of the scrobble.status.* words, already rendered. Sent when the reader changed the series' status in Maki.
+#. English: Moved to {status}
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.log.statusPushed"
+msgstr "Passé à {status}"
+
+#. {detail} is the tracker's own error text and is not translated.
+#. English: Could not send the reading status: {detail}
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.log.statusPushFailed"
+msgstr "Impossible d'envoyer le statut de lecture : {detail}"
+
 #. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
 #. own shelves, so translate them the way those sites do in this language.
 #. English: reading
@@ -5448,6 +5837,18 @@ msgstr "À lire"
 #, fuzzy
 msgid "scrobble.status.other"
 msgstr "Autre"
+
+#. English: on hold
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.status.paused"
+msgstr "en pause"
+
+#. English: dropped
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.status.dropped"
+msgstr "abandonné"
 
 #. Confirmations shown after a tracker action on the series page.
 #. English: A sync is already running
@@ -5571,23 +5972,27 @@ msgstr "La copie identique vers laquelle ces chapitres devaient être déplacés
 
 #. English: This copy backs chapters now, so it is no longer a spare. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareInUse"
-msgstr ""
+msgstr "Cette copie sert maintenant à des chapitres, elle n'est donc plus une réserve. Rien n'a été supprimé."
 
 #. English: No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareLastCopy"
-msgstr ""
+msgstr "Aucune autre copie de ces octets n'est restée sur le disque, donc celle-ci n'est pas une réserve. Rien n'a été supprimé."
 
 #. English: Maki can't tell this copy apart from the other one on disk. They may be one file under two names, so nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareNotDistinct"
-msgstr ""
+msgstr "Maki ne peut pas distinguer cette copie de l'autre sur le disque. Il peut s'agir d'un même fichier sous deux noms, donc rien n'a été supprimé."
 
 #. English: Another chapter record reads this same file under a different spelling of its path. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.fileBacksChapters"
-msgstr ""
+msgstr "Un autre enregistrement de chapitre lit ce même fichier sous une autre écriture de son chemin. Rien n'a été supprimé."
 
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -5618,6 +6023,12 @@ msgstr "Le contenu du fichier a changé, ou il n'a pas été entièrement analys
 #, fuzzy
 msgid "error.health.operationActive"
 msgstr "Une autre opération sur ce fichier est en cours."
+
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+#, fuzzy
+msgid "error.health.jobRunning"
+msgstr "Cette tâche est déjà en cours."
 
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -5866,6 +6277,12 @@ msgstr "Le planificateur en arrière-plan est en pause"
 msgid "health.check.databaseCurrent"
 msgstr "La base de données est accessible et à jour"
 
+#. English: This database was written by a newer version of Maki (migration {latest}). Running this older version against it can corrupt data. Upgrade again, or restore the backup taken before the upgrade.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#, fuzzy
+msgid "health.check.databaseNewer"
+msgstr "Cette base a été écrite par une version plus récente de Maki (migration {latest}). Utiliser cette version plus ancienne avec elle peut corrompre les données. Mettez à jour de nouveau, ou restaurez la sauvegarde prise avant la mise à jour."
+
 #. English: A previous startup migration failed. Check the startup logs.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
@@ -5948,7 +6365,7 @@ msgstr "La connexion de notification {name} n'a pas réussi à livrer {count} fo
 msgid "health.check.notificationDelivering"
 msgstr "La connexion de notification {name} livre à nouveau"
 
-#. {job} is the scheduler's own name for the job and is not translated.
+#. {job} is one of the health.job.* names below, already translated.
 #. English: {job}: last run succeeded
 #: src/Maki.Api/Services/HealthJobListener.cs
 #, fuzzy
@@ -5960,6 +6377,235 @@ msgstr "{job} : dernière exécution réussie"
 #, fuzzy
 msgid "health.check.jobFailed"
 msgstr "{job} : dernière exécution échouée, voir les journaux"
+
+#. The name of a scheduled background job, shown on the Health page and in job notifications.
+#. English: Anime list sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.animeSignals"
+msgstr "Synchronisation de la liste d'anime"
+
+#. English: Unload idle recommendation data
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.artifactIdleUnload"
+msgstr "Décharger les données de recommandation inactives"
+
+#. English: Close the idle browser
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.browserIdleShutdown"
+msgstr "Fermer le navigateur inactif"
+
+#. English: Measure chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.chapterFileMeasure"
+msgstr "Mesurer les fichiers de chapitres"
+
+#. English: Check for updates
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.checkForUpdates"
+msgstr "Rechercher les mises à jour"
+
+#. English: Install the co-read graph
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.coRead"
+msgstr "Installer le graphe de lecture commune"
+
+#. English: Import completed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.completedDownloads"
+msgstr "Importer les téléchargements terminés"
+
+#. English: Check custom sources
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.customSourceHealth"
+msgstr "Vérifier les sources personnalisées"
+
+#. English: Update custom source repositories
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.customSourceRepositories"
+msgstr "Mettre à jour les dépôts de sources personnalisées"
+
+#. English: Prepare Discover
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.discoverCacheWarm"
+msgstr "Préparer Découvrir"
+
+#. English: Check the drop folder
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.dropFolder"
+msgstr "Vérifier le dossier de dépôt"
+
+#. English: Unload the idle text model
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.embedderIdleUnload"
+msgstr "Décharger le modèle de texte inactif"
+
+#. English: Build the search index
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.embeddingIndex"
+msgstr "Construire l'index de recherche"
+
+#. English: Check followed creators for new series
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.followedCreatorReleases"
+msgstr "Vérifier les nouvelles séries des auteurs suivis"
+
+#. English: Put idle series on hold or drop them
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readingStatusRules"
+msgstr "Mettre en pause ou abandonner les séries inactives"
+
+#. English: Health checks
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.healthCheck"
+msgstr "Contrôles d'intégrité"
+
+#. English: Housekeeping
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.housekeeping"
+msgstr "Maintenance"
+
+#. English: Rebuild the image cache
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.imageCacheRebuild"
+msgstr "Reconstruire le cache d'images"
+
+#. English: Import lists
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.importLists"
+msgstr "Listes d'import"
+
+#. English: Index files for KOReader sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.koreaderDocumentIndex"
+msgstr "Indexer les fichiers pour la synchronisation KOReader"
+
+#. English: Update the MangaBaka database
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.mangaBakaDumpRefresh"
+msgstr "Mettre à jour la base MangaBaka"
+
+#. English: Prepare MangaBaka database tables
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.mangaBakaTableBackfill"
+msgstr "Préparer les tables de la base MangaBaka"
+
+#. English: Refresh metadata
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.metadataRefresh"
+msgstr "Actualiser les métadonnées"
+
+#. English: Install the prebuilt search index
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.prebuiltIndex"
+msgstr "Installer l'index de recherche préconstruit"
+
+#. English: Remove read chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readFileCleanup"
+msgstr "Supprimer les fichiers de chapitres lus"
+
+#. English: Install reader cohorts
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readerCohorts"
+msgstr "Installer les cohortes de lecteurs"
+
+#. English: Install the recommendation graph
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.recoGraph"
+msgstr "Installer le graphe de recommandations"
+
+#. English: Check monitored series for new chapters
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.refreshMonitored"
+msgstr "Vérifier les nouveaux chapitres des séries suivies"
+
+#. English: Look for new sequels and spin-offs
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.relatedWorkWatch"
+msgstr "Rechercher les nouvelles suites et spin-offs"
+
+#. English: Retry failed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.retryFailedDownloads"
+msgstr "Relancer les téléchargements en échec"
+
+#. English: Scheduled backup
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.scheduledBackup"
+msgstr "Sauvegarde planifiée"
+
+#. English: Scrobble sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.scrobble"
+msgstr "Synchronisation Scrobble"
+
+#. English: Smart Download
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.smartDownload"
+msgstr "Smart Download"
+
+#. English: Install taste vectors
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.tasteVectors"
+msgstr "Installer les vecteurs de goût"
+
+#. English: Remove finished torrents
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.torrentRemoval"
+msgstr "Retirer les torrents terminés"
+
+#. English: Upgrade scan
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upgradeScan"
+msgstr "Analyse des mises à niveau"
+
+#. English: Volume upgrade search
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upgradeVolumeSearch"
+msgstr "Recherche de mise à niveau en volume"
+
+#. English: Unload the idle upscaler
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upscalerIdleUnload"
+msgstr "Décharger l'agrandisseur inactif"
 
 #. Problems found in the library itself, shown on the same page as the checks above.
 #. {detail} is the source's own error text and is not translated.
@@ -6325,7 +6971,7 @@ msgstr "Intégrité rétablie"
 msgid "inbox.health.recovered.body"
 msgstr "Résolu : {detail}"
 
-#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. A scheduled background job changed state. {job} is one of the health.job.* names, already
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
 #. inbox copy, worded per reader.
 #. English: Background job failed

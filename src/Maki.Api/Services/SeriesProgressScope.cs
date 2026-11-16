@@ -1,0 +1,119 @@
+using Maki.Core.Entities;
+
+namespace Maki.Api.Services;
+
+/// <summary>
+/// Two totals, kept apart on purpose.
+/// <para>
+/// <see cref="Wanted"/> is what the series page shows: On disk counts the chapters the reader wants,
+/// plus any they have or had a file for, so 43 wanted out of 45 listed reads 43 of 43 whatever
+/// MangaBaka says; Read counts the downloaded ones, as the reader does.
+/// </para>
+/// <para>
+/// <see cref="Compute"/> is how long the series is, which only the automatic Completed needs
+/// (<see cref="SeriesCompletion"/>): a series whose sources lack the final chapters must not complete
+/// itself just because everything listed is read. The total is the locked total, else the largest of MangaBaka's total, the highest whole chapter
+/// listed and the number of main chapters listed. Specials (decimal chapter numbers) count on every
+/// side only while the reader keeps them: neither the global "unmonitor specials" setting nor the
+/// series' Main only mode is on. MangaBaka's total usually counts main chapters, so kept specials are
+/// added on top of it. Some entries count the extras too: 26 chapters and 3 specials listed against
+/// 29, or 54 chapters and 12 specials running on to 53.8 against 63. Then MangaBaka's number says
+/// nothing the listed chapters don't, so it stops being a floor and the rows decide (see
+/// <c>MangaBakaFloor</c>).
+/// </para>
+/// <para>
+/// A chapter the user switched off (Wanted off, no file, never had one) is left out of the listed
+/// floors and of the kept specials, so a skipped prelude reads 17 of 17. Smart mode never writes
+/// Wanted, so this holds there too. A None series is the exception: every chapter it discovers is
+/// stamped Wanted off, so an off switch there says nothing about the user.
+/// </para>
+/// </summary>
+public static class SeriesProgressScope
+{
+    /// <param name="Skipped">Chapters left out of <paramref name="Total"/> because they were switched off.</param>
+    /// <param name="IncludedSpecials">Specials inside <paramref name="Total"/>; 0 when specials are not counted.</param>
+    public sealed record Totals(
+        int Total, int Have, int? Read, bool SpecialsCounted, int ListedSpecials, int Skipped = 0, int IncludedSpecials = 0);
+
+    /// <summary>Chapters with Wanted off and no file, and the highest whole chapter that is not one.</summary>
+    public sealed record SwitchedOff(int Chapters, int Specials, double? HighestKeptMain);
+
+    /// <summary>
+    /// The Reading and Downloads totals. <paramref name="wanted"/> already holds every chapter that
+    /// is Wanted, has a file, had one, or was read (<c>LibraryListRows.ChapterTalliesAsync</c>), so the
+    /// read count cannot pass it. Zero when nothing is wanted; the client then counts against every
+    /// listed chapter instead.
+    /// </summary>
+    public static Totals Wanted(
+        int wanted, int had, int? read, int listedSpecials, int switchedOff, int switchedOffSpecials) =>
+        new(wanted, had, read is { } r ? Math.Clamp(r, 0, wanted) : null, true, listedSpecials,
+            switchedOff, Math.Max(0, listedSpecials - switchedOffSpecials));
+
+    public static bool CountsSpecials(NewChapterMonitorMode mode, bool unmonitorSpecials) =>
+        !unmonitorSpecials && mode != NewChapterMonitorMode.MainOnly;
+
+    public static Totals Compute(
+        Series series, int known, int had, int specials, int specialsHad, double? highestMain,
+        int? read, int readSpecials, bool unmonitorSpecials, SwitchedOff? switchedOff = null,
+        double? highestSpecial = null)
+    {
+        var countSpecials = CountsSpecials(series.MonitorNewItems, unmonitorSpecials);
+        var off = series.MonitorNewItems == NewChapterMonitorMode.None || switchedOff is null
+            ? new SwitchedOff(0, 0, highestMain)
+            : switchedOff;
+        var offMain = Math.Max(0, off.Chapters - off.Specials);
+        var mangaBaka = MangaBakaFloor(series, Math.Max(0, known - specials), highestMain, specials, highestSpecial);
+        var main = MainTotal(series, mangaBaka, Math.Max(0, known - specials - offMain), off.HighestKeptMain);
+        // What the switches actually took off: a MangaBaka total above the rows keeps its floor.
+        var mainOff = MainTotal(series, mangaBaka, Math.Max(0, known - specials), highestMain) - main;
+        var includedSpecials = countSpecials ? Math.Max(0, specials - off.Specials) : 0;
+        var total = main + includedSpecials;
+
+        return new Totals(
+            total,
+            Math.Max(0, had - (countSpecials ? 0 : specialsHad)),
+            read is { } r ? Math.Clamp(r - (countSpecials ? 0 : readSpecials), 0, total) : null,
+            countSpecials,
+            specials,
+            Math.Max(0, mainOff) + (countSpecials ? off.Specials : 0),
+            includedSpecials);
+    }
+
+    // Every main chapter listed is a floor too: a chapter 0, a one-shot or a volume entry is
+    // counted as had, and a total below the rows would read "100 of 99".
+    private static int MainTotal(Series series, int mangaBaka, int listedMain, double? highestMain)
+    {
+        if (series.IsLocked(SeriesMetadataField.TotalChapters) && series.TotalChapters is { } locked)
+        {
+            return locked;
+        }
+
+        var highest = highestMain is { } h ? (int)Math.Floor(h) : 0;
+        return Math.Max(Math.Max(mangaBaka, highest), listedMain);
+    }
+
+    // MangaBaka's total as a floor, or 0 when it counts the listed specials and so says nothing the rows
+    // don't. It counts them when the main chapters fall short of it and the specials make up exactly the
+    // difference, or make up more than the difference on a finished series where some of them come after
+    // the last main chapter (side stories after the ending). A source that is just missing the final
+    // chapters keeps MangaBaka's number unless it is finished and lists a special right after the last
+    // chapter it has; MangaBaka's final_chapter would settle that, but the dump leaves it empty.
+    private static int MangaBakaFloor(
+        Series series, int listedMain, double? highestMain, int specials, double? highestSpecial)
+    {
+        if (series.TotalChapters is not { } t)
+        {
+            return 0;
+        }
+
+        var main = Math.Max(listedMain, highestMain is { } h ? (int)Math.Floor(h) : 0);
+        if (specials == 0 || main >= t || main + specials < t)
+        {
+            return t;
+        }
+
+        var afterTheEnd = series.Status == SeriesStatus.Completed &&
+                          highestSpecial is { } s && s > (highestMain ?? 0);
+        return main + specials == t || afterTheEnd ? 0 : t;
+    }
+}

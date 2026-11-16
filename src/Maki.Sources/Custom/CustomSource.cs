@@ -84,7 +84,11 @@ public sealed partial class CustomSource : ISource
     public string Name => Definition.SourceName;
     public string DisplayName => Definition.Name;
     public string BaseUrl => _base.GetLeftPart(UriPartial.Authority);
-    public SourceCapabilities Capabilities => Definition.FlareSolverr ? SourceCapabilities.NeedsFlareSolverr : SourceCapabilities.None;
+    public SourceCapabilities Capabilities =>
+        (Definition.FlareSolverr ? SourceCapabilities.NeedsFlareSolverr : SourceCapabilities.None) |
+        (Definition.Engine is null && Definition.Chapters.Locked is not null
+            ? SourceCapabilities.ListsLockedChapters
+            : SourceCapabilities.None);
     public SourceKind Kind => CustomSourceEnums.Kind(Definition.Kind) ?? SourceKind.Scanlator;
     public SourceContent Content => CustomSourceEnums.Content(Definition.Content) ?? SourceContent.Manga;
     public SourceRating Rating => CustomSourceEnums.Rating(Definition.Rating) ?? SourceRating.General;
@@ -265,7 +269,9 @@ public sealed partial class CustomSource : ISource
             new SourceChapter(
                 Name, seriesId, chapterId, numberText, parsed.Number, parsed.Volume,
                 CustomExtractor.Field(chapters.Title, item), Definition.Language,
-                ParseDate(CustomExtractor.Field(chapters.Date, item), chapters.Date), url.AbsoluteUri),
+                ParseDate(CustomExtractor.Field(chapters.Date, item), chapters.Date), url.AbsoluteUri,
+                CustomExtractor.Field(chapters.Group, item),
+                CustomExtractor.Matches(chapters.Locked, item)),
             href);
     }
 

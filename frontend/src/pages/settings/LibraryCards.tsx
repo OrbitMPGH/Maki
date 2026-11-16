@@ -1,26 +1,25 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { msg, plural, t as now } from '@lingui/core/macro'
-import type { MessageDescriptor } from '@lingui/core'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Button,
   Checkbox,
   Group,
-  Modal,
+  Input,
   Radio,
-  Select,
+  SegmentedControl,
   Stack,
   Switch,
-  Table,
   Text,
   TextInput,
-  VisuallyHidden,
+  Tooltip,
 } from '@mantine/core'
-import { IconRestore, IconTrash } from '../../lib/icons'
+import { IconPencil, IconRoute, IconTrash, IconUsers, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -51,25 +50,30 @@ import {
   CONTENT_RATING_LABELS,
   type FolderNamingMode,
   type LibrarySettings,
+  useCreditScanSettings,
+  useSaveCreditScanSettings,
 } from '../../api/hooks'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from '../../components/settings/SettingsRow'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
+import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
+import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
+import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
-import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
+import { MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
-import { formatBytes, formatDate, formatDateTime, formatNumber } from '../../format'
+import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { useAuth } from '../../auth/AuthProvider'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
-import {
-  useDeleteFromRecycleBin,
-  useEmptyRecycleBin,
-  useRecycleBin,
-  useRestoreFromRecycleBin,
-  useSetRecycleBinRetention,
-  type RecycleBinEntry,
-  type RecycleReason,
-} from '../../api/recycleBin'
-import { MetaList } from '../../components/ui/MetaList'
+import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
+import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
+import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
+import { useAutoTagRules } from '../../api/autoTagRules'
+import { RootFolderRulesModal } from '../../components/settings/RootFolderRulesModal'
+import { CreditGroupsModal } from '../../components/settings/CreditGroupsModal'
+import { useRootFolderRules } from '../../api/rootFolderRules'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -79,6 +83,8 @@ export function RootFoldersSection() {
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
   const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
+  const [editing, setEditing] = useState<RootFolder | null>(null)
+  const lowDiskMark = useNewControlMark('low-disk-hold')
 
   const add = () => {
     if (!newPath.trim()) return
@@ -91,69 +97,79 @@ export function RootFoldersSection() {
     <SettingsSection
       id="root-folders"
       title={<Trans>Root folders</Trans>}
+      panelProps={{ p: 0 }}
     >
-      <Stack>
-        {rootFolders && rootFolders.length > 0 && (
-          <Table.ScrollContainer minWidth={420}>
-            <Table className="panel-table ops-table">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th><Trans>Path</Trans></Table.Th>
-                  <Table.Th><Trans>Free space</Trans></Table.Th>
-                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rootFolders.map((f) => (
-                  <Table.Tr key={f.id}>
-                    <Table.Td>
-                      <MonoValue value={f.path} copy minWidth="10rem" />
-                      {!f.accessible && (
-                        <Text span c="var(--danger)" size="xs" ml="xs">
-                          <Trans>(inaccessible)</Trans>
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
-                    <Table.Td>
-                      <ActionIcon
-                        variant="subtle"
-                        color="var(--danger)"
-                        onClick={() => setDeleting({ id: f.id, path: f.path })}
-                        aria-label={t`Remove root folder`}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        )}
-        <Group
-          component="form"
-          align="flex-end"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            add()
-          }}
-        >
-          <TextInput
-            label={t`Path`}
-            placeholder={t`C:\\Manga or /library`}
-            value={newPath}
-            onChange={(e) => setNewPath(e.currentTarget.value)}
-            style={{ flex: '1 1 16rem' }}
-          />
-          <Button variant="default" onClick={() => setBrowsing(true)}>
-            <Trans>Browse</Trans>
-          </Button>
-          <Button type="submit" loading={addFolder.isPending}>
-            <Trans>Add</Trans>
-          </Button>
-        </Group>
-      </Stack>
+      {rootFolders && rootFolders.length > 0 && (
+        <div {...lowDiskMark}>
+          <SettingsRows>
+            {rootFolders.map((f) => (
+              <SettingsRow
+                key={f.id}
+                title={<MonoValue value={f.path} copy minWidth="10rem" />}
+                status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
+                summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
+                aside={
+                  <Group gap="xs" wrap="nowrap">
+                    <NewSettingPill id="low-disk-hold" />
+                    <Tooltip
+                      label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
+                      withArrow
+                      multiline
+                      w={280}
+                    >
+                      <span>
+                        <RootFolderMinFreeInput folder={f} />
+                      </span>
+                    </Tooltip>
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setEditing(f)}
+                      aria-label={t`Change root folder path`}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="var(--danger)"
+                      onClick={() => setDeleting({ id: f.id, path: f.path })}
+                      aria-label={t`Remove root folder`}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                }
+              />
+            ))}
+          </SettingsRows>
+        </div>
+      )}
+      {/* With no root folder yet, the New tab shows where to add one. */}
+      <div {...(rootFolders && rootFolders.length > 0 ? {} : lowDiskMark)}>
+        <SettingsRowsBlock>
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              add()
+            }}
+          >
+            <TextInput
+              label={t`Path`}
+              placeholder={t`C:\\Manga or /library`}
+              value={newPath}
+              onChange={(e) => setNewPath(e.currentTarget.value)}
+              style={{ flex: '1 1 16rem' }}
+            />
+            <Button variant="default" onClick={() => setBrowsing(true)}>
+              <Trans>Browse</Trans>
+            </Button>
+            <Button type="submit" loading={addFolder.isPending}>
+              <Trans>Add</Trans>
+            </Button>
+          </Group>
+        </SettingsRowsBlock>
+      </div>
 
       <FolderBrowserModal
         opened={browsing}
@@ -161,6 +177,8 @@ export function RootFoldersSection() {
         onSelect={setNewPath}
         initialPath={newPath}
       />
+
+      <RootFolderPathModal folder={editing} onClose={() => setEditing(null)} />
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -329,19 +347,20 @@ export function NewSeriesDefaultsSection() {
       id="monitoring"
       title={<Trans>New series defaults</Trans>}
     >
-      <Select
-        mb="md"
-        styles={{ wrapper: { maxWidth: 320 } }}
-        label={t`Monitoring`}
-        data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
-          value: o.value,
-          label: renderLabel(o.label),
-        }))}
-        value={monitoring?.defaultMode ?? 'All'}
-        onChange={(value) => value && saveMonitoring.mutate({ defaultMode: value })}
-        allowDeselect={false}
-      />
-
+      <Input.Wrapper label={t`Monitoring`} mb="md">
+        <SegmentedControl
+          mt={4}
+          aria-label={t`Monitoring`}
+          aria-describedby="monitoring-default-help"
+          data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
+            value: o.value,
+            label: renderLabel(MONITOR_SHORT[o.value]),
+          }))}
+          value={monitoring?.defaultMode ?? 'All'}
+          onChange={(value) => saveMonitoring.mutate({ defaultMode: value })}
+        />
+        <SettingsHelp id="monitoring-default-help" mb={0}>{renderLabel(MONITOR_HELP[monitoring?.defaultMode ?? 'All'])}</SettingsHelp>
+      </Input.Wrapper>
       <Switch
         mb="lg"
         label={t`Skip specials`}
@@ -350,9 +369,9 @@ export function NewSeriesDefaultsSection() {
         onChange={(e) => saveMonitoring.mutate({ unmonitorSpecials: e.currentTarget.checked })}
       />
 
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Incognito by content rating</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <SettingsHelp mb="sm">
         <Trans>"No scrobble" keeps a series off your trackers. "Full" also keeps it out of stats and history.</Trans>
       </SettingsHelp>
@@ -364,22 +383,22 @@ export function NewSeriesDefaultsSection() {
               <Text size="sm" w={110} style={{ flexShrink: 0 }}>
                 {ratingLabel}
               </Text>
-              <Select
+              <SegmentedControl
                 aria-label={t`Incognito for ${ratingLabel}`}
+                size="xs"
                 data={incognitoOptions}
                 value={settings?.incognitoByRating?.[rating] ?? 'Off'}
                 disabled={!settings}
-                size="xs"
-                w={170}
                 onChange={(value) =>
                   patch({
                     incognitoByRating: {
                       ...(settings?.incognitoByRating ?? {}),
-                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                      [rating]: value as IncognitoMode,
                     },
                   })
                 }
               />
+
             </Group>
           )
         })}
@@ -409,6 +428,50 @@ export function LibraryFilesSection() {
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
       />
+    </SettingsSection>
+  )
+}
+
+/** The background credit page scan: an admin's on or off for the whole instance. */
+export function CreditScanSection() {
+  const { t } = useLingui()
+  const { data } = useCreditScanSettings()
+  const save = useSaveCreditScanSettings()
+  const [groupsOpen, setGroupsOpen] = useState(false)
+
+  return (
+    <SettingsSection
+      id="credit-scan"
+      title={<Trans>Credit pages</Trans>}
+      description={
+        <Trans>
+          Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide
+          credit pages. Never delays a download or import, and pauses while anyone reads.
+        </Trans>
+      }
+    >
+      <Switch
+        label={t`Find credit pages in the background`}
+        description={t`Off, credit pages are still found when a chapter is opened, which can take a few seconds.`}
+        checked={data?.enabled ?? false}
+        disabled={data == null}
+        onChange={(e) => save.mutate({ enabled: e.currentTarget.checked })}
+      />
+      <Group justify="space-between" wrap="nowrap" gap="sm" mt="lg" align="flex-start">
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>See the release groups behind the credit pages and ads Maki hides, and correct what it read off them.</Trans>
+        </Text>
+        <Button
+          variant="default"
+          size="xs"
+          leftSection={<IconUsers size={16} />}
+          style={{ flexShrink: 0 }}
+          onClick={() => setGroupsOpen(true)}
+        >
+          <Trans>Release groups</Trans>
+        </Button>
+      </Group>
+      <CreditGroupsModal opened={groupsOpen} onClose={() => setGroupsOpen(false)} />
     </SettingsSection>
   )
 }
@@ -489,26 +552,20 @@ export function NamingSection() {
         <Trans>Rename every series to current format</Trans>
       </Button>
 
-      <Modal
+      <ConfirmDialog
         opened={confirmRenameAll}
         onClose={() => setConfirmRenameAll(false)}
         title={t`Rename every series`}
-      >
-        <Text size="sm" mb="md">
+        description={
           <Trans>
             Renames the folders and files of all{' '}
             <Plural value={seriesCount} one="# series" other="# series" /> on disk to match the formats
             above. This can take a while.
           </Trans>
-        </Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setConfirmRenameAll(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            color="var(--danger-fill)"
-            loading={renameMany.isPending}
-            onClick={() =>
+        }
+        confirmLabel={<Trans>Rename all</Trans>}
+        loading={renameMany.isPending}
+        onConfirm={() =>
               renameMany.mutate(allSeries.map((s) => s.id), {
                 onSuccess: (results) => {
                   const renamed = results.filter((r) => r.applied).length
@@ -531,15 +588,11 @@ export function NamingSection() {
                 },
               })
             }
-          >
-            <Trans>Rename all</Trans>
-          </Button>
-        </Group>
-      </Modal>
+      />
 
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Folder naming on import</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Radio.Group
         aria-label={t`Folder naming on import`}
         value={settings?.folderNamingMode ?? 'rename'}
@@ -555,9 +608,9 @@ export function NamingSection() {
         </Stack>
       </Radio.Group>
 
-      <Text fw={500} size="sm" mt="lg" mb={4}>
+      <SettingsGroupTitle mt="lg" mb={4}>
         <Trans>File naming on import</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Switch
         label={t`Rename imported files to the chapter file format`}
         checked={settings?.renameImportedFiles ?? true}
@@ -615,86 +668,28 @@ export function NameParsingSection() {
   )
 }
 
-const RECYCLE_REASON_LABELS: Record<RecycleReason, MessageDescriptor> = {
-  deleteFile: msg`Deleted file`,
-  removeChapter: msg`Removed chapter`,
-  seriesDelete: msg`Removed series`,
-  seriesArchive: msg({ message: 'Series archived', context: 'series' }),
-}
-
-function daysLeft(expiresAt: string): number {
-  return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000))
-}
-
-function binChapterLabel(entry: RecycleBinEntry): string {
-  const numbers = entry.chapters
-    .map((c) => c.number)
-    .filter((n): n is number => n !== null)
-    .sort((a, b) => a - b)
-  if (numbers.length === 0) return ''
-  const first = formatNumber(numbers[0])
-  if (numbers.length === 1) return now`Ch. ${first}`
-  const last = formatNumber(numbers[numbers.length - 1])
-  return now`Ch. ${first} to ${last}`
-}
-
 /**
- * Files deleted from the library, grouped by series. Everyone who may delete may restore; only an
- * admin sets how long files are kept.
+ * How long deleted files wait, and the way into the bin itself. The list opens in a modal: one
+ * removed series can put hundreds of files in it, too many for a settings card.
  */
 export function RecycleBinSection() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { me } = useAuth()
   const isAdmin = me?.isAdmin ?? false
   const { data: bin } = useRecycleBin()
-  const restore = useRestoreFromRecycleBin()
-  const remove = useDeleteFromRecycleBin()
-  const empty = useEmptyRecycleBin()
   const setRetention = useSetRecycleBinRetention()
   const [retention, setRetentionDraft] = useState<number | null>(null)
-  const [deleting, setDeleting] = useState<RecycleBinEntry | null>(null)
-  const [emptying, setEmptying] = useState(false)
+  const [browsing, setBrowsing] = useState(false)
 
-  const entries = bin?.entries ?? []
+  const count = bin?.entries.length ?? 0
   const days = bin?.retentionDays ?? 14
   const totalSize = formatBytes(bin?.totalBytes)
-  const groups = new Map<number, RecycleBinEntry[]>()
-  for (const entry of entries) {
-    groups.set(entry.seriesId, [...(groups.get(entry.seriesId) ?? []), entry])
-  }
-
-  const onRestore = (entry: RecycleBinEntry) =>
-    restore.mutate(entry.id, {
-      onSuccess: (r) =>
-        notifications.show({
-          color: 'var(--ok)',
-          message: r.linked
-            ? plural(r.chapters, {
-                one: 'Restored and linked to # chapter',
-                other: 'Restored and linked to # chapters',
-              })
-            : now`Restored as an unlinked file. Health can import it.`,
-        }),
-    })
-
   const dirty = retention !== null && retention !== days
 
   return (
     <SettingsSection
       id="recycle-bin"
       title={<Trans>Recycle bin</Trans>}
-      actions={
-        <Button
-          variant="default"
-          color="var(--danger)"
-          leftSection={<IconTrash size={16} />}
-          disabled={entries.length === 0}
-          onClick={() => setEmptying(true)}
-        >
-          <Trans>Empty bin</Trans>
-        </Button>
-      }
       dirty={dirty}
       saving={setRetention.isPending}
       onSave={() => {
@@ -709,6 +704,23 @@ export function RecycleBinSection() {
       onDiscard={() => setRetentionDraft(null)}
     >
       <Stack>
+        <Group justify="space-between" wrap="wrap" gap="sm">
+          <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+            {count === 0 ? (
+              <Trans>The recycle bin is empty.</Trans>
+            ) : (
+              <Plural value={count} one={`# file, ${totalSize}`} other={`# files, ${totalSize}`} />
+            )}
+          </Text>
+          <Button
+            variant="default"
+            onClick={() => setBrowsing(true)}
+            size="xs"
+            leftSection={<IconTrash size={16} />}
+          >
+            <Trans>Open recycle bin</Trans>
+          </Button>
+        </Group>
         {isAdmin && (
           <SettingsNumberInput
             label={t`Keep deleted files (days)`}
@@ -719,149 +731,67 @@ export function RecycleBinSection() {
             onChange={setRetentionDraft}
           />
         )}
-        {entries.length === 0 ? (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>The recycle bin is empty.</Trans>
-          </Text>
-        ) : (
-          <>
-            <Text size="sm" c="var(--ink-3)">
-              <Plural value={entries.length} one={`# file, ${totalSize}`} other={`# files, ${totalSize}`} />
-            </Text>
-            {[...groups.values()].map((group) => {
-              const { seriesId, seriesTitle, seriesExists } = group[0]
-              return (
-                <Stack key={seriesId} gap={4}>
-                  <Group gap="xs">
-                    <Text fw={600}>{seriesTitle}</Text>
-                    {!seriesExists && (
-                      <Text size="xs" c="var(--ink-3)">
-                        <Trans>(no longer in the library)</Trans>
-                      </Text>
-                    )}
-                  </Group>
-                  <Table className="panel-table ops-table">
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th><Trans>File</Trans></Table.Th>
-                        <Table.Th><Trans>Size</Trans></Table.Th>
-                        <Table.Th><Trans>Deleted</Trans></Table.Th>
-                        <Table.Th><Trans>Days left</Trans></Table.Th>
-                        <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {group.map((entry) => {
-                        const left = daysLeft(entry.expiresAt)
-                        const chapters = binChapterLabel(entry)
-                        const deletedBy = entry.deletedBy
-                        return (
-                          <Table.Tr key={entry.id}>
-                            <Table.Td>
-                              <Text size="sm" style={{ wordBreak: 'break-all' }}>{entry.fileName}</Text>
-                              <Text component="div" size="xs" c="var(--ink-3)">
-                                <MetaList items={[renderLabel(RECYCLE_REASON_LABELS[entry.reason]), chapters]} />
-                              </Text>
-                              {entry.missing && (
-                                <Text size="xs" c="var(--danger)">
-                                  <Trans>The file is missing from the bin folder.</Trans>
-                                </Text>
-                              )}
-                            </Table.Td>
-                            <Table.Td>{formatBytes(entry.size)}</Table.Td>
-                            <Table.Td>
-                              <Text size="sm">{formatDate(entry.deletedAt)}</Text>
-                              {deletedBy && (
-                                <Text size="xs" c="var(--ink-3)">
-                                  <Trans>by {deletedBy}</Trans>
-                                </Text>
-                              )}
-                            </Table.Td>
-                            <Table.Td>
-                              <Plural value={left} one="# day" other="# days" />
-                            </Table.Td>
-                            <Table.Td>
-                              <Group gap={4} wrap="nowrap" justify="flex-end">
-                                <Button
-                                  size="xs"
-                                  variant="default"
-                                  leftSection={<IconRestore size={16} />}
-                                  disabled={entry.missing}
-                                  loading={restore.isPending && restore.variables === entry.id}
-                                  onClick={() => onRestore(entry)}
-                                >
-                                  <Trans>Restore</Trans>
-                                </Button>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="var(--danger)"
-                                  onClick={() => setDeleting(entry)}
-                                  aria-label={t`Delete permanently`}
-                                >
-                                  <IconTrash size={16} />
-                                </ActionIcon>
-                              </Group>
-                            </Table.Td>
-                          </Table.Tr>
-                        )
-                      })}
-                    </Table.Tbody>
-                  </Table>
-                </Stack>
-              )
-            })}
-          </>
-        )}
       </Stack>
+      <RecycleBinModal opened={browsing} onClose={() => setBrowsing(false)} />
+    </SettingsSection>
+  )
+}
 
-      <ConfirmDialog
-        opened={deleting !== null}
-        onClose={() => setDeleting(null)}
-        title={<Trans>Delete this file permanently?</Trans>}
-        confirmLabel={<Trans>Delete permanently</Trans>}
-        loading={remove.isPending}
-        onConfirm={() => deleting && remove.mutate(deleting.id, { onSuccess: () => setDeleting(null) })}
-      >
-        <Stack gap="xs">
-          <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all' }}>{deleting?.relativePath}</Text>
-          <Text size="sm" c="var(--danger)">
-            <Trans>This action cannot be undone.</Trans>
-          </Text>
-        </Stack>
-      </ConfirmDialog>
+/** Auto-tag rules live in a modal: a list of rules is too long for a card, and editing one drills down. */
+export function AutoTagRulesSection() {
+  const { data: rules } = useAutoTagRules()
+  const [open, setOpen] = useState(false)
+  const count = rules?.length ?? 0
+  const active = rules?.filter((r) => r.enabled).length ?? 0
 
-      <ConfirmDialog
-        opened={emptying}
-        onClose={() => setEmptying(false)}
-        title={<Trans>Empty the recycle bin?</Trans>}
-        confirmLabel={<Trans>Empty bin</Trans>}
-        loading={empty.isPending}
-        onConfirm={() =>
-          empty.mutate(undefined, {
-            onSuccess: (r) => {
-              setEmptying(false)
-              if (r.failed > 0) {
-                notifications.show({
-                  color: 'var(--danger)',
-                  message: plural(r.failed, {
-                    one: "Couldn't delete # file, check the log",
-                    other: "Couldn't delete # files, check the log",
-                  }),
-                })
-              }
-            },
-          })
-        }
-      >
-        <Stack gap="xs">
-          <Text size="sm">
-            <Plural value={entries.length} one="Deletes # file for good." other="Deletes # files for good." />
-          </Text>
-          <Text size="sm" c="var(--danger)">
-            <Trans>This action cannot be undone.</Trans>
-          </Text>
-        </Stack>
-      </ConfirmDialog>
+  return (
+    <SettingsSection
+      id="auto-tag-rules"
+      title={<Trans>Auto-tag rules</Trans>}
+      description={<Trans>Tag new series by genre, type, rating, folder or source.</Trans>}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+          {count === 0 ? (
+            <Trans>No rules yet.</Trans>
+          ) : (
+            <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
+          )}
+        </Text>
+        <Button variant="default" size="xs" leftSection={<IconWand size={16} />} onClick={() => setOpen(true)}>
+          <Trans>Manage rules</Trans>
+        </Button>
+      </Group>
+      <AutoTagRulesModal opened={open} onClose={() => setOpen(false)} />
+    </SettingsSection>
+  )
+}
+
+/** Root folder rules live in a modal of their own, beside the folder table rather than inside it. */
+export function RootFolderRulesSection() {
+  const { data: rules } = useRootFolderRules()
+  const [open, setOpen] = useState(false)
+  const count = rules?.length ?? 0
+  const active = rules?.filter((r) => r.enabled).length ?? 0
+
+  return (
+    <SettingsSection
+      id="root-folder-rules"
+      title={<Trans>Root folder rules</Trans>}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+          {count === 0 ? (
+            <Trans>No rules yet. New series go to the first root folder.</Trans>
+          ) : (
+            <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
+          )}
+        </Text>
+        <Button variant="default" size="xs" leftSection={<IconRoute size={16} />} onClick={() => setOpen(true)}>
+          <Trans>Manage rules</Trans>
+        </Button>
+      </Group>
+      <RootFolderRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )
 }

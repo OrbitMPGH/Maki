@@ -60,6 +60,13 @@ public record EmbeddingOptions(
     public int? BatchSizeOverride { get; init; }
 
     /// <summary>
+    /// Whether a CPU session loads the memory-mapped copy of the weights (<see cref="MappedEmbeddingModel"/>).
+    /// <c>MAKI_EMBED_MMAP=0</c> turns it off; the <c>init</c> setter is the test seam.
+    /// </summary>
+    public bool MapWeights { get; init; } =
+        !string.Equals(Environment.GetEnvironmentVariable("MAKI_EMBED_MMAP"), "0", StringComparison.Ordinal);
+
+    /// <summary>
     /// Part of every stored vector's content hash, so a change (new model, or a change to the
     /// embedded-text formula) invalidates the index and forces a one-time re-embed. Until it
     /// finishes, the table holds both widths; readers keep only rows matching <see cref="Dimensions"/>

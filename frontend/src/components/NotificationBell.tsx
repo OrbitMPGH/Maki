@@ -1,6 +1,6 @@
 import {
   ActionIcon,
-  Anchor,
+  Button,
   Box,
   Group,
   Popover,
@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
+  IconAffiliate,
   IconAlertTriangle,
   IconBell,
   IconBellOff,
@@ -54,6 +55,7 @@ import {
   type InboxItem,
 } from '../api/inbox'
 import { CountIndicator } from './ui/CountIndicator'
+import { Thumb } from './ui/Thumb'
 import { AchievementBadge } from '../pages/stats/AchievementBadge'
 import { relativeTime } from './ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -131,9 +133,9 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
             <Trans>Notifications</Trans>
           </Text>
           {count > 0 && (
-            <Anchor component="button" type="button" size="xs" onClick={() => markAll.mutate()}>
+            <Button variant="subtle" size="compact-xs" onClick={() => markAll.mutate()}>
               <Trans>Mark all read</Trans>
-            </Anchor>
+            </Button>
           )}
         </Group>
 
@@ -159,17 +161,16 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
         )}
 
         <Box px="sm" py={8} style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-          <Anchor
-            component="button"
-            type="button"
-            size="xs"
+          <Button
+            variant="subtle"
+            size="compact-xs"
             onClick={() => {
               close()
               navigate('/notifications')
             }}
           >
             <Trans>See all notifications</Trans>
-          </Anchor>
+          </Button>
         </Box>
       </Popover.Dropdown>
     </Popover>
@@ -241,6 +242,7 @@ const TYPE_ICONS: Record<InboxEventType, Icon> = {
   customSourceUpdated: IconPuzzle,
   noteReply: IconMessages,
   chapterDelisted: IconLinkOff,
+  newRelatedWork: IconAffiliate,
 }
 
 /** A warning or error shows its severity; anything else shows what kind of event it was. */
@@ -280,8 +282,7 @@ export function NotificationVisual({ item, size }: { item: InboxItem; size: numb
   }
 
   return (
-    <Box className="inbox-cover" style={{ width: size, height: Math.round(size * 1.45) }}>
-      <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
+    <Thumb src={item.coverUrl} size={size < 30 ? 'sm' : 'md'}>
       {item.level !== 'info' && (
         <span className="inbox-cover-badge">
           <IconAlertTriangle
@@ -290,6 +291,6 @@ export function NotificationVisual({ item, size }: { item: InboxItem; size: numb
           />
         </span>
       )}
-    </Box>
+    </Thumb>
   )
 }

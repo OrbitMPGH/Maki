@@ -113,8 +113,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
   strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
 - **Whole chapter.** With a server method, the **Whole chapter** switch keeps the server going
   through every page of the open chapter, not just the window: pages ahead first, then the ones
-  behind. A run of quick pages then finds the server already past them. Leaving the chapter or
-  closing the reader cancels what is left. On Auto it applies while the pages on screen are wanted.
+  behind. A run of quick pages then finds the server already past them. It then carries on through
+  every page of the next chapter, unless that chapter's quality tier is one your skip list names.
+  Leaving the chapter or closing the reader cancels what is left. On Auto it applies while the pages
+  on screen are wanted.
 - **Fallbacks.** A server method shows a browser method on this device while its page is not ready,
   **Balanced** unless you pick **Light**, **Strong** or **None** (the plain page) under "While the
   server works" in the reader settings, or "Fallback" in a reading profile. It stays on for good
@@ -129,6 +131,21 @@ screen. It is off until a reader turns it on. Library files are never modified.
   non-commercial use only; the per-model licences are in
   [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
   few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.
+  Upscaled colour pages are saved as JPEG XL, which keeps dark gradients smooth and files smaller;
+  browsers that cannot show it (Edge) get the same page as WebP, and **JPEG XL for colour pages**
+  turns it off. Grey pages are always WebP.
+- **Prepare chapters ahead (admins).** Under Server upscaling, **Prepare chapters ahead** has the
+  server upscale the next chapter of each series a reader set to Reading and read recently, while
+  nobody is reading. A series counts only when its reader settings have Enhance on **Always** with
+  a server method; Auto depends on the screen and is left out. It starts at the page the reader
+  stopped at and takes the most recently read series first (14 days, 8 series per reader and 1
+  chapter each by default). Prepared pages have their own space (4 GB by default) on top of the
+  cache size and stay until the chapter is read. Readers always come first: a prepared page being
+  made stops as soon as someone opens a page, and goes back to the front of the list. Anyone who
+  can edit a series can override it under Automation, **Prepare ahead**, in the series page's menu:
+  **Follow Settings**, **Off**, or a number of chapters to keep ready (1 to 20). It applies to every
+  reader of that series. A series with its own number is prepared however long ago it was read, is
+  planned before the others, and does not use up one of the series slots.
 - **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
   under the config folder, oldest-used dropped first, and they can be cleared at any time.
 
@@ -140,7 +157,7 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Browse.** The Browse tab has catalog and genre rails, recent-reading picks, side interests,
   blind spots, and **Readers like you**. **Your Taste** shows reading behavior, grouped interests,
   and how your taste has moved. Every rail has a fullscreen **Show more** view. Detail cards show
-  categorized tags, alternate titles, creators, per-source ratings, and MyAnimeList reviews.
+  categorized tags, alternate titles, creators, per-source ratings, and reviews from MyAnimeList and AniList, plus Kitsu reactions.
 - **Metadata.** One MangaBaka search identifies a series and brings along its MyAnimeList,
   AniList, MangaUpdates, and Kitsu IDs. The local
   [MangaBaka dump](https://mangabaka.org/data/database) (nightly snapshot, about a 350 MB
@@ -185,9 +202,13 @@ screen. It is off until a reader turns it on. Library files are never modified.
   language, and reading direction. Files are written atomically, so a reader never sees a
   half-written CBZ. Maki can also write a `cover.jpg` into each series folder for readers that
   look for one.
-- **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
-  a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
-  as lossless WebP. A download is placed as it arrived and converted afterwards by a background
+- **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP, AVIF or
+  JPEG XL and a quality, and new downloads are stored with their JPEG pages in that format and
+  their PNG pages as lossless WebP. Black-and-white and colour pages can each have their own format
+  and quality, checked page by page, and rules (by kind of release, source, page format, series type
+  or tag, bits per pixel or file size) give matching files their own targets or skip them. The setup
+  page shows each target on your own pages of that kind and estimates what the library would end
+  up at. A download is placed as it arrived and converted afterwards by a background
   queue, so downloading never waits on an encode; torrent imports join the same queue. A chapter
   someone is reading is swapped once nobody has asked for one of its pages for ten minutes. A
   pausable library pass converts the files already on disk, one at a time, and shows what it saved. Several pages of a file are encoded at once; the card sets how many (by
@@ -197,8 +218,9 @@ screen. It is off until a reader turns it on. Library files are never modified.
   original, since the source still has it; other originals wait in the upgrade trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses
   itself rather than leave less than 1 GB free. WebP opens in every reader Maki works with
   (browsers, Kavita, Komga, KOReader, Mihon, Panels); AVIF does not open in KOReader or on iOS
-  before 16. JPEG XL is not offered: the image library Maki bundles cannot write it, and Kavita
-  and KOReader cannot read it. Upgrades, source quality estimates and the quality shown on the
+  before 16. JPEG XL pages are served as they are only to browsers that support them; other
+  browsers, OPDS, Komga and KOReader get WebP made on the fly, but a downloaded CBZ keeps its
+  JPEG XL pages. Upgrades, source quality estimates and the quality shown on the
   series page keep judging a converted chapter by the size and format it was downloaded in, so
   converting never makes a copy look like a worse release.
 - **Multilingual libraries.** A series' link to a source can hold several languages, each with

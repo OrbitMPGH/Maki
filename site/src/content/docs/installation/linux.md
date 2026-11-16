@@ -8,9 +8,9 @@ Docker is the supported way to run Maki on Linux. Use the tarball where Docker i
 ## Requirements
 
 - A 64-bit glibc distribution, on x64 or arm64. Alpine and other musl systems are not supported.
-- About 350 MB to download the MangaBaka database and 3.5 GB on disk, on top of your library.
+- About 350 MB to download the MangaBaka database and 3.5 GB on disk, on top of your library. The first search by meaning adds about 110 MB for a memory-mapped copy of the search model.
 
-The tarball carries its own .NET runtime, so Maki itself needs nothing else installed. Browser-based sources need a few system libraries. See [Sources that need a browser](#sources-that-need-a-browser).
+The tarball carries its own .NET runtime, so Maki itself needs nothing else installed. The libjxl files it ships, used to save upscaled colour pages as JPEG XL, need glibc 2.39 or newer (Ubuntu 24.04, Debian 13, Fedora 40 or later). On an older system colour pages are saved as WebP instead, which works the same in the reader. Browser-based sources need a few system libraries. See [Sources that need a browser](#sources-that-need-a-browser).
 
 ## Install
 
@@ -27,7 +27,7 @@ cd maki
 
 Linux builds listen on every network interface by default, so other devices can reach Maki at once. To keep it to this machine, turn off **Allow other devices on your network** under **Settings → System → Network**, then restart Maki.
 
-To check the bundled libraries and web files without starting the server, run `./Maki.Api --selftest`.
+To check the bundled libraries (libjxl included) and web files without starting the server, run `./Maki.Api --selftest`.
 
 ## Run it as a service
 

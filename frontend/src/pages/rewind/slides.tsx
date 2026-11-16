@@ -76,7 +76,7 @@ function Poster({ url, delay = 0 }: { url: string | null; delay?: number }) {
 
 /** A handful of covers fanned like a hand of cards, for slides about several series at once. */
 function CoverFan({ urls, muted }: { urls: (string | null)[]; muted?: boolean }) {
-  const shown = urls.filter((u): u is string => !!u).slice(0, 5)
+  const shown = [...new Set(urls.filter((u): u is string => !!u))].slice(0, 5)
   if (shown.length < 2) return null
   const mid = (shown.length - 1) / 2
   // Fewer cards fan wider, or two of them overlap into what reads as one book.
@@ -143,16 +143,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
               <IconBrandMark />
             </span>
           </Reveal>
-          <Reveal>{eyebrow('Maki Rewind')}</Reveal>
+          <Reveal>{eyebrow(<Trans>Maki Rewind</Trans>)}</Reveal>
           <Reveal delay={0.25}>
             <h2 className="auth-wordmark">
               <Trans>Your {label}</Trans>
             </h2>
-          </Reveal>
-          <Reveal delay={0.55}>
-            <Text className="auth-tagline rewind-sub">
-              <Trans>Let's look back at what you read.</Trans>
-            </Text>
           </Reveal>
         </div>
       </div>
@@ -389,8 +384,8 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           {stats.finished.length > 1 && (
             <Reveal delay={0.65}>
               <Stack gap={4} align="center">
-                {stats.finished.slice(0, 5).map((s) => (
-                  <Text key={s.seriesId ?? s.title} className="rewind-list-line">
+                {stats.finished.slice(0, 5).map((s, i) => (
+                  <Text key={`${s.seriesId ?? s.title}-${i}`} className="rewind-list-line">
                     {s.title}
                   </Text>
                 ))}
@@ -413,10 +408,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           </Reveal>
           <Reveal delay={0.2}>
             <Text className="rewind-title">
-              <Plural value={droppedCount} one="# series is waiting" other="# series are waiting" />
-            </Text>
-            <Text className="rewind-caption">
-              <Trans>Maybe next year.</Trans>
+              <Plural value={droppedCount} one="# series dropped" other="# series dropped" />
             </Text>
           </Reveal>
           <Reveal delay={0.65}>
@@ -426,9 +418,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 return (
                   <Text key={s.seriesId ?? title} className="rewind-list-line">
                     {title}
-                    <span className="rewind-dim">
-                      , <Trans>stalled at ch. {maxChapter}</Trans>
-                    </span>
+                    {maxChapter > 0 && (
+                      <span className="rewind-dim">
+                        , <Trans>dropped at ch. {maxChapter}</Trans>
+                      </span>
+                    )}
                   </Text>
                 )
               })}
@@ -475,11 +469,6 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 </div>
               ))}
           </SimpleGrid>
-        </Reveal>
-        <Reveal delay={0.7}>
-          <Text className="rewind-sub">
-            <Trans>The full breakdown is waiting behind this slide.</Trans>
-          </Text>
         </Reveal>
       </Stack>
     ),

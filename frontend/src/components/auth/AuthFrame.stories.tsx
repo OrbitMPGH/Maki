@@ -40,7 +40,7 @@ export const Default: Story = {
 export const WithSubtitle: Story = {
   args: {
     title: 'Create your account',
-    subtitle: 'Create the administrator account. Your library and reading history are already attached to it.',
+    subtitle: 'This becomes the administrator account. Any existing library and history attach to it.',
   },
 }
 

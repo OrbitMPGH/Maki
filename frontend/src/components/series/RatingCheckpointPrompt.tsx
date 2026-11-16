@@ -49,7 +49,7 @@ export function RatingCheckpointPrompt({
           <Trans>Still a {soFar}</Trans>
         </Button>
       )}
-      <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Dismiss`} onClick={onDismiss}>
+      <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Dismiss`} onClick={onDismiss}>
         <IconX size={16} />
       </ActionIcon>
     </Group>

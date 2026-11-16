@@ -3,6 +3,7 @@ using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -182,6 +183,22 @@ public class PageConversionUndoService(
             return "pageConversion.undo.fileChanged";
         }
 
+        // Stored page indices follow the split file's pages; read its names before it goes.
+        var split = PageSplitMap.Parse(row.SplitPages);
+        IReadOnlyList<string>? splitPages = null;
+        if (split is { IsEmpty: false })
+        {
+            try
+            {
+                splitPages = CbzReader.PageNames(library);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                logger.LogWarning(ex, "Could not read the pages of {Path} to undo its split", library);
+                return "pageConversion.undo.fileChanged";
+            }
+        }
+
         if (!Swap(root, file.Id, library, trash))
         {
             return "pageConversion.undo.moveFailed";
@@ -189,6 +206,12 @@ public class PageConversionUndoService(
 
         // The bytes have changed: from here the rows have to be saved whatever happens.
         archives.Invalidate(file.Id);
+        await using var transaction = await db.Database.BeginTransactionAsync(CancellationToken.None);
+        if (splitPages is not null)
+        {
+            await PageSplitRemap.ApplyAsync(db, file.Id, splitPages, split!, undo: true, CancellationToken.None);
+        }
+
         var now = DateTime.UtcNow;
         file.ImageFormat = file.OriginalImageFormat ?? file.ImageFormat;
         file.ResetConversion();
@@ -204,6 +227,7 @@ public class PageConversionUndoService(
         row.TrashPath = null;
         row.TrashBytes = null;
         await db.SaveChangesAsync(CancellationToken.None);
+        await transaction.CommitAsync(CancellationToken.None);
         return null;
     }
 

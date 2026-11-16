@@ -1,16 +1,17 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import {
-  Alert,
   Button,
   Code,
   Group,
+  SimpleGrid,
   Skeleton,
   Stack,
   Switch,
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconCopy } from '../../lib/icons'
+import { IconCheck, IconCopy, IconLock } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
@@ -22,13 +23,15 @@ import {
   type OidcSettings,
   type SecuritySettings,
 } from '../../api/auth'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
+import { Note } from '../ui/Note'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { savedToast, useSliceSync } from '../../pages/settings/sharedRecord'
 import { SettingsNumberInput } from './SettingsNumberInput'
+import { SettingsRow, SettingsRows } from './SettingsRow'
 import { useHostInfo, useRestartMaki, useSetNetworkAccess } from '../../api/hooks'
 
 /**
@@ -90,8 +93,9 @@ export function SecuritySection() {
       saving={saving}
       onDiscard={discard}
       onSave={commit}
+      panelProps={{ p: 0 }}
     >
-      <Group grow align="flex-start">
+      <div className="policy-strip">
         <SettingsNumberInput
           label={t`Failed sign-ins before lockout`}
           description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
@@ -102,6 +106,7 @@ export function SecuritySection() {
         />
         <SettingsNumberInput
           label={t`Lockout duration (minutes)`}
+          description={t`Then they can try again.`}
           min={1}
           max={10080}
           value={draft.lockoutMinutes}
@@ -115,7 +120,26 @@ export function SecuritySection() {
           value={draft.sessionDays}
           onChange={(v) => setDraft({ ...draft, sessionDays: v })}
         />
-      </Group>
+      </div>
+      <div className="policy-foot">
+        <IconLock size={14} aria-hidden />
+        <span>
+          {draft.lockoutMaxAttempts > 0 ? (
+            <>
+              <Plural
+                value={draft.lockoutMaxAttempts}
+                one="Lock after # failed sign-in"
+                other="Lock after # failed sign-ins"
+              />{' '}
+              <Plural value={draft.lockoutMinutes} one="for # minute" other="for # minutes" />
+            </>
+          ) : (
+            <Trans>Lockout is off</Trans>
+          )}
+          ;{' '}
+          <Plural value={draft.sessionDays} one="sessions last # day" other="sessions last # days" />
+        </span>
+      </div>
     </SettingsSection>
   )
 }
@@ -152,13 +176,21 @@ export function SignInPageSection() {
       saving={save.isPending}
       onDiscard={discard}
       onSave={() => save.mutate({ coverMosaic }, { onSuccess: savedToast })}
+      panelProps={{ p: 0 }}
     >
-      <Switch
-        label={t`Show covers from the library`}
-        description={t`Up to 24 Safe covers, blurred.`}
-        checked={coverMosaic}
-        onChange={(e) => setCoverMosaic(e.currentTarget.checked)}
-      />
+      <SettingsRows>
+        <SettingsRow
+          title={<Trans>Show covers from the library</Trans>}
+          summary={<Trans>Up to 24 Safe covers, blurred.</Trans>}
+          aside={
+            <Switch
+              aria-label={t`Show covers from the library`}
+              checked={coverMosaic}
+              onChange={(e) => setCoverMosaic(e.currentTarget.checked)}
+            />
+          }
+        />
+      </SettingsRows>
     </SettingsSection>
   )
 }
@@ -234,20 +266,17 @@ export function NetworkSection() {
           />
         )}
         {accessEditable && !allowNetwork && host.configuredNetworkAccess && !onLoopback && (
-          <Alert color="var(--warn)" variant="light">
+          <Note>
             <Trans>
               You are on this page from another device. After the restart, Maki only answers on the
               computer it runs on.
             </Trans>
-          </Alert>
+          </Note>
         )}
         {restartPending && (
-          <Alert color="var(--warn)" variant="light">
-            <Group justify="space-between" wrap="nowrap" gap="sm">
-              <Text size="sm">
-                <Trans>Network access changes after Maki restarts.</Trans>
-              </Text>
-              {host.supervised && (
+          <Note
+            action={
+              host.supervised && (
                 <Button
                   size="xs"
                   variant="default"
@@ -264,9 +293,11 @@ export function NetworkSection() {
                 >
                   <Trans>Restart now</Trans>
                 </Button>
-              )}
-            </Group>
-          </Alert>
+              )
+            }
+          >
+            <Trans>Network access changes after Maki restarts.</Trans>
+          </Note>
         )}
         <Switch
           label={t`Require HTTPS`}
@@ -275,12 +306,12 @@ export function NetworkSection() {
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
         {onPlainHttp && draft.requireHttps && (
-          <Alert color="var(--danger)" variant="light">
+          <Note tone="danger">
             <Trans>
               You are on this page over plain HTTP. After a restart, signing in at this address will be
               refused. Open Maki through its HTTPS address first, or make sure you can reach it that way.
             </Trans>
-          </Alert>
+          </Note>
         )}
 
         <TextInput
@@ -312,6 +343,15 @@ export function NetworkSection() {
   )
 }
 
+function SsoGroup({ title, children }: { title: ReactNode; children: ReactNode }) {
+  return (
+    <Stack gap="md" className="sso-group">
+      <SettingsGroupTitle>{title}</SettingsGroupTitle>
+      {children}
+    </Stack>
+  )
+}
+
 /** Lowercases scheme and host and drops trailing slashes, the differences the server ignores. */
 function normalizeAuthority(value: string) {
   const trimmed = value.trim()
@@ -335,6 +375,7 @@ export function OidcSection() {
   const redirectCopy = useCopyText()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
   const [confirmingIssuer, setConfirmingIssuer] = useState(false)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (data) setDraft(data)
@@ -367,8 +408,24 @@ export function OidcSection() {
       saving={save.isPending}
       onDiscard={() => data && setDraft(data)}
       onSave={() => (issuerChanged ? setConfirmingIssuer(true) : saveOidc())}
+      panelProps={{ p: 0 }}
     >
+      <SettingsRows>
+        <SettingsRow
+          title={<Trans>OpenID Connect provider</Trans>}
+          status={draft.enabled ? { tone: 'ok', label: t`On` } : { tone: 'neutral', label: t`Off` }}
+          summary={
+            data?.authority.trim() ? (
+              data.displayName.trim() || data.authority
+            ) : (
+              <Trans>Not set up.</Trans>
+            )
+          }
+          opened={open}
+          onToggle={() => setOpen((value) => !value)}
+        >
       <Stack gap="md">
+        <SsoGroup title={<Trans>Provider</Trans>}>
         <Stack gap={6}>
           <Group gap="xs">
             <Code>{redirectUrl}</Code>
@@ -400,7 +457,7 @@ export function OidcSection() {
           onChange={(e) => setDraft({ ...draft, authority: e.currentTarget.value })}
         />
 
-        <Group grow align="flex-start">
+        <SimpleGrid cols={{ base: 1, xs: 2 }}>
           <TextInput
             label={t`Client ID`}
             autoComplete="off"
@@ -414,9 +471,17 @@ export function OidcSection() {
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
           />
-        </Group>
+        </SimpleGrid>
+        </SsoGroup>
 
-        <Group grow align="flex-start">
+        <SsoGroup title={<Trans>Sign-in behaviour</Trans>}>
+        <SimpleGrid cols={{ base: 1, xs: 2 }}>
+          <TextInput
+            label={t`Button label`}
+            placeholder={t`Single sign-on`}
+            value={draft.displayName}
+            onChange={(e) => setDraft({ ...draft, displayName: e.currentTarget.value })}
+          />
           <TextInput
             label={t`Scopes`}
             description={t`Space-separated. Keep email to match existing accounts.`}
@@ -424,13 +489,7 @@ export function OidcSection() {
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
           />
-          <TextInput
-            label={t`Button label`}
-            placeholder={t`Single sign-on`}
-            value={draft.displayName}
-            onChange={(e) => setDraft({ ...draft, displayName: e.currentTarget.value })}
-          />
-        </Group>
+        </SimpleGrid>
 
         <Switch
           label={t`Require single sign-on`}
@@ -440,13 +499,13 @@ export function OidcSection() {
         />
 
         {draft.breakGlassActive && (
-          <Alert color="var(--warn)" variant="light">
+          <Note>
             <Trans>
               <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
               sign-in is available to every account regardless of the switch above. Remove the variable
               and restart to enforce it again.
             </Trans>
-          </Alert>
+          </Note>
         )}
 
         <Switch
@@ -455,7 +514,9 @@ export function OidcSection() {
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />
+        </SsoGroup>
 
+        <SsoGroup title={<Trans>Claims</Trans>}>
         <TextInput
           label={t`Username claim`}
           description={t`Used when creating an account.`}
@@ -464,7 +525,7 @@ export function OidcSection() {
           onChange={(e) => setDraft({ ...draft, usernameClaim: e.currentTarget.value })}
         />
 
-        <Group grow align="flex-start">
+        <SimpleGrid cols={{ base: 1, xs: 2 }}>
           <TextInput
             label={t`Admin claim`}
             description={<Trans>Written <Code>claim=value</Code>, e.g. <Code>groups=maki-admins</Code>.</Trans>}
@@ -479,18 +540,21 @@ export function OidcSection() {
             value={draft.permissionClaim}
             onChange={(e) => setDraft({ ...draft, permissionClaim: e.currentTarget.value })}
           />
-        </Group>
+        </SimpleGrid>
 
         {mapsPermissions && (
-          <Alert color="var(--info)" variant="light">
+          <Note tone="info">
             <Trans>
               With either claim set, your provider is the authority on permissions: they are recomputed
               on every sign-in, so changes made on the Users page are overwritten the next time that
               person signs in. Leave both empty to keep permissions here.
             </Trans>
-          </Alert>
+          </Note>
         )}
+        </SsoGroup>
       </Stack>
+        </SettingsRow>
+      </SettingsRows>
 
       <ConfirmDialog
         opened={confirmingIssuer}

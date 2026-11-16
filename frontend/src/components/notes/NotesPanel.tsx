@@ -197,7 +197,7 @@ export function NotesPanelBody({
               )}
             </Text>
             {scope === 'page' && !lockPage && roots.length > 0 && (
-              <Button size="xs" variant="subtle" color="gray" onClick={() => setPicked('chapter')}>
+              <Button size="xs" variant="subtle" color="var(--neutral)" onClick={() => setPicked('chapter')}>
                 <Trans>Show the whole chapter</Trans>
               </Button>
             )}

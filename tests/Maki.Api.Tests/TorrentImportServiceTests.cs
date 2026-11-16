@@ -210,7 +210,7 @@ public class TorrentImportServiceTests : IDisposable
     public async Task Importing_the_same_download_twice_keeps_one_row_per_file()
     {
         var (series, item) = SeedLibrary(withFiles: false);
-        SeedVolumeDownload(1, 2, 3);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
 
         var first = await Service().ImportAsync(
             item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
@@ -230,6 +230,94 @@ public class TorrentImportServiceTests : IDisposable
         Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
             c => Assert.Equal(file.Id, c.ChapterFileId));
         Assert.Equal(1, db.StatsEvents.Count(e => e.SeriesId == series.Id && e.Type == StatsEventType.ChapterDownloaded));
+    }
+
+    [Fact]
+    public async Task A_pack_with_one_folder_per_volume_imports_as_one_file_per_volume()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        using (var db = _db.NewContext())
+        {
+            foreach (var number in Enumerable.Range(7, 6))
+            {
+                db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = number, Volume = 2, Language = "en" });
+            }
+
+            db.SaveChanges();
+        }
+
+        WriteCbz(Path.Combine(_downloads, "Berserk v01-02 (Digital) (1r0n).cbz"),
+        [
+            .. Enumerable.Range(1, 6).Select(c => $"Berserk v01/Berserk - c{c:000} - p001 [Oak].png"),
+            .. Enumerable.Range(7, 6).Select(c => $"Berserk v02/Berserk - c{c:000} - p001 [Oak].png")
+        ]);
+
+        var result = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Equal(2, result.Imported);
+        using var check = _db.NewContext();
+        var files = check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList();
+        Assert.Equal(2, files.Count);
+        foreach (var volume in new[] { 1, 2 })
+        {
+            var chapters = check.Chapters.Where(c => c.SeriesId == series.Id && c.Volume == volume).ToList();
+            var fileId = Assert.Single(chapters.Select(c => c.ChapterFileId).Distinct());
+            var file = Assert.Single(files, f => f.Id == fileId);
+            using var zip = ZipFile.OpenRead(Path.Combine(_root, file.RelativePath));
+            Assert.Equal(6, zip.Entries.Count(e => e.Name.EndsWith(".png")));
+        }
+    }
+
+    [Fact]
+    public async Task A_volume_that_fails_to_build_links_nothing_and_leaves_the_pack_as_it_was()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        var pack = Path.Combine(_downloads, "Berserk v01-02 (Digital) (1r0n).cbz");
+        Directory.CreateDirectory(_downloads);
+        using (var archive = ZipFile.Open(pack, ZipArchiveMode.Create))
+        {
+            foreach (var (folder, chapter) in new[] { ("Berserk v01", 1), ("Berserk v02", 2) })
+            {
+                using var writer = archive.CreateEntry($"{folder}/Berserk - c{chapter:000} - p001.png").Open();
+                writer.Write(Enumerable.Range(0, 64 * 1024).Select(i => (byte)(i * 7 % 251)).ToArray());
+            }
+        }
+
+        // Damage the second volume's page so its deflate stream opens with an invalid block type: the
+        // first volume builds and the second throws. The first occurrence of its name is the local
+        // header, which the page data follows.
+        var bytes = File.ReadAllBytes(pack);
+        var name = System.Text.Encoding.UTF8.GetBytes("Berserk v02/Berserk - c002 - p001.png");
+        bytes[bytes.AsSpan().IndexOf(name) + name.Length] = 0x07;
+
+        File.WriteAllBytes(pack, bytes);
+        var before = File.ReadAllBytes(pack);
+
+        var result = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.False(result.Applied);
+        Assert.Equal("error.torrentImport.copyFailed", result.ErrorKey);
+        Assert.Equal(before, File.ReadAllBytes(pack));
+        Assert.Empty(Directory.GetFiles(_root, "*.partial", SearchOption.AllDirectories));
+        using var db = _db.NewContext();
+        Assert.Empty(db.ChapterFiles.Where(f => f.SeriesId == series.Id));
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id), c => Assert.Null(c.ChapterFileId));
+    }
+
+    [Fact]
+    public void A_pack_whose_volume_names_clash_with_another_file_stays_whole()
+    {
+        WriteCbz(Path.Combine(_downloads, "Berserk v01-02 (Digital).cbz"),
+            ["Berserk v01/Berserk - c001 - p001.png", "Berserk v02/Berserk - c002 - p001.png"]);
+        WriteCbz(Path.Combine(_downloads, "Berserk v01.cbz"), ["Berserk - c001 - p001.png"]);
+
+        var sources = TorrentImportService.ScanSplittingPacks(_downloads);
+
+        Assert.Equal(["Berserk v01-02 (Digital).cbz", "Berserk v01.cbz"], sources.Select(s => s.Name).Order());
+        Assert.All(sources, s => Assert.Null(s.Slice));
     }
 
     [Theory]
@@ -261,7 +349,7 @@ public class TorrentImportServiceTests : IDisposable
     public async Task A_row_stored_with_the_other_separator_is_reused_rather_than_duplicated()
     {
         var (series, item) = SeedLibrary(withFiles: false);
-        SeedVolumeDownload(1, 2, 3);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
         int existingId;
         using (var db = _db.NewContext())
         {
@@ -1042,6 +1130,122 @@ public class TorrentImportServiceTests : IDisposable
 
         Assert.Equal(new UnattendedDecision(true, null, null), decision);
         Assert.Equal(plan.SuggestedSkips, TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!.SkipFileNames);
+    }
+
+    private void MarkAutoApprovedProposal(DownloadQueueItem item, int proposalId = 42)
+    {
+        using var db = _db.NewContext();
+        var info = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!;
+        info.ProposalId = proposalId;
+        info.AutoApproved = true;
+        item.UpgradeInfoJson = info.Serialize();
+        db.DownloadQueue.Single(q => q.Id == item.Id).UpgradeInfoJson = item.UpgradeInfoJson;
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_imports_unattended_with_its_skips()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz"), 120, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(decision.Park);
+        Assert.Null(decision.Guard);
+        Assert.NotNull(decision.SkipFiles);
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_replaces_every_file_it_is_at_least_as_good_as()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item, replaces: _ => []);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz"), 120, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(decision.Park);
+        Assert.Null(decision.Guard);
+        using var db = _db.NewContext();
+        var fileIds = db.ChapterFiles.Where(f => f.SeriesId == series.Id).Select(f => f.Id).ToList();
+        Assert.Equal(fileIds.Order(), TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!.ReplacedFileIds.Order());
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_leaves_a_file_it_is_no_match_for_its_chapter()
+    {
+        var (series, item) = SeedLibrary();
+        var kept = 0;
+        MakeUpgrade(series, item, files: rows =>
+        {
+            rows[0].Trusted = true;
+            kept = rows[0].Id;
+        }, replaces: _ => []);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz"), 120, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(decision.Park);
+        Assert.DoesNotContain(kept, TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!.ReplacedFileIds);
+
+        var outcome = await service.ImportAsync(item, series, _downloads, TorrentImportMode.Replace,
+            CancellationToken.None, plan, decision.SkipFiles);
+
+        Assert.True(outcome.Applied);
+        using var after = _db.NewContext();
+        var imported = after.ChapterFiles.Single(f => f.SeriesId == series.Id && f.RelativePath.Contains("v01"));
+        var chapters = after.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.Equal(kept, chapters.Single(c => c.Number == 1).ChapterFileId);
+        Assert.All(chapters.Where(c => c.Number != 1), c => Assert.Equal(imported.Id, c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_with_no_profile_replaces_nothing()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item, replaces: _ => []);
+        MarkAutoApprovedProposal(item);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == series.Id).UpgradeProfileId = null;
+            db.SaveChanges();
+        }
+
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz"), 120, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(plan.HasConflicts);
+        Assert.False(decision.Park);
+        Assert.Empty(TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!.ReplacedFileIds);
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_is_still_held_back_by_the_volume_guard()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk c001 (Digital).cbz"), 5, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.True(decision.Park);
+        Assert.Equal(new VolumeGuardFailure("Berserk c001 (Digital).cbz", "fewer_pages"), decision.Guard);
     }
 
     [Fact]

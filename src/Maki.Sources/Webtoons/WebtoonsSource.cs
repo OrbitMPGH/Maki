@@ -183,7 +183,8 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
                          || url.AbsolutePath.Contains("/canvas/", StringComparison.OrdinalIgnoreCase);
             var author = card.QuerySelector(".info_text .author")?.TextContent.Trim();
             results.Add(new SourceSeriesResult(seriesId, name, href, cover,
-                UserGenerated: canvas, Author: string.IsNullOrEmpty(author) ? null : author));
+                UserGenerated: canvas, Author: string.IsNullOrEmpty(author) ? null : author,
+                Language: LocaleLanguages[locale]));
         }
 
         return (results, null);

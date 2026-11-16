@@ -20,6 +20,18 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `<t
 
 For example, `feat(discover): offer a thumbs up or down after marking a title seen`.
 
+## Pull request titles
+
+Pull request titles use the same format, and the `PR title` check fails otherwise. They also accept `style` and `revert` as types, and `!` before the colon marks a breaking change. A pull request of many commits gets a summary of the whole change, not of its first commit, such as `feat(activity): group the history by series`.
+
+Release pull requests from `dev` to `main` are titled with the version alone, such as `v0.37.0`.
+
+## Release notes
+
+A change that someone on the last release would notice adds a file under `changes/`: a new feature, a behaviour change, a fix for a bug that shipped, or anything an upgrader has to do. A fix or tweak to unreleased work adds nothing, though you edit that feature's entry if its final form changed. The format is in [`changes/README.md`](https://github.com/OrbitMPGH/Maki/blob/main/changes/README.md).
+
+A new setting gets `since: 'next'` on its entry in `frontend/src/pages/settings/registry.ts`, which lists it on the Settings New tab after an upgrade. A new control inside an existing card gets its own `within` entry, a `setting-{id}` anchor, `useNewControlMark(id)` on the element that holds it and a `<NewSettingPill id>` beside its label. The release commit stamps every `'next'` with the version.
+
 ## User-facing text
 
 Every user-visible string goes through a translation function. A raw English literal stays English in all eleven languages and the extractor never sees it.
@@ -49,4 +61,5 @@ These rules come from the repo's `CLAUDE.md` and apply to code comments, docs an
 
 - Run the backend and frontend checks, and the Storybook tests if you touched UI.
 - Commit any catalogue changes the checks ask for.
-- Describe what changed, why, and how you checked it. There is no pull request template.
+- Add a `changes/` entry if a user would notice the change.
+- Fill in [the pull request template](https://github.com/OrbitMPGH/Maki/blob/main/.github/pull_request_template.md) section by section. `gh pr create` skips it unless you pass it, so write it to a file and use `gh pr create --body-file`.

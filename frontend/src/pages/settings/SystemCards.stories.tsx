@@ -219,9 +219,9 @@ export const CheckNowFindsRelease: Story = {
 export const ImageCacheIdle: Story = {
   render: () => <ImageCacheSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Posters: 96 files/)).toBeVisible()
+    await expect(await canvas.findByText('Posters')).toBeVisible()
     await expect(await canvas.findByText(/2 of 98 series have no usable poster/)).toBeVisible()
-    await expect(await canvas.findByText(/Last run .*: 0 posters downloaded/)).toBeVisible()
+    await expect(await canvas.findByText(/0 posters downloaded/)).toBeVisible()
   },
 }
 
@@ -235,7 +235,7 @@ export const ImageCacheEverythingPresent: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Every series has a poster.')).toBeVisible()
+    await expect(await canvas.findByText(/every series has one/)).toBeVisible()
     await expect(await canvas.findByText('Not run yet')).toBeVisible()
   },
 }
@@ -269,7 +269,7 @@ export const ImageCacheLastRunFailed: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Last run failed: The metadata service rate limited the run./)).toBeVisible()
+    await expect(await canvas.findByText('The metadata service rate limited the run.')).toBeVisible()
   },
 }
 

@@ -27,7 +27,7 @@
     accent = localStorage.getItem('maki-accent') || accent
     // "Faster animations" (lib/motionPrefs.ts), which shortens every --dur-* token in theme.css.
     if (localStorage.getItem('maki-fast-motion') === 'on') document.documentElement.dataset.motion = 'fast'
-  } catch (e) {}
+  } catch {}
   var light =
     background === 'light' || background === 'paper' || (background === 'system' && !matchMedia('(prefers-color-scheme: dark)').matches)
   var known = Object.prototype.hasOwnProperty.call(grounds, background)
@@ -82,7 +82,7 @@
     var code = null
     try {
       code = match(localStorage.getItem('maki-language'))
-    } catch (e) {}
+    } catch {}
     var tags = navigator.languages || [navigator.language]
     for (var i = 0; !code && i < tags.length; i++) code = match(tags[i])
     var href = files[code || 'en']
@@ -91,5 +91,5 @@
     link.rel = 'modulepreload'
     link.href = href
     document.head.appendChild(link)
-  } catch (e) {}
+  } catch {}
 })()

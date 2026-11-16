@@ -41,7 +41,7 @@ export const Connections: Story = {
 export const FailingConnectionShowsItsError: Story = {
   play: async ({ canvas }) => {
     await canvas.findByText('Phone alerts')
-    const row = (await canvas.findByText('Phone alerts')).closest('tr')!
+    const row = (await canvas.findByText('Phone alerts')).closest('.settings-row') as HTMLElement
     await expect(await within(row).findByText(/Failing: 4 misses in a row/)).toBeVisible()
     await expect(await within(row).findByText('Favourites')).toBeVisible()
   },
@@ -50,7 +50,7 @@ export const FailingConnectionShowsItsError: Story = {
 export const Empty: Story = {
   parameters: { msw: settingsMsw(http.get(api('/notifications'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No notification connections yet.')).toBeVisible()
+    await expect(await canvas.findByText('No connections yet')).toBeVisible()
   },
 }
 

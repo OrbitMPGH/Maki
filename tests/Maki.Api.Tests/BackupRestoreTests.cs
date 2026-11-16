@@ -54,7 +54,7 @@ public class BackupRestoreTests : IDisposable
 
     private SystemController Controller() =>
         new(_paths, Build(), null!, null!, null!, null!, null!, null!, null!, null!,
-            new TestLocalizer(), NullLogger<SystemController>.Instance);
+            new TestLocalizer(), _settings, NullLogger<SystemController>.Instance);
 
     private string LastKnownMigration => _db.Database.GetMigrations().Last();
 

@@ -33,6 +33,12 @@ public readonly record struct UpscaleTile(
 public static class UpscaleTiling
 {
     public const int TileSize = 96;
+
+    /// <summary>
+    /// The bundled Maki 2x file is cropped for this pad and returns only the interior, so change it
+    /// together with that file (<c>distribution/upscale-models/crop_maki_2x.py --pad</c>). A pad
+    /// smaller than a model's crop fails that model at load.
+    /// </summary>
     public const int ContextPad = 12;
 
     public static int RoundUp(int value, int multiple) =>

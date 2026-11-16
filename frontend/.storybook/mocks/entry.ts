@@ -1,5 +1,5 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { BookmarkDto, ResolvedReaderPrefs } from '../../src/api/reader'
+import type { BookmarkDto, ReaderCredits, ResolvedReaderPrefs } from '../../src/api/reader'
 import type { ReaderPrefs } from '../../src/pages/reader/prefs'
 import type {
   DiscoverPreset,
@@ -36,6 +36,15 @@ const readerHandlers: HttpHandler[] = [
     return manifest ? HttpResponse.json(manifest) : failWith(404, 'This chapter has no readable file.', 'error.reader.noFile')
   }),
   http.put(api('/reader/chapter/:id/progress'), () => new HttpResponse(null, { status: 204 })),
+  // The end screen's live read. Unanswered by default, so it shows what the manifest says; a story
+  // that needs a chapter to land or a rating to be asked for overrides it.
+  http.get(api('/reader/chapter/:id/ending'), () => failWith(404, 'This chapter has no readable file.', 'error.reader.noFile')),
+  http.post(api('/series/:id/rate-hint/dismiss'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: null, offset: null })),
+  http.get(api('/reader/chapter/:id/credits'), () =>
+    HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0, tailOffset: 0, pageVersion: 'v1' } satisfies ReaderCredits)),
+  // The series page and Home's Continue cards start the search ahead; the answer is the reader's to ask for.
+  http.post(api('/reader/chapter/:id/credits/warm'), () => new HttpResponse(null, { status: 204 })),
   http.get(api('/series/:id/rating-checkpoint'), () => HttpResponse.json({ checkpoint: null, provisionalRating: null })),
   http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>

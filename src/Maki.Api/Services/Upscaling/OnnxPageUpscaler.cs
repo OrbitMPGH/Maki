@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Maki.Core.Configuration;
@@ -33,9 +34,16 @@ public sealed class OnnxPageUpscaler(
 
     /// <summary>
     /// A worker's peak per context pixel: SPAN-S measured 22 MB on 120 px contexts (fp32 activations
-    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB.
+    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB.
     /// </summary>
-    private const int WorkerBytesPerPixel = 1600;
+    private static int WorkerBytesPerPixel(UpscaleModelInfo info) => info.Id == UpscaleModelId.Maki2x ? 960 : 1600;
+
+    /// <summary>
+    /// Model metadata: the output is already cropped by this many source px per side of the context
+    /// tile (Maki 2x, built by <c>distribution/upscale-models/crop_maki_2x.py</c>). Absent means 0.
+    /// The crop is baked into the file for one pad, so it may not exceed <see cref="UpscaleTiling.ContextPad"/>.
+    /// </summary>
+    internal const string ContextCropKey = "maki.context_crop";
 
     private readonly object _gate = new();
     private readonly Lock _hooks = new();
@@ -47,22 +55,37 @@ public sealed class OnnxPageUpscaler(
     /// <summary>Called with the index of each tile filled without inference. Tests only.</summary>
     internal Action<int>? TileSkipped { get; set; }
 
+    /// <summary>Called as each tile worker of a run starts. Tests only.</summary>
+    internal Action<int>? WorkerStarted { get; set; }
+
     public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
         UpscaleModelId.TryParse(modelId, out var id)
             ? UpscaleAsync(page, id, ct)
             : Task.FromResult(UpscaleResult.Failed(UpscaleReasons.UnknownModel));
 
-    public async Task<UpscaleResult> UpscaleAsync(byte[] page, UpscaleModelId model, CancellationToken ct)
+    public async Task<UpscaleResult> UpscaleAsync(byte[] page, UpscaleModelId model, CancellationToken ct) =>
+        await (await StartAsync(page, model, ct)).FinishAsync(ct);
+
+    public Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct) =>
+        UpscaleModelId.TryParse(modelId, out var id)
+            ? StartAsync(page, id, run, ct)
+            : Task.FromResult(PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.UnknownModel)));
+
+    public Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, CancellationToken ct) =>
+        StartAsync(page, model, UpscaleRun.Default, ct);
+
+    /// <summary>Decode and inference. The colour pass and encode wait for <see cref="PendingUpscale.FinishAsync"/>.</summary>
+    public async Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, UpscaleRun run, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         if (!catalog.TryGet(model, out var info))
         {
-            return UpscaleResult.Failed(UpscaleReasons.UnknownModel);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.UnknownModel));
         }
 
         if (!store.IsReady(model))
         {
-            return UpscaleResult.Failed(UpscaleReasons.ModelUnavailable);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.ModelUnavailable));
         }
 
         var (source, skip) = await ImageWorkGate.RunAsync(
@@ -70,16 +93,17 @@ public sealed class OnnxPageUpscaler(
         if (source is null)
         {
             logger.LogDebug("Skipped upscaling a page with {Model}: {Reason}", model, skip);
-            return UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable);
+            return PendingUpscale.Done(UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable));
         }
 
         var grey = UpscalePixels.IsGreyscale(source.Pixels);
         var luma = grey && UpscalePixels.IsExactGrey(source.Pixels);
-        var threads = (await UpscaleOptions.LoadAsync(settings, ct)).Threads;
+        var options = await UpscaleOptions.LoadAsync(settings, ct);
+        var threads = options.Threads;
         StitchedPage stitched;
         try
         {
-            stitched = await Task.Run(() => Run(source, info, threads, luma, ct), ct);
+            stitched = await Task.Run(() => Run(source, info, threads, luma, ct, run), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -88,12 +112,24 @@ public sealed class OnnxPageUpscaler(
         catch (ModelLoadException ex)
         {
             logger.LogInformation(ex.InnerException, "Upscale model {Model} could not be loaded", model);
-            return UpscaleResult.Failed(UpscaleReasons.ModelUnavailable);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.ModelUnavailable));
         }
         catch (Exception ex)
         {
             logger.LogInformation(ex, "Upscaling a {Width}x{Height} page with {Model} failed", source.Width, source.Height, model);
-            return UpscaleResult.Failed(UpscaleReasons.InferenceFailed);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.InferenceFailed));
+        }
+
+        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, options.JpegXl, model, run, finish));
+    }
+
+    private async Task<UpscaleResult> FinishAsync(
+        Raster source, StitchedPage stitched, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
+        UpscaleRun run, CancellationToken ct)
+    {
+        if (run.NarrowNow)
+        {
+            threads = UpscaleRun.NarrowWorkers(threads);
         }
 
         try
@@ -106,16 +142,11 @@ public sealed class OnnxPageUpscaler(
                     outputWeight, ct));
             }
 
-            var original = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.ResizeRgb(
-                source.Pixels, source.Width, source.Height, (double)stitched.Width / source.Width)), outputWeight, ct);
-            if ((original.Width, original.Height) != (stitched.Width, stitched.Height))
-            {
-                throw new InvalidDataException("The resized source does not match the upscaled page.");
-            }
-
-            UpscalePixels.TakeColourFrom(stitched.Pixels, original.Rgb);
+            UpscalePixels.TakeColourFrom(stitched.Pixels, stitched.Width, stitched.Height, source.Pixels, source.Width,
+                source.Height, threads);
+            jpegXl = jpegXl && (run.JpegXl?.Invoke() ?? true);
             var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey)),
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey, jpegXl)),
                 outputWeight, ct);
             return UpscaleResult.Ready(encoded);
         }
@@ -191,12 +222,13 @@ public sealed class OnnxPageUpscaler(
     /// Stitch one band, the luma of the model output, instead of RGB. Only for an exact-grey source
     /// (<see cref="UpscalePixels.IsExactGrey"/>), where it equals the colour pass and band average.
     /// </param>
-    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
+    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct,
+        UpscaleRun? run = null)
     {
         var loaded = Acquire(info);
         try
         {
-            return RunTiles(loaded, source, info, threads, luma, ct);
+            return RunTiles(loaded, source, info, threads, luma, run ?? UpscaleRun.Default, ct);
         }
         finally
         {
@@ -205,7 +237,7 @@ public sealed class OnnxPageUpscaler(
     }
 
     private StitchedPage RunTiles(
-        LoadedModel loaded, Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
+        LoadedModel loaded, Raster source, UpscaleModelInfo info, int threads, bool luma, UpscaleRun run, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
@@ -235,11 +267,13 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        var workers = Math.Min(Math.Min(threads, MaxWorkers(tiles[0])), pending.Count);
-        if (workers == 0)
+        var full = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), pending.Count);
+        if (full == 0)
         {
             return page;
         }
+
+        var workers = run.NarrowNow ? Math.Min(full, UpscaleRun.NarrowWorkers(threads)) : full;
 
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var next = -1;
@@ -249,6 +283,7 @@ public sealed class OnnxPageUpscaler(
         {
             try
             {
+                Report(WorkerStarted, 0);
                 using var buffers = new TileBuffers(loaded, tiles, info.ModelScale, scale);
                 using var runOptions = new RunOptions();
                 using var terminate = stop.Token.Register(() => runOptions.Terminate = true);
@@ -271,14 +306,30 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        var helpers = new Task[workers - 1];
-        for (var i = 0; i < helpers.Length; i++)
+        // The calling thread is the first worker. A narrow page gets the rest once a reader waits on it.
+        var helpers = new List<Task>(full - 1);
+        void StartHelpers(int upTo)
         {
-            helpers[i] = Task.Factory.StartNew(Work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            lock (helpers)
+            {
+                while (helpers.Count < upTo - 1)
+                {
+                    helpers.Add(Task.Factory.StartNew(Work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
+                }
+            }
         }
 
+        StartHelpers(workers);
+        var widen = workers < full ? run.Widen.Register(() => StartHelpers(full)) : default;
         Work();
-        Task.WaitAll(helpers);
+        widen.Dispose();
+        Task[] started;
+        lock (helpers)
+        {
+            started = [.. helpers];
+        }
+
+        Task.WaitAll(started);
         ct.ThrowIfCancellationRequested();
         if (failure is not null)
         {
@@ -289,8 +340,8 @@ public sealed class OnnxPageUpscaler(
     }
 
     /// <summary>How many tiles of this shape may run at once inside <see cref="WorkerBudgetBytes"/>.</summary>
-    internal static int MaxWorkers(UpscaleTile tile) =>
-        (int)Math.Max(1, WorkerBudgetBytes / ((long)tile.ContextWidth * tile.ContextHeight * WorkerBytesPerPixel));
+    internal static int MaxWorkers(UpscaleTile tile, UpscaleModelInfo info) =>
+        (int)Math.Max(1, WorkerBudgetBytes / ((long)tile.ContextWidth * tile.ContextHeight * WorkerBytesPerPixel(info)));
 
     private static void RunTile(
         LoadedModel loaded, TileBuffers buffers, RunOptions runOptions, Raster source, UpscaleModelInfo info,
@@ -308,13 +359,14 @@ public sealed class OnnxPageUpscaler(
         }
 
         var (rgb, tileWidth, tileHeight) = buffers.Read(tile);
+        var crop = loaded.ContextCrop;
         if (info.ModelScale != scale)
         {
             var halved = buffers.Resized;
             (tileWidth, tileHeight) = ImageWorkGate.RunAsync(
                 () => Task.FromResult(ImageCodec.ResizeRgb(rgb, tileWidth, tileHeight, (double)scale / info.ModelScale, halved)),
                 ct).GetAwaiter().GetResult();
-            if ((tileWidth, tileHeight) != (tile.ContextWidth * scale, tile.ContextHeight * scale))
+            if ((tileWidth, tileHeight) != ((tile.ContextWidth - 2 * crop) * scale, (tile.ContextHeight - 2 * crop) * scale))
             {
                 throw new InvalidDataException($"Resizing a tile gave {tileWidth}x{tileHeight}.");
             }
@@ -322,7 +374,8 @@ public sealed class OnnxPageUpscaler(
             rgb = halved;
         }
 
-        StitchTile(rgb, tileWidth, tile, scale, output, width, bands);
+        StitchTile(rgb, tileWidth, tile, crop, scale, output, width, bands);
+        SnapFlat(source, info, tile, scale, output, width, bands);
     }
 
     private void Report(Action<int>? hook, int tile)
@@ -369,6 +422,54 @@ public sealed class OnnxPageUpscaler(
     private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
         info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || value is 0 or 255;
 
+    /// <summary>
+    /// Sets each output pixel whose source pixel and its eight neighbours are one grey value the model
+    /// keeps flat to exactly that value, the same value <see cref="FillTile"/> gives a whole flat tile.
+    /// Maki 2x answers flats about a level off (black comes back with green at 1), so on an OLED screen
+    /// a black panel showed every inferred tile as a lit box beside the filled ones.
+    /// </summary>
+    internal static void SnapFlat(
+        Raster source, UpscaleModelInfo info, UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands)
+    {
+        for (var y = tile.Y; y < tile.Y + tile.Height; y++)
+        {
+            for (var x = tile.X; x < tile.X + tile.Width; x++)
+            {
+                if (FlatAround(source, x, y) is not { } value || !KeepsFlat(info, value))
+                {
+                    continue;
+                }
+
+                for (var dy = 0; dy < scale; dy++)
+                {
+                    output.AsSpan(((y * scale + dy) * outputWidth + x * scale) * bands, scale * bands).Fill(value);
+                }
+            }
+        }
+    }
+
+    private static byte? FlatAround(Raster source, int x, int y)
+    {
+        var pixels = source.Pixels;
+        var value = pixels[y * source.Stride + x * 3];
+        var bottom = Math.Min(source.Height - 1, y + 1);
+        var right = Math.Min(source.Width - 1, x + 1);
+        for (var ny = Math.Max(0, y - 1); ny <= bottom; ny++)
+        {
+            var row = ny * source.Stride;
+            for (var nx = Math.Max(0, x - 1); nx <= right; nx++)
+            {
+                var p = row + nx * 3;
+                if (pixels[p] != value || pixels[p + 1] != value || pixels[p + 2] != value)
+                {
+                    return null;
+                }
+            }
+        }
+
+        return value;
+    }
+
     private static void FillTile(UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands, byte value)
     {
         var rowBytes = tile.Width * scale * bands;
@@ -379,12 +480,13 @@ public sealed class OnnxPageUpscaler(
     }
 
     /// <summary>
-    /// Copies the tile's interior, past <c>Pad × scale</c> px of context, into the page: as RGB, or as
-    /// its luma when the page has one band.
+    /// Copies the tile's interior into the page, past the <c>(Pad - crop) × scale</c> px of context
+    /// the model's output still carries: as RGB, or as its luma when the page has one band.
     /// </summary>
-    private static void StitchTile(byte[] rgb, int rgbWidth, UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands)
+    private static void StitchTile(
+        byte[] rgb, int rgbWidth, UpscaleTile tile, int crop, int scale, byte[] output, int outputWidth, int bands)
     {
-        var offset = tile.Pad * scale;
+        var offset = (tile.Pad - crop) * scale;
         var rowPixels = tile.Width * scale;
         for (var y = 0; y < tile.Height * scale; y++)
         {
@@ -409,12 +511,14 @@ public sealed class OnnxPageUpscaler(
     /// <summary>
     /// One page's tensors and scratch. The input and output tensors live in pinned arrays sized to the
     /// largest context tile, with one <see cref="OrtValue"/> pair over them per tile shape, so ORT
-    /// writes each result in place instead of allocating it.
+    /// writes each result in place instead of allocating it. The output is the context tile less the
+    /// model's <see cref="LoadedModel.ContextCrop"/> per side.
     /// </summary>
     private sealed class TileBuffers : IDisposable
     {
         private readonly LoadedModel _model;
         private readonly int _modelScale;
+        private readonly int _crop;
         private readonly float[]? _floatInput;
         private readonly Float16[]? _halfInput;
         private readonly float[]? _floatOutput;
@@ -429,10 +533,11 @@ public sealed class OnnxPageUpscaler(
         {
             _model = model;
             _modelScale = modelScale;
+            _crop = model.ContextCrop;
             var maxWidth = tiles.Max(t => t.ContextWidth);
             var maxHeight = tiles.Max(t => t.ContextHeight);
             var input = maxWidth * maxHeight * 3;
-            var result = input * modelScale * modelScale;
+            var result = (maxWidth - 2 * _crop) * (maxHeight - 2 * _crop) * 3 * modelScale * modelScale;
             if (model.InputType == TensorElementType.Float16)
             {
                 _halfInput = GC.AllocateUninitializedArray<Float16>(input, pinned: true);
@@ -516,9 +621,10 @@ public sealed class OnnxPageUpscaler(
             if (!_shapes.TryGetValue(shape, out var values))
             {
                 var length = tile.ContextWidth * tile.ContextHeight * 3;
-                var resultLength = length * _modelScale * _modelScale;
+                var (resultWidth, resultHeight) = ResultSize(tile);
+                var resultLength = resultWidth * resultHeight * 3;
                 long[] inputShape = [1, 3, tile.ContextHeight, tile.ContextWidth];
-                long[] outputShape = [1, 3, tile.ContextHeight * _modelScale, tile.ContextWidth * _modelScale];
+                long[] outputShape = [1, 3, resultHeight, resultWidth];
                 var input = _halfInput is not null
                     ? OrtValue.CreateTensorValueFromMemory(OrtMemoryInfo.DefaultInstance, _halfInput.AsMemory(0, length), inputShape)
                     : OrtValue.CreateTensorValueFromMemory(OrtMemoryInfo.DefaultInstance, _floatInput.AsMemory(0, length), inputShape);
@@ -535,11 +641,13 @@ public sealed class OnnxPageUpscaler(
             return _binding;
         }
 
-        /// <summary>The whole context tile the model returned, as interleaved 8-bit RGB at the model's scale.</summary>
+        private (int Width, int Height) ResultSize(UpscaleTile tile) =>
+            ((tile.ContextWidth - 2 * _crop) * _modelScale, (tile.ContextHeight - 2 * _crop) * _modelScale);
+
+        /// <summary>What the model returned for the tile, as interleaved 8-bit RGB at the model's scale.</summary>
         public (byte[] Rgb, int Width, int Height) Read(UpscaleTile tile)
         {
-            var width = tile.ContextWidth * _modelScale;
-            var height = tile.ContextHeight * _modelScale;
+            var (width, height) = ResultSize(tile);
             var plane = width * height;
             var rgb = _rgb;
             if (_halfOutput is not null)
@@ -628,14 +736,33 @@ public sealed class OnnxPageUpscaler(
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);
             var outputType = ElementType(session.OutputMetadata[output]);
+            var crop = ContextCrop(session);
             logger.LogInformation("Loaded upscale model {Model} ({Type})", info.Id, inputType);
-            return new LoadedModel(session, info.InputName, output, inputType, outputType);
+            return new LoadedModel(session, info.InputName, output, inputType, outputType, crop);
         }
         catch (Exception ex)
         {
             session?.Dispose();
             throw new ModelLoadException(ex);
         }
+    }
+
+    private static int ContextCrop(InferenceSession session)
+    {
+        if (!session.ModelMetadata.CustomMetadataMap.TryGetValue(ContextCropKey, out var text))
+        {
+            return 0;
+        }
+
+        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var crop))
+        {
+            throw new InvalidDataException($"The model's {ContextCropKey} '{text}' is not a number.");
+        }
+
+        return crop <= UpscaleTiling.ContextPad
+            ? crop
+            : throw new InvalidDataException(
+                $"The model crops {crop} px of context per side but tiles carry {UpscaleTiling.ContextPad}.");
     }
 
     private static TensorElementType ElementType(NodeMetadata metadata) =>
@@ -650,9 +777,10 @@ public sealed class OnnxPageUpscaler(
 
     private sealed class LoadedModel(
         InferenceSession session, string inputName, string outputName, TensorElementType inputType,
-        TensorElementType outputType)
+        TensorElementType outputType, int contextCrop)
     {
         public InferenceSession Session { get; } = session;
+        public int ContextCrop { get; } = contextCrop;
         public string InputName { get; } = inputName;
         public string OutputName { get; } = outputName;
         public TensorElementType InputType { get; } = inputType;

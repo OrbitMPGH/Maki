@@ -1,12 +1,11 @@
 import { errorText } from '../../api/errorText'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Alert,
   Anchor,
   Box,
   Button,
-  Card,
+  Collapse,
   Group,
   SegmentedControl,
   SimpleGrid,
@@ -14,12 +13,14 @@ import {
   Stack,
   Text,
   Tooltip,
+  UnstyledButton,
 } from '@mantine/core'
 import { BarChart, DonutChart } from '@mantine/charts'
 import {
   IconAlertCircle,
   IconArrowsShuffle,
   IconChartPie,
+  IconChevronDown,
   IconClock,
   IconCompass,
   IconFilter,
@@ -63,6 +64,7 @@ import { SignalsCard } from './FeedbackLab'
 import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
+import { Callout } from '../../components/ui/Callout'
 
 const SLICE_COLORS = [
   'var(--chart-1)',
@@ -133,18 +135,26 @@ function TasteSkeleton() {
   )
 }
 
-function GroupCard({
+function GroupRow({
   group,
+  maxShare,
+  opened,
+  onToggle,
   onOpen,
   seriesIdFor,
+  onRecommend,
 }: {
   group: TasteGroup
+  maxShare: number
+  opened: boolean
+  onToggle: () => void
   onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
+  onRecommend: (group: TasteGroup) => void
 }) {
   const { t } = useLingui()
+  const bodyId = useId()
   const { size, share, coherence } = group
-  const shareLabel = percent(share)
   // Coherence in words. The raw cosine means nothing to a reader, and the useful distinction is
   // only ever three-way: this group is one thing, a theme, or a loose pile.
   //
@@ -153,41 +163,108 @@ function GroupCard({
   // old 0.72 floor called every one of them "very tight" and said nothing.
   const coherenceWord =
     coherence >= 0.84 ? t`very alike` : coherence >= 0.76 ? t`fairly alike` : t`loosely related`
-  const summary = plural(size, {
-    one: `# series (${shareLabel}), ${coherenceWord}`,
-    other: `# series (${shareLabel}), ${coherenceWord}`,
-  })
+  const seriesCount = plural(size, { one: '# series', other: '# series' })
+  const barWidth = maxShare > 0 ? Math.max(4, Math.min(100, (share / maxShare) * 100)) : 0
 
   return (
-    <Panel p="md">
-      <Group justify="space-between" align="center" wrap="wrap" gap="xs" mb="xs">
-        <Text fw={650} style={{ minWidth: 0 }}>
-          {group.label}
-        </Text>
-        <Text c="var(--ink-3)" size="xs" style={{ flexShrink: 0 }}>
-          {summary}
-        </Text>
-      </Group>
-
-      <Group gap="sm" wrap="wrap" mb={group.picks.length > 0 ? 'sm' : 0}>
-        {group.examples.map((m: TasteMember) => (
-          <Group key={m.seriesId} gap={6} wrap="nowrap" style={{ maxWidth: 220 }}>
-            <SeriesThumb url={m.coverUrl} alt={m.title} />
-            <Text size="sm" truncate style={{ minWidth: 0 }}>
-              <SeriesLink id={m.seriesId} title={m.title} />
-            </Text>
+    <div className="settings-row taste-theme" data-open={opened || undefined}>
+      <UnstyledButton
+        className="settings-row-head taste-theme-head"
+        aria-expanded={opened}
+        aria-controls={bodyId}
+        onClick={onToggle}
+      >
+        <span className="settings-row-text">
+          <span className="settings-row-title">{group.label}</span>
+          <span className="settings-row-summary tnum">{seriesCount}</span>
+        </span>
+        <span className="taste-theme-covers" aria-hidden>
+          {group.examples.slice(0, 4).map((m: TasteMember) =>
+            m.coverUrl ? (
+              <img key={m.seriesId} src={m.coverUrl} alt="" loading="lazy" />
+            ) : (
+              <span key={m.seriesId} className="taste-theme-cover-empty" />
+            ),
+          )}
+        </span>
+        <span className="taste-theme-share">
+          <span className="taste-theme-bar" aria-hidden>
+            <b style={{ width: `${barWidth}%` }} />
+          </span>
+          <span className="tnum taste-theme-pct">{percent(share)}</span>
+        </span>
+        <span className="taste-theme-word">{coherenceWord}</span>
+        <IconChevronDown size={16} className="settings-row-chevron" aria-hidden />
+      </UnstyledButton>
+      <Collapse expanded={opened} id={bodyId}>
+        <div className="taste-theme-body">
+          <Group gap="md" wrap="wrap" mb={group.picks.length > 0 ? 'sm' : 0}>
+            {group.examples.map((m: TasteMember) => (
+              <Group key={m.seriesId} gap={6} wrap="nowrap" style={{ maxWidth: 220 }}>
+                <SeriesThumb url={m.coverUrl} alt={m.title} />
+                <Text size="sm" truncate style={{ minWidth: 0 }}>
+                  <SeriesLink id={m.seriesId} title={m.title} />
+                </Text>
+              </Group>
+            ))}
           </Group>
-        ))}
-      </Group>
+          {group.seedIds.length > 0 && (
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              leftSection={<IconCompass size={14} />}
+              mb={group.picks.length > 0 ? 'sm' : 0}
+              onClick={() => onRecommend(group)}
+            >
+              <Trans>More like this</Trans>
+            </Button>
+          )}
+          {group.picks.length > 0 && (
+            <>
+              <Text size="xs" fw={600} mb={4}>
+                <Trans>More of this</Trans>
+              </Text>
+              <DiscoverRailRow
+                items={group.picks}
+                seriesIdFor={seriesIdFor}
+                onOpen={onOpen}
+                savedFrom={sectionSource('taste')}
+              />
+            </>
+          )}
+        </div>
+      </Collapse>
+    </div>
+  )
+}
 
-      {group.picks.length > 0 && (
-        <>
-          <Text size="xs" fw={600} mb={4}>
-            <Trans>More of this</Trans>
-          </Text>
-          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('taste')} />
-        </>
-      )}
+function ThemesPanel({
+  groups,
+  onOpen,
+  seriesIdFor,
+  onRecommend,
+}: {
+  groups: TasteGroup[]
+  onOpen: OpenItem
+  seriesIdFor: (item: RecommendationItem) => number | null
+  onRecommend: (group: TasteGroup) => void
+}) {
+  const [openLabel, setOpenLabel] = useState<string | null>(groups[0]?.label ?? null)
+  const maxShare = Math.max(0, ...groups.map((g) => g.share))
+  return (
+    <Panel p={0} className="taste-themes">
+      {groups.map((group) => (
+        <GroupRow
+          key={group.label}
+          group={group}
+          maxShare={maxShare}
+          opened={openLabel === group.label}
+          onToggle={() => setOpenLabel(openLabel === group.label ? null : group.label)}
+          onOpen={onOpen}
+          seriesIdFor={seriesIdFor}
+          onRecommend={onRecommend}
+        />
+      ))}
     </Panel>
   )
 }
@@ -207,7 +284,7 @@ function BehaviourList({
   format: (item: BehaviourSeries) => string
 }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel p="md">
       <Box mb="xs">
         <PanelTitle icon={ListIcon}>{title}</PanelTitle>
       </Box>
@@ -230,7 +307,7 @@ function BehaviourList({
           ))}
         </Stack>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -327,7 +404,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
   const data = insights.drift.map((d) => ({ bucket: d.bucket, similarity: d.similarityToStart }))
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel p="md">
       <Text c="var(--ink-3)" size="xs" mb="md">
         <Trans>How close each quarter sat to where you started.</Trans>{' '}
         <Trans>Lower bars mean your taste moved.</Trans>
@@ -364,7 +441,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
           </Group>
         ))}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -422,9 +499,9 @@ function CompositionCard({
 
   return (
     <Panel p="md">
-      <Text fw={650} mb="md">
-        {title}
-      </Text>
+      <Box mb="md">
+        <PanelTitle>{title}</PanelTitle>
+      </Box>
       {data.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           <Trans>Nothing to show yet.</Trans>
@@ -462,13 +539,12 @@ function CompositionCard({
 
 function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <IconPencil size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>
+    <Panel p="md">
+      <Box mb="xs">
+        <PanelTitle icon={IconPencil}>
           <Trans>Creators</Trans>
-        </Text>
-      </Group>
+        </PanelTitle>
+      </Box>
       {facets.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           <Trans>No creator shows up often enough yet.</Trans>
@@ -496,7 +572,7 @@ function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
           })}
         </Stack>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -509,12 +585,11 @@ function TagsCard({
 }) {
   return (
     <Panel p="md">
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <IconTags size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>
+      <Box mb="xs">
+        <PanelTitle icon={IconTags}>
           <Trans>Tags</Trans>
-        </Text>
-      </Group>
+        </PanelTitle>
+      </Box>
       {facets.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           <Trans>No tags yet.</Trans>{' '}
@@ -574,15 +649,24 @@ export function TasteTab() {
       state: { recommendationFilters: payload, seeds, source: 'taste-profile' },
     })
 
+  const recommendGroup = (group: TasteGroup) =>
+    apply(
+      {},
+      group.seedIds.map((id) => ({
+        id,
+        title: group.examples.find((m) => m.seriesId === id)?.title ?? null,
+      })),
+    )
+
   if (insightsLoading && behaviourLoading && profileLoading) {
     return <TasteSkeleton />
   }
 
   if (error) {
     return (
-      <Alert color="var(--danger)" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
+      <Callout tone="danger" role="alert" icon={IconAlertCircle} title={t`Could not read your profile`}>
         {errorText(error)}
-      </Alert>
+      </Callout>
     )
   }
 
@@ -594,9 +678,9 @@ export function TasteTab() {
   if (nothingAtAll) {
     return (
       <Stack gap="md" className="discover-tab-body">
-      <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
+      <Callout tone="neutral" role="alert" icon={IconAlertCircle} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
-      </Alert>
+      </Callout>
       <SignalsCard />
       </Stack>
     )
@@ -648,9 +732,9 @@ export function TasteTab() {
         {summaryText}
       </Text>
       {insights?.unavailable || insights?.groupsUnavailable ? (
-        <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
+        <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
           {insights.unavailable ?? insights.groupsUnavailable}
-        </Alert>
+        </Callout>
       ) : (
         <>
           <Text c="var(--ink-3)" size="xs">
@@ -660,23 +744,20 @@ export function TasteTab() {
             </Trans>{' '}
             <Trans>Groups overlap on purpose, so one series can belong to several of them.</Trans>
           </Text>
-          <Stack gap="md">
-            {insights?.groups.map((group) => (
-              <GroupCard
-                key={group.label}
-                group={group}
-                onOpen={setDetailItem}
-                seriesIdFor={seriesIdFor}
-              />
-            ))}
-          </Stack>
+          {insights && insights.groups.length > 0 && (
+            <ThemesPanel
+              groups={insights.groups}
+              onOpen={setDetailItem}
+              seriesIdFor={seriesIdFor}
+              onRecommend={recommendGroup}
+            />
+          )}
           {insights?.oddOneOut && (
-            <Card padding="md" radius="lg" withBorder>
+            <Panel p="md">
               <Group gap={8} wrap="nowrap">
-                <IconArrowsShuffle size={16} style={{ color: 'var(--brand-fg)', flexShrink: 0 }} />
-                <Text fw={650} style={{ flexShrink: 0 }}>
+                <PanelTitle icon={IconArrowsShuffle}>
                   <Trans>The odd one out</Trans>
-                </Text>
+                </PanelTitle>
                 <SeriesThumb url={insights.oddOneOut.coverUrl} alt={insights.oddOneOut.title} />
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                   <SeriesLink id={insights.oddOneOut.seriesId} title={insights.oddOneOut.title} />
@@ -685,7 +766,7 @@ export function TasteTab() {
                   <Trans>least like anything else you read</Trans>
                 </Text>
               </Group>
-            </Card>
+            </Panel>
           )}
         </>
       )}
@@ -694,9 +775,9 @@ export function TasteTab() {
         <>
           <SectionHeader icon={IconRoute} title={t`Where your taste has moved`} />
           {insights.driftUnavailable ? (
-            <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
+            <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
               {insights.driftUnavailable}
-            </Alert>
+            </Callout>
           ) : (
             <DriftSection insights={insights} />
           )}

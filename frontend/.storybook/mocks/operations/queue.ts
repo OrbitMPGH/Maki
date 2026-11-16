@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw'
 import type {
   QueueFailureGroupDto,
   QueueHistoryDto,
+  QueueHistoryGroupsDto,
+  QueueEtaDto,
   QueueItemDto,
   QueuePauseDto,
   TorrentImportPlanDto,
@@ -44,6 +46,9 @@ const item = (seriesId: number, over: Partial<QueueItemDto>): QueueItemDto => ({
   origin: 'manual',
   upgrade: null,
   seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
+  priority: 'normal',
+  // Series 6 lives on the second root folder, the one the disk hold fixture holds.
+  rootFolderId: seriesId === 6 ? 2 : 1,
   ...over,
 })
 
@@ -231,7 +236,49 @@ const historyRow = (index: number): QueueItemDto => {
     origin: index % 5 === 0 ? 'smartdownload' : 'monitorrefresh',
   })
 }
-export const historyItems: QueueItemDto[] = Array.from({ length: 40 }, (_, i) => historyRow(i))
+/** One series' burst: ten chapters in a few minutes, the last from a second source. */
+export const historyBurst: QueueItemDto[] = Array.from({ length: 10 }, (_, i) => {
+  // Not catalogue[0]: the first plain history row is that series, and would join the run.
+  const s = catalogue[2]
+  const number = s.chapters - i
+  return item(s.id, {
+    chapterNumber: String(number),
+    chapterVolume: i >= 5 ? 3 : null,
+    sourceName: sources[i === 0 ? 1 : 0].name,
+    status: 'Completed',
+    pagesTotal: 22,
+    pagesDone: 22,
+    queuedAt: minutesAgo(30 + i),
+    completedAt: minutesAgo(10 + i),
+    origin: 'monitorrefresh',
+  })
+})
+export const historyItems: QueueItemDto[] = [
+  ...historyBurst,
+  ...Array.from({ length: 40 }, (_, i) => historyRow(i)),
+]
+
+/** Runs of the same series and status next to each other, the way the server folds them. */
+const historyRuns = (items: QueueItemDto[]): QueueItemDto[][] => {
+  const runs: QueueItemDto[][] = []
+  for (const row of items) {
+    const last = runs[runs.length - 1]
+    if (last && last[0].seriesId === row.seriesId && last[0].status === row.status) last.push(row)
+    else runs.push([row])
+  }
+  return runs
+}
+
+const filteredHistory = (request: Request): QueueItemDto[] => {
+  const params = new URL(request.url).searchParams
+  const status = params.get('status')
+  const search = params.get('search')?.toLowerCase()
+  return historyItems.filter(
+    (row) =>
+      (status === 'completed' ? row.status === 'Completed' : status === 'cancelled' ? row.status === 'Cancelled' : status === 'upgrades' ? row.upgrade !== null : true) &&
+      (!search || row.seriesTitle.toLowerCase().includes(search)),
+  )
+}
 
 export const noPause: QueuePauseDto = { all: null, sources: [] }
 export const pausedAll: QueuePauseDto = { all: { until: null }, sources: [] }
@@ -241,6 +288,24 @@ export const pausedSources: QueuePauseDto = {
     { sourceName: 'weebcentral', until: minutesAgo(-90) },
     { sourceName: 'asura', until: null },
   ],
+}
+
+/** Series 9 paused on its own, and the second root folder short of space. */
+export const pausedSeriesAndDisk: QueuePauseDto = {
+  all: null,
+  sources: [],
+  series: [{ seriesId: 9, title: title(9), until: null }],
+  diskHolds: [{ rootFolderId: 2, path: '/mnt/ssd/manga', freeBytes: 3.2 * 1024 ** 3, minFreeBytes: 5 * 1024 ** 3 }],
+}
+
+export const queueEta: QueueEtaDto = {
+  queueSeconds: 47 * 60,
+  series: [
+    { seriesId: 1, seconds: 12 * 60, held: false },
+    { seriesId: 6, seconds: 47 * 60, held: false },
+    { seriesId: 9, seconds: 31 * 60, held: false },
+  ],
+  held: false,
 }
 
 export const failureGroups: QueueFailureGroupDto[] = [
@@ -385,6 +450,10 @@ export const upgradeSettings: UpgradeSettings = {
   volumeMissingTolerance: 2,
   volumeSearchesPerRun: 10,
   proposalExpiryDays: 14,
+  autoApprove: false,
+  autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const upgradesSummary: UpgradesSummaryDto = {
@@ -478,12 +547,26 @@ export const queueHandlers = [
   http.get(api('/queue/history'), ({ request }) => {
     const page = numberParam(request, 'page', 1)
     const pageSize = numberParam(request, 'pageSize', 25)
+    const rows = filteredHistory(request)
     return HttpResponse.json({
-      items: historyItems.slice((page - 1) * pageSize, page * pageSize),
-      total: historyItems.length,
+      items: rows.slice((page - 1) * pageSize, page * pageSize),
+      total: rows.length,
       page,
       pageSize,
     } satisfies QueueHistoryDto)
+  }),
+  http.get(api('/queue/history/grouped'), ({ request }) => {
+    const page = numberParam(request, 'page', 1)
+    const pageSize = numberParam(request, 'pageSize', 25)
+    const rows = filteredHistory(request)
+    const runs = historyRuns(rows)
+    return HttpResponse.json({
+      entries: runs.slice((page - 1) * pageSize, page * pageSize).map((items) => ({ items })),
+      total: runs.length,
+      itemTotal: rows.length,
+      page,
+      pageSize,
+    } satisfies QueueHistoryGroupsDto)
   }),
   http.get(api('/queue/pause'), () => HttpResponse.json(noPause)),
   http.put(api('/queue/pause'), async ({ request }) => {
@@ -494,6 +577,16 @@ export const queueHandlers = [
     )
   }),
   http.delete(api('/queue/pause'), () => HttpResponse.json(noPause)),
+  http.put(api('/queue/pause/series'), async ({ request }) => {
+    const body = (await request.json()) as { seriesId: number }
+    return HttpResponse.json({
+      ...noPause,
+      series: [{ seriesId: body.seriesId, title: title(body.seriesId), until: null }],
+      diskHolds: [],
+    } satisfies QueuePauseDto)
+  }),
+  http.delete(api('/queue/pause/series/:id'), () => HttpResponse.json(noPause)),
+  http.get(api('/queue/eta'), () => HttpResponse.json(queueEta)),
   http.get(api('/queue/failed'), () => HttpResponse.json(failureGroups)),
   http.post(api('/queue/retry-failed'), () => HttpResponse.json({ affected: 6 })),
   http.post(api('/queue/remove-failed'), () => HttpResponse.json({ affected: 6 })),

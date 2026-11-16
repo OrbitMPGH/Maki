@@ -1,7 +1,8 @@
+import { SearchInput } from '../../components/ui/SearchInput'
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
-  Switch, Tabs, Text, TextInput, Tooltip,
+  ActionIcon, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
+  Switch, Tabs, Text, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../../lib/toast'
@@ -10,7 +11,6 @@ import {
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
-  IconDots,
   IconDownload,
   IconFileImport,
   IconFilter,
@@ -19,13 +19,15 @@ import {
   IconPencil,
   IconPlus,
   IconPuzzle,
-  IconSearch,
+  
   IconShield,
   IconTool,
   IconTrash,
+  IconUsers,
   IconWorldWww,
   IconPackages,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -43,6 +45,8 @@ import { CustomSourceWizard, type WizardMode } from './CustomSourceWizard'
 import { CustomRepositoriesPanel } from './CustomRepositoriesPanel'
 import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
 import { MetaList } from '../../components/ui/MetaList'
+import { GlobalScanlationGroupsModal } from '../../components/ScanlationGroupsModal'
+import { Callout } from '../../components/ui/Callout'
 
 type StateFilter = 'all' | 'on' | 'off'
 export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
@@ -284,7 +288,7 @@ function PriorityRail({ items, onChange, labelOf }: {
   if (items.length === 0) {
     return (
       <div className="source-manager-empty">
-        <Trans>Nothing enabled. Turn a source on to rank it.</Trans>
+        <Trans>Nothing enabled.</Trans>
       </div>
     )
   }
@@ -587,6 +591,7 @@ export function ManageSourcesModal({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [setupFor, setSetupFor] = useState<string | null>(null)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { can } = useAuth()
@@ -956,12 +961,22 @@ export function ManageSourcesModal({
           <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>
         <Group gap={8} wrap="nowrap">
+          {source.scanlationGroups && isAdmin && (
+            <Tooltip label={t`Scanlation groups`} withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="var(--neutral)"
+                aria-label={t`Scanlation groups for ${label}`}
+                onClick={() => setGroupsOpen(true)}
+              >
+                <IconUsers size={16} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {source.custom && isAdmin && (
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
-                <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`More for ${label}`}>
-                  <IconDots size={16} />
-                </ActionIcon>
+                <OverflowButton aria-label={t`More for ${label}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => openEdit(source)}>
@@ -1009,15 +1024,14 @@ export function ManageSourcesModal({
   const catalogue = (
     <section className="source-manager-catalogue">
       <div className="source-manager-tools">
-        <TextInput
+        <SearchInput
           ref={searchRef}
-          type="search"
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
           placeholder={plural(total, { one: 'Search # source', other: 'Search # sources' })}
           aria-label={t`Search sources`}
-          leftSection={<IconSearch size={16} />}
-          rightSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
+          onClear={() => setSearch('')}
+          idleSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
           style={{ flex: '1 1 200px', minWidth: 160 }}
         />
         <SegmentedControl
@@ -1144,10 +1158,10 @@ export function ManageSourcesModal({
       </div>
       <div className="source-manager-list">
         {refresh.data && !refresh.data.reachable && (
-          <Alert color="var(--warn)" variant="light" mb="xs">
+          <Callout tone="warn" role="alert" mb="xs">
             {refresh.data.error}{' '}
             <Trans>The Suwayomi sources below are the ones it listed last time.</Trans>
-          </Alert>
+          </Callout>
         )}
         {!ready && (
           <Group justify="center" p="xl">
@@ -1174,7 +1188,7 @@ export function ManageSourcesModal({
         )}
         {ready && visible.length === 0 && sources && (
           <div className="source-manager-empty">
-            <Trans>No sources match. Clear a filter or try another name.</Trans>
+            <Trans>No sources match.</Trans>
           </div>
         )}
       </div>
@@ -1210,14 +1224,14 @@ export function ManageSourcesModal({
       opened={opened}
       onClose={requestClose}
       size={980}
-      closeOnEscape={!filtersOpen && !setupFor}
+      closeOnEscape={!filtersOpen && !setupFor && !groupsOpen}
       fullScreen={narrow}
       closeButtonProps={{ 'aria-label': t`Close` }}
       styles={{
         content: narrow ? undefined : { height: 'min(860px, 92dvh)' },
         body: { padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
       }}
-      title={<Text fw={600}><Trans>Manage sources</Trans></Text>}
+      title={<Trans>Manage sources</Trans>}
     >
       <div className="source-manager" data-narrow={narrow || undefined}>
         {narrow && (
@@ -1271,6 +1285,13 @@ export function ManageSourcesModal({
         onSaved={customSaved}
         onEditExisting={openEditById}
         state={wizard?.id ? sources?.find((s) => s.custom?.id === wizard.id)?.custom ?? null : null}
+      />
+    )}
+    {isAdmin && (
+      <GlobalScanlationGroupsModal
+        opened={groupsOpen}
+        onClose={() => setGroupsOpen(false)}
+        onSaved={() => notifications.show({ message: now`Saved`, color: 'var(--ok)' })}
       />
     )}
     {isAdmin && (

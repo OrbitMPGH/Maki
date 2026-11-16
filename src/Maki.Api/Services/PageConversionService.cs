@@ -135,14 +135,20 @@ public class PageConversionService(
             return new FileConversion(FileConversionStatus.Hardlinked);
         }
 
-        if (await BusyAsync(file, queued, ct) || (queued && archives.ReadWithin(path, ReadingQuiet)))
+        // A split renumbers pages under anyone reading, so the pass waits for a quiet chapter too.
+        var watchReading = queued || plan.SplitHeight is not null;
+        if (await BusyAsync(file, queued, ct) || (watchReading && archives.ReadWithin(path, ReadingQuiet)))
         {
             return new FileConversion(FileConversionStatus.Busy);
         }
 
-        var keepOriginal = !queued || file.SourceChapterId is null;
-        var action = plan.Resolve(PageConversionPlanService.Candidate(file,
-            await PageConversionPlanService.SeriesFactsAsync(db, file.SeriesId, ct)));
+        // Only a split reaches a file conversion already rewrote. Its original is already in the trash
+        // (and its history row is extended) or was never kept, so this copy is not kept either.
+        var converted = file.OriginalImageFormat is not null;
+        var keepOriginal = !converted && (!queued || file.SourceChapterId is null);
+        var candidate = PageConversionPlanService.Candidate(file,
+            await PageConversionPlanService.SeriesFactsAsync(db, file.SeriesId, ct));
+        var action = converted ? plan.ResolveConverted(candidate) : plan.Resolve(candidate);
         if (action is not PlanAction.Convert { Settings: var settings })
         {
             await MarkCheckedAsync(file, action.Name, ct);
@@ -232,7 +238,7 @@ public class PageConversionService(
             var onDisk = new FileInfo(path);
             if (current is null || current.RelativePath != file.RelativePath || current.ConversionCheckedAtUtc is not null ||
                 !onDisk.Exists || onDisk.Length != length || onDisk.LastWriteTimeUtc != written ||
-                await BusyAsync(current, queued, ct) || (queued && archives.ReadWithin(path, ReadingQuiet)))
+                await BusyAsync(current, queued, ct) || (watchReading && archives.ReadWithin(path, ReadingQuiet)))
             {
                 LeaveCold();
                 return new FileConversion(FileConversionStatus.Busy);
@@ -254,31 +260,75 @@ public class PageConversionService(
 
             // The bytes have changed: from here the row has to be saved whatever happens.
             archives.Invalidate(current.Id);
-            var acquired = current.MeasuredAtUtc is null ? null : current.ImageFormat;
-            var now = DateTime.UtcNow;
-            PageConversionOptions.Apply(current, result, acquired, action.Name, now);
-            current.Size = new FileInfo(path).Length;
-            current.ConversionQueuedAtUtc = null;
-            if (trashRelative is not null)
+            try
             {
-                db.PageConversionHistory.Add(new PageConversionHistory
+                await using var transaction = await db.Database.BeginTransactionAsync(CancellationToken.None);
+                if (result.Split is { IsEmpty: false } split && result.PagesBefore is { } pagesBefore)
                 {
-                    ChapterFileId = current.Id,
-                    SeriesId = current.SeriesId,
-                    ChapterId = chapterId,
-                    PassId = cache.PassId,
-                    TrashPath = trashRelative,
-                    TrashBytes = length,
-                    Action = action.Name,
-                    BytesBefore = length,
-                    BytesAfter = current.Size,
-                    SourceFormat = result.SourceFormat,
-                    ResultFormat = result.ResultFormat,
-                    CreatedAtUtc = now
-                });
-            }
+                    await PageSplitRemap.ApplyAsync(db, current.Id, pagesBefore, split, undo: false, CancellationToken.None);
+                }
 
-            await db.SaveChangesAsync(CancellationToken.None);
+                var acquired = current.MeasuredAtUtc is null ? null : current.ImageFormat;
+                var now = DateTime.UtcNow;
+                var (formatBefore, savedBefore, splitBefore) =
+                    (current.OriginalImageFormat, current.ConversionSavedBytes, current.SplitPageCount);
+                var history = converted && result.Split is not null
+                    ? await PageConversionUndoService.Restorable(db, current.SeriesId)
+                        .Where(h => h.ChapterFileId == current.Id)
+                        .FirstOrDefaultAsync(CancellationToken.None)
+                    : null;
+                PageConversionOptions.Apply(current, result, acquired, action.Name, now);
+                current.SplitPageCount = result.Split is { IsEmpty: false } cut && result.PagesBefore is { } namesBefore
+                    ? cut.NewStart(namesBefore.Count)
+                    : splitBefore;
+                if (converted)
+                {
+                    current.OriginalImageFormat = formatBefore;
+                    current.ConversionSavedBytes = savedBefore + result.SavedBytes;
+                }
+
+                current.Size = new FileInfo(path).Length;
+                current.ConversionQueuedAtUtc = null;
+                if (history is not null)
+                {
+                    // The trash still holds the original from before the first conversion, which an undo
+                    // restores, so the split map has to describe the way from there.
+                    history.BytesAfter = current.Size;
+                    history.ResultFormat = result.ResultFormat;
+                    history.SplitPages = (PageSplitMap.Parse(history.SplitPages) is { } earlier
+                        ? earlier.Then(result.Split!)
+                        : result.Split!).ToString();
+                }
+
+                if (trashRelative is not null)
+                {
+                    db.PageConversionHistory.Add(new PageConversionHistory
+                    {
+                        ChapterFileId = current.Id,
+                        SeriesId = current.SeriesId,
+                        ChapterId = chapterId,
+                        PassId = cache.PassId,
+                        TrashPath = trashRelative,
+                        TrashBytes = length,
+                        Action = action.Name,
+                        BytesBefore = length,
+                        BytesAfter = current.Size,
+                        SourceFormat = result.SourceFormat,
+                        ResultFormat = result.ResultFormat,
+                        SplitPages = result.Split?.ToString(),
+                        CreatedAtUtc = now
+                    });
+                }
+
+                await db.SaveChangesAsync(CancellationToken.None);
+                await transaction.CommitAsync(CancellationToken.None);
+            }
+            catch when (trashRelative is not null)
+            {
+                PutOriginalBack(row.Root, trashRelative, path);
+                archives.Invalidate(current.Id);
+                throw;
+            }
         }
         finally
         {
@@ -292,8 +342,8 @@ public class PageConversionService(
 
         var topFolder = file.RelativePath.Split('/', '\\')[0];
         kavitaScans.QueueScan(Path.Combine(row.Root, topFolder), file.SeriesId);
-        logger.LogInformation("Converted the pages of {Path}: {Before} to {After} bytes",
-            file.RelativePath, result.SourceBytes, result.ResultBytes);
+        logger.LogInformation("Converted the pages of {Path}: {Before} to {After} bytes, {Split} pages split",
+            file.RelativePath, result.SourceBytes, result.ResultBytes, result.Split?.Pieces.Count ?? 0);
         return new FileConversion(FileConversionStatus.Converted, result.SavedBytes, result.Outcome);
     }
 
@@ -346,6 +396,28 @@ public class PageConversionService(
         // The original, the same inode when hardlinked, is only read again by an undo.
         DropCache(trash);
         return trashRelative;
+    }
+
+    /// <summary>
+    /// The rows could not be saved after the swap: the trash copy goes back over the converted one, so
+    /// the file matches the progress, notes and history the rollback kept.
+    /// </summary>
+    private void PutOriginalBack(string root, string trashRelative, string path)
+    {
+        if (LibraryPaths.Resolve(root, trashRelative) is not { } trash)
+        {
+            return;
+        }
+
+        try
+        {
+            MoveOver(trash, path);
+            logger.LogWarning("Could not save the conversion of {Path}; put the original back", path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogError(ex, "Could not save the conversion of {Path} or put the original back from {Trash}", path, trash);
+        }
     }
 
     /// <summary>Renames the converted copy over the original, which is not kept. False when the file was left as it was.</summary>

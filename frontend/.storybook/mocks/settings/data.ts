@@ -1,6 +1,10 @@
+import type { GlobalScanlationGroups } from '../../../src/api/scanlationGroups'
+import type { TorrentLifecycleSettings } from '../../../src/api/torrentLifecycle'
+import type { TorrentProposalDto } from '../../../src/api/upgrades'
 import type {
   BackupInfo,
   BackupRetentionSettings,
+  ConnectionTestStatus,
   DiscoverSettings,
   DownloadClientKindInfo,
   DownloadClientSettings,
@@ -28,6 +32,7 @@ import type {
 } from '../../../src/api/hooks'
 import type {
   ApiKey,
+  MintProof,
   AuthEvent,
   OidcSettings,
   SecuritySettings,
@@ -47,6 +52,8 @@ import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
+import type { AutoTagCondition, AutoTagRule } from '../../../src/api/autoTagRules'
+import type { RootFolderRule } from '../../../src/api/rootFolderRules'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
@@ -86,6 +93,12 @@ export const readerPrefs: ReaderPrefs = {
   enhanceProgress: 'line',
   notesBeside: true,
   enhanceWholeChapter: false,
+  autoSkipRecap: false,
+  progressRail: false,
+  tapLayout: 'sides',
+  tapWidth: 33,
+  tapInvert: false,
+  hideCredits: false,
 }
 
 export const readerSettings: ReaderSettings = {
@@ -124,6 +137,39 @@ export const tags = [
   { id: 3, label: 'Re-read', color: 'orange', seriesCount: 2 },
 ] satisfies TagDto[]
 
+const weekendRead = [
+  { field: 'type', value: 'manhwa' },
+  { field: 'addedVia', value: 'importList' },
+] satisfies AutoTagCondition[]
+
+export const autoTagRules = [
+  { id: 1, tagId: 2, enabled: true, conditions: weekendRead, groups: [weekendRead] },
+  {
+    id: 2,
+    tagId: 3,
+    enabled: false,
+    conditions: [{ field: 'contentRating', value: 'suggestive' }],
+    groups: [[{ field: 'contentRating', value: 'suggestive' }], [{ field: 'genre', value: 'Romance' }]],
+  },
+] satisfies AutoTagRule[]
+
+export const rootFolderRules = [
+  {
+    id: 1,
+    rootFolderId: 2,
+    position: 0,
+    enabled: true,
+    groups: [[{ field: 'type', value: 'manhwa' }], [{ field: 'type', value: 'manhua' }]],
+  },
+  {
+    id: 2,
+    rootFolderId: 3,
+    position: 1,
+    enabled: false,
+    groups: [[{ field: 'contentRating', value: 'pornographic' }]],
+  },
+] satisfies RootFolderRule[]
+
 const sourceBase = {
   needsFlareSolverr: false,
   supportsLanguageFilter: false,
@@ -139,6 +185,7 @@ export const sources: SourceInfo[] = [
     displayName: 'MangaDex',
     baseUrl: 'https://mangadex.example',
     supportsLanguageFilter: true,
+    scanlationGroups: true,
     supportedLanguages: ['en', 'es', 'pt-br', 'fr', 'ja'],
     kind: 'aggregator',
     content: ['manga', 'manhwa', 'manhua'],
@@ -421,6 +468,7 @@ export const downloadSettings: DownloadSettings = {
   adaptiveRefresh: true,
   removeCompleted: 'never',
   removeData: true,
+  volumeFirst: false,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }
@@ -459,6 +507,14 @@ export const indexerList: IndexerEntry[] = [
 
 export const flaresolverr = { url: 'http://192.168.1.10:8191' }
 
+/** The download client was never tested; everything else has a result. */
+export const connectionTests: ConnectionTestStatus[] = [
+  { key: 'flaresolverr', ok: false, message: 'FlareSolverr did not answer. Check the URL and that it is running.', testedAt: hoursAgo(5) },
+  { key: 'indexer:prowlarr', ok: true, message: null, testedAt: daysAgo(2) },
+  { key: 'kavita', ok: true, message: null, testedAt: minutesAgo(12) },
+  { key: 'suwayomi', ok: true, message: null, testedAt: hoursAgo(1) },
+]
+
 export const kavitaConnection = {
   url: 'http://192.168.1.20:5000',
   apiKey: 'kavita-example-key',
@@ -487,6 +543,10 @@ export const upgradeSettings: UpgradeSettings = {
   volumeMissingTolerance: 3,
   volumeSearchesPerRun: 10,
   proposalExpiryDays: 30,
+  autoApprove: false,
+  autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const qualityFormats: QualityFormatDto[] = [
@@ -672,7 +732,7 @@ export const users: UserSummary[] = [
   u(3, 'noa', 'Noa', {
     permissions: 'AddSeries, DownloadChapters, UseTrackers, UseOpds',
     permissionNames: ['AddSeries', 'DownloadChapters', 'UseTrackers', 'UseOpds'],
-    maxContentRating: 'Erotica',
+    maxContentRating: 'erotica',
     allRootFolders: true,
     rootFolderIds: [],
     oidcLinked: true,
@@ -728,6 +788,10 @@ export const twoFactorOff = {
 }
 
 export const twoFactorOn = { ...twoFactorOff, enabled: true, hasAuthenticator: true, recoveryCodesLeft: 8 }
+
+export const mintByPassword: MintProof = { proof: 'Password', recentSignInSecondsLeft: 0, canSignInAgain: false }
+export const mintSsoFresh: MintProof = { proof: 'RecentSignIn', recentSignInSecondsLeft: 420, canSignInAgain: true }
+export const mintSsoStale: MintProof = { proof: 'RecentSignIn', recentSignInSecondsLeft: 0, canSignInAgain: true }
 
 export const opdsOff: OpdsSettings = { enabled: false, trackProgress: true, hasToken: false, tokenPrefix: null, feedUrl: null, komga: false }
 export const opdsOn: OpdsSettings = { enabled: true, trackProgress: true, hasToken: true, tokenPrefix: 'a91f3c', feedUrl: null, komga: false }
@@ -1087,7 +1151,7 @@ const upscaleCatalog = {
 } satisfies Record<string, UpscaleCatalogEntry>
 
 export const upscalingOff = {
-  settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8, jpegXl: true, jpegXlAvailable: true },
   catalog: [upscaleCatalog.maki2x, upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
@@ -1097,7 +1161,15 @@ export const upscalingOff = {
 } satisfies UpscalingState
 
 export const upscalingOn = {
-  settings: { enabled: true, models: ['maki-2x', 'span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: {
+    enabled: true,
+    models: ['maki-2x', 'span-s', 'realesrgan-av3'],
+    threads: 2,
+    cacheMb: 1024,
+    maxThreads: 8,
+    jpegXl: true,
+    jpegXlAvailable: true,
+  },
   catalog: [
     upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
@@ -1118,6 +1190,18 @@ export const upscalingFailed = {
       error: 'The download did not match its checksum and was removed.',
     },
   ],
+} satisfies UpscalingState
+
+export const upscalingNoJpegXl = {
+  ...upscalingOn,
+  settings: { ...upscalingOn.settings, jpegXlAvailable: false },
+} satisfies UpscalingState
+
+export const upscalingPrepare = {
+  ...upscalingOn,
+  settings: { ...upscalingOn.settings, prepare: { enabled: true, days: 14, series: 8, chapters: 1, mb: 4096 } },
+  cache: { bytes: 1124 * MB, files: 912 },
+  prepared: { chapters: 9, pages: 412, waiting: 38, bytes: 812 * MB },
 } satisfies UpscalingState
 
 export const recycleBin: RecycleBin = {
@@ -1178,3 +1262,41 @@ export const recycleBin: RecycleBin = {
 export const pushPrefs = {
   types: ['newChapterAvailable', 'downloadFailed', 'requestApproved'],
 }
+
+export const scanlationGroups = {
+  preferred: ['Tidewater Scans'],
+  blocked: [],
+  seen: [
+    { name: 'Tidewater Scans', chapters: 412 },
+    { name: 'Night Owl TL', chapters: 188 },
+  ],
+} satisfies GlobalScanlationGroups
+export const torrentLifecycle: TorrentLifecycleSettings = { stallHours: 1, seedRatio: 2, seedMinutes: 4320 }
+
+const declinedRelease = (id: number, seriesId: number, seriesTitle: string, title: string, resolvedAtUtc: string): TorrentProposalDto => ({
+  id,
+  seriesId,
+  seriesTitle,
+  title,
+  indexer: 'Nyaa',
+  sizeBytes: 0,
+  span: { volumeStart: null, volumeEnd: null, chapters: [], wholeSeries: false },
+  reasons: [],
+  upgradeCount: 0,
+  alreadyMetCount: 0,
+  skippedCount: 0,
+  missingCount: 0,
+  unknownCount: 0,
+  score: 0,
+  tier: 'volume',
+  status: 'dismissed',
+  createdAtUtc: resolvedAtUtc,
+  resolvedAtUtc,
+  queueItemId: null,
+  seriesCoverUrl: null,
+})
+
+export const declinedReleases: TorrentProposalDto[] = [
+  declinedRelease(41, 1, 'Lanterns Over Kasumi', 'Lanterns Over Kasumi v01-10 (2023) (Digital) (Paperlamp)', '2026-11-10T08:12:00Z'),
+  declinedRelease(42, 2, 'The Ninth Kitchen', 'The Ninth Kitchen v14 (2024) (Digital) (Saltcellar)', '2026-11-08T21:40:00Z'),
+]

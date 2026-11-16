@@ -761,6 +761,60 @@ public class MangaBakaLocalStore(
         return found;
     }
 
+    /// <summary>The five direct relation columns, with the key a notification uses for each.</summary>
+    public static readonly IReadOnlyList<(string Column, string Kind)> DirectRelationKinds =
+    [
+        ("relationships_sequel", "sequel"),
+        ("relationships_prequel", "prequel"),
+        ("relationships_spin_off", "spinOff"),
+        ("relationships_side_story", "sideStory"),
+        ("relationships_main_story", "mainStory"),
+    ];
+
+    /// <summary>
+    /// The raw direct relation ids of each seed, as the dump lists them: no merge following, no
+    /// filtering. A seed with no row is absent. Empty when no dump is installed.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, IReadOnlyList<(long Id, string Kind)>>> GetDirectRelationIdsAsync(
+        IReadOnlyCollection<long> seedIds, CancellationToken ct = default)
+    {
+        var result = new Dictionary<long, IReadOnlyList<(long Id, string Kind)>>();
+        if (seedIds.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return result;
+        }
+
+        using var conn = Open();
+        foreach (var chunk in seedIds.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT id, {string.Join(", ", DirectRelationKinds.Select(k => k.Column))}
+                FROM series WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                """;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var related = new List<(long Id, string Kind)>();
+                var seen = new HashSet<long>();
+                for (var i = 0; i < DirectRelationKinds.Count; i++)
+                {
+                    foreach (var id in ParseIdArray(GetString(reader, i + 1)))
+                    {
+                        if (seen.Add(id))
+                        {
+                            related.Add((id, DirectRelationKinds[i].Kind));
+                        }
+                    }
+                }
+
+                result[reader.GetInt64(0)] = related;
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are
@@ -1667,7 +1721,7 @@ public class MangaBakaLocalStore(
                        source_manga_updates_rating_normalized, source_kitsu_rating_normalized,
                        total_chapters, final_volume, authors, artists, publishers, genres, tags_v2,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime_start, anime_end, titles
+                       anime_start, anime_end, titles, source_kitsu_id
                 FROM series
                 WHERE id = $id
                 """;
@@ -1715,7 +1769,8 @@ public class MangaBakaLocalStore(
         AddRating("Kitsu", 16);
 
         var links = new List<MetadataLink> { new("mangabaka", $"https://mangabaka.org/{id}") };
-        if (GetInt(reader, 24) is int aniList)
+        var aniListId = GetInt(reader, 24);
+        if (aniListId is int aniList)
         {
             links.Add(new("anilist", $"https://anilist.co/manga/{aniList}"));
         }
@@ -1724,6 +1779,12 @@ public class MangaBakaLocalStore(
         if (malId is int mal)
         {
             links.Add(new("myanimelist", $"https://myanimelist.net/manga/{mal}"));
+        }
+
+        var kitsuId = GetInt(reader, 31);
+        if (kitsuId is int kitsu)
+        {
+            links.Add(new("kitsu", $"https://kitsu.app/manga/{kitsu}"));
         }
 
         if (GetString(reader, 26) is { Length: > 0 } mangaUpdates)
@@ -1758,6 +1819,8 @@ public class MangaBakaLocalStore(
             ParseTags(GetString(reader, 23), genreSet),
             links,
             malId,
+            aniListId,
+            kitsuId,
             GetInt(reader, 27) == 1,
             GetString(reader, 28) ?? string.Empty,
             GetString(reader, 29) ?? string.Empty);

@@ -59,6 +59,8 @@ export interface ProgressRow {
   chapterId: number
   seriesId: number
   pageIndex: number
+  /** How far down the page the continuous strip was (0 to 1). Absent on rows from before it existed. */
+  pageOffset?: number
   completed: boolean
   /** The write said `completed: false` outright, so the server must not derive completion from the position. */
   held?: boolean
@@ -82,6 +84,7 @@ export interface ProgressWrite {
   chapterId: number
   seriesId: number
   pageIndex: number
+  pageOffset?: number
   completed: boolean
   held?: boolean
   seconds: number

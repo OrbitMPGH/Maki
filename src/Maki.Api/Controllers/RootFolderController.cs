@@ -118,6 +118,68 @@ public class RootFolderController(
 
     public record FolderListing(string Path, string? Parent, List<FolderEntry> Folders);
 
+    public record ChangePathRequest(string? Path);
+
+    /// <summary>
+    /// Dry run of <see cref="ChangePath"/>: checks the new path exists and is readable, counts the
+    /// series folders found and missing under it, and says what would refuse or need a look.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{id:int}/path/check")]
+    public async Task<IActionResult> CheckPath(int id, [FromBody] ChangePathRequest request,
+        [FromServices] RootFolderPathService paths, CancellationToken ct) =>
+        Answer(await paths.CheckAsync(id, request.Path, ct), check => Ok(check));
+
+    /// <summary>
+    /// Points the root folder at a new path, for a re-mounted share or a moved library. Files are not
+    /// moved. Refused while downloads, imports, bulk moves or health scans are running against it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("{id:int}/path")]
+    public async Task<IActionResult> ChangePath(int id, [FromBody] ChangePathRequest request,
+        [FromServices] RootFolderPathService paths, CancellationToken ct) =>
+        Answer(await paths.ApplyAsync(id, request.Path, ct), check => check.Busy.Count > 0
+            ? Conflict(new { busy = check.Busy })
+            : Ok(ToDto(new RootFolder { Id = check.Id, Path = check.Path })));
+
+    private IActionResult Answer(RootFolderPathOutcome outcome, Func<RootFolderPathCheck, IActionResult> checkedResult) =>
+        outcome switch
+        {
+            { NotFound: true } => NotFound(),
+            { Refusal: { Conflict: true } refusal } => this.Conflict(localizer, refusal.Key, refusal.Args),
+            { Refusal: { } refusal } => this.Fail(localizer, refusal.Key, refusal.Args),
+            _ => checkedResult(outcome.Check!),
+        };
+
+    /// <param name="MinFreeBytes">Null for the default, 0 to never hold downloads for this folder.</param>
+    public record MinFreeRequest(long? MinFreeBytes);
+
+    /// <summary>
+    /// The free space below which new downloads into this folder wait (<see cref="DownloadDiskHold"/>).
+    /// The next claim reads the folder's free space again rather than waiting out the cached reading.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("{id:int}/minfree")]
+    public async Task<IActionResult> SetMinFree(int id, [FromBody] MinFreeRequest request,
+        [FromServices] DownloadDiskHold? diskHold, CancellationToken ct)
+    {
+        if (request.MinFreeBytes < 0)
+        {
+            return this.Fail(localizer, "error.rootFolder.minFreeNegative");
+        }
+
+        var folder = await db.RootFolders.FindAsync([id], ct);
+        if (folder is null)
+        {
+            return NotFound();
+        }
+
+        folder.MinFreeBytes = request.MinFreeBytes;
+        await db.SaveChangesAsync(ct);
+        diskHold?.Expire();
+        return Ok(ToDto(folder));
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -184,5 +246,7 @@ public class RootFolderController(
         folder.Path,
         FreeSpace = DiskSpace.AvailableFor(folder.Path),
         Accessible = Directory.Exists(folder.Path),
+        folder.MinFreeBytes,
+        DefaultMinFreeBytes = RootFolder.DefaultMinFreeBytes,
     };
 }

@@ -9,6 +9,7 @@ export interface ChapterCounts {
     /** The Downloads total: wanted or already obtained, or `listed` when nothing is wanted. */
     wanted: number
     nothingWanted: boolean
+    /** Listed chapters the Downloads total leaves out because Wanted is off. */
     notWanted: number
     /** Listed chapters with a decimal number or none. */
     offNumbering: number
@@ -45,7 +46,7 @@ export function ChapterCountsInfo({ counts }: { counts: ChapterCounts }) {
                         <Text size="sm">
                             <Trans>
                                 <Plural value={listed} one="# chapter is listed" other="# chapters are listed" />, the
-                                count on the Chapters tab and under Chapters known.
+                                count on the Chapters tab and under Listed.
                             </Trans>
                         </Text>
                     )}

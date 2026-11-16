@@ -52,6 +52,10 @@ mount and the permissions. See [Volumes, PUID and PGID](/Maki/installation/volum
 
 Removing a root folder does not touch the files on disk. It does remove every user's access to that folder.
 
+If a share is re-mounted or the library moves to new storage later, use the edit button on the root
+folder under **Settings → Library → Root folders** instead of adding a new one. It checks the new
+path and counts the series folders it finds there before saving, and it never moves files.
+
 ## 4. Wait for the MangaBaka database
 
 Series details and search come from a local copy of the [MangaBaka](https://mangabaka.org) database,

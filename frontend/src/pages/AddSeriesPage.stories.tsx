@@ -5,7 +5,7 @@ import { api, failWith, neverResolve, readerMe, signedInAs } from '../../.storyb
 import { addSeriesHandlers, requestOnlyHandlers } from '../../.storybook/mocks/entry'
 import { catalogue } from '../../.storybook/mocks/shared'
 import { catalogueDetail, catalogueItem } from '../../.storybook/mocks/entry/fixtures'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { clearTabState } from '../lib/pageState'
 import type { RecommendationIndexStatus } from '../api/hooks'
 import AddSeriesPage from './AddSeriesPage'
@@ -41,7 +41,6 @@ const modalOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocume
 export const BrowsingTheCatalogue: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Add series' })).toBeVisible()
-    await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' })).toBeVisible()
     // Titles already in the library read "View" and link through instead of offering an add.
     await expect(await canvas.findByRole('button', { name: 'View Lanterns Over Kasumi' })).toBeVisible()
@@ -58,7 +57,6 @@ export const FromDiscoverFeed: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Filters 1' })).toBeVisible()
-    await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
   },
 }
 
@@ -72,11 +70,11 @@ export const SearchResults: Story = {
 
 export const SearchByTyping: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Browsing the catalogue')
+    await canvas.findByPlaceholderText('Search by title, description, or by feel')
     await userEvent.type(await canvas.findByPlaceholderText('Search by title, description, or by feel'), 'tea')
     await expect(await canvas.findByRole('button', { name: 'View and add Clockwork Tea House' }, { timeout: 5000 })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Clear search' }))
-    await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
+    await expect((await canvas.findAllByRole('button', { name: /^View and add / }))[0]).toBeVisible()
   },
 }
 
@@ -188,7 +186,7 @@ export const MeaningSearchUnavailableForReader: Story = {
 
 export const FiltersOpen: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Browsing the catalogue')
+    await canvas.findByPlaceholderText('Search by title, description, or by feel')
     await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
     await expect(await canvas.findByRole('button', { name: /Reset/i })).toBeVisible()
   },
@@ -230,8 +228,8 @@ export const DetailWithAddForm: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByRole('dialog')).toBeVisible()
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeEnabled())
-    await waitFor(() => expect(body.getByLabelText('Root folder', { selector: 'input' })).toHaveValue('/library/manga'))
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeEnabled())
+    await waitFor(() => expect(body.getByRole('button', { name: /^Folder/ })).toHaveTextContent('/library/manga'))
   },
 }
 
@@ -239,7 +237,7 @@ export const AddingASeries: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    const add = await body.findByRole('button', { name: 'Add' })
+    const add = await body.findByRole('button', { name: 'Add to library' })
     await waitFor(() => expect(add).toBeEnabled())
     await userEvent.click(add)
     await expect(await body.findByRole('button', { name: 'Go to series' })).toBeVisible()
@@ -257,11 +255,11 @@ export const AddFails: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    const add = await body.findByRole('button', { name: 'Add' })
+    const add = await body.findByRole('button', { name: 'Add to library' })
     await waitFor(() => expect(add).toBeEnabled())
     await userEvent.click(add)
-    // The failure toast belongs to the app's own query client; here the button just stays an Add.
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeEnabled())
+    // The failure toast belongs to the app's own query client; here the button just stays enabled.
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeEnabled())
     await expect(body.queryByRole('button', { name: 'Go to series' })).not.toBeInTheDocument()
   },
 }
@@ -282,7 +280,7 @@ export const DetailWithoutRootFolders: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeDisabled())
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeDisabled())
   },
 }
 

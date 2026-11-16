@@ -143,6 +143,26 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task VolumeFirstDue_skips_archived_series()
+    {
+        var (active, archived) = Pair();
+        using (var db = _db.NewContext())
+        {
+            foreach (var series in db.Series.IgnoreQueryFilters().Where(s => s.Id == active || s.Id == archived))
+            {
+                series.VolumeFirstPendingAt = DateTime.UtcNow;
+            }
+
+            db.SaveChanges();
+        }
+
+        using var context = _db.NewContext();
+        var service = new TorrentUpgradeService(context, null!, null!, null!, null!, TimeProvider.System, null!,
+            NullLogger<TorrentUpgradeService>.Instance);
+        Assert.Equal([active], await service.VolumeFirstDueAsync(5, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task CandidateSeries_skips_archived_series()
     {
         var (active, _) = Pair();
@@ -151,6 +171,19 @@ public sealed class ArchiveGuardTests : IDisposable
         var service = new TorrentUpgradeService(db, null!, null!, null!, null!, TimeProvider.System, null!,
             NullLogger<TorrentUpgradeService>.Instance);
         Assert.Equal([active], await service.CandidateSeriesAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task MissingCandidates_skips_archived_series()
+    {
+        var (active, archived) = Pair();
+        SeedChapter(active, 1);
+        SeedChapter(archived, 1);
+
+        using var db = _db.NewContext();
+        var service = new TorrentUpgradeService(db, null!, null!, null!, null!, TimeProvider.System, null!,
+            NullLogger<TorrentUpgradeService>.Instance);
+        Assert.Equal([active], await service.MissingCandidatesAsync(CancellationToken.None));
     }
 
     [Fact]
@@ -601,6 +634,16 @@ public sealed class ArchiveGuardTests : IDisposable
         logger: logger ?? NullLogger<SeriesController>.Instance);
 
     [Fact]
+    public async Task ScanlationGroupsSeries_refuses_archived_series()
+    {
+        var (_, archived) = Pair();
+        var controller = new ScanlationGroupsController(_db.NewContext(), new FakeAppSettings(), null!, null!,
+            new TestLocalizer(), NullLogger<ScanlationGroupsController>.Instance);
+
+        AssertArchived(await controller.GetSeries(archived, default));
+    }
+
+    [Fact]
     public async Task SeriesRefresh_refuses_archived_series()
     {
         var (_, archived) = Pair();
@@ -615,6 +658,23 @@ public sealed class ArchiveGuardTests : IDisposable
         SeedChapter(archived, 1m);
 
         AssertArchived(await SeriesController(_db.NewContext()).SearchMissing(archived, default));
+    }
+
+    [Theory]
+    [InlineData(SeriesBulkAction.Refresh)]
+    [InlineData(SeriesBulkAction.SearchMissing)]
+    public async Task SeriesBulk_refuses_archived_series(SeriesBulkAction action)
+    {
+        var (_, archived) = Pair();
+        SeedChapter(archived, 1m);
+        using var services = SeriesBulkTestKit.Services(_db);
+        var operations = new SeriesBulkOperations();
+
+        // Neither the chapter sync nor the queue is registered, so reaching either records a different error.
+        var operation = operations.Enqueue(action, [archived], SeriesBulkTestKit.Caller(_db.SeedUser("bulk"), true));
+        await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
+
+        Assert.Equal(ArchivedKey, Assert.Single(operation.Snapshot().Failures).Error);
     }
 
     [Fact]
@@ -741,11 +801,22 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
-    public async Task SourceMappingQuality_refuses_archived_series()
+    public async Task SourceMappingQuality_answers_for_archived_series()
     {
         var (_, archived) = Pair();
+        var db = _db.NewContext();
 
-        AssertArchived(await Mappings(_db.NewContext()).Quality(archived, null!, default));
+        var registry = new SourceRegistry([new FakeSource { Name = "fake" }]);
+        var controller = new SourceMappingController(
+            new TestLocalizer(), db, registry, new FakeAppSettings(), Sources.AllEnabled, new SourceMatchQueue(),
+            null!, null!, null!, new SourceOrderService(registry, TestQuality.Create(registry)),
+            new SourceScoutService(_db.ScopeFactory(), registry, Sources.AllEnabled, null!, null!,
+                NullLogger<SourceScoutService>.Instance),
+            new TestCurrentUser(1), NullLogger<SourceMappingController>.Instance);
+
+        var result = await controller.Quality(archived, new UpgradeEvaluationService(db, TestQuality.Create(registry)), default);
+
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -778,7 +849,7 @@ public sealed class ArchiveGuardTests : IDisposable
     {
         var registry = new SourceRegistry(sources);
         return new ChapterController(
-            new TestLocalizer(), db, Queue(), new StatsEventService(db),
+            new TestLocalizer(), db, Queue(),
             new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), registry,
             new SourceAvailability(new FakeAppSettings(), registry),
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),

@@ -1,14 +1,19 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { enhanceBudget } from '../../lib/enhance/budget'
 import type { EnhanceFallback, EnhanceMethod, ReaderEnhance, ReaderFit } from './prefs'
 import EnhancedPage from './EnhancedPage'
 import NextChapterHint from './NextChapterHint'
+import { useLinger } from './useLinger'
+import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useCompareKey } from './compareHold'
 import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance, type StretchedReport } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
+import { measureStrip, seekStrip } from './stripMeasure'
+import type { StripTracker } from './stripPosition'
+import { cutHeight } from './creditWindow'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -120,21 +125,10 @@ const LEAVING_GIVE_UP_MS = 8000
 const WHEEL_GESTURE_GAP_MS = 250
 const WHEEL_LINE_PX = 40
 
-function useLinger(on: boolean, ms: number): boolean {
-  const [held, setHeld] = useState(on)
-  useEffect(() => {
-    if (on) {
-      setHeld(true)
-      return
-    }
-    const timer = setTimeout(() => setHeld(false), ms)
-    return () => clearTimeout(timer)
-  }, [on, ms])
-  return on || held
-}
-
 interface StripPageProps {
   index: number
+  /** The page's index in the chapter, which names its server upscale. */
+  chapterPage: number
   src: string
   label: string
   fit: ReaderFit
@@ -149,6 +143,8 @@ interface StripPageProps {
   priority: number
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
+  /** The share of this page, from its bottom, left out: set on the strip's last page only, else 0. */
+  cut: number
 }
 
 /**
@@ -157,6 +153,7 @@ interface StripPageProps {
  */
 const StripPage = memo(function StripPage({
   index,
+  chapterPage,
   src,
   label,
   fit,
@@ -168,6 +165,7 @@ const StripPage = memo(function StripPage({
   priority,
   register,
   onSettled,
+  cut,
 }: StripPageProps) {
   const { t } = useLingui()
   const image = useRef<HTMLImageElement | null>(null)
@@ -175,7 +173,7 @@ const StripPage = memo(function StripPage({
   const [loaded, setLoaded] = useState<HTMLImageElement | null>(null)
   const [covered, setCovered] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const pageNumber = index + 1
+  const pageNumber = chapterPage + 1
   const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
 
   const setRef = useCallback(
@@ -193,9 +191,31 @@ const StripPage = memo(function StripPage({
     setAttempt((n) => n + 1)
   }
 
+  // A cut page's box is shorter than its image, so the strip, its end and the next-chapter meter end
+  // at the cut. The image keeps its full size and URL, so positions stay shares of the real page.
+  const [cutTo, setCutTo] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const element = image.current
+    if (!element || cut <= 0) {
+      setCutTo(null)
+      return
+    }
+    const measure = () => {
+      const full = element.getBoundingClientRect().height
+      // A page that failed to load has no height; its retry button is left alone.
+      setCutTo(full > 0 ? cutHeight(full, cut) : null)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [cut])
+
   const alt = t`${label} - page ${pageNumber}`
+  // Every page renders this same box, so a page that becomes or stops being the last one is never
+  // remounted. It lays nothing out (display: contents) unless the page is cut.
   return (
-    <>
+    <div className="reader-strip-page" data-cut={cutTo != null ? true : undefined} style={cutTo != null ? { height: cutTo } : undefined}>
       <img
         ref={setRef}
         data-page={index}
@@ -236,7 +256,7 @@ const StripPage = memo(function StripPage({
           alt={alt}
           tone={tone}
           enhance={enhance}
-          page={index}
+          page={chapterPage}
           server={server}
           priority={priority}
           box={loaded}
@@ -254,7 +274,7 @@ const StripPage = memo(function StripPage({
           </Button>
         </Stack>
       )}
-    </>
+    </div>
   )
 })
 
@@ -265,9 +285,12 @@ const StripPage = memo(function StripPage({
  */
 export default function ContinuousView({
   urls,
-  page,
-  onPageChange,
+  first = 0,
+  page: chapterPage,
+  onPageChange: onChapterPageChange,
   seekVersion,
+  seekOffset = 0,
+  seekSmooth = false,
   onPastEnd,
   hasNext,
   nextLabel,
@@ -283,14 +306,23 @@ export default function ContinuousView({
   server = null,
   onStretched,
   onEnhanceRange,
+  tracker,
+  lastCut = 0,
 }: {
+  /** The pages shown: the chapter's from `first` on, past any credit pages left out. */
   urls: string[]
+  /** The chapter index of `urls[0]`. Every page index this view takes or reports is the chapter's. */
+  first?: number
   page: number
   onPageChange: (page: number) => void
   /** Bumped by the parent on every *explicit* navigation (resume, toolbar scrub, page-strip
    *  click, Home/End); this is what triggers a scroll. Plain `page` changes driven by this
    *  view's own scroll tracking must NOT scroll, or the view would fight the user's scroll. */
   seekVersion: number
+  /** How far down the target page (0 to 1) the seek lands, for a skip that ends mid-page. */
+  seekOffset?: number
+  /** Animate the seek instead of jumping, for a skip the reader asked for. */
+  seekSmooth?: boolean
   /** Fired once the bottom-of-strip meter fills, the strip's analogue of turning past the last page
    *  in paged mode. Returning true means the next chapter is on its way: the meter then stays full
    *  and takes no more input until `urls` change. */
@@ -323,7 +355,14 @@ export default function ContinuousView({
    * asked for: the same pages minus those behind that are off screen.
    */
   onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
+  /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
+  tracker?: StripTracker
+  /** The share of the last page, from its bottom, that is left out: a credit banner fused into it. */
+  lastCut?: number
 }) {
+  // Inside, pages count from the first one shown.
+  const page = chapterPage - first
+  const onPageChange = useCallback((index: number) => onChapterPageChange(first + index), [onChapterPageChange, first])
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
@@ -394,8 +433,9 @@ export default function ContinuousView({
   const rangeRef = useRef(onEnhanceRange)
   rangeRef.current = onEnhanceRange
   useEffect(() => {
-    rangeRef.current?.(range, beyond, serverRange)
-  }, [range, beyond, serverRange])
+    const toChapter = (list: number[]) => (first === 0 ? list : list.map((index) => first + index))
+    rangeRef.current?.(toChapter(range), beyond, toChapter(serverRange))
+  }, [range, beyond, serverRange, first])
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
@@ -458,6 +498,25 @@ export default function ContinuousView({
   // rewrites as the strip reflows: re-scrolling to *that* would chase the drift instead of
   // correcting it, landing on (and then saving) whatever page the shift happened to expose.
   const seekTarget = useRef(0)
+  const seekShare = useRef(0)
+  const seekAnimated = useRef(false)
+  const seekShareRef = useRef(seekOffset)
+  seekShareRef.current = seekOffset
+  const seekSmoothRef = useRef(seekSmooth)
+  seekSmoothRef.current = seekSmooth
+
+  const scrollToSeek = useCallback((smooth: boolean) => {
+    const element = pages.current[seekTarget.current]
+    if (!element) return
+    const scroller = container.current?.parentElement
+    if (seekShare.current <= 0 || !scroller) {
+      element.scrollIntoView(smooth ? { block: 'start', behavior: scrollBehavior() } : { block: 'start' })
+      return
+    }
+    const box = element.getBoundingClientRect()
+    const top = box.top - scroller.getBoundingClientRect().top + scroller.scrollTop + box.height * seekShare.current
+    scroller.scrollTo(smooth ? { top, behavior: scrollBehavior() } : { top })
+  }, [])
 
   // Scrolls to the target page on every explicit seek, the initial resume included, since that's
   // just the first seek the parent issues once the manifest's saved position lands.
@@ -465,13 +524,23 @@ export default function ContinuousView({
     if (seekVersion === 0 || urls.length === 0) return
     const target = pageRef.current
     seekTarget.current = target
-    pages.current[target]?.scrollIntoView({ block: 'start' })
+    seekShare.current = seekShareRef.current
+    seekAnimated.current = seekSmoothRef.current
+    scrollToSeek(seekAnimated.current)
+    // A landing partway down the target also moves with the target's own height.
+    const last = seekShare.current > 0 ? target + 1 : target
     settling.current = new Set(
-      Array.from({ length: target }, (_, index) => index).filter(
+      Array.from({ length: last }, (_, index) => index).filter(
         (index) => !pages.current[index]?.complete,
       ),
     )
-  }, [seekVersion, urls])
+  }, [seekVersion, urls, scrollToSeek])
+
+  // Pages not loaded yet borrow the loaded pages' shape, so a new shape moves every placeholder
+  // above the target at once. Scroll anchoring covers that where the browser has it; Safari does not.
+  useEffect(() => {
+    if (settling.current.size > 0) scrollToSeek(seekAnimated.current)
+  }, [shape, scrollToSeek])
 
   const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
     element.dataset.loaded = 'true'
@@ -487,8 +556,8 @@ export default function ContinuousView({
     }
     reportEnd.current()
     if (!settling.current.delete(index)) return
-    pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
-  }, [])
+    scrollToSeek(seekAnimated.current)
+  }, [scrollToSeek])
 
   const registerPage = useCallback((index: number, element: HTMLImageElement | null) => {
     pages.current[index] = element
@@ -554,6 +623,40 @@ export default function ContinuousView({
       reportEnd.current = () => {}
     }
   }, [urls, onPageChange])
+
+  const remeasure = useRef<() => void>(() => {})
+  useEffect(() => {
+    const scroller = container.current?.parentElement
+    if (!tracker || !scroller || urls.length === 0) return
+    let frame = 0
+    const measure = () => {
+      frame = 0
+      const place = measureStrip(scroller, pages.current, Math.min(pageRef.current, urls.length - 1), urls.length)
+      tracker.set(place && first > 0 ? { ...place, page: first + place.page } : place)
+    }
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(measure)
+    }
+    tracker.seek = (progress) => {
+      // A drag on the rail is the reader scrolling by hand: the resume landing is history.
+      settling.current.clear()
+      seekStrip(scroller, pages.current, urls.length, progress)
+    }
+    remeasure.current = schedule
+    schedule()
+    scroller.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      scroller.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      remeasure.current = () => {}
+      tracker.seek = null
+      tracker.set(null)
+    }
+  }, [tracker, urls, first])
+  // The band tracker moves the page a moment after the scroll that moved it.
+  useEffect(() => remeasure.current(), [page])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
   // the true max (there's no native overscroll to detect), so instead this reads wheel deltas and
@@ -754,6 +857,7 @@ export default function ContinuousView({
           <StripPage
             key={src}
             index={index}
+            chapterPage={first + index}
             src={src}
             label={label}
             fit={fit}
@@ -765,6 +869,7 @@ export default function ContinuousView({
             priority={pageEnhance && inRange.has(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
             register={registerPage}
             onSettled={onPageSettled}
+            cut={index === urls.length - 1 ? lastCut : 0}
           />
         ))}
         <div ref={sentinel} style={{ height: 1 }} />

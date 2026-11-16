@@ -403,7 +403,7 @@ public class AnimeSignalSeedTests : IDisposable
         Assert.Equal(1.8, snapshot.Effective.Weights[930], 8);
         Assert.DoesNotContain(930L, snapshot.Avoided.Keys);
         // One entry, not the title twice: EligibleIds is a list, and the anime path appends to it.
-        Assert.Single(snapshot.Effective.EligibleIds.Where(id => id == 930));
+        Assert.Single(snapshot.Effective.EligibleIds, id => id == 930);
     }
 
     /// <summary>

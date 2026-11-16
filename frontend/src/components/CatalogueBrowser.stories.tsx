@@ -23,7 +23,6 @@ const searchWith = (body: object) =>
 
 export const Browsing: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
     await waitFor(() => expect((canvas.getAllByRole('button', { name: /^View and add / })).length).toBeGreaterThan(5))
   },
 }

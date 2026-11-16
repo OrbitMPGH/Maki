@@ -10,6 +10,13 @@ namespace Maki.Core.Paths;
 public static class LibraryPaths
 {
     /// <summary>
+    /// How full paths compare when deciding whether one is inside another: ignoring case on Windows,
+    /// exactly elsewhere, where <c>/srv/Manga</c> and <c>/srv/manga</c> can be two folders.
+    /// </summary>
+    public static StringComparison PathComparison { get; } =
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    /// <summary>
     /// Resolves and canonicalizes a library-relative path, returning null when it would escape
     /// the root folder. Callers taking a path from a request must use this rather than a bare
     /// <see cref="Path.Combine(string, string)"/>: <c>Combine</c> happily accepts <c>..\..</c>
@@ -35,9 +42,7 @@ public static class LibraryPaths
         {
             var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
             var full = Path.GetFullPath(Path.Combine(root, relativePath));
-            var comparison = OperatingSystem.IsWindows()
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
+            var comparison = PathComparison;
 
             // TrimEndingDirectorySeparator is a no-op on a drive root ("C:\", "/"), so root already
             // ends with the separator there; adding another would make the containment check fail.
@@ -107,7 +112,7 @@ public static class LibraryPaths
     public static bool TraversesLink(string rootPath, string fullPath, bool includeRoot = false)
     {
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var comparison = PathComparison;
         for (var current = Path.GetFullPath(fullPath); current != null; current = Path.GetDirectoryName(current))
         {
             var atRoot = string.Equals(Path.TrimEndingDirectorySeparator(current), root, comparison);

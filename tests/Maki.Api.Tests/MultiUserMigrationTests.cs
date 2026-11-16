@@ -132,6 +132,18 @@ public class MultiUserMigrationTests : IDisposable
     }
 
     [Fact]
+    public void A_series_already_read_starts_as_Reading_after_the_upgrade()
+    {
+        MigrateTo(PreMultiUser);
+        SeedPreUpgradeLibrary();
+
+        MigrateToHead();
+
+        Assert.Equal(1L, Scalar<long>("""SELECT COUNT(*) FROM "UserSeriesStates" WHERE "SeriesId" = 1"""));
+        Assert.Equal(1L, Scalar<long>("""SELECT "Status" FROM "UserSeriesStates" WHERE "SeriesId" = 1 AND "UserId" = 1"""));
+    }
+
+    [Fact]
     public void ReadingStateKeepsAllThreeInterlockingIndexesAfterTheUpgrade()
     {
         MigrateTo(PreMultiUser);

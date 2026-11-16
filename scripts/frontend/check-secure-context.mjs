@@ -61,7 +61,7 @@ for (const file of files) {
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return
       for (const { pattern, name, use, home } of banned) {
         if ((home && rel.startsWith(home)) || !pattern.test(line)) continue
-        failures.push(`frontend/src/${rel}:${i + 1}: ${name ?? pattern.source.replace(/\b/g, '')} is undefined over plain HTTP. Use ${use}.`)
+        failures.push(`frontend/src/${rel}:${i + 1}: ${name ?? pattern.source.replace(/\\b/g, '').replace(/\\\./g, '.')} is undefined over plain HTTP. Use ${use}.`)
       }
     })
 }

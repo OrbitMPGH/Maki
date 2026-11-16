@@ -34,7 +34,6 @@ public class ChapterController(
     ILocalizer localizer,
     MakiDbContext db,
     DownloadQueueService queue,
-    StatsEventService stats,
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
@@ -90,6 +89,7 @@ public class ChapterController(
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
                     ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
                     CheckedWith = c.ChapterFile.CheckedWith,
+                    SplitPageCount = c.ChapterFile.SplitPageCount,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }
@@ -829,7 +829,7 @@ public class ChapterController(
             {
                 var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
                 if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
-                        replaceInfo: replaceInfo) is { } item)
+                        replaceInfo: replaceInfo, priority: QueuePriorities.For(DownloadOrigin.Manual, candidates.Count > 1)) is { } item)
                 {
                     queued++;
                     queuedItemIds.Add(item.Id);

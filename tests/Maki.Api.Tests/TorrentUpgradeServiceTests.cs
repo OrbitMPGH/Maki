@@ -5,6 +5,7 @@ using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Parsing;
 using Maki.Core.Quality;
+using Maki.Core.Sources;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -95,9 +96,12 @@ public class TorrentUpgradeServiceTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
+    private SourceRegistry? _sources;
+
     private TorrentUpgradeService Service(MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        _clock, _store.Provider(), NullLogger<TorrentUpgradeService>.Instance);
+        _clock, _store.Provider(), NullLogger<TorrentUpgradeService>.Instance, _sources,
+        _sources is null ? null : new SourceAvailability(_world.Settings, _sources));
 
     private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
         string language = "en")
@@ -118,10 +122,243 @@ public class TorrentUpgradeServiceTests : IDisposable
             ignoreGlobalSwitch);
     }
 
-    private async Task<TorrentCandidateView> EvaluateAsync(string title, long size = 100L * 1024 * 1024)
+    private async Task<SeriesVolumeSearchResult> VolumeFirstSearchAsync()
     {
         using var db = _world.Db.NewContext();
-        return (await Service(db).EvaluateAsync(_world.SeriesId, [FakeReleases.Release(title, size)], CancellationToken.None)).Single();
+        return await Service(db).SearchSeriesAsync(_world.SeriesId, CancellationToken.None, volumeFirst: true);
+    }
+
+    /// <summary>A series that was just added: chapters 1 and 2 in volume 1, nothing on disk.</summary>
+    private void NothingOnDisk()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.Chapters.RemoveRange(db.Chapters);
+            db.ChapterFiles.RemoveRange(db.ChapterFiles);
+            db.SaveChanges();
+        }
+
+        Chapter(1, 1, withFile: false);
+        Chapter(2, 1, withFile: false);
+    }
+
+    [Fact]
+    public async Task The_volume_first_setting_leaves_the_upgrade_search_alone()
+    {
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+        Chapter(1, 1, file: f => f.Trusted = true);
+        Chapter(2, 1, withFile: false);
+
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync()).Reason);
+
+        NothingOnDisk();
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync()).Reason);
+    }
+
+    [Fact]
+    public async Task A_volume_first_search_looks_for_a_series_with_no_files_and_marks_what_it_leaves()
+    {
+        NothingOnDisk();
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await VolumeFirstSearchAsync();
+
+        Assert.True(result.Searched);
+        Assert.NotNull(result.ProposalId);
+        using var db = _world.Db.NewContext();
+        Assert.True(db.TorrentProposals.Single().VolumeFirst);
+    }
+
+    [Fact]
+    public async Task A_volume_first_search_follows_the_upgrade_eligibility_of_the_profile()
+    {
+        NothingOnDisk();
+        using (var db = _world.Db.NewContext())
+        {
+            db.UpgradeProfiles.Single().UpgradesEnabled = false;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(VolumeSearchReasons.ProfileDisabled, (await VolumeFirstSearchAsync()).Reason);
+
+        using (var db = _world.Db.NewContext())
+        {
+            var profile = db.UpgradeProfiles.Single();
+            profile.UpgradesEnabled = true;
+            profile.Cutoff = QualityTier.Official;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(VolumeSearchReasons.Cutoff, (await VolumeFirstSearchAsync()).Reason);
+        Assert.Empty(_releases.Queries);
+    }
+
+    [Fact]
+    public async Task With_the_upgrade_switches_off_a_volume_first_search_only_proposes()
+    {
+        NothingOnDisk();
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "false");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await VolumeFirstSearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+        using var db = _world.Db.NewContext();
+        var row = db.TorrentProposals.Single();
+        Assert.True(row.VolumeFirst);
+        Assert.Contains(SpanVerdictReasons.UpgradesDisabled, row.ReasonsJson);
+    }
+
+    [Fact]
+    public async Task A_manual_search_judges_releases_that_only_add_chapters_while_volume_first_is_on()
+    {
+        Chapter(1, 1, file: f => f.Trusted = true);
+        Chapter(2, 1, withFile: false);
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync(ignoreGlobalSwitch: true)).Reason);
+
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+        var manual = await SearchAsync(ignoreGlobalSwitch: true);
+
+        Assert.True(manual.Searched);
+        Assert.NotNull(manual.ProposalId);
+        using var db = _world.Db.NewContext();
+        Assert.False(db.TorrentProposals.Single().VolumeFirst);
+    }
+
+    private void MarkPending(TimeSpan age)
+    {
+        using var db = _world.Db.NewContext();
+        db.Series.Single().VolumeFirstPendingAt = _clock.GetUtcNow().UtcDateTime - age;
+        db.SaveChanges();
+    }
+
+    private DateTime? PendingMark()
+    {
+        using var db = _world.Db.NewContext();
+        return db.Series.Single().VolumeFirstPendingAt;
+    }
+
+    [Fact]
+    public async Task A_bulk_added_series_is_due_for_its_search_for_a_day()
+    {
+        MarkPending(TimeSpan.FromHours(23));
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.Equal([_world.SeriesId], await Service(db).VolumeFirstDueAsync(5, CancellationToken.None));
+        }
+
+        MarkPending(TimeSpan.FromHours(25));
+        using (var db = _world.Db.NewContext())
+        {
+            Assert.Empty(await Service(db).VolumeFirstDueAsync(5, CancellationToken.None));
+        }
+
+        Assert.Null(PendingMark());
+    }
+
+    [Fact]
+    public async Task A_bulk_added_series_loses_its_mark_once_searched()
+    {
+        NothingOnDisk();
+        MarkPending(TimeSpan.FromHours(1));
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        using (var db = _world.Db.NewContext())
+        {
+            var result = await Service(db).SearchPendingVolumeFirstAsync(_world.SeriesId, CancellationToken.None);
+            Assert.NotNull(result.ProposalId);
+        }
+
+        Assert.Null(PendingMark());
+    }
+
+    [Fact]
+    public async Task A_volume_first_search_still_needs_an_indexer_and_a_profile()
+    {
+        NothingOnDisk();
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "");
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await VolumeFirstSearchAsync()).Reason);
+
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "key");
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single().UpgradeProfileId = null;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(VolumeSearchReasons.NoProfile, (await VolumeFirstSearchAsync()).Reason);
+        Assert.Empty(_releases.Queries);
+    }
+
+    [Fact]
+    public async Task Only_a_series_that_can_take_a_volume_is_marked_for_volume_first()
+    {
+        NothingOnDisk();
+        Assert.True(await CanTakeVolumesAsync());
+
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "");
+        Assert.False(await CanTakeVolumesAsync());
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "key");
+
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "false");
+        Assert.True(await CanTakeVolumesAsync());
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+
+        using (var db = _world.Db.NewContext())
+        {
+            db.UpgradeProfiles.Single().UpgradesEnabled = false;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+
+        using (var db = _world.Db.NewContext())
+        {
+            var profile = db.UpgradeProfiles.Single();
+            profile.UpgradesEnabled = true;
+            profile.Cutoff = QualityTier.Official;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single().UpgradeProfileId = null;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+    }
+
+    private async Task<bool> CanTakeVolumesAsync()
+    {
+        using var db = _world.Db.NewContext();
+        return await Service(db).VolumeFirstCanTakeVolumesAsync(_world.SeriesId, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task A_volume_release_for_a_series_with_nothing_yet_is_only_considered_when_additions_are_judged()
+    {
+        Chapter(1, 1, withFile: false);
+        Chapter(2, 1, withFile: false);
+
+        var upgrade = await EvaluateAsync("Kaguya v01 (2022) (Digital) (1r0n)");
+        var additions = await EvaluateAsync("Kaguya v01 (2022) (Digital) (1r0n)", judgeAdditions: true);
+
+        Assert.Equal(SpanOutcome.Ignore, upgrade.Verdict.Outcome);
+        Assert.NotEqual(SpanOutcome.Ignore, additions.Verdict.Outcome);
+    }
+
+    private async Task<TorrentCandidateView> EvaluateAsync(string title, long size = 100L * 1024 * 1024,
+        bool judgeAdditions = false)
+    {
+        using var db = _world.Db.NewContext();
+        return (await Service(db).EvaluateAsync(_world.SeriesId, [FakeReleases.Release(title, size)],
+            CancellationToken.None, judgeAdditions)).Single();
     }
 
     private Dictionary<int, bool> WantedFlags()
@@ -216,6 +453,138 @@ public class TorrentUpgradeServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Chapter_rows_without_a_volume_take_it_from_the_mangadex_map()
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var unmapped = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 });
+        var mapped = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, unmapped.Verdict.UpgradeCount);
+        Assert.DoesNotContain(SpanVerdictReasons.VolumeSpanUnknown, mapped.Verdict.Reasons);
+        Assert.Equal(4, mapped.Verdict.UpgradeCount);
+        Assert.All(StoredVolumes().Values, Assert.Null);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_switched_off_mangadex_mapping_or_source_is_not_asked(bool sourceOff)
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var calls = 0;
+        MangaDexMap(() =>
+        {
+            calls++;
+            return new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 };
+        }, mappingEnabled: sourceOff);
+        if (sourceOff)
+        {
+            _world.Settings.Set(SettingKeys.SourcesDisabled, "mangadex");
+        }
+
+        var view = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, view.Verdict.UpgradeCount);
+        Assert.Equal(0, calls);
+    }
+
+    private void MangaDexMap(Func<IReadOnlyDictionary<decimal, int>> map, bool mappingEnabled = true)
+    {
+        var uuid = Guid.NewGuid().ToString();
+        using (var db = _world.Db.NewContext())
+        {
+            db.SourceMappings.Add(new SourceMapping
+            {
+                SeriesId = _world.SeriesId, SourceName = "mangadex", SourceSeriesId = uuid,
+                Url = $"https://mangadex.org/title/{uuid}", Enabled = mappingEnabled
+            });
+            db.SaveChanges();
+        }
+
+        _sources = new SourceRegistry([new FakeSource
+        {
+            Name = "mangadex",
+            OnChapterVolumes = id => id == uuid ? map() : new Dictionary<decimal, int>()
+        }]);
+    }
+
+    private Dictionary<decimal, int?> StoredVolumes()
+    {
+        using var db = _world.Db.NewContext();
+        return db.Chapters.Where(c => c.SeriesId == _world.SeriesId).ToDictionary(c => c.Number!.Value, c => c.Volume);
+    }
+
+    [Fact]
+    public async Task A_volume_the_library_already_knows_outranks_the_mangadex_map()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        Chapter(3, null);
+        Chapter(4, null);
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 2, [2] = 2, [3] = 2, [4] = 2 });
+
+        var view = await EvaluateAsync("Kaguya v02 (Digital) (1r0n)");
+
+        Assert.Equal(2, view.Verdict.UpgradeCount);
+        Assert.Equal(new Dictionary<decimal, int?> { [1] = 1, [2] = 1, [3] = null, [4] = null }, StoredVolumes());
+    }
+
+    [Fact]
+    public async Task A_chapter_the_mangadex_map_leaves_out_stays_without_a_volume()
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2 });
+
+        var view = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(3, view.Verdict.UpgradeCount);
+    }
+
+    public static TheoryData<Exception> MangaDexFailures() =>
+    [
+        new Maki.Core.Http.RateLimitException("Rate limited by api.mangadex.org (HTTP 429)"),
+        new HttpRequestException("503"),
+        new System.Text.Json.JsonException("odd answer"),
+        new TaskCanceledException("timeout")
+    ];
+
+    [Theory]
+    [MemberData(nameof(MangaDexFailures))]
+    public async Task A_failed_mangadex_read_costs_the_verdict_the_map_and_is_tried_again(Exception failure)
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var calls = 0;
+        MangaDexMap(() => ++calls == 1
+            ? throw failure
+            : new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 });
+
+        var failed = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+        var recovered = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, failed.Verdict.UpgradeCount);
+        Assert.Equal(4, recovered.Verdict.UpgradeCount);
+        Assert.All(StoredVolumes().Values, Assert.Null);
+    }
+
+    [Fact]
     public async Task A_chapter_read_off_a_trailing_number_is_at_most_a_proposal()
     {
         Chapter(2, 1);
@@ -303,6 +672,70 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(wanted, WantedFlags());
     }
 
+    [Fact]
+    public async Task An_auto_grab_skips_a_release_nobody_seeds_for_one_that_is_seeded()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", seeders: 0, guid: "dead"));
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (LuCaZ)", seeders: 3, guid: "alive"));
+
+        await SearchAsync();
+
+        Assert.Equal("alive", Assert.Single(_releases.Grabs).Release.Guid);
+    }
+
+    [Fact]
+    public async Task An_auto_grab_with_no_seeders_at_all_grabs_nothing()
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", seeders: 0));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.Null(result.Grabbed);
+    }
+
+    [Theory]
+    [InlineData("Kaguya v01-03 (Digital) (1r0n)", true)]
+    [InlineData("Kaguya v02 (Digital) (1r0n)", false)]
+    public async Task A_release_overlapping_a_torrent_still_downloading_is_not_grabbed(string active, bool overlaps)
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        Chapter(3, 2);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (LuCaZ)", guid: "next"));
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, Protocol = AcquisitionProtocol.Torrent, Status = QueueStatus.Downloading,
+                QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Upgrade, Title = active,
+                ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(new ReleaseInfo("active", active, "Nyaa", "abc"))
+            });
+            db.SaveChanges();
+        }
+
+        await SearchAsync();
+
+        Assert.Equal(overlaps ? 0 : 1, _releases.Grabs.Count);
+    }
+
+    [Theory]
+    [InlineData("v01-03", "v03", true)]
+    [InlineData("v01", "v02", false)]
+    [InlineData("c001-010", "c011-020", false)]
+    [InlineData("c001-010", "c010", true)]
+    [InlineData("v01", "c005", true)]
+    [InlineData("", "v02", true)]
+    public void Release_spans_overlap_only_when_they_can_share_a_chapter(string a, string b, bool overlaps)
+    {
+        static ReleaseSpan Span(string s) => ReleaseTitleParser.Parse(("Kaguya " + s + " (Digital)").Trim()).Span;
+        Assert.Equal(overlaps, TorrentUpgradeRules.Overlaps(Span(a), Span(b)));
+        Assert.Equal(overlaps, TorrentUpgradeRules.Overlaps(Span(b), Span(a)));
+    }
+
     private void AddLibrarySeries(string title)
     {
         using var db = _world.Db.NewContext();
@@ -357,6 +790,262 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.False(spinOff.TitleMatched);
         Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
         Assert.True(own.TitleMatched);
+    }
+
+    private void AutoApprove(bool on, long? ceilingBytes = null)
+    {
+        _world.Settings.Set(SettingKeys.UpgradesAutoApprove, on ? "true" : "false");
+        if (ceilingBytes is { } bytes)
+        {
+            _world.Settings.Set(SettingKeys.UpgradesAutoApproveMaxBytes, bytes.ToString());
+        }
+    }
+
+    [Fact]
+    public async Task A_proposal_the_rule_allows_is_approved_at_once_when_automatic_approval_is_on()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 2L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        var grab = Assert.Single(_releases.Grabs);
+        Assert.Equal(DownloadOrigin.Upgrade, grab.Origin);
+        Assert.True(TorrentUpgradeInfo.Parse(grab.Info)!.AutoApproved);
+        Assert.NotNull(result.Grabbed);
+        Assert.Null(result.ProposalId);
+        using var db = _world.Db.NewContext();
+        var row = db.TorrentProposals.Single();
+        Assert.Equal(TorrentProposalStatus.Accepted, row.Status);
+        Assert.Null(row.ResolvedByUserId);
+    }
+
+    [Fact]
+    public async Task A_proposal_stays_a_proposal_when_automatic_approval_is_off()
+    {
+        Chapter(1, 1);
+        AutoApprove(false);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    [Fact]
+    public async Task A_release_over_the_ceiling_stays_a_proposal_even_with_automatic_approval_on()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 100L * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    private int PendingProposal(string title, string reasonsJson, long sizeBytes)
+    {
+        using var db = _world.Db.NewContext();
+        var row = new TorrentProposal
+        {
+            SeriesId = _world.SeriesId, ReleaseGuid = title, Title = title, Indexer = "Nyaa", SizeBytes = sizeBytes,
+            ReasonsJson = reasonsJson, Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow,
+            ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(
+                FakeReleases.Release(title, sizeBytes), QualitySnapshot.Json)
+        };
+        db.TorrentProposals.Add(row);
+        db.SaveChanges();
+        return row.Id;
+    }
+
+    private async Task<int> SweepAsync()
+    {
+        using var db = _world.Db.NewContext();
+        return await Service(db).AutoApprovePendingAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task The_sweep_approves_the_pending_proposals_the_rule_allows_and_leaves_the_rest()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        var allowed = PendingProposal("Kaguya (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 800L * 1024 * 1024);
+        var unsure = PendingProposal("Kaguya v02 (Digital) (1r0n)", "[\"unknown_chapters\"]", 100L * 1024 * 1024);
+        var notDigital = PendingProposal("Kaguya vol 3 scans", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        var approved = await SweepAsync();
+
+        Assert.Equal(1, approved);
+        Assert.Equal("Kaguya (2021) (Digital) (danke-Empire)", Assert.Single(_releases.Grabs).Release.Title);
+        using var db = _world.Db.NewContext();
+        Assert.Equal(TorrentProposalStatus.Accepted, db.TorrentProposals.Single(p => p.Id == allowed).Status);
+        Assert.Equal(TorrentProposalStatus.Pending, db.TorrentProposals.Single(p => p.Id == unsure).Status);
+        Assert.Equal(TorrentProposalStatus.Pending, db.TorrentProposals.Single(p => p.Id == notDigital).Status);
+    }
+
+    [Fact]
+    public async Task A_manual_search_with_the_switches_off_never_approves_on_its_own()
+    {
+        Chapter(1, 1);
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "false");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync(ignoreGlobalSwitch: true);
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    [Fact]
+    public async Task The_sweep_does_nothing_when_automatic_approval_is_off()
+    {
+        Chapter(1, 1);
+        AutoApprove(false);
+        PendingProposal("Kaguya (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        Assert.Equal(0, await SweepAsync());
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task The_sweep_approves_a_bounded_number_per_run()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        for (var i = 0; i < TorrentUpgradeService.MaxAutoApprovalsPerSweep + 3; i++)
+        {
+            PendingProposal($"Kaguya {i} (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+        }
+
+        Assert.Equal(TorrentUpgradeService.MaxAutoApprovalsPerSweep, await SweepAsync());
+    }
+
+    [Theory]
+    [InlineData("Kaguya (2021) (Digital) (danke-Empire)")]
+    [InlineData("Kaguya (2021) (Digital) [ENG] (danke-Empire)")]
+    public async Task The_sweep_judges_the_language_of_a_pending_proposal_again(string title)
+    {
+        Chapter(1, 1, language: "ja");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        PendingProposal(title, "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        Assert.Equal(0, await SweepAsync());
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task Automatic_approval_never_takes_a_release_whose_language_is_in_doubt()
+    {
+        Chapter(1, 1, language: "ja");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya (2021) (Digital) (danke-Empire)", size: 100L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    [Fact]
+    public async Task An_untagged_release_for_a_japanese_series_waits_for_a_click_instead_of_replacing_its_files()
+    {
+        Chapter(1, 1, language: "ja");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+        var result = await SearchAsync();
+
+        Assert.Equal(SpanOutcome.Proposal, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageUnknown], view.Verdict.Reasons);
+        Assert.NotNull(result.ProposalId);
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task The_same_untagged_release_is_still_grabbed_for_an_english_series()
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+        await SearchAsync();
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+        Assert.Single(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task A_release_tagged_english_is_ignored_for_a_japanese_series()
+    {
+        Chapter(1, 1, language: "ja");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (English)", size: 900L * 1024 * 1024));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (English)");
+        var result = await SearchAsync();
+
+        Assert.Equal(SpanOutcome.Ignore, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageMismatch], view.Verdict.Reasons);
+        Assert.Null(result.ProposalId);
+        Assert.Empty(_releases.Grabs);
+        using var db = _world.Db.NewContext();
+        Assert.Empty(db.TorrentProposals);
+    }
+
+    [Fact]
+    public async Task A_japanese_release_is_judged_normally_for_a_japanese_series()
+    {
+        Chapter(1, 1, language: "ja");
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (Japanese)");
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+    }
+
+    [Fact]
+    public async Task A_release_tagged_japanese_is_ignored_for_an_english_series()
+    {
+        Chapter(1, 1);
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) [JP]");
+
+        Assert.Equal(SpanOutcome.Ignore, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageMismatch], view.Verdict.Reasons);
+    }
+
+    [Theory]
+    [InlineData("Kaguya v01 (Digital) (1r0n)")]
+    [InlineData("Kaguya v01 (Digital) (English)")]
+    [InlineData("Kaguya v01 (Digital) (Japanese)")]
+    public async Task A_mostly_japanese_series_with_one_english_file_never_has_a_volume_replaced_unattended(string title)
+    {
+        var japanese = new[] { Chapter(1, 1, language: "ja"), Chapter(2, 1, language: "ja"), Chapter(3, 1, language: "ja") };
+        Chapter(4, 1);
+        _releases.Results.Add(FakeReleases.Release(title));
+
+        var view = await EvaluateAsync(title);
+        await SearchAsync();
+
+        using var db = _world.Db.NewContext();
+        var japaneseFiles = db.Chapters.Where(c => japanese.Contains(c.Id)).Select(c => c.ChapterFileId!.Value).ToHashSet();
+        Assert.NotEqual(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+        Assert.Contains(SpanVerdictReasons.LanguageMixed, view.Verdict.Reasons);
+        Assert.DoesNotContain(view.Verdict.ReplacedFileIds, japaneseFiles.Contains);
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task A_series_in_another_language_is_not_judged_on_language()
+    {
+        Chapter(1, 1, language: "fr");
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) [JP]");
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
     }
 
     [Fact]

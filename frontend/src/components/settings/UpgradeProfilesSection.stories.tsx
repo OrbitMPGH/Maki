@@ -33,7 +33,7 @@ export const Profiles: Story = {
     await expect(await canvas.findByText('Balanced')).toBeVisible()
     await expect(await canvas.findByText('Storage saver')).toBeVisible()
     await expect(await canvas.findByText('Never upgrades')).toBeVisible()
-    await expect(await canvas.findByText('Prefers official releases but accepts good scanlations.')).toBeVisible()
+    await expect(await canvas.findByText(/Prefers official releases but accepts good scanlations./)).toBeVisible()
   },
 }
 
@@ -47,11 +47,13 @@ export const NoProfilesYet: Story = {
 }
 
 export const ProfileInUseCannotBeDeleted: Story = {
-  play: async ({ canvas }) => {
-    await canvas.findByText('Balanced')
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByText('Balanced'))
+    await userEvent.click(await canvas.findByText('Storage saver'))
     const buttons = await canvas.findAllByRole('button', { name: 'Delete profile' })
     await waitFor(() => expect(buttons[0]).toBeDisabled())
     await waitFor(() => expect(buttons[1]).toBeEnabled())
+    await expect(await canvas.findByText('Unpin it from every series first')).toBeVisible()
   },
 }
 
@@ -62,14 +64,13 @@ export const UntilScoreProfile: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Keeps taking better scoring copies until one scores 150')).toBeVisible()
+    await expect(await canvas.findByText(/Keeps taking better scoring copies until one scores 150/)).toBeVisible()
   },
 }
 
 export const EditAProfile: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Balanced')
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Edit profile' }))[0])
+    await userEvent.click(await canvas.findByText('Balanced'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Name' })).toHaveValue('Balanced'))
     await expect(await canvas.findByText('Tier order')).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Score for Official digital' })).toHaveValue('40'))
@@ -78,8 +79,7 @@ export const EditAProfile: Story = {
 
 export const EditMoveATier: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Balanced')
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Edit profile' }))[0])
+    await userEvent.click(await canvas.findByText('Balanced'))
     await userEvent.click(await canvas.findByRole('button', { name: 'Move Official down' }))
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Save' })[0]).toBeEnabled())
   },
@@ -112,8 +112,8 @@ export const NewProfileRejected: Story = {
 
 export const DeleteUnusedProfile: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Storage saver')
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Delete profile' }))[1])
+    await userEvent.click(await canvas.findByText('Storage saver'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Delete profile' }))
     const dialog = await dialogOf(canvasElement)
     await expect(await dialog.findByText('Delete Storage saver?')).toBeVisible()
     await expect(await dialog.findByText("The profile is removed. This can't be undone.")).toBeVisible()
@@ -140,8 +140,7 @@ export const FormatsEmpty: Story = {
 export const EditFormat: Story = {
   render: () => <QualityFormatsSection />,
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Official digital')
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Edit format' }))[0])
+    await userEvent.click(await canvas.findByText('Official digital'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Name' })).toHaveValue('Official digital'))
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Remove condition' })).toHaveLength(qualityFormats[0].conditions.length))
     await expect(await canvas.findByRole('button', { name: 'Add condition' })).toBeVisible()
@@ -160,8 +159,8 @@ export const NewFormat: Story = {
 export const DeleteFormatConfirm: Story = {
   render: () => <QualityFormatsSection />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Tiny files')
-    await userEvent.click((await canvas.findAllByRole('button', { name: 'Delete format' }))[2])
+    await userEvent.click(await canvas.findByText('Tiny files'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Delete format' }))
     const dialog = await dialogOf(canvasElement)
     await expect(await dialog.findByText('Delete Tiny files?')).toBeVisible()
     await expect(await dialog.findByText("Removed from every profile that scores it. This can't be undone.")).toBeVisible()

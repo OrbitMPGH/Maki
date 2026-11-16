@@ -40,6 +40,8 @@ COPY Directory.Build.props ./
 COPY Maki.sln ./
 COPY src/ src/
 COPY tests/ tests/
+# Imported by Maki.Api.csproj. It only fetches libjxl on Windows; this image gets it from the libjxl stage.
+COPY distribution/libjxl/LibJxl.targets distribution/libjxl/
 # Maki.Api embeds locales/*/server.po as resources; see the EmbeddedResource item in Maki.Api.csproj.
 COPY locales/ locales/
 
@@ -72,6 +74,35 @@ RUN expected="$(ls -1d locales/*/ | wc -l)" \
          echo "Expected $expected server catalogs embedded in Maki.Api.dll, found $actual." >&2; \
          exit 1; \
        fi
+
+# ---- libjxl ----
+# The upscaler writes colour pages as JPEG XL through libjxl, which neither the bundled libvips nor
+# Ubuntu 24.04 (0.7, from 2022) provides in a usable version. Built on $BUILDPLATFORM and
+# cross-compiled for arm64: compiling it under qemu takes far longer. Nothing here depends on the
+# app's source, so the layer stays cached until build.sh changes.
+FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS libjxl
+ARG TARGETARCH
+ARG BUILDARCH
+RUN apt-get update \
+    && case "$TARGETARCH" in \
+         amd64|arm64) ;; \
+         *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+       esac \
+    && if [ "$TARGETARCH" = "$BUILDARCH" ]; then compiler=g++; \
+       elif [ "$TARGETARCH" = arm64 ]; then compiler=g++-aarch64-linux-gnu; \
+       else compiler=g++-x86-64-linux-gnu; fi \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates cmake ninja-build binutils "$compiler" \
+    && rm -rf /var/lib/apt/lists/*
+COPY distribution/libjxl/build.sh /libjxl/build.sh
+RUN if [ "$TARGETARCH" = "$BUILDARCH" ]; then \
+      bash /libjxl/build.sh /out; \
+    elif [ "$TARGETARCH" = arm64 ]; then \
+      bash /libjxl/build.sh /out -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+        -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++; \
+    else \
+      bash /libjxl/build.sh /out -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+        -DCMAKE_C_COMPILER=x86_64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=x86_64-linux-gnu-g++; \
+    fi
 
 # ---- Trim unused native runtime assets ----
 # The backend publish above ran once on $BUILDPLATFORM with no RID, so NuGet's `runtimes/` folder
@@ -143,6 +174,8 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 COPY --from=trimmed-publish /app ./
+# Flat beside Maki.Api.dll, where JpegXl looks; the libraries find each other through an $ORIGIN rpath.
+COPY --from=libjxl /out/ ./
 COPY THIRD_PARTY_NOTICES.md ./
 COPY --from=frontend /src/frontend/dist ./wwwroot/
 
@@ -174,6 +207,11 @@ ENV MALLOC_ARENA_MAX=2
 # part that matters; a trim threshold alone saved 26 MB.
 ENV MALLOC_MMAP_THRESHOLD_=131072
 ENV MALLOC_TRIM_THRESHOLD_=131072
+
+# The runtime loads its LTTng tracing provider in every process, which maps liblttng-ust and starts
+# two idle dotnet-ust threads (about 1 MB). Nothing in this image uses LTTng; EventPipe tools
+# (dotnet-trace, dotnet-counters, dotnet-gcdump) still work without it.
+ENV DOTNET_LTTng=0
 
 ENV MAKI_CONFIG_DIR=/config
 ENV MAKI_RUNTIME=docker

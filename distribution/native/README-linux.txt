@@ -25,6 +25,12 @@ Sources that need a browser
     sudo ./.playwright/node/linux-x64/node ./.playwright/package/cli.js install-deps chromium-headless-shell
   (use linux-arm64 on an ARM machine). Both sources also need FlareSolverr.
 
+JPEG XL for upscaled pages
+  Server upscaling saves colour pages as JPEG XL with the libjxl files beside Maki.Api. They are
+  built on Ubuntu 24.04 and need glibc 2.39 or newer (Ubuntu 24.04, Debian 13, Fedora 40 or later).
+  On an older system they do not load and colour pages are saved as WebP instead, which works the
+  same in the reader. Settings > Server upscaling shows which one you have.
+
 Updating
   Maki tells you in Settings when a new version is out. Stop the service, replace the files in
   /opt/maki with the new tarball's, and start it again. Your data in the config folder is kept.

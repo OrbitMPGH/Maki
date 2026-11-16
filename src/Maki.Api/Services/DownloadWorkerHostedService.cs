@@ -2,6 +2,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,7 +24,8 @@ public class DownloadWorkerHostedService(
     DownloadBatchNotifier batches,
     IServiceScopeFactory scopeFactory,
     ILogger<DownloadWorkerHostedService> logger,
-    DownloadPauseService? pauses = null) : BackgroundService
+    DownloadPauseService? pauses = null,
+    DownloadDiskHold? diskHold = null) : BackgroundService
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
@@ -34,6 +36,8 @@ public class DownloadWorkerHostedService(
     private const int MaxRecoveryAttempts = 6;
 
     private volatile int _concurrency = DefaultConcurrentChapters;
+
+    private readonly DownloadIdleRelease _idleRelease = new();
 
     private TaskCompletionSource _concurrencyChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -123,6 +127,12 @@ public class DownloadWorkerHostedService(
             ct.ThrowIfCancellationRequested();
             await RefreshSettingsAsync(ct);
             await LiftElapsedPausesAsync(ct);
+            await RefreshDiskHoldsAsync(ct);
+            if (_idleRelease.Due(queue.HandedOut, queue.Busy, queue.UtcNow))
+            {
+                NativeHeap.CollectAndTrim();
+            }
+
             await queue.SignalAsync(0, ct);
         }
     }
@@ -157,6 +167,44 @@ public class DownloadWorkerHostedService(
         return delay < CooldownPollInterval ? CooldownPollInterval : delay;
     }
 
+    private int _diskHoldVersion;
+
+    /// <summary>
+    /// Reads free space again once the last reading has aged out, and tells the open Activity pages
+    /// when a root folder became held or was let go. A lift needs no wake of its own: this tick
+    /// signals the workers right after.
+    /// </summary>
+    private async Task RefreshDiskHoldsAsync(CancellationToken ct)
+    {
+        if (diskHold is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await diskHold.RefreshAsync(ct);
+            var version = diskHold.Version;
+            if (version == _diskHoldVersion)
+            {
+                return;
+            }
+
+            _diskHoldVersion = version;
+            using var scope = scopeFactory.CreateScope();
+            if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
+            {
+                await events.QueuePauseChanged();
+            }
+
+            await queue.WakeWorkersAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not refresh the low disk space holds");
+        }
+    }
+
     /// <summary>
     /// A pause with a resume time lifts on the next poll tick, which is also the signal that wakes the
     /// workers, so no timer of its own is needed. Claiming already ignores an elapsed pause; this
@@ -182,7 +230,7 @@ public class DownloadWorkerHostedService(
             {
                 try
                 {
-                    await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+                    await events.QueuePauseChanged();
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -303,6 +351,11 @@ public class DownloadWorkerHostedService(
         // for a missing root folder says nothing about its source and must not cool it down.
         foreach (var item in interrupted)
         {
+            if (item.Status == QueueStatus.Waiting)
+            {
+                continue;
+            }
+
             if (item.Status == QueueStatus.RateLimited)
             {
                 if (item.NextAttempt is { } until && item.SourceMapping is { } mapping &&

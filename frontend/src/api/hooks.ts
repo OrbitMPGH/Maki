@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -16,9 +17,11 @@ import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
+import type { ReadingStatus } from '../components/ui/status'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
-import { optimisticMerge, optimisticSeries } from './optimistic'
+import { optimistic, optimisticMerge, optimisticSeries } from './optimistic'
+import { refreshMintProofOn } from './auth'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
 import { askSoFarSync } from '../lib/soFarSyncAsk'
@@ -47,9 +50,12 @@ import type {
   ImportDecisionResultDto,
   QueueFailedAction,
   QueuePauseDto,
+  QueueEtaDto,
   QueuePauseRequest,
   QueueFailureGroupDto,
   QueueHistoryDto,
+  QueueHistoryGroupsDto,
+  QueueHistoryStatusFilter,
   QueueSummaryDto,
   TorrentImportPlanDto,
   RootFolder,
@@ -59,6 +65,7 @@ import type {
   SeriesFilesSummaryDto,
   SeriesScrobbleDto,
   SourceMappingDto,
+  SourceNearMissDto,
   TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
@@ -274,6 +281,28 @@ export interface RecommendationItem {
    * so on the card.
    */
   franchiseId?: number | null
+}
+
+/** Enough of a card for the detail modal, which loads everything else by id. */
+export function recommendationStub(providerId: string): RecommendationItem {
+  return {
+    providerId,
+    title: '',
+    coverUrl: null,
+    thumbUrl: null,
+    thumbUrlHiDpi: null,
+    year: null,
+    description: null,
+    status: '',
+    rating: null,
+    totalChapters: null,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
 }
 
 export interface RecommendationsResult {
@@ -878,6 +907,18 @@ export function useDiscoverSearch(
         signal,
       }),
     enabled,
+    // Paging raises `limit`; keep the shorter page on screen while the wider one loads, but never
+    // carry results over to a different query.
+    placeholderData: (previous, previousQuery) => {
+      const before = previousQuery?.queryKey[1] as DiscoverSearchRequest | null | undefined
+      return before &&
+        request &&
+        before.query === request.query &&
+        before.engine === request.engine &&
+        JSON.stringify(before.filters) === JSON.stringify(request.filters)
+        ? previous
+        : undefined
+    },
     // A title answer standing in for a meaning search is provisional, so it is never served from cache.
     staleTime: (q) => (q.state.data?.fallback ? 0 : 5 * 60 * 1000),
     refetchInterval: (q) => fallbackPoll(q.state.data?.fallback, q.state.dataUpdateCount),
@@ -1516,6 +1557,8 @@ export interface MangaBakaDetail {
   tags: MangaBakaTag[]
   links: MetadataLink[]
   malId: number | null
+  aniListId: number | null
+  kitsuId: number | null
   hasAnime: boolean
   /** Free text from MangaBaka, e.g. "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA)". */
   animeStart: string | null
@@ -1523,6 +1566,38 @@ export interface MangaBakaDetail {
   readerHint: ReaderCohortHint | null
   /** Where to pick the manga back up, when the reader finished this one's anime. Null otherwise. */
   animeResume: AnimeResume | null
+  /** Where the score sits among popular series of its type. Null on an unrated series. */
+  scoreStanding?: ScoreStanding | null
+}
+
+/**
+ * Where a series' score sits among the most popular fifth of its type (`group` is the dump's type,
+ * or "all" for a type too small to stand alone). `percentile` is the share of that group it scores
+ * above, 0 to 100; `histogram` counts the group in half-point bins from 5.0 to 10.0.
+ */
+export interface ScoreStanding {
+  group: string
+  groupSize: number
+  percentile: number
+  histogram: number[]
+}
+
+/**
+ * `atOrAbove[n]` is the percentage of all popular series (the detail card's "all" group) scoring
+ * n or more on the 0-100 scale, so `atOrAbove[74]` is the share rated 7.4 or better.
+ */
+export interface ScoreShares {
+  groupSize: number
+  atOrAbove: number[]
+}
+
+/** Changes only with the dump, which installs every few hours at most. */
+export function useScoreShares() {
+  return useQuery({
+    queryKey: ['recommendations', 'score-shares'],
+    queryFn: async () => (await api<ScoreShares | undefined>('/recommendations/score-shares')) ?? null,
+    staleTime: 6 * 60 * 60 * 1000,
+  })
 }
 
 /**
@@ -1539,6 +1614,13 @@ export interface ReaderCohortHint {
   readers: number
 }
 
+export type ReviewSource = 'myanimelist' | 'anilist' | 'kitsu'
+
+/**
+ * One reader review. `score` is out of 10 whatever the site uses, `source` matches the
+ * `MetadataLink` site keys, `title` is the review's own headline (AniList has one) and `likes`
+ * its upvotes where the site counts them.
+ */
 export interface MangaReview {
   author: string
   score: number | null
@@ -1546,7 +1628,29 @@ export interface MangaReview {
   url: string | null
   date: string | null
   tags: string[]
+  source: ReviewSource
+  title: string | null
+  likes: number | null
 }
+
+/**
+ * Reviews from every site the series has an id for. `reviews` alternates MyAnimeList and AniList,
+ * `quickTakes` are Kitsu's one-line reactions, and `unavailable` names the sites that didn't
+ * answer, so a failure reads differently from a series nobody reviewed.
+ */
+export interface SeriesReviews {
+  reviews: MangaReview[]
+  quickTakes: MangaReview[]
+  unavailable: ReviewSource[]
+}
+
+export interface ReviewIds {
+  malId: number | null
+  aniListId: number | null
+  kitsuId: number | null
+}
+
+export const hasReviewIds = (ids: ReviewIds) => ids.malId != null || ids.aniListId != null || ids.kitsuId != null
 
 /** Rich detail for a Discover recommendation. `id` is a MangaBaka id; null disables the query. */
 export function useRecommendationDetail(id: string | null, inlineError = false) {
@@ -1559,14 +1663,19 @@ export function useRecommendationDetail(id: string | null, inlineError = false) 
   })
 }
 
-/** MAL reviews for a series, fetched lazily when the detail card opens. `null` means the
- *  upstream fetch failed (Jikan/MAL outage), distinct from an empty array (fetched fine,
- *  series genuinely has none) so the UI can tell the two apart. */
-export function useMangaReviews(malId: number | null) {
+/** Reviews for a series, fetched lazily when the card or drawer opens. */
+export function useSeriesReviews(ids: ReviewIds, enabled = true) {
+  const { malId, aniListId, kitsuId } = ids
   return useQuery({
-    queryKey: ['manga-reviews', malId],
-    queryFn: () => api<MangaReview[] | null>(`/recommendations/reviews/${malId}`),
-    enabled: malId != null,
+    queryKey: ['series-reviews', malId, aniListId, kitsuId],
+    queryFn: () => {
+      const query = new URLSearchParams()
+      if (malId != null) query.set('malId', String(malId))
+      if (aniListId != null) query.set('aniListId', String(aniListId))
+      if (kitsuId != null) query.set('kitsuId', String(kitsuId))
+      return api<SeriesReviews>(`/recommendations/reviews?${query}`)
+    },
+    enabled: enabled && hasReviewIds(ids),
     staleTime: 30 * 60 * 1000,
     retry: false,
   })
@@ -1774,6 +1883,17 @@ export function useDismissArchiveHint() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/series/${id}/archive-hint/dismiss`, { method: 'POST' }),
     onSuccess: (_, id) => void queryClient.invalidateQueries({ queryKey: ['series', id] }),
+  })
+}
+
+export function useDismissCompleteHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/complete-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', id] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-ending', id] })
+    },
   })
 }
 
@@ -2271,11 +2391,12 @@ export function useQueue(page = 1, pageSize = 200, enabled = true, pauseWhenIdle
 }
 
 /** One series' active queue items, so its page does not depend on them landing in the global first page. */
-export function useSeriesQueue(seriesId: number) {
+export function useSeriesQueue(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['queue', 'series', seriesId],
     queryFn: ({ signal }) =>
       api<QueueHistoryDto>(`/queue?page=1&pageSize=200&seriesId=${seriesId}`, { signal }),
+    enabled,
     refetchInterval: 10_000,
   })
 }
@@ -2295,12 +2416,47 @@ export function useQueueSummary() {
   })
 }
 
-export function useQueueHistory(page: number, pageSize = 25) {
+function queueHistoryParams(page: number, pageSize: number, status: QueueHistoryStatusFilter, search: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+  if (status !== 'all') params.set('status', status)
+  if (search.trim()) params.set('search', search.trim())
+  return params.toString()
+}
+
+export function useQueueHistory(
+  page: number,
+  pageSize = 25,
+  status: QueueHistoryStatusFilter = 'all',
+  search = '',
+  enabled = true,
+) {
   return useQuery({
-    queryKey: ['queue-history', page, pageSize],
-    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`, { signal }),
+    queryKey: ['queue-history', 'flat', page, pageSize, status, search.trim()],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryDto>(`/queue/history?${queueHistoryParams(page, pageSize, status, search)}`, { signal }),
     placeholderData: keepPreviousData,
     refetchInterval: 10_000,
+    enabled,
+  })
+}
+
+/** The history with each series' bursts folded into one entry, paged by entry. */
+export function useGroupedQueueHistory(
+  page: number,
+  pageSize = 25,
+  status: QueueHistoryStatusFilter = 'all',
+  search = '',
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['queue-history', 'grouped', page, pageSize, status, search.trim()],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryGroupsDto>(`/queue/history/grouped?${queueHistoryParams(page, pageSize, status, search)}`, {
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+    refetchInterval: 10_000,
+    enabled,
   })
 }
 
@@ -2439,6 +2595,44 @@ export function useResumeQueue() {
   })
 }
 
+/** Holds one series' queued rows; `resumeAt` unset holds them until resumed. */
+export function usePauseSeriesQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, resumeAt }: { seriesId: number; resumeAt?: string }) =>
+      api<QueuePauseDto>('/queue/pause/series', { method: 'PUT', body: JSON.stringify({ seriesId, resumeAt }) }),
+    onSuccess: (pause) => {
+      queryClient.setQueryData(['queue-pause'], pause)
+      void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
+    },
+  })
+}
+
+export function useResumeSeriesQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) => api<QueuePauseDto>(`/queue/pause/series/${seriesId}`, { method: 'DELETE' }),
+    onSuccess: (pause) => {
+      queryClient.setQueryData(['queue-pause'], pause)
+      void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
+    },
+  })
+}
+
+/**
+ * The queue's rough time left, per series and overall. Polled rather than pushed: it moves with every
+ * page downloaded, and nobody needs it to the second.
+ */
+export function useQueueEta(enabled = true) {
+  return useQuery({
+    queryKey: ['queue-eta'],
+    queryFn: ({ signal }) => api<QueueEtaDto>('/queue/eta', { signal }),
+    enabled,
+    refetchInterval: 30_000,
+    meta: { silent: true },
+  })
+}
+
 export function useClearQueue() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2459,9 +2653,10 @@ export function useReorderQueue() {
   // the ['queue'] prefix and has no `items`.
   const isQueuePage = (q: { queryKey: readonly unknown[] }) => typeof q.queryKey[1] === 'number'
   return useMutation({
-    mutationFn: (orderedIds: number[]) =>
-      api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) }),
-    onMutate: async (orderedIds) => {
+    // `movedId` is the row the person moved; it takes the claim class of its new neighbour.
+    mutationFn: ({ orderedIds, movedId }: { orderedIds: number[]; movedId?: number }) =>
+      api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds, movedId }) }),
+    onMutate: async ({ orderedIds }) => {
       await queryClient.cancelQueries({ queryKey: ['queue'] })
       const previous = queryClient.getQueriesData<QueueHistoryDto>({ queryKey: ['queue'], predicate: isQueuePage })
       const rank = new Map(orderedIds.map((id, index) => [id, index]))
@@ -2487,6 +2682,23 @@ export function useSourceMappings(seriesId: number, enabled = true) {
     queryKey: ['sourcemappings', seriesId],
     queryFn: () => api<SourceMappingDto[]>(`/sourcemapping?seriesId=${seriesId}`),
     enabled,
+  })
+}
+
+/** Suggestions auto-matching left for sources it could not match: "Is this it?" candidates. */
+export function useSourceNearMisses(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['sourcenearmisses', seriesId],
+    queryFn: () => api<SourceNearMissDto[]>(`/sourcemapping/nearmisses?seriesId=${seriesId}`),
+    enabled,
+  })
+}
+
+export function useDismissNearMiss(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/sourcemapping/nearmisses/${id}/dismiss`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', seriesId] }),
   })
 }
 
@@ -2636,6 +2848,85 @@ export function useSetSeriesNotificationMode() {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+  })
+}
+
+/** Sets how many chapters of a series are prepared ahead for you: null follows Settings, 0 never. */
+export function useSetSeriesPrepareAhead() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, chapters }: { seriesId: number; chapters: number | null }) =>
+      api<{ prepareChapters: number | null }>(`/series/${seriesId}/prepare-ahead`, {
+        method: 'POST',
+        body: JSON.stringify({ chapters }),
+      }),
+    ...optimistic<{ seriesId: number; chapters: number | null }>(queryClient, ({ seriesId, chapters }) => [
+      {
+        key: ['series', seriesId],
+        update: (old: SeriesDto) =>
+          old.prepareAhead ? { ...old, prepareAhead: { ...old.prepareAhead, chapters } } : old,
+      },
+    ]),
+  })
+}
+
+export interface SetReadingStatusResult {
+  readingStatus: string
+}
+
+/**
+ * Sets the user's own reading status on a series; trackers are updated in the background. A manual choice clears the "set automatically"
+ * flag. On hold and Dropped also leave Home's continue-reading rail, which is dropped from the cache
+ * here so the card goes at once.
+ */
+export function useSetReadingStatus() {
+  const queryClient = useQueryClient()
+  const series = optimisticSeries<{ seriesId: number; status: ReadingStatus }, SeriesDto>(queryClient, ({ status }) => ({
+    readingStatus: status,
+    readingStatusAuto: false,
+  }))
+  return useMutation({
+    mutationFn: ({ seriesId, status }: { seriesId: number; status: ReadingStatus }) =>
+      api<SetReadingStatusResult>(`/series/${seriesId}/reading-status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      }),
+    onMutate: async (vars) => {
+      if (vars.status === 'OnHold' || vars.status === 'Dropped') {
+        await queryClient.cancelQueries({ queryKey: ['home', 'reading'] })
+        queryClient.setQueriesData<HomeReadingResponse>({ queryKey: ['home', 'reading'] }, (data) =>
+          data && { continueReading: data.continueReading.filter((i) => i.seriesId !== vars.seriesId) },
+        )
+      }
+      return series.onMutate(vars)
+    },
+    onError: series.onError,
+    onSettled: (data, err, vars) => {
+      series.onSettled(data, err, vars)
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-ending', seriesId] })
+    },
+  })
+}
+
+/** Applies one reading status across many series in one request (Library bulk bar). */
+export function useBulkSetReadingStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, status }: { seriesIds: number[]; status: ReadingStatus }) =>
+      api<{ updated: number }>('/series/reading-status/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, status }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    meta: { silent: true },
   })
 }
 
@@ -2801,6 +3092,30 @@ export function useSaveRatingPromptsSettings() {
   })
 }
 
+export interface ReadingStatusSettings {
+  /** Days without reading before a series is put on hold; null when the rule is off. */
+  autoHoldDays: number | null
+  /** Days without reading before a series is dropped; null when the rule is off. */
+  autoDropDays: number | null
+}
+
+export function useReadingStatusSettings() {
+  return useQuery({
+    queryKey: ['settings', 'reading-status'],
+    queryFn: () => api<ReadingStatusSettings>('/settings/reading-status'),
+  })
+}
+
+export function useSaveReadingStatusSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: ReadingStatusSettings) =>
+      api<ReadingStatusSettings>('/settings/reading-status', { method: 'PUT', body: JSON.stringify(settings) }),
+    ...optimisticMerge(queryClient, ['settings', 'reading-status'], (settings: ReadingStatusSettings) => settings, { seededBySave: true }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'reading-status'], saved),
+  })
+}
+
 /** A "so far" score: never pushed to a tracker, and ignored by the server while a final rating exists. */
 export function useSetProvisionalRating() {
   return useRatingMutation(
@@ -2952,6 +3267,50 @@ export function useSaveFilter() {
   })
 }
 
+export function useSetDefaultSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isDefault }: { id: number; isDefault: boolean }) =>
+      api<SavedFilterDto>(`/library/filters/${id}/default`, {
+        method: 'PUT',
+        body: JSON.stringify({ isDefault }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+export function useReorderSavedFilters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      api<SavedFilterDto[]>('/library/filters/order', { method: 'PUT', body: JSON.stringify({ ids }) }),
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: ['library-filters'] })
+      queryClient.setQueryData<SavedFilterDto[]>(['library-filters'], (current) =>
+        current ? ids.map((id) => current.find((f) => f.id === id)).filter((f) => f != null) : current,
+      )
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+/** Undo for a delete: the preset comes back under its old id, so a Home rail built from it works again. */
+export function useRestoreSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (filter: SavedFilterDto) =>
+      api<SavedFilterDto>('/library/filters/restore', { method: 'POST', body: JSON.stringify(filter) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+      void queryClient.invalidateQueries({ queryKey: ['custom-rail-items'] })
+    },
+  })
+}
+
 export function useDeleteSavedFilter() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -3028,20 +3387,25 @@ export function useOpdsSettings() {
 
 export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
+  const merge = optimisticMerge(
+    queryClient,
+    ['settings', 'opds'],
+    ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
+      enabled,
+      trackProgress,
+      ...(komga !== undefined && { komga }),
+    }),
+    { seededBySave: true },
+  )
   return useMutation({
     // `password` is only needed when the save mints the token (first enable); the server decides.
     mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
-    ...optimisticMerge(
-      queryClient,
-      ['settings', 'opds'],
-      ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
-        enabled,
-        trackProgress,
-        ...(komga !== undefined && { komga }),
-      }),
-      { seededBySave: true },
-    ),
+    ...merge,
+    onError: (error, vars, snapshot) => {
+      merge.onError(error, vars, snapshot)
+      refreshMintProofOn(queryClient, error)
+    },
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
       // than refetching, otherwise the URL box stays empty until the round-trip lands.
@@ -3061,6 +3425,7 @@ export function useRotateOpdsToken() {
     onSuccess: (data) => {
       queryClient.setQueryData(['settings', 'opds'], data)
     },
+    onError: (error) => refreshMintProofOn(queryClient, error),
   })
 }
 
@@ -3153,6 +3518,8 @@ export interface SourceInfo {
    * answers false, because each is a separate series id rather than a filter over one list.
    */
   supportsLanguageFilter: boolean
+  /** Lists several scanlation groups' uploads of a chapter, so the preferred and blocked groups apply to it. */
+  scanlationGroups?: boolean
   /** Language codes this source publishes content in (`ISource.SupportedLanguages`). */
   supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
@@ -3317,6 +3684,7 @@ export function useCreateMapping() {
     // The server lists the new source's chapters before it answers.
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series', v.seriesId] })
@@ -3510,6 +3878,34 @@ export function useDownloadClientKinds() {
 
 export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
+/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, or `indexer:{backend}`. */
+export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | `indexer:${IndexerBackend}`
+
+/** The last Test of a connection, present only while the saved settings are the ones it tested. */
+export interface ConnectionTestStatus {
+  key: ConnectionTestKey
+  ok: boolean
+  message: string | null
+  testedAt: string
+}
+
+export const CONNECTION_TESTS_KEY = ['settings', 'connection-tests'] as const
+
+export function useConnectionTests() {
+  return useQuery({
+    queryKey: CONNECTION_TESTS_KEY,
+    queryFn: () => api<ConnectionTestStatus[]>('/settings/connection-tests'),
+  })
+}
+
+export function useConnectionTest(key: ConnectionTestKey | undefined) {
+  const { data, isSuccess } = useConnectionTests()
+  return { status: data?.find((s) => s.key === key) ?? null, loaded: isSuccess }
+}
+
+export const invalidateConnectionTests = (queryClient: QueryClient) =>
+  void queryClient.invalidateQueries({ queryKey: CONNECTION_TESTS_KEY })
+
 export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({
     queryKey: ['settings', name],
@@ -3524,6 +3920,7 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
       api<T>(`/settings/${name}`, { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', name] })
+      invalidateConnectionTests(queryClient)
       // The scrobble card's library picker lists Kavita's libraries through this connection.
       if (name === 'kavita') {
         void queryClient.invalidateQueries({ queryKey: ['kavita-libraries'] })
@@ -3534,12 +3931,14 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
 }
 
 export function useTestConnectionSettings<T>(name: ConnectionName) {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: T) =>
       api<{ success: boolean }>(`/settings/${name}/test`, {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    onSettled: () => invalidateConnectionTests(queryClient),
   })
 }
 
@@ -3574,14 +3973,17 @@ export function useSaveIndexerSettings() {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer'] })
       void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
       void queryClient.invalidateQueries({ queryKey: ['indexer-indexers'] })
+      invalidateConnectionTests(queryClient)
     },
   })
 }
 
 export function useTestIndexerSettings() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: Partial<IndexerSettings>) =>
       api<{ success: boolean }>('/settings/indexer/test', { method: 'POST', body: JSON.stringify(value) }),
+    onSettled: () => invalidateConnectionTests(queryClient),
   })
 }
 
@@ -3649,7 +4051,11 @@ export interface ReleaseRowDto extends ReleaseDto {
 
 export interface ReleaseSearchResult {
   query: string
+  /** Every query the search sent, in order. */
+  tried?: string[]
   releases: ReleaseRowDto[]
+  /** Fewest seeders Maki takes a release with on its own; a manual grab ignores it. */
+  minSeeders?: number
 }
 
 export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {
@@ -3891,6 +4297,41 @@ export function useSaveLibrarySettings() {
   })
 }
 
+/** The background credit page scan, off unless an admin turns it on. */
+export interface CreditScanSettings {
+  enabled: boolean
+}
+
+export function useCreditScanSettings() {
+  return useQuery({
+    queryKey: ['settings', 'creditscan'],
+    queryFn: () => api<CreditScanSettings>('/settings/creditscan'),
+  })
+}
+
+export function useSaveCreditScanSettings() {
+  const queryClient = useQueryClient()
+  const key = ['settings', 'creditscan']
+  return useMutation({
+    mutationFn: (settings: CreditScanSettings) =>
+      api<CreditScanSettings>('/settings/creditscan', { method: 'PUT', body: JSON.stringify(settings) }),
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<CreditScanSettings>(key)
+      queryClient.setQueryData<CreditScanSettings>(key, settings)
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
+      // The Health page's Running now row comes and goes with it.
+      void queryClient.invalidateQueries({ queryKey: ['health-workspace', '/running'] })
+    },
+  })
+}
+
 /** One language whose volume and chapter words the parsers can read besides English. */
 export interface NameParsingLanguage {
   code: string
@@ -4075,9 +4516,11 @@ export interface DownloadSettings {
   removeCompleted: TorrentRemovalMode
   /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
   removeData: boolean
+  /** Look for a volume release before a new series downloads anything from its sources. */
+  volumeFirst: boolean
 }
 
-export type TorrentRemovalMode = 'never' | 'afterimport'
+export type TorrentRemovalMode = 'never' | 'afterimport' | 'afterseeding'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'
@@ -4197,6 +4640,19 @@ export function useRootFolders() {
   })
 }
 
+/** Sets the free space below which downloads into a root folder wait: null for the default, 0 for never. */
+export function useSetRootFolderMinFree() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, minFreeBytes }: { id: number; minFreeBytes: number | null }) =>
+      api<RootFolder>(`/rootfolder/${id}/minfree`, { method: 'PUT', body: JSON.stringify({ minFreeBytes }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
+    },
+  })
+}
+
 export function useAddRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -4225,6 +4681,41 @@ export function useBrowseFolders(path: string | null) {
     placeholderData: keepPreviousData,
     staleTime: 0,
     meta: { silent: true },
+  })
+}
+
+/** What pointing a root folder at `path` would find. `busy` and `warnings` are codes the client words. */
+export interface RootFolderPathCheck {
+  id: number
+  oldPath: string
+  path: string
+  series: number
+  foldersFound: number
+  foldersMissing: number
+  missingFolders: string[]
+  busy: ('downloads' | 'imports' | 'moves' | 'scans' | 'conversions')[]
+  warnings: ('kavitaPathMap' | 'downloadPathMap' | 'overlapsRoot')[]
+}
+
+/** The edit modal shows a refusal inline. */
+export function useCheckRootFolderPath() {
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolderPathCheck>(`/rootfolder/${id}/path/check`, { method: 'POST', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+  })
+}
+
+export function useChangeRootFolderPath() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolder>(`/rootfolder/${id}/path`, { method: 'PUT', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
   })
 }
 
@@ -4313,12 +4804,25 @@ export interface ScrobbleStatus {
   log: ScrobbleLogRow[]
 }
 
+export interface SystemStatus {
+  version: string
+  isDevBuild?: boolean
+  /** The version run before the latest upgrade; null on a fresh install. */
+  upgradedFrom?: string | null
+}
+
+const systemStatusQuery = {
+  queryKey: ['system-status'],
+  queryFn: () => api<SystemStatus>('/system/status'),
+  staleTime: Infinity,
+}
+
+export function useSystemStatus() {
+  return useQuery(systemStatusQuery)
+}
+
 export function useAppVersion() {
-  return useQuery({
-    queryKey: ['app-version'],
-    queryFn: async () => (await api<{ version: string }>('/system/status')).version,
-    staleTime: Infinity,
-  })
+  return useQuery({ ...systemStatusQuery, select: (s: SystemStatus) => s.version })
 }
 
 export function useScrobbleStatus(refetchInterval = 5000) {
@@ -4858,6 +5362,8 @@ export interface ActivitySeriesEvent {
 export interface ActivityDroppedSeries {
   seriesId: number | null
   title: string
+  /** When the series was set to Dropped, by hand or by the auto rule. */
+  droppedAt: string
   lastProgressAt: string
   maxChapter: number
   coverUrl: string | null
@@ -5060,7 +5566,8 @@ export interface LeaderboardRow {
   name: string | null
   level: number
   chaptersRead: number
-  currentStreak: number
+  /** Null when that user switched streaks off. */
+  currentStreak: number | null
 }
 
 export interface ProgressSettings {

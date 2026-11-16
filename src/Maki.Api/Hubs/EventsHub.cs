@@ -101,11 +101,20 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueUpdated", queueItem);
 
     /// <summary>
+    /// The dispatch order of a series' queued rows changed without a row's own state changing. Carries
+    /// only the series id: clients refetch the queue, which is already filtered per viewer.
+    /// </summary>
+    public virtual Task QueueReordered(int seriesId) =>
+        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueReordered", new { seriesId });
+
+    /// <summary>
     /// The download pause changed, by a person or because a resume time passed. Goes to everyone
     /// who may pause and resume (<see cref="MakiPermission.ManageDownloadQueue"/>), not just admins,
     /// so their pause controls do not wait for the poll. Rare enough to resolve the audience each time.
+    /// It carries nothing: the state names series and root folders each manager may or may not see,
+    /// so every client refetches <c>GET queue/pause</c> under its own scope.
     /// </summary>
-    public async Task QueuePauseChanged(object pause)
+    public async Task QueuePauseChanged()
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -122,7 +131,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             return;
         }
 
-        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", pause);
+        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", new { });
     }
 
     /// <summary>
@@ -245,6 +254,11 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// </summary>
     public Task ReadProgressChanged(int userId, int seriesId) =>
         hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("readProgressChanged", new { seriesId });
+
+    /// <summary>Progress of a queued Library bulk action, to the user who queued it. Errors are already
+    /// worded in that user's language.</summary>
+    public virtual Task SeriesBulkProgress(int userId, object status) =>
+        hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("seriesBulkProgress", status);
 
     /// <summary>Per-folder progress while a library import runs. Stage is a machine key (see
     /// <see cref="Maki.Api.Services.ImportStage"/>), not display text; this reaches every admin

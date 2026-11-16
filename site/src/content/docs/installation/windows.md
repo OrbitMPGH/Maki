@@ -8,7 +8,7 @@ The Windows app runs Maki on your own computer without Docker. It is the same pr
 ## Requirements
 
 - Windows 10 or 11, 64-bit.
-- Room for the MangaBaka metadata database: about 350 MB to download and 3.5 GB on disk, on top of your library.
+- Room for the MangaBaka metadata database: about 350 MB to download and 3.5 GB on disk, on top of your library. The first search by meaning adds about 110 MB for a memory-mapped copy of the search model.
 
 ## Install
 

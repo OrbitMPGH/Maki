@@ -63,7 +63,7 @@ export const MediumConfidence: Story = {
 export const RunningLate: Story = {
   args: { outlook: lateOutlook },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/^Later than expected\. We guessed /)).toBeVisible()
+    await expect(await canvas.findByText(/^Later than expected\. Maki guessed /)).toBeVisible()
   },
 }
 

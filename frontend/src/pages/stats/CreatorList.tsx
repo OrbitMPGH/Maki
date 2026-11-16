@@ -22,15 +22,11 @@ export function CreatorList({ creators, max = 8 }: { creators: CreatorReturnDto[
         return (
           <li className="stats-row" key={creator.name}>
             <div
-              className="stats-thumb"
+              className="stats-avatar"
               aria-hidden
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 fontWeight: 700,
                 fontSize: 13,
                 color: 'var(--ink-2)',

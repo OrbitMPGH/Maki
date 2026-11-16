@@ -114,7 +114,8 @@ public sealed class DumpDbBuilder : IDisposable
         string? animeEnd = null,
         string? relationshipsV2 = null,
         string? sequels = null,
-        string? publishedStartDate = null)
+        string? publishedStartDate = null,
+        int? popularityType = null)
     {
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -126,16 +127,17 @@ public sealed class DumpDbBuilder : IDisposable
                 popularity_global_current, popularity_global_history_1w,
                 popularity_global_history_1mo, popularity_global_history_3mo,
                 anime, has_anime, anime_start, anime_end,
-                relationships_v2, relationships_sequel, published_start_date)
+                relationships_v2, relationships_sequel, published_start_date, popularity_type_current)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
                 $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists,
                 $publishers, $rating, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $popularityHistory1W,
                 $popularityHistory1Mo, $popularityHistory3Mo,
                 $anime, $hasAnime, $anime_start, $anime_end,
-                $relationshipsV2, $sequels, $publishedStartDate)
+                $relationshipsV2, $sequels, $publishedStartDate, $popularityType)
             """;
         cmd.Parameters.AddWithValue("$publishedStartDate", (object?)publishedStartDate ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$popularityType", (object?)popularityType ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$relationshipsV2", (object?)relationshipsV2 ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$sequels", (object?)sequels ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$id", id);

@@ -137,8 +137,6 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
           <>
             <Progress
               value={progress * 100}
-              size="sm"
-              radius="xl"
               color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
               aria-label={achievement.name}
             />

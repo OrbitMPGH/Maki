@@ -1,20 +1,7 @@
-import { useState } from 'react'
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Card,
-  Group,
-  MultiSelect,
-  Select,
-  Stack,
-  Switch,
-  Text,
-  TextInput,
-  Tooltip,
-} from '@mantine/core'
+import { useState, type ReactNode } from 'react'
+import { Button, Group, Input, MultiSelect, SegmentedControl, Select, Stack, Switch, TextInput, VisuallyHidden } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '../../lib/icons'
+import { IconPlus, IconTrash } from '../../lib/icons'
 import {
   SERIES_TYPES,
   SERIES_TYPE_LABELS,
@@ -25,10 +12,15 @@ import {
   type ReadingProfile,
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
-import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { BACKGROUNDS, DEFAULT_PREFS, backgroundChoice, type BackgroundChoice, type ReaderPrefs } from '../../pages/reader/prefs'
+import TapZoneSettings from '../../pages/reader/TapZoneSettings'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { TagChip } from '../ui/TagChip'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { useNewControlMark } from '../../pages/settings/newSettings'
+import { NewSettingPill } from './NewSettingPill'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
@@ -95,6 +87,7 @@ export function ReadingProfilesSection() {
   const { data: profiles } = useReadingProfiles()
   const create = useCreateReadingProfile()
   const [creating, setCreating] = useState(false)
+  const mark = useNewControlMark('skip-recap', 'hide-credit-pages', 'progress-rail', 'page-backgrounds', 'tap-zone-layouts')
 
   return (
     <SettingsSection
@@ -106,41 +99,45 @@ export function ReadingProfilesSection() {
       actions={
         <Button
           size="xs"
-          variant="light"
+          variant="subtle"
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
         </Button>
       }
+      panelProps={{ p: 0 }}
     >
-
       {creating && (
-        <ProfileEditor
-          key="new"
-          // A profile's layout is a deliberate choice, so detection stays off until asked for.
-          initial={{ name: '', prefs: { ...DEFAULT_PREFS, autoWebtoon: false }, seriesTypes: [] }}
-          taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
-          submitLabel={t`Create`}
-          busy={create.isPending}
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) =>
-            create.mutate(input, {
-              onSuccess: () => {
-                setCreating(false)
-                notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
-              },
-            })
-          }
-        />
+        <SettingsRowsBlock>
+          <ProfileEditor
+            key="new"
+            // A profile's layout is a deliberate choice, so detection stays off until asked for.
+            initial={{ name: '', prefs: { ...DEFAULT_PREFS, autoWebtoon: false }, seriesTypes: [] }}
+            taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
+            submitLabel={t`Create`}
+            busy={create.isPending}
+            onCancel={() => setCreating(false)}
+            onSubmit={(input) =>
+              create.mutate(input, {
+                onSuccess: () => {
+                  setCreating(false)
+                  notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
+                },
+              })
+            }
+          />
+        </SettingsRowsBlock>
       )}
 
-      <Stack gap="xs" mt={creating ? 'md' : undefined}>
-        <DefaultRow />
-        {(profiles ?? []).map((profile) => (
-          <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
-        ))}
-      </Stack>
+      <div {...mark}>
+        <SettingsRows>
+          <DefaultRow />
+          {(profiles ?? []).map((profile) => (
+            <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
+          ))}
+        </SettingsRows>
+      </div>
     </SettingsSection>
   )
 }
@@ -156,33 +153,19 @@ function DefaultRow() {
   const name = t`Default`
 
   return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {name}
-            </Text>
-            <Badge size="xs" variant="outline" color="var(--neutral)">
-              <Trans>Everything else</Trans>
-            </Badge>
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
-            {summarize(prefs, renderLabel)}
-          </Text>
-        </div>
-        <ActionIcon
-          variant="subtle"
-          color="var(--neutral)"
-          onClick={() => setOpen((value) => !value)}
-          aria-label={open ? t`Collapse` : t`Edit profile`}
-          disabled={!settings}
-        >
-          {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-        </ActionIcon>
-      </Group>
-
-      {open && settings && (
+    <SettingsRow
+      title={name}
+      chips={
+        <TagChip size="sm">
+          <Trans>Everything else</Trans>
+        </TagChip>
+      }
+      summary={summarize(prefs, renderLabel)}
+      opened={open}
+      onToggle={settings ? () => setOpen((value) => !value) : undefined}
+      lazy
+    >
+      {settings && (
         <ProfileEditor
           fixed
           initial={{ name, prefs, seriesTypes: [] }}
@@ -198,7 +181,7 @@ function DefaultRow() {
           }
         />
       )}
-    </Card>
+    </SettingsRow>
   )
 }
 
@@ -212,65 +195,37 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
   const { name } = profile
 
   return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {profile.name}
-            </Text>
-            {profile.seriesTypes.map((type) => (
-              <Badge key={type} size="xs" variant="light">
-                {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
-              </Badge>
-            ))}
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
-            {summarize(profile.prefs, renderLabel)}
-          </Text>
-        </div>
-        <Group gap={4} wrap="nowrap">
-          <Tooltip label={t`Delete profile`} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color="var(--danger)"
-              loading={remove.isPending}
-              onClick={() => setConfirming(true)}
-              aria-label={t`Delete profile`}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            onClick={() => setOpen((value) => !value)}
-            aria-label={open ? t`Collapse` : t`Edit profile`}
-          >
-            {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </ActionIcon>
-        </Group>
-      </Group>
-
-      {open && (
-        <ProfileEditor
-          // Remounted on open rather than kept alive hidden, so reopening after a cancel starts
-          // from the saved profile instead of the abandoned edit.
-          initial={profile}
-          // Types claimed elsewhere are removed from the picker so a save can't fail on a clash
-          // the user had no way to see.
-          taken={all.filter((p) => p.id !== profile.id).flatMap((p) => p.seriesTypes)}
-          submitLabel={t`Save`}
-          busy={update.isPending}
-          onCancel={() => setOpen(false)}
-          onSubmit={(input) =>
-            update.mutate(
-              { id: profile.id, ...input },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
-      )}
+    <SettingsRow
+      title={profile.name}
+      chips={profile.seriesTypes.map((type) => (
+        <TagChip key={type} size="sm">
+          {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
+        </TagChip>
+      ))}
+      summary={summarize(profile.prefs, renderLabel)}
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      // Mounted only while open, so reopening after a cancel starts from the saved profile instead
+      // of the abandoned edit.
+      lazy
+    >
+      <ProfileEditor
+        initial={profile}
+        // Types claimed elsewhere are removed from the picker so a save can't fail on a clash
+        // the user had no way to see.
+        taken={all.filter((p) => p.id !== profile.id).flatMap((p) => p.seriesTypes)}
+        submitLabel={t`Save`}
+        busy={update.isPending}
+        onCancel={() => setOpen(false)}
+        onDelete={() => setConfirming(true)}
+        deleting={remove.isPending}
+        onSubmit={(input) =>
+          update.mutate(
+            { id: profile.id, ...input },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+          )
+        }
+      />
 
       <ConfirmDialog
         opened={confirming}
@@ -289,7 +244,27 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
       >
         <Trans>The profile and its reader settings are removed. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Card>
+    </SettingsRow>
+  )
+}
+
+function Choice({
+  label,
+  description,
+  value,
+  onChange,
+  data,
+}: {
+  label: string
+  description?: string
+  value: string
+  onChange: (value: string) => void
+  data: { value: string; label: ReactNode }[]
+}) {
+  return (
+    <Input.Wrapper label={label} description={description}>
+      <SegmentedControl aria-label={label} fullWidth mt={4} value={value} onChange={onChange} data={data} />
+    </Input.Wrapper>
   )
 }
 
@@ -301,6 +276,8 @@ function ProfileEditor({
   busy,
   onSubmit,
   onCancel,
+  onDelete,
+  deleting,
 }: {
   /** The Default row: no name to edit and no series types to claim. */
   fixed?: boolean
@@ -311,6 +288,9 @@ function ProfileEditor({
   busy: boolean
   onSubmit: (input: ReadingProfileInput) => void
   onCancel: () => void
+  /** Saved profiles only: puts Delete at the start of the editor's footer. */
+  onDelete?: () => void
+  deleting?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -325,7 +305,7 @@ function ProfileEditor({
   )
 
   return (
-    <Stack gap="sm" mt="sm">
+    <Stack gap="sm">
       {!fixed && (
         <>
           <TextInput
@@ -353,40 +333,60 @@ function ProfileEditor({
       )}
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Layout`}
-          allowDeselect={false}
           value={prefs.mode}
-          onChange={(value) => value && set({ mode: value as ReaderPrefs['mode'] })}
+          onChange={(value) => set({ mode: value as ReaderPrefs['mode'] })}
           data={[
-            { value: 'paged', label: t`Single page` },
-            { value: 'double', label: t`Two pages side by side` },
-            { value: 'vertical', label: t`Continuous vertical (webtoon)` },
+            { value: 'paged', label: t`Single` },
+            { value: 'double', label: t`Double` },
+            { value: 'vertical', label: t`Continuous` },
           ]}
         />
-        <Select
+        <Choice
           label={t`Direction`}
-          allowDeselect={false}
           value={prefs.direction}
-          onChange={(value) => value && set({ direction: value as ReaderPrefs['direction'] })}
+          onChange={(value) => set({ direction: value as ReaderPrefs['direction'] })}
           data={[
-            { value: 'rtl', label: t`Right to left (manga)` },
-            { value: 'ltr', label: t`Left to right` },
+            {
+              value: 'rtl',
+              label: (
+                <>
+                  <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
+                  <span aria-hidden>
+                    {'← '}
+                    {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
+                  </span>
+                </>
+              ),
+            },
+            {
+              value: 'ltr',
+              label: (
+                <>
+                  <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
+                  <span aria-hidden>
+                    {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
+                    {' →'}
+                  </span>
+                </>
+              ),
+            },
           ]}
         />
-        <Select
-          label={t`Page fit`}
-          allowDeselect={false}
-          value={prefs.fit}
-          onChange={(value) => value && set({ fit: value as ReaderPrefs['fit'] })}
-          data={[
-            { value: 'height', label: t`Fit height` },
-            { value: 'width', label: t`Fit width` },
-            { value: 'screen', label: t`Fit screen` },
-            { value: 'original', label: t`Original size (1:1)` },
-          ]}
-        />
-        {prefs.fit === 'original' && (
+      </Group>
+      <Choice
+        label={t`Page fit`}
+        value={prefs.fit}
+        onChange={(value) => set({ fit: value as ReaderPrefs['fit'] })}
+        data={[
+          { value: 'height', label: t`Fit height` },
+          { value: 'width', label: t`Fit width` },
+          { value: 'screen', label: t`Fit screen` },
+          { value: 'original', label: t`Original size (1:1)` },
+        ]}
+      />
+      {prefs.fit === 'original' && (
           <SettingsNumberInput
             label={t`Scale`}
             suffix="%"
@@ -397,19 +397,24 @@ function ProfileEditor({
             onChange={(value) => set({ scale: value })}
           />
         )}
-      </Group>
 
       <Group grow align="flex-start">
         <Select
-          label={t`Background`}
-          allowDeselect={false}
-          value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-          onChange={(value) =>
-            set({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
+          label={
+            <>
+              {t`Background`}
+              <NewSettingPill id="page-backgrounds" />
+            </>
           }
+          allowDeselect={false}
+          value={backgroundChoice(prefs.background)}
+          onChange={(value) => set({ background: BACKGROUNDS[(value as BackgroundChoice | null) ?? 'dark'] })}
           data={[
             { value: 'dark', label: t`Dark` },
             { value: 'oled', label: t`OLED black` },
+            { value: 'white', label: t`White` },
+            { value: 'grey', label: t`Grey` },
+            { value: 'auto', label: t`Auto` },
           ]}
         />
         <SettingsNumberInput
@@ -421,18 +426,21 @@ function ProfileEditor({
           value={prefs.dim}
           onChange={(value) => set({ dim: value })}
         />
-        <Select
-          label={t`Colour filter`}
-          allowDeselect={false}
-          value={prefs.filter}
-          onChange={(value) => value && set({ filter: value as ReaderPrefs['filter'] })}
-          data={[
-            { value: 'none', label: t`None` },
-            { value: 'grayscale', label: t`Grayscale` },
-            { value: 'sepia', label: t`Sepia` },
-            { value: 'invert', label: t`Invert` },
-          ]}
-        />
+      </Group>
+
+      <Choice
+        label={t`Colour filter`}
+        value={prefs.filter}
+        onChange={(value) => set({ filter: value as ReaderPrefs['filter'] })}
+        data={[
+          { value: 'none', label: t`None` },
+          { value: 'grayscale', label: t`Gray` },
+          { value: 'sepia', label: t`Sepia` },
+          { value: 'invert', label: t`Invert` },
+        ]}
+      />
+
+      <Group grow align="flex-start">
         <SettingsNumberInput
           label={t`Page gap`}
           description={t`Continuous layout only.`}
@@ -443,7 +451,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead.`}
+          description={t`Paged layouts only. Pages fetched ahead.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -452,27 +460,25 @@ function ProfileEditor({
       </Group>
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Wide pages`}
           description={t`Single page layout only.`}
-          allowDeselect={false}
           value={prefs.splitWide}
-          onChange={(value) => value && set({ splitWide: value as ReaderPrefs['splitWide'] })}
+          onChange={(value) => set({ splitWide: value as ReaderPrefs['splitWide'] })}
           data={[
-            { value: 'off', label: t`Show whole` },
-            { value: 'split', label: t`Split into two pages` },
-            { value: 'rotate', label: t`Rotate to fit` },
+            { value: 'off', label: t`Whole` },
+            { value: 'split', label: t`Split` },
+            { value: 'rotate', label: t`Rotate` },
           ]}
         />
       </Group>
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Enhance`}
           description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry.`}
-          allowDeselect={false}
           value={prefs.enhance}
-          onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
+          onChange={(value) => set({ enhance: value as ReaderPrefs['enhance'] })}
           data={ENHANCE_LEVELS.map((level) => ({ value: level.value, label: renderLabel(level.label) }))}
         />
         {prefs.enhance !== 'off' && (
@@ -504,22 +510,20 @@ function ProfileEditor({
         />
       )}
       {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
-        <Select
+        <Choice
           label={t`Fallback`}
           description={t`Shown on this device until the server's page is ready, and whenever the server can't be used.`}
-          allowDeselect={false}
           value={prefs.enhanceFallback}
-          onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+          onChange={(value) => set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
           data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
         />
       )}
       {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
-        <Select
+        <Choice
           label={t`Upscale progress`}
           description={t`How a page waiting for the server shows it while the reader's bars are hidden.`}
-          allowDeselect={false}
           value={prefs.enhanceProgress}
-          onChange={(value) => value && set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+          onChange={(value) => set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
           data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
         />
       )}
@@ -555,10 +559,53 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
-        label={t`Tap zones (click the page edges to turn), paged layouts only`}
+        label={
+          <>
+            {t`Skip the recap of the previous chapter`}
+            <NewSettingPill id="skip-recap" />
+          </>
+        }
+        description={t`Continuous layout only. Off shows a Skip recap button instead.`}
+        checked={prefs.autoSkipRecap}
+        onChange={(e) => set({ autoSkipRecap: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={
+          <>
+            {t`Hide credit pages`}
+            <NewSettingPill id="hide-credit-pages" />
+          </>
+        }
+        description={t`Leave out credit and recruitment pages that repeat at the start or end of chapters.`}
+        checked={prefs.hideCredits}
+        onChange={(e) => set({ hideCredits: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={
+          <>
+            {t`Progress rail`}
+            <NewSettingPill id="progress-rail" />
+          </>
+        }
+        description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
+        checked={prefs.progressRail}
+        onChange={(e) => set({ progressRail: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={
+          <>
+            {t`Tap zones`}
+            <NewSettingPill id="tap-zone-layouts" />
+          </>
+        }
+        description={t`Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom.`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
+      {prefs.tapZones && <TapZoneSettings prefs={prefs} onPrefs={set} vertical={prefs.mode === 'vertical'} preview />}
       <Switch
         size="sm"
         label={t`Show page number`}
@@ -585,19 +632,35 @@ function ProfileEditor({
         onChange={(e) => set({ notesBeside: e.currentTarget.checked })}
       />
 
-      <Group justify="flex-end" gap="xs">
-        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button
-          size="xs"
-          loading={busy}
-          disabled={!fixed && name.trim().length === 0}
-          onClick={() => onSubmit({ name: name.trim(), prefs, seriesTypes: types })}
-        >
-          {submitLabel}
-        </Button>
-      </Group>
+      <div className="settings-row-foot">
+        {onDelete ? (
+          <Button
+            size="xs"
+            variant="subtle"
+            color="var(--danger)"
+            leftSection={<IconTrash size={16} />}
+            loading={deleting}
+            onClick={onDelete}
+          >
+            <Trans>Delete profile</Trans>
+          </Button>
+        ) : (
+          <span />
+        )}
+        <Group gap="xs">
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            size="xs"
+            loading={busy}
+            disabled={!fixed && name.trim().length === 0}
+            onClick={() => onSubmit({ name: name.trim(), prefs, seriesTypes: types })}
+          >
+            {submitLabel}
+          </Button>
+        </Group>
+      </div>
     </Stack>
   )
 }

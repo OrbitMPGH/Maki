@@ -65,6 +65,10 @@ Series in incognito, at either level, are never sent to a tracker.
 Progress only moves forward. Maki never lowers a tracker's progress and never demotes a completed
 entry.
 
+Your Maki reading status goes along with **Scrobble reading**: On hold is sent as paused, Dropped as
+dropped, and Completed as completed with the tracker's full chapter count, even when the tracker
+counts extras you skipped. A MangaBaka entry you marked as rereading stays rereading.
+
 Each block also has an **Import ratings** button, enabled once the tracker is connected, which brings
 ratings from the tracker into Maki. Imported scores always become final ratings.
 

@@ -131,7 +131,6 @@ export function OfflineHome({
       <EmptyState
         mood="asleep"
         title={t`You're offline`}
-        description={t`What's new on the server can wait. These chapters are saved on this device and ready to read.`}
         actionLabel={t`Try again`}
         onAction={onRetry}
       />

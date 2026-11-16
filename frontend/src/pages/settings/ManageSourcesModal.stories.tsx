@@ -49,7 +49,7 @@ export const SearchNarrowsTheList: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'comick')
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Search sources' }), 'comick')
     await waitFor(() => expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull())
     await expect(await dialog.findByRole('switch', { name: 'Enable Comick' })).toBeInTheDocument()
   },
@@ -59,8 +59,8 @@ export const SearchWithNoMatches: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'zzzz')
-    await expect(await dialog.findByText('No sources match. Clear a filter or try another name.')).toBeVisible()
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Search sources' }), 'zzzz')
+    await expect(await dialog.findByText('No sources match.')).toBeVisible()
   },
 }
 
@@ -157,7 +157,7 @@ export const NothingEnabled: Story = {
   },
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
-    await expect(await dialog.findByText('Nothing enabled. Turn a source on to rank it.')).toBeVisible()
+    await expect(await dialog.findByText('Nothing enabled.')).toBeVisible()
   },
 }
 
@@ -232,14 +232,14 @@ export const SetUpASite: Story = {
     await userEvent.type(body.getByRole('textbox', { name: /Chapter page/ }), 'https://quietpen.example/blue-chapter-2/')
     await userEvent.click(body.getByRole('button', { name: 'Read the site' }))
     await expect(await body.findByText('Read Blue Hour directly.')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await expect(await body.findByText('Ch. 2')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await expect(await body.findByText('40 pages on the sample chapter.')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await userEvent.click(await body.findByRole('button', { name: 'Find search' }))
     await expect(await body.findByRole('radio', { name: /Use the site's search/ })).toBeChecked()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeDisabled())
     await userEvent.click(body.getByRole('button', { name: 'Test' }))
     await expect(await body.findByText('Every check passed')).toBeVisible()
@@ -275,4 +275,15 @@ export const ReaderSeesNoAddButton: Story = {
 
 export const Closed: Story = {
   args: { opened: false },
+}
+
+export const ScanlationGroupsFromTheMangaDexRow: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Scanlation groups for MangaDex' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Preferred groups')).toBeVisible()
+    await expect(await body.findByText('Tidewater Scans')).toBeVisible()
+    await expect(dialog.queryByRole('button', { name: 'Scanlation groups for Comick' })).toBeNull()
+  },
 }

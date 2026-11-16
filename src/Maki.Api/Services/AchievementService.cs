@@ -112,7 +112,14 @@ public class AchievementService(
             return [];
         }
 
-        NotifyUnlocks(userId, unlocked);
+        // Read before NotifyLevelAsync seeds it. Unseeded means a first evaluation, or the first one
+        // since progression was switched back on: everything earned so far lands at once, and
+        // announcing it would bury the inbox, so it is recorded silently.
+        if (int.TryParse(await userSettings.GetAsync(userId, SettingKeys.ProgressLastNotifiedLevel, ct), out _))
+        {
+            NotifyUnlocks(userId, unlocked);
+        }
+
         await NotifyLevelAsync(
             userId, snapshot, held.Select(h => h.Tier).Concat(unlocked.Select(u => u.Tier)), ct);
 
@@ -220,6 +227,14 @@ public class AchievementService(
             gate.Release();
         }
     }
+
+    /// <summary>
+    /// Makes the next evaluation a silent one again, as on the very first: called when progression is
+    /// switched back on, since nothing was evaluated while it was off and the backlog would otherwise
+    /// arrive as one notification per achievement.
+    /// </summary>
+    public Task ResetNotificationBaselineAsync(int userId, CancellationToken ct = default) =>
+        userSettings.SetAsync(userId, SettingKeys.ProgressLastNotifiedLevel, null, ct);
 
     /// <summary>
     /// The master switch. Checked here rather than at each call site so that turning the feature off

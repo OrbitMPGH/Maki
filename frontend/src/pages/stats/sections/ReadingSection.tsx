@@ -1,5 +1,6 @@
 import { Skeleton, SegmentedControl, SimpleGrid, Stack, Group } from '@mantine/core'
 import { BarChart } from '@mantine/charts'
+import { statsChartProps, statsGridProps, statsSeriesColor, statsXAxisProps } from '../chartTheme'
 import {
   IconBook2,
   IconBookmark,
@@ -17,6 +18,7 @@ import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { FigureStrip, type Figure } from '../../../components/ui/FigureStrip'
 import { Panel } from '../../../components/ui/Panel'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
 import { SectionHeader } from '../../../components/ui/SectionHeader'
 import {
   formatCalendarDate,
@@ -337,10 +339,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
         <div className="stats-grid-main" data-empty={timelineEmpty || undefined}>
           <Panel p="md">
             <Group justify="space-between" align="flex-start" mb={timelineEmpty ? 4 : 'sm'}>
-              <p className="stats-panel-title">
-                <IconCalendarStats size={16} style={{ color: 'var(--brand)' }} />
-                {t`Day by day`}
-              </p>
+              <PanelTitle icon={IconCalendarStats}>{t`Day by day`}</PanelTitle>
               <SegmentedControl
                 aria-label={t`Day by day`}
                 size="xs"
@@ -369,23 +368,21 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 h={240}
                 data={timelineData}
                 dataKey="bucket"
-                tickLine="none"
-                gridAxis="y"
+                {...statsChartProps}
+                gridProps={statsGridProps}
+                xAxisProps={statsXAxisProps(timelineData.length)}
                 unit={metric === 'time' ? t`h` : undefined}
                 series={
                   metric === 'chapters'
-                    ? [{ name: 'Chapters', label: t`Chapters`, color: 'var(--brand)' }]
-                    : [{ name: 'Hours', label: t`Hours`, color: 'var(--brand)' }]
+                    ? [{ name: 'Chapters', label: t`Chapters`, color: statsSeriesColor.you }]
+                    : [{ name: 'Hours', label: t`Hours`, color: statsSeriesColor.you }]
                 }
               />
             )}
           </Panel>
 
           <Panel p="md">
-            <p className="stats-panel-title">
-              <IconBookmark size={16} style={{ color: 'var(--brand)' }} />
-              {t`Mid-way`}
-            </p>
+            <PanelTitle icon={IconBookmark}>{t`Mid-way`}</PanelTitle>
             <MidwayList items={midway} emptyText={t`Nothing sits half read right now.`} />
           </Panel>
         </div>

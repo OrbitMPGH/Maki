@@ -1,40 +1,29 @@
-import { ActionIcon, Group, Tooltip } from '@mantine/core'
-import type { MouseEvent } from 'react'
+import { Group, Tooltip } from '@mantine/core'
+import type { MouseEvent, ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { MetadataLink } from '../api/types'
+import { siteInfo } from '../lib/metadataSites'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
 
-/** Display label + color for each known metadata site key. Colors are third-party brand colors, intentionally off-token. */
-const SITES: Record<string, { label: string; short: string; color: string }> = {
-  mangabaka: { label: 'MangaBaka', short: 'MB', color: 'orange' },
-  anilist: { label: 'AniList', short: 'AL', color: 'blue' },
-  myanimelist: { label: 'MyAnimeList', short: 'MAL', color: 'indigo' },
-  mangaupdates: { label: 'MangaUpdates', short: 'MU', color: 'grape' },
-  mangadex: { label: 'MangaDex', short: 'MD', color: 'orange.7' },
-  kitsu: { label: 'Kitsu', short: 'KI', color: 'yellow' },
-}
-
-function siteInfo(site: string) {
-  return SITES[site] ?? { label: site, short: site.slice(0, 2).toUpperCase(), color: 'gray' }
-}
-
 /**
- * Clickable external metadata links (MangaBaka / AniList / MAL / …), rendered as
- * small icon buttons. Each opens the site in a new tab. Rendered as buttons (not
- * anchors) so it can sit inside a clickable card without invalid anchor nesting;
- * the click is stopped from bubbling to the parent. `compact` renders smaller
- * icons for grid cards.
+ * Clickable external metadata links (MangaBaka / AniList / MAL / …), one bordered chip per site
+ * with the site's score inside when there is one. Each opens the site in a new tab. Rendered as
+ * buttons (not anchors) so it can sit inside a clickable card without invalid anchor nesting; the
+ * click is stopped from bubbling to the parent.
  */
 export function MetadataLinks({
   links,
-  compact = false,
+  extra,
 }: {
   links: MetadataLink[]
-  compact?: boolean
+  /** Accepted for old call sites; chips are the only rendering. */
+  chips?: boolean
+  /** Trailing items in the same row, such as a rated site that has no link. */
+  extra?: ReactNode
 }) {
   const { t } = useLingui()
 
-  if (links.length === 0) return null
+  if (links.length === 0 && !extra) return null
 
   const open = (e: MouseEvent, url: string) => {
     e.preventDefault()
@@ -43,33 +32,29 @@ export function MetadataLinks({
   }
 
   return (
-    <Group gap={compact ? 4 : 'xs'} wrap="wrap">
+    <Group gap={6} wrap="wrap" align="center">
       {links.map((link) => {
         const info = siteInfo(link.site)
         const { label } = info
+        const score = link.score != null ? String(link.score) : null
+        const tip = link.votes != null ? t`${label}, ${link.votes.toLocaleString()} votes` : label
         return (
-          <Tooltip key={link.site} label={t`Open on ${label}`} withArrow openDelay={300}>
-            <ActionIcon
-              size={compact ? 'sm' : 'md'}
-              variant="light"
-              color={info.color}
+          <Tooltip key={link.site} label={tip} withArrow openDelay={300} zIndex={1001}>
+            <button
+              type="button"
+              className="site-chip"
+              data-bare={score ? undefined : true}
               role="link"
-              tabIndex={0}
-              aria-label={t`Open on ${label}`}
+              aria-label={score ? t`Open on ${label}, rated ${score}` : t`Open on ${label}`}
               onClick={(e) => open(e, link.url)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  window.open(link.url, '_blank', 'noopener,noreferrer')
-                }
-              }}
             >
-              <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 12 : 14} />
-            </ActionIcon>
+              <MetadataSiteIcon site={link.site} monogram={info.short} size={15} />
+              {score && <span className="tnum">{score}</span>}
+            </button>
           </Tooltip>
         )
       })}
+      {extra}
     </Group>
   )
 }

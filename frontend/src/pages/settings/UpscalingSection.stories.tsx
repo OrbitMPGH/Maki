@@ -3,7 +3,7 @@ import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api } from '../../../.storybook/mocks/api'
-import { upscalingFailed, upscalingOff } from '../../../.storybook/mocks/settings/data'
+import { upscalingFailed, upscalingNoJpegXl, upscalingOff, upscalingPrepare } from '../../../.storybook/mocks/settings/data'
 import { UpscalingSection } from './UpscalingSection'
 
 const meta = {
@@ -43,6 +43,19 @@ export const ReadyAndDownloading: Story = {
       'href',
       'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md',
     )
+  },
+}
+
+export const PrepareAhead: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingPrepare))),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Prepare chapters ahead/ })).toBeChecked())
+    await expect(await canvas.findByText('312 MB of 1,024 MB, 912 pages')).toBeVisible()
+    await expect(await canvas.findByText(/9 chapters held, 812 MB of 4,096 MB/)).toBeVisible()
+    await expect(canvas.getByText(/38 pages still to make/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Series per reader' })).toHaveValue('8'))
   },
 }
 
@@ -92,5 +105,29 @@ export const TestSpeed: Story = {
     await waitFor(() => expect(buttons[0]).toBeEnabled())
     await userEvent.click(buttons[0])
     await expect(await canvas.findByText('5.5 s per sample page')).toBeVisible()
+  },
+}
+
+export const JpegXlOffMarksUnsaved: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const toggle = await canvas.findByRole('switch', { name: /JPEG XL for colour pages/ })
+    await waitFor(() => expect(toggle).toBeChecked())
+    await userEvent.click(toggle)
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await waitFor(() => expect(toggle).not.toBeChecked())
+  },
+}
+
+export const JpegXlUnavailable: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingNoJpegXl))),
+  },
+  play: async ({ canvas }) => {
+    const toggle = await canvas.findByRole('switch', { name: /JPEG XL for colour pages/ })
+    await waitFor(() => {
+      expect(toggle).toBeDisabled()
+      expect(toggle).not.toBeChecked()
+    })
+    await expect(canvas.getByText(/this build of Maki has no JPEG XL library/)).toBeVisible()
   },
 }

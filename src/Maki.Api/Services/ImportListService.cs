@@ -508,6 +508,14 @@ public class ImportListService(
                 Shortlisted: shortlisted, ShortlistFull: shortlistFull);
         }
 
+        // A preference that still resolves is a choice; unset (or a folder since taken away) leaves
+        // each series to the root folder rules.
+        int? chosenRoot = prefs.RootFolderId is int preferred && rootFolderId == preferred ? preferred : null;
+        IReadOnlyCollection<int>? usableRoots = !canAdd || user.AllRootFolders
+            ? null
+            : await db.UserRootFolders.AsNoTracking().Where(g => g.UserId == user.Id).Select(g => g.RootFolderId)
+                .ToListAsync(ct);
+
         var note = canAdd
             ? null
             : catalog.GetFor(await locales.DefaultAsync(ct), "notify.importList.requestNote",
@@ -518,7 +526,7 @@ public class ImportListService(
             try
             {
                 var outcome = canAdd
-                    ? await AddAsync(user, tracker, prefs, rootFolderId!.Value, candidate, ct)
+                    ? await AddAsync(user, tracker, prefs, chosenRoot, usableRoots, candidate, ct)
                     : await RequestAsync(user, candidate, note!, ct);
 
                 switch (outcome)
@@ -596,8 +604,8 @@ public class ImportListService(
     private enum Outcome { Added, Requested, Present, Unmatched, Removed, Failed }
 
     private async Task<Outcome> AddAsync(
-        UserInfo user, IScrobbleTracker tracker, ImportListTrackerPrefs prefs, int rootFolderId,
-        Candidate candidate, CancellationToken ct)
+        UserInfo user, IScrobbleTracker tracker, ImportListTrackerPrefs prefs, int? rootFolderId,
+        IReadOnlyCollection<int>? usableRoots, Candidate candidate, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var creation = scope.ServiceProvider.GetRequiredService<SeriesCreationService>();
@@ -608,7 +616,8 @@ public class ImportListService(
             matchLane: SourceMatchLane.Background,
             attributedUserId: user.Id,
             addedFrom: AddedFrom,
-            clientMutationId: MutationId(user.Id, tracker.Name, candidate.Entry.RemoteId));
+            clientMutationId: MutationId(user.Id, tracker.Name, candidate.Entry.RemoteId),
+            usableRootFolderIds: usableRoots);
 
         if (result.Series is not null)
         {

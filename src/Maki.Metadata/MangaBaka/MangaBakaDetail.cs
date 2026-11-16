@@ -31,7 +31,8 @@ public record ReaderCohortHint(double Score, double Baseline, int Readers);
 
 /// <summary>
 /// Rich detail for one MangaBaka series, used by the Discover detail card. Everything here
-/// comes from the local dump; MAL reviews are fetched separately (lazily) by scraping MAL.
+/// comes from the local dump; reviews are fetched separately (lazily) from MAL, AniList and Kitsu
+/// by the ids carried here.
 /// </summary>
 public record MangaBakaDetail(
     string ProviderId,
@@ -56,6 +57,8 @@ public record MangaBakaDetail(
     IReadOnlyList<MangaBakaTag> Tags,
     IReadOnlyList<MetadataLink> Links,
     int? MalId,
+    int? AniListId,
+    int? KitsuId,
     bool HasAnime,
     string? AnimeStart,
     string? AnimeEnd,
@@ -68,7 +71,9 @@ public record MangaBakaDetail(
     /// </summary>
     ReaderCohortHint? ReaderHint = null,
     /// <summary>Filled by the controller, never the store.</summary>
-    CatalogueAnimeResumeDto? AnimeResume = null);
+    CatalogueAnimeResumeDto? AnimeResume = null,
+    /// <summary>Filled by the controller from <see cref="ScoreStandings"/>; null when unrated.</summary>
+    ScoreStanding? ScoreStanding = null);
 
 /// <summary>
 /// One dump row reduced to what a taste profile aggregates over. Tags carry their bucket and

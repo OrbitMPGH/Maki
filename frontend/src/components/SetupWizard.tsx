@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
-  Anchor,
   Button,
   Collapse,
   Group,
@@ -64,6 +63,8 @@ import { IndexerForm } from './settings/IndexerForm'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { MetadataDumpStatus } from './MetadataDumpProgress'
+import { StatusDot } from './ui/StatusDot'
+import { StepStrip } from './ui/StepStrip'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
@@ -101,6 +102,10 @@ function SettingRow({
   )
 }
 
+function SetupPanel({ children }: { children: ReactNode }) {
+  return <div className="setup-panel">{children}</div>
+}
+
 function WelcomeStep() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
@@ -111,7 +116,7 @@ function WelcomeStep() {
   const [languageChoice, setLanguageChoice] = useState<string | null>(null)
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Language</Trans>}
         control={
@@ -136,7 +141,7 @@ function WelcomeStep() {
       >
         <AppearancePicker />
       </SettingRow>
-    </>
+    </SetupPanel>
   )
 }
 
@@ -177,28 +182,35 @@ function LibraryStep() {
 
   return (
     <>
-      <SettingRow
-        label={<Trans>Library folders</Trans>}
-        description={
-          <Trans>Where your manga is stored. If you use Kavita, point it at the same place.</Trans>
-        }
-      >
-        <Stack gap="xs">
+      <section className="setup-section">
+        <Text className="setup-section-title">
+          <IconFolder size={16} aria-hidden />
+          <Trans>Library folders</Trans>
+        </Text>
+        <Text className="setup-section-description">
+          <Trans>If you use Kavita, point it at the same place.</Trans>
+        </Text>
+        <SetupPanel>
           {rootFolders?.map((f) => {
             const free = f.freeSpace != null ? formatBytes(f.freeSpace) : null
             return (
               <div key={f.id} className="setup-folder" data-broken={!f.accessible || undefined}>
-                <IconFolder size={18} className="setup-folder-icon" />
                 <div className="setup-folder-text">
                   <Text className="setup-folder-path">{f.path}</Text>
-                  <Text className="setup-folder-meta">
-                    {!f.accessible ? (
-                      <Trans>Maki can't reach this folder</Trans>
-                    ) : free ? (
+                  {f.accessible && free && (
+                    <Text className="setup-folder-meta tnum">
                       <Trans>{free} free</Trans>
-                    ) : null}
-                  </Text>
+                    </Text>
+                  )}
+                  {!f.accessible && (
+                    <Text className="setup-folder-meta">
+                      <Trans>Maki can't reach this folder</Trans>
+                    </Text>
+                  )}
                 </div>
+                <StatusDot tone={f.accessible ? 'ok' : 'danger'}>
+                  {f.accessible ? <Trans>Reachable</Trans> : <Trans>Unreachable</Trans>}
+                </StatusDot>
                 <ActionIcon
                   variant="subtle"
                   color="var(--danger)"
@@ -210,7 +222,7 @@ function LibraryStep() {
               </div>
             )
           })}
-          <Group gap="xs">
+          <div className="setup-add-folder">
             <TextInput
               aria-label={t`Folder path`}
               placeholder={t`C:\\Manga or /library`}
@@ -226,9 +238,9 @@ function LibraryStep() {
             <Button onClick={add} loading={addFolder.isPending} disabled={!newPath.trim()}>
               <Trans>Add folder</Trans>
             </Button>
-          </Group>
-        </Stack>
-      </SettingRow>
+          </div>
+        </SetupPanel>
+      </section>
 
       <FolderBrowserModal
         opened={browsing}
@@ -261,15 +273,18 @@ function LibraryStep() {
         </Stack>
       </ConfirmDialog>
 
-      <SettingRow
-        label={<Trans>Existing folders on import</Trans>}
-      >
+      <section className="setup-section">
+        <Text className="setup-section-title">
+          <IconArrowRight size={16} aria-hidden />
+          <Trans>Existing folders on import</Trans>
+        </Text>
+        <SetupPanel>
         <Radio.Group
           aria-label={t`Existing folders on import`}
           value={settings?.folderNamingMode ?? 'rename'}
           onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
         >
-          <Stack gap="xs">
+          <Stack gap={0}>
             <Radio.Card value="rename" className="setup-choice">
               <Group wrap="nowrap" align="flex-start" gap="sm">
                 <Radio.Indicator />
@@ -311,8 +326,10 @@ function LibraryStep() {
             </Radio.Card>
           </Stack>
         </Radio.Group>
-      </SettingRow>
+        </SetupPanel>
+      </section>
 
+      <SetupPanel>
       <SettingRow
         label={<Trans>Write ComicInfo.xml into imported files</Trans>}
         description={
@@ -336,6 +353,7 @@ function LibraryStep() {
           />
         }
       />
+      </SetupPanel>
     </>
   )
 }
@@ -349,7 +367,7 @@ function DiscoveryStep() {
   const saveDiscover = useSaveDiscoverSettings()
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Local MangaBaka database</Trans>}
         description={
@@ -381,7 +399,7 @@ function DiscoveryStep() {
           onChange={(rating) => saveDiscover.mutate(rating)}
         />
       </SettingRow>
-    </>
+    </SetupPanel>
   )
 }
 
@@ -403,7 +421,7 @@ function DownloadsStep() {
   }, [languages, order])
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Languages to download</Trans>}
         description={
@@ -453,14 +471,14 @@ function DownloadsStep() {
           />
         }
       />
-    </>
+    </SetupPanel>
   )
 }
 
 interface ServiceSpec {
   name: ConnectionName
   title: string
-  description: string
+  description?: string
   /** Left out for the indexer, which has its own form. */
   fields?: ConnectionFields
 }
@@ -483,7 +501,6 @@ function useServices(): ServiceSpec[] {
     {
       name: 'downloadclient',
       title: t`Download client`,
-      description: t`Downloads what the indexer finds.`,
       fields: downloadClientFields,
     },
     {
@@ -533,11 +550,11 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
       >
         <div className="setup-service-text">
           <Text className="setup-row-label">{service.title}</Text>
-          <Text className="setup-row-description">{service.description}</Text>
+          {service.description && <Text className="setup-row-description">{service.description}</Text>}
         </div>
-        <span className="setup-service-state" data-connected={connected || undefined}>
+        <StatusDot tone={connected ? 'ok' : 'neutral'}>
           {connected ? <Trans>Saved</Trans> : <Trans>Not set</Trans>}
-        </span>
+        </StatusDot>
         <IconChevronDown size={16} className="setup-service-chevron" />
       </UnstyledButton>
       <Collapse expanded={open} id={bodyId}>
@@ -556,7 +573,7 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
 function ConnectionsStep() {
   const services = useServices()
   return (
-    <div className="setup-services">
+    <div className="setup-panel setup-services">
       {services.map((s) => (
         <ServiceRow key={s.name} service={s} />
       ))}
@@ -594,7 +611,7 @@ function FinishStep({
 
   return (
     <>
-      <div className="setup-summary">
+      <div className="setup-panel setup-summary">
         {folderCount > 0 ? (
           <SummaryLine tone="ok">
             {plural(folderCount, { one: '# library folder', other: '# library folders' })}
@@ -603,9 +620,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('library')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('library')}>
                 <Trans>Add one</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>No library folder yet. Series need one to download into.</Trans>
@@ -619,9 +636,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('discovery')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('discovery')}>
                 <Trans>See progress</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>The local MangaBaka database is still downloading. Setup finishes once it is in.</Trans>
@@ -651,9 +668,6 @@ function FinishStep({
           <Text className="setup-row-label">
             <Trans>Add a series</Trans>
           </Text>
-          <Text className="setup-row-description">
-            <Trans>Search MangaBaka and start downloading.</Trans>
-          </Text>
         </UnstyledButton>
         <UnstyledButton className="setup-next-card" disabled={!ready} onClick={() => finishTo('/import')}>
           <Text className="setup-row-label">
@@ -680,7 +694,7 @@ function FinishStep({
             <Trans>Invite people</Trans>
           </Text>
           <Text className="setup-row-description">
-            <Trans>Give others their own account, library access and reading history.</Trans>
+            <Trans>Each person gets their own account and reading history.</Trans>
           </Text>
         </UnstyledButton>
       </div>
@@ -692,7 +706,7 @@ interface StepMeta {
   id: StepId
   label: string
   title: string
-  lead: string
+  lead?: string
   hint?: string
   tone?: Tone
 }
@@ -717,14 +731,13 @@ function useSteps(): StepMeta[] {
       id: 'welcome',
       label: t`Welcome`,
       title: t`Welcome to Maki`,
-      lead: t`A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards.`,
+      lead: t`Everything saves as you go.`,
       hint: locales.find((l) => l.code === locale)?.label,
     },
     {
       id: 'library',
       label: t`Library`,
       title: t`Where your manga lives`,
-      lead: t`Pick the folders Maki reads from and downloads into, and how it treats the files it finds there.`,
       hint: rootFolders
         ? folderCount > 0
           ? plural(folderCount, { one: '# folder', other: '# folders' })
@@ -736,7 +749,7 @@ function useSteps(): StepMeta[] {
       id: 'discovery',
       label: t`Discover`,
       title: t`Metadata and Discover`,
-      lead: t`Series details come from a local copy of the MangaBaka database. Choose what Discover may show you.`,
+      lead: t`Series details come from a local copy of the MangaBaka database.`,
       hint: metadata
         ? metadata.dumpPresent
           ? t`Database ready`
@@ -750,14 +763,13 @@ function useSteps(): StepMeta[] {
       id: 'downloads',
       label: t`Downloads`,
       title: t`What to download`,
-      lead: t`Which languages Maki looks for, and which chapters it leaves alone.`,
       hint: topLanguages || undefined,
     },
     {
       id: 'connections',
       label: t`Connections`,
       title: t`Tools you already run`,
-      lead: t`All optional. Maki downloads from its own sources without any of these. Open one to fill it in.`,
+      lead: t`All optional. Maki downloads from its own sources without them.`,
       hint:
         connectedCount > 0
           ? plural(connectedCount, { one: '# connected', other: '# connected' })
@@ -767,7 +779,7 @@ function useSteps(): StepMeta[] {
       id: 'finish',
       label: t`Finish`,
       title: t`You're set`,
-      lead: t`Here is what Maki starts with. You can come back to this guide from the top of Settings.`,
+      lead: t`You can come back to this guide from the top of Settings.`,
     },
   ]
 }
@@ -777,15 +789,11 @@ function GuideRail({
   active,
   visited,
   onSelect,
-  onSkip,
-  skipping,
 }: {
   steps: StepMeta[]
   active: number
   visited: Set<number>
   onSelect: (index: number) => void
-  onSkip: () => void
-  skipping: boolean
 }) {
   const { t } = useLingui()
   return (
@@ -803,43 +811,19 @@ function GuideRail({
       </div>
 
       <nav aria-label={t`Setup steps`}>
-        <ol className="setup-steps">
-          {steps.map((step, i) => {
-            const current = i === active
-            const done = !current && visited.has(i)
-            return (
-              <li key={step.id}>
-                <UnstyledButton
-                  className="setup-step"
-                  data-current={current || undefined}
-                  data-done={done || undefined}
-                  aria-current={current ? 'step' : undefined}
-                  onClick={() => onSelect(i)}
-                >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
-                  <span className="setup-step-text">
-                    <span className="setup-step-label">{step.label}</span>
-                    {step.hint && (
-                      <span className="setup-step-hint" data-tone={step.tone}>
-                        {step.hint}
-                      </span>
-                    )}
-                  </span>
-                </UnstyledButton>
-              </li>
-            )
-          })}
-        </ol>
+        <StepStrip
+          layout="rail"
+          label={t`Setup steps`}
+          steps={steps.map((step, i) => ({
+            label: step.label,
+            hint: step.hint,
+            tone: step.tone === 'warn' ? 'warn' : undefined,
+            state: i === active ? 'current' : visited.has(i) ? 'done' : 'todo',
+          }))}
+          onSelect={onSelect}
+        />
       </nav>
 
-      <div className="setup-rail-foot">
-        <Button variant="subtle" color="var(--neutral)" size="xs" onClick={onSkip} loading={skipping}>
-          <Trans>Skip setup</Trans>
-        </Button>
-        <Text className="setup-rail-note">
-          <Trans>Nothing here is final. Every option is also in Settings.</Trans>
-        </Text>
-      </div>
     </aside>
   )
 }
@@ -956,8 +940,6 @@ function SetupGuide() {
             active={active}
             visited={visited}
             onSelect={confirmedGo}
-            onSkip={() => confirmedFinish()}
-            skipping={complete.isPending}
           />
 
           <main className="setup-main">
@@ -979,15 +961,10 @@ function SetupGuide() {
 
             <div className="setup-stage" ref={stageRef}>
               <div className="setup-stage-inner" key={step.id}>
-                <Text className="setup-eyebrow">
-                  <Trans>
-                    Step {stepNumber} of {stepTotal}
-                  </Trans>
-                </Text>
                 <h2 className="setup-title" ref={titleRef} tabIndex={-1}>
                   {step.title}
                 </h2>
-                <Text className="setup-lead">{step.lead}</Text>
+                {step.lead && <Text className="setup-lead">{step.lead}</Text>}
 
                 <div className="setup-content">
                   {step.id === 'welcome' && <WelcomeStep />}
@@ -1009,24 +986,33 @@ function SetupGuide() {
             <footer className="setup-footer">
               <div className="setup-footer-inner">
                 <Button
-                  variant="default"
-                  leftSection={<IconArrowLeft size={16} />}
-                  onClick={() => confirmedGo(active - 1)}
-                  style={{ visibility: active === 0 ? 'hidden' : undefined }}
+                  className="setup-footer-skip"
+                  variant="subtle"
+                  color="var(--neutral)"
+                  onClick={() => confirmedFinish()}
+                  loading={complete.isPending}
                 >
-                  <Trans>Back</Trans>
+                  <Trans>Skip setup</Trans>
                 </Button>
                 {confirmLeave ? (
-                  <Text className="setup-footer-warning" role="status">
+                  <Text className="setup-footer-note" data-tone="warn" role="status">
                     <Trans>A connection has unsaved changes.</Trans>
                   </Text>
+                ) : active === last && !ready ? (
+                  <Text className="setup-footer-note" data-tone="warn" role="status">
+                    <Trans>Waiting for the metadata database.</Trans>
+                  </Text>
                 ) : (
-                  active === last &&
-                  !ready && (
-                    <Text className="setup-footer-warning" role="status">
-                      <Trans>Waiting for the metadata database.</Trans>
-                    </Text>
-                  )
+                  <span className="setup-footer-note" aria-hidden />
+                )}
+                {active > 0 && (
+                  <Button
+                    variant="default"
+                    leftSection={<IconArrowLeft size={16} />}
+                    onClick={() => confirmedGo(active - 1)}
+                  >
+                    <Trans>Back</Trans>
+                  </Button>
                 )}
                 {active === last ? (
                   <Button onClick={() => confirmedFinish()} loading={complete.isPending} disabled={!ready}>

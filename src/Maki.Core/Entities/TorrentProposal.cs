@@ -39,6 +39,9 @@ public class TorrentProposal
     /// <summary>The release's format score under the series' profile when it was found.</summary>
     public int Score { get; set; }
 
+    /// <summary>Left by a new series' volume-first search, so source downloads wait for it (<c>VolumeFirstGate</c>).</summary>
+    public bool VolumeFirst { get; set; }
+
     public TorrentProposalStatus Status { get; set; }
     public int? QueueItemId { get; set; }
     public int? ResolvedByUserId { get; set; }

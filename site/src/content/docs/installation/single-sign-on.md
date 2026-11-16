@@ -21,6 +21,10 @@ is read once at startup.
 | Admin claim / Permission claim | Optional, see below. |
 
 - **New accounts start with no library access.** Grant a root folder under **Settings → Users**.
+- **API keys and the OPDS token need a recent sign-in.** An account that signs in only through the
+  provider has no password to confirm, so creating an API key, or turning on OPDS or Komga, needs a
+  sign-in from the last ten minutes instead. The form says so up front and has a **Sign in again**
+  button that brings you back.
 - **Linking.** An account is identified by the provider's `sub` claim, scoped to the issuer URL, so
   upstream renames do not strand anyone. The first time an unknown subject signs in, Maki links it
   to a local account with the same email if the provider marks the address as verified and exactly

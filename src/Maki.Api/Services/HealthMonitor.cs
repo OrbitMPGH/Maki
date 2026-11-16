@@ -258,8 +258,16 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 Add("scheduler", "system", running ? "healthy" : "warning",
                     running ? "health.check.schedulerRunning" : "health.check.schedulerPaused");
                 var reachable = await db.Database.CanConnectAsync(ct);
-                Add("database", "system", reachable ? "healthy" : "unavailable",
-                    reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
+                var newer = reachable
+                    ? (await db.Database.GetAppliedMigrationsAsync(ct)).Except(db.Database.GetMigrations()).ToList()
+                    : [];
+                // Startup keeps running on a database a newer build wrote, so this row is the warning admins see.
+                if (newer.Count > 0)
+                    Add("database", "system", "error", "health.check.databaseNewer",
+                        new { latest = newer[^1] }, "/settings?tab=system&s=backup");
+                else
+                    Add("database", "system", reachable ? "healthy" : "unavailable",
+                        reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
                 if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
                     if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)

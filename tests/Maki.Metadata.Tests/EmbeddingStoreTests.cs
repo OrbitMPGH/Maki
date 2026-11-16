@@ -88,7 +88,7 @@ public class EmbeddingStoreTests : IDisposable
     {
         _store.UpsertBatch([(7L, "h7", [1f, 0f])]);
         _store.UpsertBatch([(7L, "h7b", [0f, 1f])]);
-        Assert.Equal([0f, 1f], _store.GetVector(7));
+        Assert.Equal([0f, 1f], _store.GetVector(7)!);
         Assert.Equal(1, _store.Count());
         Assert.Equal("h7b", _store.GetHashes()[7]);
     }
@@ -207,6 +207,133 @@ public class EmbeddingStoreTests : IDisposable
         _store.UpsertBatch([(1L, "a", [1f, 0f])]);
         Assert.Equal(0, _store.PruneExcept([]));
         Assert.Equal(1, _store.Count());
+    }
+
+    [Fact]
+    public void Count_is_kept_in_meta_through_every_writer()
+    {
+        Assert.Equal(0, StoredCount(_store.DbPath));
+
+        // New ids, a replaced id, and an id twice in one batch.
+        _store.UpsertBatch([(1L, "a", [1f, 0f]), (2L, "b", [0f, 1f])]);
+        _store.UpsertBatch([(2L, "b2", [1f, 1f]), (3L, "c", [1f, 0f]), (3L, "c2", [0f, 1f])]);
+        Assert.Equal(3, StoredCount(_store.DbPath));
+
+        // Writes that touch no vector row keep it valid under their new content version.
+        _store.UpsertTagsBatch([(1L, TagMath.Pack([(5, TagMath.Core)]))]);
+        _store.UpsertTagVectors([(1, [1f, 0f])]);
+        Assert.Equal(3, StoredCount(_store.DbPath));
+
+        _store.PruneExcept([1L, 3L]);
+        Assert.Equal(2, StoredCount(_store.DbPath));
+        Assert.Equal(2, RealCount(_store.DbPath));
+        Assert.Equal(2, new EmbeddingStore(Options(_store.DbPath)).Count());
+    }
+
+    [Fact]
+    public void Count_reads_the_stored_value_instead_of_counting()
+    {
+        _store.UpsertBatch([(1L, "a", [1f, 0f]), (2L, "b", [0f, 1f])]);
+        using (var conn = new SqliteConnection($"Data Source={_store.DbPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE meta SET value = '41:' || (SELECT value FROM meta WHERE key = 'content_version')
+                WHERE key = 'vector_count'
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        Assert.Equal(41, new EmbeddingStore(Options(_store.DbPath)).Count());
+    }
+
+    [Fact]
+    public void A_file_with_no_stored_count_is_counted_once_and_stamped()
+    {
+        var path = Path.Combine(_dir, "artifact.db");
+        WriteForeignFile(path, rows: 3, contentVersion: null);
+        Assert.Null(StoredCount(path));
+
+        Assert.Equal(3, new EmbeddingStore(Options(path)).Count());
+
+        Assert.Equal(3, StoredCount(path));
+    }
+
+    [Fact]
+    public void A_write_that_does_not_know_the_count_retires_it()
+    {
+        _store.UpsertBatch([(1L, "a", [1f, 0f])]);
+        Assert.Equal(1, StoredCount(_store.DbPath));
+
+        // What an older Maki does: a new row and a new content version, the count untouched.
+        using (var conn = new SqliteConnection($"Data Source={_store.DbPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO series_vectors (id, hash, scale, vec) VALUES (9, 'x', 1, x'0102');
+                UPDATE meta SET value = 'older-writer' WHERE key = 'content_version';
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        Assert.Null(StoredCount(_store.DbPath));
+        Assert.Equal(2, new EmbeddingStore(Options(_store.DbPath)).Count());
+        Assert.Equal(2, StoredCount(_store.DbPath));
+    }
+
+    [Fact]
+    public void A_staged_artifact_carries_its_count()
+    {
+        var path = Path.Combine(_dir, "staged.db");
+        WriteForeignFile(path, rows: 4, contentVersion: "publisher");
+
+        EmbeddingStore.StampVectorCount(path, 4);
+
+        Assert.Equal(4, StoredCount(path));
+    }
+
+    private EmbeddingOptions Options(string path) => new(_dir, path, _dir, EmbeddingModelProfile.Base);
+
+    internal static int? StoredCount(string path)
+    {
+        using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        return EmbeddingStore.StoredVectorCount(conn);
+    }
+
+    private static int RealCount(string path)
+    {
+        using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM series_vectors";
+        return Convert.ToInt32(cmd.ExecuteScalar());
+    }
+
+    /// <summary>A vector database written by something other than this store, like the published artifact.</summary>
+    private static void WriteForeignFile(string path, int rows, string? contentVersion)
+    {
+        using var conn = new SqliteConnection($"Data Source={path};Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            CREATE TABLE series_vectors (id INTEGER PRIMARY KEY, hash TEXT NOT NULL, scale REAL NOT NULL, vec BLOB NOT NULL);
+            CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            """;
+        cmd.ExecuteNonQuery();
+        for (var i = 1; i <= rows; i++)
+        {
+            cmd.CommandText = $"INSERT INTO series_vectors VALUES ({i}, 'h', 1, x'0102')";
+            cmd.ExecuteNonQuery();
+        }
+
+        if (contentVersion is not null)
+        {
+            cmd.CommandText = $"INSERT INTO meta VALUES ('content_version', '{contentVersion}')";
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public void Dispose()

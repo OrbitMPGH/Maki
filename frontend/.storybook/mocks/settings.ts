@@ -2,8 +2,10 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
+import { creditGroupsHandlers } from './settings/creditGroups'
 import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
+import type { DropFolderSettings, DropFolderStatus } from '../../src/api/dropFolder'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
 const putEcho = (path: string) =>
@@ -17,6 +19,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.put(api('/health/options'), async ({ request }) => HttpResponse.json(await request.json())),
   // Account
   http.get(api('/account/2fa'), () => HttpResponse.json(d.twoFactorOff)),
+  http.get(api('/account/mint-proof'), () => HttpResponse.json(d.mintByPassword)),
   http.get(api('/account/apikeys'), () => HttpResponse.json(d.apiKeys)),
   http.post(api('/account/apikeys'), async ({ request }) => {
     const body = (await request.json()) as { name: string; scope?: 'Full' | 'Opds' }
@@ -80,6 +83,8 @@ export const settingsHandlers: HttpHandler[] = [
   putEcho('/settings/reader'),
   http.get(api('/settings/rating-prompts'), () => HttpResponse.json({ enabled: true, volumes: false })),
   putEcho('/settings/rating-prompts'),
+  http.get(api('/settings/reading-status'), () => HttpResponse.json({ autoHoldDays: null, autoDropDays: null })),
+  putEcho('/settings/reading-status'),
   http.get(api('/readingprofiles'), () => HttpResponse.json(d.readingProfiles)),
   http.post(api('/readingprofiles'), async ({ request }) => HttpResponse.json({ id: 10, ...((await request.json()) as object) })),
   http.put(api('/readingprofiles/:id'), async ({ request, params }) =>
@@ -117,6 +122,9 @@ export const settingsHandlers: HttpHandler[] = [
   http.delete(api('/rootfolder/:id'), ok),
   http.get(api('/settings/library'), () => HttpResponse.json(d.libraryDefaults)),
   putEcho('/settings/library'),
+  http.get(api('/settings/creditscan'), () => HttpResponse.json({ enabled: false })),
+  putEcho('/settings/creditscan'),
+  ...creditGroupsHandlers(),
   http.get(api('/settings/monitoring'), () => HttpResponse.json(d.monitoring)),
   putEcho('/settings/monitoring'),
   http.get(api('/settings/nameparsing'), () => HttpResponse.json(d.nameParsing)),
@@ -179,6 +187,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/sources/languages'), () => HttpResponse.json(d.sourceLanguages)),
   putEcho('/settings/sources/languages'),
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
+  http.get(api('/scanlationgroups'), () => HttpResponse.json(d.scanlationGroups)),
+  putEcho('/scanlationgroups'),
   http.get(api('/custom-sources'), () => HttpResponse.json([])),
   http.get(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories)),
   http.post(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories[0])),
@@ -195,6 +205,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/custom-sources/:id'), () => HttpResponse.json(d.customSourcesList[0].definition)),
   http.put(api('/custom-sources/:id'), () => HttpResponse.json({ created: true, sourceName: 'custom-quietpen' })),
   http.delete(api('/custom-sources/:id'), ok),
+  http.get(api('/settings/connection-tests'), () => HttpResponse.json(d.connectionTests)),
   http.get(api('/settings/flaresolverr'), () => HttpResponse.json(d.flaresolverr)),
   putEcho('/settings/flaresolverr'),
   http.post(api('/settings/flaresolverr/test'), success),
@@ -202,6 +213,13 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/downloadclient'), () => HttpResponse.json(d.downloadClient)),
   putEcho('/settings/downloadclient'),
   http.post(api('/settings/downloadclient/test'), success),
+  http.get(api('/settings/downloadclient/lifecycle'), () => HttpResponse.json(d.torrentLifecycle)),
+  putEcho('/settings/downloadclient/lifecycle'),
+  http.post(api('/settings/downloadclient/lifecycle/import'), () =>
+    HttpResponse.json({ seedRatio: 2, seedMinutes: 4320, found: true })),
+  http.get(api('/upgrades/proposals'), ({ request }) =>
+    HttpResponse.json(new URL(request.url).searchParams.get('status') === 'dismissed' ? d.declinedReleases : [])),
+  http.post(api('/upgrades/proposals/:id/unblock'), ok),
   http.get(api('/settings/indexer'), ({ request }) => {
     const backend = new URL(request.url).searchParams.get('backend')
     return HttpResponse.json(backend === 'jackett' ? d.indexerJackett : d.indexerProwlarr)
@@ -272,6 +290,30 @@ export const settingsHandlers: HttpHandler[] = [
   http.delete(api('/notifications/:id'), ok),
   http.post(api('/notifications/test'), success),
   http.get(api('/tags'), () => HttpResponse.json(d.tags)),
+  http.get(api('/tags/rules'), () => HttpResponse.json(d.autoTagRules)),
+  http.get(api('/tags/rules/:id/preview'), () => HttpResponse.json({ count: 12 })),
+  http.post(api('/tags/rules/:id/apply'), () => HttpResponse.json({ tagged: 12 })),
+  http.post(api('/tags/rules'), async ({ request }) => HttpResponse.json({ id: 9, ...((await request.json()) as object) })),
+  http.put(api('/tags/rules/:id'), async ({ request, params }) =>
+    HttpResponse.json({ id: Number(params.id), ...((await request.json()) as object) }),
+  ),
+  http.delete(api('/tags/rules/:id'), ok),
+  http.get(api('/rootfolder/rules'), () => HttpResponse.json(d.rootFolderRules)),
+  http.post(api('/rootfolder/rules'), async ({ request }) =>
+    HttpResponse.json({ id: 9, position: 2, ...((await request.json()) as object) }),
+  ),
+  http.put(api('/rootfolder/rules/order'), () => HttpResponse.json(d.rootFolderRules)),
+  http.put(api('/rootfolder/rules/:id'), async ({ request, params }) =>
+    HttpResponse.json({ id: Number(params.id), position: 0, ...((await request.json()) as object) }),
+  ),
+  http.delete(api('/rootfolder/rules/:id'), ok),
+  http.get(api('/rootfolder/rules/test'), () => HttpResponse.json({ rootFolderId: 2, ruleId: 1 })),
+  http.get(api('/dropfolder/settings'), () =>
+    HttpResponse.json({ enabled: false, path: null, intervalMinutes: 5, placement: 'copy' } satisfies DropFolderSettings),
+  ),
+  http.get(api('/dropfolder'), () =>
+    HttpResponse.json({ enabled: false, path: null, lastRunAt: null, lastError: null, pending: [] } satisfies DropFolderStatus),
+  ),
 
   // System
   http.get(api('/system/status'), () => HttpResponse.json({ version: '0.32.0' })),

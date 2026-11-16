@@ -45,7 +45,7 @@ public static class ReaderPageCache
             return cached is null ? null : await File.ReadAllBytesAsync(cached, ct);
         }
 
-        await using var stream = await archives.OpenPageAsync(slice.ArchivePath, entry, ct);
+        await using var stream = await archives.OpenPageAsync(slice.ArchivePath, entry, ct, forReader: false);
         if (stream is null)
         {
             return null;

@@ -94,9 +94,71 @@ public class MangaDexSourceTests
         var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
 
         Assert.Equal(1, volumes[2m]);
-        var feed = Assert.Single(factory.Requests);
-        Assert.Contains("includeUnavailable=1", feed);
-        Assert.Contains("translatedLanguage[]=en", feed);
+        Assert.Equal(2, factory.Requests.Count);
+        Assert.Contains("includeUnavailable=1", factory.Requests[0]);
+        Assert.Contains("translatedLanguage[]=en", factory.Requests[0]);
+        Assert.DoesNotContain("translatedLanguage", factory.Requests[1]);
+    }
+
+    [Fact]
+    public async Task GetChapterVolumes_fills_the_numbers_english_leaves_out_from_every_language()
+    {
+        // English knows chapter 7 only; the all-language feed also assigns chapter 9, and disagrees
+        // with English about chapter 7, where English wins.
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["translatedLanguage[]=en"] = FeedPage(total: 1, volume: "1"),
+            ["feed"] = FeedPage(total: 1, volume: "2").Replace("\"chapter\":\"7\"", "\"chapter\":\"9\"")
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.Equal(1, volumes[7m]);
+        Assert.Equal(2, volumes[9m]);
+    }
+
+    [Fact]
+    public async Task GetChapterVolumes_skips_a_fill_that_breaks_the_english_volume_order()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["translatedLanguage[]=en"] = Feed(("1", "1", "en"), ("10", "2", "en"), ("20", "4", "en")),
+            ["feed"] = Feed(("1", "1", "en"), ("10", "2", "en"), ("20", "4", "en"),
+                ("5", "1", "es"), ("15", "1", "fr"), ("25", "3", "fr"), ("30", "5", "es"))
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.Equal(1, volumes[5m]);
+        Assert.Equal(5, volumes[30m]);
+        // Chapter 15 cannot be in volume 1 after chapter 10 is in volume 2, and chapter 25 cannot be
+        // in volume 3 after chapter 20 is in volume 4: an edition numbered differently.
+        Assert.False(volumes.ContainsKey(15m));
+        Assert.False(volumes.ContainsKey(25m));
+    }
+
+    [Fact]
+    public async Task GetChapterVolumes_fills_nothing_where_the_other_languages_disagree()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["translatedLanguage[]=en"] = Feed(("1", "1", "en")),
+            ["feed"] = Feed(("1", "1", "en"), ("12", "3", "es"), ("12", "4", "fr"), ("13", "3", "es"))
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.False(volumes.ContainsKey(12m));
+        Assert.Equal(3, volumes[13m]);
+    }
+
+    private static string Feed(params (string Chapter, string Volume, string Language)[] rows)
+    {
+        var data = string.Join(",", rows.Select((r, i) =>
+            $"{{\"id\":\"00000000-0000-0000-0000-{i:000000000000}\",\"type\":\"chapter\",\"attributes\":{{" +
+            $"\"chapter\":\"{r.Chapter}\",\"volume\":\"{r.Volume}\",\"title\":null,\"translatedLanguage\":\"{r.Language}\"," +
+            "\"externalUrl\":null,\"isUnavailable\":false,\"pages\":10,\"publishAt\":\"2018-01-01T00:00:00+00:00\"}}"));
+        return $"{{\"result\":\"ok\",\"response\":\"collection\",\"limit\":500,\"offset\":0,\"total\":{rows.Length},\"data\":[{data}]}}";
     }
 
     [Fact]
@@ -128,7 +190,8 @@ public class MangaDexSourceTests
         var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
 
         Assert.Equal(3, volumes[7m]);
-        Assert.Equal(20, factory.Requests.Count);
+        // The English walk and the all-language walk each stop at the cap.
+        Assert.Equal(40, factory.Requests.Count);
         Assert.DoesNotContain(factory.Requests, r => r.Contains("offset=10000", StringComparison.Ordinal));
     }
 

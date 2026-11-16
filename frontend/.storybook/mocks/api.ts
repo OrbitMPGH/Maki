@@ -51,7 +51,7 @@ export const adminMe: Me = {
   permissions: ALL_PERMISSIONS.join(', '),
   permissionNames: ALL_PERMISSIONS,
   isAdmin: true,
-  maxContentRating: 'Pornographic',
+  maxContentRating: 'pornographic',
   allRootFolders: true,
   rootFolderIds: [],
   twoFactorEnabled: false,
@@ -70,7 +70,7 @@ export const readerMe: Me = {
   permissions: 'UseTrackers, UseOpds',
   permissionNames: ['UseTrackers', 'UseOpds'],
   isAdmin: false,
-  maxContentRating: 'Suggestive',
+  maxContentRating: 'suggestive',
   allRootFolders: false,
   rootFolderIds: [1],
 }

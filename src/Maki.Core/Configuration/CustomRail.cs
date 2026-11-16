@@ -87,6 +87,11 @@ public static class CustomRailSorts
 /// <param name="Seeds">Recommendations only. Empty means the whole library, like the Recommended tab.</param>
 /// <param name="Obscurity">Recommendations only, -1 … 1.</param>
 /// <param name="Diversity">Recommendations only, 0 … 1.</param>
+/// <param name="LibraryFilterId">
+/// Library only: the owner's saved Library filter (a <c>SavedFilter</c> in the <c>library</c> scope)
+/// to show instead of <see cref="Filters"/>, in that filter's own sort. Referenced by id, so editing
+/// the filter changes the rail; a deleted filter leaves the rail saying so rather than showing everything.
+/// </param>
 public record CustomRailSpec(
     string Source = CustomRailSources.Catalogue,
     SearchDefaultsSpec? Filters = null,
@@ -94,7 +99,8 @@ public record CustomRailSpec(
     bool ExcludeOwned = true,
     IReadOnlyList<RecommendationSeed>? Seeds = null,
     double Obscurity = 0,
-    double Diversity = 0)
+    double Diversity = 0,
+    int? LibraryFilterId = null)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -124,7 +130,8 @@ public record CustomRailSpec(
             source == CustomRailSources.Catalogue && ExcludeOwned,
             recs ? Seeds?.Where(x => x.Id > 0).DistinctBy(x => x.Id).Take(MaxSeeds).ToList() : null,
             recs ? Math.Clamp(double.IsFinite(Obscurity) ? Obscurity : 0, -1, 1) : 0,
-            recs ? Math.Clamp(double.IsFinite(Diversity) ? Diversity : 0, 0, 1) : 0);
+            recs ? Math.Clamp(double.IsFinite(Diversity) ? Diversity : 0, 0, 1) : 0,
+            source == CustomRailSources.Library && LibraryFilterId > 0 ? LibraryFilterId : null);
     }
 
     public static CustomRailSpec Parse(string? json)

@@ -32,6 +32,7 @@ public static class MeasuredQuality
     {
         "png" => 0.65,
         "webp" => 1.4,
+        "jxl" => 1.5,
         "avif" => 2.0,
         _ => 1.0
     };

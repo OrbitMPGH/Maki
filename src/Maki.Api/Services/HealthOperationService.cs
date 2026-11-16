@@ -71,7 +71,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new HealthRefusedException("error.health.operationActive");
         var seriesIds = chapters.Select(c => c.SeriesId).ToArray();
-        if (await db.DownloadQueue.AnyAsync(q => seriesIds.Contains(q.SeriesId) && q.HealthOperationId != operationId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+        if (await db.DownloadQueue.AnyAsync(q => seriesIds.Contains(q.SeriesId) && q.HealthOperationId != operationId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Waiting, ct))
             throw new HealthRefusedException("error.health.downloadsActive");
         return (file, root, chapters);
     }
@@ -168,8 +168,10 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// </summary>
     /// <param name="allowWeak">Accept a match on the name alone. Only a reviewer looking at the one
     /// file sets it; a bulk relink never does.</param>
+    /// <param name="userId">Null when a scan relinked it on its own.</param>
+    /// <param name="rescan">Queue a scan of the target. A caller relinking many files queues one for all of them.</param>
     public async Task RelinkMovedAsync(int missingId, string missingVersion, int targetId, string targetVersion,
-        bool allowWeak, int userId, CancellationToken ct)
+        bool allowWeak, int? userId, CancellationToken ct, bool rescan = true)
     {
         await MutationGate.WaitAsync(ct);
         try
@@ -191,7 +193,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var record = await db.ChapterFiles.FindAsync([missing.ChapterFileId], ct) ?? throw new HealthRefusedException("error.health.reviewStale");
             if (await db.HealthOperations.AnyAsync(o => (o.FileId == missingId || o.FileId == targetId) && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
                 throw new HealthRefusedException("error.health.operationActive");
-            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Waiting, ct))
                 throw new HealthRefusedException("error.health.downloadsActive");
 
             using var seriesLock = await SeriesLocks.SeriesAsync(record.SeriesId, ct);
@@ -202,6 +204,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 record.MeasuredAtUtc = null;
                 record.ResetConversion();
             }
+            record.NamedByMaki &= SameFileName(record.RelativePath, target.RelativePath);
             record.RelativePath = target.RelativePath;
             record.Size = target.Size;
             Invalidate(record.Id);
@@ -217,7 +220,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 MessageKey = "health.history.relinkedMoved",
                 ParamsJson = JsonSerializer.Serialize(new { path = oldPath, target = target.RelativePath }),
             });
-            db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
+            if (rescan) db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
             await db.SaveChangesAsync(ct);
             await FollowFolderAsync(record, oldPath, root, userId, ct);
             HealthWorker.Wake();
@@ -226,10 +229,44 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     }
 
     /// <summary>
+    /// What a library scan does with missing files it finds again at a new path: relinks the ones
+    /// "Relink all" would take, so a folder renamed outside Maki needs no visit to Health. A match on
+    /// the name alone still waits for a reviewer, and a refusal (a download in flight, a target that
+    /// changed) waits for the next scan.
+    /// </summary>
+    public async Task<int> RelinkFoundMovesAsync(int? rootId, CancellationToken ct)
+    {
+        var missing = await db.HealthFiles.AsNoTracking()
+            .Where(f => !f.Removed && f.Size < 0 && f.ChapterFileId != null && (rootId == null || f.RootFolderId == rootId))
+            .Select(f => new { f.Id, f.Version }).ToListAsync(ct);
+        if (missing.Count == 0) return 0;
+        var found = await HealthMovedFiles.FindAsync(db, missing.Select(m => m.Id).ToList(), ct);
+        var relinked = new List<int>();
+        foreach (var m in missing)
+        {
+            if (!found.TryGetValue(m.Id, out var move) || !HealthMovedFiles.Strong(move.Evidence)) continue;
+            try
+            {
+                await RelinkMovedAsync(m.Id, m.Version, move.TargetId, move.TargetVersion, false, null, ct, rescan: false);
+                relinked.Add(move.TargetId);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                db.ChangeTracker.Clear();
+            }
+        }
+        if (relinked.Count == 0) return 0;
+        db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(relinked), Force = true });
+        await db.SaveChangesAsync(ct);
+        HealthWorker.Wake();
+        return relinked.Count;
+    }
+
+    /// <summary>
     /// Once the last record has left a series folder that no longer exists, the series moves with
     /// it, so new downloads land beside the files instead of recreating the old folder.
     /// </summary>
-    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
+    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int? userId, CancellationToken ct)
     {
         var series = await db.Series.FindAsync([moved.SeriesId], ct);
         var from = LibraryPaths.TopFolder(oldPath);
@@ -431,7 +468,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                             foreach (var note in await db.ChapterNotes.IgnoreQueryFilters().Where(n => n.ChapterId == chapter.Id && n.PageIndex != null).ToListAsync(ct))
                                 note.PageIndex = null;
                             foreach (var progress in await db.ChapterProgress.IgnoreQueryFilters().Where(p => p.ChapterId == chapter.Id).ToListAsync(ct))
-                            { progress.PageIndex = 0; progress.PageCount = candidate.Analysis.Pages.Count; }
+                            { progress.PageIndex = 0; progress.PageOffset = 0; progress.PageCount = candidate.Analysis.Pages.Count; }
                         }
                     }
                 }
@@ -572,6 +609,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             // The row moves rather than being rebuilt, so the chapters keep their file id and with it
             // everything keyed on it: quality, conversion state, KOReader documents.
             var kept = oldFiles.First(f => chapters.Any(c => c.ChapterFileId == f.Id));
+            kept.NamedByMaki &= SameFileName(kept.RelativePath, target.RelativePath);
             kept.RelativePath = target.RelativePath;
             // Whether a file is hardlinked belongs to the path, so conversion has to look again.
             if (kept.CheckedWith == PlanAction.HardSkipName) { kept.CheckedWith = null; kept.ConversionCheckedAtUtc = null; }
@@ -774,4 +812,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         var directory = Path.Combine(paths.ReaderCacheDir, id.ToString());
         if (Directory.Exists(directory)) Directory.Delete(directory, true);
     }
+
+    // A file found under another name was named by whoever moved it, not by Maki.
+    private static bool SameFileName(string from, string to) =>
+        string.Equals(Path.GetFileName(from), Path.GetFileName(to), StringComparison.Ordinal);
 }

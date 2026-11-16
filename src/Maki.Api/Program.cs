@@ -192,11 +192,38 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
     builder.Services.AddSingleton<MalReviewClient>();
 
+    // AniList reviews and Kitsu reactions beside MAL's. AniList allows 30 requests a minute
+    // (90 when not degraded) across the whole instance, so stay under the lower figure.
+    var aniListReviewLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 3);
+    builder.Services.AddHttpClient(AniListReviewClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://graphql.anilist.co/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(aniListReviewLimiter));
+    builder.Services.AddSingleton<AniListReviewClient>();
+
+    var kitsuReactionLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(KitsuReactionClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://kitsu.app/api/edge/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.api+json");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(kitsuReactionLimiter));
+    builder.Services.AddSingleton<KitsuReactionClient>();
+    builder.Services.AddSingleton<SeriesReviewService>();
+
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
+    builder.Services.AddSingleton(sp => new ScoreStandings(sp.GetRequiredService<MangaBakaDumpOptions>()));
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
     // DiscoverCacheWarmJob builds them after a dump install so the cost never lands on a keystroke.
@@ -204,6 +231,7 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<CoverFetcher>();
     builder.Services.AddSingleton<SignInMosaicService>();
     builder.Services.AddSingleton<CoverAccentCache>();
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
@@ -337,6 +365,8 @@ try
     // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
     // no state of its own; a singleton only because everything it inspects is one.
     builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<ProcessCpuSampler>();
+    builder.Services.AddScoped<HealthRunningWork>();
     builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
@@ -913,6 +943,8 @@ try
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
+    builder.Services.AddSingleton<RelatedWorkWatchService>();
+    builder.Services.AddSingleton<ReadingStatusAutoService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
@@ -934,6 +966,7 @@ try
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
     builder.Services.AddScoped<HealthMonitor>();
+    builder.Services.AddScoped<ConnectionTestStore>();
     builder.Services.AddSingleton<HealthSourceRecovery>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<HealthSourceRecovery>());
     builder.Services.AddScoped<HealthScanService>();
@@ -956,6 +989,10 @@ try
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadPauseService>();
+    builder.Services.AddSingleton(sp => new DownloadDiskHold(
+        sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<DownloadDiskHold>>()));
+    builder.Services.AddSingleton<DownloadQueueEta>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
@@ -975,6 +1012,9 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<LibraryImportResolver>();
+    builder.Services.AddScoped<ManualImportService>();
+    builder.Services.AddScoped<DropFolderImportService>();
+    builder.Services.AddSingleton<DropFolderState>();
     builder.Services.AddScoped<LibraryImportUndoService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<ChapterFromFilesService>();
@@ -988,6 +1028,8 @@ try
     builder.Services.AddSingleton<PageConversionEstimateService>();
     builder.Services.AddSingleton<PageConversionWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());
+    builder.Services.AddSingleton<CreditScanWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<CreditScanWorker>());
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
     builder.Services.AddScoped<SourceQualitySeeder>();
@@ -996,10 +1038,21 @@ try
     builder.Services.AddScoped<UpgradeRevertService>();
     builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<TorrentUpgradeService>();
+    builder.Services.AddSingleton<VolumeFirstSearches>();
+    builder.Services.AddSingleton<VolumeFirstDeferrals>();
+    builder.Services.AddScoped<VolumeFirstGate>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<TagService>();
+    builder.Services.AddScoped<AutoTagRuleService>();
+    builder.Services.AddScoped<RootFolderRoutingService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
+    builder.Services.AddSingleton<SeriesBulkOperations>();
+    builder.Services.AddScoped<RootFolderPathService>();
+    builder.Services.AddHostedService<SeriesBulkWorker>();
+    builder.Services.AddScoped(sp => new SeriesMoveService(sp.GetRequiredService<MakiDbContext>(),
+        sp.GetRequiredService<Maki.Core.Security.ICurrentUser>(), sp.GetRequiredService<KavitaScanService>(),
+        sp.GetRequiredService<ILogger<SeriesMoveService>>()));
     builder.Services.AddScoped<TorrentImportService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<SeriesMetadataChangeLog>();
@@ -1009,6 +1062,7 @@ try
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddSingleton<TorrentPollState>();
+    builder.Services.AddSingleton<IStalledDownloadResearch, StalledDownloadResearch>();
     builder.Services.AddSingleton<ReleaseSearchCache>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
@@ -1024,6 +1078,7 @@ try
     builder.Services.AddScoped<StatsStandingService>();
     builder.Services.AddScoped<ReadingSessionService>();
     builder.Services.AddScoped<ReadingSessionBackfillService>();
+    builder.Services.AddScoped<SeriesCompletionBackfillService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
@@ -1045,9 +1100,22 @@ try
     builder.Services.AddSingleton<KavitaLiveCoverage>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
+    builder.Services.AddSingleton<ReadingAwareQueueBump>();
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ReaderThumbnailCache>();
+    builder.Services.AddSingleton<ReaderRecapCache>();
+    builder.Services.AddSingleton<ReaderCreditsCache>();
+    builder.Services.AddSingleton<CreditStore>();
+    builder.Services.AddSingleton<CreditStrips>();
+    builder.Services.AddSingleton<CreditBank>();
+    builder.Services.AddSingleton<CreditNoticeStore>();
+    builder.Services.AddScoped<CreditGroupsService>();
+    builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
+        sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
+    builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>
+        sp.GetRequiredService<Maki.Api.Services.Ocr.PageTextReader>());
     builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<ReadingStatusService>();
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelCatalog>();
@@ -1060,7 +1128,10 @@ try
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleQueue>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscaleWorker>());
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscalePrepareService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscalePrepareService>());
     builder.Services.AddScoped<ReadingTimeEstimateService>();
+    builder.Services.AddScoped<SeriesReadingStatsService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
     builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthenticator>();
@@ -1264,6 +1335,14 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
+        // Every-minute tick; DropFolderImportService decides whether the configured interval has elapsed.
+        q.AddJob<Maki.Api.Jobs.DropFolderImportJob>(j => j.WithIdentity(Maki.Api.Jobs.DropFolderImportJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.DropFolderImportJob.Key)
+            .WithIdentity("drop-folder-import-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
         // Every-minute tick; ImportListService decides whether the configured interval has elapsed.
         // Starts well after the scrobble tick so the first passes don't hit the trackers together.
         q.AddJob<Maki.Api.Jobs.ImportListJob>(j => j.WithIdentity(Maki.Api.Jobs.ImportListJob.Key));
@@ -1373,6 +1452,24 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
+        // New sequels and spin-offs of library series, same schedule as the follow check.
+        q.AddJob<Maki.Api.Jobs.RelatedWorkWatchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.RelatedWorkWatchJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.RelatedWorkWatchJob.Key)
+            .WithIdentity("related-work-watch-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(22))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Reading status auto rules (put on hold / drop after N idle days), opt-in per reader.
+        q.AddJob<Maki.Api.Jobs.ReadingStatusAutoJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ReadingStatusAutoJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ReadingStatusAutoJob.Key)
+            .WithIdentity("reading-status-rules-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
         q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
@@ -1387,15 +1484,17 @@ try
             // a second one cannot overlap an index build.
             .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
+        // Frees the embedding session when nothing has used it. One minute is the tick, not the
         // idle window - the job reads that itself - so the window can change without rescheduling.
+        // The job only compares a timestamp, and a five-minute tick held the session up to five
+        // minutes past its window.
         q.AddJob<Maki.Api.Jobs.EmbedderIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
             .WithIdentity("embedder-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.UpscalerIdleUnloadJob.Key));
@@ -1406,20 +1505,20 @@ try
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // The same for the discovery artifacts, which are ~72 MB between them. Started well after
-        // the warm-up job so a fresh instance is not unloading what it is still building, and the
-        // tick is the same five minutes for the same reason.
+        // the warm-up job so a fresh instance is not unloading what it is still building, and
+        // ticking every minute for the same reason as the embedder's.
         q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // And the headless browsers, which are ~160 MB of native memory between the Playwright
         // driver and the shell's processes. Nothing launches one at startup, so this can start
         // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is three: a five-minute tick held a browser up to eight. The check is in memory.
+        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
@@ -1597,6 +1696,9 @@ try
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
         SqliteStartup.KeepAttached(paths);
 
+        VersionHistory.RecordAsync(scope.ServiceProvider.GetRequiredService<IAppSettings>(), VersionInfo.Version, freshDatabase)
+            .GetAwaiter().GetResult();
+
         // Told after the migration, never before: the UserNotifications table is itself created by a
         // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited
         // rather than fire-and-forget because the host is still starting and a detached task would
@@ -1626,6 +1728,10 @@ try
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
         // on the stats page from the first release rather than only for reads after upgrade.
         scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Series finished before the Completed reading status existed get it, so the trackers hear.
+        scope.ServiceProvider.GetRequiredService<SeriesCompletionBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing

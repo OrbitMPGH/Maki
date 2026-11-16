@@ -23,7 +23,8 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TrackersAdmin: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList/ }))
     const clientId = await canvas.findAllByRole('textbox', { name: 'Client ID' })
     await waitFor(() => expect(clientId[0]).toHaveValue('48211'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Sync interval (minutes)' })).toHaveValue('30'))
@@ -44,6 +45,7 @@ export const TrackersReader: Story = {
 
 export const TrackersEditShowsSave: Story = {
   play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Kitsu/ }))
     const email = await canvas.findByRole('textbox', { name: 'Email' })
     await waitFor(() => expect(email).toHaveValue('rin@example.test'))
     await userEvent.type(email, '.au')

@@ -71,8 +71,8 @@ public class Chapter
 
     /// <summary>
     /// Wanted, not on disk, and not removed on purpose: what downloads go looking for. Every
-    /// download selector and missing count uses this. The SQL tallies in <c>SeriesController</c> and
-    /// <c>ReadCounts</c> spell the same condition out, since EF can't translate a method call.
+    /// download selector and missing count uses this. The SQL tallies in <c>LibraryListRows</c> spell
+    /// the same condition out, since EF can't translate a method call.
     /// </summary>
     public static bool IsMissing(Chapter c) => c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null;
 

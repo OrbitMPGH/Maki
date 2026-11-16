@@ -35,6 +35,10 @@ public record SourceLanguagePreference(IReadOnlyList<string> Order, IReadOnlyLis
             ? enabled
             : [SourceLanguages.Default];
 
+    /// <summary>Whether a result tagged with <paramref name="language"/> is one anyone asked for. Untagged results always are.</summary>
+    public bool Wants(string? language) =>
+        language is null || EnabledInOrder.Any(code => LocalizedTitle.Matches(language, code));
+
     public static SourceLanguagePreference Parse(string? orderCsv, string? disabledCsv) =>
         new(SourceAvailability.Parse(orderCsv), SourceAvailability.Parse(disabledCsv));
 

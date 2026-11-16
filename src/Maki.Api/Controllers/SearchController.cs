@@ -365,6 +365,8 @@ public class SearchController(
             // serves each language as its own series id (MANGA Plus) answers false: there is
             // nothing to filter, a second language is a second mapping.
             SupportsLanguageFilter = s.Capabilities.HasFlag(SourceCapabilities.SupportsLanguageFilter),
+            // Lists several groups' uploads of a chapter, so the preferred and blocked groups apply to it.
+            ScanlationGroups = s is IScanlationGroupSource,
             s.SupportedLanguages,
             Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase),
             Kind = s.Kind.ToString().ToLowerInvariant(),

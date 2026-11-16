@@ -1,6 +1,9 @@
 import { Checkbox, Divider, SegmentedControl, Switch, Text } from '@mantine/core'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import { IconBell, IconDeviceMobile } from '../../lib/icons'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { newControlMark, useNewSettingSet } from '../../pages/settings/newSettings'
+import { NewSettingPill } from './NewSettingPill'
 import {
   INBOX_ADMIN_ONLY,
   visibleInboxCategories,
@@ -25,6 +28,11 @@ import { Trans, useLingui } from '@lingui/react/macro'
  * here. The two systems are deliberately separate so a chat channel isn't flooded with one
  * person's achievements.
  */
+/** Event rows with a Settings registry entry of their own, for the New tab and deep links. */
+const TYPE_ENTRIES: Partial<Record<InboxEventType, string>> = {
+  newRelatedWork: 'related-work-notifications',
+}
+
 export function NotificationPrefsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -36,6 +44,7 @@ export function NotificationPrefsSection() {
   const save = useSaveInboxPrefs()
   const { data: pushPrefs } = usePushPrefs()
   const savePush = useSavePushPrefs()
+  const newIds = useNewSettingSet()
 
   if (!prefs) {
     return null
@@ -65,9 +74,9 @@ export function NotificationPrefsSection() {
 
       <Divider my="md" />
 
-      <Text size="sm" fw={500}>
+      <SettingsGroupTitle>
         <Trans>Which series notify me</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>Any series can be set differently from its own page.</Trans>
       </Text>
@@ -84,7 +93,7 @@ export function NotificationPrefsSection() {
       <Divider my="md" />
 
       <table className="notify-matrix">
-        <thead>
+        <thead data-new-keep>
           <tr>
             <th scope="col">
               <Trans>Event</Trans>
@@ -118,10 +127,18 @@ export function NotificationPrefsSection() {
                 const label = renderLabel(INBOX_TYPE_LABELS[type])
                 const description = INBOX_TYPE_DESCRIPTIONS[type]
                 const bellOn = prefs.types[type] ?? true
+                const entryId = TYPE_ENTRIES[type]
                 return (
-                  <tr key={type}>
+                  <tr
+                    key={type}
+                    id={entryId ? `setting-${entryId}` : undefined}
+                    {...(entryId ? newControlMark(newIds, entryId) : {})}
+                  >
                     <th scope="row">
-                      <Text size="sm">{label}</Text>
+                      <Text size="sm">
+                        {label}
+                        {entryId && <NewSettingPill id={entryId} />}
+                      </Text>
                       {description && (
                         <Text size="xs" c="var(--ink-3)">
                           {renderLabel(description)}

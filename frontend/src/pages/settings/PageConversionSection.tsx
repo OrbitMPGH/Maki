@@ -1,4 +1,5 @@
 import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { IconPlayerPause, IconPlayerPlay, IconSettings } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { notifications } from '../../lib/toast'
@@ -6,7 +7,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
 import { useSettingsSummary } from '../../components/pageconversion/labels'
-import { formatBytes, formatDateTime } from '../../format'
+import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import {
   usePageConversion,
   usePausePageConversion,
@@ -15,7 +16,7 @@ import {
   type PageConversionStatus,
 } from '../../api/pageConversion'
 
-/** Converts stored pages to WebP or AVIF: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
+/** Converts stored pages to WebP, AVIF or JPEG XL: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
 export function PageConversionSection() {
   const { data: status } = usePageConversion()
   const summarize = useSettingsSummary()
@@ -24,20 +25,22 @@ export function PageConversionSection() {
     <SettingsSection
       id="page-conversion"
       title={<Trans>Page conversion</Trans>}
-      description={<Trans>Stores chapter pages in a smaller image format.</Trans>}
     >
       {status && (
         <Stack>
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Stack gap={2}>
-              <Text fw={500} size="sm">
+              <SettingsGroupTitle>
                 <Trans>Current setting</Trans>
-              </Text>
+              </SettingsGroupTitle>
               <Text size="sm">{summarize(status.settings, status.library.ruleCount)}</Text>
               {status.settings.format && status.settings.pngLossless && (
                 <Text size="xs" c="var(--ink-3)">
                   <Trans>PNG pages are kept lossless.</Trans>
                 </Text>
+              )}
+              {status.settings.format && status.settings.splitHeight != null && (
+                <SplitLine height={status.settings.splitHeight} />
               )}
               {status.settings.format && status.library.overrideSeries > 0 && (
                 <Text size="xs" c="var(--ink-3)">
@@ -52,7 +55,7 @@ export function PageConversionSection() {
             {status.settings.format ? (
               <Button
                 component={Link}
-                to="/settings/page-conversion?step=2"
+                to="/settings/page-conversion"
                 variant="default"
                 size="xs"
                 leftSection={<IconSettings size={16} />}
@@ -87,9 +90,9 @@ export function PageConversionSection() {
 function NewDownloads({ queued }: { queued: number }) {
   return (
     <Stack gap={2}>
-      <Text fw={500} size="sm">
+      <SettingsGroupTitle>
         <Trans>New downloads</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="sm" c="var(--ink-3)">
         {queued > 0 ? (
           <Plural
@@ -119,9 +122,9 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
   return (
     <Stack gap="xs">
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Existing library</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {pass.state === 'running' ? (
           <Button
             variant="default"
@@ -258,6 +261,15 @@ function PassTotals({
         {converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed
         over for now.
       </Trans>
+    </Text>
+  )
+}
+
+function SplitLine({ height }: { height: number }) {
+  const pixels = formatNumber(height)
+  return (
+    <Text size="xs" c="var(--ink-3)">
+      <Trans>Pages taller than {pixels} px are split.</Trans>
     </Text>
   )
 }

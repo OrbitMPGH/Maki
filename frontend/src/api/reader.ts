@@ -1,9 +1,10 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import type { QualityTierName } from './upgrades'
 import { t } from '@lingui/core/macro'
 import { getConnectivity } from '../lib/connectivity'
+import { jpegXlSupported, jpegXlSupportedNow } from '../lib/enhance/jpegXl'
 import { randomUUID } from '../lib/uuid'
 import { queueOfflineWrite } from '../pwa/progressQueue'
 import { api, ApiError, apiRootNow, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
@@ -25,7 +26,15 @@ export interface ReaderManifest {
    * arrives in batches says nothing about how much is still to come.
    */
   seriesWantedCount: number
+  /** Finishing this chapter finishes the series: it is complete and this is its last numbered chapter. Absent on a manifest saved offline before it existed. */
+  finishesSeries?: boolean
+  /** You have already finished the series. Absent on a manifest saved offline before it existed. */
+  seriesFinished?: boolean
+  /** Your median time per chapter, from your own timed reads. Null until three chapters are timed. Absent on a manifest saved offline before it existed. */
+  readingPace?: ReadingPace | null
   resumePage: number
+  /** How far down the resume page (0 to 1) the continuous strip opens. Absent on a manifest saved offline before it existed. */
+  resumeOffset?: number
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
@@ -44,6 +53,11 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
+  /**
+   * The credit pages to leave out, when credit pages are hidden and the background scan already found
+   * them for this file, so the first paint needs no search. Null or absent: ask `GET credits`.
+   */
+  credits?: Omit<ReaderCredits, 'pageVersion'> | null
   /** The quality tier of the file behind the pages. Absent on a manifest saved offline before it existed. */
   tier?: QualityTierName
   /** Whether the admin turned on server upscaling, and which of its models this reader can pick. Absent on a manifest saved offline before it existed. */
@@ -52,6 +66,31 @@ export interface ReaderManifest {
   noteCount?: number
   /** Zero based pages with at least one visible note, sorted. Absent on a manifest saved offline before it existed. */
   notedPages?: number[]
+}
+
+export interface ReadingPace {
+  chapterSeconds: number
+  style: 'scrolling' | 'paged'
+  /** What the series is meant to hold, the same total the series page's time to finish counts against. */
+  totalChapters: number
+}
+
+/** What the end screen reads live, so the reader's manifest never has to be refetched for it. */
+export interface ReaderEnding {
+  nextChapterId: number | null
+  nextChapterLabel: string | null
+  nextChapterNumber: number | null
+  seriesChapterCount: number
+  /** Counts this chapter once its completing write has landed, which `completed` tells. */
+  seriesReadCount: number
+  seriesWantedCount: number
+  completed: boolean
+  finished: boolean
+  rating: number | null
+  provisionalRating: number | null
+  rateHintDismissed: boolean
+  /** Set when the end screen asks whether you're done with a finished series: chapters you switched off, 0 when none. Null means no ask. */
+  leftOutToComplete: number | null
 }
 
 export interface EnhanceServer {
@@ -110,23 +149,28 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
  * `UpscaleCache.Generation` on the server. The enhanced page is kept as immutable, so a pipeline change
  * only reaches a browser that already has the page when its URL changes. Raise the two together.
  */
-const ENHANCE_GENERATION = 'g3'
+const ENHANCE_GENERATION = 'g6'
 
-function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string): string {
-  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}`
+void jpegXlSupported()
+
+function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string, jpegXl: boolean): string {
+  // Colour pages are cached as JPEG XL; without `jxl=1` the server sends them as WebP instead.
+  const jxl = jpegXl ? '&jxl=1' : ''
+  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}${jxl}`
   return `${apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
 }
 
 /** Where a page upscaled on the server is served from. A 404 there means not upscaled yet; it never queues one. */
 export async function serverEnhancedUrl(chapterId: number, page: number, model: string, pageVersion: string): Promise<string> {
-  const init = await getInitialize()
-  return enhancedUrl(init.apiRoot, chapterId, page, model, pageVersion)
+  const [init, jpegXl] = await Promise.all([getInitialize(), jpegXlSupported()])
+  return enhancedUrl(init.apiRoot, chapterId, page, model, pageVersion, jpegXl)
 }
 
-/** `serverEnhancedUrl` without the wait, or null while the bootstrap has not loaded. */
+/** `serverEnhancedUrl` without the wait, or null while the bootstrap or the JPEG XL probe has not settled. */
 export function serverEnhancedUrlNow(chapterId: number, page: number, model: string, pageVersion: string): string | null {
   const apiRoot = apiRootNow()
-  return apiRoot === null ? null : enhancedUrl(apiRoot, chapterId, page, model, pageVersion)
+  const jpegXl = jpegXlSupportedNow()
+  return apiRoot === null || jpegXl === null ? null : enhancedUrl(apiRoot, chapterId, page, model, pageVersion, jpegXl)
 }
 
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
@@ -139,7 +183,9 @@ const ENHANCE_SESSION = randomUUID()
  * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
  * not answered here. `notWanted` names this chapter's pages to drop from what is still queued.
  * `window` is how many leading `pages` are the reading window, ahead of the whole chapter's rest. A
- * hidden tab says so, and the server does not count its request as reading.
+ * hidden tab says so, and the server does not count its request as reading. `jpegXl` lets the server
+ * encode pages only this browser wants as WebP when it cannot show JPEG XL; the probe is awaited so a
+ * tab's first request never says no only because the probe had not answered yet.
  */
 export function requestServerEnhance(
   chapterId: number,
@@ -149,23 +195,34 @@ export function requestServerEnhance(
   wholeChapter = false,
   notWanted: number[] = [],
   window = pages.length,
-) {
-  return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
-    method: 'POST',
-    body: JSON.stringify({
-      model,
-      pages,
-      ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
-      ...(wholeChapter && { wholeChapter, window }),
-      ...(notWanted.length > 0 && { notWanted }),
-      session: ENHANCE_SESSION,
-      visible: document.visibilityState === 'visible',
-    }),
-  })
+): Promise<{ pages: { page: number; state: ServerPageState }[] }> {
+  const post = (jpegXl: boolean) =>
+    api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
+      method: 'POST',
+      body: JSON.stringify({
+        model,
+        pages,
+        ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
+        ...(wholeChapter && { wholeChapter, window }),
+        ...(notWanted.length > 0 && { notWanted }),
+        session: ENHANCE_SESSION,
+        visible: document.visibilityState === 'visible',
+        jpegXl,
+      }),
+    })
+  // Sent in the same tick once the probe has settled, so a cancel issued after it stays behind it.
+  const known = jpegXlSupportedNow()
+  if (known !== null) return post(known)
+  // A cancel that arrives while the probe is still out must not be overtaken by this request.
+  const cancelsBefore = enhanceCancels
+  return jpegXlSupported().then((jpegXl) => (cancelsBefore === enhanceCancels ? post(jpegXl) : { pages: [] }))
 }
+
+let enhanceCancels = 0
 
 /** Drops this tab's pending server upscales. `keepalive` lets it go out while the tab closes. */
 export function cancelServerEnhance() {
+  enhanceCancels++
   return api<void>(`/reader/enhance?session=${encodeURIComponent(ENHANCE_SESSION)}`, { method: 'DELETE', keepalive: true })
 }
 
@@ -199,6 +256,94 @@ export function useReaderManifest(chapterId: number) {
     staleTime: Infinity,
     refetchOnMount: 'always',
   })
+}
+
+/**
+ * Kept apart from the manifest on purpose: a manifest refetch flips `isFetching` and replaces the
+ * object every page effect keys on, while this only feeds the end screen. The socket invalidates it
+ * when a chapter of the series lands, which is what swaps "Last chapter on disk" for the next one.
+ */
+export function useReaderEnding(seriesId: number | undefined, chapterId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['reader-ending', seriesId, chapterId],
+    queryFn: () => api<ReaderEnding>(`/reader/chapter/${chapterId}/ending`),
+    enabled: enabled && seriesId != null,
+    staleTime: 0,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/** Where a chapter's recap of the previous chapter ends: the page new content starts on and how far down it (0 to 1). Both null without one. */
+export interface ReaderRecap {
+  page: number | null
+  offset: number | null
+}
+
+/** The server decodes about 35 pages the first time, so the reader also asks ahead for the next chapter. */
+export const readerRecapQuery = (chapterId: number) =>
+  queryOptions({
+    queryKey: ['reader-recap', chapterId],
+    queryFn: () => api<ReaderRecap>(`/reader/chapter/${chapterId}/recap`),
+    staleTime: Infinity,
+    retry: false,
+    meta: { silent: true },
+  })
+
+/**
+ * The credit, recruitment and notice pages the reader leaves out: whole pages at the chapter's start
+ * and end, how far down the first page shown (0 to 1) a banner fused into it ends, and what share of
+ * the last page shown (0 to 1, from its bottom) a banner fused into it takes. All zero when nothing
+ * repeats. `pageVersion` is the manifest's for the file the answer was found in.
+ */
+export interface ReaderCredits {
+  headPages: number
+  headOffset: number
+  tailPages: number
+  tailOffset: number
+  pageVersion: string
+}
+
+const readerCreditsUrl = (chapterId: number) => `/reader/chapter/${chapterId}/credits`
+
+/**
+ * Cached per file version, so a chapter whose file was replaced (an upgrade, a page conversion) is
+ * searched again instead of hiding pages by the old file's answer.
+ */
+export const readerCreditsQuery = (chapterId: number, pageVersion: string | undefined) =>
+  queryOptions({
+    queryKey: ['reader-credits', chapterId, pageVersion],
+    queryFn: () => api<ReaderCredits>(readerCreditsUrl(chapterId)),
+    staleTime: Infinity,
+    retry: false,
+    meta: { silent: true },
+  })
+
+const warmed = new Set<number>()
+
+/**
+ * Has the server start a chapter's credit page search before the reader asks, from where the next
+ * chapter to read is shown (the series page, Home's Continue). The server checks the series' settings
+ * and does nothing when credit pages are not hidden. Once per chapter per page load.
+ */
+export function warmReaderCredits(chapterId: number): void {
+  if (warmed.has(chapterId)) return
+  warmed.add(chapterId)
+  api(`${readerCreditsUrl(chapterId)}/warm`, { method: 'POST' }).catch(() => warmed.delete(chapterId))
+}
+
+/**
+ * Asks ahead for the next chapter's credit pages once this one's are known, since a search that is
+ * not stored yet decodes the edges of up to seven chapters. Its file version is not known yet, so the
+ * answer is stored under the version it carries.
+ */
+export async function prefetchReaderCredits(queryClient: QueryClient, chapterId: number): Promise<void> {
+  try {
+    const found = await api<ReaderCredits>(readerCreditsUrl(chapterId))
+    queryClient.setQueryData(readerCreditsQuery(chapterId, found.pageVersion).queryKey, found)
+  } catch {
+    // The chapter's own search runs when it opens.
+  }
 }
 
 /**
@@ -252,6 +397,7 @@ export function useContinueReading(seriesId: number, enabled = true) {
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
  * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
+ * `pageOffset` is how far down that page the continuous strip is (0 to 1); absent means its top.
  *
  * `seconds` is the exception: a delta of active reading time since the last write, which the
  * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
@@ -270,11 +416,12 @@ export async function saveProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
-    body: JSON.stringify({ pageIndex, completed, seconds, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, opId: randomUUID(), seriesId }),
   })
 }
 
@@ -294,15 +441,16 @@ export async function flushProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   const init = await getInitialize()
   const res = await trackedFetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
-    body: JSON.stringify({ pageIndex, completed, seconds, final: true, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, final: true, opId: randomUUID(), seriesId }),
   })
   if (!res.ok) {
     const status = res.status
@@ -317,9 +465,10 @@ function queuedOffline(
   completed: boolean | undefined,
   seconds: number | undefined,
   pageCount: number,
+  pageOffset: number | undefined,
 ): Promise<boolean> {
   if (getConnectivity() !== 'offline') return Promise.resolve(false)
-  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount).catch(
+  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount, pageOffset).catch(
     () => false,
   )
 }

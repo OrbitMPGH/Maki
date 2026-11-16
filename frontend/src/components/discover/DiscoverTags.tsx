@@ -1,16 +1,18 @@
-import { Paper, Title } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
 import type { MangaBakaTag } from '../../api/hooks'
+import { IconTag } from '../../lib/icons'
 import { TagBuckets } from '../TagBuckets'
+import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 
 /** The Discover detail card's Tags panel: a titled card around the shared bucket list. */
 export function DiscoverTags({ tags }: { tags: MangaBakaTag[] }) {
   return (
-    <Paper withBorder radius="lg" p="lg">
-      <Title order={2} size="h3" fz="var(--type-section)">
+    <Panel>
+      <PanelTitle order={2} icon={IconTag}>
         <Trans>Tags</Trans>
-      </Title>
+      </PanelTitle>
       <TagBuckets tags={tags} />
-    </Paper>
+    </Panel>
   )
 }

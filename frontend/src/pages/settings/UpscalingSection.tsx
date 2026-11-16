@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { Anchor, Badge, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
 import { IconDownload, IconGauge, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
@@ -16,15 +17,31 @@ import {
   useSaveUpscaling,
   useUpscaleBenchmark,
   useUpscaling,
+  type PrepareAheadSettings,
+  type PreparedState,
   type UpscaleCatalogEntry,
   type UpscalingSettings,
 } from '../../api/upscaling'
 import { MetaList } from '../../components/ui/MetaList'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
 
 const NOTICES_URL = 'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md'
 const MB = 1024 ** 2
 
 const sameModels = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id))
+
+const PREPARE_DEFAULTS: PrepareAheadSettings = { enabled: false, days: 14, series: 8, chapters: 1, mb: 4096 }
+
+const samePrepare = (a?: PrepareAheadSettings, b?: PrepareAheadSettings) =>
+  (a === undefined && b === undefined) ||
+  (a !== undefined &&
+    b !== undefined &&
+    a.enabled === b.enabled &&
+    a.days === b.days &&
+    a.series === b.series &&
+    a.chapters === b.chapters &&
+    a.mb === b.mb)
 
 /** Server-side page upscaling: which ONNX models readers may use, and how much CPU and disk they get. */
 export function UpscalingSection() {
@@ -41,10 +58,15 @@ export function UpscalingSection() {
     (draft.enabled !== saved.enabled ||
       draft.threads !== saved.threads ||
       draft.cacheMb !== saved.cacheMb ||
+      draft.jpegXl !== saved.jpegXl ||
+      !samePrepare(draft.prepare, saved.prepare) ||
       !sameModels(draft.models, saved.models))
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
   }
+  // Prepare ahead and JPEG XL only appear once upscaling is on, so until then the New tab shows the switch.
+  const offMark = useNewControlMark('prepare-ahead', 'upscaling-jpeg-xl')
+  const jpegXlMark = useNewControlMark('upscaling-jpeg-xl')
 
   return (
     <SettingsSection
@@ -66,20 +88,22 @@ export function UpscalingSection() {
     >
       {current && state && (
         <Stack>
-          <Switch
-            label={t`Enable server upscaling`}
-            description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
-            checked={current.enabled}
-            onChange={(e) => update({ enabled: e.currentTarget.checked })}
-          />
+          <div {...(current.enabled ? {} : offMark)}>
+            <Switch
+              label={t`Enable server upscaling`}
+              description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
+              checked={current.enabled}
+              onChange={(e) => update({ enabled: e.currentTarget.checked })}
+            />
+          </div>
 
           {current.enabled && (
             <>
               <Divider />
               <Stack gap="xs">
-                <Text fw={500} size="sm">
+                <SettingsGroupTitle>
                   <Trans>Models</Trans>
-                </Text>
+                </SettingsGroupTitle>
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its
@@ -123,7 +147,38 @@ export function UpscalingSection() {
                 />
               </Group>
 
-              <CacheUsage bytes={state.cache.bytes} files={state.cache.files} limitMb={saved?.cacheMb ?? current.cacheMb} />
+              <div id="setting-upscaling-jpeg-xl" {...jpegXlMark}>
+                <Switch
+                  label={
+                    <>
+                      {t`JPEG XL for colour pages`}
+                      <NewSettingPill id="upscaling-jpeg-xl" />
+                    </>
+                  }
+                  description={
+                    saved?.jpegXlAvailable === false
+                      ? t`Not available: this build of Maki has no JPEG XL library, so colour pages are WebP.`
+                      : t`Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP.`
+                  }
+                  disabled={saved?.jpegXlAvailable === false}
+                  checked={current.jpegXl !== false && saved?.jpegXlAvailable !== false}
+                  onChange={(e) => update({ jpegXl: e.currentTarget.checked })}
+                />
+              </div>
+
+              <CacheUsage
+                bytes={state.cache.bytes - (state.prepared?.bytes ?? 0)}
+                files={state.cache.files}
+                limitMb={saved?.cacheMb ?? current.cacheMb}
+              />
+
+              {saved?.prepare && (
+                <PrepareAhead
+                  value={current.prepare ?? PREPARE_DEFAULTS}
+                  onChange={(prepare) => update({ prepare })}
+                  prepared={saved.prepare.enabled ? state.prepared : undefined}
+                />
+              )}
             </>
           )}
 
@@ -232,7 +287,8 @@ function ModelRow({
       <Group gap="xs" wrap="wrap">
         {model.bundled ? null : ready ? (
           <Button
-            variant="default"
+            variant="light"
+            color="var(--danger)"
             size="xs"
             leftSection={<IconTrash size={16} />}
             loading={remove.isPending}
@@ -310,6 +366,94 @@ function Rating({ label, value, word, minWidth }: { label: string; value: ModelR
   )
 }
 
+function PrepareAhead({
+  value,
+  onChange,
+  prepared,
+}: {
+  value: PrepareAheadSettings
+  onChange: (value: PrepareAheadSettings) => void
+  prepared?: PreparedState
+}) {
+  const { t } = useLingui()
+  const set = (changes: Partial<PrepareAheadSettings>) => onChange({ ...value, ...changes })
+  const mark = useNewControlMark('prepare-ahead')
+  return (
+    <>
+      <Divider />
+      <Stack id="setting-prepare-ahead" {...mark} gap="md">
+        <Switch
+          label={
+            <>
+              {t`Prepare chapters ahead`}
+              <NewSettingPill id="prepare-ahead" />
+            </>
+          }
+          description={t`Upscales the next chapters of series set to Reading while nobody is reading. Only series with Enhance on Always and a server model count; Auto is left out.`}
+          checked={value.enabled}
+          onChange={(e) => set({ enabled: e.currentTarget.checked })}
+        />
+        {value.enabled && (
+          <>
+            <Group gap="md" align="flex-start" wrap="wrap">
+              <SettingsNumberInput
+                label={t`Read within (days)`}
+                description={t`Series read longer ago are left alone.`}
+                min={1}
+                max={365}
+                value={value.days}
+                onChange={(days) => set({ days })}
+              />
+              <SettingsNumberInput
+                label={t`Series per reader`}
+                description={t`The most recently read ones go first.`}
+                min={1}
+                max={100}
+                value={value.series}
+                onChange={(series) => set({ series })}
+              />
+              <SettingsNumberInput
+                label={t`Chapters per series`}
+                description={t`From the chapter you would open next.`}
+                min={1}
+                max={3}
+                value={value.chapters}
+                onChange={(chapters) => set({ chapters })}
+              />
+              <SettingsNumberInput
+                label={t`Space (MB)`}
+                description={t`Prepared pages are kept until read, apart from the cache size.`}
+                min={256}
+                value={value.mb}
+                onChange={(mb) => set({ mb })}
+              />
+            </Group>
+            {prepared && <PreparedUsage prepared={prepared} limitMb={value.mb} />}
+          </>
+        )}
+      </Stack>
+    </>
+  )
+}
+
+function PreparedUsage({ prepared, limitMb }: { prepared: PreparedState; limitMb: number }) {
+  const used = `${formatNumber(Math.round(prepared.bytes / MB))} MB`
+  const limit = `${formatNumber(limitMb)} MB`
+  const chapters = prepared.chapters
+  const waiting = prepared.waiting
+  return (
+    <Text size="sm">
+      <Plural value={chapters} one={`# chapter held, ${used} of ${limit}`} other={`# chapters held, ${used} of ${limit}`} />
+      {waiting > 0 && (
+        <>
+          {' · '}
+          <Plural value={waiting} one="# page still to make" other="# pages still to make" />
+        </>
+      )}
+    </Text>
+  )
+}
+
 function CacheUsage({ bytes, files, limitMb }: { bytes: number; files: number; limitMb: number }) {
   const clear = useClearUpscaleCache()
   const used = `${formatNumber(Math.round(bytes / MB))} MB`
@@ -321,7 +465,8 @@ function CacheUsage({ bytes, files, limitMb }: { bytes: number; files: number; l
         <Plural value={files} one={`${used} of ${limit}, # page`} other={`${used} of ${limit}, # pages`} />
       </Text>
       <Button
-        variant="default"
+        variant="light"
+        color="var(--danger)"
         size="xs"
         leftSection={<IconTrash size={16} />}
         disabled={files === 0}

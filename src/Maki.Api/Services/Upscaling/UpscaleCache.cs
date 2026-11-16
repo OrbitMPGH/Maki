@@ -6,10 +6,12 @@ using Maki.Core.Configuration;
 namespace Maki.Api.Services.Upscaling;
 
 /// <summary>
-/// Upscaled pages on disk at <c>{ConfigDir}/cache/upscale/{ChapterFileId}/{ArchiveVersion}-{absIndex}.{model}.{webp|jpg}</c>,
+/// Upscaled pages on disk at <c>{ConfigDir}/cache/upscale/{ChapterFileId}/{ArchiveVersion}-{absIndex}.{model}.{webp|jxl|jpg}</c>,
 /// a root of its own so the reader cache prune never sees them. Eviction is by last access as this
 /// index records it (filesystem atime is not updated on read on NTFS or under relatime), seeded from
-/// each file's write time by a walk off the request path.
+/// each file's write time by a walk off the request path. Pages <see cref="Hold"/> names (chapters being
+/// prepared ahead) are never evicted and do not count against the cap; the planner keeps them under
+/// a budget of their own.
 /// </summary>
 public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, ILogger<UpscaleCache> logger)
 {
@@ -17,6 +19,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
 
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _index = new(StringComparer.Ordinal);
+    private HashSet<string> _held = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _trim = new(1, 1);
     private long _bytes;
     private Task? _seeding;
@@ -26,11 +29,14 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// it stop being served and are pruned as unknown names. Change the regex and the frontend's
     /// <c>ENHANCE_GENERATION</c> with it: the browser keeps enhanced pages as immutable by URL. g2: colour comes
     /// from the source page, so grey pages carry no model tint. g3: pages with an embedded profile are
-    /// converted to sRGB first.
+    /// converted to sRGB first. g4: flat grey areas inside inferred tiles are snapped to their exact
+    /// value, so Maki 2x no longer leaves lit boxes on black panels. g5: the source colour is smoothed
+    /// within flat areas, so JPEG blocks no longer show as tinted boxes. g6: colour WebP is q88 at
+    /// effort 2 instead of q85 at effort 4.
     /// </summary>
-    internal const string Generation = "g3";
+    internal const string Generation = "g6";
 
-    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g3\.(webp|jpg)$")]
+    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g6\.(webp|jxl|jpg)$")]
     internal static partial Regex FileName();
 
     public string Root { get; } = Path.GetFullPath(Path.Combine(paths.CacheDir, "upscale"));
@@ -42,8 +48,72 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
         $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}.{extension}");
 
-    public static string ContentType(string path) =>
-        path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp" : "image/jpeg";
+    /// <summary>A page's path without its extension, which is what a hold names.</summary>
+    private string Stem(UpscaleWorkKey key) => Path.Combine(
+        Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
+        $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}");
+
+    private bool IsHeld(string path) => _held.Contains(path[..path.LastIndexOf('.')]);
+
+    /// <summary>
+    /// Replaces the pages kept out of eviction. Pages no longer named count against the cap again, so
+    /// call <see cref="EnforceCapAsync"/> after shrinking the set.
+    /// </summary>
+    public void Hold(IEnumerable<UpscaleWorkKey> keys)
+    {
+        var held = keys.Select(Stem).ToHashSet(StringComparer.Ordinal);
+        lock (_gate)
+        {
+            _held = held;
+        }
+    }
+
+    /// <summary>The size of <paramref name="key"/>'s cached page, or null when it is not cached. Records no access.</summary>
+    public long? SizeOf(UpscaleWorkKey key)
+    {
+        var stem = Stem(key);
+        lock (_gate)
+        {
+            foreach (var extension in (string[])["webp", "jxl", "jpg"])
+            {
+                if (_index.TryGetValue($"{stem}.{extension}", out var entry))
+                {
+                    return entry.Bytes;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What held pages take up, and the average page across the whole cache (0 when empty).</summary>
+    public (long Bytes, int Files, long AveragePage) HeldStats()
+    {
+        lock (_gate)
+        {
+            long bytes = 0;
+            var files = 0;
+            foreach (var (path, entry) in _index)
+            {
+                if (IsHeld(path))
+                {
+                    bytes += entry.Bytes;
+                    files++;
+                }
+            }
+
+            return (bytes, files, _index.Count == 0 ? 0 : _bytes / _index.Count);
+        }
+    }
+
+    public static string ContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".webp" => "image/webp",
+        ".jxl" => "image/jxl",
+        _ => "image/jpeg"
+    };
+
+    public static bool IsJpegXl(string path) => path.EndsWith(".jxl", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Starts the index walk once; later calls return the same task.</summary>
     public Task EnsureSeededAsync()
@@ -54,11 +124,23 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         }
     }
 
-    /// <summary>The cached file for <paramref name="key"/>, recording the access, or null.</summary>
+    /// <summary>Whether libjxl loaded. Tests replace it; a cached JPEG XL page is unusable without it.</summary>
+    internal Func<bool> JpegXlReadable { get; set; } = () => Maki.Core.Images.JpegXl.IsAvailable;
+
+    /// <summary>
+    /// The cached file for <paramref name="key"/>, recording the access, or null. A JPEG XL page counts
+    /// as missing while libjxl is not loaded (a cache carried over from a build that had it): it could
+    /// not be converted for a browser without JPEG XL, so the page is made again as WebP instead.
+    /// </summary>
     public string? TryGet(UpscaleWorkKey key)
     {
-        foreach (var extension in (string[])["webp", "jpg"])
+        foreach (var extension in (string[])["webp", "jxl", "jpg"])
         {
+            if (extension == "jxl" && !JpegXlReadable())
+            {
+                continue;
+            }
+
             var path = PathFor(key, extension);
             if (File.Exists(path))
             {
@@ -72,12 +154,15 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         return null;
     }
 
+    /// <summary>Deletes a cached page that turned out to be unreadable, so the next request makes it again.</summary>
+    public void Discard(string path) => DeleteAndForget(path);
+
     /// <summary>Writes the page aside and moves it into place, then evicts down to the cap.</summary>
     public async Task<string> WriteAsync(UpscaleWorkKey key, byte[] bytes, string extension, CancellationToken ct)
     {
-        if (extension is not ("webp" or "jpg"))
+        if (extension is not ("webp" or "jxl" or "jpg"))
         {
-            throw new ArgumentOutOfRangeException(nameof(extension), extension, "webp or jpg");
+            throw new ArgumentOutOfRangeException(nameof(extension), extension, "webp, jxl or jpg");
         }
 
         await EnsureSeededAsync();
@@ -240,21 +325,24 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         try
         {
             List<string> victims;
+            long held;
             lock (_gate)
             {
-                if (_bytes <= cap)
+                held = _index.Where(e => IsHeld(e.Key)).Sum(e => e.Value.Bytes);
+                if (_bytes - held <= cap)
                 {
                     return;
                 }
 
-                victims = _index.Where(e => e.Key != keep).OrderBy(e => e.Value.LastAccessUtc).Select(e => e.Key).ToList();
+                victims = _index.Where(e => e.Key != keep && !IsHeld(e.Key))
+                    .OrderBy(e => e.Value.LastAccessUtc).Select(e => e.Key).ToList();
             }
 
             foreach (var path in victims)
             {
                 lock (_gate)
                 {
-                    if (_bytes <= cap)
+                    if (_bytes - held <= cap)
                     {
                         return;
                     }

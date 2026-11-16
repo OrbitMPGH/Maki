@@ -1,0 +1,27 @@
+<!-- @dsCard group="Actions" height=130 subtitle="Static rendition of Mantine TextInput with a search icon and a clear button" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><title>SearchInput preview</title>
+<style>
+  .mk-search { position: relative; width: 280px; }
+  .mk-search input { width: 100%; height: var(--control-height-xs); padding: 0 34px; border: 1px solid var(--border-control); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--type-body); }
+  .mk-search > span { position: absolute; top: 0; bottom: 0; display: grid; place-items: center; width: 34px; color: var(--ink-3); font-size: 16px; }
+  .mk-search > span:first-child { left: 0; }
+  .mk-search > span:last-child { right: 0; }
+</style>
+</head>
+<body>
+<div class="mk-preview" data-stack style="gap:14px">
+  <div class="mk-search">
+    <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span>
+    <input type="text" placeholder="Search series" aria-label="Search series">
+  </div>
+  <div class="mk-search">
+    <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span>
+    <input type="text" value="frieren" aria-label="Search series">
+    <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></span>
+  </div>
+</div>
+</body>
+</html>

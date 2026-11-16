@@ -6,6 +6,7 @@ using Maki.Core.Naming;
 using Maki.Core.Notifications;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
+using Maki.Core.Tags;
 using Maki.Data;
 using Maki.Data.Identity;
 using System.Security.Cryptography;
@@ -100,7 +101,9 @@ public class SeriesCreationService(
     IUserLocaleResolver locales,
     IMessageCatalog catalog,
     ILocalizer localizer,
-    ILogger<SeriesCreationService> logger)
+    ILogger<SeriesCreationService> logger,
+    AutoTagRuleService? autoTags = null,
+    RootFolderRoutingService? routing = null)
 {
     /// <param name="deferSourceMatching">
     /// Hand auto-matching to <see cref="SourceMatchWorkerHostedService"/> instead of awaiting it.
@@ -118,9 +121,13 @@ public class SeriesCreationService(
     /// "decide from the content rating" — see <see cref="IncognitoRatingRules"/>, which is also what
     /// an API client that never heard of the field gets.
     /// </param>
+    /// <param name="rootFolderId">
+    /// The folder the caller chose, or null to let the root folder rules pick one from among
+    /// <paramref name="usableRootFolderIds"/> (null meaning every folder).
+    /// </param>
     public async Task<SeriesCreationResult> CreateAsync(
         string metadataProviderId,
-        int rootFolderId,
+        int? rootFolderId,
         bool monitored,
         string? monitorNewItems,
         CancellationToken ct,
@@ -131,7 +138,8 @@ public class SeriesCreationService(
         string? addedFrom = null,
         Guid? clientMutationId = null,
         SeriesRequest? originatingRequest = null,
-        int? upgradeProfileId = null)
+        int? upgradeProfileId = null,
+        IReadOnlyCollection<int>? usableRootFolderIds = null)
     {
         // The profile joins the hash only when set, so a receipt written before the field existed still matches its retry.
         var payloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
@@ -173,10 +181,14 @@ public class SeriesCreationService(
             return replay;
         }
 
-        var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
-        if (rootFolder is null)
+        RootFolder? rootFolder = null;
+        if (rootFolderId is int chosenFolderId)
         {
-            return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+            rootFolder = await db.RootFolders.FindAsync([chosenFolderId], ct);
+            if (rootFolder is null)
+            {
+                return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+            }
         }
 
         var provider = metadataProviders.First();
@@ -225,6 +237,12 @@ public class SeriesCreationService(
         series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode) && Enum.IsDefined(explicitMode)
             ? explicitMode
             : await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
+        rootFolder ??= await RoutedRootFolderAsync(series, addedFrom, attributedUserId, usableRootFolderIds, ct);
+        if (rootFolder is null)
+        {
+            return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+        }
+
         series.RootFolderId = rootFolder.Id;
         series.UpgradeProfileId = upgradeProfileId;
         // Two series in one folder rescan each other's files and delete them with their own, and a
@@ -291,6 +309,13 @@ public class SeriesCreationService(
 
         folderNameLock.Dispose();
         providerLock?.Dispose();
+
+        // Before the announcement, so a tag-scoped notification connection hears about a series a
+        // rule tagged.
+        if (autoTags is not null)
+        {
+            await autoTags.ApplyOnAddAsync(series, AutoTagAddedVia.FromAddedFrom(addedFrom), attributedUserId, ct);
+        }
 
         await NotifyAddedAsync(series, originatingRequest, ct);
 
@@ -376,6 +401,19 @@ public class SeriesCreationService(
         }
 
         return new SeriesCreationResult(series, null, warnings);
+    }
+
+    /// <summary>The folder the root folder rules pick, else the first usable one; null when none is usable.</summary>
+    private async Task<RootFolder?> RoutedRootFolderAsync(
+        Series series, string? addedFrom, int? addedBy, IReadOnlyCollection<int>? usable, CancellationToken ct)
+    {
+        int? folderId = routing is not null
+            ? (await routing.RouteAsync(RootFolderRoutingService.SubjectFor(series, addedFrom, addedBy), usable, ct))?.RootFolderId
+            : (await db.RootFolders.AsNoTracking().OrderBy(f => f.Id).Select(f => f.Id).ToListAsync(ct))
+                .Where(id => usable is null || usable.Contains(id))
+                .Select(id => (int?)id)
+                .FirstOrDefault();
+        return folderId is int id ? await db.RootFolders.FindAsync([id], ct) : null;
     }
 
     /// <summary>

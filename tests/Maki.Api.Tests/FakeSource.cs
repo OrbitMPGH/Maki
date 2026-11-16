@@ -3,7 +3,7 @@
 namespace Maki.Api.Tests;
 
 /// <summary>A canned <see cref="ISource"/> — search hits and chapter lists are injected per test.</summary>
-internal sealed class FakeSource : ISource, INextReleaseSource
+internal sealed class FakeSource : ISource, INextReleaseSource, IChapterVolumeSource
 {
     public required string Name { get; init; }
     public string DisplayName => Name;
@@ -18,6 +18,12 @@ internal sealed class FakeSource : ISource, INextReleaseSource
     public DateTime? AnnouncedNextRelease(string sourceSeriesId) => NextRelease;
 
     public IReadOnlyList<string> SupportedLanguages { get; init; } = ["en"];
+
+    /// <summary>Chapter number to volume by source series id; unset answers with no volume data.</summary>
+    public Func<string, IReadOnlyDictionary<decimal, int>>? OnChapterVolumes { get; init; }
+
+    public Task<IReadOnlyDictionary<decimal, int>> GetChapterVolumesAsync(string sourceSeriesId, CancellationToken ct = default) =>
+        Task.FromResult(OnChapterVolumes?.Invoke(sourceSeriesId) ?? new Dictionary<decimal, int>());
 
     public Func<string, IReadOnlyList<SourceSeriesResult>>? OnSearch { get; init; }
 

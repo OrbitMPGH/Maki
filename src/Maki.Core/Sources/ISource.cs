@@ -205,7 +205,14 @@ public enum SourceCapabilities
     /// The listing shows only the chapters free to read right now, so chapters leave it on a schedule.
     /// A chapter dropped from this source's listing is never counted as delisted (<c>Chapter.DelistedAt</c>).
     /// </summary>
-    FreeWindowListing = 8
+    FreeWindowListing = 8,
+
+    /// <summary>
+    /// The listing marks chapters still behind early access or a paywall (<see cref="SourceChapter.Locked"/>).
+    /// The download path checks the listing before fetching pages, so such a chapter waits for its unlock
+    /// or moves to another source instead of failing on an empty page list.
+    /// </summary>
+    ListsLockedChapters = 16
 }
 
 /// <summary>
@@ -218,6 +225,10 @@ public enum SourceCapabilities
 /// call their comic anything, so a matching title says nothing about which work it is.
 /// </param>
 /// <param name="Author">The creator credit the search result shows, when it shows one.</param>
+/// <param name="Language">
+/// Set by sources where each language edition is its own series id (WEBTOON locales, MANGA Plus),
+/// so auto-matching can skip an edition in a language nobody enabled.
+/// </param>
 public record SourceSeriesResult(
     string SourceSeriesId,
     string Title,
@@ -226,7 +237,8 @@ public record SourceSeriesResult(
     string? Description = null,
     IReadOnlyDictionary<string, string>? ExternalIds = null,
     bool UserGenerated = false,
-    string? Author = null);
+    string? Author = null,
+    string? Language = null);
 
 /// <summary>Full series info as the source presents it.</summary>
 public record SourceSeriesDetail(
@@ -244,6 +256,10 @@ public record SourceSeriesDetail(
 /// Scanlation group (or joint groups, "A, B") of the upload the source kept, when the source
 /// publishes one. Null for sources that don't (most of them) or a chapter with none attached.
 /// </param>
+/// <param name="Locked">
+/// The listing says the chapter is still behind early access or a paywall. Only sources declaring
+/// <see cref="SourceCapabilities.ListsLockedChapters"/> set it.
+/// </param>
 public record SourceChapter(
     string SourceName,
     string SourceSeriesId,
@@ -255,7 +271,8 @@ public record SourceChapter(
     string Language,
     DateTime? ReleaseDate,
     string? Url = null,
-    string? Group = null);
+    string? Group = null,
+    bool Locked = false);
 
 /// <summary>Resolved page list for a chapter.</summary>
 public record ChapterPages(IReadOnlyList<PageRequest> Pages);

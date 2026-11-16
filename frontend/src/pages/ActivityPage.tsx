@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
@@ -7,13 +8,14 @@ import {
   Checkbox,
   Group,
   Loader,
-  Modal,
   Pagination,
   Progress,
   Stack,
+  Switch,
   Table,
   Tabs,
   Text,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -26,6 +28,8 @@ import {
   IconChevronRight,
   IconHistory,
   IconPackage,
+  IconPlayerPause,
+  IconPlayerPlay,
   IconRefresh,
   IconSearch,
   IconCircleArrowUp,
@@ -35,15 +39,21 @@ import {
 import { Link, useSearchParams } from 'react-router-dom'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural, t as now } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
+import { useDebouncedValue } from '@mantine/hooks'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   useClearQueue,
+  useGroupedQueueHistory,
   useQueue,
   useQueueHistory,
+  useQueueEta,
   useQueuePause,
+  usePauseSeriesQueue,
+  useQueueSummary,
   useRemoveQueueItem,
   useReorderQueue,
+  useResumeSeriesQueue,
   useRetryQueueItem,
 } from '../api/hooks'
 import {
@@ -66,7 +76,7 @@ import type {
   UpgradeHistoryRowDto,
   UpgradeQueueInfoDto,
 } from '../api/upgrades'
-import type { QueueItemDto } from '../api/types'
+import type { QueueHistoryStatusFilter, QueueItemDto } from '../api/types'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { QueueActions } from '../components/QueueActions'
@@ -74,6 +84,7 @@ import { ImportReviewModal } from '../components/ImportReviewModal'
 import { QueuePauseBanner, QueuePauseButton } from '../components/QueuePause'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SeriesCell } from '../components/SeriesCell'
@@ -82,11 +93,28 @@ import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip, FigureStripReveal } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { TagChip, TagChips } from '../components/ui/TagChip'
+import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
-import { isHeldByPause, queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
+import {
+  isSeriesPaused,
+  queueErrorMessage,
+  queueEtaSpan,
+  queueEtaText,
+  queueHold,
+  queueItemLabel,
+  queueOriginOrUnknown,
+} from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
-import { chapterLabel, formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
+import {
+  chapterLabel,
+  chapterRangeLabel,
+  formatBytes,
+  formatCalendarDate,
+  formatDateTime,
+  formatTime,
+} from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { UpcomingView } from '../components/releases/UpcomingView'
 import { MetaList } from '../components/ui/MetaList'
@@ -188,6 +216,98 @@ function upgradeRejectionText(
   return reason ? now`Not an upgrade: ${reason}` : null
 }
 
+const HISTORY_GROUP_KEY = 'maki.activity.historyGrouped'
+const HISTORY_GROUP_VALUES = ['on', 'off'] as const
+
+const HISTORY_FILTERS: { value: QueueHistoryStatusFilter; label: MessageDescriptor }[] = [
+  { value: 'all', label: msg`All` },
+  { value: 'completed', label: msg`Completed` },
+  { value: 'cancelled', label: msg`Cancelled` },
+  { value: 'upgrades', label: msg`Upgrades` },
+]
+
+function chapterOrder(item: QueueItemDto): number {
+  const n = item.chapterNumber === null ? NaN : Number(item.chapterNumber)
+  return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY
+}
+
+function byChapter(items: QueueItemDto[]): QueueItemDto[] {
+  return [...items].sort((a, b) => chapterOrder(a) - chapterOrder(b) || a.id - b.id)
+}
+
+/** Each source in a run with its chapter count, the most used first. */
+function sourceCounts(items: QueueItemDto[]): [string, number][] {
+  const counts = new Map<string, number>()
+  for (const item of items) counts.set(item.sourceName, (counts.get(item.sourceName) ?? 0) + 1)
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+}
+
+/** "Ch. 109–119" from the lowest and highest numbered chapter in a run. */
+function historyRunRange(items: QueueItemDto[]): string {
+  const numbered = byChapter(items).filter((item) => item.chapterNumber !== null)
+  if (numbered.length === 0) return queueItemLabel(items[0])
+  return chapterRangeLabel(numbered[0].chapterNumber!, numbered[numbered.length - 1].chapterNumber!)
+}
+
+/** "11 completed", or for a run of upgrades what each one came to. Rows in a run share a status. */
+function historyRunStatus(items: QueueItemDto[]): { tone: string; text: string } {
+  const count = items.length
+  if (items[0].status === 'Cancelled') {
+    return { tone: statusToken(queueStatusVisual('Cancelled').color), text: plural(count, { one: '# cancelled', other: '# cancelled' }) }
+  }
+  if (!items[0].upgrade) {
+    return { tone: 'ok', text: plural(count, { one: '# completed', other: '# completed' }) }
+  }
+  const applied = items.filter((item) => item.upgrade?.outcome === 'applied').length
+  const rejected = items.filter((item) => item.upgrade?.outcome === 'rejected').length
+  const other = count - applied - rejected
+  const parts = [
+    applied > 0 && plural(applied, { one: '# upgraded', other: '# upgraded' }),
+    rejected > 0 && plural(rejected, { one: '# not upgraded', other: '# not upgraded' }),
+    other > 0 && plural(other, { one: '# completed', other: '# completed' }),
+  ].filter((part): part is string => !!part)
+  return { tone: rejected > 0 ? 'warn' : 'ok', text: parts.join(', ') }
+}
+
+/**
+ * A run's chapters as chips in chapter order, one cluster per volume. A chapter from a source other
+ * than the run's main one gets a dashed edge; its tooltip names the source.
+ */
+function HistoryRunChips({ items, mainSource }: { items: QueueItemDto[]; mainSource: string }) {
+  const sourceLabel = useSourceLabel()
+  const segments: { volume: number | null; items: QueueItemDto[] }[] = []
+  for (const item of byChapter(items)) {
+    const last = segments[segments.length - 1]
+    if (last && last.volume === item.chapterVolume) last.items.push(item)
+    else segments.push({ volume: item.chapterVolume, items: [item] })
+  }
+  return (
+    <div className="history-run-chips">
+      {segments.map((segment, index) => (
+        <div key={index} className="history-run-segment">
+          {segment.volume !== null && <span className="history-run-volume">{now`Vol. ${segment.volume}`}</span>}
+          {segment.items.map((item) => {
+            const label = queueItemLabel(item)
+            const source = sourceLabel(item.sourceName)
+            const time = item.completedAt ? formatTime(item.completedAt) : ''
+            return (
+              <TagChip
+                key={item.id}
+                size="sm"
+                href={item.status === 'Completed' ? `/read/${item.chapterId}` : undefined}
+                className={item.sourceName === mainSource ? 'history-chip' : 'history-chip history-chip-alt'}
+                title={time ? now`${label}, ${source}, ${time}` : now`${label}, ${source}`}
+              >
+                {item.chapterNumber ?? label}
+              </TagChip>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
@@ -201,6 +321,11 @@ function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean 
       small={small}
     />
   )
+}
+
+/** Why a row waits on its root folder: the folder and what it has free. */
+function diskHoldLine(path: string, free: string): string {
+  return now`${path} has ${free} free, less than it keeps for downloads`
 }
 
 function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
@@ -223,6 +348,8 @@ export default function ActivityPage() {
   const queueQuery = useQueue()
   const queue = queueQuery.data
   const queuePause = useQueuePause().data
+  const pauseSeries = usePauseSeriesQueue()
+  const resumeSeries = useResumeSeriesQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
   const reorder = useReorderQueue()
@@ -254,9 +381,49 @@ export default function ActivityPage() {
   const [reviewing, setReviewing] = useState<number | null>(null)
   const [removingRelease, setRemovingRelease] = useState<number | null>(null)
   const [blockRelease, setBlockRelease] = useState(true)
-  const historyQuery = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
-  const history = historyQuery.data
+  const [historyStatus, setHistoryStatus] = useState<QueueHistoryStatusFilter>('all')
+  const [historySearch, setHistorySearch] = useState('')
+  const [debouncedHistorySearch] = useDebouncedValue(historySearch, 300)
+  const [groupHistory, setGroupHistory] = useState(
+    () => readStored(HISTORY_GROUP_KEY, HISTORY_GROUP_VALUES, 'on') === 'on',
+  )
+  const changeGroupHistory = (on: boolean) => {
+    setGroupHistory(on)
+    setHistoryPage(1)
+    writeStored(HISTORY_GROUP_KEY, on ? 'on' : 'off')
+  }
+  const groupedHistoryQuery = useGroupedQueueHistory(
+    historyPage,
+    HISTORY_PAGE_SIZE,
+    historyStatus,
+    debouncedHistorySearch,
+    groupHistory,
+  )
+  const flatHistoryQuery = useQueueHistory(
+    historyPage,
+    HISTORY_PAGE_SIZE,
+    historyStatus,
+    debouncedHistorySearch,
+    !groupHistory,
+  )
+  const historyQuery = groupHistory ? groupedHistoryQuery : flatHistoryQuery
+  const history = useMemo(() => {
+    if (groupHistory) {
+      const data = groupedHistoryQuery.data
+      return data && { entries: data.entries, total: data.total, itemTotal: data.itemTotal }
+    }
+    const data = flatHistoryQuery.data
+    return data && { entries: data.items.map((item) => ({ items: [item] })), total: data.total, itemTotal: data.total }
+  }, [groupHistory, groupedHistoryQuery.data, flatHistoryQuery.data])
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
+  const historyFiltered = historyStatus !== 'all' || debouncedHistorySearch.trim() !== ''
+  const [expandedRuns, setExpandedRuns] = useState<Set<number>>(new Set())
+  const toggleRun = (key: number) =>
+    setExpandedRuns((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
 
   const [upgradesPage, setUpgradesPage] = useState(1)
   const upgradesTabActive = tab === 'upgrades'
@@ -341,6 +508,98 @@ export default function ActivityPage() {
   const revertingRow = revertUpgrade.isPending ? revertUpgrade.variables : -1
   const revertingGroup = revertGroup.isPending ? revertGroup.variables : ''
 
+  const historyItemRow = (q: QueueItemDto, nested = false) => {
+    const visual = queueStatusVisual(q.status)
+    const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
+    const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
+    const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
+    const showRevert =
+      q.upgrade?.outcome === 'applied' &&
+      (q.upgrade.historyId != null || q.upgrade.historyGroupId != null)
+    return (
+      <Table.Tr key={q.id}>
+        {nested ? (
+          <Table.Td className="series-cell-indent">
+            <Text size="xs" c="var(--ink-3)" className="tnum">
+              {queueItemLabel(q)}
+            </Text>
+          </Table.Td>
+        ) : (
+          <Table.Td>
+            <QueueSeriesCell item={q} small />
+          </Table.Td>
+        )}
+        <Table.Td data-priority="low">
+          <Stack gap={2}>
+            <Group gap={4} wrap="nowrap">
+              <Text size="sm" c="var(--ink-3)">
+                {sourceLabel(q.sourceName)}
+              </Text>
+              {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
+                <Badge size="sm" variant="light" color="var(--brand-fg)">
+                  {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
+                </Badge>
+              )}
+            </Group>
+            {transitionText && (
+              <Text size="xs" c="var(--ink-3)">
+                {transitionText}
+              </Text>
+            )}
+          </Stack>
+        </Table.Td>
+        <Table.Td>
+          <StatusDot tone={rejectionText ? 'warn' : statusToken(visual.color)}>
+            {rejectionText ?? renderLabel(visual.label)}
+          </StatusDot>
+        </Table.Td>
+        <Table.Td data-priority="low">
+          <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+            {q.completedAt ? formatDateTime(q.completedAt) : '-'}
+          </Text>
+        </Table.Td>
+        <Table.Td>
+          {showRevert &&
+            (q.upgrade!.reverted ? (
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>Reverted</Trans>
+              </Text>
+            ) : (
+              <Tooltip
+                label={q.upgrade!.trashAvailable ? t`Revert this upgrade` : t`The trashed copy is gone`}
+                withArrow
+              >
+                <ActionIcon
+                  variant="subtle"
+                  color="var(--neutral)"
+                  disabled={
+                    !q.upgrade!.trashAvailable ||
+                    (revertBusy &&
+                      !(q.upgrade!.historyGroupId
+                        ? revertingGroup === q.upgrade!.historyGroupId
+                        : revertingRow === q.upgrade!.historyId))
+                  }
+                  loading={
+                    q.upgrade!.historyGroupId
+                      ? revertingGroup === q.upgrade!.historyGroupId
+                      : revertingRow === q.upgrade!.historyId
+                  }
+                  onClick={() =>
+                    q.upgrade!.historyGroupId
+                      ? revertGroupRow(q.upgrade!.historyGroupId)
+                      : revertUpgradeRow(q.upgrade!.historyId!)
+                  }
+                  aria-label={t`Revert this upgrade`}
+                >
+                  <IconArrowBackUp size={16} />
+                </ActionIcon>
+              </Tooltip>
+            ))}
+        </Table.Td>
+      </Table.Tr>
+    )
+  }
+
   const runUpgradeVolumeSearch = () =>
     runVolumeSearch.mutate(undefined, {
       onSuccess: (result) => {
@@ -368,6 +627,10 @@ export default function ActivityPage() {
   }, [upgradesPageCount, upgradesPage])
 
   useEffect(() => {
+    if (historyPageCount > 0 && historyPage > historyPageCount) setHistoryPage(historyPageCount)
+  }, [historyPageCount, historyPage])
+
+  useEffect(() => {
     if (upgradeHistoryPageCount > 0 && upgradeHistoryPage > upgradeHistoryPageCount) {
       setUpgradeHistoryPage(upgradeHistoryPageCount)
     }
@@ -385,7 +648,7 @@ export default function ActivityPage() {
     }
     const ids = queueItems.map((q) => q.id)
     ;[ids[index], ids[target]] = [ids[target], ids[index]]
-    reorder.mutate(ids)
+    reorder.mutate({ orderedIds: ids, movedId: queueItems[index].id })
   }
 
   const moveToTop = (index: number) => {
@@ -395,17 +658,43 @@ export default function ActivityPage() {
     const ids = queueItems.map((q) => q.id)
     const [id] = ids.splice(index, 1)
     ids.unshift(id)
-    reorder.mutate(ids)
+    reorder.mutate({ orderedIds: ids, movedId: id })
   }
 
+  // Only while the queue tab shows rows, since it polls.
+  const eta = useQueueEta(tab === 'queue' && queueItems.length > 0).data
+  const seriesEta = useMemo(() => new Map((eta?.series ?? []).map((s) => [s.seriesId, s])), [eta])
+  // The time left for a series sits on its first row only, so a long run of one series says it once.
+  const firstRowOfSeries = useMemo(() => {
+    const seen = new Set<number>()
+    const first = new Set<number>()
+    for (const q of queueItems) {
+      if (seen.has(q.seriesId)) continue
+      seen.add(q.seriesId)
+      first.add(q.id)
+    }
+    return first
+  }, [queueItems])
+  const toggleSeriesPause = (seriesId: number, paused: boolean) => {
+    const onError = () =>
+      notifications.show({
+        message: paused ? now`Couldn't resume the downloads` : now`Couldn't pause the downloads`,
+        color: 'var(--danger)',
+      })
+    if (paused) resumeSeries.mutate(seriesId, { onError })
+    else pauseSeries.mutate({ seriesId }, { onError })
+  }
+
+  // The list is one page; the summary counts the whole queue, the same numbers the sidebar badge shows.
+  const { data: summary } = useQueueSummary()
   const stats = useMemo(
     () => ({
       active: queueItems.filter((q) => isQueueActive(q.status)).length,
       queued: queueItems.filter((q) => q.status === 'Queued').length,
-      review: queueItems.filter((q) => needsImportReview(q.status)).length,
-      failed: queueItems.filter((q) => q.status === 'Failed').length,
+      review: summary?.awaitingImport ?? queueItems.filter((q) => needsImportReview(q.status)).length,
+      failed: summary?.failed ?? queueItems.filter((q) => q.status === 'Failed').length,
     }),
-    [queueItems],
+    [queueItems, summary],
   )
   const stripShown = stats.active + stats.queued + stats.review + stats.failed > 0
 
@@ -455,6 +744,15 @@ export default function ActivityPage() {
               { label: t`Queued`, value: stats.queued },
               { label: t`Needs review`, value: stats.review, tone: 'warn' },
               { label: t`Failed`, value: stats.failed, tone: 'danger' },
+              ...(eta?.queueSeconds
+                ? [
+                    {
+                      label: t`Time left`,
+                      value: queueEtaSpan(eta.queueSeconds),
+                      tip: t`A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out.`,
+                    },
+                  ]
+                : []),
             ]}
           />
         </FigureStripReveal>
@@ -472,7 +770,7 @@ export default function ActivityPage() {
           framed
           mood="asleep"
           title={t`Nothing in the queue`}
-          description={t`Queued and downloading chapters show up here. Start a download from a series page or the library.`}
+          description={t`Start a download from a series page or the library.`}
           actionLabel={t`Open library`}
           actionTo="/library"
         />
@@ -500,8 +798,16 @@ export default function ActivityPage() {
               <Table.Tbody>
                 {queueItems.map((q, index) => {
                   const visual = queueStatusVisual(q.status)
-                  const held = (q.status === 'Queued' || q.status === 'RateLimited') && isHeldByPause(queuePause, q.sourceName)
+                  const hold =
+                    q.status === 'Queued' || q.status === 'RateLimited' ? queueHold(queuePause, q) : null
+                  const held = hold !== null
+                  const diskHold =
+                    hold === 'disk' ? queuePause?.diskHolds?.find((h) => h.rootFolderId === q.rootFolderId) : undefined
+                  const diskHoldText = diskHold ? diskHoldLine(diskHold.path, formatBytes(diskHold.freeBytes)) : null
                   const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
+                  const scraperRow = q.releaseTitle === null && q.sourceName !== 'torrent'
+                  const seriesPaused = isSeriesPaused(queuePause, q.seriesId)
+                  const etaForSeries = firstRowOfSeries.has(q.id) ? seriesEta.get(q.seriesId) : undefined
                   const { retryCount, nextAttempt } = q
                   const nextAttemptTime = nextAttempt ? formatTime(nextAttempt) : null
                   const retryInfo =
@@ -512,10 +818,12 @@ export default function ActivityPage() {
                             other: `Retried # times. Next attempt at ${nextAttemptTime}.`,
                           })
                         : t`Retried ${retryCount}x`
-                      : null
+                      : q.status === 'Waiting' && nextAttemptTime
+                        ? t`Next check at ${nextAttemptTime}`
+                        : null
                   const failure = queueErrorMessage(q, renderLabel)
                   const tooltipLabel =
-                    [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
+                    diskHoldText ?? ([failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label))
                   const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
                   const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
                   const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
@@ -523,6 +831,11 @@ export default function ActivityPage() {
                     <Table.Tr key={q.id}>
                       <Table.Td>
                         <QueueSeriesCell item={q} />
+                        {etaForSeries?.seconds != null && etaForSeries.seconds > 0 && (
+                          <Text size="xs" c="var(--ink-3)" className="series-cell-indent">
+                            {queueEtaText(etaForSeries.seconds)}
+                          </Text>
+                        )}
                       </Table.Td>
                       <Table.Td data-priority="low">
                         {q.status === 'Resolving' ? (
@@ -539,7 +852,7 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand-fg)">
+                                <Badge size="sm" variant="light" color="var(--brand-fg)">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
@@ -558,9 +871,8 @@ export default function ActivityPage() {
                             <Progress
                               value={(q.pagesDone / q.pagesTotal) * 100}
                               style={{ flex: 1 }}
-                              radius="xl"
                               animated={q.status === 'Downloading'}
-                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : undefined}
                               aria-label={t`Download progress`}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
@@ -574,15 +886,24 @@ export default function ActivityPage() {
                         )}
                       </Table.Td>
                       <Table.Td>
-                        <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo || !!rejectionText}>
+                        <Tooltip
+                          label={tooltipLabel}
+                          withArrow
+                          disabled={(!failure && !retryInfo && !diskHoldText) || !!rejectionText}
+                        >
                           <StatusDot
                             tone={rejectionText || held ? 'warn' : statusToken(visual.color)}
                             live={isQueueActive(q.status)}
                           >
-                            {rejectionText ?? (held ? t`Paused` : renderLabel(visual.label))}
+                            {rejectionText ??
+                              (hold === 'paused'
+                                ? t`Paused`
+                                : hold === 'disk'
+                                  ? t`Waiting for disk space`
+                                  : renderLabel(visual.label))}
                           </StatusDot>
                         </Tooltip>
-                        {q.status === 'Failed' && failure && !rejectionText && (
+                        {(q.status === 'Failed' || q.status === 'Waiting') && failure && !rejectionText && (
                           <Text size="xs" c="var(--ink-3)" lineClamp={2} maw={320}>
                             {failure}
                           </Text>
@@ -626,6 +947,23 @@ export default function ActivityPage() {
                                 </ActionIcon>
                               </Tooltip>
                             </>
+                          )}
+                          {canManageQueue && scraperRow && (reorderable || q.status === 'Resolving') && (
+                            <Tooltip label={seriesPaused ? t`Resume this series` : t`Pause this series`} withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="var(--neutral)"
+                                disabled={pauseSeries.isPending || resumeSeries.isPending}
+                                onClick={() => toggleSeriesPause(q.seriesId, seriesPaused)}
+                                aria-label={
+                                  seriesPaused
+                                    ? t`Resume downloads for this series`
+                                    : t`Pause downloads for this series`
+                                }
+                              >
+                                {seriesPaused ? <IconPlayerPlay size={16} /> : <IconPlayerPause size={16} />}
+                              </ActionIcon>
+                            </Tooltip>
                           )}
                           {needsImportReview(q.status) && canManageQueue && (
                             <Button size="compact-sm" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>
@@ -683,37 +1021,25 @@ export default function ActivityPage() {
 
       <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
 
-      <Modal
+      <ConfirmDialog
         opened={removingRelease !== null}
         onClose={() => setRemovingRelease(null)}
         title={<Trans>Remove this torrent?</Trans>}
-        centered
+        confirmLabel={<Trans>Remove</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (removingRelease === null) return
+          remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
+        }}
       >
-        <Stack gap="sm">
-          <Checkbox
-            checked={blockRelease}
-            onChange={(e) => setBlockRelease(e.currentTarget.checked)}
-            label={t`Don't grab this release again`}
-          />
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRemovingRelease(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={remove.isPending}
-              onClick={() => {
-                if (removingRelease === null) return
-                remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
-              }}
-            >
-              <Trans>Remove</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        <Checkbox
+          checked={blockRelease}
+          onChange={(e) => setBlockRelease(e.currentTarget.checked)}
+          label={t`Don't grab this release again`}
+        />
+      </ConfirmDialog>
 
-      <Modal
+      <ConfirmDialog
         opened={clearConfirmOpen}
         onClose={() => setClearConfirmOpen(false)}
         title={
@@ -723,46 +1049,85 @@ export default function ActivityPage() {
             other="Clear # queued downloads?"
           />
         }
-        centered
-      >
-        <Stack gap="sm">
-          <Text size="sm">
-            <Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={clear.isPending}
-              onClick={() => {
-                clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
-              }}
-            >
-              <Trans>Clear queue</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        description={<Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>}
+        confirmLabel={<Trans>Clear queue</Trans>}
+        loading={clear.isPending}
+        onConfirm={() => {
+          clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
+        }}
+      />
 
       <Stack gap="sm" mt="xl">
-        <SectionHeader icon={IconHistory} title={t`History`} count={history?.total} />
+        <SectionHeader icon={IconHistory} title={t`History`} count={history?.itemTotal} />
+
+        {history && (history.total > 0 || historyFiltered) && (
+          <Group gap="sm" justify="space-between" wrap="wrap">
+            <TagChips>
+              {HISTORY_FILTERS.map((filter) => (
+                <TagChip
+                  key={filter.value}
+                  active={historyStatus === filter.value}
+                  onClick={() => {
+                    setHistoryStatus(filter.value)
+                    setHistoryPage(1)
+                  }}
+                >
+                  {renderLabel(filter.label)}
+                </TagChip>
+              ))}
+            </TagChips>
+            <Group gap="md" wrap="wrap">
+              <Switch
+                size="sm"
+                label={t`Group chapters`}
+                checked={groupHistory}
+                onChange={(event) => changeGroupHistory(event.currentTarget.checked)}
+              />
+              <SearchInput
+                w={220}
+                placeholder={t`Filter by series`}
+                aria-label={t`Filter by series`}
+                value={historySearch}
+                onClear={() => {
+                  setHistorySearch('')
+                  setHistoryPage(1)
+                }}
+                onChange={(event) => {
+                  setHistorySearch(event.currentTarget.value)
+                  setHistoryPage(1)
+                }}
+              />
+            </Group>
+          </Group>
+        )}
 
         {!history ? (
           historyQuery.isError ? (
             <LoadFailed query={historyQuery} />
           ) : (
-            <TableSkeleton columns={6} />
+            <TableSkeleton columns={5} />
           )
-        ) : history.items.length === 0 ? (
-          <EmptyState
-            compact
-            framed
-            mood="asleep"
-            title={t`No history yet`}
-            description={t`Completed and cancelled downloads show up here.`}
-          />
+        ) : history.entries.length === 0 ? (
+          historyFiltered ? (
+            <EmptyState
+              compact
+              framed
+              title={t`Nothing matches these filters`}
+              actionLabel={t`Clear filters`}
+              onAction={() => {
+                setHistoryStatus('all')
+                setHistorySearch('')
+                setHistoryPage(1)
+              }}
+            />
+          ) : (
+            <EmptyState
+              compact
+              framed
+              mood="asleep"
+              title={t`No history yet`}
+            />
+          )
         ) : (
           <>
             <Panel p={0} className="table-panel">
@@ -786,87 +1151,94 @@ export default function ActivityPage() {
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {history.items.map((q) => {
-                      const visual = queueStatusVisual(q.status)
-                      const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
-                      const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
-                      const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
-                      const showRevert =
-                        q.upgrade?.outcome === 'applied' &&
-                        (q.upgrade.historyId != null || q.upgrade.historyGroupId != null)
+                    {history.entries.map((entry) => {
+                      if (entry.items.length === 1) return historyItemRow(entry.items[0])
+                      const runKey = entry.items[entry.items.length - 1].id
+                      const expanded = expandedRuns.has(runKey)
+                      const first = entry.items[0]
+                      const count = entry.items.length
+                      const sources = sourceCounts(entry.items)
+                      const [mainSource] = sources[0]
+                      const others = sources.slice(1).map(([source, n]) => {
+                        const name = sourceLabel(source)
+                        return plural(n, { one: `# from ${name}`, other: `# from ${name}` })
+                      })
+                      const status = historyRunStatus(entry.items)
                       return (
-                        <Table.Tr key={q.id}>
-                          <Table.Td>
-                            <QueueSeriesCell item={q} small />
-                          </Table.Td>
-                          <Table.Td data-priority="low">
-                            <Stack gap={2}>
-                              <Group gap={4} wrap="nowrap">
-                                <Text size="sm" c="var(--ink-3)">
-                                  {sourceLabel(q.sourceName)}
-                                </Text>
-                                {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                  <Badge size="xs" variant="light" color="var(--brand-fg)">
-                                    {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
-                                  </Badge>
+                        <Fragment key={`run-${runKey}`}>
+                          <Table.Tr
+                            className="history-run-head"
+                            onClick={(event) => {
+                              if ((event.target as HTMLElement).closest('a, button, input')) return
+                              toggleRun(runKey)
+                            }}
+                          >
+                            <Table.Td>
+                              <SeriesCell
+                                seriesId={first.seriesId}
+                                title={first.seriesTitle}
+                                coverUrl={first.seriesCoverUrl}
+                                small
+                                detail={
+                                  <Group component="span" gap={8} wrap="nowrap">
+                                    <span>{historyRunRange(entry.items)}</span>
+                                    <Badge size="sm" variant="light" color="var(--neutral)" className="tnum">
+                                      {plural(count, { one: '# chapter', other: '# chapters' })}
+                                    </Badge>
+                                  </Group>
+                                }
+                              />
+                            </Table.Td>
+                            <Table.Td data-priority="low">
+                              <Stack gap={2}>
+                                <Group gap={4} wrap="nowrap">
+                                  <Text size="sm" c="var(--ink-3)">
+                                    {sourceLabel(mainSource)}
+                                  </Text>
+                                  {first.upgrade && (
+                                    <Badge size="sm" variant="light" color="var(--brand-fg)">
+                                      <Trans>Upgrade</Trans>
+                                    </Badge>
+                                  )}
+                                </Group>
+                                {others.length > 0 && (
+                                  <Text size="xs" c="var(--ink-3)">
+                                    {others.join(', ')}
+                                  </Text>
                                 )}
-                              </Group>
-                              {transitionText && (
-                                <Text size="xs" c="var(--ink-3)">
-                                  {transitionText}
-                                </Text>
-                              )}
-                            </Stack>
-                          </Table.Td>
-                          <Table.Td>
-                            <StatusDot tone={rejectionText ? 'warn' : statusToken(visual.color)}>
-                              {rejectionText ?? renderLabel(visual.label)}
-                            </StatusDot>
-                          </Table.Td>
-                          <Table.Td data-priority="low">
-                            <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                              {q.completedAt ? formatDateTime(q.completedAt) : '-'}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            {showRevert &&
-                              (q.upgrade!.reverted ? (
-                                <Text size="xs" c="var(--ink-3)">
-                                  <Trans>Reverted</Trans>
-                                </Text>
-                              ) : (
-                                <Tooltip
-                                  label={q.upgrade!.trashAvailable ? t`Revert this upgrade` : t`The trashed copy is gone`}
-                                  withArrow
-                                >
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="var(--neutral)"
-                                    disabled={
-                                      !q.upgrade!.trashAvailable ||
-                                      (revertBusy &&
-                                        !(q.upgrade!.historyGroupId
-                                          ? revertingGroup === q.upgrade!.historyGroupId
-                                          : revertingRow === q.upgrade!.historyId))
-                                    }
-                                    loading={
-                                      q.upgrade!.historyGroupId
-                                        ? revertingGroup === q.upgrade!.historyGroupId
-                                        : revertingRow === q.upgrade!.historyId
-                                    }
-                                    onClick={() =>
-                                      q.upgrade!.historyGroupId
-                                        ? revertGroupRow(q.upgrade!.historyGroupId)
-                                        : revertUpgradeRow(q.upgrade!.historyId!)
-                                    }
-                                    aria-label={t`Revert this upgrade`}
-                                  >
-                                    <IconArrowBackUp size={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              ))}
-                          </Table.Td>
-                        </Table.Tr>
+                              </Stack>
+                            </Table.Td>
+                            <Table.Td>
+                              <StatusDot tone={status.tone}>{status.text}</StatusDot>
+                            </Table.Td>
+                            <Table.Td data-priority="low">
+                              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                                {first.completedAt ? formatDateTime(first.completedAt) : '-'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <ActionIcon
+                                variant="subtle"
+                                color="var(--neutral)"
+                                onClick={() => toggleRun(runKey)}
+                                aria-label={expanded ? t`Hide chapters` : t`Show chapters`}
+                                aria-expanded={expanded}
+                              >
+                                {expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                              </ActionIcon>
+                            </Table.Td>
+                          </Table.Tr>
+                          {expanded &&
+                            (first.upgrade ? (
+                              entry.items.map((q) => historyItemRow(q, true))
+                            ) : (
+                              <Table.Tr className="history-run-detail">
+                                <Table.Td colSpan={5} className="series-cell-indent">
+                                  <HistoryRunChips items={entry.items} mainSource={mainSource} />
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                        </Fragment>
                       )
                     })}
                   </Table.Tbody>
@@ -889,17 +1261,17 @@ export default function ActivityPage() {
             upgradesSummaryQuery.isError ? (
               <LoadFailed query={upgradesSummaryQuery} />
             ) : (
-              <TableSkeleton columns={6} rows={4} />
+              <TableSkeleton columns={4} rows={4} />
             )
           ) : upgradeHistoryQuery.isPending ? (
-            <TableSkeleton columns={6} rows={4} />
+            <TableSkeleton columns={4} rows={4} />
           ) : upgradesUnset ? (
             <EmptyState
               compact
               framed
               mood="asking"
               title={t`Upgrades are not set up yet`}
-              description={t`Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here.`}
+              description={t`Give a series a quality profile and Maki replaces files that fall short of it.`}
               actionLabel={isAdmin ? t`Set up quality profiles` : undefined}
               actionTo={isAdmin ? '/settings?tab=downloads&s=profiles' : undefined}
             />
@@ -979,7 +1351,6 @@ export default function ActivityPage() {
                   framed
                   mood="pleased"
                   title={t`Every file meets its cutoff`}
-                  description={t`Nothing has needed an upgrade yet. Files the upgrader replaces show up here.`}
                 />
               )}
 
@@ -990,7 +1361,7 @@ export default function ActivityPage() {
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
                   ) : (
-                    <TableSkeleton columns={5} />
+                    <TableSkeleton columns={4} />
                   )
                 ) : upgradeHistory.rows.length === 0 ? (
                   <EmptyState
@@ -998,7 +1369,6 @@ export default function ActivityPage() {
                     framed
                     mood="asleep"
                     title={t`No upgrades yet`}
-                    description={t`Files replaced by the automatic upgrader show up here.`}
                   />
                 ) : (
                   <>
@@ -1179,7 +1549,7 @@ export default function ActivityPage() {
                   cutoffUnmetQuery.isError ? (
                     <LoadFailed query={cutoffUnmetQuery} />
                   ) : (
-                    <TableSkeleton columns={6} rows={4} />
+                    <TableSkeleton columns={5} rows={4} />
                   )
                 ) : !upgradesSummary.profilesConfigured ? (
                   <EmptyState
@@ -1203,7 +1573,6 @@ export default function ActivityPage() {
                     framed
                     mood="pleased"
                     title={t`Every file meets its cutoff`}
-                    description={t`Nothing downloaded falls short of the quality profile assigned to it.`}
                   />
                 ) : (
                   <>

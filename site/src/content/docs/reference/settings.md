@@ -9,6 +9,9 @@ Use this page to find where a control lives. Each row is one card.
 - The open tab is in the URL, for example `/settings?tab=downloads`.
 - Link a single card with `s` and its id, for example `/settings?s=sign-in`.
 - The command palette searches card names and keywords.
+- After an upgrade, a **New** tab lists the settings added since the version you upgraded from, each
+  linked to where it normally lives, and those settings carry a **New** pill on their usual tab. Both
+  stay until the next upgrade, and a fresh install doesn't show them.
 - **Admin** cards change the server. Admin cards and cards that need a permission are hidden from accounts without it.
 
 ## Account
@@ -28,15 +31,16 @@ Use this page to find where a control lives. Each row is one card.
 | Content rating | Everyone with the `ChangeContentRating` permission | Which content ratings you see. |
 | Start page & Home | Everyone | The start page, the Home sections, their order and layout. |
 | Series page | Everyone | Related-series rails on a series page. |
-| Notifications | Everyone | In-app notifications, including new chapters and achievements. |
+| Notifications | Everyone | In-app notifications, including new chapters, achievements, and new sequels and spin-offs of series you read. |
 | Push notifications | Everyone | Browser push notifications, and whether this device receives them. |
 
 ## Reading
 
 | Card | Who sees it | What it holds |
 |---|---|---|
-| Reader profiles | Everyone | Reading direction, page fit, tap zones, auto next chapter, Enhance, and profiles by series type. |
+| Reader profiles | Everyone | Reading direction, page fit, tap zone layout, page background, auto next chapter, skip recaps, hide credit pages, progress rail, Enhance, and profiles by series type. |
 | Progress & achievements | Everyone | Achievements, levels, streak and reading goal, leaderboard, time zone. |
+| Reading status | Everyone | Optional rules that put a series on hold, or drop it, after a number of days without reading. |
 | Rating prompts | Everyone | Whether Maki asks how a series is going while you read, and at the end of each volume. |
 | OPDS catalogue | Permission `UseOpds` | Your feed URL and token for reading apps, and the Komga address. |
 | KOReader progress sync | Permission `UseOpds` | Syncing reading progress with KOReader. |
@@ -47,14 +51,18 @@ Use this page to find where a control lives. Each row is one card.
 
 | Card | Who sees it | What it holds |
 |---|---|---|
-| Root folders | Everyone | The library folders Maki reads, with the free space on each. Add one by path or with the folder browser. |
+| Root folders | Admin | The library folders Maki reads, with the free space on each and the free space to keep before downloads wait (5 GB by default). Add one by path or with the folder browser, or edit one whose path changed. |
+| Root folder rules | Admin | Which root folder a new series goes to, by type, genre, content rating, who added it or how. |
+| Drop folder | Admin | A folder Maki checks every few minutes and imports matching files from. |
 | Folder & file naming | Admin | Naming templates for series folders and files, and renaming existing ones. |
 | File name parsing | Admin | The markers and terms Maki looks for in file names, such as volume and chapter markers. |
 | ComicInfo & covers | Admin | Writing ComicInfo.xml into imported files, and saving a cover.jpg in each series folder. |
-| Page conversion | Admin | Converting pages to WebP or AVIF to save disk space, how many pages convert at once, and the pass over the existing library. The wizard also has its own page at `/settings/page-conversion`. |
-| Server upscaling | Admin | Whether upscaling is on, the models to download, CPU threads and the disk cache size. |
+| Page conversion | Admin | Converting pages to WebP, AVIF or JPEG XL to save disk space, splitting tall pages, how many pages convert at once, and the pass over the existing library. The setup has its own page at `/settings/page-conversion`. |
+| Server upscaling | Admin | Whether upscaling is on, the models to download, CPU threads, JPEG XL for colour pages, the disk cache size, and Prepare chapters ahead. |
+| Credit pages | Admin | Finding credit pages across the library in the background, and the release groups behind them. |
 | Recycle bin | Permission `DeleteSeries` | How long deleted files are kept (14 days by default) and restoring them. |
 | New series defaults | Admin | Defaults for new series: monitoring, skip specials, incognito. |
+| Auto-tag rules | Permission `ManageTags` | Tagging a new series as it is added, by genre, type, content rating, root folder or how it came in. |
 | Metadata database | Admin | The local MangaBaka database: its status and a refresh. |
 | Semantic search & recommendations | Admin | The embedding model behind semantic search and recommendations. |
 
@@ -68,14 +76,14 @@ Every card on this tab is admin only.
 | Smart Download | Smart Download and its unread trigger. |
 | Clean up read chapters | Automatic deletion of read chapters, with a retention period. |
 | Languages | The languages to download, and their priority. |
-| Sources | Source order and priority, which sources are on, adult sources, and [custom sources](/Maki/guides/sources/custom-sources/) and their repositories. |
+| Sources | Source order and priority, which sources are on, adult sources, looking for volume releases first, and [custom sources](/Maki/guides/sources/custom-sources/) and their repositories. |
 | FlareSolverr | The FlareSolverr address, used for Cloudflare-protected sources. |
 | Indexer | The indexer connection (Prowlarr or Jackett) and its categories. |
-| Download client | The torrent client (qBittorrent, Transmission or Deluge), its categories and path mapping, and whether finished torrents are hardlinked or removed after import. |
+| Download client | The torrent client (qBittorrent, Transmission or Deluge), its categories and path mapping, whether finished torrents are hardlinked, whether they are removed right after import or after seeding, the stalled torrent limit, and the declined releases list. |
 | Quality profiles | Upgrade profiles: the cutoff score, the minimum gain and maximum loss limits, and the resolution and compression weights. |
 | Quality formats | Format scores and the conditions that match them, such as regex, minimum width and image format. |
 | Upgrade scan | The default profile and automatic upgrades. |
-| Volume releases | Searching for volume packs and grabbing them. |
+| Volume releases | Searching for volume packs and grabbing them, searching for chapters no source has, minimum seeders, and approving volume releases automatically. |
 
 ## Integrations
 

@@ -18,6 +18,18 @@ export const IDLE_MS = 300_000
  */
 export const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'scroll', 'touchstart']
 
+let lastProgrammaticScroll = 0
+
+/** Auto-scroll calls this just before moving the strip, so the scroll event it causes is not read as someone being there. */
+export function markProgrammaticScroll() {
+  lastProgrammaticScroll = performance.now()
+}
+
+/** True for a scroll event that the auto-scroller itself caused; every other event counts as activity. */
+export function isProgrammaticScroll(event: Event) {
+  return event.type === 'scroll' && performance.now() - lastProgrammaticScroll < 120
+}
+
 export interface ReadingClock {
   /** Whole seconds accumulated since the last take, consumed. Sub-second remainder is kept. */
   take: () => number
@@ -78,7 +90,8 @@ export function useReadingClock(enabled: boolean, paused = false): ReadingClock 
   useEffect(() => {
     if (!enabled) return
 
-    const poke = () => {
+    const poke = (event?: Event) => {
+      if (event && isProgrammaticScroll(event)) return
       lastActivity.current = Date.now()
     }
 

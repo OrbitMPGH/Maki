@@ -40,7 +40,7 @@ public class CustomSourceGuessTests
     }
 
     [Fact]
-    public void Chapter_list_guess_runs_the_same_through_the_engine()
+    public async Task Chapter_list_guess_runs_the_same_through_the_engine()
     {
         var series = Page("silentquill-series.html", "https://silentquill.net/series/thus-the-seasons-learn-of-blue/");
         var guess = ChapterListGuesser.Run(series, "thus-the-seasons-learn-of-blue", new Uri("https://silentquill.net/thus-the-seasons-learn-of-blue-chapter-2/"))[0];
@@ -48,7 +48,7 @@ public class CustomSourceGuessTests
         Assert.Empty(CustomSourceValidator.Validate(definition));
 
         var source = new CustomSource(definition, new FakeHtmlFetcher(new() { ["/series/"] = series.Body }), new FakeHttpClientFactory([]), new SpacingGate(TimeSpan.Zero));
-        var chapters = source.ListChaptersAsync("thus-the-seasons-learn-of-blue").Result;
+        var chapters = await source.ListChaptersAsync("thus-the-seasons-learn-of-blue");
 
         Assert.Equal([1m, 2m], chapters.Select(c => c.Number));
         Assert.Equal("https://silentquill.net/thus-the-seasons-learn-of-blue-chapter-2/", chapters[1].Url);

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
-  Alert,
   Badge,
   Button,
   Collapse,
@@ -21,6 +20,7 @@ import {
   type CatalogueCredit,
   type RecommendationFilters,
   type RecommendationItem,
+  recommendationStub,
 } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useFollowToggle } from '../api/following'
@@ -49,6 +49,7 @@ import { useLabel } from '../i18n-context'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
 import { formatFixedDecimal } from '../format'
+import { Callout } from '../components/ui/Callout'
 
 const PAGE_SIZE = 60
 // Creator links come from Discover's detail card, so a page opened cold walks back there.
@@ -149,7 +150,7 @@ export default function CreatorPage() {
 
   useEffect(() => {
     if (!openId || !/^\d+$/.test(openId)) return
-    setDetailItem(stubItem(openId))
+    setDetailItem(recommendationStub(openId))
   }, [openId])
 
   const closeDetail = () => {
@@ -341,7 +342,7 @@ export default function CreatorPage() {
           title={t`Nothing to show`}
           description={
             appliedCount > 0
-              ? t`None of their titles match these filters. Try loosening one of them.`
+              ? t`None of their titles match these filters.`
               : t`Nothing of theirs is in the searchable part of the catalogue.`
           }
         />
@@ -361,14 +362,14 @@ export default function CreatorPage() {
       )}
 
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
-        <Alert variant="light" color="var(--neutral)" mt="md">
+        <Callout tone="neutral" role="alert" mt="md">
           <Text size="sm">
             {plural(workCount, {
               one: `Showing ${shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
               other: `Showing ${shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
             })}
           </Text>
-        </Alert>
+        </Callout>
       )}
 
       <DiscoverDetailModal
@@ -380,26 +381,4 @@ export default function CreatorPage() {
       />
     </SurfaceFrame>
   )
-}
-
-/** Enough of a card for the detail modal, which loads everything else by id. */
-function stubItem(providerId: string): RecommendationItem {
-  return {
-    providerId,
-    title: '',
-    coverUrl: null,
-    thumbUrl: null,
-    thumbUrlHiDpi: null,
-    year: null,
-    description: null,
-    status: '',
-    rating: null,
-    totalChapters: null,
-    matchedGenres: [],
-    matchedTags: [],
-    authorMatch: false,
-    relationKind: null,
-    relatedToTitle: null,
-    becauseOfTitle: null,
-  }
 }

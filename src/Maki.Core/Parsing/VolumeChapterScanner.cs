@@ -43,6 +43,15 @@ public static partial class VolumeChapterScanner
         }
     }
 
+    /// <summary>
+    /// Whether a volume's markers list everything it holds, so a chapter they leave out (a source's
+    /// 2.1 split, a special) is not in it. Only when they name at least one of the chapters that
+    /// should be there: markers that restart per volume ("v02 c01") follow a different numbering
+    /// and say nothing about the series' chapter rows.
+    /// </summary>
+    public static bool ListsContents(IReadOnlySet<decimal> markers, IEnumerable<decimal?> expectedNumbers) =>
+        markers.Count > 0 && expectedNumbers.Any(n => n is { } number && markers.Contains(number));
+
     /// <summary>Pure extraction used by <see cref="ScanCbz"/>; testable without a real archive.</summary>
     public static IReadOnlyList<decimal> ChaptersInNames(IEnumerable<string> imageNames)
     {

@@ -82,12 +82,19 @@ public class SettingsController(
     AccountSecurityAlerts? alerts = null,
     IScrobbleTokenStore? scrobbleTokens = null,
     MangaUpdatesTracker? mangaUpdates = null,
-    KitsuTracker? kitsu = null) : ControllerBase
+    KitsuTracker? kitsu = null,
+    ConnectionTestStore? connectionTests = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
     public record DownloadClientSettings(
         string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
+    /// <param name="StallHours">See <see cref="SettingKeys.DownloadClientStallHours"/>; 0 is off.</param>
+    /// <param name="SeedRatio">Seed ratio target for after-seeding removal; null is none.</param>
+    /// <param name="SeedMinutes">Seed time target in minutes for after-seeding removal; null is none.</param>
+    public record TorrentLifecycleSettings(int StallHours, double? SeedRatio, int? SeedMinutes);
+    /// <param name="Found">Whether the client had any seed limit switched on.</param>
+    public record SeedLimitImport(double? SeedRatio, int? SeedMinutes, bool Found);
     /// <param name="DumpDownloadFailed">
     /// No dump is installed and the last download failed, for the gate's waiting screen. Only a bit:
     /// the error text stays on the admin-only progress endpoint.
@@ -165,15 +172,19 @@ public class SettingsController(
     /// See <see cref="SettingKeys.DownloadClientRemoveCompleted"/>: <c>never</c> or <c>afterimport</c>. Null on a write leaves it alone.
     /// </param>
     /// <param name="RemoveData">See <see cref="SettingKeys.DownloadClientRemoveData"/>. Null on a write leaves it alone.</param>
+    /// <param name="VolumeFirst">See <see cref="SettingKeys.DownloadsVolumeFirst"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
-        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null);
+        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null,
+        bool? VolumeFirst = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
     /// <param name="TrashRetentionDays">0 purges replaced files on the next housekeeping run.</param>
+    /// <param name="MissingSearch">See <see cref="SettingKeys.UpgradesMissingSearch"/>.</param>
+    /// <param name="TorrentMinSeeders">See <see cref="SettingKeys.UpgradesTorrentMinSeeders"/>.</param>
     public record UpgradeSettings(
         bool Enabled,
         int? DefaultProfileId,
@@ -187,7 +198,11 @@ public class SettingsController(
         long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
         int VolumeMissingTolerance = 3,
         int VolumeSearchesPerRun = 10,
-        int ProposalExpiryDays = 30);
+        int ProposalExpiryDays = 30,
+        bool AutoApprove = false,
+        long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes,
+        bool MissingSearch = true,
+        int TorrentMinSeeders = UpgradeOptions.DefaultMinSeeders);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
     public record SignInPageSettings(bool CoverMosaic);
 
@@ -436,11 +451,12 @@ public class SettingsController(
         [FromBody] OpdsSettings request,
         [FromServices] UserManager<MakiUser> users,
         [FromServices] SignInManager<MakiUser> signIn,
+        [FromServices] OidcRuntimeOptions oidc,
         CancellationToken ct)
     {
         var existing = await CurrentOpdsKeyAsync(ct);
         var mints = request.Enabled && existing is null;
-        if (mints && await ConfirmOpdsPasswordAsync(users, signIn, request.Password) is { } refused)
+        if (mints && await ConfirmOpdsPasswordAsync(users, signIn, oidc, request.Password) is { } refused)
         {
             return refused;
         }
@@ -479,9 +495,10 @@ public class SettingsController(
         [FromBody] Maki.Api.Dtos.ConfirmPasswordRequest? request,
         [FromServices] UserManager<MakiUser> users,
         [FromServices] SignInManager<MakiUser> signIn,
+        [FromServices] OidcRuntimeOptions oidc,
         CancellationToken ct)
     {
-        if (await ConfirmOpdsPasswordAsync(users, signIn, request?.Password) is { } refused)
+        if (await ConfirmOpdsPasswordAsync(users, signIn, oidc, request?.Password) is { } refused)
         {
             return refused;
         }
@@ -500,7 +517,7 @@ public class SettingsController(
     }
 
     private async Task<IActionResult?> ConfirmOpdsPasswordAsync(
-        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, string? password)
+        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc, string? password)
     {
         var user = await users.FindByIdAsync(currentUser.UserId.ToString(CultureInfo.InvariantCulture));
         if (user is null)
@@ -508,7 +525,7 @@ public class SettingsController(
             return Unauthorized();
         }
 
-        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, user, password, TimeProvider.System) is { } key)
+        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, oidc, user, password, TimeProvider.System) is { } key)
         {
             return key == AccountCredentials.RecentSignInRequiredKey
                 ? this.Forbidden(localizer, key)
@@ -727,12 +744,61 @@ public class SettingsController(
         return Ok(request);
     }
 
+    /// <summary>Days without reading before each auto rule moves a series; null = that rule is off.</summary>
+    public record ReadingStatusSettings(int? AutoHoldDays, int? AutoDropDays);
+
+    /// <summary>The caller's reading status auto rules. Theirs alone; unset = both off.</summary>
+    [HttpGet("reading-status")]
+    public async Task<IActionResult> GetReadingStatus(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync(
+            [SettingKeys.ReadingAutoHoldDays, SettingKeys.ReadingAutoDropDays], ct);
+        return Ok(new ReadingStatusSettings(
+            ReadingStatusAutoService.ParseDays(rows.GetValueOrDefault(SettingKeys.ReadingAutoHoldDays)),
+            ReadingStatusAutoService.ParseDays(rows.GetValueOrDefault(SettingKeys.ReadingAutoDropDays))));
+    }
+
+    [HttpPut("reading-status")]
+    public async Task<IActionResult> SetReadingStatus([FromBody] ReadingStatusSettings request, CancellationToken ct)
+    {
+        if (request.AutoHoldDays is < 1 or > ReadingStatusAutoService.MaxDays ||
+            request.AutoDropDays is < 1 or > ReadingStatusAutoService.MaxDays)
+        {
+            return this.Fail(localizer, "error.settings.readingStatusDays",
+                new { max = ReadingStatusAutoService.MaxDays });
+        }
+
+        await userSettings.SetAsync(SettingKeys.ReadingAutoHoldDays,
+            request.AutoHoldDays?.ToString(CultureInfo.InvariantCulture) ?? "", ct);
+        await userSettings.SetAsync(SettingKeys.ReadingAutoDropDays,
+            request.AutoDropDays?.ToString(CultureInfo.InvariantCulture) ?? "", ct);
+        return Ok(request);
+    }
+
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/appearance/seen")]
     public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)
     {
         await userSettings.SetAsync(SettingKeys.UiAppearanceAnnouncement, "seen", ct);
         return NoContent();
+    }
+
+    /// <summary>The background credit page scan: off unless an admin turns it on.</summary>
+    public record CreditScanSettings(bool Enabled);
+
+    [HttpGet("creditscan")]
+    [Authorize(Policy = Policies.Admin)]
+    public async Task<IActionResult> GetCreditScan(CancellationToken ct) =>
+        Ok(new CreditScanSettings(await settings.GetAsync(SettingKeys.CreditScanEnabled, ct) == "true"));
+
+    [HttpPut("creditscan")]
+    [Authorize(Policy = Policies.Admin)]
+    public async Task<IActionResult> SetCreditScan([FromBody] CreditScanSettings request,
+        [FromServices] CreditScanWorker creditScan, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.CreditScanEnabled, request.Enabled ? "true" : "false", ct);
+        creditScan.SetEnabled(request.Enabled);
+        return Ok(request);
     }
 
     [HttpGet("library")]
@@ -1033,7 +1099,8 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
         await AdaptiveRefreshAsync(ct),
         await RemoveCompletedAsync(ct),
-        await RemoveDataAsync(ct)));
+        await RemoveDataAsync(ct),
+        await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true"));
 
     private async Task<string> RemoveCompletedAsync(CancellationToken ct) =>
         TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct)) ?? TorrentRemovalModes.Never;
@@ -1140,6 +1207,11 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.DownloadClientRemoveData, removeData ? "true" : "false", ct);
         }
 
+        if (request.VolumeFirst is { } volumeFirst)
+        {
+            await settings.SetAsync(SettingKeys.DownloadsVolumeFirst, volumeFirst ? "true" : "false", ct);
+        }
+
         if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
         {
             await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
@@ -1155,7 +1227,8 @@ public class SettingsController(
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
             AdaptiveRefresh = await AdaptiveRefreshAsync(ct),
             RemoveCompleted = await RemoveCompletedAsync(ct),
-            RemoveData = await RemoveDataAsync(ct)
+            RemoveData = await RemoveDataAsync(ct),
+            VolumeFirst = await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true"
         });
     }
 
@@ -1243,7 +1316,8 @@ public class SettingsController(
         return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
             options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
             options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
-            options.VolumeSearchesPerRun, options.ProposalExpiryDays));
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays, options.AutoApprove, options.AutoApproveMaxBytes,
+            options.MissingSearch, options.TorrentMinSeeders));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1300,6 +1374,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.upgradesProposalExpiryDaysRange", new { min = 1, max = 365 });
         }
 
+        if (request.TorrentMinSeeders is < 1 or > UpgradeOptions.MaxMinSeeders)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTorrentMinSeedersRange",
+                new { min = 1, max = UpgradeOptions.MaxMinSeeders });
+        }
+
         await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
             request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
@@ -1321,7 +1401,14 @@ public class SettingsController(
             request.VolumeSearchesPerRun.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpgradesProposalExpiryDays,
             request.ProposalExpiryDays.ToString(CultureInfo.InvariantCulture), ct);
-        return Ok(request);
+        var approveBytes = Maki.Core.Quality.ProposalAutoApproval.ClampMaxBytes(request.AutoApproveMaxBytes);
+        await settings.SetAsync(SettingKeys.UpgradesAutoApprove, request.AutoApprove ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesAutoApproveMaxBytes,
+            approveBytes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMissingSearch, request.MissingSearch ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesTorrentMinSeeders,
+            request.TorrentMinSeeders.ToString(CultureInfo.InvariantCulture), ct);
+        return Ok(request with { AutoApproveMaxBytes = approveBytes });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1640,14 +1727,18 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        if (await indexers.For(candidate.Backend).PingAsync(candidate, ct))
+        const string code = "error.settings.indexerNoResponse";
+        var service = new { service = candidate.Backend.DisplayName() };
+        var ok = await indexers.For(candidate.Backend).PingAsync(candidate, ct);
+        await RecordTestAsync(ConnectionTestStore.IndexerKey(candidate.Backend),
+            ConnectionTestStore.IndexerFingerprint(candidate), ok, code, service, ct);
+        if (ok)
         {
             return Ok(new { success = true });
         }
 
-        const string code = "error.settings.indexerNoResponse";
         return StatusCode(StatusCodes.Status502BadGateway,
-            new { success = false, code, error = localizer.Get(code, new { service = candidate.Backend.DisplayName() }) });
+            new { success = false, code, error = localizer.Get(code, service) });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1707,6 +1798,9 @@ public class SettingsController(
             }
         }
 
+        var addedClient = current.Kind != kind ||
+            !string.Equals(current.Url.Trim().TrimEnd('/'), (request.Url ?? string.Empty).Trim().TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase);
         await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
         await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
@@ -1714,7 +1808,94 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadClientLabel, request.Label, ct);
         await settings.SetAsync(SettingKeys.DownloadClientPathMapFrom, request.PathMapFrom, ct);
         await settings.SetAsync(SettingKeys.DownloadClientPathMapTo, request.PathMapTo, ct);
+
+        // A different client: the old one's seed targets say nothing about it, so its own defaults replace them.
+        if (addedClient && !string.IsNullOrWhiteSpace(request.Url))
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(SeedLimitImportTimeout);
+            var imported = await ReadSeedLimitsAsync(await DownloadClientSettingsStore.LoadAsync(settings, ct), timeout.Token);
+            await TorrentSeedTargets.SaveAsync(settings, new TorrentSeedTargets(imported?.Ratio, imported?.SeedingMinutes), ct);
+        }
+
         return Ok(request with { Kind = kind.Key() });
+    }
+
+    private static readonly TimeSpan SeedLimitImportTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>The client's own seed limits, or null when it could not be asked.</summary>
+    private async Task<TorrentSeedLimits?> ReadSeedLimitsAsync(TorrentClientSettings client, CancellationToken ct)
+    {
+        try
+        {
+            return await torrentClients.For(client.Kind).GetSeedLimitsAsync(client, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OperationCanceledException)
+        {
+            logger.LogInformation("Could not read seed limits from {Client} at {Url}: {Error}",
+                client.Kind.DisplayName(), client.Url, ex.Message);
+            return null;
+        }
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("downloadclient/lifecycle")]
+    public async Task<IActionResult> GetTorrentLifecycle(CancellationToken ct)
+    {
+        var targets = await TorrentSeedTargets.LoadAsync(settings, ct);
+        return Ok(new TorrentLifecycleSettings(
+            CompletedDownloadJob.StallHours(await settings.GetAsync(SettingKeys.DownloadClientStallHours, ct)),
+            targets.Ratio, targets.Minutes));
+    }
+
+    public const double MaxSeedRatio = 1000;
+    public const int MaxSeedMinutes = 525_600;
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("downloadclient/lifecycle")]
+    public async Task<IActionResult> SetTorrentLifecycle([FromBody] TorrentLifecycleSettings request, CancellationToken ct)
+    {
+        if (request.StallHours is < 0 or > CompletedDownloadJob.MaxStallHours)
+        {
+            return this.Fail(localizer, "error.settings.stallHoursRange", new { max = CompletedDownloadJob.MaxStallHours });
+        }
+
+        if (request.SeedRatio is { } ratio && (!double.IsFinite(ratio) || ratio is < 0 or > MaxSeedRatio))
+        {
+            return this.Fail(localizer, "error.settings.seedRatioRange", new { max = MaxSeedRatio });
+        }
+
+        if (request.SeedMinutes is < 0 or > MaxSeedMinutes)
+        {
+            return this.Fail(localizer, "error.settings.seedMinutesRange", new { max = MaxSeedMinutes });
+        }
+
+        await settings.SetAsync(SettingKeys.DownloadClientStallHours,
+            request.StallHours.ToString(CultureInfo.InvariantCulture), ct);
+        await TorrentSeedTargets.SaveAsync(settings,
+            new TorrentSeedTargets(request.SeedRatio is { } r ? Math.Round(r, 3) : null, request.SeedMinutes), ct);
+        return await GetTorrentLifecycle(ct);
+    }
+
+    /// <summary>Replaces the seed targets with the configured client's own default limits, empty where it has none.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("downloadclient/lifecycle/import")]
+    public async Task<IActionResult> ImportSeedLimits(CancellationToken ct)
+    {
+        var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (string.IsNullOrWhiteSpace(client.Url))
+        {
+            return this.Fail(localizer, "error.settings.urlRequired");
+        }
+
+        if (await ReadSeedLimitsAsync(client, ct) is not { } limits)
+        {
+            const string code = "error.settings.downloadClientNoResponse";
+            return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
+        }
+
+        await TorrentSeedTargets.SaveAsync(settings, new TorrentSeedTargets(limits.Ratio, limits.SeedingMinutes), ct);
+        return Ok(new SeedLimitImport(limits.Ratio, limits.SeedingMinutes, limits.Ratio is not null || limits.SeedingMinutes is not null));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1754,10 +1935,10 @@ public class SettingsController(
             request.Password ?? stored.Password,
             request.Label is null ? stored.Label : DownloadClientSettingsStore.LabelOrDefault(request.Label));
 
+        var fingerprint = ConnectionTestStore.DownloadClientFingerprint(client);
         try
         {
             await torrentClients.For(kind).PingAsync(client, ct);
-            return Ok(new { success = true });
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -1765,8 +1946,12 @@ public class SettingsController(
             var code = ex is TorrentClientException { Failure: TorrentClientFailure.LoginFailed }
                 ? "error.settings.downloadClientLoginFailed"
                 : "error.settings.downloadClientNoResponse";
+            await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, false, code, null, ct);
             return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
         }
+
+        await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, true, null, null, ct);
+        return Ok(new { success = true });
     }
 
     /// <summary>The drivers this build has, for the kind select: what each is called and whether it takes a username.</summary>
@@ -1873,7 +2058,10 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        return await kavita.PingAsync(url, apiKey, ct)
+        var reachable = await kavita.PingAsync(url, apiKey, ct);
+        await RecordTestAsync(ConnectionTestStore.Kavita, ConnectionTestStore.KavitaFingerprint(url, apiKey),
+            reachable, "error.settings.kavitaNoResponse", null, ct);
+        return reachable
             ? Ok(new { success = true })
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
@@ -1911,10 +2099,35 @@ public class SettingsController(
         }
 
         var ok = await flareSolverr.PingAsync(url, ct);
+        await RecordTestAsync(ConnectionTestStore.FlareSolverr, ConnectionTestStore.FlareSolverrFingerprint(url),
+            ok, "error.settings.flaresolverrNoResponse", null, ct);
         return ok
             ? Ok(new { success = true })
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
+    }
+
+    /// <summary>The last Test result of each connection, only where the stored settings are still the ones tested.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("connection-tests")]
+    public async Task<IActionResult> GetConnectionTests(CancellationToken ct) =>
+        Ok(connectionTests is null ? [] : await connectionTests.CurrentAsync(ct));
+
+    private async Task RecordTestAsync(string key, string fingerprint, bool ok, string? code, object? args, CancellationToken ct)
+    {
+        if (connectionTests is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await connectionTests.RecordAsync(key, fingerprint, ok, code, args, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not record the {Key} connection test result", key);
+        }
     }
 
     [HttpGet("metadata")]

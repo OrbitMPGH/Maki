@@ -35,14 +35,18 @@ not a replacement.
 
 [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
-- Type: `feat` (new capability), `fix` (bug fix), `refactor` (no behavior change), `docs`, `test`,
-  `build` (Dockerfile/deps/build scripts), `ci` (`.github/workflows/**`), `chore` (everything else).
-- Scope (optional): lowercase directory that owns the change — `core`, `data`, `sources`,
-  `metadata`, `api`, `frontend`. Omit for changes spanning several.
+- Type: `feat` (new capability), `fix` (bug fix), `perf`, `refactor` (no behavior change), `docs`,
+  `test`, `build` (Dockerfile/deps/build scripts), `ci` (`.github/workflows/**`), `chore`
+  (everything else).
+- Scope (optional): the lowercase feature area, as the commit log uses them: `reader`, `series`,
+  `discover`, `downloads`, `sources`, `enhance`, `ui`, `i18n`, `api` and so on. Omit for changes
+  spanning several.
 - Summary: imperative mood ("add", not "added"), no capital after the colon, no trailing period,
   under ~50 characters.
 - Body: only when the *why* isn't obvious from the diff — a constraint, a bug that motivated it, a
   tradeoff. Never restate what the diff already shows.
+
+PR titles use the same format, and the PR body fills in `.github/pull_request_template.md`.
 
 Examples: `feat(sources): add Asura manhwa source`,
 `fix(api): derive series monitoring from the mode, not a stale flag`,

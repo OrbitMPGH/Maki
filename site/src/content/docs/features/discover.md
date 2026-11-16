@@ -10,7 +10,9 @@ description: Recommendations, rails and metadata, all computed on your server.
 
 Local ONNX embeddings over the MangaBaka dump find titles similar to your library. Seed them from
 your whole library or from specific titles, and filter by year, rating, type, status, genre,
-chapter count and content rating. A dial moves the picks from popular to obscure.
+chapter count and content rating. The minimum rating moves in steps that match how scores spread,
+and each step says how much of the popular catalogue it keeps. A dial moves the picks from popular
+to obscure.
 
 ## Discover
 
@@ -29,12 +31,23 @@ Discover has four tabs:
   you**.
 - **Recommended** holds the seeded picks described above.
 - **Your taste** shows reading behaviour, grouped interests, the tags steering your picks and how
-  your taste has moved.
+  your taste has moved. Each group has **More like this**, which opens Recommended seeded from it.
 - **Shortlist** holds titles you saved for later.
 
 Every card shows its rating top left, and titles already in your library carry a check mark top
-right. Every rail has a fullscreen **Show more** view. Detail cards show categorized tags, alternate
-titles, creators, per-source ratings and MyAnimeList reviews. Cards show the publication status as
+right. Every rail has a fullscreen **Show more** view.
+
+A detail card opens with a compact header: the reason the card gave (such as "Feels like ...")
+above the title, a line with the year, chapters and volumes, and status, content rating and type as
+pills. The score says where it stands, such as "8.6 Exceptional" and "Top 1% of popular manhwa"
+(8.5 and up is Exceptional, 8.0 Great and 7.0 Good). Each site is one chip with its score. Adding is
+one card: **Folder** and **Incognito** show their current setting, **Automation** holds monitoring
+and the quality profile, and **Preview first chapter** sits under **Add to library**. The pick at
+the top of Discover uses the same header.
+
+Detail cards also show categorized tags, alternate titles, creators and reviews from AniList and
+MyAnimeList, with the most liked Kitsu one-line takes below them. A site that does not answer is
+named instead of hiding its reviews. Cards show the publication status as
 a disc beside the year and chapter count. Detail cards also have thumbs up and thumbs down, and
 after you mark a title seen, a toast offers **Liked it** and **Disliked it**. See
 [Tune what you see](/Maki/guides/recommendations/feedback/).
@@ -51,6 +64,13 @@ button, saved cards carry a ribbon, and the **Shortlist** tab lists them. Each e
 - Saving doesn't count as a taste signal for recommendations.
 - Tracker [import lists](/Maki/guides/trackers/connect/#importing-your-lists) put **Plan to read**
   entries here.
+
+## Related works
+
+When the catalogue lists a new sequel, prequel, spin-off or side story of a series you read, you
+get a notification that opens it in Discover. Turn it off under Discover in your notification
+settings. Series already in your library before the update, and series you add later, don't
+announce the related works they already had.
 
 ## Metadata
 

@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Core.Naming;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Tests;
 
@@ -162,10 +163,71 @@ public class NamingFormatterTests
     [InlineData("Series Title}", "error.naming.unmatchedCloseBrace")]
     [InlineData("{Series Title:000}", "error.naming.noPadding")]
     [InlineData("{Chapter Number:abc}", "error.naming.paddingNotZero")]
+    [InlineData("{Series Title} <({Chapter Group})", "error.naming.unmatchedOpenAngle")]
+    [InlineData("{Series Title} ({Chapter Group})>", "error.naming.unmatchedCloseAngle")]
+    [InlineData("{Series Title} <a <{Chapter Group}>>", "error.naming.nestedOptional")]
+    [InlineData("{Series Title} <(none)>", "error.naming.optionalWithoutToken")]
+    [InlineData("{Series<Title}", "error.naming.angleInsideToken")]
+    [InlineData("<{Series Title}> <{Chapter VolChap}>", "error.naming.allTokensOptional")]
     public void Invalid_formats_are_refused(string format, string expectedKey)
     {
         var errors = NamingFormatter.Validate(format);
         Assert.Contains(errors, e => e.Key == expectedKey);
+    }
+
+    [Fact]
+    public void Optional_block_formats_pass_validation()
+    {
+        Assert.Empty(NamingFormatter.Validate("{Series Title} <({Chapter Group})>"));
+        Assert.Empty(NamingFormatter.Validate(
+            "{Series Title} - <Vol. {Chapter Volume:00} ><Ch. {Chapter Number:0000}><OneShot {Chapter OneShotSuffix}>"));
+    }
+
+    [Fact]
+    public void Optional_block_keeps_its_text_when_every_token_has_a_value()
+    {
+        var context = Context() with { Group = "Band of the Hawk" };
+        Assert.Equal("Berserk (Band of the Hawk)",
+            NamingFormatter.Format("{Series Title} <({Chapter Group})>", context));
+    }
+
+    [Fact]
+    public void Optional_block_drops_whole_when_a_token_is_empty()
+    {
+        Assert.Equal("Berserk", NamingFormatter.Format("{Series Title} <({Chapter Group})>", Context()));
+
+        // One empty token is enough, even beside one that has a value.
+        Assert.Equal("Berserk Ch.24",
+            NamingFormatter.Format("{Series Title} <{Chapter Group} - >Ch.{Chapter Number}", Context()));
+    }
+
+    [Fact]
+    public void Issue_197_example_renders_each_part_only_when_it_has_a_value()
+    {
+        const string format =
+            "{Series Title} - <Vol. {Chapter Volume:00} ><Ch. {Chapter Number:0000}><OneShot{Chapter OneShotSuffix}>";
+
+        Assert.Equal("Berserk - Vol. 03 Ch. 0024", NamingFormatter.Format(format, Context()));
+        Assert.Equal("Berserk - Ch. 0024",
+            NamingFormatter.Format(format, Context(chapter: new Chapter { Number = 24m })));
+        Assert.Equal("Berserk - OneShot - The Prototype",
+            NamingFormatter.Format(format, Context(chapter: new Chapter { IsOneShot = true, Title = "The Prototype" })));
+    }
+
+    [Fact]
+    public void Optional_block_applies_each_token_spelling()
+    {
+        var context = Context() with { Group = "Band of the Hawk" };
+        Assert.Equal("Berserk [band.of.the.hawk]",
+            NamingFormatter.Format("{Series Title} <[{chapter.group}]>", context));
+    }
+
+    [Fact]
+    public void A_value_that_looks_like_a_token_is_not_rendered_again()
+    {
+        var context = Context(new Series { Title = "Berserk" }) with { Group = "{Series Title}" };
+        Assert.Equal("Berserk ({Series Title})",
+            NamingFormatter.Format("{Series Title} <({Chapter Group})>", context));
     }
 
     [Fact]
@@ -282,5 +344,73 @@ public class NamingFormatterTests
         var context = new NamingContext(new Series { Title = "Berserk" }, chapter, chapter);
 
         Assert.Equal("Berserk Vol.3 Ch.24", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Series_status_author_and_publisher_render_from_the_series()
+    {
+        var series = new Series
+        {
+            Title = "Berserk", Status = SeriesStatus.Hiatus,
+            AuthorStory = "Miura Kentarou ,  Mori Kouji", Publisher = "Hakusensha, Dark Horse, Panini",
+        };
+        var context = Context(series);
+
+        Assert.Equal("Berserk [Hiatus] Miura Kentarou, Mori Kouji (Hakusensha)",
+            NamingFormatter.Format("{Series Title} [{Series Status}] {Series Author} ({Series Publisher})", context));
+    }
+
+    [Fact]
+    public void Series_author_falls_back_to_the_artist_and_unknown_values_render_empty()
+    {
+        var context = Context(new Series { Title = "Berserk", AuthorArt = "Miura Kentarou" });
+
+        Assert.Equal("Berserk Miura Kentarou",
+            NamingFormatter.Format("{Series Title} [{Series Status}] {Series Author} ({Series Publisher})", context));
+    }
+
+    [Fact]
+    public void Chapter_source_release_date_and_tier_render_for_a_chapter()
+    {
+        var chapter = new Chapter { Number = 24m, Volume = 3, ReleaseDate = new DateTime(2023, 1, 9) };
+        var context = Context(chapter: chapter) with { Source = "MangaDex", Tier = QualityTier.Scanlator };
+
+        Assert.Equal("Berserk Vol.3 Ch.24 (2023-01-09) [MangaDex] [Scanlator]",
+            NamingFormatter.Format(
+                "{Series Title} {Chapter VolChap} ({Chapter ReleaseDate}) [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void Chapter_source_release_date_and_tier_leave_no_brackets_when_unknown()
+    {
+        var context = Context() with { Source = " ", Tier = QualityTier.Unknown };
+
+        Assert.Equal("Berserk Vol.3 Ch.24",
+            NamingFormatter.Format(
+                "{Series Title} {Chapter VolChap} ({Chapter ReleaseDate}) [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void File_level_tokens_are_empty_in_a_series_folder()
+    {
+        var context = new NamingContext(new Series { Title = "Berserk" }, Source: "MangaDex", Tier: QualityTier.Official);
+
+        Assert.Equal("Berserk", NamingFormatter.Format("{Series Title} [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void A_release_date_ignores_the_ambient_culture()
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("ar-SA");
+            var context = Context(chapter: new Chapter { Number = 1m, ReleaseDate = new DateTime(2023, 1, 9) });
+            Assert.Equal("2023-01-09", NamingFormatter.Format("{Chapter ReleaseDate}", context));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
     }
 }

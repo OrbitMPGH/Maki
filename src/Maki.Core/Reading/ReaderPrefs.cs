@@ -92,7 +92,28 @@ public record ReaderPrefsSpec(
     /// With a server <see cref="EnhanceMethod"/>, keep upscaling every page of the open chapter
     /// behind the reading window instead of only the window. What is left when the reader leaves is cancelled.
     /// </summary>
-    bool EnhanceWholeChapter = false)
+    bool EnhanceWholeChapter = false,
+    /// <summary>
+    /// Jump past the recap of the previous chapter that opens most webtoon chapters, instead of
+    /// offering a "Skip recap" button. Only on a chapter opened at its start.
+    /// </summary>
+    bool AutoSkipRecap = false,
+    /// <summary>In continuous mode, show the chapter's progress as a rail down the screen's edge that can be dragged to seek.</summary>
+    bool ProgressRail = false,
+    /// <summary>
+    /// How Single and Double divide the page into tap zones: <c>sides</c>, <c>l-shape</c>,
+    /// <c>kindle</c> or <c>edges</c>. Laid out for left-to-right; the reader mirrors them for right-to-left.
+    /// </summary>
+    string TapLayout = ReaderPrefsSpec.TapLayoutDefault,
+    /// <summary>The side zones' share of the page in percent, 15 to 45.</summary>
+    int TapWidth = ReaderPrefsSpec.TapWidthDefault,
+    /// <summary>Swap the back and forward tap zones.</summary>
+    bool TapInvert = false,
+    /// <summary>
+    /// Leave out the credit, recruitment and notice pages that repeat at the start or end of a
+    /// series' chapters. Display only: the files and the page indexes progress records are untouched.
+    /// </summary>
+    bool HideCredits = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -117,6 +138,9 @@ public record ReaderPrefsSpec(
     public const string EnhanceFallbackDefault = "a4k-m";
     public const string EnhanceProgressDefault = "line";
 
+    public const string TapLayoutDefault = "sides";
+    public const int TapWidthDefault = 33;
+
     public const string FitWidth = "width";
     public const string FitHeight = "height";
     public const string FitScreen = "screen";
@@ -138,6 +162,7 @@ public record ReaderPrefsSpec(
         ["a4k-s", EnhanceFallbackDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", EnhanceMethodDefault];
     private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceFallbackDefault, "a4k-a", EnhanceOff];
     private static readonly string[] EnhanceProgressStyles = [EnhanceProgressDefault, "detailed", "off"];
+    private static readonly string[] TapLayouts = [TapLayoutDefault, "l-shape", "kindle", "edges"];
     private static readonly string[] Tiers = [.. Enum.GetValues<QualityTier>().Select(QualitySnapshot.TierName)];
 
     public static readonly IReadOnlyList<string> DefaultEnhanceSkipTiers = ["volume"];
@@ -161,6 +186,8 @@ public record ReaderPrefsSpec(
             ? DefaultEnhanceSkipTiers
             : [.. Tiers.Where(EnhanceSkipTiers.Contains)],
         EnhanceProgress = EnhanceProgressStyles.Contains(EnhanceProgress) ? EnhanceProgress : EnhanceProgressDefault,
+        TapLayout = TapLayouts.Contains(TapLayout) ? TapLayout : TapLayoutDefault,
+        TapWidth = Math.Clamp(TapWidth, 15, 45),
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>

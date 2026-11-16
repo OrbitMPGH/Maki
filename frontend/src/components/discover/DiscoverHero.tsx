@@ -1,22 +1,28 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { ActionIcon, Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Button, Group, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import {
+  IconArchive,
   IconArrowRight,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
   IconPlus,
-  IconStarFilled,
 } from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
+import type { MetadataLink } from '../../api/types'
+import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
-import { seriesStatusVisual, statusToken } from '../ui/status'
-import { ContentRatingChip } from '../ContentRatingChip'
-import { relationPhrase } from '../ui/DiscoverRail'
+import { HeroChips } from '../series/HeroChips'
+import { seriesStatusVisual } from '../ui/status'
+import { engineReason } from '../ui/DiscoverRail'
+import { ScoreInline } from '../ui/ScoreInline'
+import { TYPE_LABELS } from '../CatalogueFilters'
+import { ScoreFigure } from './ScoreFigure'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
@@ -196,35 +202,34 @@ export function DiscoverHero({
   // Everything here is on the rail item as well as the detail response, so the band is complete on
   // the first frame and the detail request fills in behind it rather than rearranging it.
   const cover = item.thumbUrlHiDpi ?? item.coverUrl ?? null
-  const { title, becauseOfTitle, relationKind, relatedToTitle } = item
+  const { title } = item
   const ownedSeriesId = seriesIdFor?.(item) ?? null
-  const status = seriesStatusVisual(detail?.status ?? item.status)
   const score = detail?.rating ?? item.rating
-  // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
-  // whole figures block on a language switch.
   const year = detail?.year ?? item.year
-  const totalChapters = detail?.totalChapters ?? item.totalChapters
-  const finalVolume = detail?.finalVolume
-  const figures = [
-    { id: 'released', label: t`Released`, value: year },
-    { id: 'chapters', label: t`Chapters`, value: totalChapters },
-    { id: 'volumes', label: t`Volumes`, value: finalVolume },
-  ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
+  const chapters = detail?.totalChapters ?? item.totalChapters
+  const volumes = detail?.finalVolume ?? null
+  const typeLabel = detail?.type ? renderLabel(TYPE_LABELS[detail.type] ?? detail.type) : null
+  // The card's one reason, as the modal's kicker says it. The card names one, so the band does too.
+  const reason = engineReason(item)
 
-  // The three "why" flavours, in the order of how much they claim: what readers did beats what they
-  // said, and both beat proximity in the behavioural space. Each carries a stable id rather than
-  // being keyed by its own (translated) text below.
-  const reasons = [
-    item.coRead ? { id: 'co-read', text: t`Readers like you also finished this` } : null,
-    item.coRecommended
-      ? { id: 'co-recommended', text: t`Readers like you also recommended this` }
-      : null,
-    item.tasteMatch ? { id: 'taste-match', text: t`Close to what you read` } : null,
-    becauseOfTitle ? { id: 'because-of-title', text: t`Because you read ${becauseOfTitle}` } : null,
-    relationKind && relatedToTitle
-      ? { id: 'relation', text: relationPhrase(relationKind, relatedToTitle) }
-      : null,
-  ].filter((r): r is { id: string; text: string } => r != null)
+  // As in the modal: each site's score on its own link chip, scored sites first.
+  const ratingBySite = new Map((detail?.sourceRatings ?? []).map((r) => [r.source.toLowerCase(), r.rating]))
+  const links: MetadataLink[] = (detail?.links ?? [])
+    .map((link) => {
+      const rating = ratingBySite.get(link.site)
+      return rating != null && link.score == null ? { ...link, score: formatFixedDecimal(rating / 10, 1) } : link
+    })
+    .sort((a, b) => Number(b.score != null) - Number(a.score != null))
+  const unlinked = (detail?.sourceRatings ?? [])
+    .filter((r) => !links.some((link) => link.site === r.source.toLowerCase()))
+    .map((r) => (
+      <Tooltip key={r.source} label={r.source} withArrow>
+        <span className="site-chip" data-static tabIndex={0}>
+          <MetadataSiteIcon site={r.source.toLowerCase()} monogram={r.source.slice(0, 2).toUpperCase()} size={15} />
+          <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
+        </span>
+      </Tooltip>
+    ))
 
   return (
     <Box
@@ -268,10 +273,20 @@ export function DiscoverHero({
               </button>
             )}
 
-            <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-              <Text className="discover-hero-eyebrow">
-                <Trans>Your next read</Trans>
-              </Text>
+            <div className="hero-column hero-continue" style={{ flex: 1, minWidth: 0 }}>
+              {/* The modal's header, piece for piece, so a pick reads the same here as in the card it
+                  opens. Every row below the title holds its height while the detail loads and across
+                  picks: the band must not move under someone reading it. */}
+              <div className="hero-kicker" data-hero-swap>
+                {reason ? (
+                  <>
+                    <reason.Glyph size={14} />
+                    <span className="hero-kicker-text">{reason.text}</span>
+                  </>
+                ) : (
+                  <Trans>Your next read</Trans>
+                )}
+              </div>
 
               {/* The page's h1 is "Discover"; the featured pick is a section of it. */}
               <Title order={2} className="series-hero-title" ref={titleRef} data-hero-swap>
@@ -280,76 +295,58 @@ export function DiscoverHero({
                 </button>
               </Title>
 
-              <Group gap={9} wrap="wrap" className="discover-hero-pills" data-hero-swap>
-                <span
-                  className="series-hero-status"
-                  style={{
-                    color: `var(--${statusToken(status.color)})`,
-                    background: `var(--${statusToken(status.color)}-soft)`,
-                  }}
-                >
-                  <status.Icon size={14} />
-                  {renderLabel(status.label)}
-                </span>
-                <ContentRatingChip rating={detail?.contentRating} />
-              </Group>
+              <Text component="div" className="hero-meta" data-hero-swap>
+                <MetaList
+                  inline
+                  items={[
+                    year,
+                    chapters != null ? (
+                      volumes != null ? (
+                        <Trans key="count">
+                          <Plural value={chapters} one="# chapter" other="# chapters" /> in{' '}
+                          <Plural value={volumes} one="# volume" other="# volumes" />
+                        </Trans>
+                      ) : (
+                        plural(chapters, { one: '# chapter', other: '# chapters' })
+                      )
+                    ) : volumes != null ? (
+                      plural(volumes, { one: '# volume', other: '# volumes' })
+                    ) : null,
+                  ]}
+                />
+              </Text>
 
-              <div className="hero-figures" data-hero-swap>
-                {score != null && (
-                  <span className="hero-score">
-                    <IconStarFilled size={18} />
-                    <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
-                  </span>
-                )}
-                {score != null && figures.length > 0 && (
-                  <span className="hero-figure-rule" aria-hidden />
-                )}
-                {figures.length > 0 && (
-                  <div className="hero-stats">
-                    {figures.map((f) => (
-                      <div key={f.id} className="hero-stat">
-                        <span className="hero-stat-n figure">{f.value}</span>
-                        <span className="hero-stat-l">{f.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div data-hero-swap>
+                <HeroChips
+                  status={detail?.status ?? item.status}
+                  contentRating={detail?.contentRating}
+                  typeLabel={typeLabel}
+                  hasAnime={detail?.hasAnime}
+                >
+                  {ownedSeriesId != null && ownedArchived && (
+                    <span className="series-hero-status" data-quiet>
+                      <IconArchive size={14} />
+                      <Trans context="series">Archived</Trans>
+                    </span>
+                  )}
+                </HeroChips>
               </div>
 
-              {/* Reserved height: the source scores arrive with the detail request, and a row that
-                  appears from nothing shoves the buttons down mid-read. Row spacing is in the
-                  stylesheet rather than on `mt` props: it is what the band's height is made of, and
-                  a short viewport tunes all of it at once. */}
-              <Group gap="xs" align="center" className="discover-hero-sources" data-hero-swap>
-                {detail?.sourceRatings.map((r) => (
-                  <Tooltip key={r.source} label={r.source} withArrow>
-                    <Badge
-                      size="sm"
-                      variant="light"
-                      color="var(--neutral)"
-                      leftSection={
-                        <MetadataSiteIcon
-                          site={r.source.toLowerCase()}
-                          monogram={r.source.slice(0, 2).toUpperCase()}
-                          size={13}
-                        />
-                      }
-                    >
-                      {formatFixedDecimal(r.rating / 10, 1)}
-                    </Badge>
-                  </Tooltip>
-                ))}
-              </Group>
-
-              {/* Always rendered: an empty row still holds its height. */}
-              <div className="discover-hero-reasons" data-hero-swap>
-                <MetaList
-                  items={reasons.slice(0, 3).map((r) => (
-                    <span key={r.id} className="discover-hero-reason" title={r.text}>
-                      {r.text}
-                    </span>
-                  ))}
-                />
+              <div className="hero-scoreline" data-hero-swap>
+                <div className="discover-hero-score">
+                  {score != null && <ScoreFigure score={score} standing={detail?.scoreStanding} />}
+                </div>
+                <div className="discover-hero-sites">
+                  {links.length > 0 ? (
+                    <MetadataLinks links={links} chips extra={unlinked} />
+                  ) : (
+                    unlinked.length > 0 && (
+                      <Group gap={6} wrap="wrap" align="center">
+                        {unlinked}
+                      </Group>
+                    )
+                  )}
+                </div>
               </div>
 
               <Group gap="xs" className="discover-hero-actions">
@@ -357,9 +354,6 @@ export function DiscoverHero({
                     non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
                 {ownedSeriesId != null && ownedArchived ? (
                   <>
-                    <Badge color="gray" variant="light" size="lg">
-                      <Trans context="series">Archived</Trans>
-                    </Badge>
                     <RestoreArchivedButton seriesId={ownedSeriesId} aria-label={t({ message: `Restore ${title}`, context: 'series' })} />
                     <Button
                       variant="default"
@@ -392,20 +386,7 @@ export function DiscoverHero({
                   <Trans>More like this</Trans>
                 </Button>
               </Group>
-
-              {/* Phone only: the score and figures as one line under the buttons. */}
-              <div className="discover-hero-facts" data-hero-swap>
-                {score != null && (
-                  <span className="discover-hero-facts-score figure">
-                    <IconStarFilled size={13} />
-                    {formatFixedDecimal(score / 10, 1)}
-                  </span>
-                )}
-                {year != null && <span className="tnum">{year}</span>}
-                {totalChapters != null && <span className="tnum">{t`${totalChapters} ch.`}</span>}
-                {finalVolume != null && <span className="tnum">{t`${finalVolume} vol.`}</span>}
-              </div>
-            </Stack>
+            </div>
             </Group>
           </div>
 
@@ -470,12 +451,7 @@ export function DiscoverHero({
                       <span className="discover-hero-strip-meta">
                         {p.year != null && <span className="tnum">{p.year}</span>}
                         <span>{renderLabel(pickStatus.label)}</span>
-                        {p.rating != null && (
-                          <span className="discover-hero-strip-rating tnum">
-                            <IconStarFilled size={11} />
-                            {formatFixedDecimal(p.rating / 10, 1)}
-                          </span>
-                        )}
+                        {p.rating != null && <ScoreInline score={p.rating} />}
                       </span>
                       {matches.length > 0 && (
                         <MetaList

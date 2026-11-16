@@ -150,6 +150,10 @@ public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) :
         start.ArgumentList.Add(cli);
         start.ArgumentList.Add("install");
         start.ArgumentList.Add(BrowserName);
+        if (start.Environment.TryGetValue(DriverHeapCap.Variable, out var nodeOptions) && DriverHeapCap.IsOurs(nodeOptions))
+        {
+            start.Environment.Remove(DriverHeapCap.Variable);
+        }
 
         using var process = Process.Start(start)
             ?? throw new BrowserUnavailableException("The Playwright driver did not start.");

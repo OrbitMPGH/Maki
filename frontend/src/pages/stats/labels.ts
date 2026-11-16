@@ -24,12 +24,11 @@ export const CONTENT_RATING_LABELS: Record<string, MessageDescriptor> = {
 
 /**
  * Source reliability rows are named after the source, or after the protocol when the grab had no
- * source (a torrent or usenet release). The protocol arrives lowercased.
+ * source (a torrent release). The protocol arrives lowercased.
  */
 export const PROTOCOL_LABELS: Record<string, MessageDescriptor> = {
   scraper: msg`Scraper`,
   torrent: msg`Torrent`,
-  usenet: msg`Usenet`,
   unknown: msg`Unknown source`,
 }
 

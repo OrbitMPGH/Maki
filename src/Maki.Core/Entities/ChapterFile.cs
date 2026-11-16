@@ -26,11 +26,11 @@ public class ChapterFile
     public string SourceName { get; set; } = string.Empty;
     public DateTime DateAdded { get; set; }
 
-    /// <summary>Torrent/usenet release hash for phase-2 dedupe.</summary>
+    /// <summary>Torrent release hash for phase-2 dedupe.</summary>
     public string? ReleaseHash { get; set; }
 
     /// <summary>
-    /// The original torrent/usenet release name, kept so the UI can still show what release a
+    /// The original torrent release name, kept so the UI can still show what release a
     /// file came from after the naming format renames it. Null for scraped and manually
     /// imported files.
     /// </summary>
@@ -41,7 +41,20 @@ public class ChapterFile
     /// <summary>Scanlation group or release group that produced this file, when known.</summary>
     public string? Group { get; set; }
 
+    /// <summary>
+    /// The file name is one Maki built (a download or a rename), so it says nothing about the
+    /// release and its tags must not be read as a group.
+    /// </summary>
+    public bool NamedByMaki { get; set; }
+
     public int? PageCount { get; set; }
+
+    /// <summary>
+    /// Pages in the archive after page conversion split tall strips, when it did. <see cref="PageCount"/>
+    /// stays the count the copy was acquired with, which upgrade scoring compares against; whatever
+    /// counts the pages a reader sees (Komga, mark read) takes this one first.
+    /// </summary>
+    public int? SplitPageCount { get; set; }
     public int? MedianWidth { get; set; }
     public int? MedianHeight { get; set; }
     public string? ImageFormat { get; set; }
@@ -103,5 +116,6 @@ public class ChapterFile
         CheckedWith = null;
         ConversionSavedBytes = 0;
         OriginalImageFormat = null;
+        SplitPageCount = null;
     }
 }

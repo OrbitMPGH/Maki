@@ -128,6 +128,32 @@ namespace Maki.Data.Migrations
                     b.ToTable("AppConfig");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("AutoTagRules");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
                 {
                     b.Property<int>("Id")
@@ -185,6 +211,120 @@ namespace Maki.Data.Migrations
                     b.ToTable("Chapters");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCreditNotice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NoticeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Page")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Share")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Tail")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId");
+
+                    b.HasIndex("NoticeId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("ChapterCreditNotices");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCredits", b =>
+                {
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BankSeen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CandidatesJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ChapterFileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DetectorVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EdgeKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Failed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("HeadOffset")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("HeadPages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Judge")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OcrVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("ProbeHit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReferencesKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ScannedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Skipped")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("TailOffset")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("TailPages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TextVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ChapterId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("ChapterCredits");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ChapterFile", b =>
                 {
                     b.Property<int>("Id")
@@ -221,6 +361,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("MedianWidth")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("NamedByMaki")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("OriginalImageFormat")
                         .HasColumnType("TEXT");
 
@@ -252,6 +395,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("SourceName")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("SplitPageCount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Tier")
                         .HasColumnType("INTEGER");
@@ -363,6 +509,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PageIndex")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("PageOffset")
+                        .HasColumnType("REAL");
+
                     b.Property<int>("ReadSeconds")
                         .HasColumnType("INTEGER");
 
@@ -433,6 +582,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Volume")
                         .HasColumnType("INTEGER");
 
@@ -441,6 +593,187 @@ namespace Maki.Data.Migrations
                     b.HasIndex("SourceMappingId");
 
                     b.ToTable("ChapterSourceLinks");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ConnectionTestResult", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Ok")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TestedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("ConnectionTestResults");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Hits")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Signature")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("SignatureFirst")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SourceChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Strip")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<bool>("Tail")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SourceChapterId");
+
+                    b.ToTable("CreditBank", (string)null);
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditNotice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Fingerprint")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GroupSource")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Invite")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NameVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OcrVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Override")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Reads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Rows")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<double>("Share")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("SuggestedName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TextVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Whole")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CreditNotices");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditNoticeRead", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Bottom")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Colour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Crc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Length")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NoticeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Share")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoticeId");
+
+                    b.HasIndex("Crc", "Length", "Share", "Bottom")
+                        .IsUnique();
+
+                    b.ToTable("CreditNoticeReads");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -487,6 +820,12 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("HealthOperationId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastPeerSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProgressAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
 
@@ -500,6 +839,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("PreferredMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Protocol")
@@ -528,6 +870,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -558,10 +903,10 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("SortOrder", "QueuedAt")
+                    b.HasIndex("Priority", "SortOrder", "QueuedAt")
                         .HasFilter("\"Status\" NOT IN (6, 8)");
 
-                    b.HasIndex("Protocol", "Status", "SortOrder", "QueuedAt");
+                    b.HasIndex("Protocol", "Status", "Priority", "SortOrder", "QueuedAt");
 
                     b.ToTable("DownloadQueue");
                 });
@@ -1215,6 +1560,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("SourceFormat")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SplitPages")
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("TrashBytes")
                         .HasColumnType("INTEGER");
 
@@ -1237,9 +1585,18 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ColourFormat")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ColourStop")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ConditionsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("Format")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1797,6 +2154,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("MinFreeBytes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1804,6 +2164,35 @@ namespace Maki.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RootFolders");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RootFolderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RootFolderId");
+
+                    b.ToTable("RootFolderRules");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
@@ -1814,6 +2203,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -2069,6 +2461,10 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BlockedGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("TEXT");
 
@@ -2152,6 +2548,13 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PreferredGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PrepareChapters")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Publisher")
                         .HasColumnType("TEXT");
 
@@ -2196,6 +2599,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("UpgradeProfileId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("VolumeFirstPendingAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("Year")
                         .HasColumnType("INTEGER");
@@ -2526,6 +2932,60 @@ namespace Maki.Data.Migrations
                     b.ToTable("SourceMappings");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Author")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DismissedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceSeriesId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId", "SourceName", "SourceSeriesId")
+                        .IsUnique();
+
+                    b.ToTable("SourceNearMisses");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>
                 {
                     b.Property<int>("Id")
@@ -2709,6 +3169,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UpgradeCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("VolumeFirst")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -3230,6 +3693,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("ArchiveHintDismissedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CompleteHintDismissedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("HiddenFromHomeAt")
                         .HasColumnType("TEXT");
 
@@ -3271,6 +3737,15 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("StatusAuto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StatusChangedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -3387,6 +3862,17 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Tag", "Tag")
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
                 {
                     b.HasOne("Maki.Core.Entities.ChapterFile", "ChapterFile")
@@ -3403,6 +3889,42 @@ namespace Maki.Data.Migrations
                     b.Navigation("ChapterFile");
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCreditNotice", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.CreditNotice", null)
+                        .WithMany()
+                        .HasForeignKey("NoticeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCredits", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithOne()
+                        .HasForeignKey("Maki.Core.Entities.ChapterCredits", "ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.ChapterFile", b =>
@@ -3477,6 +3999,29 @@ namespace Maki.Data.Migrations
                     b.Navigation("Chapter");
 
                     b.Navigation("SourceMapping");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("SourceChapterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditNoticeRead", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.CreditNotice", null)
+                        .WithMany()
+                        .HasForeignKey("NoticeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -3700,6 +4245,17 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.RootFolder", "RootFolder")
+                        .WithMany()
+                        .HasForeignKey("RootFolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RootFolder");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
@@ -3876,6 +4432,15 @@ namespace Maki.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>

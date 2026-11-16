@@ -185,3 +185,28 @@ button, input, select, textarea { font: inherit; }
 
 /* --- Tooltip: fixed to the viewport in the app, placed by hand here -------- */
 .mk-preview .tip { position: absolute; }
+
+/* --- UnstyledButton (what the drill panel rows are built on) ------------- */
+.drill-row, .drill-choice, .drill-panel-back {
+  appearance: none;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* --- SegmentedControl (Mantine, size xs, as the drill panels use it) ------ */
+.mk-segmented { display: flex; padding: 4px; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.mk-segmented > span {
+  flex: 1 1 auto;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 2px 6px;
+  border-radius: calc(var(--radius-md) - 4px);
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-medium);
+}
+.mk-segmented > span[data-checked] { background: var(--surface-hover); color: var(--ink-hi); }

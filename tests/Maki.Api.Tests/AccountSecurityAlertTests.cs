@@ -153,11 +153,11 @@ public sealed class AccountSecurityAlertTests : IDisposable
         var users = IdentityTestKit.UserManager(db);
 
         await Settings(userId, db).SetOpds(
-            new SettingsController.OpdsSettings(true, true, Password), users, new TestSignInManager(users), default);
+            new SettingsController.OpdsSettings(true, true, Password), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
         Assert.Equal(AccountSecurityAlerts.OpdsTokenCreated, Alert().Key);
 
         _inbox.Raised.Clear();
-        await Settings(userId, db).RotateOpdsToken(new ConfirmPasswordRequest(Password), users, new TestSignInManager(users), default);
+        await Settings(userId, db).RotateOpdsToken(new ConfirmPasswordRequest(Password), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
         var (key, args, _) = Alert();
         Assert.Equal(AccountSecurityAlerts.OpdsTokenRotated, key);
         AssertNoSecrets(args);

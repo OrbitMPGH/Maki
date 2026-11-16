@@ -504,6 +504,85 @@ msgstr "不支持的反馈排序"
 msgid "error.feedback.unsupportedState"
 msgstr "不支持的反馈状态"
 
+#. ASP.NET Identity's own errors, joined with "; " when several apply at once.
+#. English: Something went wrong. Try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.defaultError"
+msgstr "出了点问题，请重试。"
+
+#. English: Someone else changed this account at the same time. Reload and try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.concurrencyFailure"
+msgstr "其他人同时修改了此账户。请刷新后重试。"
+
+#. English: Incorrect password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.passwordMismatch"
+msgstr "密码不正确。"
+
+#. English: This link or code is no longer valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidToken"
+msgstr "此链接或代码已失效。"
+
+#. English: That recovery code did not work.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.recoveryCodeRedemptionFailed"
+msgstr "该恢复代码无效。"
+
+#. English: This sign-in is already linked to an account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.loginAlreadyAssociated"
+msgstr "此登录方式已关联到某个账户。"
+
+#. English: The username {userName} is not allowed. Use letters, digits and - . _ @ + only.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidUserName"
+msgstr "不允许使用用户名 {userName}。只能使用字母、数字以及 - . _ @ +。"
+
+#. English: The email address {email} is not valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.invalidEmail"
+msgstr "电子邮件地址 {email} 无效。"
+
+#. English: The username {userName} is already taken.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.duplicateUserName"
+msgstr "用户名 {userName} 已被占用。"
+
+#. English: The email address {email} is already in use.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.duplicateEmail"
+msgstr "电子邮件地址 {email} 已被使用。"
+
+#. English: This account already has a password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.userAlreadyHasPassword"
+msgstr "此账户已设置密码。"
+
+#. English: Lockout is not enabled for this account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.userLockoutNotEnabled"
+msgstr "此账户未启用锁定。"
+
+#. English: Passwords must be at least {length} characters.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+#, fuzzy
+msgid "error.identity.passwordTooShort"
+msgstr "密码至少需要 {length} 个字符。"
+
 #. English: Unknown tracker
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #, fuzzy
@@ -582,6 +661,42 @@ msgstr "名称不能为空"
 #, fuzzy
 msgid "error.discoverFilters.tooMany"
 msgstr "最多只能保留 {max} 个已保存的筛选条件"
+
+#. English: That credit notice no longer exists
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.noticeNotFound"
+msgstr "该署名提示已不存在"
+
+#. English: A group name can be at most 100 characters
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.nameTooLong"
+msgstr "组名最多 100 个字符"
+
+#. English: Enter a group name
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.nameRequired"
+msgstr "请输入组名"
+
+#. English: A site ad cannot name a release group
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.siteHasNoGroup"
+msgstr "站点广告不能指定发布组"
+
+#. English: That value is not one Maki knows
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.invalidValue"
+msgstr "Maki 不识别该值"
+
+#. English: Pick at least one credit notice
+#: src/Maki.Api/Services/CreditGroupsService.cs
+#, fuzzy
+msgid "error.creditGroups.noNotices"
+msgstr "请至少选择一条署名提示"
 
 #. English: Name is required
 #: src/Maki.Api/Controllers/CustomRailsController.cs
@@ -968,6 +1083,12 @@ msgstr "章节网址模板无法重建章节列表中显示的链接。"
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "示例章节网址不在章节列表中。"
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+#, fuzzy
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr "样本章节被列为已锁定。请选择一个免费章节作为样本。"
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
@@ -998,6 +1119,13 @@ msgstr "文件夹已不存在"
 #, fuzzy
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "此文件夹已属于资料库中的另一个系列"
+
+#. English: This folder is a library root folder or contains one, so Maki won't import from it
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+#, fuzzy
+msgid "error.import.holdsRootFolder"
+msgstr "此文件夹是资料库根文件夹或包含根文件夹，因此 Maki 不会从中导入"
 
 #. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #: src/Maki.Api/Services/LibraryImportResolver.cs
@@ -1214,6 +1342,31 @@ msgstr "章节数和卷数必须在 0 到 {max} 之间。"
 msgid "error.metadata.invalidStatus"
 msgstr "未知状态。"
 
+#. English: The year must be between {minYear} and {maxYear}.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.invalidYear"
+msgstr "年份必须介于 {minYear} 与 {maxYear} 之间。"
+
+#. English: The provider rates this series above your content rating limit, so its rating can't be reset.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr "提供方将此系列评为高于你的内容分级上限，因此无法重置其评分。"
+
+#. English: Unknown series type.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#, fuzzy
+msgid "error.metadata.unknownType"
+msgstr "未知的系列类型。"
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#. English: {reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+#, fuzzy
+msgid "error.metadata.coverFetchFailed"
+msgstr "{reason, select, refused {Maki 只会从公共网络地址获取图片，因此跳过了 {url}。} timeout {{url} 响应时间过长。} status {{url} 返回 HTTP {status}。} redirects {{url} 重定向次数过多。} other {Maki 无法访问 {url}。}}"
+
 #. English: Choose at least one field.
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 #, fuzzy
@@ -1400,11 +1553,18 @@ msgstr "URL 必须是完整的 http:// 或 https:// 地址"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL 不能为空"
 
-#. English: Choose WebP, AVIF or off
+#. English: Choose WebP, AVIF, JPEG XL or off
 #: src/Maki.Api/Controllers/PageConversionController.cs
 #, fuzzy
 msgid "error.pageConversion.formatInvalid"
 msgstr "请选择 WebP、AVIF 或关闭"
+
+#. A plan or rule picked JPEG XL, but libjxl did not load beside Maki (missing or older than 0.11).
+#. English: JPEG XL needs libjxl, which this install does not have. Choose WebP or AVIF
+#: src/Maki.Api/Controllers/PageConversionController.cs
+#, fuzzy
+msgid "error.pageConversion.jpegXlUnavailable"
+msgstr "JPEG XL 需要 libjxl，而此安装中没有。请选择 WebP 或 AVIF"
 
 #. Starting the library pass while page conversion is switched off.
 #. English: Choose a format for page conversion first
@@ -1425,6 +1585,11 @@ msgstr "有一条规则无效。请检查其条件及其执行的操作。"
 #, fuzzy
 msgid "error.pageConversion.stopInvalid"
 msgstr "请选择「最小」、「紧凑」、「均衡」、「高」或「无损」"
+
+#. English: Choose a split height from {min} to {max} pixels
+#, fuzzy
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr "请选择 {min} 到 {max} 像素之间的切分高度"
 
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
@@ -1832,6 +1997,13 @@ msgstr "原位置位于根文件夹之外或经过链接，因此无法将文件
 msgid "error.release.grabFailed"
 msgstr "无法将版本发送到 qBittorrent。详情请查看服务器日志。"
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+#, fuzzy
+msgid "error.release.diskLow"
+msgstr "此系列所在的资料库文件夹可用空间不足，因此暂停向其中的新下载。请释放一些空间，或在“设置 → 资料库”中降低阈值。"
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2010,6 +2182,13 @@ msgstr "未知用户"
 msgid "error.requests.unknownKind"
 msgstr "未知请求类型"
 
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#, fuzzy
+msgid "error.rootFolder.minFreeNegative"
+msgstr "需保留的可用空间必须为零或更大"
+
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #, fuzzy
@@ -2048,6 +2227,18 @@ msgstr "Maki 无法读取此文件夹：{path}"
 #, fuzzy
 msgid "error.rootFolder.pathRequired"
 msgstr "路径不能为空"
+
+#. English: A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+#, fuzzy
+msgid "error.rootFolderRules.invalidConditions"
+msgstr "规则的每个分组至少需要一个条件，最多 10 个分组和 20 个条件，每个条件都需要已知字段和有效值"
+
+#. English: That root folder no longer exists
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+#, fuzzy
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr "该根文件夹已不存在"
 
 #. English: Set the AniList client id/secret in Settings first
 #: src/Maki.Api/Controllers/ScrobbleController.cs
@@ -2376,6 +2567,20 @@ msgstr "未知模式：{mode}"
 msgid "error.series.unknownNotificationMode"
 msgstr "未知模式：{mode}"
 
+#. Shown when a client sends a reading status that is not Reading, PlanToRead, OnHold or Dropped.
+#. English: Unknown reading status: {status}
+#: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
+msgid "error.series.unknownReadingStatus"
+msgstr "未知的阅读状态：{status}"
+
+#. {max} is the largest number of days either reading status rule accepts.
+#. English: Days must be between 1 and {max}.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.readingStatusDays"
+msgstr "天数必须介于 1 与 {max} 之间。"
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2388,6 +2593,14 @@ msgstr "不支持的添加来源"
 #, fuzzy
 msgid "error.series.unknownTagIds"
 msgstr "一个或多个标签 ID 不存在"
+
+#. Recorded against the series a bulk Library action stopped at, when the account that queued it was
+#. disabled, removed or lost the permission or root folder it needs.
+#. English: Stopped here: your account can no longer run this action
+#: src/Maki.Api/Services/SeriesBulkWorker.cs
+#, fuzzy
+msgid "error.seriesBulk.accessRevoked"
+msgstr "在此停止：你的账户已无法执行此操作"
 
 #. Shown as warnings after the series row is already saved. The cause is in the server log.
 #. English: Could not finish cover setup. Details are in the server log.
@@ -2767,6 +2980,12 @@ msgstr "此登录模式需要用户名。"
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} 版本过旧，无法用于此登录模式。Maki 需要 {minimum} 或更高版本。"
 
+#. English: A rule needs between 1 and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+#, fuzzy
+msgid "error.autoTagRules.invalidConditions"
+msgstr "规则需要 1 到 20 个条件，每个条件都需要已知字段和有效值"
+
 #. {label} is the tag name the user typed in.
 #. English: A tag called "{label}" already exists
 #: src/Maki.Api/Controllers/TagsController.cs
@@ -3088,6 +3307,18 @@ msgstr "无法下载模型。请检查此服务器能否访问 GitHub，然后�
 msgid "error.upscaling.invalidCache"
 msgstr "缓存大小必须在 {min} 到 {max} MB 之间。"
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+#, fuzzy
+msgid "error.upscaling.invalidPrepare"
+msgstr "提前准备章节的数值之一超出范围。"
+
+#. English: Prepare ahead takes between 0 and {max} chapters.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
+msgid "error.series.invalidPrepareChapters"
+msgstr "提前准备的章节数须介于 0 与 {max} 之间。"
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy
@@ -3214,6 +3445,27 @@ msgstr "下载超时时间必须为 0（无限制），或介于 {min} 和 {max}
 msgid "error.settings.bulkHoldRange"
 msgstr "批量保留数必须介于 0（关闭）和 {max} 章之间"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.stallHoursRange"
+msgstr "停滞时限必须介于 0（关闭）与 {max} 小时之间"
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.seedRatioRange"
+msgstr "分享率必须介于 0 与 {max} 之间"
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.seedMinutesRange"
+msgstr "做种时间必须介于 0 与 {max} 分钟之间"
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3287,6 +3539,12 @@ msgstr "每次运行的卷搜索数必须介于 {min} 和 {max} 之间"
 #, fuzzy
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "提议有效期必须介于 {min} 和 {max} 天之间"
+
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr "最少做种者数必须介于 {min} 与 {max} 之间"
 
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3429,6 +3687,19 @@ msgstr "FlareSolverr 未响应"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki 没有语言“{language}”的卷或章节标记词。"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format needs at least one token outside a <...> block, or a name could come out empty
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.allTokensOptional"
+msgstr "格式中至少需要一个位于 <...> 块之外的标记，否则名称可能为空"
+
+#. English: Format has a "<" or ">" inside a token
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.angleInsideToken"
+msgstr "格式的某个标记内含有 \"<\" 或 \">\""
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #. English: Format has a "{" inside a token
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3472,6 +3743,13 @@ msgstr "格式不能为空"
 msgid "error.naming.formatInvalid"
 msgstr "{field}：{reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format has a <...> block inside another one
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.nestedOptional"
+msgstr "格式中的一个 <...> 块嵌套在另一个之内"
+
 #. English: {token} does not take a padding pattern
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
@@ -3483,6 +3761,13 @@ msgstr "{token} 不支持补零格式"
 #, fuzzy
 msgid "error.naming.noTokens"
 msgstr "格式至少要包含一个标记，否则所有作品都会使用相同名称"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#. English: {block} has no token in it, so it would always show
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.optionalWithoutToken"
+msgstr "{block} 中没有任何标记，因此它将始终显示"
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -3504,11 +3789,23 @@ msgstr "格式不能包含路径分隔符。名称只能是单层文件夹或文
 msgid "error.naming.unknownToken"
 msgstr "未知标记：{token}"
 
+#. English: Format has a ">" with no matching "<"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.unmatchedCloseAngle"
+msgstr "格式中有 \">\" 却没有匹配的 \"<\""
+
 #. English: Format has a "}" with no matching "{"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "格式中的“}”没有对应的“{”"
+
+#. English: Format has a "<" with no matching ">"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#, fuzzy
+msgid "error.naming.unmatchedOpenAngle"
+msgstr "格式中有 \"<\" 却没有匹配的 \">\""
 
 #. English: Format has a "{" with no matching "}"
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3545,11 +3842,23 @@ msgstr "作品 ID"
 msgid "naming.token.anilistid.description"
 msgstr "AniList ID；未匹配时留空"
 
+#. English: Release date as 2024-05-17; blank when the source gives none
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.chapterreleasedate.description"
+msgstr "发布日期，格式如 2024-05-17；来源未提供时留空"
+
 #. English: Scanlation group, e.g. Group Name. Blank when the file has none
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.chaptergroup.description"
 msgstr "扫描组，例如 Group Name。文件没有时留空"
+
+#. English: The source the file was downloaded from, e.g. MangaDex. Blank for an imported file
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.chaptersource.description"
+msgstr "文件的下载来源，例如 MangaDex。导入的文件留空"
 
 #. English: BCP-47 language tag, e.g. en
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -3599,6 +3908,12 @@ msgstr "Kitsu ID；未匹配时留空"
 msgid "naming.token.malid.description"
 msgstr "MyAnimeList ID；未匹配时留空"
 
+#. English: Official, Scanlator, Aggregator or Volume; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.qualitytier.description"
+msgstr "官方、汉化、聚合或卷；未知时留空"
+
 #. English: MangaBaka id; blank when unmatched
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3617,6 +3932,12 @@ msgstr "MangaDex UUID；未匹配时留空"
 msgid "naming.token.mangaupdatesid.description"
 msgstr "MangaUpdates ID；未匹配时留空"
 
+#. English: The story author, or the artist when no author is known. Several are joined with a comma
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriesauthor.description"
+msgstr "作品的作者；未知作者时为画师。多个之间用逗号连接"
+
 #. English: Title with punctuation removed: letters, digits and spaces only
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3629,11 +3950,23 @@ msgstr "移除标点后的标题：仅保留字母、数字和空格"
 msgid "naming.token.seriesoriginaltitle.description"
 msgstr "原语言标题；提供方未提供时留空"
 
+#. English: The original publisher, the first one listed; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriespublisher.description"
+msgstr "原出版方，取列出的第一个；未知时留空"
+
 #. English: The sort title, e.g. leading article moved to the end
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.seriessorttitle.description"
 msgstr "用于排序的标题，例如将开头的冠词移至末尾"
+
+#. English: Ongoing, Completed, Hiatus or Cancelled; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+#, fuzzy
+msgid "naming.token.seriesstatus.description"
+msgstr "连载中、已完结、休刊或已取消；未知时留空"
 
 #. English: The series title as Maki has it
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -4503,6 +4836,31 @@ msgstr "关注创作者的新作"
 msgid "inbox.followedReleases.body"
 msgstr "目录中新增 {count, plural, other {# 部作品}}。"
 
+#. English: {kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWork.title"
+msgstr "{kind, select, sequel {新续作} prequel {新前传} spinOff {新衍生作} sideStory {新外传} mainStory {新正篇} other {新相关作品}}"
+
+#. {title} is a catalogue title and is not translated.
+#. English: {kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWork.body"
+msgstr "{kind, select, sequel {{title} 是你读过的系列的新续作。} prequel {{title} 是你读过的系列的新前传。} spinOff {{title} 是你读过的系列的新衍生作。} sideStory {{title} 是你读过的系列的新外传。} mainStory {{title} 是你读过的系列的正篇。} other {{title} 与你读过的系列相关。}}"
+
+#. English: New sequels and spin-offs
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWorks.title"
+msgstr "新续作与衍生作"
+
+#. English: {count, plural, one {# new work} other {# new works}} related to series you read.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+#, fuzzy
+msgid "inbox.relatedWorks.body"
+msgstr "{count, plural, other {# 部与你读过的系列相关的新作品。}}"
+
 #. English: Update available
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #, fuzzy
@@ -4955,6 +5313,23 @@ msgstr "种子已在下载客户端中，但 {series} 的另一个下载任务�
 #, fuzzy
 msgid "error.download.torrentRemoved"
 msgstr "该种子已不在 qBittorrent 中"
+
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#, fuzzy
+msgid "error.download.torrentStalled"
+msgstr "种子在停滞时限内没有进展"
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#, fuzzy
+msgid "error.download.torrentNoPeers"
+msgstr "在停滞时限内，种子没有连接任何做种者或节点"
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #. English: The download client reports an error on this torrent
@@ -5423,6 +5798,20 @@ msgstr "已评分 {score}/10"
 msgid "scrobble.log.ratingPushFailed"
 msgstr "无法发送评分：{detail}"
 
+#. {status} is one of the scrobble.status.* words, already rendered. Sent when the reader changed the series' status in Maki.
+#. English: Moved to {status}
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.log.statusPushed"
+msgstr "已更改为{status}"
+
+#. {detail} is the tracker's own error text and is not translated.
+#. English: Could not send the reading status: {detail}
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.log.statusPushFailed"
+msgstr "无法发送阅读状态：{detail}"
+
 #. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
 #. own shelves, so translate them the way those sites do in this language.
 #. English: reading
@@ -5448,6 +5837,18 @@ msgstr "计划阅读"
 #, fuzzy
 msgid "scrobble.status.other"
 msgstr "其他"
+
+#. English: on hold
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.status.paused"
+msgstr "搁置中"
+
+#. English: dropped
+#: src/Maki.Api/Services/ScrobbleService.cs
+#, fuzzy
+msgid "scrobble.status.dropped"
+msgstr "已弃看"
 
 #. Confirmations shown after a tracker action on the series page.
 #. English: A sync is already running
@@ -5571,23 +5972,27 @@ msgstr "这些章节将迁移到的相同副本已更改或已不存在。未删
 
 #. English: This copy backs chapters now, so it is no longer a spare. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareInUse"
-msgstr ""
+msgstr "此副本现在为章节提供支持，因此不再是备用副本。未删除任何内容。"
 
 #. English: No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareLastCopy"
-msgstr ""
+msgstr "磁盘上已没有这些字节的其他副本，因此此副本不是备用副本。未删除任何内容。"
 
 #. English: Maki can't tell this copy apart from the other one on disk. They may be one file under two names, so nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.spareNotDistinct"
-msgstr ""
+msgstr "Maki 无法区分此副本与磁盘上的另一个文件。它们可能是同一文件的两个名称，因此未删除任何内容。"
 
 #. English: Another chapter record reads this same file under a different spelling of its path. Nothing was deleted.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.fileBacksChapters"
-msgstr ""
+msgstr "另一条章节记录以不同的路径写法读取同一文件。未删除任何内容。"
 
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -5618,6 +6023,12 @@ msgstr "文件内容已更改，或未完整扫描。请先重新扫描。"
 #, fuzzy
 msgid "error.health.operationActive"
 msgstr "此文件上已有另一项操作正在进行。"
+
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+#, fuzzy
+msgid "error.health.jobRunning"
+msgstr "此任务已在运行。"
 
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -5866,6 +6277,12 @@ msgstr "后台调度器已暂停"
 msgid "health.check.databaseCurrent"
 msgstr "数据库可访问且已是最新"
 
+#. English: This database was written by a newer version of Maki (migration {latest}). Running this older version against it can corrupt data. Upgrade again, or restore the backup taken before the upgrade.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#, fuzzy
+msgid "health.check.databaseNewer"
+msgstr "此数据库由更新版本的 Maki 写入（迁移 {latest}）。用旧版本运行它可能会损坏数据。请重新升级，或还原升级前的备份。"
+
 #. English: A previous startup migration failed. Check the startup logs.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
@@ -5948,7 +6365,7 @@ msgstr "通知连接 {name} 已连续 {count} 次发送失败"
 msgid "health.check.notificationDelivering"
 msgstr "通知连接 {name} 已恢复发送"
 
-#. {job} is the scheduler's own name for the job and is not translated.
+#. {job} is one of the health.job.* names below, already translated.
 #. English: {job}: last run succeeded
 #: src/Maki.Api/Services/HealthJobListener.cs
 #, fuzzy
@@ -5960,6 +6377,235 @@ msgstr "{job}：上次运行成功"
 #, fuzzy
 msgid "health.check.jobFailed"
 msgstr "{job}：上次运行失败，请查看日志"
+
+#. The name of a scheduled background job, shown on the Health page and in job notifications.
+#. English: Anime list sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.animeSignals"
+msgstr "动画列表同步"
+
+#. English: Unload idle recommendation data
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.artifactIdleUnload"
+msgstr "卸载闲置的推荐数据"
+
+#. English: Close the idle browser
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.browserIdleShutdown"
+msgstr "关闭闲置的浏览器"
+
+#. English: Measure chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.chapterFileMeasure"
+msgstr "测量章节文件"
+
+#. English: Check for updates
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.checkForUpdates"
+msgstr "检查更新"
+
+#. English: Install the co-read graph
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.coRead"
+msgstr "安装共读图谱"
+
+#. English: Import completed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.completedDownloads"
+msgstr "导入已完成的下载"
+
+#. English: Check custom sources
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.customSourceHealth"
+msgstr "检查自定义来源"
+
+#. English: Update custom source repositories
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.customSourceRepositories"
+msgstr "更新自定义来源仓库"
+
+#. English: Prepare Discover
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.discoverCacheWarm"
+msgstr "准备发现页"
+
+#. English: Check the drop folder
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.dropFolder"
+msgstr "检查投放文件夹"
+
+#. English: Unload the idle text model
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.embedderIdleUnload"
+msgstr "卸载闲置的文本模型"
+
+#. English: Build the search index
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.embeddingIndex"
+msgstr "构建搜索索引"
+
+#. English: Check followed creators for new series
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.followedCreatorReleases"
+msgstr "检查关注的创作者是否有新系列"
+
+#. English: Put idle series on hold or drop them
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readingStatusRules"
+msgstr "将闲置系列搁置或弃看"
+
+#. English: Health checks
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.healthCheck"
+msgstr "健康检查"
+
+#. English: Housekeeping
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.housekeeping"
+msgstr "日常维护"
+
+#. English: Rebuild the image cache
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.imageCacheRebuild"
+msgstr "重建图片缓存"
+
+#. English: Import lists
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.importLists"
+msgstr "导入列表"
+
+#. English: Index files for KOReader sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.koreaderDocumentIndex"
+msgstr "为 KOReader 同步建立文件索引"
+
+#. English: Update the MangaBaka database
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.mangaBakaDumpRefresh"
+msgstr "更新 MangaBaka 数据库"
+
+#. English: Prepare MangaBaka database tables
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.mangaBakaTableBackfill"
+msgstr "准备 MangaBaka 数据库表"
+
+#. English: Refresh metadata
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.metadataRefresh"
+msgstr "刷新元数据"
+
+#. English: Install the prebuilt search index
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.prebuiltIndex"
+msgstr "安装预构建的搜索索引"
+
+#. English: Remove read chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readFileCleanup"
+msgstr "移除已读章节的文件"
+
+#. English: Install reader cohorts
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.readerCohorts"
+msgstr "安装读者分群"
+
+#. English: Install the recommendation graph
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.recoGraph"
+msgstr "安装推荐图谱"
+
+#. English: Check monitored series for new chapters
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.refreshMonitored"
+msgstr "检查受监控系列是否有新章节"
+
+#. English: Look for new sequels and spin-offs
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.relatedWorkWatch"
+msgstr "查找新的续作与衍生作"
+
+#. English: Retry failed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.retryFailedDownloads"
+msgstr "重试失败的下载"
+
+#. English: Scheduled backup
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.scheduledBackup"
+msgstr "定时备份"
+
+#. English: Scrobble sync
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.scrobble"
+msgstr "记录同步"
+
+#. English: Smart Download
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.smartDownload"
+msgstr "Smart Download"
+
+#. English: Install taste vectors
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.tasteVectors"
+msgstr "安装口味向量"
+
+#. English: Remove finished torrents
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.torrentRemoval"
+msgstr "移除已完成的种子"
+
+#. English: Upgrade scan
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upgradeScan"
+msgstr "升级扫描"
+
+#. English: Volume upgrade search
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upgradeVolumeSearch"
+msgstr "卷升级搜索"
+
+#. English: Unload the idle upscaler
+#: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
+msgid "health.job.upscalerIdleUnload"
+msgstr "卸载闲置的放大器"
 
 #. Problems found in the library itself, shown on the same page as the checks above.
 #. {detail} is the source's own error text and is not translated.
@@ -6325,7 +6971,7 @@ msgstr "健康已恢复"
 msgid "inbox.health.recovered.body"
 msgstr "已解决：{detail}"
 
-#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. A scheduled background job changed state. {job} is one of the health.job.* names, already
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
 #. inbox copy, worded per reader.
 #. English: Background job failed

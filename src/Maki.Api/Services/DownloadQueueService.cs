@@ -18,7 +18,8 @@ public class DownloadQueueService(
     TimeProvider time,
     ChapterSourceResolver sourceResolver,
     ILogger<DownloadQueueService> logger,
-    DownloadPauseService? pauses = null) : IDownloadCooldown
+    DownloadPauseService? pauses = null,
+    DownloadDiskHold? diskHold = null) : IDownloadCooldown
 {
     // A write is only a wake-up, so a full channel drops the extra rather than letting the five-second
     // poll pile signals up behind busy workers.
@@ -97,6 +98,11 @@ public class DownloadQueueService(
     /// the poll can sleep until the next cooldown or pause ends.
     /// </summary>
     public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
+
+    private long _handedOut;
+
+    /// <summary>How many items <see cref="ClaimNextAsync"/> has handed to a worker since startup.</summary>
+    public long HandedOut => Interlocked.Read(ref _handedOut);
 
     /// <summary>Completes the next time <see cref="WakePoll"/> runs.</summary>
     public Task PollWake => Volatile.Read(ref _pollWake).Task;
@@ -310,7 +316,8 @@ public class DownloadQueueService(
         {
             ChapterId = chapter.Id, SeriesId = chapter.SeriesId, SourceMappingId = source.Mapping.Id,
             SourceChapterId = source.SourceChapterId, HealthOperationId = operationId,
-            Origin = DownloadOrigin.HealthRepair, QueuedByUserId = userId, Status = QueueStatus.Queued,
+            Origin = DownloadOrigin.HealthRepair, Priority = QueuePriorities.For(DownloadOrigin.HealthRepair, bulk: false),
+            QueuedByUserId = userId, Status = QueueStatus.Queued,
             QueuedAt = time.GetUtcNow().UtcDateTime, SortOrder = await NextSortOrderAsync(db, ct)
         };
         db.DownloadQueue.Add(item);
@@ -337,19 +344,24 @@ public class DownloadQueueService(
     /// Queues many chapters at once with the same rules as <see cref="EnqueueChapterAsync"/>, minus the
     /// pin: one context, one query per check over the whole set and one save, rather than a scope, a
     /// handful of queries, a MAX(SortOrder) scan and a commit per chapter. Queue order follows
-    /// <paramref name="chapterIds"/>. Chapters already active are skipped.
+    /// <paramref name="chapterIds"/>. Chapters already active are skipped, apart from taking a higher
+    /// <paramref name="priority"/>.
     /// </summary>
+    /// <param name="priority">The claim class; by default the origin's, with a manual set of more than one chapter as backlog.</param>
     public async Task<BulkEnqueueResult> EnqueueChaptersAsync(
         IReadOnlyList<int> chapterIds,
         DownloadOrigin origin,
         int? queuedByUserId,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        QueuePriority? priority = null)
     {
         var ids = chapterIds.Distinct().ToList();
         if (ids.Count == 0)
         {
             return new BulkEnqueueResult([], null);
         }
+
+        var claimClass = priority ?? QueuePriorities.For(origin, bulk: ids.Count > 1);
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -394,6 +406,10 @@ public class DownloadQueueService(
                 .Select(q => q.ActiveChapterId!.Value)
                 .ToListAsync(ct))
             .ToHashSet();
+        if (active.Count > 0)
+        {
+            await PromoteAsync(db, [.. active], claimClass, ct);
+        }
 
         var toQueue = ids
             .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !archived.Contains(seriesId) &&
@@ -415,6 +431,7 @@ public class DownloadQueueService(
             QueuedAt = now,
             SortOrder = sortOrder + i,
             Origin = origin,
+            Priority = claimClass,
             QueuedByUserId = queuedByUserId
         }).ToList();
 
@@ -437,7 +454,7 @@ public class DownloadQueueService(
             {
                 try
                 {
-                    if (await EnqueueChapterAsync(chapterId, ct, origin, queuedByUserId) is { } item)
+                    if (await EnqueueChapterAsync(chapterId, ct, origin, queuedByUserId, priority: claimClass) is { } item)
                     {
                         queued.Add(item);
                     }
@@ -484,7 +501,7 @@ public class DownloadQueueService(
     /// <para>
     /// Also changes the dedupe outcome: a pinned request for a chapter that is already queued but not
     /// yet actively fetching (still <see cref="QueueStatus.Resolving"/>, <see cref="QueueStatus.Queued"/>,
-    /// or <see cref="QueueStatus.RateLimited"/>) overrides that row's preference in place and re-resolves
+    /// <see cref="QueueStatus.RateLimited"/> or <see cref="QueueStatus.Waiting"/>) overrides that row's preference in place and re-resolves
     /// it, rather than being dropped like a second plain enqueue is. An item already past that point
     /// (fetching pages, downloading, etc.) is not cheap to redirect mid-flight, so the existing row is
     /// returned unchanged instead.
@@ -494,14 +511,20 @@ public class DownloadQueueService(
     /// The chapter's existing file is to be replaced through the upgrade gate rather than overwritten.
     /// Stored on the new row, and on an existing row the pin is applied to.
     /// </param>
+    /// <param name="priority">
+    /// The claim class; by default the origin's for a single chapter. An already active row of a lower
+    /// class is raised to it, so clicking a chapter sitting in the backlog moves it up.
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
         int? queuedByUserId = null,
         int? preferMappingId = null,
-        Maki.Core.Quality.UpgradeInfo? replaceInfo = null)
+        Maki.Core.Quality.UpgradeInfo? replaceInfo = null,
+        QueuePriority? priority = null)
     {
+        var claimClass = priority ?? QueuePriorities.For(origin, bulk: false);
         var replaceJson = replaceInfo?.Serialize();
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -539,6 +562,7 @@ public class DownloadQueueService(
             QueuedAt = time.GetUtcNow().UtcDateTime,
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
+            Priority = claimClass,
             QueuedByUserId = queuedByUserId,
             PreferredMappingId = preferMappingId,
             UpgradeInfoJson = replaceJson
@@ -569,6 +593,7 @@ public class DownloadQueueService(
 
         async Task<DownloadQueueItem?> OnAlreadyActiveAsync(DownloadQueueItem active)
         {
+            await PromoteAsync(db, [active.Id], claimClass, ct, byRowId: true);
             if (preferMappingId is null)
             {
                 return null;
@@ -584,7 +609,7 @@ public class DownloadQueueService(
             var repinned = await db.DownloadQueue
                 .Where(q => q.Id == active.Id &&
                             (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
-                             q.Status == QueueStatus.RateLimited))
+                             q.Status == QueueStatus.RateLimited || q.Status == QueueStatus.Waiting))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(q => q.PreferredMappingId, preferMappingId)
                     .SetProperty(q => q.SourceMappingId, (int?)null)
@@ -659,6 +684,7 @@ public class DownloadQueueService(
             QueuedAt = time.GetUtcNow().UtcDateTime,
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = DownloadOrigin.Upgrade,
+            Priority = QueuePriorities.For(DownloadOrigin.Upgrade, bulk: false),
             QueuedByUserId = queuedByUserId,
             SourceMappingId = mappingId,
             PreferredMappingId = mappingId,
@@ -959,6 +985,18 @@ public class DownloadQueueService(
         }
     }
 
+    /// <summary>
+    /// Raises active rows below <paramref name="priority"/> to it, by chapter id or by row id. Never
+    /// lowers one, so a backlog enqueue leaves a chapter somebody clicked where it is.
+    /// </summary>
+    private static Task<int> PromoteAsync(
+        MakiDbContext db, IReadOnlyList<int> ids, QueuePriority priority, CancellationToken ct, bool byRowId = false) =>
+        (byRowId
+            ? db.DownloadQueue.Where(q => ids.Contains(q.Id) && q.ActiveChapterId != null)
+            : db.DownloadQueue.Where(q => q.ActiveChapterId != null && ids.Contains(q.ActiveChapterId.Value)))
+        .Where(q => q.Priority > priority)
+        .ExecuteUpdateAsync(s => s.SetProperty(q => q.Priority, priority), ct);
+
     /// <summary>Next-to-the-end manual position for a newly created queue item.</summary>
     public static async Task<int> NextSortOrderAsync(MakiDbContext db, CancellationToken ct = default) =>
         (await db.DownloadQueue.MaxAsync(q => (int?)q.SortOrder, ct) ?? 0) + 1;
@@ -982,10 +1020,13 @@ public class DownloadQueueService(
     }
 
     /// <summary>
-    /// Claims the highest-priority claimable scraper item (lowest <see cref="DownloadQueueItem.SortOrder"/>,
-    /// ties broken by <see cref="DownloadQueueItem.QueuedAt"/>) whose source isn't currently cooling down.
-    /// Claimable status means <c>Queued</c> (never attempted) or <c>RateLimited</c> (a previous attempt was
-    /// throttled — its own tracker's cooldown may have lifted since). Skipping past a cooling-down tracker
+    /// Claims the highest-priority claimable scraper item (its <see cref="DownloadQueueItem.Priority"/> class
+    /// first, then lowest <see cref="DownloadQueueItem.SortOrder"/>, ties broken by
+    /// <see cref="DownloadQueueItem.QueuedAt"/>) whose source isn't currently cooling down. Rows of a paused
+    /// series and of series in a root folder <see cref="DownloadDiskHold"/> holds are skipped like a paused source.
+    /// Claimable status means <c>Queued</c> (never attempted), <c>RateLimited</c> (a previous attempt was
+    /// throttled, and its own tracker's cooldown may have lifted since) or <c>Waiting</c> once its early access
+    /// should have ended. Skipping past a cooling-down tracker
     /// to the next-highest-priority item on a different one is the whole point of a per-tracker cooldown:
     /// one rate-limited source shouldn't stall everything else in the queue. A paused source is skipped
     /// the same way, and a global pause claims nothing; items already in flight are never touched. The status flip is a
@@ -1010,6 +1051,14 @@ public class DownloadQueueService(
             return null;
         }
 
+        var pausedSeries = pause.PausedSeries.Keys.ToList();
+        List<int> heldRoots = [];
+        if (diskHold is not null)
+        {
+            await diskHold.RefreshAsync(ct);
+            heldRoots = [.. diskHold.HeldRootIds];
+        }
+
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
@@ -1025,12 +1074,26 @@ public class DownloadQueueService(
             var now = time.GetUtcNow().UtcDateTime;
             var cooling = CoolingDownSources();
             cooling.AddRange(pause.Sources.Keys);
-            var candidate = await db.DownloadQueue
+            var claimable = db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited ||
+                             q.Status == QueueStatus.Waiting) &&
                             (q.NextAttempt == null || q.NextAttempt <= now) &&
-                            (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)))
-                .OrderBy(q => q.SortOrder)
+                            (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)));
+            // Added only when something is held, so the usual claim stays the query its index covers.
+            if (pausedSeries.Count > 0)
+            {
+                claimable = claimable.Where(q => !pausedSeries.Contains(q.SeriesId));
+            }
+
+            if (heldRoots.Count > 0)
+            {
+                claimable = claimable.Where(q => !heldRoots.Contains(q.Series!.RootFolderId));
+            }
+
+            var candidate = await claimable
+                .OrderBy(q => q.Priority)
+                .ThenBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
                 .Select(q => new { q.Id })
                 .FirstOrDefaultAsync(ct);
@@ -1055,8 +1118,11 @@ public class DownloadQueueService(
             {
                 claimed = await db.DownloadQueue
                     .Where(q => q.Id == candidate.Id &&
-                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
-                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited ||
+                                 q.Status == QueueStatus.Waiting))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(q => q.Status, QueueStatus.FetchingPages)
+                        .SetProperty(q => q.StartedAt, now), ct);
             }
             catch
             {
@@ -1067,6 +1133,7 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                Interlocked.Increment(ref _handedOut);
                 if (wasIdle)
                 {
                     WakePoll();
@@ -1215,8 +1282,13 @@ public class DownloadQueueService(
     /// Sets the manual dispatch order for a batch of active queue items. Ids not currently active
     /// (already completed/cancelled, or unknown) are ignored rather than erroring — the caller is
     /// reordering a snapshot that may have moved on since it was fetched.
+    /// <para>
+    /// The list is shown in claim order, class first, so a row moved across a class boundary would
+    /// snap back. <paramref name="movedId"/>, the row the person moved, takes the class of the row now
+    /// above it instead, or High when it went to the top: "move to top" means "next".
+    /// </para>
     /// </summary>
-    public async Task ReorderAsync(IReadOnlyList<int> orderedIds, CancellationToken ct = default)
+    public async Task ReorderAsync(IReadOnlyList<int> orderedIds, CancellationToken ct = default, int? movedId = null)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -1232,6 +1304,15 @@ public class DownloadQueueService(
             {
                 item.SortOrder = i;
             }
+        }
+
+        if (movedId is { } moved && items.TryGetValue(moved, out var movedItem))
+        {
+            // Parked imports list first whatever their class (QueueController.List), so they say nothing about it.
+            var above = orderedIds.TakeWhile(id => id != moved)
+                .Select(id => items.GetValueOrDefault(id))
+                .LastOrDefault(item => item is not null && item.Status != QueueStatus.AwaitingImport);
+            movedItem.Priority = above?.Priority ?? QueuePriority.High;
         }
 
         await db.SaveChangesAsync(ct);

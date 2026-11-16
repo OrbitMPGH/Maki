@@ -231,13 +231,7 @@ export default function NotificationsPage() {
                 ? t`Nothing matches`
                 : t`No notifications yet`
           }
-          description={
-            olderMayMatch
-              ? t`Older ones may match. Load more to look further back.`
-              : unreadOnly || category
-                ? t`Try clearing the filters.`
-                : t`New chapters, finished downloads and unlocked achievements land here.`
-          }
+          description={olderMayMatch ? t`Older ones may match. Load more to look further back.` : undefined}
         />
       ) : (
         <Panel className="notifications-feed" p={0}>

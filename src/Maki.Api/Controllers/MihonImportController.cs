@@ -91,7 +91,7 @@ public class MihonImportController(ILocalizer localizer, MihonImportService miho
             return this.Conflict(localizer, "error.mihon.dumpUnavailable");
         }
 
-        if (!await mihon.CanUseRootFolderAsync(request.RootFolderId, ct))
+        if (request.RootFolderId is int rootFolderId && !await mihon.CanUseRootFolderAsync(rootFolderId, ct))
         {
             return this.Fail(localizer, "error.series.rootFolderNotFound");
         }

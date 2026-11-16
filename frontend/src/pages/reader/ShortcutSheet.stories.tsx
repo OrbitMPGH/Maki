@@ -35,6 +35,15 @@ export const LeftToRight: Story = {
   },
 }
 
+export const ListsTheBookmarkKeys: Story = {
+  play: async ({ canvas }) => {
+    const row = (await canvas.findByText('Previous and next bookmark')).closest('div')
+    await expect(row).toHaveTextContent(',')
+    await expect(row).toHaveTextContent('.')
+    await expect(canvas.getByText('Back to where you came from')).toBeVisible()
+  },
+}
+
 export const ClosesFromTheButton: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Close' }))

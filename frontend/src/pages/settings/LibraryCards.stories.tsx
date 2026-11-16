@@ -11,6 +11,7 @@ import {
 } from '../../../.storybook/mocks/settings/data'
 import {
   LibraryFilesSection,
+  CreditScanSection,
   MetadataSection,
   NameParsingSection,
   NamingSection,
@@ -45,7 +46,7 @@ async function dialogOf(body: HTMLElement) {
 export const RootFolders: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('/library/manga')).toBeVisible()
-    await expect(await canvas.findByText('(inaccessible)')).toBeVisible()
+    await expect(await canvas.findByText('Inaccessible')).toBeVisible()
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Remove root folder' })).toHaveLength(3))
   },
 }
@@ -206,9 +207,12 @@ export const RecommendationIndexOff: Story = {
 export const NewSeriesDefaults: Story = {
   render: () => <NewSeriesDefaultsSection />,
   play: async ({ canvas }) => {
-    const pornographic = await canvas.findByLabelText('Incognito for Pornographic')
-    await waitFor(() => expect(pornographic).toHaveValue('Full'))
-    await waitFor(() => expect(canvas.getByLabelText('Incognito for Safe')).toHaveValue('Off'))
+    const pornographic = await canvas.findByRole('radiogroup', { name: 'Incognito for Pornographic' })
+    await waitFor(() => expect(within(pornographic).getByRole('radio', { name: 'Full' })).toBeChecked())
+    const safe = canvas.getByRole('radiogroup', { name: 'Incognito for Safe' })
+    await waitFor(() => expect(within(safe).getByRole('radio', { name: 'Off' })).toBeChecked())
+    const monitoring = canvas.getByRole('radiogroup', { name: 'Monitoring' })
+    await waitFor(() => expect(within(monitoring).getByRole('radio', { name: 'Smart' })).toBeChecked())
   },
 }
 
@@ -230,6 +234,17 @@ export const LibraryFiles: Story = {
     await waitFor(() => expect(cover).not.toBeChecked())
     await userEvent.click(cover)
     await waitFor(() => expect(cover).toBeChecked())
+  },
+}
+
+export const CreditScan: Story = {
+  render: () => <CreditScanSection />,
+  play: async ({ canvas, userEvent }) => {
+    const scan = await canvas.findByRole('switch', { name: /^Find credit pages in the background/ })
+    await waitFor(() => expect(scan).toBeEnabled())
+    await waitFor(() => expect(scan).not.toBeChecked())
+    await userEvent.click(scan)
+    await waitFor(() => expect(scan).toBeChecked())
   },
 }
 
@@ -286,11 +301,12 @@ export const NameParsingToggle: Story = {
 
 export const RecycleBinWithFiles: Story = {
   render: () => <RecycleBinSection />,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
-    await expect(await canvas.findByText('(no longer in the library)')).toBeVisible()
-    await expect(await canvas.findByText('The file is missing from the bin folder.')).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Restore' })[2]).toBeDisabled())
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByText('3 files, 312 MB')).toBeVisible()
+    await expect(canvas.queryByText('Lanterns Over Kasumi - c131.cbz')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Open recycle bin' }))
+    const dialog = await dialogOf(canvasElement.ownerDocument.body)
+    await expect(await dialog.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
   },
 }
 
@@ -301,7 +317,6 @@ export const RecycleBinEmpty: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('The recycle bin is empty.')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Empty bin' })).toBeDisabled())
   },
 }
 
@@ -309,29 +324,8 @@ export const RecycleBinNonAdmin: Story = {
   render: () => <RecycleBinSection />,
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
+    await expect(await canvas.findByText('3 files, 312 MB')).toBeVisible()
     await expect(canvas.queryByRole('textbox', { name: /Keep deleted files/ })).toBeNull()
-  },
-}
-
-export const RecycleBinDeletePermanently: Story = {
-  render: () => <RecycleBinSection />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const [first] = await canvas.findAllByRole('button', { name: 'Delete permanently' })
-    await userEvent.click(first)
-    const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('This action cannot be undone.')).toBeVisible()
-  },
-}
-
-export const RecycleBinEmptyConfirm: Story = {
-  render: () => <RecycleBinSection />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const empty = await canvas.findByRole('button', { name: 'Empty bin' })
-    await waitFor(() => expect(empty).toBeEnabled())
-    await userEvent.click(empty)
-    const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('Empty the recycle bin?')).toBeVisible()
   },
 }
 

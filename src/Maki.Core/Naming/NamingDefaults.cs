@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Naming;
 
@@ -38,6 +39,9 @@ public static class NamingDefaults
             OriginalTitle = "シリーズタイトル",
             Year = 2010,
             Type = SeriesTypes.Manga,
+            Status = SeriesStatus.Ongoing,
+            AuthorStory = "Author Name",
+            Publisher = "Publisher Name, Second Publisher",
             MangaBakaId = 12345,
             MalId = 11223,
             AniListId = 54321,
@@ -50,7 +54,10 @@ public static class NamingDefaults
             Number = 24m,
             Volume = 3,
             Title = "The Chapter Title",
-            Language = "en"
+            Language = "en",
+            ReleaseDate = new DateTime(2024, 5, 17, 0, 0, 0, DateTimeKind.Utc)
         },
-        Group: "Group Name");
+        Group: "Group Name",
+        Source: "Source Name",
+        Tier: QualityTier.Official);
 }

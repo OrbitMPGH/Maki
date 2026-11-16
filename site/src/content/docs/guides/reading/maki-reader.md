@@ -17,10 +17,13 @@ you are on. The rows under them show their
 current value and open a page of their own:
 
 - **Wide pages**, in the single page layout only.
-- **Page look**: the background (dark or OLED black) and **Crop borders**.
-- **Enhance**, see below.
-- **While reading**: tap zones, the page number, showing the chapter name when a new chapter
-  opens, auto-advance to the next chapter, scrolling webtoon chapters, **Notes beside the page** and
+- **Page look**: the background (dark, OLED black, white, grey, or **Auto**, which takes the colour
+  of the page's edge and eases between pages) and **Crop borders**.
+- **Enhance**, see below. **Method** is a row that opens a list of the methods on this device and on
+  the server, each with a line on what it does or why it cannot be picked yet.
+- **Chapters**: showing the chapter name when a new chapter opens, auto-advance to the next chapter,
+  **Skip recaps**, **Hide credit pages** and scrolling webtoon chapters.
+- **While reading**: tap zones, the page number, **Notes beside the page**, **Progress rail** and
   **Keep the screen awake**.
 
 Each page opens in place with a back row at the top. `Esc` on one of those pages goes back to the
@@ -40,8 +43,23 @@ Other settings:
 - **Page fit**: **Fit height**, **Fit width**, **Fit screen** or **Original size (1:1)**.
 - **Crop borders** (`C`, paged layouts only) trims plain white or black margins.
 - **Wide pages** (single page layout only): shown whole, split into two pages, or rotated to fit.
-- **Tap zones**: in the paged layouts, click the screen edges to turn the page. In Continuous, see
-  below.
+- **Tap zones**: in the paged layouts, tap or click the screen to turn the page. There are four
+  layouts: **Sides** (back on one side, forward on the other), **L-shape**, **Kindle** (most of the
+  page goes forward) and **Edges** (both edges go forward, for one hand). The zone size can be
+  changed and back and forward swapped, and while you adjust them the zones are drawn on the page.
+  In Continuous, the zone size sets the height of the top and bottom bands, see below.
+
+In the Single and Double layouts you can also:
+
+- **Pinch to zoom** around the point between your fingers. Ctrl and the scroll wheel, or a trackpad
+  pinch, zoom the same way. While zoomed, drag with a finger or the mouse to move around the page.
+  Double-tap zooms in on the spot you tapped.
+- **Swipe** sideways to turn the page, following the reading direction. Mostly vertical drags are
+  ignored, and a zoomed page pans instead.
+- **Turn pages with the scroll wheel.** A page taller than the screen scrolls first, then turns from
+  the bottom, and scrolling up from the top goes back. A trackpad swipe turns one page at most.
+
+The mouse cursor hides after a couple of seconds at rest over the page.
 
 ## Continuous mode
 
@@ -51,10 +69,38 @@ your place. `Space` and `Page Down` do the same, and `Shift` + `Space` and `Page
 
 The auto-scroll button in the toolbar (or `A`) scrolls the strip for you, at one of ten speeds (`[`
 slower, `]` faster). It pauses while your finger is on the screen or the toolbar is up, picks up
-again after you scroll by hand, and carries on into the next chapter when auto-advance is on.
+again after you scroll by hand, and carries on into the next chapter when auto-advance is on. A
+reader left on auto-scroll with nobody there stops counting reading time and lets the screen sleep
+after five idle minutes.
+
+**Progress rail**, under While reading, shows the chapter's progress as a thin line down the right
+edge. With the bars up you can drag it to move through the chapter. Reopening a chapter brings you
+back to where you stopped inside a tall slice, not to the top of that slice, on any device.
+
+Webtoon chapters that open by repeating the end of the previous chapter get a **Skip recap** button,
+which jumps to where the new pages start. **Skip recaps** under Chapters does it on its own.
+
+**Hide credit pages**, also under Chapters, leaves out scanlator credit, recruitment, donation and
+notice pages at the start and end of a chapter, and a group's banner joined to the top of a webtoon
+slice. Maki looks for pages that repeat at the same edge of nearby chapters and reads their text, so
+copyright pages, "to be continued" cards, title pages and covers stay. Your files are never changed,
+finishing the last page shown still counts the chapter as read, and the reader settings show how many
+pages were left out with a button to show them again. An admin can have Maki find credit pages for
+the whole library in the background under **Settings → Library → Credit pages**.
+
+## End of a chapter
 
 At the end of a chapter, keep scrolling (or pull, on touch) to open the next one. The prompt names
-the chapter and fills a ring as you pull.
+the chapter and fills a ring as you pull. With auto-advance off, the end screen shows instead:
+
+- About how much reading time is left in the series at your pace. Hover the page counter while you
+  read for the same figure plus the rest of the chapter.
+- On the last chapter of a series you have finished, it says so and asks for your final rating, with
+  a one-tap **Keep** if you gave it a score so far.
+- When you are caught up, a rough span for the next chapter, such as "usually comes in 1 to 2
+  weeks", with how sure the estimate is. Never a date.
+- If the next chapter finishes downloading while the screen is open, **Read** appears. Queued
+  chapters show their download progress.
 
 ## Page bar
 
@@ -63,7 +109,8 @@ the chapter and fills a ring as you pull.
 The bar along the bottom has one segment per page. Segments up to the page on screen are lit.
 Pages ahead that the server has already upscaled show in a lighter grey. Hover a segment to see its
 thumbnail. Click or drag to jump; the page changes when you let go. In right to left reading, page 1
-is the rightmost segment. Press `T` to open the page thumbnails strip.
+is the rightmost segment. Bookmarked pages are flagged on the bar. Press `T` to open the page
+thumbnails strip.
 
 ## Enhance
 
@@ -112,13 +159,15 @@ combinations with Ctrl, Cmd or Alt are left to the browser.
 | `1`, `2`, `3` | Single page, double page, continuous |
 | `D` | Switch reading direction |
 | `C` | Crop borders on or off |
+| `E` | Enhance on Always, or back to what you had |
 | `+` (or `=`) / `-` | Zoom in / zoom out |
 | `0` | Reset zoom |
 | `F` | Full screen |
 | `T` | Page thumbnails |
 | `B` | Bookmark this page |
+| `,` / `.` | Previous / next bookmark |
 | `H` (hold) | Show the original page while the key is held, if enhancement is on |
-| `Esc` | Back to the series page. Outside full screen only, since `Esc` leaves full screen first. |
+| `Esc` | Back to the page you opened the chapter from, such as Home or the Library, or the series page after a reload or a link. Outside full screen only, since `Esc` leaves full screen first. |
 | `?` | Show or hide the shortcut list |
 
 :::tip

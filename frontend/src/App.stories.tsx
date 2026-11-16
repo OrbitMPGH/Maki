@@ -102,7 +102,7 @@ export const Health: Story = mirror('/health', HealthStories, HealthStories.Heal
 export const PageConversion: Story = mirror(
   '/settings/page-conversion',
   PageConversionStories,
-  PageConversionStories.Format,
+  PageConversionStories.Plan,
 )
 export const NotFound: Story = {
   parameters: { router: { initialEntries: ['/no/such/page'] } },

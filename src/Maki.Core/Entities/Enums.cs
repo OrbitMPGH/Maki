@@ -141,8 +141,7 @@ public enum PendingImportLink
 public enum AcquisitionProtocol
 {
     Scraper = 0,
-    Torrent = 1,
-    Usenet = 2
+    Torrent = 1
 }
 
 /// <summary>
@@ -198,7 +197,14 @@ public enum QueueStatus
     /// the item waits in the activity list until someone picks what happens to the existing files.
     /// Nothing in the pipeline may advance it on its own — see <c>TorrentImportService</c>.
     /// </summary>
-    AwaitingImport = 11
+    AwaitingImport = 11,
+
+    /// <summary>
+    /// A chapter the source still holds behind early access. Parked until <c>NextAttempt</c>, when it is
+    /// claimable again like a Queued row. Not a failure: it spends no attempt, raises no notification,
+    /// and bulk retry and "remove failed" leave it alone.
+    /// </summary>
+    Waiting = 12
 }
 
 /// <summary>
@@ -234,4 +240,33 @@ public enum RatingSnapshotOrigin
 
     /// <summary>The tracker rating import.</summary>
     Import = 3,
+}
+
+/// <summary>
+/// One reader's own status for one series, stored in <c>UserSeriesState.Status</c>. Persisted as an
+/// int: append only, never renumber.
+/// <para>
+/// Finished is not a status here. It stays <c>ReadingState.Finished</c>, which the trackers already
+/// turn into Completed, so a Reading series that is finished reads as Completed there.
+/// </para>
+/// </summary>
+public enum ReadingStatus
+{
+    /// <summary>Not started. Every row that predates the column, and every new series, reads as this.</summary>
+    PlanToRead = 0,
+
+    /// <summary>Set by any read Maki sees, through <c>MakiDbContext</c>'s save hook.</summary>
+    Reading = 1,
+
+    /// <summary>Off Home's reading rail until the next read. Pushed to trackers as paused.</summary>
+    OnHold = 2,
+
+    /// <summary>Off Home's reading rail until the next read. Pushed to trackers as dropped.</summary>
+    Dropped = 3,
+
+    /// <summary>
+    /// Read to the end. Set when a read reaches the last chapter of a finished series and every chapter
+    /// its progress total counts is read, or by hand. Pushed to trackers as completed.
+    /// </summary>
+    Completed = 4,
 }

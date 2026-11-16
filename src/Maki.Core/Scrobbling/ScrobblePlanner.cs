@@ -15,8 +15,9 @@ public record ScrobblePlan(
 /// <summary>
 /// Pure decision logic for pushing progress to a tracker. Forward-only: the pushed
 /// value is max(remote, kavita); remote progress is never lowered, completed entries
-/// are never demoted, and user-set statuses (paused/dropped/planning) are only moved
-/// back to reading when Kavita shows further reading progress.
+/// are never demoted, and user-set statuses (paused/dropped/other lists) are only moved
+/// back to reading when Kavita shows further reading progress, or to the status the
+/// reader holds the series at in Maki.
 /// </summary>
 public static class ScrobblePlanner
 {
@@ -39,9 +40,18 @@ public static class ScrobblePlanner
     /// the tracker to confirm it (not releasing, or exactly one chapter): a few read unnumbered
     /// chapters of a series whose status is simply unknown are not evidence the work is over.
     /// </param>
+    /// <param name="held">
+    /// <see cref="ScrobbleStatus.Paused"/> or <see cref="ScrobbleStatus.Dropped"/> when the reader put
+    /// the series on hold or dropped it in Maki, else null. It replaces Reading in every push, and an
+    /// entry already on the list is moved to it even with no new progress. Completed still wins.
+    /// <see cref="ScrobbleStatus.Completed"/> when the series is Completed in Maki: the entry is
+    /// completed whatever the tracker's total, with its progress filled to that total, because the
+    /// reader's mark can fall short of it for chapters the tracker counts and the reader skipped. An
+    /// entry already completed keeps the progress it has.
+    /// </param>
     public static ScrobblePlan Decide(
         RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null, bool finished = false,
-        bool completedLocally = false)
+        bool completedLocally = false, ScrobbleStatus? held = null)
     {
         finished = finished && entry.TotalChapters is null or <= 1 && entry.Releasing != true &&
                    (completedLocally || entry.Releasing == false || entry.TotalChapters == 1);
@@ -50,12 +60,22 @@ public static class ScrobblePlanner
             chapter = Math.Max(chapter, 1);
         }
 
+        var done = held == ScrobbleStatus.Completed;
+
         if (chapter <= 0 && volume <= 0)
         {
-            // No scrobbable progress: only add the series to the list if it isn't
-            // there yet; never touch an existing entry.
+            // No scrobbable progress: only add the series to the list if it isn't there yet, and
+            // never touch an existing entry beyond moving it to the status the reader holds it at.
             if (entry.Status is { } existing)
             {
+                if (held is { } hold && existing != hold && existing != ScrobbleStatus.Completed)
+                {
+                    return done
+                        ? new ScrobblePlan(true, Math.Max(entry.ProgressChapter, entry.TotalChapters ?? 0),
+                            Math.Max(entry.ProgressVolume, entry.TotalVolumes ?? 0), hold, hold)
+                        : new ScrobblePlan(true, entry.ProgressChapter, entry.ProgressVolume, hold, hold);
+                }
+
                 return new ScrobblePlan(false, entry.ProgressChapter, entry.ProgressVolume, existing, existing);
             }
 
@@ -69,8 +89,13 @@ public static class ScrobblePlanner
 
         var newCh = Math.Max(chapter, entry.ProgressChapter);
         var newVol = Math.Max(volume, entry.ProgressVolume);
+        if (done && entry.Status != ScrobbleStatus.Completed)
+        {
+            newCh = Math.Max(newCh, entry.TotalChapters ?? 0);
+            newVol = Math.Max(newVol, entry.TotalVolumes ?? 0);
+        }
 
-        var completed = finished;
+        var completed = finished || done;
         if (entry.TotalChapters is > 0 && newCh >= entry.TotalChapters)
         {
             completed = true;
@@ -86,29 +111,27 @@ public static class ScrobblePlanner
             completed = true; // never demote a completed entry
         }
 
-        var status = completed ? ScrobbleStatus.Completed : ScrobbleStatus.Reading;
+        var status = completed ? ScrobbleStatus.Completed : held ?? ScrobbleStatus.Reading;
 
         var noProgressChange = newCh == entry.ProgressChapter && newVol == entry.ProgressVolume;
-        var statusUnchanged = entry.Status == status ||
-                              (entry.Status == ScrobbleStatus.Other && status == ScrobbleStatus.Reading);
+        var userSet = IsUserSet(entry.Status);
+        var statusUnchanged = entry.Status == status || (userSet && status == ScrobbleStatus.Reading);
         if (entry.Status is { } current && noProgressChange && statusUnchanged)
         {
             return new ScrobblePlan(false, newCh, newVol, current, current);
         }
 
-        if (entry.Status == ScrobbleStatus.Other && noProgressChange)
+        if (userSet && noProgressChange && held is null)
         {
-            return new ScrobblePlan(false, newCh, newVol, ScrobbleStatus.Other, ScrobbleStatus.Other);
+            return new ScrobblePlan(false, newCh, newVol, entry.Status!.Value, entry.Status!.Value);
         }
 
-        var pushStatus = status;
-        if (entry.Status == ScrobbleStatus.Other && !completed)
-        {
-            // The user set a custom status (paused/dropped/planning) but read
-            // further — move it back to reading since they clearly are.
-            pushStatus = ScrobbleStatus.Reading;
-        }
-
-        return new ScrobblePlan(true, newCh, newVol, pushStatus, pushStatus);
+        // A status the reader set on the tracker (paused, dropped, another list) moves back to
+        // reading once they read further, since they clearly are.
+        return new ScrobblePlan(true, newCh, newVol, status, status);
     }
+
+    /// <summary>A list status somebody chose rather than one reading progress implies.</summary>
+    public static bool IsUserSet(ScrobbleStatus? status) =>
+        status is ScrobbleStatus.Other or ScrobbleStatus.Paused or ScrobbleStatus.Dropped;
 }

@@ -1,13 +1,12 @@
 import type { Decorator, Preview } from '@storybook/react-vite'
 import { mswLoader } from 'msw-storybook-addon/csf3'
-import { notifications } from '@mantine/notifications'
 import { configure } from 'storybook/test'
+import { notifications } from '../src/lib/toast'
 import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
 import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import '../src/theme.css'
-import { ACCENTS, BACKGROUNDS } from '../src/theme-context'
+import { ACCENTS, BACKGROUNDS, DEFAULT_ACCENT, DEFAULT_BACKGROUND } from '../src/theme-context'
 import { loadLocale, SUPPORTED_LOCALES, type LocaleCode } from '../src/i18n'
 import { StoryProviders } from './StoryProviders'
 import type { MemoryRouterProps } from 'react-router-dom'
@@ -75,7 +74,6 @@ function resetBrowserState() {
     }
   }
   notifications.clean()
-  notifications.cleanQueue()
 }
 
 // AppThemeProvider reads the choice from localStorage once on mount, so the toolbar writes it there
@@ -152,8 +150,8 @@ const preview: Preview = {
     throw new Error(`Requests with no MSW handler (add them under .storybook/mocks):\n  ${missing.join('\n  ')}`)
   },
   initialGlobals: {
-    background: 'tinted',
-    accent: 'indigo',
+    background: DEFAULT_BACKGROUND,
+    accent: DEFAULT_ACCENT,
     locale: 'en',
   },
   globalTypes: {

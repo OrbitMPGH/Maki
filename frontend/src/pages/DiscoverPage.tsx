@@ -3,10 +3,9 @@ import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
-  Alert,
   Button,
   Collapse,
   Group,
@@ -16,11 +15,9 @@ import {
   RangeSlider,
   SimpleGrid,
   Skeleton,
-  Slider,
   Stack,
   Tabs,
   Text,
-  ThemeIcon,
   Tooltip,
 } from '@mantine/core'
 import {
@@ -67,6 +64,7 @@ import {
   type RecommendationDefaults,
   type RecommendationFilters,
   type RecommendationItem,
+  recommendationStub,
   type RecommendationRequest,
   type RecommendationApplyState,
 } from '../api/hooks'
@@ -106,6 +104,7 @@ import {
 } from '../components/ui/DiscoverRail'
 import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
+import { MinRatingSlider } from '../components/MinRatingSlider'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -116,6 +115,7 @@ import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '..
 import { FOLLOWING_RAIL_KEY } from '../api/following'
 import { OTHER_SOURCE, railSource, sectionSource, useShortlistCount, type ShortlistSource } from '../api/shortlist'
 import { CountIndicator } from '../components/ui/CountIndicator'
+import { ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -141,6 +141,7 @@ import {
 } from '../components/ui/viewPrefs'
 import { formatFixedDecimal } from '../format'
 import { useModalHistory } from '../lib/useModalHistory'
+import { Callout } from '../components/ui/Callout'
 
 const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
 
@@ -604,7 +605,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
-  const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
     <div className="discover-tab-body">
@@ -640,7 +640,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
-              description={t`Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library.`}
+              description={t`Empty uses your whole library.`}
               placeholder={seedIds.length ? undefined : t`Whole library`}
               data={seedOptions}
               value={seedIds}
@@ -723,29 +723,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                   ]}
                 />
               </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {minRating > 0 ? (
-                    <Trans>Minimum rating: ★ {minRatingDisplay}</Trans>
-                  ) : (
-                    <Trans>Minimum rating: any</Trans>
-                  )}
-                </Text>
-                <Slider
-                  thumbLabel={t`Minimum rating`}
-                  min={0}
-                  max={9.5}
-                  step={0.5}
-                  value={minRating}
-                  onChange={setMinRating}
-                  label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
-                  marks={[
-                    { value: 0, label: t`any` },
-                    { value: 7, label: '7' },
-                    { value: 9, label: '9' },
-                  ]}
-                />
-              </div>
+              <MinRatingSlider value={minRating} onChange={setMinRating} />
               <RecommenderDials
                 obscurity={obscurity}
                 setObscurity={setObscurity}
@@ -807,15 +785,12 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       )}
 
       {error && (
-        <Alert color="var(--warn)" variant="light">
+        <Callout tone="warn" role="alert">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
       {isFetching && !data && (
         <>
-          <Text c="var(--ink-3)" size="sm" mb="sm">
-            <Trans>Scanning the MangaBaka database for matches…</Trans>
-          </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
         </>
       )}
@@ -823,11 +798,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
           title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
-          description={
-            isCustomized
-              ? t`No matches for these seeds and filters. Try loosening them.`
-              : t`Add some series to your library first and Maki will suggest more like them.`
-          }
+          description={isCustomized ? undefined : t`Add some series to your library first and Maki will suggest more like them.`}
           actionLabel={isCustomized ? undefined : t`Go to library`}
           actionTo={isCustomized ? undefined : '/library'}
         />
@@ -1052,20 +1023,7 @@ function FeedExpandModal({
       opened={rail != null}
       onClose={onClose}
       fullScreen
-      title={
-        <Group gap="xs">
-          <ThemeIcon variant="light" color="brand" size="md" radius="md">
-            <IconCompass size={16} />
-          </ThemeIcon>
-          <Text
-            span
-            fz="var(--mantine-h4-font-size)"
-            fw="var(--mantine-h4-font-weight)"
-            lh="var(--mantine-h4-line-height)"
-            ff="var(--mantine-font-family-headings)"
-          >{rail?.title}</Text>
-        </Group>
-      }
+      title={<ModalHeading title={rail?.title} />}
     >
       <Panel p="md" mb="md">
         <Stack gap="md">
@@ -1097,9 +1055,9 @@ function FeedExpandModal({
       </Panel>
 
       {error && (
-        <Alert color="var(--warn)" variant="light">
+        <Callout tone="warn" role="alert">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
 
       {isFetching && !items && <PosterSkeletons density={density} />}
@@ -1107,7 +1065,6 @@ function FeedExpandModal({
       {items && items.length === 0 && (
         <EmptyState
           title={t`No matches`}
-          description={t`No titles match these filters. Try loosening them.`}
         />
       )}
 
@@ -1258,6 +1215,22 @@ function DiscoverBrowseTab({
     setDetailItem(item)
     setDetailSource(source ?? OTHER_SOURCE)
   }, [])
+  // A sequel or spin-off notification links here with the new work's MangaBaka id.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openId = searchParams.get('open')
+  useEffect(() => {
+    if (!openId || !/^\d+$/.test(openId)) return
+    setDetailItem(recommendationStub(openId))
+    setDetailSource(OTHER_SOURCE)
+  }, [openId])
+  const closeDetail = () => {
+    setDetailItem(null)
+    if (openId) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('open')
+      setSearchParams(next, { replace: true })
+    }
+  }
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
 
@@ -1357,12 +1330,7 @@ function DiscoverBrowseTab({
   // than at the top of the page, since the hero and the personalised rows come from other endpoints
   // and survive this one being down; with that section off they move to Trending instead.
   const catalogueStatus = error ? (
-    <Alert
-      color="var(--warn)"
-      variant="light"
-      icon={<IconAlertTriangle size={18} />}
-      title={t`Catalogue unavailable`}
-    >
+    <Callout tone="warn" role="alert" icon={IconAlertTriangle} title={t`Catalogue unavailable`}>
       <Stack gap="sm" align="flex-start">
         <Text size="sm">{errorText(error)}</Text>
         <Button
@@ -1375,7 +1343,7 @@ function DiscoverBrowseTab({
           <Trans>Try again</Trans>
         </Button>
       </Stack>
-    </Alert>
+    </Callout>
   ) : null
 
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {
@@ -1547,9 +1515,6 @@ function DiscoverBrowseTab({
         {catalogueStatus ??
           (isFetching && !rails ? (
             <>
-              <Text c="var(--ink-3)" size="sm" mb="sm">
-                <Trans>Scanning the MangaBaka catalogue…</Trans>
-              </Text>
               <DiscoverCatalogueSkeleton density={density.density} />
             </>
           ) : catalogueRails.length > 0 ? (
@@ -1612,7 +1577,7 @@ function DiscoverBrowseTab({
         feedbackContext={{ surface: 'browse' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
+        onClose={closeDetail}
         savedFrom={detailSource}
       />
     </div>

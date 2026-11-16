@@ -137,6 +137,7 @@ public static class MakiLogging
             .MinimumLevel.Override("Quartz", LogEventLevel.Warning)
             .Filter.ByExcluding(IsKnownBenign)
             .Enrich.With<ComponentEnricher>()
+            .Enrich.With<ControlCharacterEnricher>()
             .WriteTo.Console(outputTemplate: ConsoleTemplate)
             .WriteTo.File(
                 Path.Combine(paths.LogDir, "maki-.log"),
@@ -194,5 +195,75 @@ internal sealed class ComponentEnricher : ILogEventEnricher
         }
 
         logEvent.AddPropertyIfAbsent(factory.CreateProperty("Component", component));
+    }
+}
+
+/// <summary>
+/// Escapes control characters in string properties, so a value from a request (a search, a folder
+/// name, a host) cannot start a fake line in the log. <c>{Message:lj}</c> writes top-level strings
+/// as they are; nested values are rendered as JSON and already escaped.
+/// </summary>
+internal sealed class ControlCharacterEnricher : ILogEventEnricher
+{
+    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory factory)
+    {
+        List<LogEventProperty>? replaced = null;
+        foreach (var (name, value) in logEvent.Properties)
+        {
+            if (value is ScalarValue { Value: string text } && NeedsEscape(text))
+            {
+                (replaced ??= []).Add(new LogEventProperty(name, new ScalarValue(Escape(text))));
+            }
+        }
+
+        if (replaced is null)
+        {
+            return;
+        }
+
+        foreach (var property in replaced)
+        {
+            logEvent.AddOrUpdateProperty(property);
+        }
+    }
+
+    private static bool NeedsEscape(string text)
+    {
+        foreach (var c in text)
+        {
+            if (char.IsControl(c) && c != '\t')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal static string Escape(string text)
+    {
+        var escaped = new System.Text.StringBuilder(text.Length + 8);
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '\r': escaped.Append(@"\r"); break;
+                case '\n': escaped.Append(@"\n"); break;
+                case '\t': escaped.Append(c); break;
+                default:
+                    if (char.IsControl(c))
+                    {
+                        escaped.Append(@"\u").Append(((int)c).ToString("x4", System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                    else
+                    {
+                        escaped.Append(c);
+                    }
+
+                    break;
+            }
+        }
+
+        return escaped.ToString();
     }
 }

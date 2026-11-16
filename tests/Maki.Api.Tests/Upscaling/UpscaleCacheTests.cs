@@ -30,7 +30,7 @@ public sealed class UpscaleCacheTests : IDisposable
 
         var path = await cache.WriteAsync(Key(3, fileId: 12), [1, 2, 3], "webp", default);
 
-        Assert.Equal(Path.Combine(_configDir, "cache", "upscale", "12", "1000-5-3.span-s.g3.webp"), path);
+        Assert.Equal(Path.Combine(_configDir, "cache", "upscale", "12", "1000-5-3.span-s.g6.webp"), path);
         Assert.Equal(path, cache.TryGet(Key(3, fileId: 12)));
         Assert.Equal((3L, 1), cache.Stats());
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(path)!, "*.tmp"));
@@ -53,6 +53,43 @@ public sealed class UpscaleCacheTests : IDisposable
         Assert.NotNull(cache.TryGet(Key(2)));
         Assert.NotNull(cache.TryGet(Key(3)));
         Assert.Equal((300L, 3), cache.Stats());
+    }
+
+    [Fact]
+    public async Task Held_pages_are_never_evicted_and_do_not_count_against_the_cap()
+    {
+        var cache = NewCache(capBytes: 200);
+        cache.Hold([Key(0), Key(1)]);
+        await cache.WriteAsync(Key(0), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(1), new byte[100], "jxl", default);
+        await cache.WriteAsync(Key(2), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(3), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(4), new byte[100], "webp", default);
+
+        Assert.NotNull(cache.TryGet(Key(0)));
+        Assert.NotNull(cache.TryGet(Key(1)));
+        Assert.Null(cache.TryGet(Key(2)));
+        Assert.NotNull(cache.TryGet(Key(3)));
+        Assert.NotNull(cache.TryGet(Key(4)));
+        Assert.Equal((200L, 2, 100L), cache.HeldStats());
+        Assert.Equal(100L, cache.SizeOf(Key(1)));
+        Assert.Null(cache.SizeOf(Key(2)));
+    }
+
+    [Fact]
+    public async Task A_released_hold_counts_against_the_cap_again()
+    {
+        var cache = NewCache(capBytes: 200);
+        cache.Hold([Key(0), Key(1)]);
+        await cache.WriteAsync(Key(0), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(1), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(2), new byte[100], "webp", default);
+
+        cache.Hold([]);
+        await cache.EnforceCapAsync(default);
+
+        Assert.Equal((200L, 2), cache.Stats());
+        Assert.Equal((0L, 0, 100L), cache.HeldStats());
     }
 
     [Fact]
@@ -170,7 +207,7 @@ public sealed class UpscaleCacheTests : IDisposable
 
         var left = Directory.GetFiles(cache.Root, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(cache.Root, f).Replace('\\', '/')).Order().ToArray();
-        Assert.Equal([$"{liveId}/500-200-0.span-s.g3.webp", $"{liveId}/500-200-1.span-s.g3.jpg"], left);
+        Assert.Equal([$"{liveId}/500-200-0.span-s.g6.webp", $"{liveId}/500-200-1.span-s.g6.jpg"], left);
         Assert.False(Directory.Exists(Path.Combine(cache.Root, (liveId + 50).ToString())));
         Assert.Equal((2L, 2), cache.Stats());
         Assert.True(File.Exists(readerFile));

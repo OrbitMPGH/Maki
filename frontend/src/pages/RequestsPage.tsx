@@ -1,14 +1,12 @@
 import { errorText } from '../api/errorText'
 import { archivedExistsSeriesId } from '../api/client'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ActionIcon,
-  Alert,
   Badge,
   Button,
   Group,
-  Image,
   Modal,
   NumberInput,
   Tabs,
@@ -31,7 +29,9 @@ import {
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now, plural, msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { useRootFolders } from '../api/hooks'
+import { useLibrarySettings, useRootFolders } from '../api/hooks'
+import { useRootFolderRoute } from '../api/rootFolderRules'
+import { MONITOR_OPTIONS } from '../components/series/SeriesActionsMenu'
 import {
   chapterRangeInline,
   chapterRangeLabel,
@@ -46,13 +46,16 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { RestoreArchivedButton } from '../components/discover/ArchivedRestore'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { okButtonVars } from '../components/ui/status'
 import { useLabel } from '../i18n-context'
-import { formatDate } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { Thumb } from '../components/ui/Thumb'
+import { TimeAgo } from '../components/ui/TimeAgo'
+import { Callout } from '../components/ui/Callout'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'var(--warn)',
@@ -78,6 +81,7 @@ export default function RequestsPage() {
   const [filter, setFilter] = useState<RequestFilter>('pending')
   const { data: requests, isPending, error, refetch, isRefetching } = useSeriesRequests(filter)
   const { data: rootFolders } = useRootFolders()
+  const { data: librarySettings } = useLibrarySettings()
 
   const approve = useApproveSeriesRequest()
   const reject = useRejectSeriesRequest()
@@ -87,7 +91,10 @@ export default function RequestsPage() {
   /** The request an admin is approving; the root folder is only asked for when one is needed. */
   const [approving, setApproving] = useState<SeriesRequest | null>(null)
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  /** Set once the admin picks a folder, so the rule's answer arriving late can't undo it. */
+  const [rootFolderPinned, setRootFolderPinned] = useState(false)
   const [approveNote, setApproveNote] = useState('')
+  const [monitorNewItems, setMonitorNewItems] = useState<string | null>(null)
 
   const [rejecting, setRejecting] = useState<SeriesRequest | null>(null)
   const [removing, setRemoving] = useState<SeriesRequest | null>(null)
@@ -129,11 +136,26 @@ export default function RequestsPage() {
     approve.reset()
     setApproving(request)
     setApproveNote('')
+    setMonitorNewItems(null)
     setRootFolderId(rootFolders && rootFolders.length > 0 ? String(rootFolders[0].id) : null)
+    setRootFolderPinned(false)
   }
 
   // A new-series request has to land somewhere; a chapter request already has its series.
   const needsRootFolder = approving?.kind === 'NewSeries' && approving.seriesId == null
+
+  // A root folder rule that matches the requested series preselects its folder.
+  const { data: route } = useRootFolderRoute(
+    needsRootFolder ? approving?.metadataProviderId : null,
+    'request',
+    approving?.userId,
+  )
+  const routedFolderId = route?.rootFolderId
+  useEffect(() => {
+    if (!rootFolderPinned && routedFolderId != null && rootFolders?.some((f) => f.id === routedFolderId)) {
+      setRootFolderId(String(routedFolderId))
+    }
+  }, [routedFolderId, rootFolders, rootFolderPinned])
 
   // The modal offers Restore for this one, so the page-level alert would only repeat it.
   const archivedSeriesId = archivedExistsSeriesId(approve.error)
@@ -145,6 +167,7 @@ export default function RequestsPage() {
       {
         id: approving.id,
         rootFolderId: needsRootFolder && rootFolderId ? Number(rootFolderId) : null,
+        monitorNewItems: needsRootFolder ? (monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? undefined) : undefined,
         note: approveNote.trim() || null,
       },
       {
@@ -189,11 +212,7 @@ export default function RequestsPage() {
       <PageHeader
         compact
         title={t`Requests`}
-        description={
-          isAdmin
-            ? t`Approving adds the series and queues the chapters.`
-            : t`Series and chapters you have asked an admin for.`
-        }
+        description={isAdmin ? t`Approving adds the series and queues the chapters.` : undefined}
       />
 
       <Tabs
@@ -216,9 +235,9 @@ export default function RequestsPage() {
       </Tabs>
 
       {(shownApproveError || reject.isError || remove.isError || edit.isError) && (
-        <Alert color="var(--danger)" variant="light" mb="md">
+        <Callout tone="danger" role="alert" mb="md">
           {errorText(shownApproveError ?? reject.error ?? remove.error ?? edit.error)}
-        </Alert>
+        </Callout>
       )}
 
       {isPending ? (
@@ -244,8 +263,8 @@ export default function RequestsPage() {
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin
-              ? t`Requests filed from the Request series page and from series pages show up here.`
-              : t`Search for a series and request it. It shows up here once you do.`
+              ? t`Requests from users show up here.`
+              : t`Search for a series and request it.`
           }
         />
       ) : (
@@ -257,13 +276,11 @@ export default function RequestsPage() {
             return (
               <Panel key={r.id} p="sm">
                 <div className="requests-row">
-                  <div className="requests-row-cover" data-series-cover={r.seriesId ?? undefined}>
-                    {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
-                  </div>
+                  <Thumb src={r.coverUrl} size="lg" data-series-cover={r.seriesId ?? undefined} />
 
                   <div className="requests-row-main">
                     <Group gap="xs">
-                      <Text fw={650} lineClamp={1}>
+                      <Text className="series-title">
                         {r.title}
                       </Text>
                       {r.year && (
@@ -285,7 +302,7 @@ export default function RequestsPage() {
                       </Text>
                       <Divider orientation="vertical" />
                       <Text size="sm" c="var(--ink-3)">
-                        {r.requestedBy}, {formatDate(r.created)}
+                        {r.requestedBy}, <TimeAgo value={r.created} />
                       </Text>
                     </Group>
 
@@ -402,29 +419,51 @@ export default function RequestsPage() {
         </Stack>
       )}
 
-      <Modal opened={approving !== null} onClose={() => setApproving(null)} title={t`Approve request`}>
+      <Modal
+        opened={approving !== null}
+        onClose={() => setApproving(null)}
+        title={
+          <ModalHeading
+            title={t`Approve request`}
+            description={
+              <>
+                {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
+              </>
+            }
+          />
+        }
+      >
         <Stack gap="sm">
-          <Text size="sm">
-            {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
-          </Text>
-
           {needsRootFolder && (
             <Select
               label={t`Root folder`}
-              description={t`Where the series will live. The requester doesn't choose this.`}
+              description={t`The requester doesn't choose this.`}
               data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
               value={rootFolderId}
-              onChange={setRootFolderId}
+              onChange={(value) => {
+                setRootFolderId(value)
+                setRootFolderPinned(true)
+              }}
+            />
+          )}
+
+          {needsRootFolder && (
+            <Select
+              label={t`New chapters`}
+              data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(o.label) }))}
+              value={monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? 'All'}
+              onChange={(v) => v && setMonitorNewItems(v)}
+              allowDeselect={false}
             />
           )}
 
           {archivedSeriesId != null && (
-            <Alert color="var(--warn)" variant="light">
+            <Callout tone="warn" role="alert">
               <Stack gap="xs" align="flex-start">
                 <Text size="sm">{errorText(approve.error)}</Text>
                 <RestoreArchivedButton seriesId={archivedSeriesId} size="xs" onRestored={() => approve.reset()} />
               </Stack>
-            </Alert>
+            </Callout>
           )}
 
           <Textarea
@@ -436,7 +475,7 @@ export default function RequestsPage() {
             minRows={2}
           />
 
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setApproving(null)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -449,11 +488,24 @@ export default function RequestsPage() {
             >
               <Trans>Approve and queue</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={editing !== null} onClose={() => setEditing(null)} title={t`Edit request`}>
+      <Modal
+        opened={editing !== null}
+        onClose={() => setEditing(null)}
+        title={
+          <ModalHeading
+            title={t`Edit request`}
+            description={
+              <Trans>
+                {editingTitle}, asked for {editingAskedFor}
+              </Trans>
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           gap="sm"
@@ -462,12 +514,6 @@ export default function RequestsPage() {
             submitEdit()
           }}
         >
-          <Text size="sm">
-            <Trans>
-              {editingTitle}, asked for {editingAskedFor}
-            </Trans>
-          </Text>
-
           <Group gap="sm" align="flex-end" className="requests-form-range">
             <NumberInput
               className="requests-form-field"
@@ -494,20 +540,23 @@ export default function RequestsPage() {
             <Trans>Leave a field blank for no bound. Approving queues exactly this range.</Trans>
           </Text>
 
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setEditing(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" loading={edit.isPending}>
               <Trans>Save range</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={rejecting !== null} onClose={() => setRejecting(null)} title={t`Reject request`}>
+      <Modal
+        opened={rejecting !== null}
+        onClose={() => setRejecting(null)}
+        title={<ModalHeading title={t`Reject request`} description={rejecting?.title} />}
+      >
         <Stack gap="sm">
-          <Text size="sm">{rejecting?.title}</Text>
           <Textarea
             label={t`Reason (optional)`}
             placeholder={t`Shown to whoever asked`}
@@ -516,14 +565,14 @@ export default function RequestsPage() {
             autosize
             minRows={2}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setRejecting(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button color="var(--danger-fill)" onClick={submitReject} loading={reject.isPending}>
               <Trans>Reject</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 

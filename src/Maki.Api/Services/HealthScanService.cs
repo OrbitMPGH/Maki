@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -126,21 +127,25 @@ public class HealthScanService(MakiDbContext db)
                     }
                     if (trackedFile == null && trackedFullPaths.Any(t => t.Key != root.Id && t.Value.Contains(absolute))) continue;
                     if (!seen.Add(absolute)) continue;
-                    if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
                     var sameFile = knownByKey.GetValueOrDefault(key);
                     var file = sameFile?[0];
-                    // A row stored with the other host's separator is one this host cannot open.
-                    if (sameFile is [var only] && !OperatingSystem.IsWindows() && only.RelativePath.Contains('\\'))
-                        only.RelativePath = relative;
-                    if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
-                    // Gone from disk with no record pointing at it: Maki deleted it itself (relink,
-                    // chapter delete, rename) or the owner did. There is nothing left to report on.
-                    if (trackedFile == null && file != null && !File.Exists(absolute))
+                    // Gone from disk with no record pointing at it: Maki deleted or renamed it itself
+                    // (relink, chapter delete, rename) or the owner did. There is nothing left to report
+                    // on. A series scan retires its own such rows too, or the file verified at its new
+                    // path read as a duplicate of its old row.
+                    if (trackedFile == null && file != null && !File.Exists(absolute)
+                        && (scan.SeriesId == null || file.SeriesId == scan.SeriesId)
+                        && (selected.Length == 0 || selected.Contains(file.Id)))
                     {
                         file.Removed = true;
                         retired.Add(file.Id);
                         continue;
                     }
+                    if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
+                    // A row stored with the other host's separator is one this host cannot open.
+                    if (sameFile is [var only] && !OperatingSystem.IsWindows() && only.RelativePath.Contains('\\'))
+                        only.RelativePath = relative;
+                    if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
                     if (file == null)
                     {
                         file = new HealthFile { RootFolderId = root.Id, RelativePath = relative };
@@ -211,7 +216,7 @@ public class HealthScanService(MakiDbContext db)
                         if (DateTime.UtcNow - busyReadAt > BusyCacheFor || file.SeriesId != busySeriesOf)
                         {
                             busySeries = (await db.DownloadQueue
-                                .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+                                .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting)
                                 .Select(q => q.SeriesId)
                                 .Distinct()
                                 .ToListAsync(ct)).Select(seriesId => (int?)seriesId).ToHashSet();
@@ -227,7 +232,7 @@ public class HealthScanService(MakiDbContext db)
                         // The sets only say who might be busy; a hit is confirmed against the row before
                         // a file is skipped, so an operation or download that ended inside the window does
                         // not cost the file its analysis.
-                        var busy = busySeries.Contains(file.SeriesId) && await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct)
+                        var busy = busySeries.Contains(file.SeriesId) && await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting, ct)
                             || busyFiles.Contains(file.Id) && await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct);
                         if (!busy)
                             await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
@@ -335,7 +340,13 @@ public class HealthScanService(MakiDbContext db)
                 await using var stream = File.OpenRead(path);
                 hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
                 var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
-                if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+                if (cached != null)
+                {
+                    analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+                    // The hash read the whole file and the analyzer, which drops it after its own
+                    // read, will not run. A miss keeps the pages: the analyzer reads them next.
+                    PageCache.DropAfterScan(path);
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

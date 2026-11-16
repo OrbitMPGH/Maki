@@ -1,12 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Notifications } from '@mantine/notifications'
-import { notifications } from './lib/toast'
+import { AppToaster, notifications } from './lib/toast'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
 // Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
 // the theme's font stack named a face without anything ever loading it. Onest carries Cyrillic, so
 // the Russian locale sets in the same face as the rest.
@@ -160,10 +158,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppI18nProvider>
       <AppThemeProvider>
-        {/* Above every modal, not Mantine's default 400. The Discover detail modal sits at 1000 and
-            the fullscreen "Show more" modal above that, so a toast raised by an action taken inside
-            one of them rendered behind it: the action worked, said so, and the reader saw nothing. */}
-        <Notifications autoClose={6000} zIndex={2000} />
+        {/* Sonner's layer sits above every modal. The Discover detail modal sits at 1000 and the
+            fullscreen "Show more" modal above that, and a toast raised by an action inside one of
+            them once rendered behind it: the action worked, said so, and the reader saw nothing. */}
+        <AppToaster />
         <QueryClientProvider client={queryClient}>
           <HistoryRouter history={appHistory}>
             <PageTransitionCommit />

@@ -31,6 +31,8 @@ public class AniListTracker(
         ["REPEATING"] = ScrobbleStatus.Reading,
         ["COMPLETED"] = ScrobbleStatus.Completed,
         ["PLANNING"] = ScrobbleStatus.PlanToRead,
+        ["PAUSED"] = ScrobbleStatus.Paused,
+        ["DROPPED"] = ScrobbleStatus.Dropped,
     };
 
     private static readonly Dictionary<ScrobbleStatus, string> InternalToStatus = new()
@@ -38,6 +40,8 @@ public class AniListTracker(
         [ScrobbleStatus.Reading] = "CURRENT",
         [ScrobbleStatus.Completed] = "COMPLETED",
         [ScrobbleStatus.PlanToRead] = "PLANNING",
+        [ScrobbleStatus.Paused] = "PAUSED",
+        [ScrobbleStatus.Dropped] = "DROPPED",
     };
 
     public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
@@ -358,7 +362,9 @@ public class AniListTracker(
         ScrobbleStatus.Reading => ["CURRENT", "REPEATING"],
         ScrobbleStatus.Completed => ["COMPLETED"],
         ScrobbleStatus.PlanToRead => ["PLANNING"],
-        _ => ["PAUSED", "DROPPED"],
+        ScrobbleStatus.Paused => ["PAUSED"],
+        ScrobbleStatus.Dropped => ["DROPPED"],
+        _ => [],
     };
 
     public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(

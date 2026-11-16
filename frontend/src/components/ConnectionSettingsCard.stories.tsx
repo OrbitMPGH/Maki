@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../.storybook/mocks/settings'
-import { api, failWith } from '../../.storybook/mocks/api'
+import { api, failWith, minutesAgo } from '../../.storybook/mocks/api'
+import type { ConnectionTestStatus } from '../api/hooks'
 import { ConnectionForm, ConnectionSettingsCard } from './ConnectionSettingsCard'
 
 const meta = {
@@ -124,5 +125,61 @@ export const BareForm: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Test' })).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled())
+  },
+}
+
+const testsAnswer = (results: ConnectionTestStatus[]) =>
+  http.get(api('/settings/connection-tests'), () => HttpResponse.json(results))
+
+export const StatusConnected: Story = {
+  parameters: {
+    msw: settingsMsw(testsAnswer([{ key: 'flaresolverr', ok: true, message: null, testedAt: minutesAgo(4) }])),
+  },
+  play: async ({ canvas }) => {
+    const line = await canvas.findByRole('status')
+    await waitFor(() => expect(line).toHaveTextContent('Connected'))
+    await expect(line.querySelector('time')).not.toBeNull()
+  },
+}
+
+export const StatusFailed: Story = {
+  play: async ({ canvas }) => {
+    const line = await canvas.findByRole('status')
+    await waitFor(() => expect(line).toHaveTextContent('Failed'))
+    await expect(within(line).getByText('FlareSolverr did not answer. Check the URL and that it is running.')).toBeVisible()
+  },
+}
+
+export const StatusNotTested: Story = {
+  parameters: { msw: settingsMsw(testsAnswer([])) },
+  play: async ({ canvas }) => {
+    const line = await canvas.findByRole('status')
+    await waitFor(() => expect(line).toHaveTextContent('Not tested'))
+  },
+}
+
+let testedOnce = false
+
+export const TestUpdatesStatus: Story = {
+  beforeEach: () => {
+    testedOnce = false
+  },
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/settings/connection-tests'), () =>
+        HttpResponse.json(testedOnce ? [{ key: 'flaresolverr', ok: true, message: null, testedAt: new Date().toISOString() }] : []),
+      ),
+      http.post(api('/settings/flaresolverr/test'), () => {
+        testedOnce = true
+        return HttpResponse.json({ success: true })
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const line = await canvas.findByRole('status')
+    await waitFor(() => expect(line).toHaveTextContent('Not tested'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Connected'))
+    await expect(await within(document.body).findByText('FlareSolverr is reachable')).toBeVisible()
   },
 }

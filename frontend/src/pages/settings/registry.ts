@@ -58,7 +58,21 @@ export interface SettingsEntry {
    * The page and the jump list skip it; the control carries the `setting-{id}` anchor itself.
    */
   within?: string
+  /**
+   * With `within`: the control sits inside an editor or in each row of that card rather than on
+   * the card itself. The New tab names it under the card instead of showing it, and a deep link
+   * lands on the card.
+   */
+  nested?: boolean
+  /**
+   * The release this card or control first shipped in. Write `'next'` for unreleased work; the
+   * release commit stamps the real version (`npm run settings:stamp-since -- <version>`). Anything
+   * newer than the version an instance upgraded from is listed on the New tab and gets a New pill.
+   */
+  since?: SettingsSince
 }
+
+export type SettingsSince = 'next' | `${number}.${number}.${number}`
 
 export const SETTINGS_TABS: SettingsTab[] = [
   {
@@ -182,6 +196,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'related-work-notifications',
+    tab: 'preferences',
+    since: '0.37.0',
+    title: msg`New sequels and spin-offs`,
+    within: 'notification-prefs',
+    keywords: msg({
+      message: `sequel, prequel, spin-off, side story, related works, catalogue`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'push-notifications',
     tab: 'preferences',
     title: msg`Push notifications`,
@@ -201,6 +226,66 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'skip-recap',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Skip the recap of the previous chapter`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `recap, skip recap, previously, webtoon recap`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'hide-credit-pages',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Hide credit pages`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `credits, credit pages, scanlator pages, recruitment, donation pages`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'progress-rail',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Progress rail`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `progress bar, scrubber, rail, chapter progress`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'page-backgrounds',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Background`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `page background, white, grey, gray, auto background, page colour`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'tap-zone-layouts',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Tap zones`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `tap zones, tap layout, kindle, l-shape, one hand, swap tap sides`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'progress',
     tab: 'reading',
     title: msg`Progress & achievements`,
@@ -215,6 +300,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Rating prompts`,
     keywords: msg({
       message: `rating, rate, so far, provisional, score, prompt, ask, stars`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'reading-status',
+    tab: 'reading',
+    since: '0.37.0',
+    title: msg`Reading status`,
+    keywords: msg({
+      message: `reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -268,6 +363,30 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'low-disk-hold',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Free space to keep`,
+    admin: true,
+    within: 'root-folders',
+    nested: true,
+    keywords: msg({
+      message: `low disk, disk space, free space, drive full, pause downloads`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'root-folder-rules',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Root folder rules`,
+    admin: true,
+    keywords: msg({
+      message: `root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'naming',
     tab: 'library',
     title: msg`Folder & file naming`,
@@ -284,6 +403,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'drop-folder',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Drop folder`,
+    admin: true,
+    keywords: msg({
+      message: `drop folder, watch folder, auto import, incoming, blackhole, move, copy, poll`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -318,12 +448,58 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'prepare-ahead',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Prepare chapters ahead`,
+    admin: true,
+    within: 'upscaling',
+    keywords: msg({
+      message: `prepare ahead, pre-upscale, next chapter, background upscaling, warm up`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'upscaling-jpeg-xl',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`JPEG XL for colour pages`,
+    admin: true,
+    within: 'upscaling',
+    keywords: msg({
+      message: `jpeg xl, jxl, colour pages, color pages, banding, gradients, webp`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'credit-scan',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Credit pages`,
+    admin: true,
+    keywords: msg({
+      message: `credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr, release groups, scanlation group`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'recycle-bin',
     tab: 'library',
     title: msg`Recycle bin`,
     permission: 'DeleteSeries',
     keywords: msg({
       message: `recycle bin, trash, deleted files, restore, undelete, empty bin, retention`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'auto-tag-rules',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`Auto-tag rules`,
+    permission: 'ManageTags',
+    keywords: msg({
+      message: `auto tag, automatic tags, tag rules, rules, tag new series, collections, labels`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -409,6 +585,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'volume-first',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Look for volume releases first`,
+    admin: true,
+    within: 'sources',
+    keywords: msg({
+      message: `volume first, volume release, new series, torrent, indexer, hold sources`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'flaresolverr',
     tab: 'downloads',
     title: msg`FlareSolverr`,
@@ -434,7 +622,31 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Download client`,
     admin: true,
     keywords: msg({
-      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping`,
+      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping, seeding, seed ratio, stalled, declined releases`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'remove-after-seeding',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Remove torrents after seeding`,
+    admin: true,
+    within: 'downloadclient',
+    keywords: msg({
+      message: `seed ratio, seeding time, after seeding, remove torrent, cleanup`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'stalled-torrents',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Stalled torrents`,
+    admin: true,
+    within: 'downloadclient',
+    keywords: msg({
+      message: `stalled, stuck, no peers, no seeds, dead torrent, timeout`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -474,7 +686,43 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Volume releases`,
     admin: true,
     keywords: msg({
-      message: `volume, volume packs, volume search, auto-grab, proposals, torrent`,
+      message: `volume, volume packs, volume search, auto-grab, proposals, torrent, missing chapters, licensed, seeders, minimum seeders`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'missing-chapter-search',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Search torrents for chapters no source has`,
+    admin: true,
+    within: 'volume-releases',
+    keywords: msg({
+      message: `licensed, delisted, taken down, missing chapters, no source, torrent search`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'minimum-seeders',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Minimum seeders`,
+    admin: true,
+    within: 'volume-releases',
+    keywords: msg({
+      message: `seeders, seeds, peers, dead torrent`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'auto-approve-volumes',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Approve volume releases automatically`,
+    admin: true,
+    within: 'volume-releases',
+    keywords: msg({
+      message: `auto approve, automatic approval, proposals, size ceiling, volume packs`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -19,6 +19,13 @@ public record LocalizedTitleDto(string Title, string? Language);
 /// <summary>One row of <c>GET series/lookup</c>.</summary>
 public record SeriesLookupDto(int Id, int? MangaBakaId, string? CoverUrl, bool Archived);
 
+/// <summary>
+/// A series' "Prepare chapters ahead" setting. <paramref name="Chapters"/> null follows the instance
+/// setting (<paramref name="DefaultChapters"/> chapters for readers who read it within
+/// <paramref name="Days"/> days), 0 never prepares the series, a number keeps that many ready.
+/// </summary>
+public record SeriesPrepareAheadDto(int? Chapters, int DefaultChapters, int Days);
+
 public record SeriesDto(
     int Id,
     /// <summary>
@@ -203,10 +210,29 @@ public record SeriesDto(
     public DateTime? LastDownloadedAt { get; init; }
 
     /// <summary>
+    /// The caller's unread files in the series' latest batch (<see cref="Services.NewChapterBatch"/>),
+    /// the "N new" pill Home's Recently added rail shows too. Filled by the list and detail endpoints.
+    /// </summary>
+    public int NewChapterCount { get; init; }
+
+    /// <summary>The newest release date among this series' known chapters, or null when none has one. Library list only.</summary>
+    public DateTime? LatestChapterAt { get; init; }
+
+    /// <summary>
     /// MangaBaka's aggregate score on a 0–10 scale, read from the local dump. Library list only; null
     /// without a MangaBaka link, without the dump, or when MangaBaka has no score for the series.
     /// </summary>
     public double? CommunityRating { get; init; }
+
+    /// <summary>Bytes of every chapter file the series has on disk. Library list only.</summary>
+    public long? SizeOnDisk { get; init; }
+
+    /// <summary>
+    /// When the monitored refresh next syncs this series, or null when it never will (archived, no
+    /// enabled source, finished, or still waiting on an import link). A series that is due carries
+    /// a time already past: its last check, else when it was added. Library list only.
+    /// </summary>
+    public DateTime? NextCheckAt { get; init; }
 
     /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
@@ -229,6 +255,13 @@ public record SeriesDto(
     public bool ArchiveHintEligible { get; init; }
 
     /// <summary>
+    /// Set when the series page should ask the caller whether they are done with a finished series
+    /// (<see cref="Services.SeriesCompletion.AskAsync"/>): how many chapters they switched off, 0 when
+    /// none. Null means no ask. Detail endpoint only.
+    /// </summary>
+    public int? CompleteHintLeftOut { get; init; }
+
+    /// <summary>
     /// The series page should ask this caller to rate it: they finished it, have not rated it and
     /// have not dismissed the ask. Detail endpoint only.
     /// </summary>
@@ -246,6 +279,15 @@ public record SeriesDto(
     /// detail endpoints.
     /// </summary>
     public bool Finished { get; init; }
+
+    /// <summary>The caller's own <see cref="Maki.Core.Entities.ReadingStatus"/> name. Filled by the list and detail endpoints.</summary>
+    public string ReadingStatus { get; init; } = nameof(Maki.Core.Entities.ReadingStatus.PlanToRead);
+
+    /// <summary><see cref="ReadingStatus"/> was set by an auto rule rather than by the caller.</summary>
+    public bool ReadingStatusAuto { get; init; }
+
+    /// <summary>The series' prepare-ahead setting; null while the instance has it off. Detail endpoint only.</summary>
+    public SeriesPrepareAheadDto? PrepareAhead { get; init; }
 
     /// <summary>
     /// The "how is it so far?" prompt waiting for this caller: "hooked", "caughtUp", or null. Detail
@@ -272,8 +314,32 @@ public record SeriesDto(
     /// </summary>
     public int RemovedChapterCount { get; init; }
 
+    /// <summary>
+    /// The total Reading and Downloads count against (<see cref="SeriesProgressScope.Wanted"/>): the
+    /// chapters the reader wants, plus any they have, had or read. 0 when nothing is wanted.
+    /// </summary>
+    public int ProgressTotal { get; init; }
+
+    /// <summary>Chapters had (on disk or removed on purpose) within <see cref="ProgressTotal"/>'s scope.</summary>
+    public int ProgressHave { get; init; }
+
+    /// <summary><see cref="ReadChapterCount"/> clamped to <see cref="ProgressTotal"/>. Null when nothing has been read.</summary>
+    public int? ProgressRead { get; init; }
+
+    /// <summary>Listed chapters with a decimal number (<see cref="Chapter.IsSpecial"/>).</summary>
+    public int ListedSpecials { get; init; }
+
+    /// <summary>Listed chapters <see cref="ProgressTotal"/> leaves out because the user switched Wanted off.</summary>
+    public int ProgressSkipped { get; init; }
+
     /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
     public int? PendingProposalId { get; init; }
+
+    /// <summary>
+    /// What volume first holds back from automatic source downloads, filled only by the detail
+    /// endpoint and only while something is held (<see cref="Services.VolumeFirstGate"/>).
+    /// </summary>
+    public VolumeHoldDto? VolumeHold { get; init; }
 
     /// <summary>
     /// Metadata fields a user set by hand (<see cref="Series.LockedFields"/>), camelCased:
@@ -371,7 +437,7 @@ public record SeriesDto(
         queuedCount,
         downloadingCount,
         s.HasAnime,
-        s.AnimeName,
+        string.IsNullOrWhiteSpace(s.AnimeName) ? null : s.AnimeName,
         s.AnimeStart,
         s.AnimeEnd,
         readChapterCount,
@@ -440,9 +506,10 @@ public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Check
 /// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
 /// to be the fallback rather than a hardcoded Off.
 /// </param>
+/// <param name="RootFolderId">Null lets the root folder rules pick.</param>
 public record AddSeriesRequest(
     string MetadataProviderId,
-    int RootFolderId,
+    int? RootFolderId,
     bool Monitored = true,
     // Null follows the "Default monitoring for new series" setting.
     string? MonitorNewItems = null,
@@ -450,3 +517,8 @@ public record AddSeriesRequest(
     string? AddedFrom = null,
     Guid? ClientMutationId = null,
     int? UpgradeProfileId = null);
+
+/// <param name="Reason">searching, proposal or downloading.</param>
+/// <param name="Through">The highest chapter number held; null holds every chapter.</param>
+/// <param name="Until">When the hold lapses on its own; null while the search runs.</param>
+public sealed record VolumeHoldDto(string Reason, decimal? Through, int? ProposalId, DateTime? Until);

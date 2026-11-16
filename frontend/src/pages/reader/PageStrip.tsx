@@ -10,6 +10,8 @@ import { useLingui } from '@lingui/react/macro'
  */
 export default function PageStrip({
   urls,
+  first = 0,
+  last = urls.length - 1,
   page,
   bookmarks,
   notedPages,
@@ -17,6 +19,9 @@ export default function PageStrip({
   rtl,
 }: {
   urls: string[]
+  /** The pages shown, as chapter indexes: credit pages left out at either end are not listed. */
+  first?: number
+  last?: number
   page: number
   /** Bookmarked page indices, marked here so a bookmark is findable, not just settable. */
   bookmarks: Set<number>
@@ -34,8 +39,9 @@ export default function PageStrip({
 
   return (
     <div className="reader-strip" style={{ flexDirection: rtl ? 'row-reverse' : 'row' }}>
-      {urls.map((src, index) => {
-        const pageNumber = index + 1
+      {urls.slice(first, last + 1).map((src, at) => {
+        const index = first + at
+        const pageNumber = at + 1
         const bookmarked = bookmarks.has(index)
         const noted = notedPages.has(index)
         return (

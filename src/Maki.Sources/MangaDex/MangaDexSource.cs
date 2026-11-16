@@ -11,7 +11,7 @@ namespace Maki.Sources.MangaDex;
 /// Page URLs come from the at-home network and expire after ~15 minutes,
 /// so GetPagesAsync must be called at download time.
 /// </summary>
-public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, IChapterVolumeSource
+public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationGroupSource, IChapterVolumeSource
 {
     public const string HttpClientName = "source-mangadex";
 
@@ -44,7 +44,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     {
         var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdManga>>(
             $"manga?title={Uri.EscapeDataString(title)}&limit=10&includes[]=cover_art" +
-            "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+            "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic",
             ct);
 
         return response?.Data.Select(m => new SourceSeriesResult(
@@ -72,7 +72,15 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             m.Attributes.Status);
     }
 
+    /// <summary>
+    /// The same chapter number often exists from several scanlation groups; with no group preference
+    /// the earliest-published upload is kept, so the diff stays stable across refreshes.
+    /// </summary>
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
+        string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default) =>
+        ScanlationGroupChoice.Pick(await ListUploadsAsync(sourceSeriesId, languageFilter, ct), ScanlationGroupPreference.None);
+
+    public async Task<IReadOnlyList<SourceChapter>> ListUploadsAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var languages = SiteLanguageCodes.Parse(languageFilter);
@@ -90,7 +98,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}" +
                 languageQuery +
-                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica" +
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic" +
                 "&includes[]=scanlation_group",
                 ct);
 
@@ -130,25 +138,48 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             }
         }
 
-        // The same chapter number often exists from multiple scanlation groups; keep the
-        // earliest-published one so the diff stays stable across refreshes.
-        return SourceChapterList.Normalize(
-            chapters, g => g.OrderBy(c => c.ReleaseDate ?? DateTime.MaxValue).First());
+        return chapters;
     }
 
     /// <summary>
     /// Chapter number → volume map from the full feed with includeUnavailable=1: unlike
     /// the aggregate endpoint (and the default feed), this still lists delisted chapters
-    /// of licensed titles, whose volume assignment is exactly what we're after. Volume
-    /// boundaries are language-independent, so the English feed is walked first, which keeps a
-    /// widely translated title from costing a request per 500 rows across every language; only
-    /// a title with no English volumes falls back to the feed of all languages.
+    /// of licensed titles, whose volume assignment is exactly what we're after.
+    /// English answers first; the feed of all languages fills the chapters English leaves out, as
+    /// long as the volume it gives fits between the English volumes around it. A translated
+    /// edition can split volumes differently (an omnibus numbers them lower), and that is the
+    /// check that catches it.
     /// </summary>
     public async Task<IReadOnlyDictionary<decimal, int>> GetChapterVolumesAsync(
         string sourceSeriesId, CancellationToken ct = default)
     {
         var english = await WalkVolumesAsync(sourceSeriesId, "&translatedLanguage[]=en", ct);
-        return english.Count > 0 ? english : await WalkVolumesAsync(sourceSeriesId, string.Empty, ct);
+        var every = await WalkVolumesAsync(sourceSeriesId, string.Empty, ct);
+        if (english.Count == 0)
+        {
+            return every;
+        }
+
+        var numbers = english.Keys.Order().ToArray();
+        var merged = new Dictionary<decimal, int>(english);
+        foreach (var (number, volume) in every)
+        {
+            if (english.ContainsKey(number))
+            {
+                continue;
+            }
+
+            var next = ~Array.BinarySearch(numbers, number);
+            if ((next > 0 && volume < english[numbers[next - 1]]) ||
+                (next < numbers.Length && volume > english[numbers[next]]))
+            {
+                continue;
+            }
+
+            merged[number] = volume;
+        }
+
+        return merged;
     }
 
     private async Task<IReadOnlyDictionary<decimal, int>> WalkVolumesAsync(
@@ -165,7 +196,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit={FeedPageSize}&offset={offset}&includeUnavailable=1" +
                 languageQuery +
-                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic",
                 ct);
 
             if (response is null)

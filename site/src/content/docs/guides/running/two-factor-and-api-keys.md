@@ -43,8 +43,10 @@ second factor. A code you set up still protects password sign-in. See
 ## API keys
 
 Open **Settings → Account → API keys**, type a name such as "Phone reader", enter your password, and
-click **Create**. An account without a password (single sign-on only) must have signed in within the
-last ten minutes, or Maki refuses.
+click **Create**. An account that cannot sign in with a password, because it uses single sign-on only
+or **Require single sign-on** switched password sign-in off, is not asked for one. It needs a sign-in
+from the last ten minutes instead, and the form says so up front with a **Sign in again** button that
+brings you back.
 
 The key appears once in a dialog titled **Your new API key**. Maki stores only a fingerprint, so if
 you lose it, revoke it and create another. Create one key per script or app so you can revoke one
@@ -65,8 +67,9 @@ X-Api-Key: <your key>
 Maki reads keys from that header only, never the query string, because URLs end up in browser history
 and proxy logs.
 
-OPDS feed tokens are a separate kind of key. They work only on the OPDS catalogue, and Maki rejects
-them on `/api/v1`, so a reading app holding a feed URL cannot manage your library. See
+OPDS feed tokens are a separate kind of key, created on the OPDS catalogue card under **Settings →
+Reading**, with the same password or recent sign-in check. They work only on the OPDS catalogue, and
+Maki rejects them on `/api/v1`, so a reading app holding a feed URL cannot manage your library. See
 [OPDS apps](/Maki/guides/reading/opds-apps/).
 
 If you restore a backup, any key you revoked after that backup was taken stays revoked. See

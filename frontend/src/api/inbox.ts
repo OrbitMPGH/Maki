@@ -35,6 +35,7 @@ export type InboxEventType =
   | 'noteReply'
   | 'customSourceUpdated'
   | 'chapterDelisted'
+  | 'newRelatedWork'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -116,7 +117,7 @@ export const INBOX_CATEGORIES: {
       'chapterDelisted',
     ],
   },
-  { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
+  { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease', 'newRelatedWork'] },
   {
     id: 'downloads',
     label: msg`Downloads`,
@@ -185,6 +186,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   noteReply: msg`Replies to your notes`,
   customSourceUpdated: msg`Custom source updated by its repository`,
   chapterDelisted: msg`Downloaded chapters no longer listed`,
+  newRelatedWork: msg`New sequels and spin-offs`,
 }
 
 /**
@@ -194,6 +196,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   followedCreatorRelease: msg`Follow someone from their creator page.`,
+  newRelatedWork: msg`When the catalogue lists a new work related to a series you read.`,
   upgradeRestoreFailed: msg`The file is waiting in the trash folder.`,
   noteReply: msg`Someone replied in a thread you wrote or joined.`,
   chapterDelisted: msg`Every source that listed them has stopped, which can mean a source filed them here by mistake.`,

@@ -133,12 +133,17 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: o.muted ? 'Muted' : 'Default',
+    readingStatus: e.read > 0 ? 'Reading' : 'PlanToRead',
+    readingStatusAuto: false,
     sources,
     enabledSources: o.enabledSources ?? sources,
     fileSources: sources.slice(0, 1),
     lastReadAt: o.lastRead == null ? null : daysAgo(o.lastRead),
     lastDownloadedAt: o.files > 0 ? hoursAgo(e.id * 7) : null,
+    newChapterCount: e.id % 3 === 1 ? Math.min(4, Math.max(0, o.files - e.read)) : 0,
     communityRating: Math.round(e.rating * 10) / 10,
+    sizeOnDisk: o.files > 0 ? o.files * 31_457_280 : null,
+    nextCheckAt: o.monitored === false || sources.length === 0 ? null : hoursAgo(-e.id),
     upgradeProfileId: o.profile ?? null,
     lastUpgradeScan: null,
     pendingProposalId: null,
@@ -278,6 +283,7 @@ export const upgradeProfiles: UpgradeProfileDto[] = [
 ]
 
 const baseSpec: LibraryFilterSpec = {
+  readingStatuses: [],
   status: 'all',
   tagMatch: 'any',
   monitored: 'all',
@@ -294,9 +300,9 @@ const baseSpec: LibraryFilterSpec = {
 }
 
 export const savedFilters: SavedFilterDto[] = [
-  { id: 1, name: 'Ongoing and behind', sortOrder: 0, spec: { ...baseSpec, status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } },
-  { id: 2, name: 'Favourites', sortOrder: 1, spec: { ...baseSpec, tagIds: [1], sort: 'title' } },
-  { id: 3, name: 'Finished, never rated', sortOrder: 2, spec: { ...baseSpec, status: 'Completed', ratingState: 'unrated' } },
+  { id: 1, name: 'Ongoing and behind', sortOrder: 0, isDefault: false, spec: { ...baseSpec, status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } },
+  { id: 2, name: 'Favourites', sortOrder: 1, isDefault: false, spec: { ...baseSpec, tagIds: [1], sort: 'title' } },
+  { id: 3, name: 'Finished, never rated', sortOrder: 2, isDefault: false, spec: { ...baseSpec, status: 'Completed', ratingState: 'unrated' } },
 ]
 
 /** A slice of the recommendation tag vocabulary: enough to browse into a group, search and tick. */

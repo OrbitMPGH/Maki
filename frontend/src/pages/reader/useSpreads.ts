@@ -33,17 +33,23 @@ export type Spread = number[]
  * subsequent spread out of phase). A page measured as wider than it is tall is a printed
  * two-page spread and also stands alone. Pages not measured yet are assumed portrait, so the
  * layout settles as images arrive rather than blocking on them.
+ *
+ * Only pages `first` to `last` are shown, when credit pages are left out at either end. The pairing
+ * keeps the whole chapter's phase, so leaving out a credit page never re-pairs the printed spreads;
+ * a pair cut by the window's edge shows its one remaining page alone.
  */
-export function useSpreads(pageCount: number, wide: Record<number, boolean>, enabled: boolean): Spread[] {
+export function useSpreads(
+  pageCount: number,
+  wide: Record<number, boolean>,
+  enabled: boolean,
+  first = 0,
+  last = pageCount - 1,
+): Spread[] {
   return useMemo(() => {
-    if (!enabled) {
-      return Array.from({ length: pageCount }, (_, i) => [i])
-    }
-
     const spreads: Spread[] = []
     let i = 0
     while (i < pageCount) {
-      if (i === 0 || wide[i]) {
+      if (!enabled || i === 0 || wide[i]) {
         spreads.push([i])
         i += 1
         continue
@@ -56,8 +62,9 @@ export function useSpreads(pageCount: number, wide: Record<number, boolean>, ena
       spreads.push([i])
       i += 1
     }
-    return spreads
-  }, [pageCount, wide, enabled])
+    if (first <= 0 && last >= pageCount - 1) return spreads
+    return spreads.map((spread) => spread.filter((index) => index >= first && index <= last)).filter((spread) => spread.length > 0)
+  }, [pageCount, wide, enabled, first, last])
 }
 
 /** The spread containing a page, and the first page of a spread. */

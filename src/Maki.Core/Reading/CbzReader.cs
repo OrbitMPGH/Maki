@@ -24,7 +24,7 @@ public static class CbzReader
 {
     public static readonly IReadOnlySet<string> ImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp"
+        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp", ".jxl"
     };
 
     /// <summary>An image page, by extension, unless <see cref="IsMacMetadata"/> says it is a stub.</summary>
@@ -42,6 +42,17 @@ public static class CbzReader
         return segments[^1].StartsWith('.') ||
                segments.Any(s => s.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase));
     }
+
+    /// <summary>
+    /// Image entries of an open archive, in reading order, with the checksum and size the zip's own
+    /// directory records for each. Rewriting ComicInfo.xml copies every page and keeps these.
+    /// </summary>
+    public static List<PageEntry> PageEntries(ZipArchive archive) =>
+        archive.Entries
+            .Where(e => IsImage(e.FullName))
+            .Select(e => new PageEntry(e.FullName, e.Crc32, e.Length))
+            .OrderBy(e => e.Name, NaturalFileNameComparer.Instance)
+            .ToList();
 
     /// <summary>Image entries of an open archive, in reading order.</summary>
     public static List<string> PageNames(ZipArchive archive) =>
@@ -236,6 +247,7 @@ public static class CbzReader
         ".gif" => "image/gif",
         ".avif" => "image/avif",
         ".bmp" => "image/bmp",
+        ".jxl" => "image/jxl",
         _ => "image/jpeg"
     };
 
@@ -287,3 +299,6 @@ public static class CbzReader
         }
     }
 }
+
+/// <summary>One page entry of a CBZ: its name, and the CRC-32 and uncompressed size its directory records.</summary>
+public readonly record struct PageEntry(string Name, uint Crc, long Length);

@@ -39,6 +39,138 @@ public class UpscaleQueueTests
         Assert.Equal([0, 100, 1, 101, 2], DrainPages());
     }
 
+    private static (UpscaleWorkKey Key, Maki.Api.Services.ReaderService.PageSlice Slice) Ahead(int page, int fileId = 9) =>
+        (new UpscaleWorkKey(fileId, "1000-5", page, "span-s"), Slice(fileId, fileId));
+
+    [Fact]
+    public void A_page_is_webp_only_when_every_waiting_tab_says_its_browser_cannot_show_jpeg_xl()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "edge", jpegXl: false);
+        _queue.Replace(2, 1, "span-s", [Item(1)], session: "old");
+        _queue.Replace(3, 1, "span-s", [Item(2)], session: "a", jpegXl: false);
+        _queue.Replace(4, 1, "span-s", [Item(2)], session: "b", jpegXl: true);
+
+        var edgeOnly = _queue.TryDequeue()!;
+        var unknown = _queue.TryDequeue()!;
+        var mixed = _queue.TryDequeue()!;
+
+        Assert.False(_queue.DecodesJpegXl(edgeOnly));
+        Assert.True(_queue.DecodesJpegXl(unknown));
+        Assert.True(_queue.DecodesJpegXl(mixed));
+    }
+
+    [Fact]
+    public void A_tab_that_stops_saying_counts_as_able_again()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "t", jpegXl: false);
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "t");
+
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
+    public void A_prepared_page_follows_the_last_request_of_the_users_it_was_planned_for()
+    {
+        _queue.Replace(1, 1, "span-s", [], session: "edge", jpegXl: false);
+        _queue.Replace(2, 1, "span-s", [], session: "chrome", jpegXl: true);
+        var owners = new Dictionary<UpscaleWorkKey, IReadOnlySet<int>>
+        {
+            [Ahead(50).Key] = new HashSet<int> { 1 },
+            [Ahead(51).Key] = new HashSet<int> { 1, 2 },
+            [Ahead(52).Key] = new HashSet<int> { 3 },
+        };
+        _queue.SetBackground([Ahead(50), Ahead(51), Ahead(52), Ahead(53)], owners);
+
+        Assert.False(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
+    public void An_abandoned_prepared_page_keeps_its_owners_when_put_back()
+    {
+        _queue.Replace(1, 1, "span-s", [], session: "edge", jpegXl: false);
+        _queue.SetBackground([Ahead(50)], new Dictionary<UpscaleWorkKey, IReadOnlySet<int>> { [Ahead(50).Key] = new HashSet<int> { 1 } });
+        var job = _queue.TryDequeue()!;
+        _queue.Complete(job, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+
+        Assert.False(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
+    public void Prepared_pages_run_only_once_readers_have_nothing_pending()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
+
+        Assert.Equal([0, 1, 50, 51], DrainPages());
+        Assert.Equal(0, _queue.Snapshot().Background);
+    }
+
+    [Fact]
+    public void The_snapshot_tells_a_running_prepared_page_from_a_reader_page()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        _queue.TryDequeue();
+
+        var prepared = _queue.Snapshot();
+        Assert.Equal((1, 1, 1), (prepared.Working, prepared.BackgroundWorking, prepared.Background));
+
+        _queue.Replace(1, 1, "span-s", [Item(0)]);
+        Assert.Equal(0, _queue.TryDequeue()!.Key.AbsIndex);
+
+        var both = _queue.Snapshot();
+        Assert.Equal((2, 1), (both.Working, both.BackgroundWorking));
+    }
+
+    [Fact]
+    public void A_prepared_page_runs_with_nobody_told()
+    {
+        _queue.SetBackground([Ahead(50)]);
+
+        var job = _queue.TryDequeue();
+
+        Assert.NotNull(job);
+        Assert.Empty(_queue.Complete(job, UpscaleOutcome.Ready, null));
+        Assert.Null(_queue.TryDequeue());
+    }
+
+    [Fact]
+    public void A_reader_queueing_work_abandons_a_running_prepared_page_and_it_goes_back_first()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [Item(0)]);
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        _queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+        Assert.Equal([0, 50, 51], DrainPages());
+    }
+
+    [Fact]
+    public void A_reader_leaving_a_page_that_is_also_prepared_does_not_abandon_it()
+    {
+        _queue.SetBackground([Ahead(50)]);
+        var running = _queue.TryDequeue()!;
+        _queue.Replace(1, 9, "span-s", [new UpscaleRequestItem(running.Key, new UpscaleTarget(9, 50), running.Slice)], session: "a");
+
+        _queue.Cancel(1, "a");
+
+        Assert.False(running.Abandoned.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void A_prepared_page_that_recently_failed_is_skipped()
+    {
+        var failed = new UpscaleJob(Ahead(50).Key, Ahead(50).Slice);
+        _queue.Complete(failed, UpscaleOutcome.Skipped, UpscaleReasons.TooLarge);
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+
+        Assert.Equal([51], DrainPages());
+    }
+
     [Fact]
     public void A_page_two_readers_want_runs_once_and_answers_both()
     {

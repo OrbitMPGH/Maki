@@ -83,7 +83,7 @@ public class CoReadGraphTests : IDisposable
         // A NaN propagates through every sum it reaches, so it must never enter the index.
         var graph = await Load((1, 2, float.NaN), (1, 3, 0f), (1, 4, 0.3f));
 
-        Assert.Equal([4L], Neighbours(graph, 1));
+        Assert.Equal([4L], Neighbours(graph!, 1));
     }
 
     [Fact]

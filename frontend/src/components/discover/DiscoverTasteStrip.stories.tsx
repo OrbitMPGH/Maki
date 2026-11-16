@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Steering your picks')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText(/%$/).length).toBeGreaterThan(0))
   },
 }
 
@@ -28,7 +28,7 @@ export const NoTagsYet: Story = {
   parameters: {
     msw: discoverPage(http.get(api('/recommendations/taste-profile'), () => HttpResponse.json(tasteProfileEmpty))),
   },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.queryByText('Steering your picks')).toBeNull())
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.discover-taste-strip')).toBeNull())
   },
 }

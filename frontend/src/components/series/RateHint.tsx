@@ -11,15 +11,17 @@ export function RateHint({
   onRate,
   onKeep,
   onDismiss,
+  wrap = 'nowrap',
 }: {
   soFar?: number | null
   onRate: (rating: number) => void
   onKeep?: () => void
   onDismiss: () => void
+  wrap?: 'wrap' | 'nowrap'
 }) {
   const { t } = useLingui()
   return (
-    <Group className="series-rate-hint" gap="xs" mt="md" wrap="nowrap">
+    <Group className="series-rate-hint" gap="xs" mt="md" wrap={wrap}>
       <IconStar size={16} style={{ flexShrink: 0, color: 'var(--ink-3)' }} aria-hidden />
       <Text size="sm" c="var(--ink-3)">
         {soFar != null ? (
@@ -45,7 +47,7 @@ export function RateHint({
           <Trans>Keep {soFar}</Trans>
         </Button>
       )}
-      <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Dismiss`} onClick={onDismiss}>
+      <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Dismiss`} onClick={onDismiss}>
         <IconX size={16} />
       </ActionIcon>
     </Group>

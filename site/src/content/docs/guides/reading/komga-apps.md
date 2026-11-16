@@ -10,7 +10,8 @@ OPDS feeds, such as Panels, Chunky, KOReader and Mihon's OPDS source, use the fe
 ## Turn it on
 
 In **Settings → Reading → OPDS catalogue**, turn on **Enable the OPDS catalogue**. The first time
-you do, confirm your password, then turn on **Komga-compatible API**. Both must stay on for the API
+you do, confirm your password (an account that signs in only through single sign-on needs a sign-in
+from the last ten minutes instead), then turn on **Komga-compatible API**. Both must stay on for the API
 to answer.
 
 The card shows the two values an app needs:
@@ -45,12 +46,15 @@ so it counts in Stats and reaches your trackers and Kavita. For the full picture
 
 Loading a page does not count as progress here, unlike OPDS.
 
+The app's on-deck shelf leaves out series you put On hold or Dropped, until you read them again.
+
 ## Formats an app cannot show
 
 Apps that cannot decode WebP or AVIF can ask for JPEG or PNG instead, as with Komga. Maki converts
-the page for that request, which uses server CPU.
+the page for that request, which uses server CPU. JPEG XL pages always go out as WebP, and the API
+lists them as WebP.
 
 :::tip
 AVIF pages do not open in KOReader or on iOS. If you read on those, keep page conversion on a format
-they can open. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+they can open. See [Page conversion](/Maki/guides/library/page-conversion/).
 :::

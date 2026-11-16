@@ -16,9 +16,10 @@ namespace Maki.Api.Jobs;
 /// </para>
 ///
 /// <para>
-/// The cost of being wrong is a reload on the next typed query, a second or two once, which is why
-/// the window is five minutes rather than the fifteen it started at: about 170 MB held for a
-/// reload that cheap was the wrong trade. Set
+/// The cost of being wrong is a reload on the next typed query, about 0.12 s, during which that
+/// query is answered from the title index and the search box asks again. The window started at
+/// fifteen minutes, then five; it is one, because over 120 MB held for a reload that cheap was the
+/// wrong trade. Set
 /// <c>MAKI_EMBED_IDLE_MINUTES=0</c> to keep the session loaded forever, which is the old behaviour
 /// and what a machine with RAM to spare and a search-heavy household wants.
 /// </para>
@@ -30,14 +31,17 @@ public class EmbedderIdleUnloadJob(TextEmbedder embedder) : IJob
 
     public const string IdleMinutesVariable = "MAKI_EMBED_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 5;
+    private const int DefaultIdleMinutes = 1;
 
     public Task Execute(IJobExecutionContext context)
     {
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
         if (minutes > 0 && embedder.ReleaseIfIdle(TimeSpan.FromMinutes(minutes)))
         {
-            NativeHeap.Trim();
+            // The session going means the typed searches or the indexing pass that used it have
+            // stopped, so the heap their tensors churned is collected now. The artifact unload does
+            // the same, but nothing else would after an indexing pass, or with artifact unloading off.
+            NativeHeap.CollectAndTrim();
         }
 
         return Task.CompletedTask;

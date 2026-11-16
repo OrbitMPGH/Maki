@@ -71,6 +71,28 @@ public partial class SourceMatchService(
     private const double MatchThreshold = 0.6;
 
     /// <summary>
+    /// The lowest title similarity at which the best leftover result is offered as "Is this it?".
+    /// The score alone is not enough: "Blue Lock" scores 0.60 against "Blue Period" and "Tokyo Ghoul"
+    /// 0.54 against "Tokyo Revengers", so a suggestion must also pass <see cref="SharesItsWords"/>.
+    /// </summary>
+    internal const double NearMissFloor = 0.4;
+
+    /// <summary>
+    /// How alike two words must be to count as one word spelt two ways ("Kyojin"/"Kyoujin" 0.92,
+    /// "Ippo"/"Ipo" 0.86), while "Chainsaw"/"Chain" (0.77) and "Days"/"Desu" (0.5) stay apart.
+    /// </summary>
+    private const double NearMissWordSimilarity = 0.8;
+
+    /// <summary>Words that say nothing about which work a title names, in English and romaji.</summary>
+    private static readonly HashSet<string> FillerWords =
+    [
+        "the", "a", "an", "of", "and", "to", "in", "on", "at", "for", "with", "is", "my", "x",
+        "no", "wa", "ga", "wo", "o", "ni", "de", "mo", "na", "e",
+    ];
+
+    private const int NearMissDescriptionLength = 280;
+
+    /// <summary>
     /// How many candidates are worth a cross-id lookup on a source that charges a page fetch for one.
     /// Search returns up to twenty hits and matching runs per source per series, so looking every hit
     /// up would turn adding one series into a burst of scrapes through that source's shared rate
@@ -165,6 +187,12 @@ public partial class SourceMatchService(
         IReadOnlyList<LocalizedTitle> AltTitles,
         IReadOnlyList<string> Rivals)
     {
+        private static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> NoDismissals =
+            new Dictionary<string, IReadOnlySet<string>>();
+
+        /// <summary>Near-miss candidates the user turned down, by source name, so they are not offered again.</summary>
+        public IReadOnlyDictionary<string, IReadOnlySet<string>> Dismissed { get; init; } = NoDismissals;
+
         public static MatchTarget For(Series series, IReadOnlyList<string> rivals) =>
             new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series),
                 [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()],
@@ -395,7 +423,9 @@ public partial class SourceMatchService(
         SourceSeriesResult? Match,
         SourceMappingOrigin Origin,
         IReadOnlyDictionary<string, string>? ConfirmedIds,
-        bool Failed = false);
+        bool Failed = false,
+        SourceSeriesResult? NearMiss = null,
+        double NearMissScore = 0);
 
     /// <summary>
     /// Searches one source and decides what it matched, touching nothing shared. Never throws: a
@@ -406,13 +436,16 @@ public partial class SourceMatchService(
         ISource source,
         int priority,
         MatchTarget target,
+        SourceLanguagePreference languages,
         IProgress<SourceMatchStep>? progress,
         CancellationToken ct)
     {
         var nothing = new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null);
         try
         {
-            var results = await source.SearchAsync(target.Title, ct);
+            // An edition in a language nobody enabled would list chapters that never merge with the
+            // rest: the French WEBTOON "The Infinite Mage" duplicated every English chapter.
+            var results = Wanted(await source.SearchAsync(target.Title, ct), languages);
             var namedRivals = new Dictionary<string, string?>(StringComparer.Ordinal);
             var outcome = await JudgeAsync(source, priority, target, results, namedRivals, ct);
 
@@ -425,7 +458,7 @@ public partial class SourceMatchService(
                 {
                     try
                     {
-                        var more = await source.SearchAsync(term, ct);
+                        var more = Wanted(await source.SearchAsync(term, ct), languages);
                         results = [.. results.Concat(more.Where(m =>
                             !results.Any(r => r.SourceSeriesId == m.SourceSeriesId)))];
                     }
@@ -454,6 +487,10 @@ public partial class SourceMatchService(
             return nothing with { Failed = true };
         }
     }
+
+    private static List<SourceSeriesResult> Wanted(
+        IReadOnlyList<SourceSeriesResult> results, SourceLanguagePreference languages) =>
+        [.. results.Where(r => languages.Wants(r.Language))];
 
     private async Task<SourceOutcome> JudgeAsync(
         ISource source, int priority, MatchTarget target, IReadOnlyList<SourceSeriesResult> results,
@@ -502,11 +539,67 @@ public partial class SourceMatchService(
         }
 
         var best = ScrobbleMatching.BestCandidate(queries, candidates, MatchThreshold);
-        return best is null
-            ? new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null)
-            : new SourceOutcome(
+        if (best is not null)
+        {
+            return new SourceOutcome(
                 source, priority, usable.First(r => r.SourceSeriesId == best.Id),
                 SourceMappingOrigin.TitleSearch, null);
+        }
+
+        var turnedDown = target.Dismissed.GetValueOrDefault(source.Name);
+        var near = candidates
+            .Where(c => turnedDown?.Contains(c.Id) != true)
+            .Select(c => (Candidate: c, Score: queries
+                .Where(q => SharesItsWords(q, c.Title))
+                .Select(q => ScrobbleMatching.TitleSimilarity(q, c.Title))
+                .DefaultIfEmpty(0)
+                .Max()))
+            .Where(x => x.Score >= NearMissFloor)
+            .OrderByDescending(x => x.Score)
+            .Cast<(ScrobbleCandidate Candidate, double Score)?>()
+            .FirstOrDefault();
+        return new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null,
+            NearMiss: near is { } n ? usable.First(r => r.SourceSeriesId == n.Candidate.Id) : null,
+            NearMissScore: near?.Score ?? 0);
+    }
+
+    /// <summary>
+    /// Whether two titles carry the same meaningful words, allowing each word a small spelling
+    /// difference. At least two thirds of the shorter title's words must have a counterpart, and at
+    /// least half of the longer one's, so "Blue Lock" never suggests "Blue Period" and a lone shared
+    /// word in a long title is not enough.
+    /// </summary>
+    internal static bool SharesItsWords(string a, string b)
+    {
+        var wa = MeaningfulWords(a);
+        var wb = MeaningfulWords(b);
+        if (wa.Count == 0 || wb.Count == 0)
+        {
+            return false;
+        }
+
+        var (fewer, more) = wa.Count <= wb.Count ? (wa, wb) : (wb, wa);
+        // One-to-one, exact pairs first, so "Witch" can't stand in for both "Witch" and "Watch".
+        var unpaired = more.Except(fewer).ToList();
+        var matched = fewer.Count(more.Contains);
+        foreach (var word in fewer.Where(w => !more.Contains(w)))
+        {
+            var partner = unpaired.FirstOrDefault(o => ScrobbleMatching.TitleSimilarity(word, o) >= NearMissWordSimilarity);
+            if (partner is not null)
+            {
+                unpaired.Remove(partner);
+                matched++;
+            }
+        }
+
+        return matched * 3 >= fewer.Count * 2 && matched * 2 >= more.Count;
+    }
+
+    private static List<string> MeaningfulWords(string title)
+    {
+        var words = ScrobbleMatching.NormalizeTitle(title).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var meaningful = words.Where(w => w.Length > 1 && !FillerWords.Contains(w)).Distinct().ToList();
+        return meaningful.Count > 0 ? meaningful : [.. words.Distinct()];
     }
 
     /// <summary>The rival a result's title names strictly better than it names the series, if any.</summary>
@@ -684,7 +777,8 @@ public partial class SourceMatchService(
         var outcomes = await Task.WhenAll(work.Select(async item =>
         {
             SourceOutcome outcome;
-            if (known?.TryGetValue(item.Source.Name, out var earlier) == true)
+            if (known?.TryGetValue(item.Source.Name, out var earlier) == true &&
+                languages.Wants(earlier.Match?.Language))
             {
                 progress?.Report(new SourceMatchStep(
                     item.Source.Name, earlier.Match is null ? SourceMatchState.NoMatch : SourceMatchState.Matched));
@@ -693,7 +787,7 @@ public partial class SourceMatchService(
             }
             else
             {
-                outcome = await WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct);
+                outcome = await WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, languages, progress, ct), ct);
             }
 
             settled?.Invoke(outcome, languages);
@@ -745,6 +839,69 @@ public partial class SourceMatchService(
         }
     }
 
+    /// <summary>
+    /// Replaces each unmatched source's suggestion with this run's, keeping dismissed rows so a
+    /// declined candidate stays declined. A source whose search failed keeps what it had: a failed
+    /// search says nothing about the old suggestion.
+    /// </summary>
+    private async Task RecordNearMissesAsync(
+        Series series, SourceOutcome[] outcomes, List<string> mapped,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> dismissed, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == series.Id, ct))
+        {
+            return;
+        }
+
+        var existing = await db.SourceNearMisses.Where(n => n.SeriesId == series.Id).ToListAsync(ct);
+        var now = DateTime.UtcNow;
+        foreach (var outcome in outcomes.Where(o => !o.Failed))
+        {
+            var name = outcome.Source.Name;
+            var live = existing
+                .Where(n => n.DismissedAt is null && string.Equals(n.SourceName, name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var linked = outcome.Match is not null || mapped.Contains(name, StringComparer.OrdinalIgnoreCase);
+            var fresh = linked ? null : outcome.NearMiss;
+            if (fresh is not null && dismissed.GetValueOrDefault(name)?.Contains(fresh.SourceSeriesId) == true)
+            {
+                fresh = null;
+            }
+
+            if (fresh is not null && live.Any(n => n.SourceSeriesId == fresh.SourceSeriesId))
+            {
+                continue;
+            }
+
+            db.SourceNearMisses.RemoveRange(live);
+            if (fresh is null)
+            {
+                continue;
+            }
+
+            var description = fresh.Description?.Trim();
+            db.SourceNearMisses.Add(new SourceNearMiss
+            {
+                SeriesId = series.Id,
+                SourceName = name,
+                SourceSeriesId = fresh.SourceSeriesId,
+                Title = fresh.Title,
+                Url = fresh.Url,
+                CoverUrl = fresh.CoverUrl,
+                Author = fresh.Author,
+                Language = fresh.Language,
+                Description = description is { Length: > NearMissDescriptionLength }
+                    ? description[..NearMissDescriptionLength].TrimEnd() + "..."
+                    : description,
+                Score = outcome.NearMissScore,
+                CreatedAt = now
+            });
+        }
+
+        db.SourceNearMisses.RemoveRange(existing.Where(n =>
+            n.DismissedAt is null && mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase)));
+    }
+
     /// <param name="progress">
     /// Optional per-source running commentary, for a caller that shows the sources resolving one at
     /// a time. Every source reports <see cref="SourceMatchState.Searching"/> before the fan-out and
@@ -773,7 +930,15 @@ public partial class SourceMatchService(
             StringComparer.OrdinalIgnoreCase);
 
         // A Discover preview of this series may have searched every source minutes ago.
-        var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct));
+        var dismissed = (await db.SourceNearMisses
+                .Where(n => n.SeriesId == series.Id && n.DismissedAt != null)
+                .Select(n => new { n.SourceName, n.SourceSeriesId })
+                .ToListAsync(ct))
+            .GroupBy(n => n.SourceName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key, g => (IReadOnlySet<string>)g.Select(n => n.SourceSeriesId).ToHashSet(StringComparer.Ordinal),
+                StringComparer.OrdinalIgnoreCase);
+        var target = MatchTarget.For(series, await RivalTitlesAsync(series, ct)) with { Dismissed = dismissed };
         var known = series.MangaBakaId is { } mangaBakaId ? searchCache.Take(mangaBakaId, target) : null;
         if (known is not null)
         {
@@ -839,6 +1004,7 @@ public partial class SourceMatchService(
 
         if (mapped.Count == 0)
         {
+            await SaveNearMissesAsync(series, outcomes, mapped, dismissed, ct);
             return mapped;
         }
 
@@ -847,8 +1013,8 @@ public partial class SourceMatchService(
         // insert dies on the foreign key. There is nothing left to link, so drop them quietly.
         if (!await db.Series.AnyAsync(s => s.Id == series.Id, ct))
         {
-            foreach (var entry in db.ChangeTracker.Entries<SourceMapping>()
-                         .Where(e => e.State == EntityState.Added)
+            foreach (var entry in db.ChangeTracker.Entries()
+                         .Where(e => e.State == EntityState.Added && e.Entity is SourceMapping or SourceNearMiss)
                          .ToList())
             {
                 entry.State = EntityState.Detached;
@@ -861,7 +1027,32 @@ public partial class SourceMatchService(
         }
 
         await db.SaveChangesAsync(ct);
+        await SaveNearMissesAsync(series, outcomes, mapped, dismissed, ct);
 
         return mapped;
+    }
+
+    /// <summary>
+    /// Suggestions are saved on their own, after the mappings, so a series deleted mid-match or a
+    /// second match of the same series writing the same suggestion costs only the suggestion.
+    /// </summary>
+    private async Task SaveNearMissesAsync(
+        Series series, SourceOutcome[] outcomes, List<string> mapped,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> dismissed, CancellationToken ct)
+    {
+        await RecordNearMissesAsync(series, outcomes, mapped, dismissed, ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            foreach (var entry in db.ChangeTracker.Entries<SourceNearMiss>().ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            logger.LogInformation(ex, "Could not save near-miss suggestions for series {Id}", series.Id);
+        }
     }
 }

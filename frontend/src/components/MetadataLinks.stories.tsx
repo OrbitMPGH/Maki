@@ -20,13 +20,24 @@ export const Default: Story = {
   },
 }
 
-export const Compact: Story = {
-  args: { compact: true },
-}
-
 export const Empty: Story = {
   args: { links: [] },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.queryAllByRole('link')).toHaveLength(0))
+  },
+}
+
+export const WithScores: Story = {
+  args: {
+    links: [
+      { site: 'mangabaka', url: 'https://mangabaka.org/1', score: '8.4' },
+      { site: 'anilist', url: 'https://anilist.co/manga/1', score: 86, votes: 41200 },
+      { site: 'myanimelist', url: 'https://myanimelist.net/manga/1', score: '8.62' },
+      { site: 'mangadex', url: 'https://mangadex.org/title/1' },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('8.62')).toBeVisible()
+    await expect(canvas.getAllByRole('link')).toHaveLength(4)
   },
 }

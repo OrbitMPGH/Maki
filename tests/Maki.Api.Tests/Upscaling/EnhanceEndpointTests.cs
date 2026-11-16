@@ -89,7 +89,7 @@ public sealed class EnhanceEndpointTests : IDisposable
             new TestLocalizer(), db,
             new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
                 new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
-            null!, null!, null!, null!, null!, _paths,
+            null!, null!, new ReadingProfileService(db, new UserSettingsService(db, new TestCurrentUser(userId))), null!, null!, _paths,
             new TestCurrentUser(userId), null!, _settings)
         {
             ControllerContext = new ControllerContext { HttpContext = context }
@@ -105,6 +105,62 @@ public sealed class EnhanceEndpointTests : IDisposable
     private static string Code(IActionResult result) =>
         JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value, Web).GetProperty("code").GetString()!;
 
+    private int AddVolumeChapter(int number)
+    {
+        var id = AddChapter(number);
+        using var db = _db.NewContext();
+        var file = db.Chapters.Where(c => c.Id == id).Select(c => c.ChapterFile!).Single();
+        file.Tier = Maki.Core.Quality.QualityTier.Volume;
+        db.SaveChanges();
+        return id;
+    }
+
+    [Fact]
+    public async Task Whole_chapter_queues_every_page_of_the_next_chapter_behind_this_one()
+    {
+        var next = AddChapter(2);
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [0, 1, 2], next, [], WholeChapter: true),
+            _store, _queue, _cache, default);
+
+        var targets = new List<(int Chapter, int Page)>();
+        while (_queue.TryDequeue() is { } job)
+        {
+            targets.AddRange(_queue.WaitersOf(job).Select(w => (w.Value.ChapterId, w.Value.Page)));
+            _queue.Complete(job, Maki.Core.Images.Upscaling.UpscaleOutcome.Ready, null);
+        }
+
+        Assert.Equal([(_chapterId, 0), (_chapterId, 1), (_chapterId, 2), (next, 0), (next, 1), (next, 2)], targets);
+    }
+
+    [Fact]
+    public async Task A_browser_without_jpeg_xl_says_so_and_an_older_client_that_says_nothing_keeps_it()
+    {
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [0], Session: "edge", JpegXl: false),
+            _store, _queue, _cache, default);
+        var edge = _queue.TryDequeue()!;
+        await Post(db, 1, "span-s", 1);
+        var older = _queue.TryDequeue()!;
+
+        Assert.False(_queue.DecodesJpegXl(edge));
+        Assert.True(_queue.DecodesJpegXl(older));
+    }
+
+    [Fact]
+    public async Task A_next_chapter_whose_tier_is_skipped_is_not_queued()
+    {
+        var next = AddVolumeChapter(2);
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [2], next, [0, 1], WholeChapter: true),
+            _store, _queue, _cache, default);
+
+        Assert.Equal(1, _queue.Snapshot().Pending);
+    }
+
     [Fact]
     public async Task Both_endpoints_answer_409_while_the_tier_is_off()
     {
@@ -112,7 +168,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         using var db = _db.NewContext(1);
 
         var post = await Post(db, 1, "span-s", 0);
-        var get = await Reader(db, 1).EnhancedPage(_chapterId, 0, "span-s", _store, _cache, default);
+        var get = await Reader(db, 1).EnhancedPage(_chapterId, 0, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default);
 
         Assert.Equal(409, Assert.IsType<ConflictObjectResult>(post).StatusCode);
         Assert.Equal("error.enhance.disabled", Code(post));
@@ -137,8 +193,10 @@ public sealed class EnhanceEndpointTests : IDisposable
     [Fact]
     public async Task A_page_is_404_until_the_worker_has_made_it_then_served_with_its_etag()
     {
+        // This test pins the WebP file path; the JPEG XL ones have their own test.
+        _settings.Set(SettingKeys.UpscalingJpegXl, "false");
         using var db = _db.NewContext(1);
-        var before = await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default);
+        var before = await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default);
         Assert.IsType<NotFoundResult>(before);
         Assert.Equal(0, _queue.Snapshot().Pending);
 
@@ -151,23 +209,24 @@ public sealed class EnhanceEndpointTests : IDisposable
         var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.Equal([(1, _chapterId, 1, "span-s", "working"), (1, _chapterId, 1, "span-s", "ready")], _broadcaster.Sent);
 
         var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
             new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
         var version = $"{slice.ChapterFileId}-{slice.ArchiveVersion}";
         var controller = Reader(db, 1, $"?model=span-s&v={version}&g={UpscaleCache.Generation}");
-        var file = Assert.IsType<PhysicalFileResult>(await controller.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
+        var file = Assert.IsType<PhysicalFileResult>(await controller.EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
         Assert.Equal("image/webp", file.ContentType);
         Assert.Equal($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s-{UpscaleCache.Generation}\"", file.EntityTag!.Tag.ToString());
         Assert.Equal("private, max-age=31536000, immutable", controller.Response.Headers.CacheControl.ToString());
 
         var olderGeneration = Reader(db, 1, $"?model=span-s&v={version}");
-        Assert.IsType<PhysicalFileResult>(await olderGeneration.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
+        Assert.IsType<PhysicalFileResult>(await olderGeneration.EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
         Assert.Equal("private, no-cache", olderGeneration.Response.Headers.CacheControl.ToString());
 
         var stale = Reader(db, 1, "?model=span-s&v=old");
-        Assert.IsType<PhysicalFileResult>(await stale.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
+        Assert.IsType<PhysicalFileResult>(await stale.EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
         Assert.Equal("private, no-cache", stale.Response.Headers.CacheControl.ToString());
 
         var again = Json(await Post(db, 1, "span-s", 1, 2));
@@ -193,7 +252,9 @@ public sealed class EnhanceEndpointTests : IDisposable
         var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.Equal(
             [(1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready"), (1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready")],
             _broadcaster.Sent);
@@ -206,7 +267,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         using var db = _db.NewContext(outsider, allRootFolders: false);
 
         Assert.IsType<NotFoundResult>(await Post(db, outsider, "span-s", 0));
-        Assert.IsType<NotFoundResult>(await Reader(db, outsider).EnhancedPage(_chapterId, 0, "span-s", _store, _cache, default));
+        Assert.IsType<NotFoundResult>(await Reader(db, outsider).EnhancedPage(_chapterId, 0, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
         Assert.Equal(0, _queue.Snapshot().Pending);
 
         using (var grant = _db.NewContext())
@@ -246,6 +307,88 @@ public sealed class EnhanceEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task A_jpeg_xl_page_goes_out_as_it_is_only_to_a_reader_that_decodes_it()
+    {
+        if (!Maki.Core.Images.JpegXl.IsAvailable && Environment.GetEnvironmentVariable("MAKI_REQUIRE_LIBJXL") != "1")
+        {
+            return;
+        }
+
+        using var db = _db.NewContext(1);
+        var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
+            new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
+        var rgb = new byte[40 * 30 * 3];
+        for (var i = 0; i < rgb.Length; i++) rgb[i] = (byte)(i * 7);
+        var jxl = Maki.Core.Images.JpegXl.Encode(rgb, 40, 30, 3, 1.5f, 3);
+        await _cache.WriteAsync(new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + 1, "span-s"), jxl, "jxl", default);
+        var tag = $"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s-{UpscaleCache.Generation}";
+
+        var direct = Assert.IsType<PhysicalFileResult>(
+            await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", "1", _store, _cache, NullLogger<ReaderController>.Instance, default));
+        Assert.Equal("image/jxl", direct.ContentType);
+        Assert.Equal($"{tag}-jxl\"", direct.EntityTag!.Tag.ToString());
+
+        var converted = Assert.IsType<FileContentResult>(
+            await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
+        Assert.Equal("image/webp", converted.ContentType);
+        Assert.Equal($"{tag}-webp\"", converted.EntityTag!.Tag.ToString());
+        Assert.Equal(Maki.Core.Images.ImageFormat.Webp, Maki.Core.Images.ImageCodec.DetectFormat(converted.FileContents));
+
+        var head = Reader(db, 1);
+        head.Request.Method = "HEAD";
+        Assert.IsType<OkResult>(
+            await head.EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
+        Assert.Equal("image/webp", head.Response.ContentType);
+        Assert.Equal($"{tag}-webp\"", head.Response.Headers.ETag.ToString());
+    }
+
+    [Fact]
+    public async Task An_unreadable_jpeg_xl_page_is_dropped_so_asking_again_queues_it_instead_of_looping()
+    {
+        if (!Maki.Core.Images.JpegXl.IsAvailable && Environment.GetEnvironmentVariable("MAKI_REQUIRE_LIBJXL") != "1")
+        {
+            return;
+        }
+
+        using var db = _db.NewContext(1);
+        var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
+            new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
+        var key = new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + 1, "span-s");
+        var path = await _cache.WriteAsync(key, [0xFF, 0x0A, 1, 2, 3, 4], "jxl", default);
+
+        Assert.IsType<NotFoundResult>(
+            await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
+
+        Assert.False(File.Exists(path));
+        Assert.Null(_cache.TryGet(key));
+        Assert.Equal("""[{"page":1,"state":"queued"}]""", Json(await Post(db, 1, "span-s", 1)).GetProperty("pages").GetRawText());
+    }
+
+    [Fact]
+    public async Task Without_libjxl_a_cached_jpeg_xl_page_counts_as_missing()
+    {
+        var key = new UpscaleWorkKey(1, "1-1", 0, "span-s");
+        await _cache.WriteAsync(key, [0xFF, 0x0A], "jxl", default);
+        Assert.NotNull(_cache.TryGet(key));
+
+        _cache.JpegXlReadable = () => false;
+        Assert.Null(_cache.TryGet(key));
+    }
+
+    [Fact]
+    public async Task Jpeg_xl_is_on_until_turned_off_and_an_older_client_saving_leaves_it_alone()
+    {
+        Assert.True(Json(await Admin().Status(default)).GetProperty("settings").GetProperty("jpegXl").GetBoolean());
+
+        await Admin().Save(new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 1024, JpegXl: false), default);
+        Assert.Equal("false", await _settings.GetAsync(SettingKeys.UpscalingJpegXl));
+
+        var status = Json(await Admin().Save(new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 1024), default));
+        Assert.False(status.GetProperty("settings").GetProperty("jpegXl").GetBoolean());
+        Assert.Equal(Maki.Core.Images.JpegXl.IsAvailable, status.GetProperty("settings").GetProperty("jpegXlAvailable").GetBoolean());
+    }
+
+    [Fact]
     public async Task The_admin_status_has_the_planned_shape_and_save_returns_it()
     {
         await _cache.WriteAsync(new UpscaleWorkKey(1, "1-1", 0, "span-s"), new byte[10], "webp", default);
@@ -254,12 +397,15 @@ public sealed class EnhanceEndpointTests : IDisposable
         var status = Json(await Admin().Status(default));
 
         Assert.Equal(saved.GetRawText(), status.GetRawText());
-        Assert.Equal(["settings", "catalog", "cache", "queue"], status.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(["settings", "catalog", "cache", "queue", "prepared"], status.EnumerateObject().Select(p => p.Name));
         var settings = status.GetProperty("settings");
         Assert.True(settings.GetProperty("enabled").GetBoolean());
         Assert.Equal("""["span-s"]""", settings.GetProperty("models").GetRawText());
         Assert.Equal(1, settings.GetProperty("threads").GetInt32());
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
+        Assert.Equal(
+            """{"enabled":false,"days":14,"series":8,"chapters":1,"mb":4096}""",
+            settings.GetProperty("prepare").GetRawText());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
         Assert.Equal(["maki-2x", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
@@ -277,6 +423,21 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(1, status.GetProperty("cache").GetProperty("files").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("pending").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("working").GetInt32());
+        Assert.Equal("""{"chapters":0,"pages":0,"waiting":0,"bytes":0}""", status.GetProperty("prepared").GetRawText());
+    }
+
+    [Fact]
+    public async Task Save_stores_the_prepare_ahead_settings_and_refuses_out_of_range_ones()
+    {
+        var prepare = new UpscalingController.PrepareDto(true, 7, 3, 2, 1024);
+        var saved = Json(await Admin().Save(new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 512, Prepare: prepare), default));
+        var refused = await Admin().Save(
+            new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 512, Prepare: prepare with { Chapters = 4 }), default);
+
+        Assert.Equal("""{"enabled":true,"days":7,"series":3,"chapters":2,"mb":1024}""",
+            saved.GetProperty("settings").GetProperty("prepare").GetRawText());
+        Assert.Equal("error.upscaling.invalidPrepare", Code(refused));
+        Assert.Equal("2", await _settings.GetAsync(SettingKeys.UpscalingPrepareChapters));
     }
 
     [Fact]

@@ -159,26 +159,44 @@ public class DiscordNotificationProvider(
     {
         NotificationLevel.Error => 0xED4245,
         NotificationLevel.Warning => 0xFAA61A,
-        _ => message.EventType switch
-        {
-            NotificationEventType.ChapterDownloaded => 0x57F287,
-            NotificationEventType.DownloadFailed => 0xED4245,
-            NotificationEventType.NewChapterAvailable => 0x5865F2,
-            NotificationEventType.ImportCompleted => 0x1ABC9C,
-            NotificationEventType.HealthIssue => 0xFAA61A,
-            NotificationEventType.UpdateAvailable => 0x9B59B6,
-            _ => 0x5865F2
-        }
+        _ => EventColor(message.EventType)
     };
 
-    private static string IconFor(NotificationEventType eventType) => eventType switch
+    internal static int EventColor(NotificationEventType eventType) => eventType switch
     {
+        NotificationEventType.Test => 0x5865F2,
+        NotificationEventType.ChapterDownloaded => 0x57F287,
+        NotificationEventType.DownloadFailed => 0xED4245,
+        NotificationEventType.NewChapterAvailable => 0x5865F2,
+        NotificationEventType.ImportCompleted => 0x1ABC9C,
+        NotificationEventType.HealthIssue => 0xFAA61A,
+        NotificationEventType.UpdateAvailable => 0x9B59B6,
+        NotificationEventType.SeriesAdded => 0x3BA55C,
+        NotificationEventType.SeriesRemoved => 0x99AAB5,
+        NotificationEventType.RequestSubmitted => 0xEB459E,
+        NotificationEventType.RequestResolved => 0x2ECC71,
+        NotificationEventType.ManualMatchNeeded => 0xE67E22,
+        NotificationEventType.SeriesStatusChanged => 0x3498DB,
+        NotificationEventType.SeriesArchived => 0x747F8D,
+        _ => 0x5865F2
+    };
+
+    internal static string IconFor(NotificationEventType eventType) => eventType switch
+    {
+        NotificationEventType.Test => "🔔",
         NotificationEventType.ChapterDownloaded => "📥",
         NotificationEventType.DownloadFailed => "❌",
         NotificationEventType.NewChapterAvailable => "🆕",
         NotificationEventType.ImportCompleted => "📦",
         NotificationEventType.HealthIssue => "⚠️",
         NotificationEventType.UpdateAvailable => "🚀",
+        NotificationEventType.SeriesAdded => "➕",
+        NotificationEventType.SeriesRemoved => "🗑️",
+        NotificationEventType.RequestSubmitted => "🙋",
+        NotificationEventType.RequestResolved => "✅",
+        NotificationEventType.ManualMatchNeeded => "🔍",
+        NotificationEventType.SeriesStatusChanged => "🔄",
+        NotificationEventType.SeriesArchived => "🗄️",
         _ => "🔔"
     };
 

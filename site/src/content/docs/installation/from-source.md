@@ -51,7 +51,11 @@ dotnet test
 dotnet publish src/Maki.Api -c Release
 ```
 
-To build the Docker image yourself, run `docker build -t maki:local .` from the repository root.
+To build the Docker image yourself, run `docker build -f distribution/docker/Dockerfile -t maki:local .` from the repository root.
+
+## JPEG XL
+
+Server upscaling and page conversion write JPEG XL through libjxl, which is not part of .NET. A Windows build downloads the pinned libjxl DLLs on its own (pass `-p:SkipLibJxl=true` to skip that). On Linux, build them with `distribution/libjxl/build.sh`, which needs git, cmake, ninja and a C++17 compiler. Without libjxl Maki still runs: upscaled colour pages are saved as WebP, and page conversion refuses a JPEG XL target.
 
 ## Next
 

@@ -20,6 +20,15 @@ export function clearTabState(): void {
   for (const listener of clearListeners) listener()
 }
 
+/** Whether this tab has already stored something under `key`, i.e. the page has been opened here before. */
+export function hasPageState(key: string): boolean {
+  try {
+    return sessionStorage.getItem(PREFIX + key) !== null
+  } catch {
+    return false
+  }
+}
+
 const clearListeners = new Set<() => void>()
 
 /** Lets in-memory per-tab state (the nav stack) reset together with the stored state. */

@@ -45,7 +45,7 @@ export function SplitBar({ items, max = COLORS.length }: { items: SplitBarItem[]
           />
         ))}
       </div>
-      <ul className="stats-split-legend">
+      <ul className="stats-legend">
         {segments.map((s) => (
           <li key={s.key}>
             <span className="stats-legend-swatch" style={{ background: s.color }} aria-hidden />

@@ -3,8 +3,6 @@ import {
   Button,
   Divider,
   Group,
-  Image,
-  Loader,
   Modal,
   ScrollArea,
   Stack,
@@ -14,11 +12,17 @@ import {
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useMutation } from '@tanstack/react-query'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api/client'
 import { errorText } from '../../api/errorText'
 import { useMetadataSearch } from '../../api/hooks'
 import type { MetadataSearchResult } from '../../api/types'
+import { IconChevronRight } from '../../lib/icons'
+import { EmptyState } from '../ui/EmptyState'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { StatusDot } from '../ui/StatusDot'
+import { Thumb } from '../ui/Thumb'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Picks the match for one import folder by hand: a title search (the same endpoint the Add dialog
@@ -49,53 +53,48 @@ export function ImportMatchFinder({
   })
   const results = search.data ?? []
 
+  const showEmpty = debounced.trim().length > 1 && !search.isFetching && results.length === 0
+
   return (
-    <Modal opened onClose={onClose} title={t`Find a match for ${folderName}`} size="lg">
+    <Modal
+      opened
+      onClose={onClose}
+      title={
+        <ModalHeading title={t`Find a match for ${folderName}`} />
+      }
+      size={MODAL_SIZE.default}
+    >
       <Stack gap="sm">
         <TextInput
           label={t`Search by title`}
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
-          rightSection={search.isFetching ? <Loader size="xs" /> : null}
+          rightSection={search.isFetching ? <StatusDot tone="info" live aria-hidden /> : null}
           data-autofocus
         />
-        <ScrollArea.Autosize mah={320}>
-          <Stack gap={4}>
-            {debounced.trim().length > 1 && !search.isFetching && results.length === 0 && (
-              <Text size="sm" c="var(--ink-3)">
-                <Trans>Nothing found for that title.</Trans>
-              </Text>
-            )}
-            {results.map((r) => {
-              const { title, year } = r
-              return (
-                <UnstyledButton
-                  key={r.providerId}
-                  onClick={() => onPick(r)}
-                  className="import-match-option"
-                >
-                  <Group wrap="nowrap" gap="sm">
-                    {r.coverUrl ? (
-                      <Image src={r.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
-                    ) : (
-                      <div style={{ width: 32, height: 48 }} />
-                    )}
-                    <div style={{ minWidth: 0 }}>
-                      <Text size="sm" fw={600} lineClamp={1}>
-                        {title}
+        {showEmpty && <EmptyState compact mood="asking" title={t`Nothing found for that title.`} />}
+        {results.length > 0 && (
+          <ScrollArea.Autosize mah={320} mx={-10} scrollbars="y">
+            <div className="modal-list" style={{ marginInline: 10 }}>
+              {results.map((r) => (
+                <UnstyledButton key={r.providerId} onClick={() => onPick(r)} className="modal-list-row">
+                  <Thumb src={r.coverUrl} size="sm" />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <Text size="sm" fw={600} lineClamp={1}>
+                      {r.title}
+                    </Text>
+                    {r.year && (
+                      <Text size="xs" c="var(--ink-3)">
+                        {r.year}
                       </Text>
-                      {year && (
-                        <Text size="xs" c="var(--ink-3)">
-                          {year}
-                        </Text>
-                      )}
-                    </div>
-                  </Group>
+                    )}
+                  </div>
+                  <IconChevronRight size={16} color="var(--ink-4)" aria-hidden />
                 </UnstyledButton>
-              )
-            })}
-          </Stack>
-        </ScrollArea.Autosize>
+              ))}
+            </div>
+          </ScrollArea.Autosize>
+        )}
         <Divider label={t`or paste an id or link`} labelPosition="center" />
         <form
           onSubmit={(e) => {
@@ -120,6 +119,11 @@ export function ImportMatchFinder({
             </Button>
           </Group>
         </form>
+        <ModalFooter status={<Plural value={results.length} one="# result" other="# results" />}>
+          <Button variant="default" onClick={onClose}>
+            <Trans>Cancel</Trans>
+          </Button>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

@@ -119,7 +119,8 @@ public record LibraryImportPlan(
     IReadOnlyList<LibraryImportPlanFile>? Files = null,
     IReadOnlyList<ImportSkippedFile>? Skipped = null,
     bool WritesCover = false,
-    string Kind = ImportCandidateKind.New);
+    string Kind = ImportCandidateKind.New,
+    int GatheredFileCount = 0);
 
 /// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>
@@ -172,6 +173,12 @@ public sealed class ImportOperations
 
     /// <summary>For a merge, the files moved out of the scanned folder, relative to it.</summary>
     public List<string> Moved { get; set; } = [];
+
+    /// <summary>
+    /// Loose files the import moved from the root into the folder it then imported
+    /// (<see cref="ImportBatchFolder.OriginalFolderName"/>). Undo moves them back to the root.
+    /// </summary>
+    public List<string> Gathered { get; set; } = [];
 
     public List<ImportBuiltFile> Built { get; set; } = [];
 

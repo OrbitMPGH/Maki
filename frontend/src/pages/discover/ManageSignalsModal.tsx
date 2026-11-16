@@ -1,13 +1,19 @@
+import { SearchInput } from '../../components/ui/SearchInput'
 import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
-  TextInput,
+  Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
+  
 } from '@mantine/core'
-import { IconSearch, IconThumbDown, IconThumbUp, IconX } from '../../lib/icons'
+import {
+  IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconEyeCheck, IconEyeOff, IconRestore,
+  IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
+} from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
+import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -21,6 +27,8 @@ import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatRecentDate } from '../../format'
 import { useLabel } from '../../i18n-context'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
+import { Callout } from '../../components/ui/Callout'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
 const EXPOSURE_LABELS: Record<string, MessageDescriptor> = {
@@ -174,7 +182,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     }
   }
 
-  const clear = (row: Row, action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment') =>
+  const clear = (row: Row, action: ClearAction | 'hide') =>
     run(row.id, () => feedback.mutateAsync({
       id: row.id, action, expectedRevision: row.state?.revision ?? 0,
       clientMutationId: randomUUID(),
@@ -192,7 +200,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     { value: 'thumbs', label: t`Thumbs`, count: counts.thumbs },
     { value: 'hidden', label: t`Hidden`, count: counts.hidden },
     { value: 'exposed', label: t`Seen elsewhere`, count: counts.exposed },
-    { value: 'excluded', label: t`Excluded from taste`, count: counts.excluded },
+    { value: 'excluded', label: t`Excluded`, count: counts.excluded },
     { value: 'added', label: t`Added by you`, count: counts.added },
   ]
 
@@ -201,14 +209,11 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
   return (
     <Modal
-      opened={opened} onClose={onClose} size="xl" radius="lg"
+      opened={opened} onClose={onClose} size={MODAL_SIZE.wide} radius="lg"
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={
         <div>
           <Text fw={600}><Trans>Manage signals</Trans></Text>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Change how individual titles affect recommendations.</Trans>
-          </Text>
         </div>
       }
     >
@@ -228,9 +233,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         <Tabs.Panel value="titles">
           <Stack gap="sm">
             <Group gap="sm" align="center" wrap="wrap">
-              <TextInput
-                value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-                placeholder={t`Search titles`} leftSection={<IconSearch size={16} />}
+              <SearchInput
+                value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+                placeholder={t`Search titles`}
                 w={240} aria-label={t`Search titles`}
               />
               <Select
@@ -242,20 +247,12 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
                 ]}
               />
             </Group>
-            <Chip.Group multiple={false} value={filter} onChange={(value) => setFilter(value as Filter)}>
-              <Group gap={6} wrap="wrap">
-                {filters.map((item) => (
-                  <Chip key={item.value} value={item.value} size="xs" variant="outline">
-                    {item.label} ({item.count})
-                  </Chip>
-                ))}
-              </Group>
-            </Chip.Group>
+            <SegmentFilters value={filter} onChange={(value) => setFilter(value as Filter)} items={filters} />
 
             {actionError && (
-              <Alert color="var(--danger)">
+              <Callout tone="danger" role="alert">
                 <Trans>{actionError} Refresh the page and try again.</Trans>
-              </Alert>
+              </Callout>
             )}
 
             {visible.length === 0 && (
@@ -266,7 +263,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
               {visible.map((row) => (
                 <SignalRow
                   key={row.id} row={row} busy={pending.has(row.id)}
-                  onClear={clear} onExclude={setExcluded}
+                  onClear={clear} onExclude={setExcluded} onHide={(target) => clear(target, 'hide')}
                 />
               ))}
             </Stack>
@@ -342,7 +339,7 @@ function AnimeSignalsPanel() {
   if (isLoading || !data) {
     const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
+      <Callout tone="danger" role="alert"><Trans>Could not load anime signals: {reason}</Trans></Callout>
     ) : null
   }
 
@@ -371,23 +368,15 @@ function AnimeSignalsPanel() {
         </Button>
       </Group>
 
-      {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
+      {syncError && <Callout tone="danger" role="alert">{syncError}</Callout>}
 
-      <TextInput
-        value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-        placeholder={t`Search shows`} leftSection={<IconSearch size={16} />}
+      <SearchInput
+        value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+        placeholder={t`Search shows`}
         aria-label={t`Search shows`}
       />
 
-      <Chip.Group multiple={false} value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)}>
-        <Group gap={6} wrap="wrap">
-          {roles.map((role) => (
-            <Chip key={role.value} value={role.value} size="xs" variant="outline">
-              {role.label} ({role.count})
-            </Chip>
-          ))}
-        </Group>
-      </Chip.Group>
+      <SegmentFilters value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)} items={roles} />
 
       {filtered.length === 0 && (
         <Text size="sm" c="var(--ink-3)" py="md"><Trans>No shows match.</Trans></Text>
@@ -408,11 +397,40 @@ function AnimeSignalsPanel() {
   )
 }
 
-function SignalRow({ row, busy, onClear, onExclude }: {
+type ClearAction = 'clear-suppression' | 'clear-exposure' | 'clear-sentiment'
+
+/** One row of underlined segments with their counts, scrolling sideways rather than wrapping. */
+function SegmentFilters({ value, onChange, items }: {
+  value: string
+  onChange: (value: string) => void
+  items: { value: string; label: string; count: number }[]
+}) {
+  return (
+    <Chip.Group multiple={false} value={value} onChange={(next) => onChange(next as string)}>
+      <div className="signals-filters">
+        {items.map((item) => (
+          <Chip
+            key={item.value}
+            value={item.value}
+            size="sm"
+            icon={null}
+            classNames={{ root: 'signals-filter', label: 'signals-filter-label', iconWrapper: 'signals-filter-icon' }}
+          >
+            {item.label}
+            <span className="signals-filter-count tnum">{item.count}</span>
+          </Chip>
+        ))}
+      </div>
+    </Chip.Group>
+  )
+}
+
+function SignalRow({ row, busy, onClear, onExclude, onHide }: {
   row: Row
   busy: boolean
-  onClear: (row: Row, action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment') => void
+  onClear: (row: Row, action: ClearAction) => void
   onExclude: (row: Row, ignoreAsSeed: boolean) => void
+  onHide: (row: Row) => void
 }) {
   const { t } = useLingui()
   const label = useLabel()
@@ -441,104 +459,73 @@ function SignalRow({ row, busy, onClear, onExclude }: {
           ? t`Not recommended again`
           : t`Shapes recommendations`
 
-  const action = row.excluded
-    ? { label: t`Use for taste`, color: undefined, variant: 'outline', run: () => onExclude(row, false) }
-    : suppression !== 'none'
-      ? { label: t`Restore`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-suppression') }
-      : exposure.length > 0
-        ? { label: t`Clear seen`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-exposure') }
-        : sentiment !== 'none'
-          ? { label: t`Clear rating`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-sentiment') }
-          : row.onShelf
-            ? { label: t`Exclude from taste`, color: undefined, variant: 'subtle', run: () => onExclude(row, true) }
-            : null
+  const quiet = 'var(--ink-2)'
+  const statuses: SignalStatusInfo[] = []
+  if (row.excluded) statuses.push({ icon: IconBan, label: t`Excluded from taste`, color: quiet })
+  if (sentiment === 'liked') statuses.push({ icon: IconThumbUp, label: t`Liked`, color: 'var(--ok)' })
+  if (sentiment === 'disliked') statuses.push({ icon: IconThumbDown, label: t`Disliked`, color: 'var(--danger)' })
+  if (rating !== null) {
+    statuses.push({ icon: IconStarFilled, label: t`Rated ${rating}`, color: quiet, iconColor: 'var(--rating)' })
+  }
+  if (suppression === 'hidden') statuses.push({ icon: IconEyeOff, label: t`Hidden`, color: quiet })
+  if (suppression === 'dismissed') {
+    statuses.push({
+      icon: IconClockPause,
+      label: dismissalEnded ? t`Back in recommendations since ${until}` : t`Dismissed until ${until}`,
+      color: quiet,
+    })
+  }
+  if (exposure.length > 0) statuses.push({ icon: IconEyeCheck, label: t`Seen: ${media}`, color: 'var(--info)' })
+  if (statuses.length === 0 && row.isRead) statuses.push({ icon: IconBook, label: t`Read`, color: 'var(--brand-fg)' })
+  if (statuses.length === 0 && row.onShelf) statuses.push({ icon: IconBooks, label: t`On shelf`, color: 'var(--brand-fg)' })
 
-  const plain = !row.excluded && suppression === 'none' && sentiment === 'none' &&
-    exposure.length === 0 && rating === null
+  const actions: { label: string; icon: Icon; run: () => void }[] = []
+  if (sentiment === 'liked') actions.push({ label: t`Clear the thumbs up`, icon: IconX, run: () => onClear(row, 'clear-sentiment') })
+  if (sentiment === 'disliked') actions.push({ label: t`Clear the thumbs down`, icon: IconX, run: () => onClear(row, 'clear-sentiment') })
+  if (suppression !== 'none') actions.push({ label: t`Restore this title`, icon: IconRestore, run: () => onClear(row, 'clear-suppression') })
+  if (exposure.length > 0) actions.push({ label: t`Clear read or seen`, icon: IconRestore, run: () => onClear(row, 'clear-exposure') })
+  if (row.onShelf) {
+    actions.push(row.excluded
+      ? { label: t`Use this title for taste`, icon: IconCompass, run: () => onExclude(row, false) }
+      : { label: t`Exclude from taste`, icon: IconBan, run: () => onExclude(row, true) })
+  } else if (suppression === 'none') {
+    actions.push({ label: t`Hide`, icon: IconEyeOff, run: () => onHide(row) })
+  }
 
   return (
-    <div className="signals-row">
-      <SeriesThumb url={row.coverUrl} alt={title} large />
+    <div className="signals-row signals-row-title">
+      <SeriesThumb url={row.coverUrl} alt="" large />
       <div className="signals-row-main">
-        <Text size="sm" fw={500} truncate>{title}</Text>
+        <Text size="sm" fw={600} c="var(--ink-hi)" truncate>{title}</Text>
         {row.genres.length > 0 && (
-          <Text size="xs" c="var(--ink-3)" truncate>{row.genres.join(', ')}</Text>
+          <Text size="sm" c="var(--ink-3)" truncate>{row.genres.join(', ')}</Text>
         )}
       </div>
       <div className="signals-col signals-col-state">
-        <Group gap={6} wrap="wrap">
-          {rating !== null && (
-            <Badge size="sm" variant="light" color={rating <= 4 ? 'var(--danger)' : 'var(--ok)'}>
-              {t`★ ${rating} rated`}
-            </Badge>
-          )}
-          {sentiment === 'liked' && (
-            <Pill color="var(--ok)" icon={<IconThumbUp size={12} />} label={t`Liked`} clear={t`Clear the thumbs up`}
-              onClear={() => onClear(row, 'clear-sentiment')} />
-          )}
-          {sentiment === 'disliked' && (
-            <Pill color="var(--danger)" icon={<IconThumbDown size={12} />} label={t`Disliked`} clear={t`Clear the thumbs down`}
-              onClear={() => onClear(row, 'clear-sentiment')} />
-          )}
-          {suppression === 'hidden' && (
-            <Pill color="var(--neutral)" label={t`Hidden`} clear={t`Restore this title`}
-              onClear={() => onClear(row, 'clear-suppression')} />
-          )}
-          {suppression === 'dismissed' && (
-            <Pill
-              color="var(--neutral)"
-              label={dismissalEnded ? t`Back in recommendations since ${until}` : t`Dismissed until ${until}`}
-              clear={t`Restore this title`}
-              onClear={() => onClear(row, 'clear-suppression')} />
-          )}
-          {exposure.length > 0 && (
-            <Pill color="var(--info)" label={t`Seen: ${media}`} clear={t`Clear read or seen`}
-              onClear={() => onClear(row, 'clear-exposure')} />
-          )}
-          {row.excluded && (
-            <Pill color="var(--neutral)" label={t`Excluded from taste`} clear={t`Use this title for taste`}
-              onClear={() => onExclude(row, false)} />
-          )}
-          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--brand)">{t`Read`}</Badge>}
-          {plain && !row.isRead && row.onShelf && (
-            <Badge size="sm" variant="light" color="var(--brand)">{t`On shelf`}</Badge>
-          )}
-        </Group>
-        <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>
+        <div className="signals-statuses">
+          {statuses.map((status) => <SignalStatus key={status.label} {...status} />)}
+        </div>
+        <Text size="sm" c="var(--ink-3)">{why}</Text>
       </div>
-      <div className="signals-col signals-col-action">
-        {action && (
-          <Button
-            size="xs" variant={action.variant} color={action.color} loading={busy}
-            onClick={action.run}
-          >
-            {action.label}
-          </Button>
+      <div className="signals-col signals-col-menu">
+        {actions.length > 0 && (
+          <Menu position="bottom-end" width={240} withinPortal>
+            <Menu.Target>
+              <OverflowButton loading={busy} aria-label={t`Actions for ${title}`} />
+            </Menu.Target>
+            <Menu.Dropdown>
+              {actions.map((action) => {
+                const ActionGlyph = action.icon
+                return (
+                  <Menu.Item key={action.label} leftSection={<ActionGlyph size={16} />} onClick={action.run}>
+                    {action.label}
+                  </Menu.Item>
+                )
+              })}
+            </Menu.Dropdown>
+          </Menu>
         )}
       </div>
     </div>
-  )
-}
-
-/** A state badge with the × that clears exactly that state. */
-function Pill({ color, icon, label, clear, onClear }: {
-  color: string
-  icon?: React.ReactNode
-  label: string
-  clear: string
-  onClear: () => void
-}) {
-  return (
-    <Badge
-      size="sm" variant="light" color={color} pr={3} style={{ overflow: 'visible' }}
-      leftSection={icon}
-      rightSection={
-        <ActionIcon size={24} m={-5} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
-          <IconX size={12} />
-        </ActionIcon>
-      }
-    >
-      {label}
-    </Badge>
   )
 }

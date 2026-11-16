@@ -1,6 +1,7 @@
-import { ActionIcon, Group, Loader, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
+import { Group, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
+  IconAperture,
   IconArchive,
   IconArchiveOff,
   IconArrowLeft,
@@ -9,7 +10,6 @@ import {
   IconDeviceMobile,
   IconDeviceMobileDown,
   IconDeviceMobileOff,
-  IconDotsVertical,
   IconEyeOff,
   IconFileText,
   IconFolder,
@@ -27,10 +27,12 @@ import {
   IconTrashX,
   IconArrowBackUp,
   IconRanking,
+  IconUsers,
 } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
-import { msg } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
@@ -38,9 +40,14 @@ import type { UpgradeProfileDto } from '../../api/upgrades'
 import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
 import { STOP_HINTS, STOP_LABELS } from '../pageconversion/labels'
 import { DrillPanes } from '../ui/DrillPanes'
+import { StatusDot } from '../ui/StatusDot'
+import type { SeriesPrepareAhead } from '../../api/types'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
+
+/** The chapter counts offered per series, besides following Settings and Off. */
+const PREPARE_COUNTS = [1, 2, 3, 5, 10, 20]
 
 /** The series endpoint names a fixed quality the way the enum does: "Balanced". */
 const stopMode = (stop: PageConversionStop) => stop.charAt(0).toUpperCase() + stop.slice(1)
@@ -61,7 +68,7 @@ export const MONITOR_SHORT: Record<string, MessageDescriptor> = {
     None: msg`None`,
 }
 
-const MONITOR_HELP: Record<string, MessageDescriptor> = {
+export const MONITOR_HELP: Record<string, MessageDescriptor> = {
     All: msg`Every chapter released from now on is wanted.`,
     Smart: msg`Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading.`,
     MainOnly: msg`Chapters released from now on are wanted, except specials.`,
@@ -75,7 +82,7 @@ const NOTIFY_SHORT: Record<SeriesNotificationMode, MessageDescriptor> = {
     Muted: msg`Muted`,
 }
 
-const INCOGNITO_HELP: Record<string, MessageDescriptor> = {
+export const INCOGNITO_HELP: Record<string, MessageDescriptor> = {
     Off: msg`Reading counts in your stats and goes to your trackers.`,
     ScrobbleOnly: msg`Reading counts in your stats but isn't sent to your trackers.`,
     Full: msg`Kept out of your trackers, Rewind, stats and reading history.`,
@@ -90,6 +97,7 @@ type Page =
     | 'profile'
     | 'cleanup'
     | 'conversion'
+    | 'prepare'
 
 const PARENT: Record<Page, Page> = {
     root: 'root',
@@ -100,6 +108,7 @@ const PARENT: Record<Page, Page> = {
     profile: 'upgrades',
     cleanup: 'files',
     conversion: 'files',
+    prepare: 'automation',
 }
 
 /**
@@ -151,6 +160,9 @@ export function SeriesActionsMenu({
                                       offlineSaved,
                                       onSaveUnreadOffline,
                                       onRemoveOffline,
+                                      prepareAhead,
+                                      onSetPrepareAhead,
+                                      onScanlationGroups,
                                   }: {
     monitorMode: string
     incognito: string
@@ -207,6 +219,12 @@ export function SeriesActionsMenu({
     offlineSaved?: number
     onSaveUnreadOffline?: () => void
     onRemoveOffline?: () => void
+    /** The series' "Prepare chapters ahead" setting; null or absent hides the row (the instance has it off). Needs `canEdit`. */
+    prepareAhead?: SeriesPrepareAhead | null
+    /** Null follows Settings, 0 never prepares the series. */
+    onSetPrepareAhead?: (chapters: number | null) => void
+    /** Set when a source of this series lists several groups' uploads and the user may manage sources. */
+    onScanlationGroups?: () => void
 }) {
     const [opened, setOpened] = useState(false)
     const [page, setPage] = useState<Page>('root')
@@ -272,7 +290,8 @@ export function SeriesActionsMenu({
             {text}
         </Text>
     )
-    const drill = (to: Page, icon: ReactNode, title: ReactNode, current?: ReactNode) => (
+    const workingDot = <StatusDot tone="info" live aria-hidden />
+    const drill = (to: Page, icon: ReactNode, title: ReactNode, current?: ReactNode, busy = false) => (
         <Menu.Item
             data-page={to}
             leftSection={icon}
@@ -280,6 +299,7 @@ export function SeriesActionsMenu({
             onClick={() => go(to)}
             rightSection={
                 <Group gap={6} wrap="nowrap">
+                    {busy && workingDot}
                     {current !== undefined && value(current)}
                     <IconChevronRight size={16} color="var(--ink-3)" />
                 </Group>
@@ -425,6 +445,30 @@ export function SeriesActionsMenu({
         stops[next].focus()
     }
 
+    const chaptersLabel = (n: number) => plural(n, { one: '# chapter', other: '# chapters' })
+    const prepareValue =
+        prepareAhead == null
+            ? undefined
+            : prepareAhead.chapters === null
+              ? t`Default`
+              : prepareAhead.chapters === 0
+                ? t`Off`
+                : chaptersLabel(prepareAhead.chapters)
+
+    const hasPrepare = canEdit && prepareAhead != null && onSetPrepareAhead !== undefined
+    const groupsItem = onScanlationGroups && (
+        <Menu.Item
+            leftSection={<IconUsers size={16} />}
+            closeMenuOnClick={false}
+            onClick={() => {
+                setOpened(false)
+                onScanlationGroups()
+            }}
+        >
+            <Trans>Scanlation groups...</Trans>
+        </Menu.Item>
+    )
+
     const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
     const hasUpgrades = canEdit || canScanUpgrades
     const notifyField = field({
@@ -445,7 +489,9 @@ export function SeriesActionsMenu({
                             <>
                                 {reason}
                                 <Menu.Item
-                                    leftSection={refreshingChapters ? <Loader size={16} /> : <IconRefresh size={16} />}
+                                    leftSection={<IconRefresh size={16} />}
+                                    rightSection={refreshingChapters ? workingDot : undefined}
+                                    aria-busy={refreshingChapters || undefined}
                                     disabled={refreshingChapters}
                                     onClick={whenOn(onRefreshChapters)}
                                     {...offProps}
@@ -453,7 +499,9 @@ export function SeriesActionsMenu({
                                     <Trans>Refresh chapters</Trans>
                                 </Menu.Item>
                                 <Menu.Item
-                                    leftSection={refreshingMetadata ? <Loader size={16} /> : <IconPhoto size={16} />}
+                                    leftSection={<IconPhoto size={16} />}
+                                    rightSection={refreshingMetadata ? workingDot : undefined}
+                                    aria-busy={refreshingMetadata || undefined}
                                     disabled={refreshingMetadata}
                                     onClick={onRefreshMetadata}
                                 >
@@ -465,10 +513,11 @@ export function SeriesActionsMenu({
                                 <Menu.Divider />
                             </>
                         )}
-                        {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>)}
+                        {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>, undefined, rescanning)}
                         {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
                         {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
-                        {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>)}
+                        {!canEdit && groupsItem}
+                        {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>, undefined, scanningUpgrades || searchingVolumes)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
                         {(canArchive || canRemove) && <Menu.Divider />}
@@ -508,7 +557,9 @@ export function SeriesActionsMenu({
                         {canEdit && (
                             <>
                                 <Menu.Item
-                                    leftSection={rescanning ? <Loader size={16} /> : <IconScan size={16} />}
+                                    leftSection={<IconScan size={16} />}
+                                    rightSection={rescanning ? workingDot : undefined}
+                                    aria-busy={rescanning || undefined}
                                     disabled={rescanning}
                                     onClick={onRescan}
                                 >
@@ -557,6 +608,9 @@ export function SeriesActionsMenu({
                             onPick: onSetIncognito,
                             help: INCOGNITO_HELP[incognito] && renderLabel(INCOGNITO_HELP[incognito]),
                         })}
+                        {hasPrepare && drill('prepare', <IconAperture size={16} />, <Trans>Prepare ahead</Trans>, prepareValue)}
+                        {groupsItem && <Menu.Divider />}
+                        {groupsItem}
                     </>
                 )
             case 'upgrades':
@@ -567,7 +621,9 @@ export function SeriesActionsMenu({
                         {canEdit && drill('profile', <IconRanking size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={scanningUpgrades ? <Loader size={16} /> : <IconRefresh size={16} />}
+                                leftSection={<IconRefresh size={16} />}
+                                    rightSection={scanningUpgrades ? workingDot : undefined}
+                                    aria-busy={scanningUpgrades || undefined}
                                 disabled={scanningUpgrades}
                                 onClick={whenOn(onScanUpgrades)}
                                 {...offProps}
@@ -577,7 +633,9 @@ export function SeriesActionsMenu({
                         )}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={searchingVolumes ? <Loader size={16} /> : <IconSearch size={16} />}
+                                leftSection={<IconSearch size={16} />}
+                                    rightSection={searchingVolumes ? workingDot : undefined}
+                                    aria-busy={searchingVolumes || undefined}
                                 disabled={searchingVolumes}
                                 onClick={whenOn(onSearchVolumes)}
                                 {...offProps}
@@ -603,6 +661,37 @@ export function SeriesActionsMenu({
                         </Menu.Item>
                     </>
                 )
+            case 'prepare': {
+                if (!prepareAhead || !onSetPrepareAhead) return null
+                const own = prepareAhead.chapters
+                const counts =
+                    own !== null && own > 0 && !PREPARE_COUNTS.includes(own)
+                        ? [...PREPARE_COUNTS, own].sort((a, b) => a - b)
+                        : PREPARE_COUNTS
+                const defaultChapters = chaptersLabel(prepareAhead.defaultChapters)
+                const days = prepareAhead.days
+                return choice({
+                    title: <Trans>Prepare ahead</Trans>,
+                    current: own === null ? 'default' : String(own),
+                    options: [
+                        {
+                            value: 'default',
+                            label: <Trans>Follow Settings</Trans>,
+                            hint: <Trans>{defaultChapters} for each reader who read it in the last {days} days.</Trans>,
+                        },
+                        { value: '0', label: <Trans>Off</Trans> },
+                        ...counts.map((n) => ({ value: String(n), label: chaptersLabel(n) })),
+                    ],
+                    onPick: (v) => onSetPrepareAhead(v === 'default' ? null : Number(v)),
+                    note: (
+                        <Trans>
+                            Upscaled on the server while nobody is reading, for each reader who has this series set to Reading
+                            with Enhance on Always and a server method. A number keeps that many ready however long ago they
+                            read it.
+                        </Trans>
+                    ),
+                })
+            }
             case 'profile':
                 return choice({
                     title: <Trans>Quality profile</Trans>,
@@ -631,7 +720,7 @@ export function SeriesActionsMenu({
                             label: <Trans>On for this series</Trans>,
                             hint: <Trans>Each chapter's file is deleted for good some days after everyone has read it.</Trans>,
                         },
-                        { value: 'Off', label: <Trans>Off for this series</Trans>, hint: <Trans>Read files stay on disk.</Trans> },
+                        { value: 'Off', label: <Trans>Off for this series</Trans> },
                     ],
                     onPick: onSetReadFileCleanup,
                 })
@@ -645,7 +734,7 @@ export function SeriesActionsMenu({
                             label: <Trans>Follow the rules</Trans>,
                             hint: <Trans>The page conversion rules in Settings decide.</Trans>,
                         },
-                        { value: 'Never', label: <Trans>Never</Trans>, hint: <Trans>Pages stay as they were downloaded.</Trans> },
+                        { value: 'Never', label: <Trans>Never</Trans> },
                         ...PAGE_CONVERSION_STOPS.map((stop) => ({
                             value: stopMode(stop),
                             label: renderLabel(STOP_LABELS[stop]),
@@ -677,19 +766,14 @@ export function SeriesActionsMenu({
             classNames={{ dropdown: 'series-actions menu-dropdown-scroll' }}
         >
             <Menu.Target>
-                <ActionIcon
-                    variant="subtle"
+                <OverflowButton
                     size={42}
                     radius="md"
-                    aria-label={t`More actions`}
                     style={{
-                        color: 'var(--ink-3)',
                         background: 'color-mix(in srgb, var(--app-bg) 45%, transparent)',
                         border: '1px solid var(--border-strong)',
                     }}
-                >
-                    <IconDotsVertical size={19} />
-                </ActionIcon>
+                />
             </Menu.Target>
 
             <Menu.Dropdown

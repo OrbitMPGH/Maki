@@ -1,6 +1,8 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePageState } from '../lib/pageState'
+import { type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { hasPageState, usePageState } from '../lib/pageState'
+import { paramsToSpec, specToParams, VIEW_PARAM, viewFromParams } from '../lib/libraryUrl'
 import { onPageScroll } from '../lib/pageScroll'
 import { shownRating } from '../lib/rating'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
@@ -10,21 +12,18 @@ import {
   Badge,
   Box,
   Button,
+  Checkbox,
   Divider,
-  Drawer,
   Group,
   Indicator,
   Menu,
   Modal,
   MultiSelect,
-  NumberInput,
   Radio,
-  RangeSlider,
   SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -32,12 +31,14 @@ import {
 import {
   IconArchive,
   IconArchiveOff,
+  IconBook,
   IconBookmark,
   IconCheck,
   IconChevronDown,
   IconDeviceFloppy,
   IconDeviceMobileCheck,
   IconEye,
+  IconEyeOff,
   IconRanking,
   IconFileOff,
   IconFileText,
@@ -45,19 +46,36 @@ import {
   IconFolderDown,
   IconFolderSymlink,
   IconListCheck,
+  IconPencil,
   IconPhoto,
+  IconPhotoCog,
   IconPlus,
   IconRefresh,
+  IconScan,
   IconSearch,
   IconSettings,
   IconSortAscending,
   IconSortDescending,
+  IconTable,
+  IconListTree,
   IconBell,
+  IconChevronLeft,
+  IconChevronRight,
+  IconColumns,
+  IconArrowUp,
+  IconArrowDown,
+  IconStar,
   IconTag,
   IconTrash,
+  IconTrashX,
   IconWand,
   IconX,
 } from '../lib/icons'
+import { OverflowButton } from '../components/ui/OverflowButton'
+import { useIncognitoOptions } from '../components/ui/incognito'
+import { INCOGNITO_HELP } from '../components/series/SeriesActionsMenu'
+import { PAGE_CONVERSION_STOPS } from '../api/pageConversion'
+import { STOP_HINTS, STOP_LABELS } from '../components/pageconversion/labels'
 import { notifications } from '../lib/toast'
 import {
   useSeriesNotificationHelp,
@@ -66,18 +84,22 @@ import {
 } from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { runSeriesBulk, type SeriesBulkRequest } from '../api/seriesBulk'
 import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,
   missingCount,
   useAutoMatchSources,
   useBulkArchiveSeries,
+  useBulkSetReadingStatus,
   useBulkSetSeriesNotificationMode,
   useBulkSetUpgradeProfile,
   useBulkTag,
   useDeleteSavedFilter,
+  useReorderSavedFilters,
+  useSetDefaultSavedFilter,
   useDeleteSeries,
   useLibraryStats,
   useRemoveArchivedFiles,
@@ -85,6 +107,7 @@ import {
   useRootFolders,
   useSavedFilters,
   useSaveFilter,
+  useRestoreSavedFilter,
   useSeries,
   useRateSeries,
   useTags,
@@ -104,9 +127,16 @@ import type { LibraryFilterSpec, RestoreSeriesResponse, SavedFilterDto, SeriesDt
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Disclosure } from '../components/ui/Disclosure'
+import { DrillChoices } from '../components/ui/DrillPanel'
+import {
+  LibraryFilterPanel,
+  type LibraryFilterOptions,
+  type LibraryFilterSetters,
+  type LibraryFilterValues,
+} from '../components/library/LibraryFilterPanel'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
@@ -114,13 +144,37 @@ import { TagChip } from '../components/ui/TagChip'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
-import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
+import { WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/series/ArchivedSeriesCard'
+import { ArchivedList } from '../components/library/ArchivedList'
+import {
+  LibraryTableBody,
+  LibraryTableFrame,
+  LibraryTableHeader,
+  LibraryTableRow,
+} from '../components/library/LibraryTable'
+import {
+  GROUP_BY_LABELS,
+  GROUP_BY_VALUES,
+  groupSeries,
+  STATUS_ORDER,
+  useCollapsedGroups,
+  type GroupBy,
+} from '../components/library/libraryGroups'
+import { LibraryGroupHeader, WindowedItems } from '../components/library/LibraryGroupHeader'
+import {
+  DEFAULT_LIBRARY_COLUMNS,
+  LIBRARY_COLUMN_LABELS,
+  LIBRARY_COLUMNS,
+  readLibraryColumns,
+  writeLibraryColumns,
+  type LibraryColumn,
+} from '../components/library/libraryColumns'
 import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
@@ -130,20 +184,40 @@ import {
   ViewModeToggle,
   writeStored,
 } from '../components/ui/viewPrefs'
-import { seriesStatusVisual } from '../components/ui/status'
+import {
+  READING_STATUSES,
+  readingStatusVisual,
+  seriesProgressVisual,
+  seriesStatusVisual,
+  type ReadingStatus,
+} from '../components/ui/status'
 import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
-import { MetaList } from '../components/ui/MetaList'
 
-const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded', 'archived'] as const
+const SORT_VALUES = [
+  'added',
+  'title',
+  'incomplete',
+  'status',
+  'read',
+  'rating',
+  'downloaded',
+  'year',
+  'score',
+  'unread',
+  'released',
+  'chapters',
+  'author',
+  'archived',
+] as const
 
 type LibraryScope = 'library' | 'archived'
 
 /** Which sorts each scope offers. The first is the scope's default. */
 const SCOPE_SORTS: Record<LibraryScope, readonly string[]> = {
   library: SORT_VALUES.filter((v) => v !== 'archived'),
-  archived: ['archived', 'title', 'rating', 'read'],
+  archived: ['archived', 'title', 'rating', 'read', 'year', 'score', 'chapters', 'author'],
 }
 
 const SORT_LABELS: Record<string, MessageDescriptor> = {
@@ -154,6 +228,12 @@ const SORT_LABELS: Record<string, MessageDescriptor> = {
   read: msg`Recently read`,
   rating: msg`My rating`,
   downloaded: msg`Last downloaded`,
+  year: msg`Year`,
+  score: msg`Community score`,
+  unread: msg`Most unread`,
+  released: msg`Latest chapter released`,
+  chapters: msg`Chapter count`,
+  author: msg`Author`,
   archived: msg({ message: 'Recently archived', context: 'series' }),
 }
 
@@ -168,6 +248,12 @@ const SORT_DEFAULT_DIR: Record<string, SortDir> = {
   read: 'desc',
   rating: 'desc',
   downloaded: 'desc',
+  year: 'desc',
+  score: 'desc',
+  unread: 'desc',
+  released: 'desc',
+  chapters: 'desc',
+  author: 'asc',
   archived: 'desc',
 }
 
@@ -175,6 +261,11 @@ function toTime(iso: string | null | undefined): number | null {
   if (!iso) return null
   const t = Date.parse(iso)
   return Number.isNaN(t) ? null : t
+}
+
+function statusRank(status: string): number {
+  const i = STATUS_ORDER.indexOf(status)
+  return i === -1 ? STATUS_ORDER.length : i
 }
 
 /**
@@ -189,19 +280,37 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
     if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1
     return (x - y) * sign
   }
+  const nullableText = (pick: (s: SeriesDto) => string | null) => (a: SeriesDto, b: SeriesDto) => {
+    const x = pick(a)
+    const y = pick(b)
+    if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1
+    return x.localeCompare(y) * sign
+  }
   switch (sort) {
     case 'title':
       return (a, b) => titleSortKey(a).localeCompare(titleSortKey(b)) * sign
     case 'incomplete':
       return (a, b) => (missingCount(a) - missingCount(b)) * sign
     case 'status':
-      return (a, b) => a.status.localeCompare(b.status) * sign
+      return (a, b) => (statusRank(a.status) - statusRank(b.status)) * sign
     case 'read':
       return nullable((s) => toTime(s.lastReadAt))
     case 'rating':
       return nullable(shownRating)
     case 'downloaded':
       return nullable((s) => toTime(s.lastDownloadedAt))
+    case 'year':
+      return nullable((s) => s.year)
+    case 'score':
+      return nullable((s) => s.communityRating ?? null)
+    case 'unread':
+      return (a, b) => (unreadCount(a) - unreadCount(b)) * sign
+    case 'released':
+      return nullable((s) => toTime(s.latestChapterAt))
+    case 'chapters':
+      return (a, b) => (chapterCount(a, 'total') - chapterCount(b, 'total')) * sign
+    case 'author':
+      return nullableText(authorOf)
     case 'archived':
       return nullable((s) => toTime(s.archivedAt))
     default:
@@ -209,12 +318,44 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
   }
 }
 
+/** Downloaded chapters the caller has not finished yet. */
+function unreadCount(s: SeriesDto): number {
+  return Math.max(0, s.chapterFileCount - (s.readChapterCount ?? 0))
+}
+
+/** Every name credited for story or art, split the way the series page splits them. */
+function creditsOf(s: SeriesDto): string[] {
+  const names = new Set<string>()
+  for (const credit of [s.authorStory, s.authorArt]) {
+    for (const name of (credit ?? '').split(',')) {
+      const trimmed = name.trim()
+      if (trimmed !== '') names.add(trimmed)
+    }
+  }
+  return [...names]
+}
+
+const OVERRIDE_VALUES = ['readCleanup', 'pageConversion'] as const
+
+const OVERRIDE_LABELS: Record<string, MessageDescriptor> = {
+  readCleanup: msg`Read file cleanup`,
+  pageConversion: msg`Page conversion`,
+}
+
+const DAY_MS = 86_400_000
+
+function authorOf(s: SeriesDto): string | null {
+  const name = (s.authorStory || s.authorArt || '').trim()
+  return name === '' ? null : name.toLowerCase()
+}
+
 /** A series with every file gone that had some: restoring it is a choice about downloading them again. */
 function needsRedownloadChoice(s: SeriesDto | undefined): boolean {
   return s != null && s.chapterFileCount === 0 && s.removedChapterCount > 0
 }
 
-type ViewMode = 'grid' | 'list'
+type ViewMode = 'grid' | 'list' | 'table'
+const VIEW_MODES: readonly ViewMode[] = ['grid', 'list', 'table']
 type Density = 'compact' | 'default' | 'comfortable'
 
 /**
@@ -234,22 +375,12 @@ function titleSortKey(s: SeriesDto): string {
 }
 
 /**
- * How much of the series has been read, 0–100. A series with no read count
- * (`readChapterCount === null`) counts as 0% rather than being dropped: the whole library would otherwise vanish the moment the slider left 0.
+ * The percentage the cover's read ring shows, so the filter agrees with it. A series with no read
+ * progress counts as 0% rather than being dropped: the whole library would otherwise vanish the
+ * moment the slider left 0.
  */
-function readPercent(s: SeriesDto): number {
-  const total = s.wantedChapterCount || s.knownChapterCount || 0
-  if (total <= 0) return 0
-  return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
-}
-
-/**
- * An empty (or half-typed, e.g. a lone "-") NumberInput means "unbounded", not zero: the boxes
- * default to empty, and a 0 lower bound would silently filter nothing while looking like a bound.
- */
-function toBound(v: string | number): number | null {
-  const n = typeof v === 'number' ? v : Number(v)
-  return v === '' || Number.isNaN(n) ? null : n
+function readPercent(s: SeriesDto, readTracking: boolean): number {
+  return Math.round(seriesProgressVisual(s, readTracking).readPct ?? 0)
 }
 
 /**
@@ -282,7 +413,7 @@ function facetOptions(
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([value, count]) => ({ value, label: `${label(value)} (${count})` }))
+    .map(([value, count]) => ({ value, name: label(value), label: `${label(value)} (${count})` }))
 }
 
 const DEFAULT_SPEC: LibraryFilterSpec = {
@@ -319,9 +450,22 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   ratingMax: 10,
   communityRatingMin: 0,
   communityRatingMax: 10,
+  readingStatuses: [],
+  yearMin: null,
+  yearMax: null,
+  credits: [],
+  publishers: [],
+  rootFolderIds: [],
+  incognito: 'all',
+  muted: 'all',
+  anime: 'all',
+  numberingClash: 'all',
+  overrides: [],
+  addedWithinDays: null,
+  groupBy: 'none',
 }
 
-/** The filter drawer's groups, in the order they appear. */
+/** The areas the active filters are counted in; their sum is what the Filters button badges. */
 type FilterGroup = 'series' | 'tags' | 'ratings' | 'monitoring'
 
 /** Quality profile filter value for series with no pin of their own. */
@@ -385,10 +529,32 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
+  Rescan: msg`Rescan files`,
+  Rename: msg`Rename files`,
+  'Mark read': msg`Mark read`,
+  'Mark unread': msg`Mark unread`,
+  Incognito: msg`Incognito`,
+  'Read file cleanup': msg`Clean up read files`,
+  'Page conversion': msg`Page conversion`,
   Archive: msg({ message: 'Archive', context: 'series' }),
   Restore: msg({ message: 'Restore', context: 'series' }),
   'Remove files': msg`Remove files`,
   Delete: msg`Delete`,
+}
+
+/** Per-series settings the selection can set in one go, each with its own endpoint and busy key. */
+type BulkSetting = 'Incognito' | 'Read file cleanup' | 'Page conversion'
+
+const BULK_SETTING_ENDPOINTS: Record<BulkSetting, string> = {
+  Incognito: 'incognito',
+  'Read file cleanup': 'readcleanup',
+  'Page conversion': 'pageconversion',
+}
+
+const BULK_SETTING_FIRST: Record<BulkSetting, string> = {
+  Incognito: 'Off',
+  'Read file cleanup': 'Default',
+  'Page conversion': 'Default',
 }
 
 const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
@@ -409,7 +575,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const { i18n, _ } = useLingui()
   const { t } = useLinguiMacro()
   const notificationOptions = useSeriesNotificationOptions()
-  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
+  const [searchParams, setSearchParams] = useSearchParams()
+  // A link's view wins over the one this browser remembers, without replacing what it remembers.
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => viewFromParams(searchParams, VIEW_MODES) ?? readStored(LS_VIEW, VIEW_MODES, 'grid'),
+  )
+  // The table has no room for the archived view's restore and delete actions, so it shows the list.
+  const shownView: ViewMode = archivedScope && viewMode === 'table' ? 'list' : viewMode
+  const chooseView = (mode: ViewMode) => {
+    setViewMode(mode)
+    writeStored(LS_VIEW, mode)
+  }
+  const [tableColumns, setTableColumns] = useState<LibraryColumn[]>(readLibraryColumns)
+  const [columnsOpen, setColumnsOpen] = useState(false)
+  const changeColumns = (next: LibraryColumn[]) => {
+    setTableColumns(next)
+    writeLibraryColumns(next)
+  }
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: allSeries, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
   // useSeries answers with every series; each view keeps only its own half.
@@ -428,8 +610,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const sourceLabel = useSourceLabel()
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
+  const restoreSavedFilter = useRestoreSavedFilter()
+  const reorderSavedFilters = useReorderSavedFilters()
+  const setDefaultSavedFilter = useSetDefaultSavedFilter()
   const bulkTag = useBulkTag()
   const bulkNotifications = useBulkSetSeriesNotificationMode()
+  const bulkReadingStatus = useBulkSetReadingStatus()
   const bulkUpgradeProfile = useBulkSetUpgradeProfile()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const autoMatch = useAutoMatchSources()
@@ -480,6 +666,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [metaTagFilter, setMetaTagFilter] = usePageState<string[]>(`${MEM}:meta-tags`, [])
   const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
   const [contentRatingFilter, setContentRatingFilter] = usePageState<string[]>(`${MEM}:content-ratings`, [])
+  const [readingStatusFilter, setReadingStatusFilter] = usePageState<string[]>(`${MEM}:reading-statuses`, [])
   const [readRange, setReadRange] = usePageState<[number, number]>(`${MEM}:read-range`, [0, 100])
   const [ratingState, setRatingState] = usePageState(`${MEM}:rating-state`, 'all')
   const [ratingRange, setRatingRange] = usePageState<[number, number]>(`${MEM}:rating-range`, [1, 10])
@@ -497,11 +684,35 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
   const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
   const [qualityProfileFilter, setQualityProfileFilter] = usePageState(`${MEM}:quality-profile`, 'all')
+  const [yearMin, setYearMin] = usePageState<number | null>(`${MEM}:year-min`, null)
+  const [yearMax, setYearMax] = usePageState<number | null>(`${MEM}:year-max`, null)
+  const [creditFilter, setCreditFilter] = usePageState<string[]>(`${MEM}:credits`, [])
+  const [publisherFilter, setPublisherFilter] = usePageState<string[]>(`${MEM}:publishers`, [])
+  const [rootFolderFilter, setRootFolderFilter] = usePageState<string[]>(`${MEM}:root-folders`, [])
+  const [incognitoFilter, setIncognitoFilter] = usePageState(`${MEM}:incognito`, 'all')
+  const [mutedFilter, setMutedFilter] = usePageState(`${MEM}:muted`, 'all')
+  const [animeFilter, setAnimeFilter] = usePageState(`${MEM}:anime`, 'all')
+  const [clashFilter, setClashFilter] = usePageState(`${MEM}:numbering-clash`, 'all')
+  const [overrideFilter, setOverrideFilter] = usePageState<string[]>(`${MEM}:overrides`, [])
+  const [addedWithin, setAddedWithin] = usePageState<number | null>(`${MEM}:added-within`, null)
+  const [storedGroupBy, setGroupBy] = usePageState<string>(`${MEM}:group-by`, 'none')
+  const groupBy: GroupBy = (GROUP_BY_VALUES as readonly string[]).includes(storedGroupBy)
+    ? (storedGroupBy as GroupBy)
+    : 'none'
+  const collapsedGroups = useCollapsedGroups(groupBy)
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<SavedFilterDto | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  // Read before usePageState's effects store anything: a tab that has never opened this view has
+  // nothing remembered, which is when the default preset applies.
+  // A link's own view wins over what this tab remembered, and over the default preset.
+  const [urlSpec] = useState(() => paramsToSpec(searchParams, SCOPE_SORTS[scope]))
+  const [urlHydrated, setUrlHydrated] = useState(urlSpec === null)
+  const [freshView] = useState(() => urlSpec === null && scope === 'library' && !hasPageState(`${MEM}:sort`))
+  const defaultApplied = useRef(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
-  const [openGroups, setOpenGroups] = usePageState<FilterGroup[]>(`${MEM}:filter-groups`, ['series'])
   // Local to this device, so it is not part of a saved filter.
   const [onDeviceOnly, setOnDeviceOnly] = usePageState(`${MEM}:on-device`, false)
   const offlineSeries = useOfflineSeriesIds()
@@ -527,11 +738,18 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [bulkProfile, setBulkProfile] = useState<string>(DEFAULT_PROFILE_FILTER)
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
+  const [readingStatusModalOpen, setReadingStatusModalOpen] = useState(false)
+  const [bulkReadingStatusValue, setBulkReadingStatusValue] = useState<ReadingStatus>('Reading')
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
   const notificationHelp = useSeriesNotificationHelp(notifyMode)
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
+  const [renameModalOpen, setRenameModalOpen] = useState(false)
+  const [readStateModalOpen, setReadStateModalOpen] = useState(false)
+  const [settingModal, setSettingModal] = useState<BulkSetting | null>(null)
+  const [settingValue, setSettingValue] = useState('')
+  const incognitoOptions = useIncognitoOptions()
   const [archiveModalOpen, setArchiveModalOpen] = useState(false)
   const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
   // Ids the recycle bin refused during a bulk archive with files; the dialog then offers to delete them for good.
@@ -548,11 +766,14 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     [series],
   )
 
+  // Home rails built from a saved filter run this same chain on the server
+  // (src/Maki.Api/Services/LibraryFilterEvaluator.cs). Change one, change the other.
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
     if (onDevice) list = list.filter((s) => offlineSeries.has(s.id))
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
     if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
+    if (readingStatusFilter.length > 0) list = list.filter((s) => readingStatusFilter.includes(s.readingStatus))
     if (untaggedOnly) {
       list = list.filter((s) => (s.tagIds ?? []).length === 0)
     } else {
@@ -605,6 +826,31 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     if (completeness !== 'all') {
       list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
     }
+    if (yearMin != null || yearMax != null) {
+      list = list.filter(
+        (s) => s.year != null && (yearMin == null || s.year >= yearMin) && (yearMax == null || s.year <= yearMax),
+      )
+    }
+    if (creditFilter.length > 0) list = list.filter((s) => creditsOf(s).some((name) => creditFilter.includes(name)))
+    if (publisherFilter.length > 0) {
+      list = list.filter((s) => s.publisher != null && publisherFilter.includes(s.publisher))
+    }
+    if (rootFolderFilter.length > 0) list = list.filter((s) => rootFolderFilter.includes(String(s.rootFolderId)))
+    if (incognitoFilter !== 'all') list = list.filter((s) => (s.incognito !== 'Off') === (incognitoFilter === 'on'))
+    if (mutedFilter !== 'all') list = list.filter((s) => (s.notificationMode === 'Muted') === (mutedFilter === 'muted'))
+    if (animeFilter !== 'all') list = list.filter((s) => s.hasAnime === (animeFilter === 'has'))
+    if (clashFilter !== 'all') list = list.filter((s) => (s.numberingClash != null) === (clashFilter === 'clash'))
+    if (overrideFilter.length > 0) {
+      list = list.filter(
+        (s) =>
+          (overrideFilter.includes('readCleanup') && s.readFileCleanup !== 'Default') ||
+          (overrideFilter.includes('pageConversion') && s.pageConversion !== 'Default'),
+      )
+    }
+    if (addedWithin != null) {
+      const cutoff = Date.now() - addedWithin * DAY_MS
+      list = list.filter((s) => (toTime(s.added) ?? 0) >= cutoff)
+    }
     if (sourceState !== 'all') list = list.filter((s) => matchesSourceState(s, sourceState))
     if (sourceFilter.length > 0) {
       list = list.filter((s) => matches(sourceFilter, s.sources, sourceMatch))
@@ -620,7 +866,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     }
     if (readRange[0] > 0 || readRange[1] < 100) {
       list = list.filter((s) => {
-        const pct = readPercent(s)
+        const pct = readPercent(s, readTracking)
         return pct >= readRange[0] && pct <= readRange[1]
       })
     }
@@ -635,11 +881,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [
     series, titlesOf, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     excludeTagFilter, excludeGenreFilter, untaggedOnly,
-    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, readTracking, sort, sortDir, contentRatingFilter, readingStatusFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
+    yearMin, yearMax, creditFilter, publisherFilter, rootFolderFilter, incognitoFilter, mutedFilter, animeFilter,
+    clashFilter, overrideFilter, addedWithin,
     onDevice, offlineSeries, isOffline, availableOffline,
   ])
+
+  // Sort runs first, so each group keeps it.
+  const groups = useMemo(
+    () => groupSeries(visible, groupBy, { tags: tags ?? [], rootFolders: rootFolders ?? [] }),
+    [visible, groupBy, tags, rootFolders],
+  )
 
   // Hidden when nothing carries a score (no dump, or no MangaBaka links), unless a saved filter
   // narrowed it anyway: a counted filter the user can't see or reset on its own would be a trap.
@@ -661,7 +915,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [series, renderLabel, i18n.locale])
 
   const tagOptions = useMemo(
-    () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
+    () => (tags ?? []).map((t) => ({ value: String(t.id), name: t.label, label: `${t.label} (${t.seriesCount})` })),
     [tags],
   )
 
@@ -676,6 +930,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     setTagFilter(dropStale)
     setExcludeTagFilter(dropStale)
   }, [tags, tagOptions, setTagFilter, setExcludeTagFilter])
+
+  const creditOptions = useMemo(() => facetOptions(series, creditsOf), [series])
+  const publisherOptions = useMemo(
+    () => facetOptions(series, (s) => (s.publisher ? [s.publisher] : undefined)),
+    [series],
+  )
+  const rootFolderOptions = useMemo(
+    () => (rootFolders ?? []).map((f) => ({ value: String(f.id), label: f.path })),
+    [rootFolders],
+  )
+  const overrideOptions = useMemo(
+    () => OVERRIDE_VALUES.map((value) => ({ value, label: _(OVERRIDE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const showRootFolderFilter = rootFolderOptions.length > 1 || rootFolderFilter.length > 0
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
@@ -699,6 +968,18 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
+  const readingStatusOptions = useMemo(
+    () => READING_STATUSES.map((value) => ({ value, label: renderLabel(readingStatusVisual(value).label) })),
+    [renderLabel, i18n.locale],
+  )
+
+  const groupByOptions = useMemo(
+    () =>
+      GROUP_BY_VALUES.filter((v) => v !== 'rootFolder' || (rootFolders ?? []).length > 1 || groupBy === 'rootFolder').map(
+        (value) => ({ value, label: _(GROUP_BY_LABELS[value]) }),
+      ),
+    [rootFolders, groupBy, _, i18n.locale],
+  )
   const sortOptions = useMemo(
     () => scopeSorts.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
     [scopeSorts, _, i18n.locale],
@@ -719,6 +1000,115 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     () => MATCH_MODE_VALUES.map((value) => ({ value, label: _(MATCH_MODE_LABELS[value]) })),
     [_, i18n.locale],
   )
+
+  const filterValues: LibraryFilterValues = {
+    status: statusFilter,
+    types: typeFilter,
+    contentRatings: contentRatingFilter,
+    readingStatuses: readingStatusFilter,
+    chapterMode,
+    chapterMin,
+    chapterMax,
+    yearMin,
+    yearMax,
+    addedWithin,
+    credits: creditFilter,
+    publishers: publisherFilter,
+    anime: animeFilter,
+    clash: clashFilter,
+    tags: tagFilter,
+    tagMatch,
+    excludeTags: excludeTagFilter,
+    untaggedOnly,
+    genres: genreFilter,
+    genreMatch,
+    excludeGenres: excludeGenreFilter,
+    metaTags: metaTagFilter,
+    metaTagMatch,
+    ratingState,
+    ratingRange,
+    communityRange,
+    readRange,
+    monitored: monitoredFilter,
+    qualityProfile: qualityProfileFilter,
+    completeness,
+    sourceState,
+    sources: sourceFilter,
+    sourceMatch,
+    fileSources: fileSourceFilter,
+    fileSourceMatch,
+    rootFolders: rootFolderFilter,
+    incognito: incognitoFilter,
+    muted: mutedFilter,
+    overrides: overrideFilter,
+  }
+  const filterSetters: LibraryFilterSetters = {
+    status: setStatusFilter,
+    types: setTypeFilter,
+    contentRatings: setContentRatingFilter,
+    readingStatuses: setReadingStatusFilter,
+    chapterMode: setChapterMode,
+    chapterMin: setChapterMin,
+    chapterMax: setChapterMax,
+    yearMin: setYearMin,
+    yearMax: setYearMax,
+    addedWithin: setAddedWithin,
+    credits: setCreditFilter,
+    publishers: setPublisherFilter,
+    anime: setAnimeFilter,
+    clash: setClashFilter,
+    tags: setTagFilter,
+    tagMatch: setTagMatch,
+    excludeTags: setExcludeTagFilter,
+    untaggedOnly: setUntaggedOnly,
+    genres: setGenreFilter,
+    genreMatch: setGenreMatch,
+    excludeGenres: setExcludeGenreFilter,
+    metaTags: setMetaTagFilter,
+    metaTagMatch: setMetaTagMatch,
+    ratingState: setRatingState,
+    ratingRange: setRatingRange,
+    communityRange: setCommunityRange,
+    readRange: setReadRange,
+    monitored: setMonitoredFilter,
+    qualityProfile: setQualityProfileFilter,
+    completeness: setCompleteness,
+    sourceState: setSourceState,
+    sources: setSourceFilter,
+    sourceMatch: setSourceMatch,
+    fileSources: setFileSourceFilter,
+    fileSourceMatch: setFileSourceMatch,
+    rootFolders: setRootFolderFilter,
+    incognito: setIncognitoFilter,
+    muted: setMutedFilter,
+    overrides: setOverrideFilter,
+  }
+  const filterOptions: LibraryFilterOptions = {
+    statuses: statusOptions
+      .filter((s) => s !== 'all')
+      .map((s) => ({ value: s, label: renderLabel(seriesStatusVisual(s).label) })),
+    types: typeOptions,
+    contentRatings: contentRatingOptions,
+    readingStatuses: readingStatusOptions,
+    credits: creditOptions,
+    publishers: publisherOptions,
+    tags: tagOptions,
+    genres: genreOptions,
+    metaTags: metaTagOptions,
+    sources: sourceOptions,
+    fileSources: fileSourceOptions,
+    rootFolders: rootFolderOptions,
+    overrides: overrideOptions,
+    qualityProfiles: [
+      { value: 'all', label: t`Any` },
+      { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+      ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+    ],
+    sourceStates: sourceStateOptions,
+    chapterModes: chapterModeOptions,
+    ratingStates: ratingStateOptions,
+    matchModes: matchModeOptions,
+  }
 
   const currentSpec = (): LibraryFilterSpec => ({
     query,
@@ -743,6 +1133,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     chapterMax,
     chapterMode,
     contentRatings: contentRatingFilter,
+    readingStatuses: readingStatusFilter,
     sources: sourceFilter,
     sourceMatch,
     sourceState,
@@ -754,6 +1145,18 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     ratingMax: ratingRange[1],
     communityRatingMin: communityRange[0],
     communityRatingMax: communityRange[1],
+    yearMin,
+    yearMax,
+    credits: creditFilter,
+    publishers: publisherFilter,
+    rootFolderIds: rootFolderFilter.map(Number),
+    incognito: incognitoFilter,
+    muted: mutedFilter,
+    anime: animeFilter,
+    numberingClash: clashFilter,
+    overrides: overrideFilter,
+    addedWithinDays: addedWithin,
+    groupBy,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -779,6 +1182,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     // Clamped in case a preset was saved before the user's ceiling was lowered.
     const allowed: string[] = allowedContentRatings(me?.maxContentRating)
     setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
+    setReadingStatusFilter(merged.readingStatuses ?? [])
     setMonitoredFilter(merged.monitored)
     setCompleteness(merged.completeness)
     setSourceFilter(merged.sources ?? [])
@@ -790,6 +1194,18 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     setRatingState(merged.ratingState ?? 'all')
     setRatingRange([merged.ratingMin ?? 1, merged.ratingMax ?? 10])
     setCommunityRange([merged.communityRatingMin ?? 0, merged.communityRatingMax ?? 10])
+    setYearMin(merged.yearMin ?? null)
+    setYearMax(merged.yearMax ?? null)
+    setCreditFilter(merged.credits ?? [])
+    setPublisherFilter(merged.publishers ?? [])
+    setRootFolderFilter((merged.rootFolderIds ?? []).map(String))
+    setIncognitoFilter(merged.incognito ?? 'all')
+    setMutedFilter(merged.muted ?? 'all')
+    setAnimeFilter(merged.anime ?? 'all')
+    setClashFilter(merged.numberingClash ?? 'all')
+    setOverrideFilter(merged.overrides ?? [])
+    setAddedWithin(merged.addedWithinDays ?? null)
+    setGroupBy(merged.groupBy ?? 'none')
     setSort(merged.sort)
     setSortDirOverride(merged.sortDir === 'asc' || merged.sortDir === 'desc' ? merged.sortDir : '')
     setActiveFilterId(id)
@@ -801,7 +1217,14 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (statusFilter !== 'all' ? 1 : 0) +
       (typeFilter.length > 0 ? 1 : 0) +
       (contentRatingFilter.length > 0 ? 1 : 0) +
-      (chapterMin != null || chapterMax != null ? 1 : 0),
+      (readingStatusFilter.length > 0 ? 1 : 0) +
+      (chapterMin != null || chapterMax != null ? 1 : 0) +
+      (yearMin != null || yearMax != null ? 1 : 0) +
+      (creditFilter.length > 0 ? 1 : 0) +
+      (publisherFilter.length > 0 ? 1 : 0) +
+      (animeFilter !== 'all' ? 1 : 0) +
+      (clashFilter !== 'all' ? 1 : 0) +
+      (addedWithin != null ? 1 : 0),
     tags:
       (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
       (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
@@ -819,92 +1242,90 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (qualityProfileFilter !== 'all' ? 1 : 0) +
       (sourceState !== 'all' ? 1 : 0) +
       (sourceFilter.length > 0 ? 1 : 0) +
-      (fileSourceFilter.length > 0 ? 1 : 0),
+      (fileSourceFilter.length > 0 ? 1 : 0) +
+      (rootFolderFilter.length > 0 ? 1 : 0) +
+      (incognitoFilter !== 'all' ? 1 : 0) +
+      (mutedFilter !== 'all' ? 1 : 0) +
+      (overrideFilter.length > 0 ? 1 : 0),
   }
   const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
-  const toggleGroup = (group: FilterGroup) =>
-    setOpenGroups((open) => (open.includes(group) ? open.filter((g) => g !== group) : [...open, group]))
-  /** What a closed group is doing: its active values, or failing that, what it holds. */
-  const groupSummary = (group: FilterGroup): ReactNode => {
-    const label = (options: { value: string; label: string }[], values: string[]) =>
-      values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
-    const tagNames = (ids: string[]) => ids.map((id) => tags?.find((tag) => String(tag.id) === id)?.label ?? id).join(', ')
-    const range = (lo: number, hi: number) => `${formatNumber(lo)}–${formatNumber(hi)}`
-    const parts: string[] = []
-    if (group === 'series') {
-      if (statusFilter !== 'all') parts.push(renderLabel(seriesStatusVisual(statusFilter).label))
-      if (typeFilter.length > 0) parts.push(label(typeOptions, typeFilter))
-      if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
-      const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
-      if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
-      else if (chapterMin != null) parts.push(plural(chapterMin, { one: 'At least # chapter', other: 'At least # chapters' }))
-      else if (chapterMax != null) parts.push(plural(chapterMax, { one: 'At most # chapter', other: 'At most # chapters' }))
-    } else if (group === 'tags') {
-      if (untaggedOnly) parts.push(t`Untagged only`)
-      else {
-        if (tagFilter.length > 0) parts.push(tagNames(tagFilter))
-        const excluded = tagNames(excludeTagFilter)
-        if (excludeTagFilter.length > 0) parts.push(t`Not ${excluded}`)
-      }
-      if (genreFilter.length > 0) parts.push(genreFilter.join(', '))
-      const excluded = excludeGenreFilter.join(', ')
-      if (excludeGenreFilter.length > 0) parts.push(t`Not ${excluded}`)
-      if (metaTagFilter.length > 0) parts.push(metaTagFilter.join(', '))
-    } else if (group === 'ratings') {
-      const rated = range(ratingRange[0], ratingRange[1])
-      const score = range(communityRange[0], communityRange[1])
-      const read = range(readRange[0], readRange[1])
-      if (ratingState === 'rated') parts.push(t`Rated ${rated}`)
-      else if (ratingState !== 'all') parts.push(label(ratingStateOptions, [ratingState]))
-      if (communityRange[0] > 0 || communityRange[1] < 10) parts.push(t`Score ${score}`)
-      if (readRange[0] > 0 || readRange[1] < 100) parts.push(t`${read}% read`)
-    } else {
-      if (monitoredFilter !== 'all') parts.push(monitoredFilter === 'monitored' ? t`Monitored` : t`Unmonitored`)
-      if (completeness !== 'all') parts.push(completeness === 'behind' ? t`Behind (missing chapters)` : t`Complete`)
-      if (qualityProfileFilter !== 'all')
-        parts.push(
-          qualityProfileFilter === DEFAULT_PROFILE_FILTER
-            ? t`Instance default`
-            : (upgradeProfiles?.find((p) => String(p.id) === qualityProfileFilter)?.name ?? qualityProfileFilter),
-        )
-      if (sourceState !== 'all') parts.push(label(sourceStateOptions, [sourceState]))
-      if (sourceFilter.length > 0) parts.push(label(sourceOptions, sourceFilter))
-      const origins = label(fileSourceOptions, fileSourceFilter)
-      if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
-    }
-    if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
-    return {
-      series: t`Status, type, content rating, chapters`,
-      tags: t`Your tags, genres, provider tags`,
-      ratings: t`Your rating, score, how much you've read`,
-      monitoring: t`Monitoring, quality profile, completeness, sources`,
-    }[group]
-  }
-  const groupProps = (group: FilterGroup) => ({
-    opened: openGroups.includes(group),
-    onToggle: () => toggleGroup(group),
-    count: groupCounts[group],
-    countLabel: plural(groupCounts[group], { one: '# filter active', other: '# filters active' }),
-    summary: groupSummary(group),
-  })
-
   const specActive = query.trim() !== '' || activeFilterCount > 0
+
+  const defaultFilter = (savedFilters ?? []).find((f) => f.isDefault)
+  useEffect(() => {
+    if (!freshView || defaultApplied.current || savedFilters == null) return
+    defaultApplied.current = true
+    // Anything the user already did while the presets loaded wins over the default.
+    if (defaultFilter && !specActive && activeFilterId === null) applySpec(defaultFilter.spec, defaultFilter.id)
+  }, [freshView, savedFilters])
+
+  useLayoutEffect(() => {
+    if (urlHydrated || urlSpec === null) return
+    applySpec({ ...DEFAULT_SPEC, ...urlSpec }, null)
+    setUrlHydrated(true)
+  }, [])
+
+  // The address bar follows the view: replaced, never pushed, and only once the search box has
+  // settled so typing does not rewrite it on every keystroke.
+  const viewParams = (() => {
+    const params = specToParams({ ...currentSpec(), query }, { ...DEFAULT_SPEC, sort: defaultSort })
+    if (shownView !== 'grid') params.set(VIEW_PARAM, shownView)
+    return params.toString()
+  })()
+  useEffect(() => {
+    if (!urlHydrated || query !== debouncedQuery) return
+    if (viewParams === searchParams.toString()) return
+    setSearchParams(new URLSearchParams(viewParams), { replace: true })
+  }, [viewParams, urlHydrated, query, debouncedQuery, setSearchParams])
+
+  const moveSavedFilter = (f: SavedFilterDto, by: -1 | 1) => {
+    const ids = (savedFilters ?? []).map((x) => x.id)
+    const from = ids.indexOf(f.id)
+    const to = from + by
+    if (from === -1 || to < 0 || to >= ids.length) return
+    ;[ids[from], ids[to]] = [ids[to], ids[from]]
+    reorderSavedFilters.mutate(ids)
+  }
   const filtersActive = specActive || onDevice
 
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
-  const toggle = useCallback(
-    (id: number) =>
-      setSelected((s) => {
-        const next = new Set(s)
-        if (next.has(id)) next.delete(id)
-        else next.add(id)
-        return next
-      }),
-    [],
+  const visibleRef = useRef(visible)
+  const displayOrder = useMemo(
+    () => (groups ?? []).filter((g) => !collapsedGroups.isCollapsed(g.key)).flatMap((g) => g.items),
+    [groups, collapsedGroups.isCollapsed],
   )
+  useEffect(() => {
+    visibleRef.current = groups == null ? visible : displayOrder
+  }, [visible, groups, displayOrder])
+  /** Where the last plain click landed, the fixed end of a shift-range. */
+  const selectAnchor = useRef<number | null>(null)
+
+  const toggle = useCallback((id: number, shiftKey = false) => {
+    const ids = visibleRef.current.map((s) => s.id)
+    const anchor = selectAnchor.current
+    const from = anchor === null ? -1 : ids.indexOf(anchor)
+    const to = ids.indexOf(id)
+    if (shiftKey && from !== -1 && to !== -1) {
+      // Shift-clicking drags a text selection across the cards it spans.
+      window.getSelection()?.removeAllRanges()
+      const [lo, hi] = from <= to ? [from, to] : [to, from]
+      const range = ids.slice(lo, hi + 1)
+      // The anchor stays put, so moving the far end re-draws the range from the same start.
+      setSelected((s) => new Set([...s, ...range]))
+      return
+    }
+    selectAnchor.current = id
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const exitSelectMode = () => {
+    selectAnchor.current = null
     setSelectMode(false)
     setSelected(new Set())
   }
@@ -926,16 +1347,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 style={{ flexShrink: 0 }}
                 onClick={() => {
                   notifications.hide(toastId)
-                  saveFilter.mutate(
-                    { name: f.name, spec: f.spec },
-                    {
-                      onError: (err) =>
-                        notifications.show({
-                          color: 'var(--danger)',
-                          message: now`Failed to restore filter: ${errorText(err)}`,
-                        }),
-                    },
-                  )
+                  restoreSavedFilter.mutate(f, {
+                    onError: (err) =>
+                      notifications.show({
+                        color: 'var(--danger)',
+                        message: now`Failed to restore filter: ${errorText(err)}`,
+                      }),
+                  })
                 }}
               >
                 <Trans>Undo</Trans>
@@ -948,8 +1366,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     if (activeFilterId === f.id) setActiveFilterId(null)
   }
 
-  /** Runs an action against every selected series sequentially with a live progress notification. */
-  const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
+  /**
+   * Runs an action against every selected series with a live progress notification. A function is
+   * called once per series from here; a `SeriesBulkRequest` is queued on the server as one operation.
+   */
+  const runBulk = async (action: string, fn: ((id: number) => Promise<unknown>) | SeriesBulkRequest) => {
     const ids = [...selected]
     const total = ids.length
     // `action` is the busy-state key and stays English. What the toast shows is its label, or the
@@ -957,47 +1378,29 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     // to nothing.
     const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
-    let stopped = false
+    const stop = new AbortController()
     let ok = 0
-    const errors: string[] = []
+    let failed = 0
+    let firstFailure: string | null = null
+    let done = 0
     const progress = () => (
       <Group gap="xs" wrap="nowrap" justify="space-between">
-        <Text size="sm">{`${name}: ${ok + errors.length}/${total}`}</Text>
+        <Text size="sm">{`${name}: ${done}/${total}`}</Text>
         <Button
           size="xs"
           variant="subtle"
           style={{ flexShrink: 0 }}
-          disabled={stopped}
+          disabled={stop.signal.aborted}
           onClick={() => {
-            stopped = true
-            notifications.update({
-              id: 'bulk-action',
-              loading: true,
-              message: progress(),
-              autoClose: false,
-              withCloseButton: false,
-            })
+            stop.abort()
+            update()
           }}
         >
-          {stopped ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
+          {stop.signal.aborted ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
         </Button>
       </Group>
     )
-    notifications.show({
-      id: 'bulk-action',
-      loading: true,
-      message: progress(),
-      autoClose: false,
-      withCloseButton: false,
-    })
-    for (const id of ids) {
-      if (stopped) break
-      try {
-        await fn(id)
-        ok++
-      } catch (err) {
-        errors.push(errorText(err))
-      }
+    const update = () =>
       notifications.update({
         id: 'bulk-action',
         loading: true,
@@ -1005,15 +1408,53 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         autoClose: false,
         withCloseButton: false,
       })
+    notifications.show({
+      id: 'bulk-action',
+      loading: true,
+      message: progress(),
+      autoClose: false,
+      withCloseButton: false,
+    })
+    if (typeof fn === 'function') {
+      for (const id of ids) {
+        if (stop.signal.aborted) break
+        try {
+          await fn(id)
+          ok++
+        } catch (err) {
+          failed++
+          firstFailure ??= errorText(err)
+        }
+        done = ok + failed
+        update()
+      }
+    } else {
+      try {
+        await runSeriesBulk(
+          fn,
+          ids,
+          (count, result) => {
+            ok = result.succeeded
+            failed = count - result.succeeded
+            firstFailure = result.firstError ?? (result.skipped > 0 ? now`Series not found` : null)
+            done = count
+            update()
+          },
+          stop.signal,
+        )
+      } catch (err) {
+        failed = total - ok
+        firstFailure ??= errorText(err)
+      }
     }
-    const firstError = errors[0]
-    const stoppedEarly = stopped && ok + errors.length < total
+    const stoppedEarly = stop.signal.aborted && ok + failed < total
+    const firstError = firstFailure ?? ''
     notifications.update({
       id: 'bulk-action',
       loading: false,
-      color: errors.length ? 'var(--warn)' : 'var(--ok)',
+      color: failed ? 'var(--warn)' : 'var(--ok)',
       // The fixed wording is translated; `firstError` carries a raw exception message untouched.
-      message: errors.length
+      message: failed
         ? stoppedEarly
           ? now`${name}: stopped, ${ok}/${total} succeeded, first error: ${firstError}`
           : now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
@@ -1221,88 +1662,64 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     )
   }
 
-  /**
-   * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
-   * picked: with one selected, "any" and "all" mean the same thing and it's just noise.
-   */
-  const excludeFilter = ({
-    label,
-    data,
-    value,
-    onChange,
-    disabled,
-  }: {
-    label: string
-    data: { value: string; label: string }[]
-    value: string[]
-    onChange: (v: string[]) => void
-    disabled?: boolean
-  }) => (
-    <MultiSelect
-      label={label}
-      data={data}
-      value={value}
-      onChange={onChange}
-      className="field-default-value"
-      placeholder={value.length === 0 ? t`None` : undefined}
-      disabled={disabled || data.length === 0}
-      searchable
-      clearable
-      limit={100}
-      comboboxProps={{ withinPortal: true }}
-    />
-  )
 
-  const facetFilter = ({
-    label,
-    description,
-    data,
-    value,
-    onChange,
-    mode,
-    onModeChange,
-    disabled,
-  }: {
-    label: string
-    description?: string
-    data: { value: string; label: string }[]
-    value: string[]
-    onChange: (v: string[]) => void
-    mode: string
-    onModeChange: (v: string) => void
-    disabled?: boolean
-  }) => (
-    <div>
-      <Group justify="space-between" align="center" mb={4} wrap="nowrap">
-        <Text size="sm" fw={500}>
-          {label}
-        </Text>
-        {value.length > 1 && (
-          <SegmentedControl aria-label={t`Match mode for ${label}`} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
-        )}
-      </Group>
-      {description && (
-        <Text size="xs" c="var(--ink-3)" mb={4}>
-          {description}
-        </Text>
-      )}
-      <MultiSelect
-        aria-label={label}
-        data={data}
-        value={value}
-        onChange={onChange}
-        className="field-default-value"
-        placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
-        disabled={disabled || data.length === 0}
-        searchable
-        clearable
-        // The metadata-tag list runs to a few thousand entries on a big library; rendering them
-        // all makes opening the dropdown visibly janky, and search narrows it anyway.
-        limit={100}
-        comboboxProps={{ withinPortal: true }}
-      />
-    </div>
-  )
+  const openSetting = (setting: BulkSetting) => {
+    setSettingValue(BULK_SETTING_FIRST[setting])
+    setSettingModal(setting)
+  }
+
+  const runReadState = (state: 'read' | 'unread') => {
+    setReadStateModalOpen(false)
+    void runBulk(state === 'read' ? 'Mark read' : 'Mark unread', (id) =>
+      api(`/reader/series/${id}/state`, { method: 'POST', body: JSON.stringify({ state }) }),
+    ).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress'] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-continue'] })
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
+    })
+  }
+
+  const settingOptions: Record<BulkSetting, { value: string; label: ReactNode; hint?: ReactNode }[]> = {
+    Incognito: incognitoOptions.map((o) => ({
+      value: o.value,
+      label: o.label,
+      hint: INCOGNITO_HELP[o.value] && _(INCOGNITO_HELP[o.value]),
+    })),
+    'Read file cleanup': [
+      { value: 'Default', label: <Trans>Use the Downloads setting</Trans> },
+      {
+        value: 'On',
+        label: <Trans>On</Trans>,
+        hint: <Trans>Each chapter's file is deleted for good some days after everyone has read it.</Trans>,
+      },
+      { value: 'Off', label: <Trans>Off</Trans>, hint: <Trans>Read files stay on disk.</Trans> },
+    ],
+    'Page conversion': [
+      {
+        value: 'Default',
+        label: <Trans>Follow the rules</Trans>,
+        hint: <Trans>The page conversion rules in Settings decide.</Trans>,
+      },
+      { value: 'Never', label: <Trans>Never</Trans>, hint: <Trans>Pages stay as they were downloaded.</Trans> },
+      ...PAGE_CONVERSION_STOPS.map((stop) => ({
+        value: stop.charAt(0).toUpperCase() + stop.slice(1),
+        label: _(STOP_LABELS[stop]),
+        hint: _(STOP_HINTS[stop]),
+      })),
+    ],
+  }
+  const settingTitles: Record<BulkSetting, string> = {
+    Incognito: plural(selected.size, { one: 'Set incognito for # series', other: 'Set incognito for # series' }),
+    'Read file cleanup': plural(selected.size, {
+      one: 'Clean up read files for # series',
+      other: 'Clean up read files for # series',
+    }),
+    'Page conversion': plural(selected.size, {
+      one: 'Set page conversion for # series',
+      other: 'Set page conversion for # series',
+    }),
+  }
 
   // `key` is compared against `busy` (see runBulk) and must stay an untranslated identifier;
   // `label` is what actually renders, so it's the only part that gets translated.
@@ -1328,7 +1745,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       key: 'Search missing',
       label: <Trans>Search missing</Trans>,
       icon: <IconSearch size={16} />,
-      run: () => runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
+      run: () => runBulk('Search missing', { path: '/series/searchmissing/bulk' }),
     },
     can('EditMetadata') && {
       key: 'Monitoring',
@@ -1350,13 +1767,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       key: 'Refresh',
       label: <Trans>Refresh</Trans>,
       icon: <IconRefresh size={16} />,
-      run: () => runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+      run: () => runBulk('Refresh', { path: '/series/refresh/bulk' }),
     },
     can('EditMetadata') && {
       key: 'Metadata',
       label: <Trans>Metadata</Trans>,
       icon: <IconPhoto size={16} />,
-      run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
+      run: () => runBulk('Metadata', { path: '/series/refreshmetadata/bulk' }),
+    },
+    can('EditMetadata') && {
+      key: 'Rescan',
+      label: <Trans>Rescan files</Trans>,
+      icon: <IconScan size={16} />,
+      run: () => runBulk('Rescan', { path: '/series/rescan/bulk' }),
     },
     can('ManageSources') && {
       key: 'Auto-match',
@@ -1374,10 +1797,28 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       },
     },
     {
+      key: 'Reading status',
+      label: <Trans>Reading status</Trans>,
+      icon: <IconBookmark size={16} />,
+      run: () => setReadingStatusModalOpen(true),
+    },
+    {
       key: 'Notifications',
       label: <Trans>Notifications</Trans>,
       icon: <IconBell size={16} />,
       run: () => setNotifyModalOpen(true),
+    },
+    {
+      key: 'Read state',
+      label: <Trans>Mark read or unread</Trans>,
+      icon: <IconBook size={16} />,
+      run: () => setReadStateModalOpen(true),
+    },
+    can('EditMetadata') && {
+      key: 'Incognito',
+      label: <Trans>Incognito</Trans>,
+      icon: <IconEyeOff size={16} />,
+      run: () => openSetting('Incognito'),
     },
     // "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5).
     can('EditMetadata') && {
@@ -1395,6 +1836,24 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         setMoveFiles(true)
         setMoveModalOpen(true)
       },
+    },
+    can('EditMetadata') && {
+      key: 'Rename',
+      label: <Trans>Rename files</Trans>,
+      icon: <IconPencil size={16} />,
+      run: () => setRenameModalOpen(true),
+    },
+    canDelete && {
+      key: 'Read file cleanup',
+      label: <Trans>Clean up read files</Trans>,
+      icon: <IconTrashX size={16} />,
+      run: () => openSetting('Read file cleanup'),
+    },
+    can('Admin') && {
+      key: 'Page conversion',
+      label: <Trans>Page conversion</Trans>,
+      icon: <IconPhotoCog size={16} />,
+      run: () => openSetting('Page conversion'),
     },
   ]).filter((a) => a !== false)
   // The danger button's busy key and toast name; it reads Delete in Archived, beside Remove files.
@@ -1427,20 +1886,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [visible])
 
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
-  // silently grabbed hidden series would make every bulk action a foot-gun.
-  const allSelected = visible.length > 0 && visible.every((s) => selected.has(s.id))
+  // silently grabbed hidden series would make every bulk action a foot-gun. Series in a collapsed
+  // group are hidden too.
+  const selectable = groups == null ? visible : displayOrder
+  const allSelected = selectable.length > 0 && selectable.every((s) => selected.has(s.id))
   const selectedCount = selected.size
 
-  // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
-  // re-subscribes when the other takes over.
-  const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
+  const windowOn = visible.length >= WINDOW_MIN_ITEMS
 
   // Hoisted so the "X of Y series" messages below get named placeholders instead of `{0}`/`{1}`.
   const visibleCount = formatNumber(visible.length)
   const totalCount = formatNumber(series?.length ?? 0)
   const totalSeries = series?.length ?? 0
   const shownCount = visible.length
-  const totalSeriesShown = series?.length ?? 0
   const loadErrorMessage = error ? (error instanceof Error ? error.message : String(error)) : null
   // Kept mounted through loading and error too, so the grid lands where it will stay and an error isn't a dead end.
   const showChrome = isLoading || error != null || (series != null && series.length > 0)
@@ -1485,6 +1943,16 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
     setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
   }
+  const sortByColumn = (value: string) => {
+    if (value === sort) return reverseSort()
+    setSort(value)
+    setSortDirOverride('')
+  }
+  const tagsById = useMemo(() => new Map((tags ?? []).map((tag) => [tag.id, tag])), [tags])
+  const profileNames = useMemo(
+    () => new Map((upgradeProfiles ?? []).map((p) => [p.id, p.name])),
+    [upgradeProfiles],
+  )
 
   // The library's figures count monitoring and downloads, which archived series no longer do.
   const archiveCount = archiveBinRefused.length || selectedCount
@@ -1518,6 +1986,134 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       ]}
     />
   )
+
+  const renderItems = (items: SeriesDto[], innerRef: (el: HTMLDivElement | null) => void, last: boolean) => {
+    if (shownView === 'table') {
+      return (
+        <LibraryTableBody innerRef={innerRef}>
+          {items.map((s) => (
+            <LibraryTableRow
+              key={s.id}
+              series={s}
+              columns={tableColumns}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              tagsById={tagsById}
+              profileNames={profileNames}
+              sourceLabel={sourceLabel}
+            />
+          ))}
+        </LibraryTableBody>
+      )
+    }
+    if (shownView === 'list') {
+      return archivedScope ? (
+        <ArchivedList
+          ref={innerRef}
+          series={items}
+          selectMode={selectMode}
+          selectedIds={selected}
+          readTracking={readTracking}
+          onToggle={toggle}
+          canRestore={canArchive}
+          canRemoveFiles={canDelete}
+          canDelete={canDelete}
+          onRate={onRate}
+          onAction={onCardAction}
+        />
+      ) : (
+        <Stack ref={innerRef} gap="xs">
+          {items.map((s) => (
+            <SeriesRow
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              density={density}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+            />
+          ))}
+        </Stack>
+      )
+    }
+    return (
+      <SimpleGrid ref={innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
+        {items.map((s) =>
+          archivedScope ? (
+            <ArchivedSeriesCard
+              key={s.id}
+              series={s}
+              variant="grid"
+              density={density}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              canRestore={canArchive}
+              canRemoveFiles={canDelete}
+              canDelete={canDelete}
+              onRate={onRate}
+              onAction={onCardAction}
+            />
+          ) : (
+            <CoverCard
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              menu
+            />
+          ),
+        )}
+        {last && !archivedScope && !selectMode && (series?.length ?? 0) < 12 && (
+          <Link
+            to="/add"
+            className="library-add-cell"
+            aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
+          >
+            <IconPlus size={24} aria-hidden />
+          </Link>
+        )}
+      </SimpleGrid>
+    )
+  }
+
+  const itemsBody =
+    groups == null ? (
+      <WindowedItems items={visible} enabled={windowOn}>
+        {(slice, innerRef) => renderItems(slice, innerRef, true)}
+      </WindowedItems>
+    ) : (
+      <div className="library-groups" data-view={shownView}>
+        {groups.map((group, i) => {
+          const folded = collapsedGroups.isCollapsed(group.key)
+          return (
+            <Fragment key={group.key}>
+              <LibraryGroupHeader
+                group={group}
+                collapsed={folded}
+                onToggle={() => collapsedGroups.toggle(group.key)}
+                asRow={shownView === 'table'}
+              />
+              {!folded && (
+                <WindowedItems items={group.items} enabled={windowOn}>
+                  {(slice, innerRef) => renderItems(slice, innerRef, i === groups.length - 1)}
+                </WindowedItems>
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
+    )
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
@@ -1590,9 +2186,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 <Button
                   size="xs"
                   variant="subtle"
-                  onClick={() =>
-                    setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
-                  }
+                  onClick={() => {
+                    selectAnchor.current = null
+                    setSelected(allSelected ? new Set() : new Set(selectable.map((s) => s.id)))
+                  }}
                 >
                   {allSelected ? (
                     <Trans>Clear all</Trans>
@@ -1717,12 +2314,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ) : (
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
-                <TextInput
+                <SearchInput
                   aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
-                  leftSection={<IconSearch size={16} />}
                   value={query}
+                  onClear={() => setQuery('')}
                   onChange={(e) => setQuery(e.currentTarget.value)}
                 />
                 <Button
@@ -1781,6 +2378,16 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     </ActionIcon>
                   </Tooltip>
                 </div>
+                <Select
+                  aria-label={t`Group by`}
+                  className="library-group-by"
+                  visibleFrom="sm"
+                  leftSection={<IconListTree size={16} />}
+                  data={groupByOptions}
+                  value={groupBy}
+                  onChange={(v) => setGroupBy(v ?? 'none')}
+                  comboboxProps={{ withinPortal: true }}
+                />
                 {filtersActive && !isLoading && (
                   <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count">
                     {t`${visibleCount} of ${totalCount}`}
@@ -1788,14 +2395,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 )}
                 <Group className="library-view-controls" gap="sm" wrap="nowrap">
                   <Box visibleFrom="sm">
-                    <ViewModeToggle
-                      value={viewMode}
-                      onChange={(v) => {
-                        setViewMode(v)
-                        writeStored(LS_VIEW, v)
-                      }}
-                    />
+                    <ViewModeToggle value={shownView} withTable={!archivedScope} onChange={chooseView} />
                   </Box>
+                  {shownView === 'table' && (
+                    <Tooltip label={t`Columns`} withArrow>
+                      <ActionIcon
+                        visibleFrom="sm"
+                        variant="default"
+                        size="input-sm"
+                        aria-label={t`Columns`}
+                        onClick={() => setColumnsOpen(true)}
+                      >
+                        <IconColumns size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
                   {!archivedScope && (
                     <LuckyButton
                       candidates={luckyPool}
@@ -1814,18 +2428,20 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                       <Box hiddenFrom="sm">
                         <Menu.Divider />
                         <Menu.Label>{t`View`}</Menu.Label>
-                        {(['grid', 'list'] as const).map((mode) => (
+                        {VIEW_MODES.filter((mode) => mode !== 'table' || !archivedScope).map((mode) => (
                           <Menu.Item
                             key={mode}
-                            onClick={() => {
-                              setViewMode(mode)
-                              writeStored(LS_VIEW, mode)
-                            }}
-                            rightSection={viewMode === mode ? <IconCheck size={16} /> : undefined}
+                            onClick={() => chooseView(mode)}
+                            rightSection={shownView === mode ? <IconCheck size={16} /> : undefined}
                           >
-                            {mode === 'grid' ? t`Grid view` : t`List view`}
+                            {mode === 'grid' ? t`Grid view` : mode === 'list' ? t`List view` : t`Table view`}
                           </Menu.Item>
                         ))}
+                        {shownView === 'table' && (
+                          <Menu.Item leftSection={<IconTable size={16} />} onClick={() => setColumnsOpen(true)}>
+                            {t`Columns`}
+                          </Menu.Item>
+                        )}
                         <Menu.Divider />
                         <Menu.Label>{t`Sort by`}</Menu.Label>
                         {sortOptions.map((o) => (
@@ -1850,6 +2466,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                         >
                           {t`Reverse sort order`}
                         </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Label>{t`Group by`}</Menu.Label>
+                        {groupByOptions.map((o) => (
+                          <Menu.Item
+                            key={o.value}
+                            onClick={() => setGroupBy(o.value)}
+                            rightSection={groupBy === o.value ? <IconCheck size={16} /> : undefined}
+                          >
+                            {o.label}
+                          </Menu.Item>
+                        ))}
                       </Box>
                       <Menu.Divider />
                       <DensityMenuItems
@@ -1888,25 +2515,59 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               <Trans>Saved filters</Trans>
             </span>
           )}
-          {(savedFilters ?? []).map((f) => (
-            <Group key={f.id} gap={2}>
-              <TagChip
-                active={activeFilterId === f.id}
-                onClick={() => applySpec(f.spec, f.id)}
-              >
-                {f.name}
-              </TagChip>
-              <ActionIcon
-                size={24}
-                variant="subtle"
-                color="var(--ink-4)"
-                aria-label={t`Delete saved filter`}
-                onClick={() => removeSavedFilter(f)}
-              >
-                <IconX size={11} />
-              </ActionIcon>
-            </Group>
-          ))}
+          {(savedFilters ?? []).map((f, index, all) => {
+            const { name } = f
+            return (
+              <Group key={f.id} gap={2}>
+                <TagChip active={activeFilterId === f.id} onClick={() => applySpec(f.spec, f.id)}>
+                  <Group gap={4} wrap="nowrap" component="span">
+                    {f.isDefault && <IconStar size={13} aria-label={t`Opens by default`} />}
+                    {f.name}
+                  </Group>
+                </TagChip>
+                <Menu position="bottom-end" withinPortal>
+                  <Menu.Target>
+                    <OverflowButton size={24} aria-label={t`Options for ${name}`} />
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconPencil size={16} />}
+                      onClick={() => {
+                        setRenameValue(f.name)
+                        setRenameTarget(f)
+                      }}
+                    >
+                      <Trans>Rename</Trans>
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconStar size={16} />}
+                      onClick={() => setDefaultSavedFilter.mutate({ id: f.id, isDefault: !f.isDefault })}
+                    >
+                      {f.isDefault ? <Trans>Stop opening the Library with this</Trans> : <Trans>Open the Library with this</Trans>}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconChevronLeft size={16} />}
+                      disabled={index === 0}
+                      onClick={() => moveSavedFilter(f, -1)}
+                    >
+                      <Trans>Move earlier</Trans>
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconChevronRight size={16} />}
+                      disabled={index === all.length - 1}
+                      onClick={() => moveSavedFilter(f, 1)}
+                    >
+                      <Trans>Move later</Trans>
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={() => removeSavedFilter(f)}>
+                      <Trans>Delete</Trans>
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            )
+          })}
           {specActive && (
             <Button
               size="compact-xs"
@@ -1938,330 +2599,40 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Group>
       )}
 
-      <Drawer
+      <LibraryFilterPanel
         opened={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        position="right"
-        size="sm"
-        title={t`Filters`}
-        classNames={{ content: 'library-filter-drawer' }}
-      >
-        <Stack gap="sm" className="library-filter-drawer-body">
-          {/* On a phone the drawer covers the grid, so the count moves to the footer instead. */}
-          <Text size="sm" c="var(--ink-3)" visibleFrom="sm">
-            {plural(totalSeriesShown, {
-              one: `${shownCount} of # series shown.`,
-              other: `${shownCount} of # series shown.`,
-            })}{' '}
-            <Trans>Changes apply straight to the grid behind this panel.</Trans>
-          </Text>
-          <div>
-            <Disclosure title={t`Series`} {...groupProps('series')}>
-              <Select
-                label={t`Status`}
-                data={statusOptions.map((s) => ({
-                  value: s,
-                  label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
-                }))}
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Type`}
-                className="field-default-value"
-                placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
-                data={typeOptions}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                disabled={typeOptions.length === 0}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Content rating`}
-                className="field-default-value"
-                placeholder={contentRatingFilter.length ? undefined : t`Any`}
-                data={contentRatingOptions}
-                value={contentRatingFilter}
-                onChange={setContentRatingFilter}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-              <div>
-                <Text size="sm" fw={500} mb={2}>
-                  <Trans>Chapters</Trans>
-                </Text>
-                <Text size="xs" c="var(--ink-3)" mb="xs">
-                  <Trans>Leave both boxes empty to ignore.</Trans>
-                </Text>
-                <SegmentedControl
-                  aria-label={t`Chapters`}
-                  size="xs"
-                  fullWidth
-                  value={chapterMode}
-                  onChange={setChapterMode}
-                  data={chapterModeOptions}
-                  mb="xs"
-                />
-                <Group grow gap="xs" align="flex-start">
-                  <NumberInput
-                    aria-label={t`Minimum chapters`}
-                    className="field-default-value"
-                        placeholder={t`Min`}
-                    min={0}
-                    allowDecimal={false}
-                    value={chapterMin ?? ''}
-                    onChange={(v) => setChapterMin(toBound(v))}
-                  />
-                  <NumberInput
-                    aria-label={t`Maximum chapters`}
-                    className="field-default-value"
-                        placeholder={t`Max`}
-                    min={0}
-                    allowDecimal={false}
-                    value={chapterMax ?? ''}
-                    onChange={(v) => setChapterMax(toBound(v))}
-                  />
-                </Group>
-              </div>
-            </Disclosure>
-            <Disclosure title={t`Tags and genres`} {...groupProps('tags')}>
-              {facetFilter({
-                label: t`Your tags`,
-                data: tagOptions,
-                value: tagFilter,
-                onChange: setTagFilter,
-                mode: tagMatch,
-                onModeChange: setTagMatch,
-                disabled: untaggedOnly,
-              })}
-              {excludeFilter({
-                label: t`Exclude your tags`,
-                data: tagOptions,
-                value: excludeTagFilter,
-                onChange: setExcludeTagFilter,
-                disabled: untaggedOnly,
-              })}
-              <Switch
-                label={t`Untagged only`}
-                description={t`Series with none of your tags`}
-                checked={untaggedOnly}
-                onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
-              />
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                color="var(--neutral)"
-                leftSection={<IconSettings size={16} />}
-                style={{ alignSelf: 'flex-start' }}
-                onClick={() => {
-                  setFiltersOpen(false)
-                  setTagManagerOpen(true)
-                }}
-              >
-                <Trans>Manage tags</Trans>
-              </Button>
-              {facetFilter({
-                label: t`Genres`,
-                data: genreOptions,
-                value: genreFilter,
-                onChange: setGenreFilter,
-                mode: genreMatch,
-                onModeChange: setGenreMatch,
-              })}
-              {excludeFilter({
-                label: t`Exclude genres`,
-                data: genreOptions,
-                value: excludeGenreFilter,
-                onChange: setExcludeGenreFilter,
-              })}
-              {facetFilter({
-                label: t`Tags`,
-                description: t`From the metadata provider, not your own tags`,
-                data: metaTagOptions,
-                value: metaTagFilter,
-                onChange: setMetaTagFilter,
-                mode: metaTagMatch,
-                onModeChange: setMetaTagMatch,
-              })}
-            </Disclosure>
-            <Disclosure title={t`Ratings and reading`} {...groupProps('ratings')}>
-              <div>
-                <Text size="sm" fw={500} mb="xs">
-                  <Trans>My rating</Trans>
-                </Text>
-                <SegmentedControl
-                  aria-label={t`My rating`}
-                  size="xs"
-                  fullWidth
-                  value={ratingState}
-                  onChange={setRatingState}
-                  data={ratingStateOptions}
-                  mb={ratingState === 'rated' ? 'md' : undefined}
-                />
-                {ratingState === 'rated' && (
-                  <RangeSlider
-                    thumbFromLabel={t`My rating from`}
-                    thumbToLabel={t`My rating to`}
-                    min={1}
-                    max={10}
-                    step={1}
-                    minRange={0}
-                    value={ratingRange}
-                    onChange={setRatingRange}
-                    marks={[
-                      { value: 1, label: '1' },
-                      { value: 5, label: '5' },
-                      { value: 10, label: '10' },
-                    ]}
-                    mb="lg"
-                  />
-                )}
-              </div>
-              {hasCommunityRatings && (
-                <div>
-                  <Text size="sm" fw={500} mb={2}>
-                    <Trans context="MangaBaka score filter">Rating</Trans>
-                  </Text>
-                  <Text size="xs" c="var(--ink-3)" mb="md">
-                    <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
-                  </Text>
-                  <RangeSlider
-                    thumbFromLabel={t`Rating from`}
-                    thumbToLabel={t`Rating to`}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    minRange={0}
-                    value={communityRange}
-                    onChange={setCommunityRange}
-                    marks={[
-                      { value: 0, label: '0' },
-                      { value: 5, label: '5' },
-                      { value: 10, label: '10' },
-                    ]}
-                    mb="lg"
-                  />
-                </div>
-              )}
-              {readTracking && (
-                <div>
-                  <Text size="sm" fw={500} mb={2}>
-                    <Trans>Read</Trans>
-                  </Text>
-                  <Text size="xs" c="var(--ink-3)" mb="md">
-                    <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
-                  </Text>
-                  <RangeSlider
-                    thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
-                    min={0}
-                    max={100}
-                    step={5}
-                    minRange={0}
-                    value={readRange}
-                    onChange={setReadRange}
-                    marks={[
-                      { value: 0, label: '0%' },
-                      { value: 50, label: '50%' },
-                      { value: 100, label: '100%' },
-                    ]}
-                    mb="lg"
-                  />
-                </div>
-              )}
-            </Disclosure>
-            <Disclosure title={t`Monitoring and sources`} {...groupProps('monitoring')}>
-              <Select
-                label={t`Monitoring`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'monitored', label: t`Monitored` },
-                  { value: 'unmonitored', label: t`Unmonitored` },
-                ]}
-                value={monitoredFilter}
-                onChange={(v) => setMonitoredFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Quality profile`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-                  ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-                ]}
-                value={qualityProfileFilter}
-                onChange={(v) => setQualityProfileFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Completeness`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'behind', label: t`Behind (missing chapters)` },
-                  { value: 'complete', label: t`Complete` },
-                ]}
-                value={completeness}
-                onChange={(v) => setCompleteness(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Source state`}
-                description={t`Counts both switches: the per-series link and the global source toggle`}
-                data={sourceStateOptions}
-                value={sourceState}
-                onChange={(v) => setSourceState(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              {facetFilter({
-                label: t`Sources`,
-                description: t`Linked to the series, enabled or not`,
-                data: sourceOptions,
-                value: sourceFilter,
-                onChange: setSourceFilter,
-                mode: sourceMatch,
-                onModeChange: setSourceMatch,
-              })}
-              {facetFilter({
-                label: t`Downloaded from`,
-                description: t`Where the files on disk came from, which can outlive the link`,
-                data: fileSourceOptions,
-                value: fileSourceFilter,
-                onChange: setFileSourceFilter,
-                mode: fileSourceMatch,
-                onModeChange: setFileSourceMatch,
-              })}
-            </Disclosure>
-          </div>
-          {activeFilterCount > 0 && (
-            <Button
-              visibleFrom="sm"
-              variant="default"
-              leftSection={<IconX size={16} />}
-              onClick={() => applySpec(DEFAULT_SPEC, null)}
-            >
-              <Trans>Clear all filters</Trans>
-            </Button>
-          )}
-          <Group className="library-filter-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
-            {activeFilterCount > 0 && (
-              <Button variant="default" onClick={() => applySpec(DEFAULT_SPEC, null)}>
-                <Trans>Clear all</Trans>
-              </Button>
-            )}
-            <Button className="library-filter-show" onClick={() => setFiltersOpen(false)}>
-              <Plural value={shownCount} one="Show # series" other="Show # series" />
-            </Button>
-          </Group>
-        </Stack>
-      </Drawer>
+        values={filterValues}
+        set={filterSetters}
+        options={filterOptions}
+        hasCommunityRatings={hasCommunityRatings}
+        readTracking={readTracking}
+        showRootFolder={showRootFolderFilter}
+        shownCount={shownCount}
+        activeCount={activeFilterCount}
+        onReset={() => applySpec(DEFAULT_SPEC, null)}
+        onManageTags={() => {
+          setFiltersOpen(false)
+          setTagManagerOpen(true)
+        }}
+      />
 
       <TagManagerModal opened={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
 
       <Modal
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
-        title={t`Save this filter`}
+        title={
+          <ModalHeading
+            title={t`Save this filter`}
+            description={
+              <>
+                <Trans>Includes the search, sort and every filter.</Trans>{' '}
+                <Trans>Reusing the name of the active preset overwrites it.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack
           component="form"
@@ -2286,10 +2657,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             )
           }}
         >
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
-            <Trans>Reusing the name of the active preset overwrites it.</Trans>
-          </Text>
           <TextInput
             label={t`Name`}
             placeholder={t`e.g. Ongoing & behind`}
@@ -2297,27 +2664,66 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onChange={(e) => setFilterName(e.currentTarget.value)}
             data-autofocus
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
+        </Stack>
+      </Modal>
+
+      <Modal opened={renameTarget != null} onClose={() => setRenameTarget(null)} title={t`Rename saved filter`}>
+        <Stack
+          component="form"
+          gap="md"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            const target = renameTarget
+            const name = renameValue.trim()
+            if (!target || !name) return
+            saveFilter.mutate(
+              { id: target.id, name, spec: target.spec },
+              {
+                onSuccess: () => setRenameTarget(null),
+                onError: (err) => {
+                  const detail = err instanceof Error ? err.message : String(err)
+                  notifications.show({ color: 'var(--danger)', message: now`Failed to rename filter: ${detail}` })
+                },
+              },
+            )
+          }}
+        >
+          <TextInput
+            label={t`Name`}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.currentTarget.value)}
+            data-autofocus
+          />
+          <ModalFooter>
+            <Button variant="default" onClick={() => setRenameTarget(null)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button type="submit" disabled={!renameValue.trim()} loading={saveFilter.isPending}>
+              <Trans>Save</Trans>
+            </Button>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+            description={<Trans>Create new tags from "Manage tags".</Trans>}
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
-            <Trans>Create new tags from "Manage tags".</Trans>
-          </Text>
           <MultiSelect
             label={t`Add`}
             data={tagOptions}
@@ -2336,7 +2742,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             clearable
             comboboxProps={{ withinPortal: true }}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setTagModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -2368,22 +2774,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             >
               <Trans>Apply</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+            description={<Trans>Only sources that aren't linked yet are searched.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>
-        </Text>
-        <Text size="sm" c="var(--ink-3)" mb="lg">
-          <Trans>A large selection can take a while.</Trans>
-        </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -2411,7 +2816,122 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Auto-match</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
+      </Modal>
+
+      <Modal
+        opened={renameModalOpen}
+        onClose={() => setRenameModalOpen(false)}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+            description={
+              <Trans>Renames each series folder and its chapter files to match the naming formats in Settings.</Trans>
+            }
+          />
+        }
+      >
+        <Text size="sm" c="var(--ink-3)" mb="lg">
+          <Trans>
+            A series with a download in progress, or with two chapters that would get the same name, is
+            skipped.
+          </Trans>
+        </Text>
+        <ModalFooter>
+          <Button variant="default" onClick={() => setRenameModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            leftSection={<IconPencil size={16} />}
+            onClick={() => {
+              setRenameModalOpen(false)
+              void runBulk('Rename', { path: '/series/rename/bulk' })
+            }}
+          >
+            <Trans>Rename</Trans>
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal
+        opened={readStateModalOpen}
+        onClose={() => setReadStateModalOpen(false)}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+            description={
+              <Trans>
+                Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
+                days stay as they are.
+              </Trans>
+            }
+          />
+        }
+      >
+        <Text size="sm" c="var(--ink-3)" mb="lg">
+          <Trans>Unread clears your progress and resume position in every chapter.</Trans>
+        </Text>
+        <ModalFooter>
+          <Button variant="default" onClick={() => setReadStateModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button variant="light" onClick={() => runReadState('unread')}>
+            <Trans>Mark unread</Trans>
+          </Button>
+          <Button leftSection={<IconCheck size={16} />} onClick={() => runReadState('read')}>
+            <Trans>Mark read</Trans>
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal
+        opened={settingModal != null}
+        onClose={() => setSettingModal(null)}
+        title={
+          settingModal ? (
+            <ModalHeading
+              title={settingTitles[settingModal]}
+              description={
+                settingModal === 'Page conversion' ? <Trans>Files already converted stay as they are.</Trans> : undefined
+              }
+            />
+          ) : undefined
+        }
+      >
+        <Radio.Group
+          value={settingValue}
+          onChange={setSettingValue}
+          aria-label={settingModal ? _(BULK_ACTION_LABELS[settingModal]) : undefined}
+          mb="lg"
+        >
+          <Stack gap="sm">
+            {settingModal &&
+              settingOptions[settingModal].map((o) => (
+                <Radio key={o.value} value={o.value} label={o.label} description={o.hint} />
+              ))}
+          </Stack>
+        </Radio.Group>
+        <ModalFooter>
+          <Button variant="default" onClick={() => setSettingModal(null)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            onClick={() => {
+              if (!settingModal) return
+              const setting = settingModal
+              const mode = settingValue
+              setSettingModal(null)
+              void runBulk(setting, (id) =>
+                api(`/series/${id}/${BULK_SETTING_ENDPOINTS[setting]}`, {
+                  method: 'POST',
+                  body: JSON.stringify({ mode }),
+                }),
+              )
+            }}
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </ModalFooter>
       </Modal>
 
       <RemoveSeriesDialog
@@ -2496,16 +3016,22 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+            description={
+              <>
+                <Trans>Applies to chapters released later.</Trans>{' '}
+                <Trans>Chapters already listed keep their own setting.</Trans>{' '}
+                <Trans>
+                  "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
+                  read.
+                </Trans>
+              </>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Applies to chapters released later.</Trans>{' '}
-          <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
-          <Trans>
-            "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
-            read.
-          </Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Monitoring`}
           fullWidth
@@ -2519,57 +3045,51 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ]}
           mb="lg"
         />
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setMonitorModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
           <Button
             onClick={() => {
               setMonitorModalOpen(false)
-              void runBulk('Set monitoring', (id) =>
-                api(`/series/${id}/monitormode`, {
-                  method: 'POST',
-                  body: JSON.stringify({ mode: monitorMode }),
-                }),
-              )
+              void runBulk('Set monitoring', { path: '/series/monitormode/bulk', body: { mode: monitorMode } })
             }}
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+            description={<Trans>Instance default clears each series' own choice.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Instance default clears each series' own choice.</Trans>
-        </Text>
-        <Select
-          aria-label={t`Quality profile`}
-          data={[
-            { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-            ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-          ]}
-          value={bulkProfile}
-          onChange={(v) => setBulkProfile(v ?? DEFAULT_PROFILE_FILTER)}
-          allowDeselect={false}
-          comboboxProps={{ withinPortal: true }}
-          mb="xs"
-        />
-        {(() => {
-          const description = upgradeProfiles?.find((p) => String(p.id) === bulkProfile)?.description
-          return description ? (
-            <Text size="xs" c="var(--ink-3)" mb="lg">
-              {description}
-            </Text>
-          ) : (
-            <div style={{ height: 'var(--mantine-spacing-lg)' }} />
-          )
-        })()}
-        <Group justify="flex-end">
+        <div className="library-profile-choices">
+          <DrillChoices
+            label={t`Quality profile`}
+            value={bulkProfile}
+            options={[
+              {
+                value: DEFAULT_PROFILE_FILTER,
+                label: t`Instance default`,
+                hint: t`Follows the default profile set in Settings.`,
+              },
+              ...(upgradeProfiles ?? []).map((p) => ({
+                value: String(p.id),
+                label: p.name,
+                hint: p.description ?? undefined,
+              })),
+            ]}
+            onPick={setBulkProfile}
+          />
+        </div>
+        <ModalFooter>
           <Button variant="default" onClick={() => setProfileModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -2605,17 +3125,74 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
+      </Modal>
+
+      <Modal
+        opened={readingStatusModalOpen}
+        onClose={() => setReadingStatusModalOpen(false)}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+            description={<Trans>Trackers you have connected are updated too.</Trans>}
+          />
+        }
+      >
+        <SegmentedControl
+          aria-label={t`Reading status`}
+          fullWidth
+          orientation="vertical"
+          value={bulkReadingStatusValue}
+          onChange={(v) => setBulkReadingStatusValue(v as ReadingStatus)}
+          data={readingStatusOptions}
+          mb="lg"
+        />
+        <ModalFooter>
+          <Button variant="default" onClick={() => setReadingStatusModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            loading={bulkReadingStatus.isPending}
+            onClick={() =>
+              bulkReadingStatus.mutate(
+                { seriesIds: [...selected], status: bulkReadingStatusValue },
+                {
+                  onSuccess: ({ updated }) => {
+                    setReadingStatusModalOpen(false)
+                    notifications.show({
+                      color: 'var(--ok)',
+                      message: plural(updated, {
+                        one: 'Reading status updated for # series',
+                        other: 'Reading status updated for # series',
+                      }),
+                    })
+                  },
+                  onError: (err) => {
+                    const detail = err instanceof Error ? err.message : String(err)
+                    notifications.show({
+                      color: 'var(--danger)',
+                      message: now`Failed to update reading status: ${detail}`,
+                    })
+                  },
+                },
+              )
+            }
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+            description={<Trans>This only changes your own bell.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Notifications`}
           fullWidth
@@ -2627,7 +3204,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <Text size="xs" c="var(--ink-3)" mb="lg">
           {notificationHelp}
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -2660,20 +3237,26 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+            description={
+              <>
+                <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
+                <Trans>A file move is blocked for any series with an active download.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-            <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
-            <Trans>A file move is blocked for any series with an active download.</Trans>
-          </Text>
           <Select
             label={t`Destination root folder`}
             placeholder={t`Pick a root folder`}
@@ -2695,7 +3278,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               />
             </Stack>
           </Radio.Group>
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -2704,21 +3287,25 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               onClick={() => {
                 if (!moveTarget) return
                 setMoveModalOpen(false)
-                void runBulk('Move', (id) =>
-                  api(`/series/${id}/move`, {
-                    method: 'POST',
-                    body: JSON.stringify({ rootFolderId: Number(moveTarget), moveFiles }),
-                  }),
-                )
+                void runBulk('Move', {
+                  path: '/series/move/bulk',
+                  body: { rootFolderId: Number(moveTarget), moveFiles },
+                })
               }}
             >
               <Trans>Move</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} colsByDensity={LIBRARY_POSTER_COLS_BY_DENSITY} />}
+      {isLoading && (
+        <PosterSkeletons
+          density={density}
+          viewMode={shownView === 'grid' ? 'grid' : 'list'}
+          colsByDensity={LIBRARY_POSTER_COLS_BY_DENSITY}
+        />
+      )}
       {error && (
         <EmptyState
           title={t`Failed to load library`}
@@ -2744,7 +3331,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <EmptyState
           art="shelf"
           title={t`Your library is empty`}
-          description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
+          description={t`Search MangaBaka and add your first series.`}
           actionLabel={can('AddSeries') ? t`Add a series` : t`Request series`}
           actionTo="/add"
           actionIcon={<IconPlus size={16} />}
@@ -2756,7 +3343,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           title={t`No matches`}
-          description={t`No series match your filters. Try clearing the search or a filter.`}
           actionLabel={t`Clear all filters`}
           onAction={() => {
             applySpec(DEFAULT_SPEC, null)
@@ -2764,92 +3350,115 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           }}
         />
       )}
-      {/* Both views render a slice, not the whole filtered set, once the library is big enough to
-          be worth it (see useWindowedRows for the threshold and what it costs). Bulk selection is
-          unaffected: "select filtered" works off `visible`, never off what is mounted. */}
-      {visible.length > 0 && viewMode === 'grid' && (
-        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
-            {visible.slice(windowed.start, windowed.end).map((s) =>
-              archivedScope ? (
-                <ArchivedSeriesCard
-                  key={s.id}
-                  series={s}
-                  variant="grid"
-                  density={density}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  canRestore={canArchive}
-                  canRemoveFiles={canDelete}
-                  canDelete={canDelete}
-                  onRate={onRate}
-                  onAction={onCardAction}
-                />
-              ) : (
-                <CoverCard
-                  key={s.id}
-                  series={s}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  menu
-                />
-              ),
-            )}
-            {!archivedScope && !selectMode && (series?.length ?? 0) < 12 && (
-              <Link
-                to="/add"
-                className="library-add-cell"
-                aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
-              >
-                <IconPlus size={24} aria-hidden />
-              </Link>
-            )}
-          </SimpleGrid>
-        </div>
+      {/* Every view renders a slice, not the whole filtered set, once the library is big enough to
+          be worth it (see useWindowedRows for the threshold and what it costs), each group through
+          its own window. Bulk selection is unaffected: "select filtered" works off `visible`,
+          never off what is mounted. */}
+      {visible.length > 0 && shownView === 'table' && (
+        <LibraryTableFrame columns={tableColumns} selectMode={selectMode}>
+          <LibraryTableHeader
+            columns={tableColumns}
+            selectMode={selectMode}
+            sort={sort}
+            sortDir={sortDir}
+            sorts={scopeSorts}
+            onSort={sortByColumn}
+          />
+          {itemsBody}
+        </LibraryTableFrame>
       )}
-      {visible.length > 0 && viewMode === 'list' && (
-        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <Stack ref={windowed.innerRef} gap="xs">
-            {visible.slice(windowed.start, windowed.end).map((s) =>
-              archivedScope ? (
-                <ArchivedSeriesCard
-                  key={s.id}
-                  series={s}
-                  variant="list"
-                  density={density}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  canRestore={canArchive}
-                  canRemoveFiles={canDelete}
-                  canDelete={canDelete}
-                  onRate={onRate}
-                  onAction={onCardAction}
-                />
-              ) : (
-                <SeriesRow
-                  key={s.id}
-                  series={s}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  density={density}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                />
-              ),
-            )}
-          </Stack>
-        </div>
-      )}
+      {visible.length > 0 && shownView !== 'table' && itemsBody}
+      <LibraryColumnsModal
+        opened={columnsOpen}
+        onClose={() => setColumnsOpen(false)}
+        columns={tableColumns}
+        onChange={changeColumns}
+      />
     </SurfaceFrame>
+  )
+}
+
+/**
+ * Which table columns show and in what order. Shown columns come first in their order with arrows
+ * to move them; hidden ones follow in the default order.
+ */
+function LibraryColumnsModal({
+  opened,
+  onClose,
+  columns,
+  onChange,
+}: {
+  opened: boolean
+  onClose: () => void
+  columns: LibraryColumn[]
+  onChange: (columns: LibraryColumn[]) => void
+}) {
+  const { _ } = useLingui()
+  const { t } = useLinguiMacro()
+  const hidden = LIBRARY_COLUMNS.filter((c) => !columns.includes(c))
+  const move = (column: LibraryColumn, by: -1 | 1) => {
+    const from = columns.indexOf(column)
+    const to = from + by
+    if (from === -1 || to < 0 || to >= columns.length) return
+    const next = [...columns]
+    ;[next[from], next[to]] = [next[to], next[from]]
+    onChange(next)
+  }
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Columns`}
+          description={<Trans>The cover and title always show.</Trans>}
+        />
+      }
+      closeButtonProps={{ 'aria-label': t`Close` }}
+    >
+      <Stack gap="xs">
+        {[...columns, ...hidden].map((column) => {
+          const shown = columns.includes(column)
+          const index = columns.indexOf(column)
+          const label = _(LIBRARY_COLUMN_LABELS[column])
+          return (
+            <Group key={column} justify="space-between" wrap="nowrap" className="library-columns-row">
+              <Checkbox
+                label={label}
+                checked={shown}
+                onChange={(e) =>
+                  onChange(e.currentTarget.checked ? [...columns, column] : columns.filter((c) => c !== column))
+                }
+              />
+              {shown && (
+                <Group gap={4} wrap="nowrap">
+                  <ActionIcon
+                    variant="subtle"
+                    aria-label={t`Move ${label} up`}
+                    disabled={index === 0}
+                    onClick={() => move(column, -1)}
+                  >
+                    <IconArrowUp size={16} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    aria-label={t`Move ${label} down`}
+                    disabled={index === columns.length - 1}
+                    onClick={() => move(column, 1)}
+                  >
+                    <IconArrowDown size={16} />
+                  </ActionIcon>
+                </Group>
+              )}
+            </Group>
+          )
+        })}
+        <ModalFooter>
+          <Button variant="subtle" onClick={() => onChange([...DEFAULT_LIBRARY_COLUMNS])}>
+            <Trans>Reset to default</Trans>
+          </Button>
+        </ModalFooter>
+      </Stack>
+    </Modal>
   )
 }

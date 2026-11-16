@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
 import { Fragment, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
@@ -8,9 +9,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   ActionIcon,
-  Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Divider,
@@ -28,13 +27,11 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
-  Title,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconArrowLeft,
   IconBook,
   IconChevronDown,
@@ -46,6 +43,7 @@ import {
   IconEyeCheck,
   IconHistory,
   IconLink,
+  IconHourglass,
   IconLinkOff,
   IconListCheck,
   IconSearch,
@@ -56,10 +54,13 @@ import {
   IconX,
   IconDeviceTv,
   IconEyeOff,
+  IconSortAscending,
   IconSortAscendingNumbers,
+  IconSortDescending,
   IconSortDescendingNumbers,
   IconDatabase,
   IconFileText,
+  IconFileUnknown,
 } from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
@@ -71,6 +72,7 @@ import {
   useSources,
   useArchiveSeries,
   useDismissArchiveHint,
+  useDismissCompleteHint,
   useDismissRateHint,
   useDeleteSeries,
   useRemoveArchivedFiles,
@@ -90,6 +92,7 @@ import {
   useClearDelisted,
   useSetIncognito,
   useSetSeriesNotificationMode,
+  useSetSeriesPrepareAhead,
   useSetMonitorMode,
   useSetUpgradeProfile,
   useSetReadFileCleanup,
@@ -105,6 +108,7 @@ import {
   useDeleteChapters,
   useSeriesQueue, useSeriesFilesSummary,
   useRecommendationDetail,
+  hasReviewIds,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -112,13 +116,14 @@ import {
   useSeriesReadProgress,
   useSetChapterRead,
   useSetChaptersState,
+  warmReaderCredits,
   type ChapterReadState,
 } from '../api/reader'
 import { useSeriesNoteCounts } from '../api/notes'
 import NotesPanel from '../components/notes/NotesPanel'
 import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from '../api/animeResume'
 import { useCreateSeriesRequest } from '../api/requests'
-import { altTitleLabel, readableTitles } from '../api/titles'
+import { altTitleLabel, otherTitles, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import {
   isVolumeSearchStarted,
@@ -142,7 +147,8 @@ import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { TYPE_LABELS } from '../components/CatalogueFilters'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { RelinkFilesModal } from '../components/RelinkFilesModal'
-import { MetadataLinks } from '../components/MetadataLinks'
+import { ScoreFigure } from '../components/discover/ScoreFigure'
+import { ScoredSiteChips } from '../components/ScoredSiteChips'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { TagBuckets } from '../components/TagBuckets'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
@@ -151,24 +157,41 @@ import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
+import { ChapterViewMenu } from '../components/series/ChapterViewMenu'
 import {
   ChapterRow,
   ChapterRowSkeletons,
   ChapterSpanRow,
+  ChapterVolumeRow,
   ChunkedRows,
   type ChapterRowActions,
   type ChapterSpanRowActions,
+  type ChapterVolumeRowActions,
 } from '../components/series/ChapterTableRows'
 import {
+  CHAPTER_SORTS,
   chapterLabel,
   finishedHighWater,
+  groupByVolume,
+  isDescendingSort,
+  isReleaseSort,
   isSkipped,
+  mostHaveVolumes,
+  parseHiddenColumns,
   readLanguagesOf,
   readStateOf,
+  serializeHiddenColumns,
+  sortChapters,
+  volumeOf,
+  type ChapterSort,
   type FileOrigin,
+  type HidableChapterColumn,
+  type VolumeGroup,
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
+import { SeriesTorrentDownloads } from '../components/series/SeriesTorrentDownloads'
 import { ArchiveHint } from '../components/series/ArchiveHint'
+import { CompleteHint } from '../components/series/CompleteHint'
 import { RateHint } from '../components/series/RateHint'
 import { RatingCheckpointPrompt } from '../components/series/RatingCheckpointPrompt'
 import { ratesProvisionally } from '../lib/rating'
@@ -179,11 +202,15 @@ import { UndoConversionModal } from '../components/series/UndoConversionModal'
 import { useSeriesConversion } from '../api/pageConversion'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { SeriesPausedButton, SeriesPauseMenuItem } from '../components/series/SeriesQueuePause'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
+import { useChangeReadingStatus } from '../components/series/ReadingStatus'
+import { ReadingFootLine, SeriesReadingPanel } from '../components/series/SeriesReadingPanel'
+import { useSeriesReadingStats } from '../api/seriesReadingStats'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -191,7 +218,7 @@ import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { ReleaseOutlookSummary } from '../components/releases/ReleaseOutlookSummary'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
-import { formatDate, formatReadingTime } from '../format'
+import { formatDate, formatDateTime, formatDecimal, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
   seriesProgressVisual,
@@ -199,7 +226,11 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
+import { Callout } from '../components/ui/Callout'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
+import { MetaList } from '../components/ui/MetaList'
+import { SectionHeader } from '../components/ui/SectionHeader'
 import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -218,6 +249,7 @@ import { useSeriesNotificationOptions } from '../components/ui/seriesNotificatio
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
+import { SeriesScanlationGroupsModal } from '../components/ScanlationGroupsModal'
 import { pwaSupported } from '../lib/pwa/serviceWorker'
 import {
   removeChaptersOffline,
@@ -254,8 +286,9 @@ const CHAPTER_FILTERS = [
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
 const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
-const CHAPTER_SORTS = ['asc', 'desc'] as const
-type ChapterSort = (typeof CHAPTER_SORTS)[number]
+const CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY = 'series-chapter-hidden-columns'
+const CHAPTER_GROUPING_STORAGE_KEY = 'series-chapter-grouping'
+const CHAPTER_GROUPINGS = ['auto', 'on', 'off'] as const
 
 const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
 const CHAPTER_COLUMNS = {
@@ -280,29 +313,52 @@ const CHAPTER_COLUMN_MAX = 640
  */
 type ChapterLayout = 'full' | 'compact' | 'list'
 const CHAPTER_SHED_COLUMN: ChapterColumn = 'released'
-const shownChapterColumns = (layout: ChapterLayout) =>
-  layout === 'compact' ? CHAPTER_COLUMN_KEYS.filter((key) => key !== CHAPTER_SHED_COLUMN) : CHAPTER_COLUMN_KEYS
-const chapterColumnsWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
-  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + shownChapterColumns(layout).reduce((sum, key) => sum + widths[key], 0)
+type HiddenChapterColumns = ReadonlySet<HidableChapterColumn>
+const NO_HIDDEN_COLUMNS: HiddenChapterColumns = new Set()
+// Columns the reader hid never count towards the width a layout needs, so hiding some lets the full
+// layout hold in a narrower panel. The auto-shed of Released on top of that is unchanged.
+const shownChapterColumns = (layout: ChapterLayout, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS) =>
+  CHAPTER_COLUMN_KEYS.filter(
+      (key) => !hidden.has(key as HidableChapterColumn) && !(layout === 'compact' && key === CHAPTER_SHED_COLUMN),
+  )
+const chapterColumnsWidthFor = (
+  widths: Record<ChapterColumn, number>,
+  layout: ChapterLayout,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+) =>
+  CHAPTER_FIXED_COLUMNS_WIDTH +
+  (hidden.has('title') ? 0 : CHAPTER_TITLE_MIN_WIDTH) +
+  shownChapterColumns(layout, hidden).reduce((sum, key) => sum + widths[key], 0)
 // Off the default widths, never the dragged ones: a column dragged wide used to tip the table into
 // list rows, which have no header to drag it back from.
 const CHAPTER_DEFAULT_WIDTHS = Object.fromEntries(
     CHAPTER_COLUMN_KEYS.map((key) => [key, CHAPTER_COLUMNS[key].width]),
 ) as Record<ChapterColumn, number>
-const CHAPTER_FULL_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
-const CHAPTER_COMPACT_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+const chapterFullMinWidth = (hidden: HiddenChapterColumns) => chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full', hidden)
+const chapterCompactMinWidth = (hidden: HiddenChapterColumns) => chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact', hidden)
 // The layout was picked because the panel holds at least this much, so a table never needs to
 // scroll sideways in it. Widths stored from a wider window stay as preferences the browser can
 // squeeze rather than a floor that pushes the table past the panel.
-const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+const chapterTableMinWidthFor = (
+  widths: Record<ChapterColumn, number>,
+  layout: ChapterLayout,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+) =>
   Math.min(
-      chapterColumnsWidthFor(widths, layout),
-      layout === 'full' ? CHAPTER_FULL_MIN_WIDTH : CHAPTER_COMPACT_MIN_WIDTH,
+      chapterColumnsWidthFor(widths, layout, hidden),
+      layout === 'full' ? chapterFullMinWidth(hidden) : chapterCompactMinWidth(hidden),
   )
-const chapterLayoutFor = (panelWidth: number): ChapterLayout =>
-  panelWidth === 0 || panelWidth >= CHAPTER_FULL_MIN_WIDTH ? 'full' : panelWidth >= CHAPTER_COMPACT_MIN_WIDTH ? 'compact' : 'list'
+const chapterLayoutFor = (panelWidth: number, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden)
+      ? 'full'
+      : panelWidth >= chapterCompactMinWidth(hidden) ? 'compact' : 'list'
 
-type ChapterColumnRoom = { panel: number; layout: ChapterLayout; widths: Record<ChapterColumn, number> | null }
+type ChapterColumnRoom = {
+  panel: number
+  layout: ChapterLayout
+  widths: Record<ChapterColumn, number> | null
+  hidden: HiddenChapterColumns
+}
 /**
  * Column specs whose max is whatever the panel has left once every other shown column has its
  * width, so a drag can't push the table wider than the panel. Read at drag time from `room`, which
@@ -313,10 +369,11 @@ const chapterColumnSpecsWithin = (room: RefObject<ChapterColumnRoom>) =>
       CHAPTER_COLUMN_KEYS.map((key): [ChapterColumn, ColumnSpec] => [key, {
         ...CHAPTER_COLUMNS[key],
         get max() {
-          const { panel, layout, widths } = room.current
+          const { panel, layout, widths, hidden } = room.current
           if (panel === 0 || layout === 'list' || !widths) return CHAPTER_COLUMN_MAX
-          const others = shownChapterColumns(layout).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
-          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - CHAPTER_TITLE_MIN_WIDTH - others)
+          const others = shownChapterColumns(layout, hidden).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
+          const titleMin = hidden.has('title') ? 0 : CHAPTER_TITLE_MIN_WIDTH
+          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - titleMin - others)
           return Math.min(CHAPTER_COLUMN_MAX, Math.max(CHAPTER_COLUMNS[key].min, left))
         },
       }]),
@@ -349,8 +406,10 @@ const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
+    | { kind: 'volume'; group: VolumeGroup; collapsed: boolean }
 
 const NO_ROWS: RenderedRow[] = []
+const NO_VOLUME_KEYS: string[] = []
 
 type ReadTimeEstimate = {
   seconds: number
@@ -461,6 +520,8 @@ function SeriesDetailBody() {
       series?.mangaBakaId != null ? String(series.mangaBakaId) : null,
   )
   const providerTags = providerDetail?.tags ?? []
+  const communityScore = providerDetail?.rating ?? null
+  const sourceRatings = providerDetail?.sourceRatings ?? []
 
   // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
   const { data: sources } = useSources()
@@ -513,8 +574,13 @@ function SeriesDetailBody() {
     wasLinking.current = linking
   }, [series?.importLinkPending, seriesId, queryClient])
   const readTracking = useReadTracking()
+  const { data: readingStats } = useSeriesReadingStats(seriesId, readTracking)
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
+  // Read opens this chapter, so its credit page search starts while the page is looked at.
+  useEffect(() => {
+    if (continueAt?.chapterId != null) warmReaderCredits(continueAt.chapterId)
+  }, [continueAt?.chapterId])
   const { data: filesSummary } = useSeriesFilesSummary(seriesId)
   const setRead = useSetChapterRead(seriesId)
   // Only worth asking once there is an anime to have finished, and only meaningful with read
@@ -550,9 +616,14 @@ function SeriesDetailBody() {
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
   )
+  const torrentDownloads = useMemo(
+      () => (queue?.items ?? []).filter((q) => q.seriesId === seriesId && q.releaseTitle != null),
+      [queue, seriesId],
+  )
   const deleteSeries = useDeleteSeries()
   const archiveSeries = useArchiveSeries()
   const dismissArchiveHint = useDismissArchiveHint()
+  const dismissCompleteHint = useDismissCompleteHint()
   const dismissRateHint = useDismissRateHint()
   const restoreSeries = useRestoreSeries()
   const removeArchivedFiles = useRemoveArchivedFiles()
@@ -630,6 +701,8 @@ function SeriesDetailBody() {
         color: 'var(--warn)',
         message: staticT`Another upgrade scan was already running, so this one did not run. Try again once it finishes.`,
       })
+    } else if (scanStatus.state === 'cancelled') {
+      notifications.show({ color: 'var(--info)', message: staticT`The upgrade scan was stopped.` })
     } else {
       notifications.show({
         color: 'var(--danger)',
@@ -642,6 +715,8 @@ function SeriesDetailBody() {
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
+  const setPrepareAhead = useSetSeriesPrepareAhead()
+  const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
@@ -685,12 +760,54 @@ function SeriesDetailBody() {
   const [chapterSort, setChapterSortState] = useState<ChapterSort>(() =>
       readStored(CHAPTER_SORT_STORAGE_KEY, CHAPTER_SORTS, 'asc'),
   )
-  const toggleChapterSort = () => {
-    const next = chapterSort === 'asc' ? 'desc' : 'asc'
+  const chapterSortedByRelease = isReleaseSort(chapterSort)
+  const chapterSortDescending = isDescendingSort(chapterSort)
+  const setChapterSort = (next: ChapterSort) => {
     setChapterSortState(next)
     writeStored(CHAPTER_SORT_STORAGE_KEY, next)
   }
-  const chapterColumnRoom = useRef<ChapterColumnRoom>({ panel: 0, layout: 'full', widths: null })
+  const toggleChapterSort = () =>
+      setChapterSort(
+          chapterSortedByRelease
+              ? (chapterSortDescending ? 'releasedAsc' : 'releasedDesc')
+              : (chapterSortDescending ? 'asc' : 'desc'),
+      )
+  const chooseChapterSortKey = (key: 'number' | 'released') =>
+      setChapterSort(
+          key === 'released'
+              ? (chapterSortDescending ? 'releasedDesc' : 'releasedAsc')
+              : (chapterSortDescending ? 'desc' : 'asc'),
+      )
+  const [hiddenChapterColumns, setHiddenChapterColumns] = useState<HiddenChapterColumns>(() => {
+    try {
+      return parseHiddenColumns(localStorage.getItem(CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY))
+    } catch {
+      return NO_HIDDEN_COLUMNS
+    }
+  })
+  const toggleChapterColumn = (column: HidableChapterColumn) => {
+    const next = new Set(hiddenChapterColumns)
+    if (!next.delete(column)) next.add(column)
+    setHiddenChapterColumns(next)
+    writeStored(CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY, serializeHiddenColumns(next))
+  }
+  const [chapterGroupingPref, setChapterGroupingPref] = useState(() =>
+      readStored(CHAPTER_GROUPING_STORAGE_KEY, CHAPTER_GROUPINGS, 'auto'),
+  )
+  const [collapsedVolumes, setCollapsedVolumes] = useState<ReadonlySet<string>>(new Set())
+  const toggleVolume = useCallback((key: string) => {
+    setCollapsedVolumes((current) => {
+      const next = new Set(current)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
+  }, [])
+  const chapterColumnRoom = useRef<ChapterColumnRoom>({
+    panel: 0,
+    layout: 'full',
+    widths: null,
+    hidden: hiddenChapterColumns,
+  })
   const [chapterColumnSpecs] = useState(() => chapterColumnSpecsWithin(chapterColumnRoom))
   const { widths: chapterColumnWidths, handleProps: chapterColumnHandle } = useColumnWidths(
       CHAPTER_COLUMNS_STORAGE_KEY,
@@ -700,7 +817,10 @@ function SeriesDetailBody() {
         // hand. The lines sit at the Chapter cell's end, so they shift by exactly what it grew.
         chapterTable
             ?.querySelector<HTMLElement>('.mantine-TableScrollContainer-scrollContainer')
-            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout)}px`)
+            ?.style.setProperty(
+                '--table-min-width',
+                `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout, chapterColumnRoom.current.hidden)}px`,
+            )
         const overlay = chapterTable?.querySelector<HTMLElement>('.chapter-span-overlay')
         if (overlay) overlay.style.transform = key === 'chapter' && shift ? `translateX(${shift}px)` : ''
       },
@@ -760,12 +880,19 @@ function SeriesDetailBody() {
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
   const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
+  const volumeHold = series?.volumeHold ?? null
+  const holdUntil = volumeHold?.until ? formatDateTime(volumeHold.until) : null
+  const holdThrough = volumeHold?.through != null ? formatDecimal(volumeHold.through) : null
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
   const canManageSources = can('ManageSources')
   const { data: sourceMappings } = useSourceMappings(seriesId, canManageSources)
   const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
+  const [groupsOpen, setGroupsOpen] = useState(false)
+  const hasGroupSource = (sourceMappings ?? []).some(
+    (m) => m.enabled && sources?.some((s) => s.name === m.sourceName && s.scanlationGroups),
+  )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
    * `unread` and `read` only consider downloaded chapters, plus read ones whose file was removed: a
@@ -847,15 +974,7 @@ function SeriesDetailBody() {
   const visibleChapters = useMemo(() => {
     const query = chapterSearch.trim().toLocaleLowerCase()
     const numberQuery = query.match(/^(?:ch(?:apter)?\.?\s*)?(\d+(?:\.\d+)?)$/)?.[1]
-    // The API sends numbered chapters ascending with unnumbered one-shots after them. Descending
-    // flips only the numbered run, so a pile of one-shots doesn't bury the latest chapter.
-    const ordered = chapterSort === 'desc'
-        ? [
-          ...(chapters ?? []).filter((c) => c.number !== null).reverse(),
-          ...(chapters ?? []).filter((c) => c.number === null),
-        ]
-        : (chapters ?? [])
-    return ordered
+    return sortChapters(chapters ?? [], chapterSort)
         .filter(filters[chapterFilter] ?? filters.all)
         .filter((chapter) => {
           if (!query) return true
@@ -940,10 +1059,12 @@ function SeriesDetailBody() {
     return numbered.length === 0 ? null : Math.max(...numbered)
   }, [chapters])
 
+  // A season is a run of chapter numbers, so it only means something while the table is in number
+  // order. Sorted by release date the markers stay as plain badges and nothing folds.
   const animeSpans = useMemo(() => {
-    if (lastChapterNumber === null) return [] as AnimeSpan[]
+    if (lastChapterNumber === null || chapterSortedByRelease) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, lastChapterNumber)
-  }, [animeMarkers, lastChapterNumber])
+  }, [animeMarkers, lastChapterNumber, chapterSortedByRelease])
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -1038,21 +1159,22 @@ function SeriesDetailBody() {
     if (!chapterTable) return
     const observer = new ResizeObserver(([entry]) => {
       chapterColumnRoom.current.panel = entry.contentRect.width
-      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width))
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns))
     })
     observer.observe(chapterTable)
     return () => observer.disconnect()
-  }, [chapterTable])
+  }, [chapterTable, hiddenChapterColumns])
   // A panel that can't hold the default columns first drops Released, then turns rows into two-line
   // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
   // actions out of view.
   const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
   const chapterRowsAsList = chapterLayout === 'list'
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout)
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
   useLayoutEffect(() => {
     chapterColumnRoom.current.layout = chapterLayout
     chapterColumnRoom.current.widths = chapterColumnWidths
-  }, [chapterLayout, chapterColumnWidths])
+    chapterColumnRoom.current.hidden = hiddenChapterColumns
+  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
   const [spanLines, setSpanLines] = useState<
       { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
@@ -1063,6 +1185,19 @@ function SeriesDetailBody() {
    */
   const [markerSlot, setMarkerSlot] = useState(0)
   const hasAnimeMarkers = animeMarkers.size > 0
+
+  const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
+  const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
+  const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
+  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
+  // being in play means the table stays flat.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
+  const setChapterGrouping = (on: boolean) => {
+    const next = on ? 'on' : 'off'
+    setChapterGroupingPref(next)
+    writeStored(CHAPTER_GROUPING_STORAGE_KEY, next)
+  }
 
   /**
    * The table's rows, with folded spans collapsed to one summary row each.
@@ -1104,8 +1239,20 @@ function SeriesDetailBody() {
       out.push({ kind: 'chapter', chapter: c })
     }
 
-    return { rows: out, visibleSpans }
-  }, [visibleChapters, animeSpans, foldedSpans])
+    if (groupingActive) {
+      const rows: RenderedRow[] = []
+      const volumeKeys: string[] = []
+      for (const group of groupByVolume(visibleChapters, chapterSortDescending)) {
+        const collapsed = collapsedVolumes.has(group.key)
+        volumeKeys.push(group.key)
+        rows.push({ kind: 'volume', group, collapsed })
+        if (!collapsed) for (const chapter of group.chapters) rows.push({ kind: 'chapter', chapter })
+      }
+      return { rows, visibleSpans, volumeKeys }
+    }
+
+    return { rows: out, visibleSpans, volumeKeys: NO_VOLUME_KEYS }
+  }, [visibleChapters, animeSpans, foldedSpans, groupingActive, collapsedVolumes, chapterSortDescending])
 
   /**
    * Highest chapter number the reader has finished, for the marker on the coverage bar. The DTO's
@@ -1125,39 +1272,57 @@ function SeriesDetailBody() {
       chapterPageSizePreference === 'all'
           ? Math.max(1, renderedRows.rows.length)
           : Number(chapterPageSizePreference)
-  const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
-  const chapterPageLabels = useMemo(
-      () =>
-          Array.from({ length: chapterPageCount }, (_, index) => {
-            const rows = renderedRows.rows.slice(index * chapterPageSize, (index + 1) * chapterPageSize)
-            const numbers = rows.flatMap((row) =>
-                row.kind === 'chapter'
-                    ? row.chapter.number === null
-                        ? []
-                        : [row.chapter.number]
-                    : row.rows.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number])),
-            )
+  /**
+   * The rows split into pages. A grouped table never ends a page on a volume header whose chapters
+   * start the next one, and a page that opens inside a volume repeats that volume's header, so every
+   * page reads on its own.
+   */
+  const chapterPages = useMemo(() => {
+    const rows = renderedRows.rows
+    const pages: RenderedRow[][] = []
+    if (!groupingActive) {
+      for (let i = 0; i < rows.length; i += chapterPageSize) pages.push(rows.slice(i, i + chapterPageSize))
+      return pages
+    }
+    let current: RenderedRow[] = []
+    let header: RenderedRow | null = null
+    for (const row of rows) {
+      if (current.length >= chapterPageSize) {
+        const last = current[current.length - 1]
+        const carried = current.length > 1 && last.kind === 'volume' && !last.collapsed ? [current.pop()!] : []
+        pages.push(current)
+        current = header !== null && carried.length === 0 && row.kind === 'chapter' ? [header] : carried
+      }
+      if (row.kind === 'volume') header = row
+      current.push(row)
+    }
+    if (current.length > 0) pages.push(current)
+    return pages
+  }, [renderedRows.rows, chapterPageSize, groupingActive])
+  const chapterPageCount = Math.max(1, chapterPages.length)
+  const chapterPageLabels = useMemo(() => {
+    let offset = 0
+    return Array.from({ length: chapterPageCount }, (_, index) => {
+      const rows = chapterPages[index] ?? NO_ROWS
+      const start = offset + 1
+      offset += rows.length
+      const numbers = rows.flatMap((row) => {
+        const chapters =
+            row.kind === 'chapter' ? [row.chapter] : row.kind === 'span' ? row.rows : row.collapsed ? row.group.chapters : []
+        return chapters.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number]))
+      })
 
-            if (numbers.length === 0) {
-              const start = index * chapterPageSize + 1
-              const end = index * chapterPageSize + rows.length
-              return t`Items ${start}–${end}`
-            }
-            const first = Math.min(...numbers)
-            const last = Math.max(...numbers)
-            return first === last ? String(first) : `${first}–${last}`
-          }),
-      [renderedRows.rows, chapterPageCount, chapterPageSize, t, i18n.locale],
-  )
+      if (numbers.length === 0) {
+        const end = offset
+        return t`Items ${start}–${end}`
+      }
+      const first = Math.min(...numbers)
+      const last = Math.max(...numbers)
+      return first === last ? String(first) : `${first}–${last}`
+    })
+  }, [chapterPages, chapterPageCount, t, i18n.locale])
   const currentChapterPage = Math.min(chapterPage, chapterPageCount)
-  const pagedRows = useMemo(
-      () =>
-          renderedRows.rows.slice(
-              (currentChapterPage - 1) * chapterPageSize,
-              currentChapterPage * chapterPageSize,
-          ),
-      [renderedRows.rows, currentChapterPage, chapterPageSize],
-  )
+  const pagedRows = chapterPages[currentChapterPage - 1] ?? NO_ROWS
   /**
    * What the table body actually renders. Deferred, and empty while another tab is open, so that
    * opening Chapters commits the tab with a skeleton at once and builds the rows in a background
@@ -1170,7 +1335,7 @@ function SeriesDetailBody() {
   useEffect(() => {
     setChapterPage(1)
     selectAnchor.current = null
-  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference])
+  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference, groupingActive])
 
   useEffect(() => {
     if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
@@ -1180,7 +1345,13 @@ function SeriesDetailBody() {
   const rangeUnits = useMemo(
       () =>
           shownRows.map((r) =>
-              r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
+              r.kind === 'chapter'
+                  ? { ids: [r.chapter.id] }
+                  : r.kind === 'span'
+                      ? { ids: r.rows.map((c) => c.id) }
+                      // An open header is just a divider in a range. A folded one stands in for
+                      // the chapters it hides, like a folded season.
+                      : { ids: r.collapsed ? r.group.chapters.map((c) => c.id) : [] },
           ),
       [shownRows],
   )
@@ -1239,8 +1410,8 @@ function SeriesDetailBody() {
         const startEl = markerRefs.current.get(`${span.key}:start`)
         const endEl = markerRefs.current.get(`${span.key}:end`)
         // Sorted descending, the end badge is the one on top.
-        const topEl = chapterSort === 'desc' ? endEl : startEl
-        const bottomEl = chapterSort === 'desc' ? startEl : endEl
+        const topEl = chapterSortDescending ? endEl : startEl
+        const bottomEl = chapterSortDescending ? startEl : endEl
         // Clip to the visible run, below the table header. Either badge can be on another
         // page (or hidden by a filter), including both on a middle page of a long season.
         const top = topEl
@@ -1306,30 +1477,16 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths, chapterLayout])
+  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
   const chapterSearchInput = chapters && chapters.length > 0 && (
-      <TextInput
-          size="sm"
+      <SearchInput
           mt={isMobile ? -8 : undefined}
           value={chapterSearch}
           onChange={(event) => setChapterSearch(event.currentTarget.value)}
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            chapterSearch ? (
-                <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="var(--neutral)"
-                    aria-label={t`Clear chapter search`}
-                    onClick={() => setChapterSearch('')}
-                >
-                  <IconX size={16} />
-                </ActionIcon>
-            ) : null
-          }
+          onClear={() => setChapterSearch('')}
           placeholder={t`Search by chapter number or title`}
           aria-label={t`Search chapters`}
       />
@@ -1424,6 +1581,26 @@ function SeriesDetailBody() {
     toggleSpanFold,
   })
 
+  const volumeRowActions = useStableActions<ChapterVolumeRowActions>({
+    applyWanted,
+    applyReadState,
+    download: (chapterIds) => {
+      if (archived || chapterIds.length === 0) return
+      downloadChapters.mutate(chapterIds, {
+        onSuccess: (r) =>
+          r.queued > 0
+            ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+            : notify.info(r.error ?? staticT`Nothing to queue, those chapters are already on disk`),
+      })
+    },
+    selectChapters: (ids) => {
+      setSelectMode(true)
+      selectAnchor.current = null
+      setSelected(new Set(ids))
+    },
+    toggleVolume,
+  })
+
   const nextChapter = useMemo(
       () => {
         if (!chapters) return null
@@ -1499,7 +1676,6 @@ function SeriesDetailBody() {
               headingOrder={1}
               code={`#${id}`}
               title={t`Series not found`}
-              description={t`It may have been removed from the library.`}
               actionLabel={t`Back to library`}
               actionTo="/library"
               actionIcon={<IconArrowLeft size={16} />}
@@ -1514,6 +1690,10 @@ function SeriesDetailBody() {
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
   const altTitles = readableTitles(series.altTitles ?? [], i18n.locale)
+  const releaseSearchTitles = [
+    series.title,
+    ...otherTitles(altTitles, series.originalTitle, series.title).map((x) => x.title),
+  ].slice(0, 6)
   const synopsis = splitSynopsis(cleanSynopsis(series.overview))
   const synopsisSource = synopsis.source
   const synopsisExtras = (synopsis.notes.length > 0 || synopsisSource) && (
@@ -1610,6 +1790,7 @@ function SeriesDetailBody() {
   // The server counts a chapter whose file vanished from disk as obtained; the heading sits next to
   // the "no file on disk" count, so it leaves those out.
   const chaptersHave = Math.max(0, progress.have - fileMissingFilterCount)
+  const readInTotal = readFilterCount
   const wantedColumnTip = t`Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way.`
   const chapterFilterTips: Record<string, string> = {
     wanted: t`Chapters with Wanted switched on, downloaded or not.`,
@@ -1660,7 +1841,8 @@ function SeriesDetailBody() {
       })
 
   const requestQueueAllWanted = () => {
-    if (missingWanted >= LARGE_WANTED_DOWNLOAD_THRESHOLD) {
+    // A pending volume release may bring these chapters in one download, so say so before the sources go.
+    if (missingWanted >= LARGE_WANTED_DOWNLOAD_THRESHOLD || (canDownload && pendingProposal)) {
       setDownloadAllConfirmOpen(true)
       return
     }
@@ -2063,9 +2245,14 @@ function SeriesDetailBody() {
         <SeriesHero
             series={series}
             onRate={submitRating}
+            onSetReadingStatus={(status) => changeReadingStatus(seriesId, status)}
             onFinalize={keepRating}
             readUpTo={highestReadChapter}
             nextChapter={nextChapter}
+            noFileCount={tab === 'chapters' ? 0 : fileMissingFilterCount}
+            progressFoot={
+              <ReadingFootLine firstReadAt={readingStats?.firstReadAt ?? null} estimate={series.readTimeEstimate ?? null} />
+            }
             actions={
               <>
                 {continueAt && (
@@ -2085,6 +2272,7 @@ function SeriesDetailBody() {
                       )}
                     </Button>
                 )}
+                <SeriesPausedButton seriesId={seriesId} />
                 {canDownload ? (
                     <>
                       {/* Unticking chapters used to be the only way to download a series a bit at a time,
@@ -2153,6 +2341,7 @@ function SeriesDetailBody() {
                                 </Menu.Item>
                             ))}
                             <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
+                            <SeriesPauseMenuItem seriesId={seriesId} />
                           </Menu.Dropdown>
                         </Menu>
                         )}
@@ -2199,6 +2388,25 @@ function SeriesDetailBody() {
                     monitorMode={series.monitorNewItems}
                     incognito={series.incognito}
                     notificationMode={series.notificationMode}
+                    prepareAhead={series.prepareAhead}
+                    onSetPrepareAhead={(chapters) =>
+                        setPrepareAhead.mutate(
+                            { seriesId, chapters },
+                            {
+                              onSuccess: () =>
+                                notify.ok(
+                                  chapters === null
+                                    ? staticT`Prepare ahead follows Settings`
+                                    : chapters === 0
+                                      ? staticT`Prepare ahead is off for this series`
+                                      : plural(chapters, {
+                                          one: 'Prepare ahead: # chapter',
+                                          other: 'Prepare ahead: # chapters',
+                                        }),
+                                ),
+                            },
+                        )
+                    }
                     upgradeProfileId={series.upgradeProfileId}
                     upgradeProfiles={upgradeProfiles ?? []}
                     readFileCleanup={series.readFileCleanup}
@@ -2316,6 +2524,7 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
+                    onScanlationGroups={hasGroupSource && !archived ? () => setGroupsOpen(true) : undefined}
                     offlineSaved={canSaveOffline ? offlineSaved : undefined}
                     onSaveUnreadOffline={() =>
                         void saveUnreadOffline(seriesId).then(
@@ -2333,24 +2542,6 @@ function SeriesDetailBody() {
                     }
                     onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
-                {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
-                {fileMissingFilterCount > 0 ? (tab !== 'chapters' && (
-                    <Text component="span" size="sm" c="var(--warn)" className="series-actions-done series-actions-done--warn tnum">
-                      <IconAlertTriangle size={16} />
-                      <Plural
-                          value={fileMissingFilterCount}
-                          one="# chapter has no file on disk"
-                          other="# chapters have no file on disk"
-                      />
-                    </Text>
-                )) : canDownload && allWantedOnDisk && chapters.length > 0 && (
-                    <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
-                      <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
-                        <IconCircleCheck size={16} />
-                        <Trans>Nothing left to download</Trans>
-                      </Text>
-                    </Tooltip>
-                )}
               </>
             }
             tabs={
@@ -2368,7 +2559,7 @@ function SeriesDetailBody() {
             }
         />
 
-        {/* One hint at a time: rating comes first, the archive offer follows once it is settled. */}
+        {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
             soFar={series.provisionalRating ?? null}
@@ -2387,6 +2578,12 @@ function SeriesDetailBody() {
               )
             }
             onDismiss={() => dismissCheckpoint.mutate(series.id)}
+          />
+        ) : series.completeHintLeftOut != null ? (
+          <CompleteHint
+            leftOut={series.completeHintLeftOut}
+            onComplete={() => changeReadingStatus(series.id, 'Completed')}
+            onDismiss={() => dismissCompleteHint.mutate(series.id)}
           />
         ) : series.archiveHintEligible && series.archivedAt == null && canArchive && (
           <ArchiveHint
@@ -2411,6 +2608,8 @@ function SeriesDetailBody() {
             }
           />
         )}
+
+        <SeriesTorrentDownloads items={torrentDownloads} canReview={can('ManageDownloadQueue')} />
 
         <Tabs.Panel value="details">
           <Stack className="series-detail-overview" gap="lg">
@@ -2462,16 +2661,16 @@ function SeriesDetailBody() {
                     </>
                 ) : (
                     <Text size="sm" mt="sm" c="var(--ink-3)">
-                      <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
+                      <Trans>Refresh metadata to fetch one.</Trans>
                     </Text>
                 )}
 
                 {(series.animeStart || series.animeEnd) && (
                     <>
                       <Divider my="md" color="var(--hairline)" />
-                      <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                      <PanelTitle>
                         <Trans>Anime coverage</Trans>
-                      </Title>
+                      </PanelTitle>
                       <AnimeCoverageBar
                           start={series.animeStart}
                           end={series.animeEnd}
@@ -2487,10 +2686,10 @@ function SeriesDetailBody() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Genres</Trans>
-                          {series.lockedFields.includes('genres') && <>{' '}<MetadataLock /></>}
-                        </Title>
+                          {series.lockedFields.includes('genres') && <MetadataLock />}
+                        </PanelTitle>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
                         <div className="tag-chips" style={{ '--bucket': 'var(--neutral)' } as CSSProperties}>
@@ -2506,9 +2705,9 @@ function SeriesDetailBody() {
                   {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
                         <Divider my="md" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Tags</Trans>
-                        </Title>
+                        </PanelTitle>
                         <div ref={tagListRef}>
                           {providerTags.length > 0 ? (
                               <TagBuckets tags={providerTags} />
@@ -2529,16 +2728,26 @@ function SeriesDetailBody() {
                   )}
                   <Divider mt="sm" color="var(--hairline)" />
                   <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
-                  {series.links && series.links.length > 0 && (
+                  {((series.links?.length ?? 0) > 0 || communityScore != null || sourceRatings.length > 0) && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
-                          <Trans>Open on</Trans>
-                        </Title>
-                        <Group gap="xs" wrap="wrap">
-                          <MetadataLinks links={series.links} />
-                          {series.malId != null && <SeriesReviews malId={series.malId} />}
-                        </Group>
+                        <PanelTitle>
+                          {communityScore != null || sourceRatings.length > 0 ? (
+                              <Trans>Scores and links</Trans>
+                          ) : (
+                              <Trans>Open on</Trans>
+                          )}
+                        </PanelTitle>
+                        <Stack gap="sm" align="flex-start">
+                          {communityScore != null && (
+                              <ScoreFigure score={communityScore} standing={providerDetail?.scoreStanding} />
+                          )}
+                          <ScoredSiteChips
+                              links={series.links ?? []}
+                              sourceRatings={sourceRatings}
+                              extra={hasReviewIds(series) && <SeriesReviews ids={series} />}
+                          />
+                        </Stack>
                       </div>
                   )}
                 </Stack>
@@ -2547,10 +2756,8 @@ function SeriesDetailBody() {
               <div className="series-split-row">
                 <Panel className="series-detail-source-panel series-machine">
                   {series.numberingClash && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconAlertTriangle size={18} />}
+                      <Callout
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={t`Sources disagree on chapter numbering`}
                       >
                         {(() => {
@@ -2572,23 +2779,19 @@ function SeriesDetailBody() {
                               </>
                           )
                         })()}
-                      </Alert>
+                      </Callout>
                   )}
                   <FigureStripReveal shown={delistedWithFileIds.length > 0}>
                     {alertDelistedIds.length > 0 && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconLinkOff size={18} />}
+                      <Callout
+                          icon={IconLinkOff}
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={plural(alertDelistedIds.length, {
                             one: '# downloaded chapter is no longer listed',
                             other: '# downloaded chapters are no longer listed',
                           })}
-                      >
-                        <Text size="sm">
-                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
-                        </Text>
-                        <Group gap="xs" mt="sm">
+                          actions={
+                            <>
                           <Button
                               size="xs"
                               variant="light"
@@ -2611,8 +2814,13 @@ function SeriesDetailBody() {
                                 <Trans>Keep them</Trans>
                               </Button>
                           )}
-                        </Group>
-                      </Alert>
+                            </>
+                          }
+                      >
+                        <Text size="sm">
+                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
+                        </Text>
+                      </Callout>
                     )}
                   </FigureStripReveal>
                   {canManageSources && (
@@ -2683,6 +2891,9 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
+                {readingStats && (
+                    <SeriesReadingPanel stats={readingStats} estimate={series.readTimeEstimate ?? null} />
+                )}
                 <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <PanelTitle order={2} icon={IconDatabase}>
@@ -2743,8 +2954,16 @@ function SeriesDetailBody() {
                           {series.lockedFields.includes('totalVolumes') && <>{' '}<MetadataLock /></>}
                         </RecordRow>
                     )}
-                    <RecordRow label={t`Chapters known`}>{series.knownChapterCount}</RecordRow>
-                    {series.readTimeEstimate && (
+                    {series.totalChapters != null && (
+                        <RecordRow label={t`Total chapters`}>
+                          {series.totalChapters}
+                          {series.lockedFields.includes('totalChapters') && <>{' '}<MetadataLock /></>}
+                        </RecordRow>
+                    )}
+                    <RecordRow label={t`Listed`}>
+                      <ListedChapters known={series.knownChapterCount} specials={series.listedSpecials ?? 0} />
+                    </RecordRow>
+                    {series.readTimeEstimate && !readingStats && (
                         <RecordRow label={t`Time to finish`}>
                           <ReadTimeEstimateText estimate={series.readTimeEstimate} />
                         </RecordRow>
@@ -2768,20 +2987,25 @@ function SeriesDetailBody() {
         <Modal
             opened={downloadAllConfirmOpen}
             onClose={() => setDownloadAllConfirmOpen(false)}
-            title={plural(missingWanted, {
-              one: 'Download # wanted chapter?',
-              other: 'Download # wanted chapters?',
-            })}
-            centered
+            title={
+              <ModalHeading
+                  title={plural(missingWanted, {
+                    one: 'Download # wanted chapter?',
+                    other: 'Download # wanted chapters?',
+                  })}
+              />
+            }
         >
           <Stack gap="sm">
-            <Text mt="sm" size="sm">
-              {plural(missingWanted, {
-                one: 'This will add # chapter to the download queue.',
-                other: 'This will add # chapters to the download queue.',
-              })}
-            </Text>
-            <Group justify="flex-end">
+            {canDownload && pendingProposal && (
+                <>
+                  <Text size="sm" c="var(--ink-3)">
+                    <Trans>A volume release for this series is waiting for your answer. Grabbing it instead may bring these chapters in one download.</Trans>
+                  </Text>
+                  <TorrentProposalCard proposal={pendingProposal} banner />
+                </>
+            )}
+            <ModalFooter>
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -2794,7 +3018,7 @@ function SeriesDetailBody() {
               >
                 {plural(missingWanted, { one: 'Download # chapter', other: 'Download # chapters' })}
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -2802,7 +3026,6 @@ function SeriesDetailBody() {
             opened={nextCountOpen}
             onClose={() => setNextCountOpen(false)}
             title={t`Download next chapters`}
-            centered
         >
           <Stack
               component="form"
@@ -2822,19 +3045,20 @@ function SeriesDetailBody() {
                 onChange={setNextCount}
                 data-autofocus
             />
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setNextCountOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
               <Button type="submit" loading={downloadNext.isPending}>
                 <Trans>Download</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
         <ReleaseSearchModal
             seriesId={seriesId}
+            titles={releaseSearchTitles}
             opened={releaseModalOpen}
             onClose={() => setReleaseModalOpen(false)}
         />
@@ -2859,13 +3083,23 @@ function SeriesDetailBody() {
             />
         )}
 
-        <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
+        <Modal
+            opened={moveModalOpen}
+            onClose={() => setMoveModalOpen(false)}
+            title={
+              <ModalHeading
+                  title={t`Move series`}
+                  description={
+                    <>
+                      <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                      <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
+                        itself.</Trans>
+                    </>
+                  }
+              />
+            }
+        >
           <Stack gap="md">
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-              <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
-                itself.</Trans>
-            </Text>
             <Select
                 label={t`Destination root folder`}
                 placeholder={t`Pick a root folder`}
@@ -2889,7 +3123,7 @@ function SeriesDetailBody() {
                 />
               </Stack>
             </Radio.Group>
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setMoveModalOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -2911,7 +3145,7 @@ function SeriesDetailBody() {
               >
                 <Trans>Move</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -2920,21 +3154,11 @@ function SeriesDetailBody() {
           <Stack className="series-detail-chapters" gap="lg">
             <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
               <Stack className="series-detail-chapter-toolbar" gap="sm">
-                <Group justify="space-between" wrap="nowrap" align="flex-start" gap="sm">
-                  <Group gap="xs" align="baseline" style={{ flex: 1, minWidth: 0 }}>
-                    <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                    {chapters && (
-                        <Text size="sm" c="var(--ink-3)" className="tnum">
-                          <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
-                        </Text>
-                    )}
-                    {chapters && readTracking && progress.have > 0 && (
-                        <Badge size="sm" variant="light" color="var(--brand)" className="tnum">
-                          <Trans>{readFilterCount} read</Trans>
-                        </Badge>
-                    )}
-                  </Group>
-                  {chapters && chapters.length > 0 && !selectMode && (
+                <SectionHeader
+                    icon={IconBook}
+                    title={t`Chapters`}
+                    count={chapters ? chaptersCounted : undefined}
+                    action={chapters && chapters.length > 0 && !selectMode && (
                       isMobile ? (
                           <ActionIcon
                               size="input-xs"
@@ -2954,8 +3178,18 @@ function SeriesDetailBody() {
                             <Trans>Select</Trans>
                           </Button>
                       )
-                  )}
-                </Group>
+                    )}
+                />
+                {chapters && (
+                    <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
+                      <MetaList
+                          items={[
+                            <Trans key="have">{chaptersHave}/{chaptersCounted} downloaded</Trans>,
+                            readTracking && progress.have > 0 && <Trans key="read">{readInTotal} read</Trans>,
+                          ]}
+                      />
+                    </Text>
+                )}
                 {chapters && chapters.length > 0 && (
                     // One row on a phone: the filter takes what the fixed-width controls leave.
                     <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'}>
@@ -2979,18 +3213,45 @@ function SeriesDetailBody() {
                             {chapterFilterChips}
                           </div>
                       )}
-                      <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
+                      <Tooltip
+                          label={
+                            chapterSortedByRelease
+                                ? chapterSortDescending ? t`Newest release first` : t`Oldest release first`
+                                : chapterSortDescending ? t`Newest first` : t`Oldest first`
+                          }
+                          withArrow
+                      >
                         <ActionIcon
                             size="input-xs"
                             variant="default"
-                            aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
+                            aria-label={
+                              chapterSortedByRelease
+                                  ? chapterSortDescending ? t`Sort oldest release first` : t`Sort newest release first`
+                                  : chapterSortDescending ? t`Sort oldest first` : t`Sort newest first`
+                            }
                             onClick={toggleChapterSort}
                         >
-                          {chapterSort === 'asc'
-                              ? <IconSortAscendingNumbers size={16} />
-                              : <IconSortDescendingNumbers size={16} />}
+                          {chapterSortedByRelease
+                              ? chapterSortDescending ? <IconSortDescending size={16} /> : <IconSortAscending size={16} />
+                              : chapterSortDescending
+                                  ? <IconSortDescendingNumbers size={16} />
+                                  : <IconSortAscendingNumbers size={16} />}
                         </ActionIcon>
                       </Tooltip>
+                      <ChapterViewMenu
+                          sortKey={chapterSortedByRelease ? 'released' : 'number'}
+                          onSortKey={chooseChapterSortKey}
+                          hidden={hiddenChapterColumns}
+                          onToggleColumn={toggleChapterColumn}
+                          grouping={{
+                            checked: groupingChosen && hasVolumes,
+                            blockedBy: hasVolumes ? groupingBlockedBy : 'none',
+                            onChange: setChapterGrouping,
+                            active: groupingActive,
+                            onCollapseAll: () => setCollapsedVolumes(new Set(renderedRows.volumeKeys)),
+                            onExpandAll: () => setCollapsedVolumes(new Set()),
+                          }}
+                      />
                       <Select
                           size="xs"
                           aria-label={t`Chapters per page`}
@@ -3010,219 +3271,85 @@ function SeriesDetailBody() {
             {isMobile && chapterSearchInput}
 
             {!selectMode && fileMissingFilterCount > 0 && (
-                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg" role="status">
-                  <Group gap="sm" wrap="wrap" justify="space-between">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                      <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                      <Text size="sm" c="var(--ink-2)" className="tnum">
-                        <Plural
-                            value={fileMissingFilterCount}
-                            one="# chapter has no file on disk"
-                            other="# chapters have no file on disk"
-                        />
-                      </Text>
-                    </Group>
-                    {canEditMetadata && (
+                <Callout
+                    icon={IconFileUnknown}
+                    role="status"
+                    actions={canEditMetadata && (
                         <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
                           <Trans>Relink files</Trans>
                         </Button>
                     )}
-                  </Group>
-                </Paper>
+                >
+                  <Text size="sm" c="var(--ink-2)" className="tnum">
+                    <Plural
+                        value={fileMissingFilterCount}
+                        one="# chapter has no file on disk."
+                        other="# chapters have no file on disk."
+                    />{' '}
+                    {canEditMetadata && (
+                        <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
+                    )}
+                  </Text>
+                </Callout>
             )}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
             {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
-                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
-                  <Group justify="space-between" wrap="wrap" gap="xs">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
-                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                      <Text size="sm" c="var(--ink-2)">
-                        <Plural
-                            value={unlinkedFilesOnDisk}
-                            one="# file in the series folder isn't linked to any chapter."
-                            other="# files in the series folder aren't linked to any chapter."
-                        />{' '}
-                        <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
-                      </Text>
-                    </Group>
-                    <Group gap="xs">
-                      <Button size="xs" variant="light" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
-                        <Trans>Relink files</Trans>
-                      </Button>
-                      <Button size="xs" variant="subtle" leftSection={<IconLink size={16} />} onClick={() => changeTab('files')}>
-                        <Trans>Link by hand</Trans>
-                      </Button>
-                    </Group>
-                  </Group>
-                </Paper>
+                <Callout
+                    icon={IconLink}
+                    actions={
+                      <>
+                        <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                          <Trans>Relink files</Trans>
+                        </Button>
+                        <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
+                          <Trans>Link by hand</Trans>
+                        </Button>
+                      </>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
+                    <Plural
+                        value={unlinkedFilesOnDisk}
+                        one="# file in the series folder isn't linked to any chapter."
+                        other="# files in the series folder aren't linked to any chapter."
+                    />{' '}
+                    <Text span inherit c="var(--ink-3)">
+                      <Trans>Anything Relink can't place you can link by hand.</Trans>
+                    </Text>
+                  </Text>
+                </Callout>
             )}
 
             {!selectMode && canDownload && pendingProposal && (
                 <TorrentProposalCard proposal={pendingProposal} banner />
             )}
 
-            {selectMode && (
-                <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
-                  <Group justify="space-between" wrap="wrap" gap="xs">
-                    <Group gap="xs">
-                      <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
-                        <IconX size={16} />
-                      </ActionIcon>
-                      <Text size="sm" c="var(--ink-3)" className="tnum">
-                        <Trans>{selectedCount} selected</Trans>
-                      </Text>
-                      <Menu shadow="md" position="bottom-start" withinPortal>
-                        <Menu.Target>
-                          <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
-                            <Trans>Select all</Trans>
-                          </Button>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          {/* Every item works over the rows the filter is showing, same as a shift-range,
-                        so "Specials" under the Missing filter means the specials you can see. */}
-                          <Menu.Item
-                              className="tnum"
-                              onClick={() => selectAll(() => true)}
-                          >
-                            <Trans>All ({visibleAllCount})</Trans>
-                          </Menu.Item>
-                          <Menu.Item
-                              className="tnum"
-                              disabled={visibleMain.length === 0}
-                              onClick={() => selectAll((c) => !isSpecial(c))}
-                          >
-                            <Trans>Main ({visibleMainCount})</Trans>
-                          </Menu.Item>
-                          <Menu.Item
-                              className="tnum"
-                              disabled={visibleSpecials.length === 0}
-                              onClick={() => selectAll(isSpecial)}
-                          >
-                            <Trans>Specials ({visibleSpecialsCount})</Trans>
-                          </Menu.Item>
-                          <Menu.Divider />
-                          <Menu.Item
-                              disabled={selected.size === 0}
-                              onClick={() => {
-                                selectAnchor.current = null
-                                setSelected(new Set())
-                              }}
-                          >
-                            <Trans>Clear</Trans>
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                      <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
-                        <Trans>Click a row to select, shift-click for a range</Trans>
-                      </Text>
-                    </Group>
-                    <Group gap="xs">
-                      {chapterPrimaryActions.map((a) => {
-                        const button = (
-                          <Button
-                              key={a.key}
-                              visibleFrom="sm"
-                              size="xs"
-                              variant="light"
-                              leftSection={a.icon}
-                              disabled={selected.size === 0}
-                              data-disabled={a.disabled || undefined}
-                              aria-disabled={a.disabled || undefined}
-                              loading={a.loading}
-                              onClick={a.run}
-                          >
-                            {a.label}
-                          </Button>
-                        )
-                        return a.key === 'download' ? (
-                            <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
-                              {button}
-                            </Tooltip>
-                        ) : (
-                            button
-                        )
-                      })}
-                      {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
-                          <Menu position="bottom-end" withinPortal>
-                            <Menu.Target>
-                              <Button
-                                  size="xs"
-                                  variant="default"
-                                  rightSection={<IconChevronDown size={16} />}
-                                  disabled={selected.size === 0}
-                                  loading={chapterMoreBusy}
-                                  className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
-                              >
-                                <Text span inherit visibleFrom="sm">
-                                  <Trans>More</Trans>
-                                </Text>
-                                <Text span inherit hiddenFrom="sm">
-                                  <Trans>Actions</Trans>
-                                </Text>
-                              </Button>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              {chapterPrimaryActions.map((a) => (
-                                  <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
-                                    {a.label}
-                                  </Menu.Item>
-                              ))}
-                              {chapterMoreGroups.map((group, i) => (
-                                  <Fragment key={group[0].key}>
-                                    {(i > 0 || chapterPrimaryActions.length > 0) && (
-                                        <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
-                                    )}
-                                    {group.map((a) => (
-                                        <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
-                                          {a.label}
-                                        </Menu.Item>
-                                    ))}
-                                  </Fragment>
-                              ))}
-                            </Menu.Dropdown>
-                          </Menu>
-                      )}
-                      {canDelete && (
-                          <>
-                            <Divider orientation="vertical" className="library-bulk-divider" />
-                            <Menu position="bottom-end" withinPortal>
-                              <Menu.Target>
-                                <Button
-                                    size="xs"
-                                    variant="light"
-                                    color="var(--danger)"
-                                    leftSection={<IconTrash size={16} />}
-                                    rightSection={<IconChevronDown size={16} />}
-                                    disabled={selected.size === 0}
-                                >
-                                  <Trans>Delete</Trans>
-                                </Button>
-                              </Menu.Target>
-                              <Menu.Dropdown>
-                                <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
-                                  <Trans>Delete files</Trans>
-                                </Menu.Item>
-                                <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
-                                  <Trans>Remove chapters</Trans>
-                                </Menu.Item>
-                              </Menu.Dropdown>
-                            </Menu>
-                          </>
-                      )}
-                      <Button
-                          visibleFrom="sm"
-                          size="xs"
-                          variant="default"
-                          leftSection={<IconX size={16} />}
-                          onClick={exitSelectMode}
-                      >
-                        <Trans>Done</Trans>
+            {!selectMode && canDownload && volumeHold && missingWanted > 0 && (
+                <Callout
+                    icon={IconHourglass}
+                    actions={
+                      <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
+                        <Trans>Download from sources now</Trans>
                       </Button>
-                    </Group>
-                  </Group>
-                </Paper>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
+                    {volumeHold.reason === 'searching'
+                        ? <Trans>Looking for a volume release before downloading from sources.</Trans>
+                        : volumeHold.reason === 'proposal'
+                            ? <Trans>A volume release is waiting for your answer.</Trans>
+                            : <Trans>A volume release is downloading.</Trans>}{' '}
+                    <Text span inherit c="var(--ink-3)">
+                      {holdUntil == null
+                          ? null
+                          : holdThrough == null
+                              ? <Trans>Automatic downloads from sources wait for it until {holdUntil}.</Trans>
+                              : <Trans>Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual.</Trans>}
+                    </Text>
+                  </Text>
+                </Callout>
             )}
 
             <ConfirmDialog
@@ -3246,7 +3373,6 @@ function SeriesDetailBody() {
                     one="Backing files go to the recycle bin for # day."
                     other="Backing files go to the recycle bin for # days."
                   />{' '}
-                  <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
                 {selectedNoteCount > 0 && (
@@ -3258,9 +3384,6 @@ function SeriesDetailBody() {
                     />
                   </Text>
                 )}
-                <Text size="sm" c="var(--danger)">
-                  <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
-                </Text>
                 {binRefused === 'chapters' && (
                     <PermanentDeleteFallback loading={deleteChapters.isPending} onConfirm={() => removeChapters(true)} />
                 )}
@@ -3325,17 +3448,23 @@ function SeriesDetailBody() {
             />
 
             {(chapters === undefined && chaptersFailed) || chapters?.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
-                </Text>
+                <EmptyState
+                    compact
+                    framed
+                    mood="asking"
+                    title={t`No chapters known.`}
+                    description={t`Link a source and refresh.`}
+                />
             ) : chapters !== undefined && renderedRows.rows.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters match this search and filter.</Trans>
-                </Text>
+                <EmptyState compact framed mood="asleep" title={t`No chapters match this search and filter.`} />
             ) : (
                 <Stack gap="sm">
                   <Paper
-                      className={`series-detail-chapter-table chapter-rows-${chapterLayout}`}
+                      className={[
+                        'series-detail-chapter-table',
+                        `chapter-rows-${chapterLayout}`,
+                        ...[...hiddenChapterColumns].map((column) => `chapter-hide-${column}`),
+                      ].join(' ')}
                       withBorder
                       radius="lg"
                       style={{ overflow: 'hidden' }}
@@ -3396,6 +3525,23 @@ function SeriesDetailBody() {
                             ) : (
                                 <ChunkedRows rows={shownRows}>
                                   {(rows) => rows.map((row) => {
+                                  if (row.kind === 'volume') {
+                                    return (
+                                        <ChapterVolumeRow
+                                            key={`volume:${row.group.key}`}
+                                            group={row.group}
+                                            collapsed={row.collapsed}
+                                            readProgress={readProgress}
+                                            readTracking={readTracking}
+                                            canEditMetadata={canEditMetadata}
+                                            canDownload={canDownload}
+                                            downloadDisabled={archived}
+                                            wantedPending={setChaptersWanted.isPending}
+                                            downloadPending={downloadChapters.isPending}
+                                            actions={volumeRowActions}
+                                        />
+                                    )
+                                  }
                                   if (row.kind === 'span') {
                                     return (
                                         <ChapterSpanRow
@@ -3495,6 +3641,167 @@ function SeriesDetailBody() {
                         />
                       </Group>
                   )}
+              {selectMode && (
+                  <div className="series-detail-chapter-selection" role="toolbar" aria-label={t`Selected chapters`}>
+                    <Group justify="space-between" wrap="wrap" gap="xs">
+                      <Group gap="xs">
+                        <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
+                          <IconX size={16} />
+                        </ActionIcon>
+                        <Text size="sm" fw={600} c="var(--ink-hi)" className="tnum">
+                          <Trans>{selectedCount} selected</Trans>
+                        </Text>
+                        <Menu shadow="md" position="bottom-start" withinPortal>
+                          <Menu.Target>
+                            <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
+                              <Trans>Select all</Trans>
+                            </Button>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            {/* Every item works over the rows the filter is showing, same as a shift-range,
+                          so "Specials" under the Missing filter means the specials you can see. */}
+                            <Menu.Item
+                                className="tnum"
+                                onClick={() => selectAll(() => true)}
+                            >
+                              <Trans>All ({visibleAllCount})</Trans>
+                            </Menu.Item>
+                            <Menu.Item
+                                className="tnum"
+                                disabled={visibleMain.length === 0}
+                                onClick={() => selectAll((c) => !isSpecial(c))}
+                            >
+                              <Trans>Main ({visibleMainCount})</Trans>
+                            </Menu.Item>
+                            <Menu.Item
+                                className="tnum"
+                                disabled={visibleSpecials.length === 0}
+                                onClick={() => selectAll(isSpecial)}
+                            >
+                              <Trans>Specials ({visibleSpecialsCount})</Trans>
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item
+                                disabled={selected.size === 0}
+                                onClick={() => {
+                                  selectAnchor.current = null
+                                  setSelected(new Set())
+                                }}
+                            >
+                              <Trans>Clear</Trans>
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                        <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
+                          <Trans>Click a row to select, shift-click for a range</Trans>
+                        </Text>
+                      </Group>
+                      <Group gap="xs">
+                        {chapterPrimaryActions.map((a) => {
+                          const button = (
+                            <Button
+                                key={a.key}
+                                visibleFrom="sm"
+                                size="xs"
+                                variant={a.key === 'download' ? 'filled' : 'default'}
+                                leftSection={a.icon}
+                                disabled={selected.size === 0}
+                                data-disabled={a.disabled || undefined}
+                                aria-disabled={a.disabled || undefined}
+                                loading={a.loading}
+                                onClick={a.run}
+                            >
+                              {a.label}
+                            </Button>
+                          )
+                          return a.key === 'download' ? (
+                              <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                                {button}
+                              </Tooltip>
+                          ) : (
+                              button
+                          )
+                        })}
+                        {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
+                            <Menu position="bottom-end" withinPortal>
+                              <Menu.Target>
+                                <Button
+                                    size="xs"
+                                    variant="default"
+                                    rightSection={<IconChevronDown size={16} />}
+                                    disabled={selected.size === 0}
+                                    loading={chapterMoreBusy}
+                                    className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
+                                >
+                                  <Text span inherit visibleFrom="sm">
+                                    <Trans>More</Trans>
+                                  </Text>
+                                  <Text span inherit hiddenFrom="sm">
+                                    <Trans>Actions</Trans>
+                                  </Text>
+                                </Button>
+                              </Menu.Target>
+                              <Menu.Dropdown>
+                                {chapterPrimaryActions.map((a) => (
+                                    <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
+                                      {a.label}
+                                    </Menu.Item>
+                                ))}
+                                {chapterMoreGroups.map((group, i) => (
+                                    <Fragment key={group[0].key}>
+                                      {(i > 0 || chapterPrimaryActions.length > 0) && (
+                                          <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
+                                      )}
+                                      {group.map((a) => (
+                                          <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                                            {a.label}
+                                          </Menu.Item>
+                                      ))}
+                                    </Fragment>
+                                ))}
+                              </Menu.Dropdown>
+                            </Menu>
+                        )}
+                        {canDelete && (
+                            <>
+                              <Divider orientation="vertical" className="library-bulk-divider" />
+                              <Menu position="bottom-end" withinPortal>
+                                <Menu.Target>
+                                  <Button
+                                      size="xs"
+                                      variant="light"
+                                      color="var(--danger)"
+                                      leftSection={<IconTrash size={16} />}
+                                      rightSection={<IconChevronDown size={16} />}
+                                      disabled={selected.size === 0}
+                                  >
+                                    <Trans>Delete</Trans>
+                                  </Button>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
+                                    <Trans>Delete files</Trans>
+                                  </Menu.Item>
+                                  <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
+                                    <Trans>Remove chapters</Trans>
+                                  </Menu.Item>
+                                </Menu.Dropdown>
+                              </Menu>
+                            </>
+                        )}
+                        <Button
+                            visibleFrom="sm"
+                            size="xs"
+                            variant="default"
+                            leftSection={<IconX size={16} />}
+                            onClick={exitSelectMode}
+                        >
+                          <Trans>Done</Trans>
+                        </Button>
+                      </Group>
+                    </Group>
+                  </div>
+              )}
                 </Stack>
             )}
           </Stack>
@@ -3564,6 +3871,18 @@ function SeriesDetailBody() {
         >
           <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
         </RemoveSeriesDialog>
+
+        {hasGroupSource && (
+          <SeriesScanlationGroupsModal
+            seriesId={seriesId}
+            opened={groupsOpen}
+            onClose={() => setGroupsOpen(false)}
+            onSaved={() => {
+              notify.ok(staticT`Saved. Refreshing chapters to pick up the change.`)
+              refresh.mutate(seriesId)
+            }}
+          />
+        )}
 
         {conversionHistory && (
           <UndoConversionModal
@@ -3704,6 +4023,18 @@ function CreatorNames({
         </span>
         ))}
       </Text>
+  )
+}
+
+/** Every chapter row, split into whole-numbered chapters and extras when there are extras. */
+function ListedChapters({ known, specials }: { known: number; specials: number }) {
+  const main = Math.max(0, known - specials)
+  if (specials === 0) return <Plural value={known} one="# chapter" other="# chapters" />
+  return (
+      <Trans>
+        <Plural value={main} one="# chapter" other="# chapters" />,{' '}
+        <Plural value={specials} one="# extra" other="# extras" />
+      </Trans>
   )
 }
 

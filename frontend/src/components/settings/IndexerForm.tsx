@@ -6,7 +6,16 @@ import { SaveButton } from './SaveButton'
 import { FieldAction } from './FieldAction'
 import { INDEXER_BACKENDS, useIndexerForm, type IndexerForm as IndexerFormState } from './useIndexerForm'
 
-export function IndexerFieldRow({ form, children }: { form: IndexerFormState; children?: ReactNode }) {
+export function IndexerFieldRow({
+  form,
+  status,
+  children,
+}: {
+  form: IndexerFormState
+  /** Goes straight under the fields, where the other connection cards show their last test. */
+  status?: ReactNode
+  children?: ReactNode
+}) {
   const { t } = useLingui()
   const placeholder = INDEXER_BACKENDS.find((b) => b.value === form.selected)?.placeholder
   return (
@@ -44,6 +53,7 @@ export function IndexerFieldRow({ form, children }: { form: IndexerFormState; ch
           {children}
         </FieldAction>
       </Group>
+      {status}
       <Text size="sm" c="var(--ink-3)">
         <Trans>
           Only one indexer is used at a time. Switching makes release suggestions you dismissed

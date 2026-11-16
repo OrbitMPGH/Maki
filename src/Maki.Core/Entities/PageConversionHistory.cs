@@ -29,6 +29,12 @@ public class PageConversionHistory
     public long BytesAfter { get; set; }
     public string? SourceFormat { get; set; }
     public string? ResultFormat { get; set; }
+
+    /// <summary>
+    /// The pages a split cut into several, as <c>PageSplitMap</c> stores them ("12:3,40:2"), by their
+    /// index in the original. Null when nothing was split. An undo carries stored page indices back with it.
+    /// </summary>
+    public string? SplitPages { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UndoneAtUtc { get; set; }
 }

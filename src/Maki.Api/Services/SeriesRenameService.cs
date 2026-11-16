@@ -3,6 +3,7 @@ using System.Text;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -74,7 +75,8 @@ public class SeriesRenameService(
     NamingService naming,
     KavitaScanService kavitaScans,
     ILocalizer localizer,
-    ILogger<SeriesRenameService> logger)
+    ILogger<SeriesRenameService> logger,
+    SourceRegistry? sources = null)
 {
     /// <summary>Suffix for the two-step move a case-only rename needs on Windows.</summary>
     private const string TempSuffix = ".maki-rename";
@@ -146,11 +148,17 @@ public class SeriesRenameService(
         // name that chapter's own file wants — on a case-sensitive filesystem that lands a second
         // file beside the first rather than being refused.
         var ordered = chapters.OrderBy(c => c.Volume).ThenBy(c => c.Number).ToList();
-        foreach (var span in ordered
+        foreach (var group in ordered
                      .Where(c => c.ChapterFile is not null)
                      .GroupBy(c => c.ChapterFileId!.Value))
         {
-            var chapter = span.First();
+            // A chapter with no volume sorts before every volume, which named v01 holding 1-5 and a
+            // source's 2.1 "Ch.2.1-5", a name that reads back as chapter 2.1. Without a volume on
+            // every chapter, the numbers alone order the span.
+            var span = group.Any(c => c.Volume is null)
+                ? group.OrderBy(c => c.Number ?? decimal.MaxValue).ToList()
+                : group.ToList();
+            var chapter = span[0];
             var file = chapter.ChapterFile!;
 
             if (scope.FileIds is { } wanted && !wanted.Contains(file.Id))
@@ -158,14 +166,16 @@ public class SeriesRenameService(
                 continue;
             }
 
-            var through = span.Last();
+            var through = span[^1];
             var existingExtension = Path.GetExtension(file.RelativePath);
+            var source = sources?.Find(file.SourceName)?.DisplayName;
             var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
                 ? await naming.BuildChapterFileNameAsync(
                     series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct,
-                    group: file.Group)
+                    group: file.Group, source: source, tier: file.Tier)
                 : await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group));
+                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group,
+                    source: source, tier: file.Tier));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {
@@ -396,18 +406,55 @@ public class SeriesRenameService(
         var byId = renamed
             .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
             .ToDictionary(f => f.ChapterFileId, f => f.To);
+        if (plan.FolderChanged)
+        {
+            // The folder move carried every file in it, including the ones the plan leaves alone
+            // (no chapter to name them after). Their rows follow, or they read as missing beside an
+            // unlinked copy of themselves.
+            var planned = plan.Files.Select(f => f.ChapterFileId).ToList();
+            var unplanned = await db.ChapterFiles.AsNoTracking()
+                .Where(f => f.SeriesId == series.Id && !planned.Contains(f.Id))
+                .Select(f => new { f.Id, f.RelativePath })
+                .ToListAsync(saveToken);
+            foreach (var file in unplanned)
+            {
+                if (TailUnder(plan.FolderFrom, file.RelativePath) is { } tail)
+                {
+                    var to = Path.Combine(plan.FolderTo, tail);
+                    byId[file.Id] = to;
+                    renamed.Add(new SeriesRenameFile(file.Id, file.RelativePath, to));
+                }
+            }
+        }
+
         if (byId.Count > 0)
         {
             var ids = byId.Keys.ToList();
             var rows = await db.ChapterFiles.Where(f => ids.Contains(f.Id)).ToListAsync(saveToken);
             foreach (var row in rows)
             {
+                // A folder-only move keeps the release's own file name.
+                if (!string.Equals(Path.GetFileName(row.RelativePath), Path.GetFileName(byId[row.Id]),
+                        StringComparison.Ordinal))
+                {
+                    row.NamedByMaki = true;
+                }
+
                 row.RelativePath = byId[row.Id];
             }
         }
 
+        // The health inventory follows in the same save. Left at the old paths, the next series scan
+        // verified each file at its new path and flagged it identical to its own old row.
+        List<string> retiredHashes;
         try
         {
+            var repathed = renamed
+                .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
+                .GroupBy(f => f.From, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First().To, StringComparer.Ordinal);
+            retiredHashes = await HealthInventory.RepathAsync(db, series.RootFolderId,
+                repathed, plan.FolderChanged ? plan.FolderFrom : null, plan.FolderChanged ? plan.FolderTo : null, saveToken);
             await db.SaveChangesAsync(saveToken);
         }
         catch (Exception ex)
@@ -416,6 +463,11 @@ public class SeriesRenameService(
                 series.Title, moves.Count);
             UndoMoves(moves, series.Title);
             throw;
+        }
+
+        if (retiredHashes.Count > 0)
+        {
+            await HealthDuplicates.ResolveLonelyAsync(db, retiredHashes, CancellationToken.None);
         }
 
         // ReaderArchiveCache needs no invalidation: it is keyed by ChapterFile id and validated

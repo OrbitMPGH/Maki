@@ -26,7 +26,8 @@ import {
   undoRestored,
   upgradeProfiles,
 } from './series/fixtures'
-import { api, failWith, hoursAgo } from './api'
+import { api, daysAgo, failWith, hoursAgo } from './api'
+import type { SeriesReadingStats } from '../../src/api/seriesReadingStats'
 import { catalogue, seriesLookupHandler } from './shared'
 import { notesHandlers } from './notes'
 import { outlookFor } from './operations/upcoming'
@@ -97,6 +98,9 @@ const seriesMutations: HttpHandler[] = [
   http.post(api('/series/:id/incognito'), async ({ request }) => HttpResponse.json({ incognito: (await bodyOf(request)).mode })),
   http.post(api('/series/:id/notifications'), async ({ request }) =>
     HttpResponse.json({ notificationMode: (await bodyOf(request)).mode }),
+  ),
+  http.put(api('/series/:id/reading-status'), async ({ request }) =>
+    HttpResponse.json({ readingStatus: (await bodyOf(request)).status }),
   ),
   http.put(api('/series/:id/rating'), async ({ request }) => HttpResponse.json({ rating: (await bodyOf(request)).rating ?? null })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
@@ -178,6 +182,12 @@ const seriesMutations: HttpHandler[] = [
   http.put(api('/series/:id/metadata'), () => HttpResponse.json({ lockedFields: ['title'], refreshed: true, coverRestored: false })),
   http.post(api('/series/:id/metadata/reset'), () => HttpResponse.json({ lockedFields: [], refreshed: true, coverRestored: true })),
   http.post(api('/mediacover/:id/cover'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.get(api('/mediacover/:id/cover/chapter/:chapterId/pages'), () => HttpResponse.json({ pageCount: 18 })),
+  http.post(api('/mediacover/:id/cover/from-page'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.post(api('/mediacover/:id/cover/from-source'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.post(api('/mediacover/:id/cover/from-url'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.get(api('/sourcemapping/nearmisses'), () => HttpResponse.json([])),
+  http.post(api('/sourcemapping/nearmisses/:id/dismiss'), () => noContent()),
   http.post(api('/sourcemapping'), async ({ request }) =>
     HttpResponse.json({ ...mappingsFor(1)[0], ...(await bodyOf(request)), id: 99, enabled: true, origin: 'Manual' }),
   ),
@@ -237,6 +247,9 @@ export const seriesHandlers: HttpHandler[] = [
     return known(id) ? HttpResponse.json(filesFor(id, chaptersFor(id, shapeOf(id)))) : notFound()
   }),
   http.get(api('/series/:id/pageconversion/history'), () => HttpResponse.json(seriesConversionNone)),
+  http.get(api('/series/:id/reading-stats'), ({ params }) =>
+    idOf(params) === 1 ? HttpResponse.json(seriesReadingStats) : noContent(),
+  ),
   http.get(api('/series/:id/related'), ({ params }) => HttpResponse.json(relatedItems(idOf(params)))),
   http.get(api('/series/:id/similar'), ({ params }) => HttpResponse.json(similarItems(idOf(params)))),
   http.get(api('/series/:id/scrobble'), () => HttpResponse.json(scrobble)),
@@ -305,7 +318,7 @@ export const seriesPageHandlers: HttpHandler[] = [
     const entry = catalogue.find((s) => String(s.mangaBakaId) === String(params.id))
     return entry ? HttpResponse.json(providerDetail(entry.id)) : failWith(404, 'Not found')
   }),
-  http.get(api('/recommendations/reviews/:malId'), () => HttpResponse.json([])),
+  http.get(api('/recommendations/reviews'), () => HttpResponse.json({ reviews: [], quickTakes: [], unavailable: [] })),
   http.get(api('/tags'), () => HttpResponse.json(tags)),
   http.get(api('/search/sources'), () => HttpResponse.json(sourceInfos)),
   http.get(api('/upgrade-profiles'), () => HttpResponse.json(upgradeProfiles)),
@@ -317,4 +330,22 @@ export const seriesPageHandlers: HttpHandler[] = [
 ]
 
 /** `parameters.msw` for a series page story: its variants first, then the shared page endpoints. */
+const weeklyMinutes = [0, 0, 35, 62, 48, 0, 20, 95, 120, 74, 40, 0, 58, 88, 110, 66, 30, 52, 77, 41]
+
+/** Series 1's reading time: twenty weeks of the built-in reader, last read yesterday. */
+export const seriesReadingStats: SeriesReadingStats = {
+  seconds: 42_240,
+  timedChapters: 88,
+  chapterMedianSeconds: 480,
+  elsewhereMedianSeconds: 360,
+  sittings: 37,
+  firstReadAt: daysAgo(115),
+  lastReadAt: hoursAgo(26),
+  bucketUnit: 'week',
+  timeline: weeklyMinutes.map((minutes, i) => ({
+    bucket: new Date(Date.UTC(2026, 5, 8 + i * 7)).toISOString().slice(0, 10),
+    seconds: minutes * 60,
+  })),
+}
+
 export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [seriesLookupHandler, ...variants, ...seriesPageHandlers]

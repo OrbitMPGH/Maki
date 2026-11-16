@@ -36,6 +36,8 @@ public class KitsuTracker(
         ["current"] = ScrobbleStatus.Reading,
         ["completed"] = ScrobbleStatus.Completed,
         ["planned"] = ScrobbleStatus.PlanToRead,
+        ["on_hold"] = ScrobbleStatus.Paused,
+        ["dropped"] = ScrobbleStatus.Dropped,
     };
 
     private static readonly Dictionary<ScrobbleStatus, string> InternalToStatus = new()
@@ -43,6 +45,8 @@ public class KitsuTracker(
         [ScrobbleStatus.Reading] = "current",
         [ScrobbleStatus.Completed] = "completed",
         [ScrobbleStatus.PlanToRead] = "planned",
+        [ScrobbleStatus.Paused] = "on_hold",
+        [ScrobbleStatus.Dropped] = "dropped",
     };
 
     /// <summary>
@@ -603,7 +607,9 @@ public class KitsuTracker(
         ScrobbleStatus.Reading => ["current"],
         ScrobbleStatus.Completed => ["completed"],
         ScrobbleStatus.PlanToRead => ["planned"],
-        _ => ["on_hold", "dropped"],
+        ScrobbleStatus.Paused => ["on_hold"],
+        ScrobbleStatus.Dropped => ["dropped"],
+        _ => [],
     };
 
     /// <summary>

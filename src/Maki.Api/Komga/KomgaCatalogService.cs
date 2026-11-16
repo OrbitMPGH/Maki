@@ -532,6 +532,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     public async Task<KomgaPage<KomgaBook>> OnDeckAsync(int page, int? size, CancellationToken ct)
     {
         var recent = await db.ChapterProgress.AsNoTracking().OwnedByScopeUser(db)
+            .Where(p => !db.UserSeriesStates.Any(s => s.SeriesId == p.SeriesId &&
+                (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped)))
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })
@@ -593,7 +595,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             .Select(i =>
             {
                 var entry = slice.Pages[slice.StartPage + i];
-                return new KomgaPageInfo(i + 1, Path.GetFileName(entry), CbzReader.ContentType(entry), null, null, null);
+                return new KomgaPageInfo(i + 1, Path.GetFileName(entry),
+                    JpegXlPages.Representation(entry, false).ContentType, null, null, null);
             })
             .ToList();
     }
@@ -717,7 +720,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
             .Select(c => new ChapterRow(
                 c.Id, c.SeriesId, c.Number, c.NumberRaw, c.Volume, c.Title, c.IsOneShot, c.Language, c.ReleaseDate,
-                c.ChapterFile!.RelativePath, c.ChapterFile.Size, c.ChapterFile.DateAdded, c.ChapterFile.PageCount,
+                c.ChapterFile!.RelativePath, c.ChapterFile.Size, c.ChapterFile.DateAdded,
+                c.ChapterFile.SplitPageCount ?? c.ChapterFile.PageCount,
                 db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id)))
             .ToListAsync(ct);
 

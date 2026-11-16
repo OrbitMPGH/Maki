@@ -5,7 +5,9 @@ import { IconBookFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
+import { warmReaderCredits } from '../../api/reader'
 import { relativeTime } from '../ui/time'
+import { Thumb } from '../ui/Thumb'
 import { serverChapterLabel } from '../../format'
 
 /**
@@ -83,14 +85,14 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
       to={`/read/${item.chapterId}`}
       className={item.coverAccent ? 'next-up-row has-accent' : 'next-up-row'}
       style={style}
+      onPointerEnter={() => warmReaderCredits(item.chapterId)}
+      onFocus={() => warmReaderCredits(item.chapterId)}
     >
       {/* The verb first, hidden: the row's text names the link, so a reader hears "Resume <title>, <chapter>". */}
       <VisuallyHidden>{started ? <Trans>Resume</Trans> : <Trans>Start</Trans>} </VisuallyHidden>
-      <span className="next-up-thumb">
-        {item.coverUrl && <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />}
-      </span>
+      <Thumb src={item.coverUrl} size="sm" />
       <span className="next-up-copy">
-        <span className="next-up-name">{seriesTitle}</span>
+        <span className="next-up-name series-title" data-lines="1">{seriesTitle}</span>
         <span className="next-up-meta">
           <span>{chapterLabel}</span>
           {lastRead && <span>{lastRead}</span>}

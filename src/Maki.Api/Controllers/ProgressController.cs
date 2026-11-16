@@ -79,6 +79,12 @@ public class ProgressController(
             return this.Fail(localizer, "error.progress.unknownTimeZone");
         }
 
+        var wasEnabled = ProgressSpec.Parse(await userSettings.GetAsync(SettingKeys.UserGamification, ct)).Enabled;
+        if (request.Enabled && !wasEnabled)
+        {
+            await achievements.ResetNotificationBaselineAsync(currentUser.UserId, ct);
+        }
+
         await userSettings.SetAsync(SettingKeys.UserGamification, ProgressSpec.Serialize(
             new ProgressSpec(request.Enabled, request.ShowStreaks, request.ShowOnLeaderboard)), ct);
 
@@ -143,6 +149,8 @@ public class ProgressController(
             .Select(d => d!)
             .ToList();
 
+        var (earned, total) = BadgeCounts(held);
+
         return Ok(new ProgressSummaryDto(
             true,
             spec.ShowStreaks,
@@ -153,10 +161,33 @@ public class ProgressController(
             snapshot.DaysRead,
             snapshot.CurrentStreak,
             snapshot.LongestStreak,
-            held.Count,
-            AchievementCatalog.All.Sum(a => a.Tiers.Count),
+            earned,
+            total,
             recent,
             await GoalsForAsync(target, ct, snapshot)));
+    }
+
+    /// <summary>
+    /// Earned and total tiers. A hidden achievement only joins the total once earned, or the gap
+    /// between the two would say how many secrets are left.
+    /// </summary>
+    internal static (int Earned, int Total) BadgeCounts(IReadOnlyList<UserAchievement> held)
+    {
+        var earned = 0;
+        var total = 0;
+        foreach (var definition in AchievementCatalog.All)
+        {
+            var tiers = held.Count(h => h.Key == definition.Key && h.Tier >= 1 && h.Tier <= definition.Tiers.Count);
+            if (definition.Hidden && tiers == 0)
+            {
+                continue;
+            }
+
+            earned += tiers;
+            total += definition.Tiers.Count;
+        }
+
+        return (earned, total);
     }
 
     /// <summary>
@@ -328,7 +359,7 @@ public class ProgressController(
                 UserNameVisibility.For(currentUser, user.Id, user.DisplayName, user.UserName, loginNamesVisible),
                 level,
                 snapshot.ChaptersRead + snapshot.VolumesRead,
-                snapshot.CurrentStreak));
+                spec.ShowStreaks ? snapshot.CurrentStreak : null));
         }
 
         return Ok(rows.Count < 2

@@ -75,7 +75,8 @@ internal sealed class UpgradeWorld : IDisposable
     public const string Official = "official";
 
 
-    public UpgradeWorld()
+    /// <param name="officialCapabilities">What "official" declares, for a test of a capability-gated path.</param>
+    public UpgradeWorld(SourceCapabilities officialCapabilities = SourceCapabilities.None)
     {
         Root = Path.Combine(Path.GetTempPath(), "maki-upgrade-" + Guid.NewGuid().ToString("N")[..8]);
         Paths = new AppPaths(Path.Combine(Root, "config"));
@@ -84,6 +85,7 @@ internal sealed class UpgradeWorld : IDisposable
             new FakeSource
             {
                 Name = Official, Kind = SourceKind.Official, OnGetPages = c => OfficialPages(c),
+                Capabilities = officialCapabilities,
                 OnListChapters = id => OfficialListing(id)
             }
         ]);

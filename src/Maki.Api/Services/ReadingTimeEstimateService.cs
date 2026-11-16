@@ -17,10 +17,23 @@ public record ReadingTimeEstimate(
     int SampleChapters,
     bool SeriesSpecific);
 
+/// <summary>The reader's median active time for one chapter of a series, in the style they read it.</summary>
+public record ReadingPace(double MedianSeconds, string Style, int SampleChapters, bool SeriesSpecific);
+
 public class ReadingTimeEstimateService(MakiDbContext db)
 {
     private const int MinimumSamples = 3;
     private const int MaximumSamples = 100;
+
+    /// <summary>
+    /// The reading style to take the pace from. A profile or series override is an explicit choice;
+    /// with only the global default, the format's conventional style applies, so an unconfigured
+    /// manhua or manhwa does not borrow a manga pace merely because the application default is paged.
+    /// </summary>
+    public static string ModeFor(string? seriesType, ResolvedReaderPrefs resolved) =>
+        resolved.Source == ReaderPrefsSource.Global && seriesType is SeriesTypes.Manhua or SeriesTypes.Manhwa
+            ? ReaderPrefsSpec.ModeVertical
+            : resolved.Prefs.Mode;
 
     public async Task<ReadingTimeEstimate?> EstimateAsync(
         int seriesId,
@@ -35,6 +48,18 @@ public class ReadingTimeEstimateService(MakiDbContext db)
             return null;
         }
 
+        if (await PaceAsync(seriesId, readerMode, ct) is not { } pace)
+        {
+            return null;
+        }
+
+        var seconds = (int)Math.Min(int.MaxValue, Math.Round(pace.MedianSeconds * remaining));
+        return new ReadingTimeEstimate(seconds, remaining, pace.Style, pace.SampleChapters, pace.SeriesSpecific);
+    }
+
+    /// <summary>Null until three timed chapters exist, in the series or in comparable ones.</summary>
+    public async Task<ReadingPace?> PaceAsync(int seriesId, string readerMode, CancellationToken ct = default)
+    {
         var scrolling = readerMode == ReaderPrefsSpec.ModeVertical;
         var samples = await TimedChapters()
             .Where(x => x.SeriesId == seriesId)
@@ -74,14 +99,7 @@ public class ReadingTimeEstimateService(MakiDbContext db)
         var median = samples.Count % 2 == 0
             ? (samples[middle - 1] + samples[middle]) / 2d
             : samples[middle];
-        var seconds = (int)Math.Min(int.MaxValue, Math.Round(median * remaining));
-
-        return new ReadingTimeEstimate(
-            seconds,
-            remaining,
-            scrolling ? "scrolling" : "paged",
-            samples.Count,
-            seriesSpecific);
+        return new ReadingPace(median, scrolling ? "scrolling" : "paged", samples.Count, seriesSpecific);
     }
 
     private IQueryable<ChapterProgress> TimedChapters() =>

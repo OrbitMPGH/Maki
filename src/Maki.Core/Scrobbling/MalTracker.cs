@@ -31,6 +31,8 @@ public class MalTracker(
         ["reading"] = ScrobbleStatus.Reading,
         ["completed"] = ScrobbleStatus.Completed,
         ["plan_to_read"] = ScrobbleStatus.PlanToRead,
+        ["on_hold"] = ScrobbleStatus.Paused,
+        ["dropped"] = ScrobbleStatus.Dropped,
     };
 
     private static readonly Dictionary<ScrobbleStatus, string> InternalToStatus = new()
@@ -38,6 +40,8 @@ public class MalTracker(
         [ScrobbleStatus.Reading] = "reading",
         [ScrobbleStatus.Completed] = "completed",
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
+        [ScrobbleStatus.Paused] = "on_hold",
+        [ScrobbleStatus.Dropped] = "dropped",
     };
 
     /// <summary>Every wait the tracker makes goes through here, so tests can skip the sleeping.</summary>
@@ -393,7 +397,9 @@ public class MalTracker(
         ScrobbleStatus.Reading => ["reading"],
         ScrobbleStatus.Completed => ["completed"],
         ScrobbleStatus.PlanToRead => ["plan_to_read"],
-        _ => ["on_hold", "dropped"],
+        ScrobbleStatus.Paused => ["on_hold"],
+        ScrobbleStatus.Dropped => ["dropped"],
+        _ => [],
     };
 
     /// <summary>

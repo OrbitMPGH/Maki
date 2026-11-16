@@ -32,7 +32,10 @@ a different result.
 
 Settings above the table apply to the whole import:
 
-- **Root folder** is where the new series are stored.
+- **Root folder** is where the new series are stored. With more than one root folder it starts on
+  **Picked by the root folder rules**, which sends each series where your
+  [root folder rules](/Maki/guides/library/folder-layout/#root-folder-rules) say, or to the first
+  root folder when no rule matches.
 - **Monitor for new chapters** and **New chapters** set the monitor mode for each series.
 - **Apply categories as tags** turns each Mihon category into a tag. Manga in Mihon's Default
   category get no tag.

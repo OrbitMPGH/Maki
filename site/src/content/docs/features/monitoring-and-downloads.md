@@ -43,6 +43,12 @@ hand.
 - The series page can compare linked sources side by side on sampled page quality.
 - A single chapter can be re-fetched from another linked source: pick the copy that looks best
   and Maki downloads it again from there.
+- A result that comes close to the series title but not close enough to link on its own is offered
+  as **Is this it?** with **Link** and **Dismiss**.
+- On MangaDex you can prefer or block scanlation groups, for every series or for one. See
+  [Choosing sources](/Maki/guides/sources/choosing-sources/#scanlation-groups-on-mangadex).
+- A chapter that is still early access on one source is taken from another linked source that has
+  it free, and only waits when none does.
 
 Files that no source chapter claims still become chapters. A chapter file gets a row under its
 number, and a volume file gets a row for each chapter its page names mark. A volume file with no
@@ -57,6 +63,10 @@ A chapter that no enabled source lists any more is flagged as **Delisted**, with
 filter on the series page. An alert there offers **Show them** and **Keep them**. The flag clears
 itself if a source lists the chapter again, and a sync that delists chapters you have files for
 sends one inbox warning per series. Nothing is downloaded or deleted because of it.
+
+Chapters no source has can still come from your indexers: **Search torrents for chapters no source
+has** is on by default once an indexer and a download client are set up. See
+[Torrents](/Maki/guides/sources/torrents/#getting-a-release).
 
 A chapter whose file has gone from disk says **File missing**, with a count in the chapter heading,
 a filter and a **Relink files** button. Downloaded counts leave these chapters out. See
@@ -75,10 +85,12 @@ and auto-import on completion. Torrents share the queue with scraper downloads, 
 hardlinked into the library where possible. A release whose title names a related work (a spin-off
 or sequel) better than the series itself is rejected.
 
-Maki can also remove a torrent from the client once it is imported. This is off by default. Turn on
-**Remove torrents from the download client after import** under **Settings → Downloads**, and
-**Also delete the downloaded files** under it to delete the data as well. See
-[Torrents](/Maki/guides/sources/torrents/).
+Maki can also remove a torrent from the client, right after import or once it reaches a seed ratio
+or seeding time. This is off by default. Turn on **Remove torrents from the download client after
+import** under **Settings → Downloads**, and **Also delete the downloaded files** under it to delete
+the data as well. A torrent that stalls is failed after a limit you set, declined, and replaced by
+the next best release. **Look for volume releases first** tries a volume release before downloading
+a new series chapter by chapter. See [Torrents](/Maki/guides/sources/torrents/).
 
 Anything that is not already CBZ is converted on the way in:
 
@@ -94,4 +106,7 @@ Manual library import converts files the same way and leaves your originals in p
 ## Activity queue
 
 Updates live over SignalR with per-page progress. You can retry or remove items and review downloads
-that need a decision, for example an import that would replace existing chapter files.
+that need a decision, for example an import that would replace existing chapter files. New chapters
+download ahead of big backlogs, one series can be paused on its own, a drive running low on space
+holds the downloads for that root folder, and the queue shows roughly how long it has left. See
+[Activity, Wanted and the queue](/Maki/guides/getting-started/activity-and-queue/).

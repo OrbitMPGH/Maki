@@ -185,6 +185,8 @@ export function seriesDto(id: number, overrides: Partial<SeriesDto> = {}): Serie
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: 'Default',
+    readingStatus: entry.read > 0 ? 'Reading' : 'PlanToRead',
+    readingStatusAuto: false,
     readTimeEstimate:
       entry.read < entry.chapters
         ? {
@@ -622,6 +624,8 @@ export function providerDetail(id: number, overrides: Partial<MangaBakaDetail> =
     tags: entry.tags.map((name, i) => ({ name, weight: String(90 - i * 10), description: null, isSpoiler: i === 2 })),
     links: links(entry),
     malId: entry.mangaBakaId + 200,
+    aniListId: entry.mangaBakaId + 100,
+    kitsuId: null,
     hasAnime: false,
     animeStart: null,
     animeEnd: null,

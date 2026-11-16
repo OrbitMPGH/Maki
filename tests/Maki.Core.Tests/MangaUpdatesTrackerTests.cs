@@ -372,8 +372,8 @@ public class MangaUpdatesTrackerTests
     [InlineData(0, ScrobbleStatus.Reading)]
     [InlineData(1, ScrobbleStatus.PlanToRead)]
     [InlineData(2, ScrobbleStatus.Completed)]
-    [InlineData(3, ScrobbleStatus.Other)]
-    [InlineData(4, ScrobbleStatus.Other)]
+    [InlineData(3, ScrobbleStatus.Dropped)]
+    [InlineData(4, ScrobbleStatus.Paused)]
     [InlineData(101, ScrobbleStatus.Other)]
     public async Task MapsListsToStatuses(int listId, ScrobbleStatus expected)
     {

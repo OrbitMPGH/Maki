@@ -98,7 +98,7 @@ public class UpscalePixelsTests
         byte[] source = [100, 100, 100, 30, 30, 30];
         byte[] output = [120, 104, 140, 10, 0, 20];
 
-        UpscalePixels.TakeColourFrom(output, source);
+        UpscalePixels.TakeColourFrom(output, 2, 1, source, 2, 1, 1);
 
         // Luma of (120, 104, 140) rounds to 113 and of (10, 0, 20) to 5.
         Assert.Equal([113, 113, 113, 5, 5, 5], output);
@@ -110,11 +110,11 @@ public class UpscalePixelsTests
         byte[] source = [200, 40, 40];
         byte[] output = [230, 70, 70];
 
-        UpscalePixels.TakeColourFrom(output, source);
+        UpscalePixels.TakeColourFrom(output, 1, 1, source, 1, 1, 1);
 
         // Source luma 88, output luma 118: every channel moves up by 30.
         Assert.Equal([230, 70, 70], output);
-        Assert.Throws<ArgumentException>(() => UpscalePixels.TakeColourFrom(new byte[6], new byte[3]));
+        Assert.Throws<ArgumentException>(() => UpscalePixels.TakeColourFrom(new byte[9], 3, 1, new byte[6], 2, 1, 1));
     }
 
     [Fact]
@@ -135,9 +135,41 @@ public class UpscalePixelsTests
             luma[p] = (byte)UpscalePixels.Luma(output[p * 3], output[p * 3 + 1], output[p * 3 + 2]);
         }
 
-        UpscalePixels.TakeColourFrom(output, source);
+        UpscalePixels.TakeColourFrom(output, 256, 64, source, 256, 64, 2);
 
         Assert.Equal(luma, UpscalePixels.ToSingleBand(output));
+    }
+
+    [Fact]
+    public void Slightly_different_tints_in_a_flat_area_even_out_while_a_colour_edge_stays()
+    {
+        // Source: two 8 px JPEG-like blocks of dark purple a little apart in tint, then a saturated red
+        // area. Output: the same page at 2x, as a model that changed nothing would return it.
+        const int width = 32, height = 16;
+        var source = new byte[width * height * 3];
+        for (var y = 0; y < height; y++)
+        for (var x = 0; x < width; x++)
+        {
+            (byte r, byte g, byte b) c = x < 8 ? ((byte)40, (byte)20, (byte)60) : x < 16 ? ((byte)44, (byte)20, (byte)56) : ((byte)200, (byte)30, (byte)30);
+            var p = (y * width + x) * 3;
+            (source[p], source[p + 1], source[p + 2]) = c;
+        }
+
+        var output = new byte[width * height * 12];
+        for (var y = 0; y < height * 2; y++)
+        for (var x = 0; x < width * 2; x++)
+        {
+            Array.Copy(source, ((y / 2) * width + x / 2) * 3, output, (y * width * 2 + x) * 3, 3);
+        }
+
+        UpscalePixels.TakeColourFrom(output, width * 2, height * 2, source, width, height, 2);
+
+        int Red(int x) => output[(16 * width * 2 + x) * 3];
+        var stepAfter = Math.Abs(Red(16) - Red(15));
+        Assert.True(stepAfter <= 2, $"The 4-level block step is still {stepAfter}.");
+        Assert.InRange(Red(48), 199, 201);
+        Assert.True(Red(33) > 190, $"The red area's edge bled to {Red(33)}.");
+        Assert.True(Red(30) < 60, $"The purple beside the red area picked up red: {Red(30)}.");
     }
 
     [Fact]

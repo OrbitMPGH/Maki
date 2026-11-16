@@ -564,7 +564,7 @@ public class HomeControllerTests : IDisposable
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
         // Chapter 2: the next unread after the last completed.
-        var item = Assert.Single(response.ContinueReading.Where(i => i.SeriesTitle == "ContinueAfterLast"));
+        var item = Assert.Single(response.ContinueReading, i => i.SeriesTitle == "ContinueAfterLast");
         Assert.Equal(ch2, item.ChapterId);
     }
 
@@ -598,7 +598,7 @@ public class HomeControllerTests : IDisposable
             var result = await controller.Continue(seriesId, CancellationToken.None);
 
             var ok = Assert.IsType<OkObjectResult>(result);
-            var data = (dynamic)ok.Value;
+            var data = (dynamic)ok.Value!;
             Assert.Equal(ch2, data.chapterId);
             Assert.Equal(0, data.page);
         }
