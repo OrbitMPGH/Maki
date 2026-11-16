@@ -294,7 +294,7 @@ foreach ($b in $built) {
   if ($viewExit -ne 0) {
     Write-Host "Creating release '$($b.Tag)'…"
     & gh release create $b.Tag --title "Prebuilt embedding index ($($b.Model))" --notes `
-      "Prebuilt $($b.Model) embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
+      "Prebuilt $($b.Model) embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable." --latest=false
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed for $($b.Tag)" }
   }
 

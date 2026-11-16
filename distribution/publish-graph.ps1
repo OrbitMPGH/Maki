@@ -314,7 +314,8 @@ foreach ($b in $built) {
   $viewExit = Invoke-Native { & gh release view $b.Profile.Tag --json tagName | Out-Null }
   if ($viewExit -ne 0) {
     Write-Host "Creating release '$($b.Profile.Tag)'…"
-    & gh release create $b.Profile.Tag --title $b.Profile.Label --notes $b.Profile.Notes
+    # Not the Latest release: UpdateCheckService reads releases/latest for the app version.
+    & gh release create $b.Profile.Tag --title $b.Profile.Label --notes $b.Profile.Notes --latest=false
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed for $($b.Profile.Tag)" }
   }
 
