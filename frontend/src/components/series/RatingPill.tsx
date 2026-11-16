@@ -1,7 +1,7 @@
 import type { ComponentPropsWithRef } from 'react'
 import { UnstyledButton } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { useRatingFormat } from '../../api/ratings'
+import { useRatingFormat, useRatingText } from '../../api/ratings'
 import { RATING_WORDS, ratingWordFor, useRatingWord } from '../../lib/ratingWords'
 
 /**
@@ -24,7 +24,8 @@ export function RatingPill({
   const { format } = useRatingFormat()
   const word = useRatingWord()
   const state = value == null ? 'unrated' : soFar ? 'so-far' : 'rated'
-  const shown = value != null ? `${word(value)} ${format(value)}` : null
+  const ratingText = useRatingText()
+  const shown = value != null ? ratingText(value) : null
   const level = value != null ? RATING_WORDS.length - 1 - RATING_WORDS.indexOf(ratingWordFor(value)) : -1
 
   return (

@@ -3734,6 +3734,11 @@ msgstr "{who}, {when}"
 msgid "{width}px, {bpp} bpp"
 msgstr "{width}px, 픽셀당 {bpp}비트"
 
+#. A rating word and its score, such as "Very good 7.8".
+#: src/api/ratings.ts
+msgid "{word} {score}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "{workCount, plural, one {Showing {shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.} other {Showing {shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.}}"
@@ -25226,7 +25231,7 @@ msgid "Suggestive"
 msgstr "선정적"
 
 #: src/components/series/RatingPanel.tsx
-msgid "Suggests <0>{totalWord} {total}</0>"
+msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx

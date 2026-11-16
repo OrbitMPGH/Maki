@@ -26,10 +26,17 @@ export default function ChapterEndRating({ seriesId, soFar }: { seriesId: number
   const { precision, format } = useRatingFormat()
   const [answer, setAnswer] = useState<{ rating: number | null } | null>(null)
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingNudge = useRef<number | null>(null)
+  const { mutate: saveRating } = setRating
 
-  useEffect(() => () => {
-    if (nudgeTimer.current) clearTimeout(nudgeTimer.current)
-  }, [])
+  // Leaving within the delay saves the last nudge rather than dropping it.
+  useEffect(
+    () => () => {
+      if (nudgeTimer.current) clearTimeout(nudgeTimer.current)
+      if (pendingNudge.current != null) saveRating({ seriesId, rating: pendingNudge.current })
+    },
+    [saveRating, seriesId],
+  )
 
   const settle = (rating: number | null) => {
     setAnswer({ rating })
@@ -65,8 +72,12 @@ export default function ChapterEndRating({ seriesId, soFar }: { seriesId: number
     const nudge = (step: number) => {
       const next = roundRating(current + step)
       setAnswer({ rating: next })
+      pendingNudge.current = next
       if (nudgeTimer.current) clearTimeout(nudgeTimer.current)
-      nudgeTimer.current = setTimeout(() => setRating.mutate({ seriesId, rating: next }), NUDGE_DELAY_MS)
+      nudgeTimer.current = setTimeout(() => {
+        pendingNudge.current = null
+        saveRating({ seriesId, rating: next })
+      }, NUDGE_DELAY_MS)
     }
     return (
       <Group gap="xs" justify="center" wrap="wrap">

@@ -1163,8 +1163,9 @@ public class ScrobbleService(
         }
 
         // A burst of nudges (7.6, 7.7, 7.8) sends one push: each queue takes a ticket, and only the
-        // latest ticket for this series pushes once the debounce has passed.
-        var key = (userId, series.Id, soFar);
+        // latest ticket for this series pushes once the debounce has passed. "So far" and final share
+        // the key, so a final score set right after a "so far" one is the one that lands.
+        var key = (userId, series.Id);
         var ticket = Interlocked.Increment(ref _ratingPushTicket);
         _ratingPushTickets[key] = ticket;
 
@@ -1185,7 +1186,7 @@ public class ScrobbleService(
             try
             {
                 await Task.Delay(RatingPushDebounce, CancellationToken.None);
-                if (!_ratingPushTickets.TryRemove(new KeyValuePair<(int, int, bool), long>(key, ticket)))
+                if (!_ratingPushTickets.TryRemove(new KeyValuePair<(int, int), long>(key, ticket)))
                 {
                     return;
                 }
@@ -1203,7 +1204,7 @@ public class ScrobbleService(
     internal TimeSpan RatingPushDebounce { get; set; } = TimeSpan.FromSeconds(3);
 
     private long _ratingPushTicket;
-    private readonly ConcurrentDictionary<(int UserId, int SeriesId, bool SoFar), long> _ratingPushTickets = new();
+    private readonly ConcurrentDictionary<(int UserId, int SeriesId), long> _ratingPushTickets = new();
 
     /// <summary>
     /// Best-effort push of a user rating (1–10, or 0 to clear) to every connected tracker,

@@ -14,9 +14,12 @@ public static class TrackerScore
     public static int Hundred(double score) =>
         Math.Clamp((int)Math.Round(score * 10, MidpointRounding.AwayFromZero), 0, 100);
 
-    /// <summary>A 0-100 score read back onto Maki's 1-10 scale, or null for 0 (not rated).</summary>
+    /// <summary>
+    /// A 0-100 score read back onto Maki's 1-10 scale. Below 10 is null: under Maki's lowest rating,
+    /// and what older Maki versions wrote to MangaBaka when they sent 0-10 there (an 8 stored as 8 of 100).
+    /// </summary>
     public static double? FromHundred(double raw) =>
-        raw > 0 ? RatingScale.Round(Math.Clamp(raw / 10, 1, 10)) : null;
+        raw >= 10 ? RatingScale.Round(Math.Min(raw / 10, 10)) : null;
 
     /// <summary>A 1-10 score to one decimal, for trackers that store any number (MangaUpdates).</summary>
     public static double Tenths(double score) => RatingScale.Round(Math.Clamp(score, 1, 10));

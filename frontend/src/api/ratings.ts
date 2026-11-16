@@ -7,6 +7,7 @@ import { api } from './client'
 import { optimisticMerge } from './optimistic'
 import type { SeriesDto } from './types'
 import { formatRating, type RatingCategory, type RatingPrecision } from '../lib/rating'
+import { ratingWordFor } from '../lib/ratingWords'
 
 export interface RatingSettings {
   precision: RatingPrecision
@@ -68,6 +69,23 @@ export function useRatingFormat() {
   return { precision, format }
 }
 
+/**
+ * A score's word and number as one phrase ("Very good 7.8"), so a language can order them its way.
+ * `decimal` forces one decimal, for a computed suggestion shown in whole-number mode.
+ */
+export function useRatingText() {
+  const { t, i18n } = useLingui()
+  const { precision } = useRatingSettings().settings
+  return useCallback(
+    (value: number, decimal = false) => {
+      const word = i18n._(ratingWordFor(value).label)
+      const score = formatRating(value, decimal ? 'decimal' : precision)
+      return t({ message: `${word} ${score}`, comment: 'A rating word and its score, such as "Very good 7.8".' })
+    },
+    [t, i18n, precision],
+  )
+}
+
 /** A category's name: translated for a built-in, as typed for a custom one. */
 export function useCategoryLabel() {
   const { i18n } = useLingui()
@@ -87,6 +105,12 @@ export function useSetRatingBreakdown() {
         method: 'PUT',
         body: JSON.stringify({ scores }),
       }),
+    // Written ahead of the request, since each save replaces the whole map: a panel reopened before
+    // the answer must start from these scores, not the ones the series loaded with.
+    onMutate: ({ seriesId, scores }) => {
+      const ratingBreakdown = Object.keys(scores).length ? scores : null
+      queryClient.setQueryData<SeriesDto>(['series', seriesId], (old) => (old ? { ...old, ratingBreakdown } : old))
+    },
     onSuccess: ({ ratingBreakdown }, { seriesId }) => {
       queryClient.setQueryData<SeriesDto>(['series', seriesId], (old) => (old ? { ...old, ratingBreakdown } : old))
     },

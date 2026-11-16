@@ -3032,6 +3032,11 @@ msgstr "{who}, {when}"
 msgid "{width}px, {bpp} bpp"
 msgstr "{width}px, {bpp} bpp"
 
+#. A rating word and its score, such as "Very good 7.8".
+#: src/api/ratings.ts
+msgid "{word} {score}"
+msgstr "{word} {score}"
+
 #: src/pages/CreatorPage.tsx
 msgid "{workCount, plural, one {Showing {shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.} other {Showing {shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.}}"
 msgstr "{workCount, plural, one {Showing {shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.} other {Showing {shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.}}"
@@ -20545,8 +20550,8 @@ msgid "Suggestive"
 msgstr "Suggestive"
 
 #: src/components/series/RatingPanel.tsx
-msgid "Suggests <0>{totalWord} {total}</0>"
-msgstr "Suggests <0>{totalWord} {total}</0>"
+msgid "Suggests <0>{suggested}</0>"
+msgstr "Suggests <0>{suggested}</0>"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Supernatural"

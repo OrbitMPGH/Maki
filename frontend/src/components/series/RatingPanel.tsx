@@ -6,9 +6,10 @@ import {
   useCategoryLabel,
   useRatingFormat,
   useRatingSettings,
+  useRatingText,
   useSetRatingBreakdown,
 } from '../../api/ratings'
-import { breakdownScore, formatRating, parseRating, roundRating, RATING_STEP } from '../../lib/rating'
+import { breakdownScore, parseRating, roundRating, RATING_STEP } from '../../lib/rating'
 import { RATING_WORDS, ratingWordFor } from '../../lib/ratingWords'
 import { IconCheck, IconChevronDown, IconListDetails, IconMinus, IconPencil, IconPlus, IconX } from '../../lib/icons'
 import { DrillBack, DrillRow, useDrillPages } from '../ui/DrillPanel'
@@ -51,7 +52,7 @@ function useBreakdownDraft(seriesId: number, initial: Record<string, number> | n
  * The overall score as the panel holds it. Changes stay a draft until the panel closes (it unmounts)
  * or "Use" commits one, so stepping through values saves once, not each time.
  */
-function useRatingDraft(value: number | null, onChange: (rating: number) => void) {
+function useRatingDraft(value: number | null, onChange: (rating: number) => void, immediate: boolean) {
   const [draft, setDraft] = useState<number | null>(null)
   const latest = useRef<number | null>(null)
   const saved = useRef(value)
@@ -69,9 +70,14 @@ function useRatingDraft(value: number | null, onChange: (rating: number) => void
   const change = (rating: number) => {
     latest.current = rating
     setDraft(rating)
+    if (immediate) {
+      saved.current = rating
+      onChange(rating)
+    }
   }
   const commit = (rating: number) => {
-    change(rating)
+    latest.current = rating
+    setDraft(rating)
     saved.current = rating
     if (rating !== value) onChange(rating)
   }
@@ -112,6 +118,7 @@ export function RatingPanel({
   onChange,
   onClear,
   canEditCategories = false,
+  immediate = false,
 }: {
   seriesId: number
   value: number | null
@@ -126,6 +133,11 @@ export function RatingPanel({
   /** Clears the rating at once. Without it the panel offers no Clear. */
   onClear?: () => void
   canEditCategories?: boolean
+  /**
+   * Hands every change to `onChange` at once instead of on close, for a host that only holds the
+   * score (the archive dialog), so its own confirm button never reads a stale one.
+   */
+  immediate?: boolean
 }) {
   const { t, i18n } = useLingui()
   const { settings } = useRatingSettings()
@@ -133,7 +145,7 @@ export function RatingPanel({
   const label = useCategoryLabel()
   const pages = useDrillPages<Page>('main', PARENTS)
   const { scores, update } = useBreakdownDraft(seriesId, breakdown)
-  const { draft, change, commit, forget } = useRatingDraft(value, onChange)
+  const { draft, change, commit, forget } = useRatingDraft(value, onChange, immediate)
   const [cleared, setCleared] = useState(false)
   const [typing, setTyping] = useState<string | null>(null)
   const [openKey, setOpenKey] = useState<string | null | undefined>(undefined)
@@ -165,8 +177,8 @@ export function RatingPanel({
   const offered = suggestion == null ? null : decimal ? suggestion : Math.round(suggestion)
   const compared = shown == null ? null : decimal ? shown : Math.round(shown)
   const matches = offered != null && compared != null && Math.abs(offered - compared) < RATING_STEP / 2
-  const total = suggestion != null ? formatRating(suggestion, 'decimal') : ''
-  const totalWord = suggestion != null ? wordOf(suggestion) : ''
+  const ratingText = useRatingText()
+  const suggested = suggestion != null ? ratingText(suggestion, true) : ''
   const of = categories.length
 
   const scoreCategory = (key: string, score: number) => {
@@ -238,7 +250,7 @@ export function RatingPanel({
           label={<Trans>Break it down</Trans>}
           value={
             suggestion != null ? (
-              `${totalWord} ${total}`
+              ratingText(suggestion, true)
             ) : scoredCount > 0 ? (
               <Trans>
                 {scoredCount} of {of} scored
@@ -340,7 +352,7 @@ export function RatingPanel({
         ) : (
           <Text size="sm" c="var(--ink-3)">
             <Trans>
-              Suggests <span className="rating-panel-sum tnum">{totalWord} {total}</span>
+              Suggests <span className="rating-panel-sum tnum">{suggested}</span>
             </Trans>
           </Text>
         )}

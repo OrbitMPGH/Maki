@@ -129,6 +129,7 @@ export function ArchiveSeriesDialog({
                     finished: false,
                     breakdown: leavingRating.breakdown,
                     onChange: leavingRating.onChange,
+                    immediate: true,
                   }}
                   target={(toggle) => (
                     <Button size="compact-sm" variant="subtle" leftSection={<IconAdjustmentsHorizontal size={16} />} onClick={toggle}>

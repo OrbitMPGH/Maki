@@ -26,6 +26,7 @@ import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './A
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatRecentDate } from '../../format'
+import { useRatingFormat } from '../../api/ratings'
 import { useLabel } from '../../i18n-context'
 import { MODAL_SIZE } from '../../components/ui/modalSizes'
 import { Callout } from '../../components/ui/Callout'
@@ -439,6 +440,7 @@ function SignalRow({ row, busy, onClear, onExclude, onHide }: {
   const suppression = state?.suppression ?? 'none'
   const exposure = state?.exposure ?? []
   const rating = row.rating
+  const { format: formatRating } = useRatingFormat()
   const media = exposure.map((value) => label(EXPOSURE_LABELS[value] ?? value)).join(', ')
   const until = state?.dismissedUntilUtc ? formatRecentDate(state.dismissedUntilUtc) : ''
   const dismissalEnded = state?.dismissedUntilUtc != null && new Date(state.dismissedUntilUtc).getTime() <= Date.now()
@@ -464,7 +466,8 @@ function SignalRow({ row, busy, onClear, onExclude, onHide }: {
   if (row.excluded) statuses.push({ icon: IconBan, label: t`Excluded from taste`, color: quiet })
   if (sentiment === 'liked') statuses.push({ icon: IconThumbUp, label: t`Liked`, color: 'var(--ok)' })
   if (sentiment === 'disliked') statuses.push({ icon: IconThumbDown, label: t`Disliked`, color: 'var(--danger)' })
-  if (rating !== null) {
+  if (row.rating !== null) {
+    const rating = formatRating(row.rating)
     statuses.push({ icon: IconStarFilled, label: t`Rated ${rating}`, color: quiet, iconColor: 'var(--rating)' })
   }
   if (suppression === 'hidden') statuses.push({ icon: IconEyeOff, label: t`Hidden`, color: quiet })

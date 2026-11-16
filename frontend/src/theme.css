@@ -21,6 +21,7 @@
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
   --rating: #f5c518;
+  --rating-on: #241c00;
   --tier-1: #a1662f;
   --tier-1-soft: color-mix(in srgb, var(--tier-1) 15%, transparent);
   --tier-2: #9aa4ad;
@@ -3772,7 +3773,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .rating-word[data-on] {
   background: var(--rating);
-  color: #241c00;
+  color: var(--rating-on);
   box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 3.5px var(--brand);
 }
 .rating-word[data-so-far] {
