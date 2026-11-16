@@ -457,7 +457,9 @@ public class CompletedDownloadJob(
     /// included), or without getting any further. A torrent the client holds (queued, paused, checking), one
     /// in error, a finished one and one parked for an import decision stop the clock, and it starts again
     /// from the next poll that sees the torrent downloading. The first look in a process compares against
-    /// the percentage on the row, so a torrent that moved while Maki was down is not failed for it.
+    /// the percentage on the row, so a torrent that moved while Maki was down is not failed for it, and
+    /// keeps a stored clock only while it is still inside the limit: one older than that may have run out
+    /// while Maki or the client was down, so it starts again from now.
     /// </summary>
     internal static string? StallOf(DownloadQueueItem item, ClientTorrent torrent, int previousPercent, DateTime now,
         TimeSpan? timeout)
@@ -471,9 +473,14 @@ public class CompletedDownloadJob(
             return null;
         }
 
-        var progressed = ProgressSeen.TryGetValue(item.Id, out var seen)
-            ? torrent.Progress > seen
-            : (int)(torrent.Progress * 100) > previousPercent;
+        var firstLook = !ProgressSeen.TryGetValue(item.Id, out var seen);
+        if (firstLook)
+        {
+            item.LastProgressAt = WithinLimit(item.LastProgressAt, now, limit);
+            item.LastPeerSeenAt = WithinLimit(item.LastPeerSeenAt, now, limit);
+        }
+
+        var progressed = firstLook ? (int)(torrent.Progress * 100) > previousPercent : torrent.Progress > seen;
         ProgressSeen.AddOrUpdate(item.Id, torrent.Progress, (_, previous) => Math.Max(previous, torrent.Progress));
         item.LastProgressAt = StallClock(item.LastProgressAt, progressed, now);
         // Progress is proof of peers, including progress made while Maki was down, when a first look
@@ -492,6 +499,9 @@ public class CompletedDownloadJob(
 
         return stall;
     }
+
+    private static DateTime? WithinLimit(DateTime? since, DateTime now, TimeSpan limit) =>
+        since is { } at && now - at >= limit ? now : since;
 
     /// <summary>Starts a stopped clock, and moves a running one to now on activity, at most every few minutes.</summary>
     private static DateTime StallClock(DateTime? since, bool active, DateTime now) =>

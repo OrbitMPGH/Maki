@@ -155,6 +155,54 @@ public sealed class SeriesBulkOperationsTests : IDisposable
     }
 
     [Fact]
+    public async Task Losing_the_permission_or_the_account_stops_the_job_at_the_next_series()
+    {
+        foreach (var revoke in new Action<MakiUser>[] { u => u.Permissions = MakiPermission.None, u => u.Disabled = true })
+        {
+            var alice = _db.SeedUser("alice" + Guid.NewGuid().ToString("N")[..6], MakiPermission.EditMetadata);
+            var first = _db.SeedSeries("First", configure: s => s.ArchivedAt = DateTime.UtcNow);
+            var second = _db.SeedSeries("Second", configure: s => s.ArchivedAt = DateTime.UtcNow);
+            using (var db = _db.NewContext())
+            {
+                revoke(db.Users.Single(u => u.Id == alice));
+                db.SaveChanges();
+            }
+
+            using var services = SeriesBulkTestKit.Services(_db);
+            var operations = new SeriesBulkOperations();
+            var operation = operations.Enqueue(SeriesBulkAction.Refresh, [first, second],
+                SeriesBulkTestKit.Caller(alice, true));
+            await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
+
+            var status = operation.Snapshot();
+            Assert.Equal("finished", status.State);
+            Assert.Equal(1, status.Done);
+            Assert.Equal([(first, "error.seriesBulk.accessRevoked")],
+                status.Failures.Select(f => (f.SeriesId, f.Error)).ToArray());
+        }
+    }
+
+    [Fact]
+    public async Task A_root_folder_taken_away_after_queueing_hides_its_series()
+    {
+        var alice = _db.SeedUser("alice", MakiPermission.EditMetadata, allRootFolders: false);
+        var kept = _db.SeedSeries("Kept", configure: s => s.ArchivedAt = DateTime.UtcNow);
+        var taken = _db.SeedSeries("Taken", configure: s => s.ArchivedAt = DateTime.UtcNow);
+        Grant(alice, RootOf(kept));
+        using var services = SeriesBulkTestKit.Services(_db);
+        var operations = new SeriesBulkOperations();
+
+        // Queued while both roots were granted.
+        var operation = operations.Enqueue(SeriesBulkAction.Refresh, [kept, taken],
+            SeriesBulkTestKit.Caller(alice, false, RootOf(kept), RootOf(taken)));
+        await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
+
+        Assert.Equal(
+            [(kept, "error.series.archived"), (taken, "error.seriesRename.notFound")],
+            operation.Snapshot().Failures.Select(f => (f.SeriesId, f.Error)).ToArray());
+    }
+
+    [Fact]
     public async Task A_series_already_in_the_destination_counts_as_moved()
     {
         var alice = _db.SeedUser("alice");

@@ -115,7 +115,7 @@ export function EditMetadataModal({
   const upload = useUploadSeriesCover()
 
   const base = useMemo(() => baseline(series), [series])
-  const value = <K extends keyof Draft>(key: K): Draft[K] => (edits[key] ?? base[key]) as Draft[K]
+  const value = <K extends keyof Draft>(key: K): Draft[K] => (key in edits ? edits[key] : base[key]) as Draft[K]
   const set = <K extends keyof Draft>(key: K, next: Draft[K]) => setEdits((current) => ({ ...current, [key]: next }))
   const dirty = (Object.keys(edits) as (keyof Draft)[]).filter((key) => !same(edits[key]!, base[key]))
   const locked = (field: MetadataField) => series.lockedFields.includes(field)

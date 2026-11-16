@@ -5389,6 +5389,7 @@ msgstr "Ch. {chapter}"
 msgid "Ch. {chapterLabel}"
 msgstr "Ch. {chapterLabel}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 msgid "Ch. {chapterNumber}"
 msgstr "Ch. {chapterNumber}"
@@ -10770,9 +10771,15 @@ msgstr "JPEG pages are kept as they are at Lossless."
 msgid "JPEG XL"
 msgstr "JPEG XL"
 
+#: src/pages/settings/registry.ts
 #: src/pages/settings/UpscalingSection.tsx
 msgid "JPEG XL for colour pages"
 msgstr "JPEG XL for colour pages"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "jpeg xl, jxl, colour pages, color pages, banding, gradients, webp"
+msgstr "jpeg xl, jxl, colour pages, color pages, banding, gradients, webp"
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -11656,6 +11663,7 @@ msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Look for volume releases first"
 msgstr "Look for volume releases first"
 
@@ -15270,6 +15278,10 @@ msgstr "page background, white, grey, gray, auto background, page colour"
 #: src/pages/settings/registry.ts
 msgid "Page conversion"
 msgstr "Page conversion"
+
+#: src/components/settings/RootFolderPathModal.tsx
+msgid "Page conversion is rewriting a file in this folder."
+msgstr "Page conversion is rewriting a file in this folder."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -23216,12 +23228,14 @@ msgstr "Vol. {0}"
 msgid "Vol. {fileVolume}"
 msgstr "Vol. {fileVolume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 msgid "Vol. {volume} Ch. {chapterNumber}"
 msgstr "Vol. {volume} Ch. {chapterNumber}"
@@ -23257,6 +23271,11 @@ msgstr "Volume {number}"
 #: src/api/upgrades.ts
 msgid "Volume {range}"
 msgstr "Volume {range}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "volume first, volume release, new series, torrent, indexer, hold sources"
+msgstr "volume first, volume release, new series, torrent, indexer, hold sources"
 
 #: src/api/inbox.ts
 msgid "Volume release proposed"

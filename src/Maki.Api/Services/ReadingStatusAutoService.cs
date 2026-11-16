@@ -14,7 +14,8 @@ namespace Maki.Api.Services;
 /// moment the oldest unread downloaded chapter arrived. A series the reader is caught up on is never
 /// touched, and when a chapter finally lands after months of waiting the clock starts then, not at
 /// the last read. A change a rule made does not restart the clock, so a series paused at 30 days is
-/// still dropped at 90.
+/// still dropped at 90. The hold overwrites the date of the last change by hand, so for a paused
+/// series that change is taken as the hold's days before the hold.
 /// </para>
 /// <para>
 /// Drop applies to Reading series and to ones the hold rule paused, never to a series the reader put
@@ -137,9 +138,17 @@ public class ReadingStatusAutoService(
                 since = read;
             }
 
-            if (!c.StatusAuto && c.StatusChangedAt is { } changed && changed > since)
+            var anchor = c.StatusChangedAt switch
             {
-                since = changed;
+                null => (DateTime?)null,
+                { } changed when !c.StatusAuto => changed,
+                // The hold overwrote the date of the last change by hand, which was at least the hold's
+                // days before it.
+                { } heldAt => holdDays is { } days ? heldAt - TimeSpan.FromDays(days) : heldAt
+            };
+            if (anchor > since)
+            {
+                since = anchor.Value;
             }
 
             var idle = now - since;

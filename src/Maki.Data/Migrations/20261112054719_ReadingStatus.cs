@@ -32,6 +32,8 @@ namespace Maki.Data.Migrations
                 nullable: true);
 
             // Every series somebody has already read starts as Reading for them; the rest stay Plan to read.
+            // A high-water mark next to watched ticks or a pending anime marker came from Anime resume,
+            // which is not reading.
             migrationBuilder.Sql("""
                 INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusAuto", "UpdatedAt",
                     "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
@@ -40,8 +42,12 @@ namespace Maki.Data.Migrations
                     SELECT "UserId", "SeriesId" FROM "ChapterProgress"
                     WHERE "Watched" = 0 AND ("Completed" = 1 OR ("PageIndex" > 0 AND "UnreadAt" IS NULL))
                     UNION
-                    SELECT "UserId", "SeriesId" FROM "ReadingStates"
-                    WHERE "SeriesId" IS NOT NULL AND ("MaxChapter" > 0 OR "MaxVolume" > 0)
+                    SELECT rs."UserId", rs."SeriesId" FROM "ReadingStates" rs
+                    WHERE rs."SeriesId" IS NOT NULL AND (rs."MaxChapter" > 0 OR rs."MaxVolume" > 0)
+                    AND NOT EXISTS (SELECT 1 FROM "ChapterProgress" w
+                        WHERE w."UserId" = rs."UserId" AND w."SeriesId" = rs."SeriesId" AND w."Watched" = 1)
+                    AND NOT EXISTS (SELECT 1 FROM "UserSeriesStates" a
+                        WHERE a."UserId" = rs."UserId" AND a."SeriesId" = rs."SeriesId" AND a."AnimeWatchPendingTo" IS NOT NULL)
                 ) AS r
                 JOIN "Series" s ON s."Id" = r."SeriesId"
                 JOIN "AspNetUsers" u ON u."Id" = r."UserId"

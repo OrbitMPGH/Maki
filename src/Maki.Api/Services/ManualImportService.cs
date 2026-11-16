@@ -45,7 +45,8 @@ public class ManualImportService(
 {
     public const string ManualSourceName = "manual";
 
-    private static readonly StringComparison PathComparison = StringComparison.OrdinalIgnoreCase;
+    /// <summary>How a granted root folder is matched against a path; exact on a case-sensitive host.</summary>
+    internal StringComparison GrantComparison { get; init; } = LibraryPaths.PathComparison;
 
     private bool IsAdmin => currentUser.Has(MakiPermission.Admin);
 
@@ -56,12 +57,17 @@ public class ManualImportService(
 
     internal static string Normalize(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
 
-    internal static bool IsWithin(string path, string folder)
+    /// <summary>
+    /// Ignores case unless told otherwise: the refusals use it that way, since a case-insensitive share
+    /// mounted on Linux holds <c>Manga</c> and <c>manga</c> as one folder.
+    /// </summary>
+    internal static bool IsWithin(string path, string folder,
+        StringComparison comparison = StringComparison.OrdinalIgnoreCase)
     {
         var p = Normalize(path);
         var f = Normalize(folder);
-        return string.Equals(p, f, PathComparison) ||
-               p.StartsWith(f.EndsWith(Path.DirectorySeparatorChar) ? f : f + Path.DirectorySeparatorChar, PathComparison);
+        return string.Equals(p, f, comparison) ||
+               p.StartsWith(f.EndsWith(Path.DirectorySeparatorChar) ? f : f + Path.DirectorySeparatorChar, comparison);
     }
 
     /// <summary>The full path when the caller may read it, else null.</summary>
@@ -88,7 +94,7 @@ public class ManualImportService(
         }
 
         var roots = await VisibleRootsAsync(ct);
-        return roots.Any(r => IsWithin(full, r.Path) && !LibraryPaths.TraversesLink(r.Path, full)) ? full : null;
+        return roots.Any(r => IsWithin(full, r.Path, GrantComparison) && !LibraryPaths.TraversesLink(r.Path, full)) ? full : null;
     }
 
     public async Task<ManualImportListing?> BrowseAsync(string? path, CancellationToken ct)

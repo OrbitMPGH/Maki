@@ -789,6 +789,8 @@ public class LibraryImportUndoService(
             {
                 if (LibraryPaths.IsSameDirectory(sourceDir, targetDir) || !Directory.Exists(sourceDir))
                 {
+                    // A grouping folder emptied by the import may be gone since.
+                    Directory.CreateDirectory(Path.GetDirectoryName(sourceDir)!);
                     SeriesRenameService.MovePath(targetDir, sourceDir, Directory.Move);
                 }
                 else

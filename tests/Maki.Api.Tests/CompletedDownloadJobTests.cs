@@ -600,6 +600,7 @@ public class CompletedDownloadJobTests : IDisposable
         var id = SeedItem(QueueStatus.Downloading, "meta01", queuedAt);
         _client.Torrents.Add(Torrent("meta01", 0.0, queuedAt, peers: 0));
         SetClocks(id, DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddHours(-2), pagesDone: 0);
+        CompletedDownloadJob.ProgressSeen[id] = 0.0;
 
         await RunAsync();
 
@@ -607,22 +608,51 @@ public class CompletedDownloadJobTests : IDisposable
     }
 
     [Fact]
-    public async Task The_stall_clock_survives_a_restart_unless_the_torrent_moved_meanwhile()
+    public async Task The_stall_clock_survives_a_restart_inside_the_limit_unless_the_torrent_moved_meanwhile()
     {
         var queuedAt = DateTime.UtcNow.AddHours(-3);
         var stuck = SeedItem(QueueStatus.Downloading, "stuck1", queuedAt);
         var moved = SeedItem(QueueStatus.Downloading, "moved1", queuedAt);
         _client.Torrents.Add(Torrent("stuck1", 0.3, queuedAt));
         _client.Torrents.Add(Torrent("moved1", 0.45, queuedAt));
-        SetClocks(stuck, DateTime.UtcNow.AddHours(-2), pagesDone: 30);
-        SetClocks(moved, DateTime.UtcNow.AddHours(-2), pagesDone: 30);
+        var started = DateTime.UtcNow.AddMinutes(-40);
+        SetClocks(stuck, started, pagesDone: 30);
+        SetClocks(moved, started, pagesDone: 30);
 
         await RunAsync();
 
-        Assert.Equal(CompletedDownloadJob.StalledKey, Reload(stuck).ErrorKey);
-        var row = Reload(moved);
+        var row = Reload(stuck);
+        Assert.Equal(QueueStatus.Downloading, row.Status);
+        Assert.Equal(started, row.LastProgressAt!.Value, TimeSpan.FromSeconds(1));
+        row = Reload(moved);
         Assert.Equal(QueueStatus.Downloading, row.Status);
         Assert.True(row.LastProgressAt > DateTime.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
+    public async Task A_first_look_after_downtime_longer_than_the_limit_starts_both_clocks_again()
+    {
+        var queuedAt = DateTime.UtcNow.AddHours(-5);
+        var slow = SeedItem(QueueStatus.Downloading, "slow02", queuedAt);
+        var reconnecting = SeedItem(QueueStatus.Downloading, "recon1", queuedAt);
+        // A large pack that moved under a percent, and a client with nobody connected yet.
+        _client.Torrents.Add(Torrent("slow02", 0.305, queuedAt, peers: 4));
+        _client.Torrents.Add(Torrent("recon1", 0.3, queuedAt, peers: 0));
+        var beforeDowntime = DateTime.UtcNow.AddHours(-4);
+        SetClocks(slow, beforeDowntime, beforeDowntime, pagesDone: 30);
+        SetClocks(reconnecting, beforeDowntime, beforeDowntime, pagesDone: 30);
+
+        await RunAsync();
+
+        Assert.All(new[] { slow, reconnecting }, id =>
+        {
+            var row = Reload(id);
+            Assert.Equal(QueueStatus.Downloading, row.Status);
+            Assert.True(row.LastProgressAt > DateTime.UtcNow.AddMinutes(-1));
+            Assert.True(row.LastPeerSeenAt > DateTime.UtcNow.AddMinutes(-1));
+        });
+        Assert.Empty(_client.Removed);
+        Assert.Empty(_research.Requested);
     }
 
     [Fact]

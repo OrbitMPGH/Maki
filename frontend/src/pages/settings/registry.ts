@@ -198,7 +198,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'related-work-notifications',
     tab: 'preferences',
-    since: 'next',
+    since: '0.37.0',
     title: msg`New sequels and spin-offs`,
     within: 'notification-prefs',
     keywords: msg({
@@ -228,7 +228,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'skip-recap',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Skip the recap of the previous chapter`,
     within: 'reader',
     nested: true,
@@ -240,7 +240,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'hide-credit-pages',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Hide credit pages`,
     within: 'reader',
     nested: true,
@@ -252,7 +252,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'progress-rail',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Progress rail`,
     within: 'reader',
     nested: true,
@@ -264,7 +264,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'page-backgrounds',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Background`,
     within: 'reader',
     nested: true,
@@ -276,7 +276,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'tap-zone-layouts',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Tap zones`,
     within: 'reader',
     nested: true,
@@ -316,7 +316,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'reading-status',
     tab: 'reading',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Reading status`,
     keywords: msg({
       message: `reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic`,
@@ -375,7 +375,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'low-disk-hold',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Free space to keep`,
     admin: true,
     within: 'root-folders',
@@ -388,7 +388,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'root-folder-rules',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Root folder rules`,
     admin: true,
     keywords: msg({
@@ -419,7 +419,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'drop-folder',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Drop folder`,
     admin: true,
     keywords: msg({
@@ -460,7 +460,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'prepare-ahead',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Prepare chapters ahead`,
     admin: true,
     within: 'upscaling',
@@ -470,9 +470,21 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'upscaling-jpeg-xl',
+    tab: 'library',
+    since: '0.37.0',
+    title: msg`JPEG XL for colour pages`,
+    admin: true,
+    within: 'upscaling',
+    keywords: msg({
+      message: `jpeg xl, jxl, colour pages, color pages, banding, gradients, webp`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'credit-scan',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Credit pages`,
     admin: true,
     keywords: msg({
@@ -493,7 +505,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'auto-tag-rules',
     tab: 'library',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Auto-tag rules`,
     permission: 'ManageTags',
     keywords: msg({
@@ -583,6 +595,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'volume-first',
+    tab: 'downloads',
+    since: '0.37.0',
+    title: msg`Look for volume releases first`,
+    admin: true,
+    within: 'sources',
+    keywords: msg({
+      message: `volume first, volume release, new series, torrent, indexer, hold sources`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'flaresolverr',
     tab: 'downloads',
     title: msg`FlareSolverr`,
@@ -615,7 +639,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'remove-after-seeding',
     tab: 'downloads',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Remove torrents after seeding`,
     admin: true,
     within: 'downloadclient',
@@ -627,7 +651,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'stalled-torrents',
     tab: 'downloads',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Stalled torrents`,
     admin: true,
     within: 'downloadclient',
@@ -679,7 +703,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'missing-chapter-search',
     tab: 'downloads',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Search torrents for chapters no source has`,
     admin: true,
     within: 'volume-releases',
@@ -691,7 +715,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'minimum-seeders',
     tab: 'downloads',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Minimum seeders`,
     admin: true,
     within: 'volume-releases',
@@ -703,7 +727,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'auto-approve-volumes',
     tab: 'downloads',
-    since: 'next',
+    since: '0.37.0',
     title: msg`Approve volume releases automatically`,
     admin: true,
     within: 'volume-releases',

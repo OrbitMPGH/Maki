@@ -146,6 +146,7 @@ export function SourcePrioritySection() {
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
   const [scoutOnMatch, setScoutOnMatch] = useState(false)
   const [volumeFirst, setVolumeFirst] = useState(false)
+  const volumeFirstMark = useNewControlMark('volume-first')
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -206,13 +207,20 @@ export function SourcePrioritySection() {
         onChange={(e) => setScoutOnMatch(e.currentTarget.checked)}
         mb="sm"
       />
-      <Switch
-        label={t`Look for volume releases first`}
-        description={t`Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held.`}
-        checked={volumeFirst}
-        onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
-        mb="lg"
-      />
+      <div id="setting-volume-first" {...volumeFirstMark}>
+        <Switch
+          label={
+            <>
+              {t`Look for volume releases first`}
+              <NewSettingPill id="volume-first" />
+            </>
+          }
+          description={t`Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held.`}
+          checked={volumeFirst}
+          onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
+          mb="lg"
+        />
+      </div>
       {(sources || priority) && (
         <Group gap={14} wrap="wrap">
           {enabledCount > 0 && (

@@ -61,7 +61,7 @@ const SETTLE_MS = 400
  * the screen, so a strip of ordinary pages writes exactly what it wrote before offsets existed.
  * Null until the strip has settled at least once since `key` (the chapter) last changed.
  */
-function useSettledOffset(tracker: StripTracker, enabled: boolean, key: number): { page: number; offset: number } | null {
+export function useSettledOffset(tracker: StripTracker, enabled: boolean, key: number): { page: number; offset: number } | null {
   const [settled, setSettled] = useState<{ key: number; page: number; offset: number } | null>(null)
   useEffect(() => {
     if (!enabled) return

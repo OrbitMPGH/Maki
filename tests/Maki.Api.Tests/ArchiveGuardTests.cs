@@ -671,7 +671,7 @@ public sealed class ArchiveGuardTests : IDisposable
         var operations = new SeriesBulkOperations();
 
         // Neither the chapter sync nor the queue is registered, so reaching either records a different error.
-        var operation = operations.Enqueue(action, [archived], SeriesBulkTestKit.Caller(1, true));
+        var operation = operations.Enqueue(action, [archived], SeriesBulkTestKit.Caller(_db.SeedUser("bulk"), true));
         await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
 
         Assert.Equal(ArchivedKey, Assert.Single(operation.Snapshot().Failures).Error);

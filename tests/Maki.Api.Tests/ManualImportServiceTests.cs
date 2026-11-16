@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
+using Maki.Core.Paths;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Core.Tests;
@@ -68,7 +69,7 @@ public class ManualImportServiceTests : IDisposable
         return (root.Id, series.Id);
     }
 
-    private ManualImportService Service(MakiDbContext db, ICurrentUser? user = null)
+    private ManualImportService Service(MakiDbContext db, ICurrentUser? user = null, StringComparison? grant = null)
     {
         var scans = new KavitaScanService(
             new KavitaClient(new StubHttpClientFactory("{}")), _settings, _db.ScopeFactory(),
@@ -85,7 +86,23 @@ public class ManualImportServiceTests : IDisposable
             new UpgradeEvaluationService(db, TestQuality.Create(registry)), new RecordingInbox(),
             NullLogger<TorrentImportService>.Instance);
         return new ManualImportService(db, importer, user ?? new TestCurrentUser(1),
-            NullLogger<ManualImportService>.Instance);
+            NullLogger<ManualImportService>.Instance) { GrantComparison = grant ?? LibraryPaths.PathComparison };
+    }
+
+    [Fact]
+    public async Task A_granted_root_does_not_reach_a_folder_spelled_in_other_case_on_a_case_sensitive_host()
+    {
+        var (rootId, _) = Seed();
+        await using var db = _db.NewContext();
+        var granted = new TestCurrentUser(2, permissions: MakiPermission.ImportLibrary, allRootFolders: false,
+            rootFolderIds: new HashSet<int> { rootId });
+        var otherCase = Path.Combine(Path.GetDirectoryName(_root)!, Path.GetFileName(_root).ToUpperInvariant(), "unsorted");
+
+        Assert.Null(await Service(db, granted, StringComparison.Ordinal).ReadablePathAsync(otherCase, default));
+        Assert.NotNull(await Service(db, granted, StringComparison.Ordinal)
+            .ReadablePathAsync(Path.Combine(_root, "unsorted"), default));
+        Assert.Equal(OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal,
+            Service(db, granted).GrantComparison);
     }
 
     [Fact]

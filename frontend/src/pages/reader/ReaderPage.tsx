@@ -56,7 +56,14 @@ import { serverChapterLabel } from '../../format'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
-import { createStripTracker, liveStripOffset, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
+import {
+  createStripTracker,
+  liveStripOffset,
+  resumeOffsetOf,
+  useSettledOffset,
+  useStripOffset,
+  type StripResume,
+} from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
 import { CREDITS_MIN_PAGES, clampToCut, clampToWindow, creditWindow, tailCut, type PageWindow } from './creditWindow'
 import { stripTapActionAt, tapActionAt } from './tapZones'
@@ -530,7 +537,7 @@ export default function ReaderPage() {
   )
   useEffect(() => {
     if (!recapEnd || recapPhase !== null) return
-    if (page >= recapEnd.page) {
+    if (page > recapEnd.page || (page === recapEnd.page && page !== first)) {
       setRecap({ chapterId, phase: 'done' })
     } else if (prefs.autoSkipRecap && page === first) {
       skipRecap(false)
@@ -539,10 +546,15 @@ export default function ReaderPage() {
       setRecap({ chapterId, phase: 'offer' })
     }
   }, [recapEnd, recapPhase, page, first, prefs.autoSkipRecap, chapterId, skipRecap])
-  // Scrolling past the recap by hand retires the offer.
+  // Scrolling past the recap by hand retires the offer. Its end can sit partway down a tall slice.
+  const recapSettled = useSettledOffset(stripTracker, mode === 'vertical' && recapPhase === 'offer', chapterId)
+  const pastRecap =
+    recapEnd != null &&
+    (page > recapEnd.page ||
+      (page === recapEnd.page && recapSettled?.page === page && recapSettled.offset >= recapEnd.offset - 0.01))
   useEffect(() => {
-    if (recapPhase === 'offer' && recapEnd && page >= recapEnd.page) setRecap({ chapterId, phase: 'done' })
-  }, [recapPhase, recapEnd, page, chapterId])
+    if (recapPhase === 'offer' && pastRecap) setRecap({ chapterId, phase: 'done' })
+  }, [recapPhase, pastRecap, chapterId])
   useEffect(() => {
     if (recapPhase !== 'skipped') return
     const timer = setTimeout(() => setRecap({ chapterId, phase: 'done' }), RECAP_SKIPPED_MS)

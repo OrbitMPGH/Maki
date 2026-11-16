@@ -82,20 +82,26 @@ RUN expected="$(ls -1d locales/*/ | wc -l)" \
 # app's source, so the layer stays cached until build.sh changes.
 FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS libjxl
 ARG TARGETARCH
+ARG BUILDARCH
 RUN apt-get update \
     && case "$TARGETARCH" in \
-         amd64) compiler=g++ ;; \
-         arm64) compiler=g++-aarch64-linux-gnu ;; \
+         amd64|arm64) ;; \
          *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
        esac \
+    && if [ "$TARGETARCH" = "$BUILDARCH" ]; then compiler=g++; \
+       elif [ "$TARGETARCH" = arm64 ]; then compiler=g++-aarch64-linux-gnu; \
+       else compiler=g++-x86-64-linux-gnu; fi \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates cmake ninja-build binutils "$compiler" \
     && rm -rf /var/lib/apt/lists/*
 COPY distribution/libjxl/build.sh /libjxl/build.sh
-RUN if [ "$TARGETARCH" = arm64 ] && [ "$(uname -m)" != aarch64 ]; then \
+RUN if [ "$TARGETARCH" = "$BUILDARCH" ]; then \
+      bash /libjxl/build.sh /out; \
+    elif [ "$TARGETARCH" = arm64 ]; then \
       bash /libjxl/build.sh /out -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
         -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++; \
     else \
-      bash /libjxl/build.sh /out; \
+      bash /libjxl/build.sh /out -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+        -DCMAKE_C_COMPILER=x86_64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=x86_64-linux-gnu-g++; \
     fi
 
 # ---- Trim unused native runtime assets ----
