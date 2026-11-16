@@ -46,6 +46,7 @@ import {
 import { CatalogueFilterBar, useCatalogueFilterSlots } from './CatalogueFilterBar'
 import {
   filtersFromSpec,
+  normalizeFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
   useFilterSummary,
@@ -197,7 +198,7 @@ export function CatalogueBrowser({
     }
     if (!defaultsLoaded || !savedDefaults) return
 
-    const filters = filtersFromSpec(savedDefaults)
+    const filters = normalizeFilters(filtersFromSpec(savedDefaults))
     hydrateFilters(filters)
     setApplied(filters)
     setHydrated(true)
@@ -208,7 +209,7 @@ export function CatalogueBrowser({
     if (!seededBrowse) return
     setQuery('')
     hydrateFilters(seededBrowse.filters)
-    setApplied(seededBrowse.filters)
+    setApplied(normalizeFilters(seededBrowse.filters))
     setSort(seededBrowse.sort)
     setPages(1)
     setHydrated(true)

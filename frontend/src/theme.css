@@ -4377,7 +4377,8 @@ button.site-chip:hover {
 }
 /* The tab row already spaces the page from what follows, so the rail-scale margin above a first
    section header would double it. */
-.discover-tab-body > .section-header:not(.section-header ~ .section-header) {
+.discover-tab-body > .section-header:not(.section-header ~ .section-header),
+.discover-tab-body > .filter-results > .section-header:not(.section-header ~ .section-header) {
   margin-top: 0;
 }
 
@@ -7033,14 +7034,10 @@ button.site-chip:hover {
 .filter-bar-row {
   display: flex;
   flex: 1 1 320px;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  overflow: hidden;
-}
-.filter-bar-row[data-folded] {
-  flex-wrap: wrap;
-  overflow: visible;
 }
 .filter-bar-end {
   display: flex;
@@ -7096,14 +7093,20 @@ button.site-chip:hover {
   opacity: 0.7;
 }
 .filter-bar-button-value {
-  display: inline-flex;
-  gap: 6px;
   max-width: 18rem;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .filter-bar-excluded {
+  margin-inline-start: 6px;
   color: var(--danger-fg);
+}
+.filter-results {
+  transition: opacity var(--dur-base);
+}
+.filter-results[data-stale] {
+  opacity: 0.6;
 }
 .filter-bar-add {
   border-style: dashed;

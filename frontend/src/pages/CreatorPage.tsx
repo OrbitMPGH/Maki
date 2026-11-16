@@ -279,7 +279,7 @@ export default function CreatorPage() {
         }}
         saved={
           <PresetMenu
-                compact
+            compact
             current={catalogue.build}
             onLoad={(f) => {
               catalogue.hydrate(f)

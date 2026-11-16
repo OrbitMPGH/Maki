@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { ActionIcon, Button, Menu, NumberInput, Popover, RangeSlider, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useDebouncedValue, useElementSize } from '@mantine/hooks'
@@ -102,7 +102,8 @@ export function CatalogueFilterBar({
   const trailing = slots.filter((s) => !setIds.has(s.id))
 
   // How many unset buttons fit after the set ones; the rest go behind "Add filter". Widths are
-  // remembered from the last time each button was drawn, since a folded one is not on the page.
+  // remembered from the last time each button was drawn, since a folded one is not on the page,
+  // and kept apart for the set and unset forms so a cleared filter is not sized by its old value.
   const { ref: sizeRef } = useElementSize<HTMLDivElement>()
   const rowRef = useRef<HTMLDivElement | null>(null)
   const widths = useRef<Record<string, number>>({})
@@ -114,7 +115,7 @@ export function CatalogueFilterBar({
       widths.current[el.dataset.slot!] = el.offsetWidth
     })
     const widthOf = (id: string) => (widths.current[id] ?? 110) + BAR_GAP
-    let used = leading.reduce((sum, s) => sum + widthOf(s.id), 0) + DIVIDER_WIDTH
+    let used = leading.reduce((sum, s) => sum + widthOf(`${s.id}:set`), 0) + DIVIDER_WIDTH
     let fit = 0
     for (let i = 0; i < trailing.length; i++) {
       const needsAdd = i < trailing.length - 1
@@ -124,6 +125,14 @@ export function CatalogueFilterBar({
     }
     setShown((prev) => (prev === fit ? prev : fit))
   })
+  // Stable, or React re-attaches it every render and Mantine's observer reports a fresh size each time.
+  const rowCallbackRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      rowRef.current = node
+      sizeRef(node)
+    },
+    [sizeRef],
+  )
   const visibleTrailing = trailing.slice(0, shown)
   const folded = trailing.slice(shown)
 
@@ -140,12 +149,8 @@ export function CatalogueFilterBar({
   return (
     <div className="filter-bar">
       <div
-        ref={(node) => {
-          rowRef.current = node
-          sizeRef(node)
-        }}
+        ref={rowCallbackRef}
         className="filter-bar-row"
-        data-folded={folded.length > 0 || undefined}
         role="toolbar"
         aria-label={t`Filters`}
       >
@@ -199,6 +204,49 @@ const BAR_GAP = 6
 const DIVIDER_WIDTH = 15
 const ADD_WIDTH = 120
 
+/**
+ * Closes a popover on a press outside it. Mantine's own check only knows the popover's DOM, so a
+ * tag picker's dropdown or a modal opened from inside an editor, which render in their own
+ * portals, would close the editor they belong to. Any portal counts as inside. Escape is handled
+ * here too, since Mantine's own handler closes the editor before a nested list can take the key.
+ */
+function useDismissOutside(
+  opened: boolean,
+  target: RefObject<HTMLElement | null>,
+  dropdown: RefObject<HTMLElement | null>,
+  onClose: () => void,
+) {
+  const close = useRef(onClose)
+  useEffect(() => {
+    close.current = onClose
+  })
+  useEffect(() => {
+    if (!opened) return
+    const handler = (event: PointerEvent) => {
+      const el = event.target as Element | null
+      if (!el || target.current?.contains(el) || el.closest('[data-portal]')) return
+      close.current()
+    }
+    // Escape closes the editor only from inside it, and not while one of its own lists is open:
+    // that press belongs to the list, and a modal opened from the editor sits outside it.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      const el = event.target as Element | null
+      if (!el) return
+      const inDropdown = dropdown.current?.contains(el) ?? false
+      if (!inDropdown && !target.current?.contains(el)) return
+      if (inDropdown && el.closest('[aria-expanded="true"]')) return
+      close.current()
+    }
+    document.addEventListener('pointerdown', handler, true)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', handler, true)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [opened, target, dropdown])
+}
+
 function popoverWidth(width = 340) {
   return `min(${width}px, calc(100vw - 32px))`
 }
@@ -216,20 +264,26 @@ function FilterButton({
 }) {
   const set = slot.value != null
   const SlotIcon = slot.icon
+  const targetRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  useDismissOutside(opened, targetRef, dropdownRef, onClose)
   return (
     <Popover
       opened={opened}
       onChange={(o) => (o ? onOpen() : onClose())}
       position="bottom-start"
       width={popoverWidth(slot.width)}
+      closeOnClickOutside={false}
+      closeOnEscape={false}
       trapFocus
       returnFocus
       withinPortal
     >
       <Popover.Target>
         <UnstyledButton
+          ref={targetRef}
           className="filter-bar-button"
-          data-slot={slot.id}
+          data-slot={set ? `${slot.id}:set` : slot.id}
           data-active={set || undefined}
           data-open={opened || undefined}
           aria-expanded={opened}
@@ -247,7 +301,7 @@ function FilterButton({
           <IconChevronDown size={14} aria-hidden className="filter-bar-button-chevron" />
         </UnstyledButton>
       </Popover.Target>
-      <Popover.Dropdown className="filter-bar-pop">
+      <Popover.Dropdown ref={dropdownRef} className="filter-bar-pop">
         <FilterEditorHead slot={slot} />
         <div className="filter-bar-pop-body">{slot.editor}</div>
       </Popover.Dropdown>
@@ -261,11 +315,19 @@ function FilterEditorHead({ slot }: { slot: FilterSlot }) {
     <div className="filter-bar-pop-head">
       <SlotIcon size={16} aria-hidden className="filter-bar-button-icon" />
       <span className="filter-bar-pop-title">{slot.title ?? slot.label}</span>
-      {slot.value != null && (
-        <Button variant="subtle" size="compact-xs" color="var(--ink-2)" onClick={slot.onClear}>
-          <Trans>Clear</Trans>
-        </Button>
-      )}
+      {/* Stays rendered once cleared, so keyboard focus is not dropped onto the page. */}
+      <Button
+        variant="subtle"
+        size="compact-xs"
+        color="var(--ink-2)"
+        data-disabled={slot.value == null || undefined}
+        aria-disabled={slot.value == null}
+        onClick={() => {
+          if (slot.value != null) slot.onClear()
+        }}
+      >
+        <Trans>Clear</Trans>
+      </Button>
     </div>
   )
 }
@@ -293,18 +355,24 @@ function AddFilterButton({
     drill.reset()
   }
   const width = current?.width ?? 320
+  const targetRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  useDismissOutside(opened, targetRef, dropdownRef, close)
   return (
     <Popover
       opened={opened}
       onChange={(o) => (o ? onOpen() : close())}
       position="bottom-start"
       width={popoverWidth(Math.max(width, 320))}
+      closeOnClickOutside={false}
+      closeOnEscape={false}
       trapFocus
       returnFocus
       withinPortal
     >
       <Popover.Target>
         <UnstyledButton
+          ref={targetRef}
           className="filter-bar-button filter-bar-add"
           data-open={opened || undefined}
           aria-expanded={opened}
@@ -316,7 +384,7 @@ function AddFilterButton({
           </span>
         </UnstyledButton>
       </Popover.Target>
-      <Popover.Dropdown className="filter-bar-pop filter-bar-pop-drill">
+      <Popover.Dropdown ref={dropdownRef} className="filter-bar-pop filter-bar-pop-drill">
         <DrillPanes page={drill.page} depth={drill.depth}>
           {current ? (
             <div>
@@ -406,7 +474,6 @@ function RangeEditor({
   toLabel: string
   presets: RangePreset[]
 }) {
-  const clamp = (v: number) => Math.min(max, Math.max(min, v))
   return (
     <div className="filter-range">
       <RangeSlider
@@ -421,21 +488,19 @@ function RangeEditor({
         label={null}
       />
       <div className="filter-range-inputs">
-        <NumberInput
-          size="xs"
-          aria-label={fromLabel}
+        <BoundInput
+          label={fromLabel}
           min={min}
           max={max}
           value={value[0]}
-          onChange={(v) => typeof v === 'number' && onChange([clamp(Math.min(v, value[1])), value[1]])}
+          onCommit={(v) => onChange([Math.min(v, value[1]), value[1]])}
         />
-        <NumberInput
-          size="xs"
-          aria-label={toLabel}
+        <BoundInput
+          label={toLabel}
           min={min}
           max={max}
           value={value[1]}
-          onChange={(v) => typeof v === 'number' && onChange([value[0], clamp(Math.max(v, value[0]))])}
+          onCommit={(v) => onChange([value[0], Math.max(v, value[0])])}
         />
       </div>
       <div className="tag-chips filter-presets">
@@ -457,6 +522,54 @@ function RangeEditor({
         })}
       </div>
     </div>
+  )
+}
+
+/** A number kept as typed until blur or Enter, then clamped: clamping per keystroke turns "2" of "2000" into the minimum. */
+function BoundInput({
+  label,
+  min,
+  max,
+  value,
+  onCommit,
+}: {
+  label: string
+  min: number
+  max: number
+  value: number
+  onCommit: (value: number) => void
+}) {
+  const [draft, setDraft] = useState<string | number>(value)
+  const [shown, setShown] = useState(value)
+  if (shown !== value) {
+    setShown(value)
+    setDraft(value)
+  }
+  const commit = () => {
+    const n = typeof draft === 'number' ? draft : Number.parseInt(draft, 10)
+    if (Number.isNaN(n)) {
+      setDraft(value)
+      return
+    }
+    const clamped = Math.min(max, Math.max(min, Math.round(n)))
+    setDraft(clamped)
+    if (clamped !== value) onCommit(clamped)
+  }
+  return (
+    <NumberInput
+      size="xs"
+      aria-label={label}
+      min={min}
+      max={max}
+      clampBehavior="none"
+      allowDecimal={false}
+      value={draft}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+      }}
+    />
   )
 }
 
@@ -498,6 +611,7 @@ const STATUS_VISUAL: Record<string, string> = {
 
 /** The genre-and-tag rules as button text: required names, then excluded ones struck through. */
 function TermsValue({ rules, renderGenre }: { rules: CatalogueRule[]; renderGenre: (name: string) => string }) {
+  const { t } = useLingui()
   const names = (rule: CatalogueRule) =>
     rule.terms.map((term) => (term.kind === 'genre' ? renderGenre(term.name) : term.name))
   const kept = rules.filter((r) => r.mode !== 'none')
@@ -505,11 +619,17 @@ function TermsValue({ rules, renderGenre }: { rules: CatalogueRule[]; renderGenr
   return (
     <>
       {kept.map((r) => names(r).join(r.mode === 'any' ? ' / ' : ', ')).join(', ')}
-      {dropped.map((r, i) => (
-        <s key={i} className="filter-bar-excluded">
-          {names(r).join(', ')}
-        </s>
-      ))}
+      {dropped.map((r, i) => {
+        const excluded = names(r).join(', ')
+        return (
+          <span key={i}>
+            <s className="filter-bar-excluded" aria-hidden>
+              {excluded}
+            </s>
+            <VisuallyHidden>{t`not ${excluded}`}</VisuallyHidden>
+          </span>
+        )
+      })}
     </>
   )
 }
@@ -706,11 +826,14 @@ export function SeedThumb({ url }: { url: string | null }) {
 export function SeedPicker({
   value,
   labels,
+  covers,
   onPick,
   onRemove,
 }: {
   value: string[]
   labels: Record<string, string>
+  /** Covers remembered for picks outside the library, which the library lookup cannot find. */
+  covers: Record<string, string | null>
   onPick: (pick: SeedPick) => void
   onRemove: (id: string) => void
 }) {
@@ -723,7 +846,7 @@ export function SeedPicker({
   const q = query.trim().toLowerCase()
 
   const rows = useMemo(() => {
-    const picked: SeedPick[] = value.map((id) => ({ id, title: labels[id] ?? id, cover: coverFor(id) }))
+    const picked: SeedPick[] = value.map((id) => ({ id, title: labels[id] ?? id, cover: coverFor(id) ?? covers[id] ?? null }))
     const typed = q.length >= 2
     const seen = new Set(value)
     const more: SeedPick[] = []
@@ -742,7 +865,7 @@ export function SeedPicker({
       more.push({ id: r.providerId, title: r.title, cover: coverFor(r.providerId) ?? r.coverUrl })
     }
     return [...picked, ...more]
-  }, [value, labels, coverFor, q, library, found])
+  }, [value, labels, covers, coverFor, q, library, found])
 
   return (
     <div className="seed-picker">

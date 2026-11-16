@@ -14,7 +14,7 @@ import {
   type CatalogueRule,
   type RecommendationFilters,
 } from '../api/hooks'
-import { liveRules, TermFilters, useRuleChips, useTermFilters } from './CatalogueRules'
+import { liveRules, normalizeTerms, TermFilters, useRuleChips, useTermFilters } from './CatalogueRules'
 import { Disclosure } from './ui/Disclosure'
 import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
@@ -211,6 +211,25 @@ export function filtersFromSpec(spec: CatalogueFilterSpec): RecommendationFilter
   if (spec.rules?.length) f.rules = spec.rules
   if (spec.credits?.length) f.credits = spec.credits
   return f
+}
+
+/**
+ * A stored or carried filter in the exact shape a panel's `build()` would send for it: legacy
+ * genre and tag lists as rules, bounds at the sliders' ends and empty lists dropped. Applying this
+ * on hydration means live apply sees no change, so no second request goes out.
+ */
+export function normalizeFilters(f: RecommendationFilters): RecommendationFilters {
+  const out = normalizeTerms(f)
+  if (out.yearMin != null && out.yearMin <= YEAR_MIN) delete out.yearMin
+  if (out.yearMax != null && out.yearMax >= YEAR_MAX) delete out.yearMax
+  if (out.minChapters != null && out.minChapters <= CHAPTER_MIN) delete out.minChapters
+  if (out.maxChapters != null && out.maxChapters >= CHAPTER_MAX) delete out.maxChapters
+  if (out.minRating != null && out.minRating <= 0) delete out.minRating
+  if (out.types && !out.types.length) delete out.types
+  if (out.statuses && !out.statuses.length) delete out.statuses
+  if (out.contentRatings && !out.contentRatings.length) delete out.contentRatings
+  if (out.credits && !out.credits.length) delete out.credits
+  return out
 }
 
 /**

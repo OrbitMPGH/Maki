@@ -17078,6 +17078,10 @@ msgstr "없음, 아래 필터 사용"
 msgid "Normal"
 msgstr ""
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "not {excluded}"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"

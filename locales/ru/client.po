@@ -17078,6 +17078,10 @@ msgstr "Нет, использовать фильтры ниже"
 msgid "Normal"
 msgstr ""
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "not {excluded}"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"

@@ -69,6 +69,7 @@ import {
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
+  normalizeFilters,
   normalizeStoredYears,
   useCatalogueFilters,
   YEAR_MAX,
@@ -157,8 +158,6 @@ function migrateBrowseDensity() {
  * because the tab is reached at one path and nothing else on Discover shares its controls.
  */
 const MEM = 'discover-recommended'
-const NO_CREDITS: CatalogueCredit[] = []
-const ignoreCredits = () => {}
 
 /** Longer than the catalogue's 400 ms: a recommendation rebuild costs seconds on a whole library. */
 const LIVE_APPLY_MS = 600
@@ -287,11 +286,13 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
   const [diversity, setDiversity] = usePageState(`${MEM}:diversity`, 0)
   const [contentRatings, setContentRatings] = usePageState<string[]>(`${MEM}:content-ratings`, [])
+  const [credits, setCredits] = usePageState<CatalogueCredit[]>(`${MEM}:credits`, [])
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
   // Remembered too, or restored seeds would come back as bare ids until the library query lands.
   const [labelCache, setLabelCache] = usePageState<Record<string, string>>(`${MEM}:seed-labels`, {})
+  const [coverCache, setCoverCache] = usePageState<Record<string, string | null>>(`${MEM}:seed-covers`, {})
   useEffect(() => {
     setLabelCache((prev) => {
       const next = { ...prev }
@@ -354,6 +355,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
       setMinRating((carriedFilters.minRating ?? 0) / 10)
       setContentRatings(carriedFilters.contentRatings ?? [])
+      setCredits(carriedFilters.credits ?? [])
       setObscurity(carried.obscurity)
       setDiversity(carried.diversity)
       // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
@@ -371,7 +373,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       }
       setApplied({
         seedIds: carriedSeeds?.length ? carriedSeeds.map((seed) => seed.id) : undefined,
-        filters: Object.keys(carriedFilters).length ? carriedFilters : undefined,
+        filters: Object.keys(carriedFilters).length ? normalizeFilters(carriedFilters) : undefined,
         obscurity: carried.obscurity !== 0 ? carried.obscurity : undefined,
         diversity: carried.diversity !== 0 ? carried.diversity : undefined,
         nonce: 0,
@@ -407,8 +409,9 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     setObscurity(d.obscurity)
     setDiversity(d.diversity)
     setContentRatings(d.contentRatings ?? [])
+    setCredits([])
 
-    const filters = filtersFromSpec(d)
+    const filters = normalizeFilters(filtersFromSpec(d))
     setApplied({
       seedIds: seeds.length ? seeds.map((s) => s.id) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
@@ -420,12 +423,16 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   }, [
     hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
     setSeedIds, setLabelCache, setYears, setTypes, setStatuses, hydrateTerms, setChapters,
-    setMinRating, setObscurity, setDiversity, setContentRatings, setApplied,
+    setMinRating, setObscurity, setDiversity, setContentRatings, setCredits, setApplied,
     setHydrated,
   ])
 
-  const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, isFetching, isPlaceholderData, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useRecommendations(applied, hydrated, true)
+  // The headings describe the picks on screen, which trail the bar while a live change loads.
+  const appliedSeeded = (applied.seedIds?.length ?? 0) > 0
+  const appliedCustomized =
+    appliedSeeded || applied.filters != null || applied.obscurity != null || applied.diversity != null
   const related = data?.pages[0]?.related ?? []
   const similar = data?.pages.flatMap((p) => p.similar) ?? []
 
@@ -440,6 +447,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
     if (contentRatings.length) filters.contentRatings = contentRatings
+    if (credits.length) filters.credits = credits
     return filters
   }
 
@@ -452,6 +460,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
     setMinRating((f.minRating ?? 0) / 10)
     setContentRatings(f.contentRatings ?? [])
+    setCredits(f.credits ?? [])
   }
 
   const apply = (refresh = false) => {
@@ -523,7 +532,8 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     setObscurity(0)
     setDiversity(0)
     setContentRatings([])
-    setApplied((prev) => ({ nonce: prev.nonce + 1 }))
+    setCredits([])
+    setApplied((prev) => ({ nonce: prev.nonce }))
   }
 
   const isCustomized =
@@ -538,7 +548,8 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     minRating > 0 ||
     obscurity !== 0 ||
     diversity !== 0 ||
-    contentRatings.length > 0
+    contentRatings.length > 0 ||
+    credits.length > 0
 
 
   // --- detail modal ---
@@ -587,10 +598,11 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     chapters, setChapters,
     minRating, setMinRating,
     contentRatings, setContentRatings,
-    credits: NO_CREDITS, setCredits: ignoreCredits,
-  })
+    credits, setCredits,
+  }, { creators: true })
   const firstSeed = seedIds[0]
   const firstSeedTitle = firstSeed == null ? null : (labelCache[firstSeed] ?? firstSeed)
+  const firstSeedCover = firstSeed == null ? null : (coverFor(firstSeed) ?? coverCache[firstSeed] ?? null)
   const extraSeeds = seedIds.length - 1
   const tuningParts = [
     obscurity > 0 ? t`Hidden gems` : obscurity < 0 ? t`Mainstream` : null,
@@ -603,15 +615,17 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       label: t`Seeds`,
       value:
         firstSeedTitle == null ? null : extraSeeds > 0 ? t`${firstSeedTitle} +${extraSeeds}` : firstSeedTitle,
-      thumb: firstSeed == null ? undefined : <SeedThumb url={coverFor(firstSeed)} />,
+      thumb: firstSeedCover ? <SeedThumb url={firstSeedCover} /> : undefined,
       width: 360,
       onClear: () => setSeedIds([]),
       editor: (
         <SeedPicker
           value={seedIds}
           labels={labelCache}
+          covers={coverCache}
           onPick={(pick) => {
             setLabelCache((prev) => ({ ...prev, [pick.id]: pick.title }))
+            setCoverCache((prev) => ({ ...prev, [pick.id]: pick.cover }))
             setSeedIds((prev) => (prev.includes(pick.id) ? prev : [...prev, pick.id]))
           }}
           onRemove={(id) => setSeedIds((prev) => prev.filter((s) => s !== id))}
@@ -668,7 +682,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
         onReset={reset}
         saved={
           <PresetMenu
-                compact
+            compact
             current={currentFilters}
             onLoad={loadCatalogueFilters}
             railDraft={() => ({
@@ -695,96 +709,98 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
         </>
       )}
 
-      {data && related.length === 0 && similar.length === 0 && (
-        <EmptyState
-          title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
-          description={isCustomized ? undefined : t`Add some series to your library first and Maki will suggest more like them.`}
-          actionLabel={isCustomized ? undefined : t`Go to library`}
-          actionTo={isCustomized ? undefined : '/library'}
-        />
-      )}
-
-      {similar.length > 0 && (
-        <>
-          <SectionHeader
-            icon={IconCompass}
-            title={seedIds.length > 0 ? t`Feels like your seeds` : t`Because of what you collect`}
-            count={similar.length}
+      <div className="filter-results" data-stale={isPlaceholderData || undefined} aria-busy={isPlaceholderData || undefined}>
+        {data && related.length === 0 && similar.length === 0 && (
+          <EmptyState
+            title={appliedCustomized ? t`No matches` : t`Nothing to recommend yet`}
+            description={appliedCustomized ? undefined : t`Add some series to your library first and Maki will suggest more like them.`}
+            actionLabel={appliedCustomized ? undefined : t`Go to library`}
+            actionTo={appliedCustomized ? undefined : '/library'}
           />
-          {viewMode === 'grid' ? (
-            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-              {similar.map((item) => (
-                <EngineCard
-                  key={item.providerId}
-                  item={item}
-                  inLibrarySeriesId={seriesIdFor(item)}
-                  onOpen={setDetailItem}
-                  seedCoverUrl={seedCover(item)}
-                />
-              ))}
-            </SimpleGrid>
-          ) : (
-            <Stack gap="xs">
-              {similar.map((item) => (
-                <RecommendationRow
-                  key={item.providerId}
-                  item={item}
-                  inLibrarySeriesId={seriesIdFor(item)}
-                  density={density}
-                  onOpen={setDetailItem}
-                />
-              ))}
-            </Stack>
-          )}
-          {hasNextPage && (
-            <Group justify="center" mt="md">
-              <Button
-                variant="default"
-                leftSection={<IconPlus size={16} />}
-                loading={isFetchingNextPage}
-                onClick={() => fetchNextPage()}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            </Group>
-          )}
-        </>
-      )}
+        )}
 
-      {related.length > 0 && (
-        <>
-          <SectionHeader
-            icon={IconAffiliate}
-            title={seedIds.length > 0 ? t`Related to your seeds` : t`Related to your library`}
-            count={related.length}
-          />
-          {viewMode === 'grid' ? (
-            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-              {related.map((item) => (
-                <EngineCard
-                  key={item.providerId}
-                  item={item}
-                  inLibrarySeriesId={seriesIdFor(item)}
-                  onOpen={setDetailItem}
-                  seedCoverUrl={seedCover(item)}
-                />
-              ))}
-            </SimpleGrid>
-          ) : (
-            <Stack gap="xs">
-              {related.map((item) => (
-                <RecommendationRow
-                  key={item.providerId}
-                  item={item}
-                  inLibrarySeriesId={seriesIdFor(item)}
-                  density={density}
-                  onOpen={setDetailItem}
-                />
-              ))}
-            </Stack>
-          )}
-        </>
-      )}
+        {similar.length > 0 && (
+          <>
+            <SectionHeader
+              icon={IconCompass}
+              title={appliedSeeded ? t`Feels like your seeds` : t`Because of what you collect`}
+              count={similar.length}
+            />
+            {viewMode === 'grid' ? (
+              <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+                {similar.map((item) => (
+                  <EngineCard
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    onOpen={setDetailItem}
+                    seedCoverUrl={seedCover(item)}
+                  />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Stack gap="xs">
+                {similar.map((item) => (
+                  <RecommendationRow
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    density={density}
+                    onOpen={setDetailItem}
+                  />
+                ))}
+              </Stack>
+            )}
+            {hasNextPage && (
+              <Group justify="center" mt="md">
+                <Button
+                  variant="default"
+                  leftSection={<IconPlus size={16} />}
+                  loading={isFetchingNextPage}
+                  onClick={() => fetchNextPage()}
+                >
+                  <Trans>Show more</Trans>
+                </Button>
+              </Group>
+            )}
+          </>
+        )}
+
+        {related.length > 0 && (
+          <>
+            <SectionHeader
+              icon={IconAffiliate}
+              title={appliedSeeded ? t`Related to your seeds` : t`Related to your library`}
+              count={related.length}
+            />
+            {viewMode === 'grid' ? (
+              <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+                {related.map((item) => (
+                  <EngineCard
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    onOpen={setDetailItem}
+                    seedCoverUrl={seedCover(item)}
+                  />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Stack gap="xs">
+                {related.map((item) => (
+                  <RecommendationRow
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    density={density}
+                    onOpen={setDetailItem}
+                  />
+                ))}
+              </Stack>
+            )}
+          </>
+        )}
+      </div>
 
       <DiscoverDetailModal
         item={detailItem}
