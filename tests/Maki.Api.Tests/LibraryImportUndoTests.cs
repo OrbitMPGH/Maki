@@ -1049,6 +1049,23 @@ public class LibraryImportUndoTests : IDisposable
     }
 
     [Fact]
+    public async Task Undo_recreates_a_grouping_folder_deleted_after_the_import()
+    {
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        var rootId = SeedRoot();
+        WriteZip(At("A-Z", "chainsaw raws", "Chainsaw Man 001.cbz"));
+
+        await ImportAsync(rootId, "A-Z/chainsaw raws");
+        Directory.Delete(At("A-Z"));
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.True(File.Exists(At("A-Z", "chainsaw raws", "Chainsaw Man 001.cbz")));
+        Assert.False(Directory.Exists(At("chainsaw raws")));
+    }
+
+    [Fact]
     public async Task Loose_root_files_are_gathered_on_import_and_undo_puts_them_back_in_the_root()
     {
         _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
