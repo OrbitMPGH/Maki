@@ -37,6 +37,7 @@ public class SimilarSeriesServiceTests
         public bool LastCoRead = true;
         public bool LastTaste = true;
         public bool LastEase = true;
+        public double? LastGraphWeight;
 
         public string? Stamp;
 
@@ -50,7 +51,7 @@ public class SimilarSeriesServiceTests
             IReadOnlyDictionary<long, double>? seedWeights = null,
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
@@ -60,12 +61,13 @@ public class SimilarSeriesServiceTests
             LastCoRead = coRead;
             LastTaste = taste;
             LastEase = ease;
+            LastGraphWeight = graphWeight;
             if (Gate is not null)
             {
                 await Gate.Task;
             }
 
-            return [Recommendation("77") with { TasteMatch = taste }];
+            return [Recommendation("77") with { TasteMatch = taste, CoRecommended = coGraph }];
         }
     }
 
@@ -76,16 +78,17 @@ public class SimilarSeriesServiceTests
         new(recommender, settings ?? new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
 
     [Fact]
-    public async Task The_rail_runs_the_taste_vectors_and_neither_pair_graph()
+    public async Task The_rail_runs_the_taste_vectors_and_the_votes_and_never_co_read()
     {
-        // The pair graphs answer "who else read this" and stay off. The taste vectors were off too
-        // until the rail was graded on its own: the content-only list scored lower on story and feel
-        // and carried more than twice the unrelated picks.
+        // Co-read answers "who else read this" and stays off. A vote is a reader saying "if you
+        // liked this, try that", which is the rail's own claim, and graded on its own the rail was
+        // the more story-alike list with each of the two switched on.
         var recommender = new CountingRecommender();
 
         await Service(recommender).GetAsync(1, ["safe"]);
 
-        Assert.False(recommender.LastCoGraph);
+        Assert.True(recommender.LastCoGraph);
+        Assert.Equal(RecoGraphTuning.SingleSeedWeight, recommender.LastGraphWeight);
         Assert.False(recommender.LastCoRead);
         Assert.True(recommender.LastTaste);
     }
@@ -121,7 +124,7 @@ public class SimilarSeriesServiceTests
     }
 
     [Fact]
-    public async Task The_pair_graph_settings_do_not_reach_this_rail()
+    public async Task The_co_read_setting_does_not_reach_this_rail()
     {
         var recommender = new CountingRecommender();
         var settings = new FakeAppSettings();
@@ -129,21 +132,36 @@ public class SimilarSeriesServiceTests
 
         await service.GetAsync(1, ["safe"]);
         await settings.SetAsync(SettingKeys.RecommendationsCoRead, "true");
-        await settings.SetAsync(SettingKeys.RecommendationsCoGraph, "true");
         await service.GetAsync(1, ["safe"]);
 
         Assert.Equal(1, recommender.Calls);
         Assert.False(recommender.LastCoRead);
+    }
+
+    [Fact]
+    public async Task The_instance_switch_turns_the_votes_off_and_is_its_own_pool()
+    {
+        var recommender = new CountingRecommender();
+        var settings = new FakeAppSettings();
+        var service = Service(recommender, settings);
+
+        await service.GetAsync(1, ["safe"]);
+        await settings.SetAsync(SettingKeys.RecommendationsCoGraph, "false");
+        await service.GetAsync(1, ["safe"]);
+
+        Assert.Equal(2, recommender.Calls);
         Assert.False(recommender.LastCoGraph);
     }
 
     [Fact]
-    public async Task No_card_on_the_rail_claims_to_be_close_to_the_viewers_taste()
+    public async Task No_card_on_the_rail_makes_a_claim_about_the_viewer()
     {
-        // The pool is shared by everyone and is about the seed, not about a reader.
+        // The pool is shared by everyone and is about the seed, not about a reader, so neither
+        // "Close to your taste" nor "Readers like you also recommended this" may print.
         var picks = await Service(new CountingRecommender()).GetAsync(1, ["safe"]);
 
         Assert.All(picks, p => Assert.False(p.TasteMatch));
+        Assert.All(picks, p => Assert.False(p.CoRecommended));
     }
 
     [Fact]
@@ -159,7 +177,9 @@ public class SimilarSeriesServiceTests
         // Damping the candidate norm to 0.75 addressed that at the source, and re-swept the override
         // no longer paid for itself: +0.0026 against just using the default, 95% [-0.0007, +0.0061].
         // An unmeasured divergence between the two surfaces is exactly what this test exists to
-        // stop, so it went away and the assertion is back to what it always was.
+        // stop, so it went away and the assertion is back to what it always was. The one measured
+        // divergence is the vote graph's coefficient, which travels as graphWeight and not in this
+        // vector.
         var recommender = new CountingRecommender();
 
         await Service(recommender).GetAsync(1, ["safe"]);

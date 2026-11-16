@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 
 namespace Maki.Api.Services;
 
@@ -24,16 +25,17 @@ namespace Maki.Api.Services;
 /// </para>
 ///
 /// <para>
-/// <b>The two pair graphs are off; the taste vectors are on.</b> Co-recommendation and co-read answer
-/// "who else read this", which is the question Discover's rails and the reader-cohort rail exist
-/// for, and they are off here whatever the instance settings say. The behavioural taste vectors
-/// were off as well until the rail was graded on its own. On a judged panel of 300 seeds the
-/// content-only list was the less story-alike one: 1.45 against 1.57 with the vectors on, for
-/// "similar story, tone and feel" on a 0 to 3 scale, and 8% of its picks were unrelated against
-/// 3% (<c>distribution/CLAUDE.md</c>, "v7").
-/// A series' description and tags say less about how it reads than what its readers went on to
-/// read, so the vectors stay on and follow the instance's <c>recommendations.tastevectors</c>
-/// switch.
+/// <b>Co-read and the EASE table are off; the taste vectors and the recommendation votes are
+/// on.</b> Co-read and EASE answer "who else read this", which is the question Discover's rails
+/// and the reader-cohort rail exist for, and they are off here whatever the instance settings
+/// say. The other two were off as well until the rail was graded on its own, on a judged panel of
+/// 300 seeds, for "similar story, tone and feel" on a 0 to 3 scale
+/// (<c>distribution/CLAUDE.md</c>, "v7"): content only 1.45 with 8% of picks unrelated, with the
+/// taste vectors 1.57 and 3%, with the votes as well 1.65. A vote is a reader saying "if you
+/// liked this, try that", a statement about two works, which is what this rail's heading claims.
+/// Each follows its instance switch (<c>recommendations.tastevectors</c>,
+/// <c>recommendations.cograph</c>), and the votes run at
+/// <see cref="Maki.Metadata.RecoGraph.RecoGraphTuning.SingleSeedWeight"/>.
 /// </para>
 /// </summary>
 public class SimilarSeriesService(
@@ -76,7 +78,7 @@ public class SimilarSeriesService(
     /// the candidate norm to 0.75 fixed that at the source, and re-swept over 800 single-seed
     /// requests the override stopped paying for itself: +0.0026 against simply using the default,
     /// 95% [-0.0007, +0.0061]. So it went away again, and the rail asks for the same weights
-    /// Discover does.
+    /// Discover does, with the vote graph's coefficient as the one measured exception.
     /// </para>
     ///
     /// <para>
@@ -126,8 +128,13 @@ public class SimilarSeriesService(
             await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
             StringComparison.OrdinalIgnoreCase);
 
+        var votes = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}", _ => new Entry());
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}|g:{(votes ? 1 : 0)}",
+            _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -157,15 +164,21 @@ public class SimilarSeriesService(
                     obscurity: 0,
                     seedWeights: null,
                     diversity: Diversity,
-                    coGraph: false,
+                    coGraph: votes,
                     coRead: false,
                     taste: taste,
                     ease: false,
+                    graphWeight: RecoGraphTuning.SingleSeedWeight,
                     ct: ct);
 
-                // The card reads TasteMatch as "Close to your taste". This pool is shared by every
-                // viewer and is about the seed, so that line would be false here.
-                results = picks.Select(p => p.TasteMatch ? p with { TasteMatch = false } : p).ToList();
+                // The card reads TasteMatch as "Close to your taste" and CoRecommended as "Readers
+                // like you also recommended this". This pool is shared by every viewer and is about
+                // the seed, so both lines would be false here.
+                results = picks
+                    .Select(p => p.TasteMatch || p.CoRecommended
+                        ? p with { TasteMatch = false, CoRecommended = false }
+                        : p)
+                    .ToList();
             }
             finally
             {

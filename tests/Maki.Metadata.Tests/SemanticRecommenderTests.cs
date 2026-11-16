@@ -328,6 +328,31 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task ACallCanSetTheVoteWeight_AndZeroIsTheChannelOff()
+    {
+        // The series page asks for RecoGraphTuning.SingleSeedWeight; everything else leaves it null.
+        Add(1, "Seed");
+        Add(10, "Closer by feel");
+        Add(11, "Co-read");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.6f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.9f)),
+        ]);
+        var graph = WriteGraph((1, 11, 500));
+
+        var off = await Recommender(graph).GetSimilarAsync([1], [], limit: 5, graphWeight: 0);
+        var heavier = await Recommender(graph).GetSimilarAsync(
+            [1], [], limit: 5, graphWeight: RecoGraphTuning.SingleSeedWeight);
+
+        Assert.Equal(["10", "11"], off.Select(p => p.ProviderId));
+        Assert.All(off, p => Assert.False(p.CoRecommended));
+        Assert.Equal(["11", "10"], heavier.Select(p => p.ProviderId));
+        Assert.True(heavier[0].CoRecommended);
+    }
+
+    [Fact]
     public async Task TheSameCandidate_IsStillDroppedByAFilter_BecauseInjectionRespectsThePlan()
     {
         // The injection path reads the scan's own negative-infinity sentinel rather than re-testing

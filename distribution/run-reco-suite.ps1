@@ -50,9 +50,10 @@
   installed table must be a fold-limited build too, or the eval refuses the run; pass it with
   -LibraryEase.
 
-  `rail` is the series-page "More like this" rail as it ships: both pair graphs off, the taste
-  vectors on, diversity 0.15. It is a default variant so the cost of that choice is printed on
-  every run. `railcontent` is the rail before v7, with the taste vectors off as well.
+  `rail` is the series-page "More like this" rail as it ships: the vote graph at its single-seed
+  weight, co-read off, the taste vectors on, diversity 0.15. It is a default variant so the cost
+  of that choice is printed on every run. `railtaste` is the rail without the votes and
+  `railcontent` without the taste vectors either, the two rails that shipped before it.
 
 .PARAMETER Split
   dev (default), confirm or all. Sweeps and fits run on dev. A default changes only after one

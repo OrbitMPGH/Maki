@@ -315,7 +315,7 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? seedWeights = null,
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
@@ -327,7 +327,8 @@ public class SemanticRecommender(
 
         // The graphs live in their own files, so after an idle unload they load alongside the
         // vector index instead of after it. The awaits further down join these same loads.
-        Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
+        var graphCoefficient = graphWeight ?? graphTuning.Weight;
+        Observe(coGraph && graphCoefficient > 0 ? graphCache.GetAsync(ct) : null);
         Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
         var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0
             && seedIds.Count >= _easeTuning.MinSeeds;
@@ -357,7 +358,7 @@ public class SemanticRecommender(
         // read it without a dictionary hop through ids. Seeded from `seedIds` rather than
         // `seedVectors.Keys`: a seed with no vector yet can still carry graph edges, and dropping it
         // would silently narrow the channel on a freshly added library.
-        var graphByRow = coGraph && graphTuning.Weight > 0
+        var graphByRow = coGraph && graphCoefficient > 0
             ? await BuildGraphScoresAsync(index, seedIds, seedWeights, ct)
             : [];
 
@@ -370,7 +371,7 @@ public class SemanticRecommender(
         // it would otherwise be carrying.
         if (graphByRow.Count > 0)
         {
-            w = w with { Graph = graphTuning.Weight };
+            w = w with { Graph = graphCoefficient };
         }
 
         if (coReadByRow.Count > 0)

@@ -52,7 +52,7 @@ public class RecommendationServiceTasteTests : IDisposable
             IReadOnlyDictionary<long, double>? seedWeights = null,
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
             CancellationToken ct = default)
         {
             Seen.Add(seedWeights);
