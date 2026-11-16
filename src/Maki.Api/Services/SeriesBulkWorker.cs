@@ -2,6 +2,7 @@ using Maki.Api.Auth;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +10,11 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// Runs the operations <see cref="SeriesBulkOperations"/> queues, one series at a time. Each series
-/// gets its own scope set up as the caller (user, data scope, language), so a series the caller can
-/// no longer see is refused as gone, and a failure is recorded against that series without stopping
-/// the rest. Progress goes to the caller's own SignalR group as <c>seriesBulkProgress</c>.
+/// gets its own scope set up as the caller (user, data scope, language), with the account, permissions,
+/// root folders and content rating read again from the database, so a series the caller can no longer
+/// see is refused as gone and an account that lost the action stops the job. Any other failure is
+/// recorded against that series without stopping the rest. Progress goes to the caller's own SignalR
+/// group as <c>seriesBulkProgress</c>.
 /// </summary>
 public sealed class SeriesBulkWorker(
     SeriesBulkOperations operations,
@@ -73,9 +76,10 @@ public sealed class SeriesBulkWorker(
             }
 
             string? title, error;
+            bool revoked;
             try
             {
-                (title, error) = await RunOneAsync(operation, seriesId, ct);
+                (title, error, revoked) = await RunOneAsync(operation, seriesId, ct);
             }
             catch (OperationCanceledException) when (operation.Cancel.IsCancellationRequested
                 && !stoppingToken.IsCancellationRequested)
@@ -85,6 +89,13 @@ public sealed class SeriesBulkWorker(
             }
 
             operation.Record(seriesId, title, error);
+            if (revoked)
+            {
+                logger.LogWarning("Bulk {Action} operation {Id} stopped: user {UserId} may no longer run it",
+                    operation.Action, operation.Id, operation.Caller.UserId);
+                break;
+            }
+
             if (DateTime.UtcNow - lastPush >= PushEvery)
             {
                 lastPush = DateTime.UtcNow;
@@ -97,22 +108,52 @@ public sealed class SeriesBulkWorker(
         await PushAsync(operation);
     }
 
-    private async Task<(string? Title, string? Error)> RunOneAsync(
+    /// <summary>The permission the single endpoint behind each action asks for.</summary>
+    private static MakiPermission Required(SeriesBulkAction action) => action switch
+    {
+        SeriesBulkAction.SearchMissing => MakiPermission.DownloadChapters,
+        _ => MakiPermission.EditMetadata,
+    };
+
+    /// <returns><c>Revoked</c> when the caller may no longer run the action, which ends the operation.</returns>
+    private async Task<(string? Title, string? Error, bool Revoked)> RunOneAsync(
         SeriesBulkOperation operation, int seriesId, CancellationToken ct)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var caller = operation.Caller;
-        services.GetRequiredService<CurrentUserContext>().Set(caller.UserId, caller.UserName, caller.Permissions,
-            caller.AllRootFolders, caller.RootFolderIds, caller.MaxContentRating);
-        if (!caller.ScopeUnrestricted)
-        {
-            services.GetRequiredService<DataScope>().SetUser(caller.ScopeUserId, caller.ScopeAllRootFolders);
-        }
-
         services.GetRequiredService<RequestLocaleContext>().SetRequested(caller.Locale, null);
         var localizer = services.GetRequiredService<ILocalizer>();
         var db = services.GetRequiredService<MakiDbContext>();
+
+        // As the request pipeline loads it (CurrentUserMiddleware), so a revocation mid-job applies to
+        // the next series rather than the next request.
+        var account = await db.Users.AsNoTracking()
+            .Where(u => u.Id == caller.UserId)
+            .Select(u => new { u.UserName, u.Permissions, u.AllRootFolders, u.MaxContentRating, u.Disabled, u.PendingSetup })
+            .FirstOrDefaultAsync(ct);
+        if (account is null || account.Disabled || account.PendingSetup ||
+            !account.Permissions.Grants(Required(operation.Action)))
+        {
+            return (null, localizer.Get("error.seriesBulk.accessRevoked"), true);
+        }
+
+        IReadOnlySet<int> folders = account.AllRootFolders
+            ? new HashSet<int>()
+            : (await db.UserRootFolders.Where(g => g.UserId == caller.UserId).Select(g => g.RootFolderId).ToListAsync(ct))
+            .ToHashSet();
+        if (operation.Action == SeriesBulkAction.Move && !account.AllRootFolders &&
+            operation.RootFolderId is { } target && !folders.Contains(target))
+        {
+            return (null, localizer.Get("error.seriesBulk.accessRevoked"), true);
+        }
+
+        services.GetRequiredService<CurrentUserContext>().Set(caller.UserId, account.UserName ?? caller.UserName,
+            account.Permissions, account.AllRootFolders, folders, account.MaxContentRating);
+        if (!caller.ScopeUnrestricted)
+        {
+            services.GetRequiredService<DataScope>().SetUser(caller.UserId, account.AllRootFolders);
+        }
 
         Series? series = null;
         try
@@ -121,7 +162,7 @@ public sealed class SeriesBulkWorker(
             series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
             if (series is null)
             {
-                return (null, localizer.Get("error.seriesRename.notFound"));
+                return (null, localizer.Get("error.seriesRename.notFound"), false);
             }
 
             var key = operation.Action switch
@@ -134,12 +175,12 @@ public sealed class SeriesBulkWorker(
                 SeriesBulkAction.Move => await MoveAsync(services, operation, series, ct),
                 _ => throw new InvalidOperationException($"Unknown bulk action {operation.Action}"),
             };
-            return (series.Title, key);
+            return (series.Title, key, false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.LogWarning(ex, "Bulk {Action} failed for series {SeriesId}", operation.Action, seriesId);
-            return (series?.Title, localizer.Get("error.server.unexpected"));
+            return (series?.Title, localizer.Get("error.server.unexpected"), false);
         }
     }
 
