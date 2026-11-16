@@ -31,12 +31,15 @@ import { SaveActions, planChanged } from '../components/pageconversion/SaveActio
 import {
   READING_PLACES,
   READING_PLACE_LABELS,
+  gapOf,
   placeOf,
   recommendationsFor,
   recommendedSettings,
   useJpegXlGap,
+  type JpegXlGap,
   type ReadingPlace,
 } from '../components/pageconversion/recommendation'
+import { jpegXlSupported, jpegXlSupportedNow } from '../lib/enhance/jpegXl'
 import { FORMAT_LABELS, STOP_LABELS } from '../components/pageconversion/labels'
 import { SelectCards } from '../components/SelectCards'
 import { RULE_TEMPLATES, newRuleDraft, toRuleDraft, toRuleDtos, type RuleDraft } from '../components/pageconversion/ruleTemplates'
@@ -130,16 +133,23 @@ function Plan({
   }
   const [lastFormat, setLastFormat] = useState<PageConversionFormat>(value.format ?? 'webp')
   const gap = useJpegXlGap(status.jpegXlAvailable)
-  const place = placeOf(value, gap)
   const [pickedPlace, setPickedPlace] = useState<ReadingPlace | null>(null)
+  const place = placeOf(value, gap, pickedPlace)
   const recommendations = recommendationsFor(place ?? pickedPlace ?? 'maki', gap)
   // Never set up before: the first switch-on fills in the recommendation instead of WebP High.
   const seeded = useRef(
     status.settings.format !== null || !!status.settings.colourStop || status.library.convertedFiles > 0,
   )
-  const pickPlace = (next: ReadingPlace) => {
+  const pickPlace = (next: ReadingPlace, nextGap: JpegXlGap = gap) => {
     setPickedPlace(next)
-    onChange(recommendedSettings(next, gap))
+    onChange(recommendedSettings(next, nextGap))
+  }
+  // The browser probe may still be out, and seeding before it answers would pick JPEG XL for a browser without it.
+  const seedPlace = () => {
+    const seed = (browser: boolean) => pickPlace('maki', gapOf(status.jpegXlAvailable, browser))
+    const known = jpegXlSupportedNow()
+    if (known !== null) seed(known)
+    else void jpegXlSupported().then(seed)
   }
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -192,7 +202,7 @@ function Plan({
               onChange={(event) => {
                 if (event.currentTarget.checked) {
                   if (seeded.current) onChange({ format: lastFormat })
-                  else pickPlace('maki')
+                  else seedPlace()
                   seeded.current = true
                 } else {
                   if (format) setLastFormat(format)

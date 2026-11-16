@@ -72,17 +72,27 @@ export function recommendedSettings(place: ReadingPlace, gap: JpegXlGap): Partia
   return { format: grey.target.format, stop: grey.target.stop, colourFormat: colour.target.format, colourStop: colour.target.stop }
 }
 
-/** The place whose recommendation the plan's default matches, or null when it was set by hand. */
-export function placeOf(settings: PageConversionSettings, gap: JpegXlGap): ReadingPlace | null {
-  if (!settings.format) return null
+/** Whether the plan's default is what `place` recommends. */
+export function matchesPlace(settings: PageConversionSettings, place: ReadingPlace, gap: JpegXlGap): boolean {
+  if (!settings.format) return false
   const grey: PageTarget = { format: settings.format, stop: settings.stop }
   const colour = colourTargetOf(settings) ?? grey
-  return (
-    READING_PLACES.find((place) => {
-      const r = recommendationsFor(place, gap)
-      return sameTarget(grey, r.grey.target) && sameTarget(colour, r.colour.target)
-    }) ?? null
-  )
+  const r = recommendationsFor(place, gap)
+  return sameTarget(grey, r.grey.target) && sameTarget(colour, r.colour.target)
+}
+
+/**
+ * The place whose recommendation the plan's default matches, or null when it was set by hand. Without
+ * JPEG XL two places recommend the same targets, so the one picked wins while it still matches.
+ */
+export function placeOf(settings: PageConversionSettings, gap: JpegXlGap, picked: ReadingPlace | null = null): ReadingPlace | null {
+  if (picked && matchesPlace(settings, picked, gap)) return picked
+  return READING_PLACES.find((place) => matchesPlace(settings, place, gap)) ?? null
+}
+
+export function gapOf(serverAvailable: boolean | undefined, browser: boolean | null): JpegXlGap {
+  if (serverAvailable === false) return 'server'
+  return browser === false ? 'browser' : null
 }
 
 /** Whether this browser and the server can both handle JPEG XL. Assumes the browser can until its probe settles. */
@@ -96,6 +106,5 @@ export function useJpegXlGap(serverAvailable: boolean | undefined): JpegXlGap {
       live = false
     }
   }, [browser])
-  if (serverAvailable === false) return 'server'
-  return browser === false ? 'browser' : null
+  return gapOf(serverAvailable, browser)
 }

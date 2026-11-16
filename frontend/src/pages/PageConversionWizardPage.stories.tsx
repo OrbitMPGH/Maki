@@ -260,9 +260,15 @@ export const FirstSwitchOnRecommends: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: 'Convert pages' }))
-    await expect(chip(canvas, 'Black-and-white pages, Everything else')).toHaveTextContent('AVIFCompact')
+    // Seeding waits for the browser's JPEG XL probe when it has not answered yet.
+    await waitFor(() => expect(chip(canvas, 'Black-and-white pages, Everything else')).toHaveTextContent('AVIFCompact'))
     await expect(chip(canvas, 'Colour pages, Everything else')).toHaveTextContent('AVIFHigh')
     await expect(canvas.getByRole('button', { name: /^Only in Maki/ })).toHaveAttribute('aria-pressed', 'true')
+
+    // Without JPEG XL the apps pick has the same targets as Maki, and stays the one selected.
+    await userEvent.click(canvas.getByRole('button', { name: /^Also in apps like Mihon/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Also in apps like Mihon/ })).toHaveAttribute('aria-pressed', 'true'))
+    await expect(canvas.getByRole('button', { name: /^Only in Maki/ })).toHaveAttribute('aria-pressed', 'false')
 
     await userEvent.click(canvas.getByRole('button', { name: /^Also in KOReader/ }))
     await expect(chip(canvas, 'Black-and-white pages, Everything else')).toHaveTextContent('WebPCompact')
