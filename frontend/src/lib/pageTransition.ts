@@ -37,10 +37,12 @@ const disabled = () => !motionEnabled('pageTransitions') || prefersReducedMotion
 // The reader pages between chapters with its own motion, and a fade on top of it reads as lag.
 const isReader = (path: string) => path.startsWith('/read/')
 
-// Safari, and every iOS browser, which all run on WebKit. Its view transitions paint the page while it
-// should be held, barely draw the flying cover under the cross-fade, then replay the flight once the
-// transition ends (issue #150). There pages take the path for browsers without the API.
-const skipViewTransitions = navigator.vendor === 'Apple Computer, Inc.'
+// Safari, and every iOS browser, which all run on WebKit. Its view transitions show the new page as
+// a still rather than live, so nothing that moves in the page during the cross-fade is seen: the
+// flying cover sat still and jumped once the fade ended (issue #150), and the drift came out as a
+// jump. A page change with a flying cover takes the path for browsers without the API, and the
+// drift is left out of the cross-fade.
+const webkit = navigator.vendor === 'Apple Computer, Inc.'
 
 const seriesId = (path: string) => /^\/series\/(\d+)\/?$/.exec(path)?.[1] ?? null
 
@@ -203,8 +205,9 @@ function unsettleLayout(token: number) {
 }
 
 /**
- * The new page drifts up into place while it fades in. Without the API it fades in alone. A flying
- * cover measures where it lands at the start, so beside one the page only fades.
+ * The new page drifts up into place while it fades in, alongside the view transition's cross-fade.
+ * A flying cover measures where it lands at the start, so beside one the page only fades. The page's
+ * children animate rather than <main>, since a flight's copy can sit in <main> (see flyCover).
  */
 function rise(fade: boolean, drift = true) {
   const main = document.getElementById('main')
@@ -215,7 +218,9 @@ function rise(fade: boolean, drift = true) {
     from.opacity = 0
     to.opacity = 1
   }
-  main.animate([from, to], { duration: pacedMs(PAGE.rise), easing: EASE_CSS })
+  for (const el of main.children) {
+    if (!el.classList.contains('cover-ghost')) el.animate([from, to], { duration: pacedMs(PAGE.rise), easing: EASE_CSS })
+  }
 }
 
 /**
@@ -318,6 +323,32 @@ function flyCover(
 }
 
 /**
+ * The page change without a view transition, once the new page has committed. No fade: a page held
+ * back for its fade showed blank for as long as its first frame took, and a fade started at the
+ * commit was over before anything was drawn. Until the commit the old page stays up, since React
+ * renders the new one as a transition. The cover flies once the poster has rendered and decoded.
+ */
+async function reveal(
+  from: DOMRect | undefined,
+  opening: string | null,
+  leaving: string | null,
+  release: ((fade: boolean) => void) | null,
+) {
+  const settled = settleLayout()
+  // ScrollMemory's restore runs in the commit's passive effects, and the landing spot depends on it.
+  await tick()
+  requestAnimationFrame(() => requestAnimationFrame(() => unsettleLayout(settled)))
+  if (!from || !release) return
+  const incoming = opening ? await posterReady(performance.now() + COMMIT_TIMEOUT_MS) : leaving ? linkedCover(leaving) : null
+  const flight = incoming ? flyCover(from, incoming) : null
+  if (!flight) return release(true)
+  await Promise.race([flight.decoded, tick(100)])
+  // The flight's copy starts on the same spot, so the held one can go in the same frame.
+  release(false)
+  flight.start()
+}
+
+/**
  * Hides the cover the flight will land on while the held copy waits, so the new page doesn't show
  * the same cover twice before the flight hides its target. A stylesheet, since the page that holds
  * it hasn't rendered yet. Returns its removal; it also lifts itself in case the flight never starts.
@@ -366,25 +397,6 @@ function holdCover(cover: HTMLElement, at: DOMRect, opening: string | null, leav
   }
 }
 
-/**
- * The flight without a view transition, once the new page has committed: the page fades in (rise)
- * while the cover flies from where it was to its place on the new page.
- */
-async function flyIn(from: DOMRect, opening: string | null, leaving: string | null, release: (fade: boolean) => void) {
-  const settled = settleLayout()
-  // ScrollMemory's restore runs in the commit's passive effects, and the landing spot depends on it.
-  await tick()
-  const incoming = opening ? await posterReady(performance.now() + COMMIT_TIMEOUT_MS) : leaving ? linkedCover(leaving) : null
-  const flight = incoming && flyCover(from, incoming)
-  if (flight) {
-    await Promise.race([flight.decoded, tick(100)])
-    // The flight's copy starts on the same spot, so the held one can go in the same frame.
-    release(false)
-    flight.start()
-  } else release(true)
-  requestAnimationFrame(() => requestAnimationFrame(() => unsettleLayout(settled)))
-}
-
 const listen = appHistory.listen
 appHistory.listen = (listener) =>
   listen((update) => {
@@ -403,13 +415,12 @@ appHistory.listen = (listener) =>
     const outgoing = !morph ? null : opening ? clickedCover(opening) : leaving ? heroPoster() : null
     const fromRect = outgoing?.getBoundingClientRect()
 
-    if (!document.startViewTransition || skipViewTransitions) {
+    if (!document.startViewTransition || (webkit && outgoing && fromRect)) {
       const release = outgoing && fromRect ? holdCover(outgoing, fromRect, opening, leaving) : null
       listener(update)
       settle = () => {
         settle = null
-        rise(true, !release)
-        if (fromRect && release) void flyIn(fromRect, opening, leaving, release)
+        void reveal(fromRect, opening, leaving, release)
       }
       return
     }
@@ -466,7 +477,7 @@ appHistory.listen = (listener) =>
         // The drift starts with the cross-fade so the two land together.
         const go = () => {
           if (flight) flight.start()
-          else rise(false)
+          else if (!webkit) rise(false)
           releaseTint()
         }
         if (fadeOnMainThread) holdFadeUntilCalm(go)

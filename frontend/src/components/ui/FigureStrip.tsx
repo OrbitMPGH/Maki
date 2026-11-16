@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { Skeleton, Tooltip, VisuallyHidden } from '@mantine/core'
 import { formatNumber, formatSignedPercent } from '../../format'
 import { IconInfoCircle } from '../../lib/icons'
@@ -45,6 +45,7 @@ export function FigureStrip({
     <div
       className={className ? `figure-strip ${className}` : 'figure-strip'}
       data-flush={flush || undefined}
+      style={{ '--figures': figures.length } as CSSProperties}
     >
       {figures.map((f) => {
         const zero = isZero(f)

@@ -1308,10 +1308,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
   text-decoration: none;
-  transform: translateY(calc(-100% - 16px));
 }
-.skip-link:focus-visible {
-  transform: none;
+/* Clipped rather than parked above the window: Safari's overscroll at the top pulled it into view. */
+.skip-link:not(:focus-visible) {
+  clip-path: inset(50%);
+  pointer-events: none;
 }
 #main:focus {
   outline: none;
@@ -12635,10 +12636,15 @@ tr:hover .mono-value-copy {
   box-shadow: inset 0 0 0 1px var(--border-control);
 }
 
+/* auto-fill with a floor of one figure's share of the width, rather than auto-fit: Safari gives an
+   auto-fit grid that is also its own size container 0px columns (WebKit bugs 256047, 282326), and
+   the figures piled up in the first few pixels. This fills the width the same way: every figure
+   on one row while each gets 8.5rem, wrapping at 8.5rem below that. `--figures` is set by
+   FigureStrip. */
 .figure-strip {
   display: grid;
   container: figure-strip / inline-size;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(8.5rem, 100% / var(--figures, 1)), 1fr));
   margin-bottom: var(--mantine-spacing-lg);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -13029,7 +13035,7 @@ button.step-strip-item:disabled {
 
 /* Import preview: one line per folder, files only once a folder is opened. */
 .import-plan-figures {
-  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(6.5rem, 100% / var(--figures, 1)), 1fr));
   margin-bottom: 0;
 }
 .import-plan-figures .figure-strip-item {
@@ -18676,4 +18682,43 @@ button.shortlist-title:hover {
   font: inherit;
   font-size: var(--type-meta);
   cursor: pointer;
+}
+
+/* Touch: a tap fired the hover lift and zoom late, after the finger lifted, and the zoom animates the
+   image's box, which re-lays out and repaints every frame. Touch gets a press-down on the card instead,
+   a transform on the whole card so image and scrim stay on one layer. Mouse and trackpad keep the hover. */
+@media (hover: none), (pointer: coarse) {
+  .cover-card,
+  .reading-card > .cover-card {
+    transition: transform var(--dur-fast) var(--ease);
+  }
+  .cover-card:hover,
+  .reading-card:hover > .cover-card {
+    transform: none;
+    border-color: var(--cover-rim);
+    box-shadow: var(--shadow-cover);
+  }
+  .cover-poster img {
+    transition: none;
+  }
+  .cover-card:hover .cover-poster img,
+  .reading-card:hover > .cover-card .cover-poster img {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .reading-card:hover > :is(.reading-card-menu, .home-read-button),
+  .reading-card:hover > .home-read-button:hover,
+  .series-row:hover,
+  .discover-genre-tile:hover,
+  .continue-hero-poster:hover,
+  .discover-hero-poster:hover .series-hero-poster {
+    transform: none;
+  }
+  .cover-card:active,
+  .reading-card:active > .cover-card,
+  .continue-hero-poster:active {
+    transform: scale(0.97);
+  }
 }
