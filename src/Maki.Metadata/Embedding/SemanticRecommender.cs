@@ -2040,7 +2040,7 @@ public class SemanticRecommender(
 
     /// <summary>
     /// Gives a pick the EASE table pushed up the co-read card reason, "Readers who finished X also
-    /// finished this", naming the seed with the largest positive weighted weight. That is literally
+    /// finished this", naming the seed with the largest positive weighted contribution. That is literally
     /// what the table measures (it is fitted on finished lists), so no new wording is needed. Only
     /// picks with no co-read reason of their own, and only where some seed weighs them up: a row the
     /// table scores at or below zero keeps whatever reason it had. Rewrites the reason fields only,
