@@ -128,6 +128,7 @@ var maxLibrary = 300;
 var workPath = Path.Combine(artifactsDir, "coread-graph.db");
 string? muPathOverride = null;
 string? tastePathOverride = null;
+string? easePathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
 var negatives = false;
@@ -189,6 +190,11 @@ for (var i = 0; i < args.Length; i++)
         // fold-limited build without copying it into the config dir.
         case "--taste":
             tastePathOverride = args[++i];
+            break;
+        // An EASE table other than the installed one, for the same reason: `library --fold-users`
+        // grades a fold-limited build (`build-ease-table.py --fold-out`) without installing it.
+        case "--ease":
+            easePathOverride = args[++i];
             break;
         case "--rng":
             rngSeed = int.Parse(args[++i], CultureInfo.InvariantCulture);
@@ -380,6 +386,9 @@ var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Co
 // Behavioural vectors. Declared beside the other artifacts because the fold guard below has to see
 // it: this is the one artifact actually TRAINED on readers, so it is the one the guard exists for.
 var tastePath = tastePathOverride ?? Path.Combine(configDir, "taste-vectors.db");
+// The EASE table, where the app installs it (AppPaths.EaseDbPath). Variants that do not name an
+// `easepath` read it, so `default` stays the engine as shipped.
+var easePath = easePathOverride ?? Path.Combine(configDir, "ease-table.db");
 
 foreach (var (name, path) in new[] { ("dump", dumpPath), ("vector index", vectorPath) })
 {
@@ -420,6 +429,28 @@ if (mode == "library" && !File.Exists(workPath))
 var variants = variantArgs.Count > 0
     ? variantArgs.Select(Variants.Parse).ToList()
     : [Variants.Parse("nocrowd"), Variants.Parse("default")];
+
+// A variant that runs the EASE channel without naming a table reads the installed one, and with no
+// table installed the channel is off, exactly as in the app. An explicit `easepath` that is missing
+// is still an error below.
+for (var v = 0; v < variants.Count; v++)
+{
+    if (variants[v].Ease.Weight > 0 && variants[v].EasePath is null)
+    {
+        variants[v] = File.Exists(easePath)
+            ? variants[v] with { EasePath = easePath }
+            : variants[v] with { Ease = variants[v].Ease with { Weight = 0 } };
+    }
+}
+
+if (variants.Any(v => v.Ease.Weight > 0 && v.EasePath == easePath))
+{
+    Console.WriteLine($"ease     : {easePath}");
+}
+else if (easePathOverride is null && variants.Any(v => Variants.RunsEase(v.Name)))
+{
+    Console.WriteLine($"note     : no EASE table at {easePath}, so 'default' runs without that channel.");
+}
 
 var modelKind = modelOverride ?? Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
 var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
@@ -640,12 +671,6 @@ foreach (var v in variants)
     {
         var which = forbidGraph && v.CoGraph ? "vote" : "co-read";
         Console.WriteLine($"note     : forcing the {which} channel off for '{v.Name}' — it provides the labels.");
-    }
-
-    if (v.Ease.Weight > 0 && v.EasePath is null)
-    {
-        Console.WriteLine($"error: '{v.Name}' sets an EASE weight but no easepath.");
-        return 2;
     }
 
     if (v.EasePath is not null && !File.Exists(v.EasePath))
@@ -2542,20 +2567,28 @@ file static class Judgements
 ///
 /// <para>
 /// <c>easepath</c> names an EASE table (<c>distribution/build-ease-table.py</c>) and <c>easeweight</c>
-/// switches its channel on; <c>easenegative</c>, <c>easemaxinjected</c> and <c>easemininjected</c> are
-/// the rest of <see cref="EaseTuning"/>. The channel ships off, so no shorthand turns it on.
+/// sets its coefficient; <c>easenegative</c>, <c>easemaxinjected</c> and <c>easemininjected</c> are
+/// the rest of <see cref="EaseTuning"/>. The channel ships at weight 4 on personal recommendations,
+/// so every variant runs it from the installed table (or <c>--ease</c>) unless it says otherwise;
+/// <c>noease</c> is the baseline it has to be read against, and <c>rail</c>/<c>railcontent</c> never
+/// run it, because <c>SimilarSeriesService</c> passes it off.
 /// </para>
 ///
 /// <para>
 /// Shorthand names: <c>default</c> is what ships; <c>nograph</c>, <c>nocoread</c> and <c>nocrowd</c>
 /// switch one or both crowd channels off, which are the baselines those features have to be read
-/// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the series-page rail as
+/// against; <c>noavoid</c> is the same for the avoid channel and <c>noease</c> for the EASE
+/// channel; <c>rail</c> is the series-page rail as
 /// <c>SimilarSeriesService</c> ships it: no pair graph, taste vectors on, diversity 0.15, and
 /// <c>railcontent</c> is that with the taste vectors off, which is what shipped before v7.
 /// </para>
 /// </summary>
 file static class Variants
 {
+    /// <summary>Whether a shorthand runs the EASE channel before any override.</summary>
+    public static bool RunsEase(string name) =>
+        name.Split(':', 2)[0].ToLowerInvariant() is not ("noease" or "rail" or "railcontent");
+
     public static Variant Parse(string spec)
     {
         var (name, overrides) = spec.Split(':', 2) is [var n, var rest] ? (n, rest) : (spec, string.Empty);
@@ -2573,7 +2606,9 @@ file static class Variants
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
         var scoreWeights = false;
-        var ease = EaseTuning.Default;
+        // What RecommendationService asks for. The path is filled in from the installed table once
+        // the config dir is known; `noease` and the rail shorthands start with the channel off.
+        var ease = RunsEase(lower) ? EaseTuning.Default : EaseTuning.Default with { Weight = 0 };
         string? easePath = null;
 
         // The baseline the avoid channel has to be read against, the same way `nocrowd` and
