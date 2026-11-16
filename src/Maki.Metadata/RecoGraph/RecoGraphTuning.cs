@@ -37,6 +37,14 @@ public sealed record RecoGraphTuning
     public double Weight { get; init; } = 0.6;
 
     /// <summary>
+    /// The coefficient the series page's "More like this" asks for instead of <see cref="Weight"/>.
+    /// One seed has no library to agree with, so what readers said about that one series is worth
+    /// more there: on the judged panel 1.2 against 0.6 is +0.025 feel@10 [+0.017, +0.034], and 2.4
+    /// or 4 add nothing certain on top (<c>distribution/CLAUDE.md</c>, "v7: votes on the rail").
+    /// </summary>
+    public const double SingleSeedWeight = 1.2;
+
+    /// <summary>
     /// Exponent on the neighbour's degree, dividing its contribution. Fixes a failure that is
     /// obvious once measured: at 0 the channel is a shonen popularity chart, because a handful of
     /// mega-titles are paired with everything and their vote counts dwarf everything else.

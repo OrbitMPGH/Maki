@@ -2578,8 +2578,8 @@ file static class Judgements
 /// sets its coefficient; <c>easenegative</c>, <c>easeminseeds</c>, <c>easemaxinjected</c> and <c>easemininjected</c> are
 /// the rest of <see cref="EaseTuning"/>. The channel ships at weight 4 on personal recommendations,
 /// so every variant runs it from the installed table (or <c>--ease</c>) unless it says otherwise;
-/// <c>noease</c> is the baseline it has to be read against, and <c>rail</c>/<c>railcontent</c> never
-/// run it, because <c>SimilarSeriesService</c> passes it off.
+/// <c>noease</c> is the baseline it has to be read against, and the three <c>rail*</c> shorthands
+/// never run it, because <c>SimilarSeriesService</c> passes it off.
 /// </para>
 ///
 /// <para>
@@ -2587,15 +2587,17 @@ file static class Judgements
 /// switch one or both crowd channels off, which are the baselines those features have to be read
 /// against; <c>noavoid</c> is the same for the avoid channel and <c>noease</c> for the EASE
 /// channel; <c>rail</c> is the series-page rail as
-/// <c>SimilarSeriesService</c> ships it: no pair graph, taste vectors on, diversity 0.15, and
-/// <c>railcontent</c> is that with the taste vectors off, which is what shipped before v7.
+/// <c>SimilarSeriesService</c> ships it: the vote graph at
+/// <c>RecoGraphTuning.SingleSeedWeight</c>, no co-read, taste vectors on, diversity 0.15;
+/// <c>railtaste</c> is that without the votes and <c>railcontent</c> without the taste vectors
+/// either, which are the two rails that shipped before it.
 /// </para>
 /// </summary>
 file static class Variants
 {
     /// <summary>Whether a shorthand runs the EASE channel before any override.</summary>
     public static bool RunsEase(string name) =>
-        name.Split(':', 2)[0].ToLowerInvariant() is not ("noease" or "rail" or "railcontent");
+        name.Split(':', 2)[0].ToLowerInvariant() is not ("noease" or "rail" or "railtaste" or "railcontent");
 
     public static Variant Parse(string spec)
     {
@@ -2627,15 +2629,21 @@ file static class Variants
             weights = new EmbeddingMath.Weights() with { Avoid = 0 };
         }
 
-        // What SimilarSeriesService asks for: both pair graphs off, the taste vectors on and a
-        // small MMR nudge. It used to stand for a reduced weight vector that service dropped long
-        // ago, so the shipped rail went ungraded while a row called `rail` sat in the table.
-        // `railcontent` is the rail as it shipped until v7, with the taste vectors off as well.
-        if (lower is "rail" or "railcontent")
+        // What SimilarSeriesService asks for: the vote graph at its single-seed weight, co-read
+        // off, the taste vectors on and a small MMR nudge. It used to stand for a reduced weight
+        // vector that service dropped long ago, so the shipped rail went ungraded while a row
+        // called `rail` sat in the table. `railtaste` and `railcontent` are the rail as it shipped
+        // before: without the votes, and without the taste vectors either.
+        if (lower is "rail" or "railtaste" or "railcontent")
         {
-            coGraph = false;
+            coGraph = lower == "rail";
             coRead = false;
             diversity = 0.15;
+            if (coGraph)
+            {
+                graph = graph with { Weight = RecoGraphTuning.SingleSeedWeight };
+            }
+
             if (lower == "railcontent")
             {
                 taste = TasteVectorTuning.Default with { Weight = 0 };
