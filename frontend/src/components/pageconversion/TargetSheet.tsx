@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Button, Group, Modal, SegmentedControl, Skeleton, Slider, Stack, Text } from '@mantine/core'
+import { Button, Group, Modal, SegmentedControl, Skeleton, Slider, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useDebouncedValue, useMediaQuery } from '@mantine/hooks'
-import { IconPhotoSearch } from '../../lib/icons'
+import { IconCircleCheckFilled, IconPhotoSearch } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
   PAGE_CONVERSION_STOPS,
@@ -21,6 +21,7 @@ import { SelectCards } from '../SelectCards'
 import { ComparePicker } from './ComparePicker'
 import { CompareView } from './CompareView'
 import { sampleKey } from './compareChoice'
+import type { Recommendation } from './recommendation'
 import {
   COLOUR_STOP_HINTS,
   CONVERSION_FORMATS,
@@ -47,6 +48,7 @@ export function TargetSheet({
   kind,
   target,
   fallback,
+  recommended,
   pngLossless,
   samplesRequest,
   onChange,
@@ -59,6 +61,8 @@ export function TargetSheet({
   target: PageTarget | null
   /** The row's black-and-white target, which colour pages take while `target` is null. */
   fallback: PageTarget
+  /** Marked on the format and quality controls. */
+  recommended: Recommendation
   pngLossless: boolean
   /** Built when the sheet opens, so editing the target never fetches new pages. */
   samplesRequest: RowSamplesRequest | null
@@ -80,6 +84,7 @@ export function TargetSheet({
           kind={kind}
           target={target}
           fallback={fallback}
+          recommended={recommended}
           pngLossless={pngLossless}
           samplesRequest={samplesRequest}
           onChange={onChange}
@@ -94,6 +99,7 @@ function SheetBody({
   kind,
   target,
   fallback,
+  recommended,
   pngLossless,
   samplesRequest,
   onChange,
@@ -102,6 +108,7 @@ function SheetBody({
   kind: SampleKind
   target: PageTarget | null
   fallback: PageTarget
+  recommended: Recommendation
   pngLossless: boolean
   samplesRequest: RowSamplesRequest | null
   onChange: (target: PageTarget | null) => void
@@ -132,10 +139,27 @@ function SheetBody({
 
   const setStop = (next: PageConversionStop) => onChange({ format: shown.format, stop: next })
   const formatChoice = same ? 'same' : lossless ? 'webp' : shown.format
+  const recommendedFormat = recommended.target.format
+  const recommendedStop = PAGE_CONVERSION_STOPS.indexOf(recommended.target.stop)
   const formatData = [
     ...(kind === 'colour' ? [{ value: 'same', label: t`Same` }] : []),
-    ...CONVERSION_FORMATS.map((f) => ({ value: f, label: t(FORMAT_LABELS[f]), disabled: lossless && !same })),
+    ...CONVERSION_FORMATS.map((f) => ({
+      value: f,
+      label:
+        f === recommendedFormat ? (
+          <span className="pc-rec-format">
+            {t(FORMAT_LABELS[f])}
+            <IconCircleCheckFilled size={13} className="pc-rec-tick" aria-hidden />
+            <VisuallyHidden>{t`, recommended`}</VisuallyHidden>
+          </span>
+        ) : (
+          t(FORMAT_LABELS[f])
+        ),
+      disabled: lossless && !same,
+    })),
   ]
+  const onRecommendedFormat = !same && !lossless && shown.format === recommendedFormat
+  const onRecommendedStop = !same && shown.stop === recommended.target.stop
   const kindName = kind === 'colour' ? t`colour` : t`black-and-white`
   const fallbackLabel = targetLabel(fallback)
 
@@ -214,6 +238,10 @@ function SheetBody({
               <Trans>Colour pages are stored like black-and-white pages in this row: {fallbackLabel}.</Trans>
             ) : lossless ? (
               <Trans>Lossless is always stored as lossless WebP.</Trans>
+            ) : onRecommendedFormat ? (
+              <>
+                <span className="pc-rec-line">{t(recommended.line)}</span> {t(FORMAT_HINTS[shown.format])}
+              </>
             ) : (
               t(FORMAT_HINTS[shown.format])
             )}
@@ -225,11 +253,25 @@ function SheetBody({
             <Text size="sm" fw={600}>
               <Trans>Quality</Trans>
             </Text>
-            <Text size="sm" fw={600} c="var(--brand)" aria-live="polite">
-              {t(STOP_LABELS[shown.stop])}
-            </Text>
+            <Group gap={6} wrap="nowrap" aria-live="polite">
+              <Text size="sm" fw={600} c="var(--brand)">
+                {t(STOP_LABELS[shown.stop])}
+              </Text>
+              {onRecommendedStop && (
+                <span className="pc-rec-pill">
+                  <Trans>Recommended</Trans>
+                </span>
+              )}
+            </Group>
           </Group>
           <Slider
+            mt={same ? undefined : 14}
+            classNames={{ mark: 'pc-rec-mark', markLabel: 'pc-rec-mark-label' }}
+            marks={
+              same
+                ? undefined
+                : [{ value: recommendedStop, label: <IconCircleCheckFilled size={14} aria-label={t`Recommended`} /> }]
+            }
             min={0}
             max={PAGE_CONVERSION_STOPS.length - 1}
             step={1}

@@ -115,6 +115,8 @@ export interface PageConversionStatus {
     /** The server's core count. */
     max: number
   }
+  /** Whether the server can write JPEG XL; absent from an older server. */
+  jpegXlAvailable?: boolean
 }
 
 const key = ['page-conversion']

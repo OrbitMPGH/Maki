@@ -112,12 +112,6 @@ export const RULE_TEMPLATES: readonly RuleTemplate[] = [
     rule: { conditions: { tiers: ['aggregator'] }, action: 'skip', stop: null },
   },
   {
-    id: 'volumes',
-    title: msg`Squeeze volumes harder`,
-    hint: msg`Converts imported volumes at Balanced, where the biggest savings are.`,
-    rule: { conditions: { tiers: ['volume'] }, action: 'convert', stop: 'balanced' },
-  },
-  {
     id: 'scanlator',
     title: msg`Keep scanlator releases exact`,
     hint: msg`Converts scanlator chapters at Lossless, so no pixel changes.`,

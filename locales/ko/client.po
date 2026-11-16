@@ -29,6 +29,10 @@ msgstr "- 건너뛰기 -"
 msgid "-2 (lowest) to 2 (emergency)."
 msgstr "-2 (최저)부터 2 (긴급)까지."
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid ", recommended"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
@@ -1817,6 +1821,10 @@ msgstr "{folderLabel}: {linkTotal, plural, other {파일 #개}} 중 {linkedCount
 msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{formatName} {stopName}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1863,6 +1871,10 @@ msgstr "{granted, plural, other {권한 #개}}"
 #, fuzzy
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, other {권한 #개}}"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{grey} for black-and-white, {colour} for colour"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5009,6 +5021,14 @@ msgstr "다운로드한 파일도 함께 삭제"
 msgid "Also for you"
 msgstr "나에게도 적용"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in apps like Mihon"
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in KOReader or on an e-reader"
+msgstr ""
+
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "Also known as"
@@ -8070,11 +8090,6 @@ msgstr "페이지 변환 중"
 #, fuzzy
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
 msgstr "변환해도 이 페이지가 5% 이상 작아지지 않으므로, 작업에서 그대로 둡니다."
-
-#: src/components/pageconversion/ruleTemplates.ts
-#, fuzzy
-msgid "Converts imported volumes at Balanced, where the biggest savings are."
-msgstr "가져온 권은 가장 많이 줄어드는 Balanced로 변환합니다."
 
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
@@ -18132,6 +18147,10 @@ msgstr "읽지 않은 챕터가 다운로드된 시리즈에만 적용합니다.
 msgid "Only for tagged series"
 msgstr "태그가 있는 시리즈에만"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Only in Maki"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time."
@@ -20502,11 +20521,36 @@ msgstr "추천 끄기"
 msgid "Recommendations on"
 msgstr "추천 켜기"
 
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Recommended"
 msgstr "추천됨"
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended for most libraries, with no difference you would notice while reading."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended if you read in Maki."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when apps like Mihon read your library."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when KOReader or an e-reader reads your library."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this browser cannot show JPEG XL."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this server cannot write JPEG XL."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23680,6 +23724,10 @@ msgstr "이 사이트를 소스로 설정"
 msgid "Set up trackers"
 msgstr "트래커 설정"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sets the targets for files no rule covers."
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24717,11 +24765,6 @@ msgstr "스포츠"
 #, fuzzy
 msgid "Spotlight"
 msgstr "주목할 작품"
-
-#: src/components/pageconversion/ruleTemplates.ts
-#, fuzzy
-msgid "Squeeze volumes harder"
-msgstr "권을 더 세게 압축"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -28769,6 +28812,10 @@ msgstr "화면에 공간이 있을 때"
 #, fuzzy
 msgid "When to remove"
 msgstr "제거 시점"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Where do you read?"
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy

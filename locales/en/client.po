@@ -26,6 +26,10 @@ msgstr "- skip -"
 msgid "-2 (lowest) to 2 (emergency)."
 msgstr "-2 (lowest) to 2 (emergency)."
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid ", recommended"
+msgstr ", recommended"
+
 #: src/pages/LibraryPage.tsx
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
 msgstr "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
@@ -1491,6 +1495,10 @@ msgstr "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} 
 msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{formatName} {stopName}"
+msgstr "{formatName} {stopName}"
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1528,6 +1536,10 @@ msgstr "{granted, plural, one {# permission} other {# permissions}}"
 #: src/components/settings/UsersSection.tsx
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, one {# permission} other {# permissions}}"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{grey} for black-and-white, {colour} for colour"
+msgstr "{grey} for black-and-white, {colour} for colour"
 
 #: src/components/pageconversion/labels.ts
 msgid "{greyLabel} for black-and-white pages, {colourLabel} for colour pages"
@@ -4065,6 +4077,14 @@ msgstr "Also delete the downloaded files"
 msgid "Also for you"
 msgstr "Also for you"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in apps like Mihon"
+msgstr "Also in apps like Mihon"
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in KOReader or on an e-reader"
+msgstr "Also in KOReader or on an e-reader"
+
 #: src/components/discover/DiscoverGlance.tsx
 msgid "Also known as"
 msgstr "Also known as"
@@ -6564,10 +6584,6 @@ msgstr "Converting pages"
 #: src/components/pageconversion/labels.ts
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
 msgstr "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
-
-#: src/components/pageconversion/ruleTemplates.ts
-msgid "Converts imported volumes at Balanced, where the biggest savings are."
-msgstr "Converts imported volumes at Balanced, where the biggest savings are."
 
 #: src/components/pageconversion/ruleTemplates.ts
 msgid "Converts scanlator chapters at Lossless, so no pixel changes."
@@ -14738,6 +14754,10 @@ msgstr "Only for series with unread chapters downloaded. A series you are caught
 msgid "Only for tagged series"
 msgstr "Only for tagged series"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Only in Maki"
+msgstr "Only in Maki"
+
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time."
 msgstr "Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time."
@@ -16666,10 +16686,35 @@ msgstr "Recommendations off"
 msgid "Recommendations on"
 msgstr "Recommendations on"
 
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Recommended"
 msgstr "Recommended"
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended for most libraries, with no difference you would notice while reading."
+msgstr "Recommended for most libraries, with no difference you would notice while reading."
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended if you read in Maki."
+msgstr "Recommended if you read in Maki."
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when apps like Mihon read your library."
+msgstr "Recommended when apps like Mihon read your library."
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when KOReader or an e-reader reads your library."
+msgstr "Recommended when KOReader or an e-reader reads your library."
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this browser cannot show JPEG XL."
+msgstr "Recommended, since this browser cannot show JPEG XL."
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this server cannot write JPEG XL."
+msgstr "Recommended, since this server cannot write JPEG XL."
 
 #: src/pages/HealthPage.tsx
 msgid "Record"
@@ -19256,6 +19301,10 @@ msgstr "Set up this site as a source"
 msgid "Set up trackers"
 msgstr "Set up trackers"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sets the targets for files no rule covers."
+msgstr "Sets the targets for files no rule covers."
+
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -20100,10 +20149,6 @@ msgstr "Sports"
 #: src/api/hooks.ts
 msgid "Spotlight"
 msgstr "Spotlight"
-
-#: src/components/pageconversion/ruleTemplates.ts
-msgid "Squeeze volumes harder"
-msgstr "Squeeze volumes harder"
 
 #: src/pages/HealthPage.tsx
 msgid "Stacked height"
@@ -23386,6 +23431,10 @@ msgstr "When the screen has room for them"
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "When to remove"
 msgstr "When to remove"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Where do you read?"
+msgstr "Where do you read?"
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "Where it appears"

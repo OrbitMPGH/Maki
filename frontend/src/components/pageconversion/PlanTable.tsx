@@ -15,6 +15,7 @@ import {
 import { formatBytes } from '../../format'
 import { FORMAT_LABELS, STOP_LABELS, useTargetLabel } from './labels'
 import type { PlanEstimate } from './PlanEstimate'
+import type { Recommendations } from './recommendation'
 import { CountLine, RuleEditor, useConditionsSummary } from './RuleEditor'
 import { toRuleDtos, type RuleDraft } from './ruleTemplates'
 import { TargetSheet } from './TargetSheet'
@@ -55,6 +56,7 @@ export function PlanTable({
   defaultBucket,
   countsStale,
   estimate,
+  recommendations,
   onSheetChange,
 }: {
   value: PageConversionSettings & { format: PageConversionFormat }
@@ -66,6 +68,7 @@ export function PlanTable({
   defaultBucket: ScopeBucket | undefined
   countsStale: boolean
   estimate: PlanEstimate
+  recommendations: Recommendations
   /** The sheet opened or closed, so the estimate can wait while targets are tuned. */
   onSheetChange: (open: boolean) => void
 }) {
@@ -188,6 +191,7 @@ export function PlanTable({
           kind={sheet.kind}
           target={sheet.kind === 'colour' ? sheetTargets.colour : sheetTargets.grey}
           fallback={sheetTargets.grey}
+          recommended={sheet.kind === 'colour' ? recommendations.colour : recommendations.grey}
           pngLossless={value.pngLossless}
           samplesRequest={sheet.request}
           onChange={(target) => setTarget(sheet.row, sheet.kind, target)}

@@ -72,7 +72,8 @@ public partial class PageConversionController(
 
     public record ParallelRequest(int? Limit);
 
-    public record StatusDto(SettingsDto Settings, PassDto Pass, LibraryDto Library, ParallelDto Parallel);
+    /// <param name="JpegXlAvailable">Whether libjxl loaded; without it a JPEG XL target is refused.</param>
+    public record StatusDto(SettingsDto Settings, PassDto Pass, LibraryDto Library, ParallelDto Parallel, bool JpegXlAvailable);
 
     [HttpGet]
     public async Task<IActionResult> Status(CancellationToken ct)
@@ -104,7 +105,8 @@ public partial class PageConversionController(
             new LibraryDto(convertedFiles, savedBytes, pending, queued, trashBytes, trashFiles,
                 options.TrashRetentionDays, ruleCount, overrideSeries),
             new ParallelDto(PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, ct)),
-                ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit)));
+                ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit),
+            JpegXlAvailable()));
     }
 
     /// <summary>Pages converted at once. Takes effect on the next page, so a running pass needs no restart.</summary>

@@ -17960,6 +17960,39 @@ button.series-title:hover {
 .pc-sheet-controls {
   min-width: 0;
 }
+.pc-rec-format {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pc-rec-tick {
+  flex: none;
+  color: var(--brand);
+}
+.pc-rec-line {
+  color: var(--brand-fg);
+  font-weight: var(--fw-semibold);
+}
+.pc-rec-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-strong);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.pc-rec-mark {
+  border-color: var(--brand-fg);
+}
+.pc-rec-mark-label {
+  display: flex;
+  color: var(--brand);
+  transform: translate(calc(-50% + var(--slider-size) / 2), calc(-100% - var(--slider-size) - 4px));
+}
 @media (max-width: 62em) {
   .pc-sheet {
     grid-template-columns: minmax(0, 1fr);

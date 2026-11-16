@@ -29,6 +29,10 @@ msgstr "- pomiń -"
 msgid "-2 (lowest) to 2 (emergency)."
 msgstr "Od -2 (najniższy priorytet) do 2 (alarmowy)."
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid ", recommended"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
@@ -1818,6 +1822,10 @@ msgstr "{folderLabel}: powiązano {linkedCount} z {linkTotal, plural, one {# pli
 msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{formatName} {stopName}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1864,6 +1872,10 @@ msgstr "{granted, plural, one {# uprawnienie} few {# uprawnienia} many {# uprawn
 #, fuzzy
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, one {# uprawnienie} few {# uprawnienia} many {# uprawnień} other {# uprawnienia}}"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{grey} for black-and-white, {colour} for colour"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5010,6 +5022,14 @@ msgstr "Usuń też pobrane pliki"
 msgid "Also for you"
 msgstr "Także dla Ciebie"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in apps like Mihon"
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Also in KOReader or on an e-reader"
+msgstr ""
+
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "Also known as"
@@ -8071,11 +8091,6 @@ msgstr "Konwersja stron"
 #, fuzzy
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
 msgstr "Konwersja nie zmniejszyłaby tej strony o co najmniej 5%, więc przebieg zostawia ją bez zmian."
-
-#: src/components/pageconversion/ruleTemplates.ts
-#, fuzzy
-msgid "Converts imported volumes at Balanced, where the biggest savings are."
-msgstr "Konwertuje zaimportowane tomy na poziomie Zrównoważone, gdzie oszczędności są największe."
 
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
@@ -18133,6 +18148,10 @@ msgstr "Tylko dla serii z pobranymi nieprzeczytanymi rozdziałami. Seria, na kt�
 msgid "Only for tagged series"
 msgstr "Tylko dla serii z tagiem"
 
+#: src/components/pageconversion/recommendation.ts
+msgid "Only in Maki"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time."
@@ -20503,11 +20522,36 @@ msgstr "Rekomendacje wyłączone"
 msgid "Recommendations on"
 msgstr "Rekomendacje włączone"
 
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Recommended"
 msgstr "Polecane"
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended for most libraries, with no difference you would notice while reading."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended if you read in Maki."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when apps like Mihon read your library."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended when KOReader or an e-reader reads your library."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this browser cannot show JPEG XL."
+msgstr ""
+
+#: src/components/pageconversion/recommendation.ts
+msgid "Recommended, since this server cannot write JPEG XL."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23681,6 +23725,10 @@ msgstr "Dodaj tę stronę jako źródło"
 msgid "Set up trackers"
 msgstr "Skonfiguruj trackery"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Sets the targets for files no rule covers."
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24718,11 +24766,6 @@ msgstr "Sport"
 #, fuzzy
 msgid "Spotlight"
 msgstr "Wyróżnione"
-
-#: src/components/pageconversion/ruleTemplates.ts
-#, fuzzy
-msgid "Squeeze volumes harder"
-msgstr "Mocniej ściskaj tomy"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -28770,6 +28813,10 @@ msgstr "Gdy na ekranie jest na nie miejsce"
 #, fuzzy
 msgid "When to remove"
 msgstr "Kiedy usuwać"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Where do you read?"
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button, Group, Menu, Modal, Skeleton, Stack, Switch, Text } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { IconArrowLeft, IconChevronDown, IconPlus } from '../lib/icons'
@@ -14,6 +14,7 @@ import {
   type PageConversionScopeRequest,
   type PageConversionSettings,
   type PageConversionStatus,
+  type PageTarget,
   type ScopeBucket,
 } from '../api/pageConversion'
 import { formatBytes, formatReadingTime } from '../format'
@@ -27,6 +28,17 @@ import {
   type PlanEstimate,
 } from '../components/pageconversion/PlanEstimate'
 import { SaveActions, planChanged } from '../components/pageconversion/SaveActions'
+import {
+  READING_PLACES,
+  READING_PLACE_LABELS,
+  placeOf,
+  recommendationsFor,
+  recommendedSettings,
+  useJpegXlGap,
+  type ReadingPlace,
+} from '../components/pageconversion/recommendation'
+import { FORMAT_LABELS, STOP_LABELS } from '../components/pageconversion/labels'
+import { SelectCards } from '../components/SelectCards'
 import { RULE_TEMPLATES, newRuleDraft, toRuleDraft, toRuleDtos, type RuleDraft } from '../components/pageconversion/ruleTemplates'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -111,7 +123,24 @@ function Plan({
   onDone: () => void
 }) {
   const { t } = useLingui()
+  const shortTarget = (target: PageTarget) => {
+    const formatName = t(FORMAT_LABELS[target.format])
+    const stopName = t(STOP_LABELS[target.stop])
+    return t`${formatName} ${stopName}`
+  }
   const [lastFormat, setLastFormat] = useState<PageConversionFormat>(value.format ?? 'webp')
+  const gap = useJpegXlGap(status.jpegXlAvailable)
+  const place = placeOf(value, gap)
+  const [pickedPlace, setPickedPlace] = useState<ReadingPlace | null>(null)
+  const recommendations = recommendationsFor(place ?? pickedPlace ?? 'maki', gap)
+  // Never set up before: the first switch-on fills in the recommendation instead of WebP High.
+  const seeded = useRef(
+    status.settings.format !== null || !!status.settings.colourStop || status.library.convertedFiles > 0,
+  )
+  const pickPlace = (next: ReadingPlace) => {
+    setPickedPlace(next)
+    onChange(recommendedSettings(next, gap))
+  }
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const estimate = usePlanEstimate(value, rules, sheetOpen)
@@ -161,8 +190,11 @@ function Plan({
               aria-label={t`Convert pages`}
               checked={!!format}
               onChange={(event) => {
-                if (event.currentTarget.checked) onChange({ format: lastFormat })
-                else {
+                if (event.currentTarget.checked) {
+                  if (seeded.current) onChange({ format: lastFormat })
+                  else pickPlace('maki')
+                  seeded.current = true
+                } else {
                   if (format) setLastFormat(format)
                   onChange({ format: null })
                 }
@@ -178,6 +210,30 @@ function Plan({
 
           {format && scopeRequest && (
             <>
+              <Stack gap={6}>
+                <Text size="sm" fw={600}>
+                  <Trans>Where do you read?</Trans>
+                </Text>
+                <SelectCards<ReadingPlace | ''>
+                  fillLeft
+                  cols={{ base: 1, sm: 3 }}
+                  value={place ?? ''}
+                  onChange={(next) => next && pickPlace(next)}
+                  options={READING_PLACES.map((option) => {
+                    const r = recommendationsFor(option, gap)
+                    const grey = shortTarget(r.grey.target)
+                    const colour = shortTarget(r.colour.target)
+                    return {
+                      value: option,
+                      title: t(READING_PLACE_LABELS[option]),
+                      subtitle: t`${grey} for black-and-white, ${colour} for colour`,
+                    }
+                  })}
+                />
+                <Text size="xs" c="var(--ink-3)">
+                  <Trans>Sets the targets for files no rule covers.</Trans>
+                </Text>
+              </Stack>
               <PlanTable
                 value={{ ...value, format }}
                 onChange={onChange}
@@ -188,6 +244,7 @@ function Plan({
                 defaultBucket={scope?.default}
                 countsStale={countsStale}
                 estimate={estimate}
+                recommendations={recommendations}
                 onSheetChange={setSheetOpen}
               />
 

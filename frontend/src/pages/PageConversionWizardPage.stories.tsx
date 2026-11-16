@@ -3,7 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { delay, http, HttpResponse } from 'msw'
 import { api } from '../../.storybook/mocks/api'
 import { settingsMsw } from '../../.storybook/mocks/settings'
-import { pageConversionIdle, pageConversionRunning } from '../../.storybook/mocks/settings/data'
+import { pageConversionIdle, pageConversionOff, pageConversionRunning } from '../../.storybook/mocks/settings/data'
 import {
   estimateFailed,
   estimateIdle,
@@ -229,7 +229,7 @@ export const SaveOnly: Story = {
     saved = null
     await userEvent.click(await canvas.findByRole('button', { name: chipName('Colour pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))
-    await userEvent.click(dialog.getByRole('radio', { name: 'AVIF' }))
+    await userEvent.click(dialog.getByRole('radio', { name: /^AVIF/ }))
     await userEvent.click(dialog.getByRole('button', { name: 'Done' }))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Save only' }))
@@ -237,6 +237,45 @@ export const SaveOnly: Story = {
     expect(saved!.settings).toMatchObject({ format: 'webp', stop: 'balanced', colourFormat: 'avif', colourStop: 'balanced' })
     expect(saved!.rules.map((r) => r.name)).toEqual(pageConversionRules.rules.map((r) => r.name))
     expect(saved!.rules[0]).toMatchObject({ id: 1 })
+  },
+}
+
+/** Never set up. Switching on fills in the recommendation for where the library is read. */
+export const NeverSetUp: Story = {
+  parameters: {
+    msw: settingsMsw(
+      noRules,
+      http.get(api('/pageconversion'), () => HttpResponse.json({ ...pageConversionOff, jpegXlAvailable: true })),
+    ),
+  },
+}
+
+/** Never set up, on a server without libjxl so the colour pick does not depend on the test browser. */
+export const FirstSwitchOnRecommends: Story = {
+  parameters: {
+    msw: settingsMsw(
+      noRules,
+      http.get(api('/pageconversion'), () => HttpResponse.json({ ...pageConversionOff, jpegXlAvailable: false })),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Convert pages' }))
+    await expect(chip(canvas, 'Black-and-white pages, Everything else')).toHaveTextContent('AVIFCompact')
+    await expect(chip(canvas, 'Colour pages, Everything else')).toHaveTextContent('AVIFHigh')
+    await expect(canvas.getByRole('button', { name: /^Only in Maki/ })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(canvas.getByRole('button', { name: /^Also in KOReader/ }))
+    await expect(chip(canvas, 'Black-and-white pages, Everything else')).toHaveTextContent('WebPCompact')
+    await expect(chip(canvas, 'Colour pages, Everything else')).toHaveTextContent('WebPHigh')
+
+    await userEvent.click(chip(canvas, 'Colour pages, Everything else'))
+    const dialog = within(await body(canvasElement).findByRole('dialog'))
+    await expect(dialog.getByRole('radio', { name: /^WebP.*recommended$/ })).toBeChecked()
+    await expect(dialog.getByText('Recommended when KOReader or an e-reader reads your library.')).toBeVisible()
+    await userEvent.click(dialog.getByRole('radio', { name: 'AVIF' }))
+    await expect(dialog.queryByText('Recommended when KOReader or an e-reader reads your library.')).toBeNull()
+    await userEvent.click(dialog.getByRole('button', { name: 'Done' }))
+    await expect(canvas.getByRole('button', { name: /^Also in KOReader/ })).toHaveAttribute('aria-pressed', 'false')
   },
 }
 
