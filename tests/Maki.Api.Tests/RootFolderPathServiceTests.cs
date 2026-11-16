@@ -132,6 +132,46 @@ public sealed class RootFolderPathServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_conversion_running_on_a_file_in_the_root_blocks_the_save()
+    {
+        var root = SeedRoot(_old);
+        var elsewhere = SeedRoot(Path.Combine(_tmp, "other"));
+        var series = SeedSeriesIn(root, "Berserk");
+        var other = SeedSeriesIn(elsewhere, "Monster");
+        int FileIn(int seriesId)
+        {
+            using var seed = _db.NewContext();
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = "x/v01.cbz", Size = 1 };
+            seed.ChapterFiles.Add(file);
+            seed.SaveChanges();
+            return file.Id;
+        }
+
+        var converting = FileIn(series);
+        var unrelated = FileIn(other);
+
+        using var db = _db.NewContext();
+        var idle = await Service(db).CheckAsync(root, _new, default);
+        Assert.Empty(idle.Check!.Busy);
+
+        var withConversion = new RootFolderPathService(db, new SeriesBulkOperations(),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), new FakeAppSettings())
+        {
+            ConvertingFileId = () => converting
+        };
+        var outcome = await withConversion.ApplyAsync(root, _new, default);
+        Assert.Equal(["conversions"], outcome.Check!.Busy);
+        Assert.Equal(_old, db.RootFolders.AsNoTracking().Single(r => r.Id == root).Path);
+
+        var elsewhereOnly = new RootFolderPathService(db, new SeriesBulkOperations(),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), new FakeAppSettings())
+        {
+            ConvertingFileId = () => unrelated
+        };
+        Assert.Empty((await elsewhereOnly.CheckAsync(root, _new, default)).Check!.Busy);
+    }
+
+    [Fact]
     public async Task Saving_rewrites_the_root_and_its_recycle_bin_entries_only()
     {
         var root = SeedRoot(_old);

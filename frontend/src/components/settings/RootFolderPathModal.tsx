@@ -24,6 +24,8 @@ function BusyNote({ code }: { code: RootFolderPathCheck['busy'][number] }) {
       return <Trans>A bulk move, rename or rescan is running.</Trans>
     case 'scans':
       return <Trans>A health scan or repair is running in this folder.</Trans>
+    case 'conversions':
+      return <Trans>Page conversion is rewriting a file in this folder.</Trans>
   }
 }
 

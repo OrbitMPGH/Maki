@@ -17958,6 +17958,10 @@ msgstr ""
 msgid "Page conversion"
 msgstr "페이지 변환"
 
+#: src/components/settings/RootFolderPathModal.tsx
+msgid "Page conversion is rewriting a file in this folder."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy

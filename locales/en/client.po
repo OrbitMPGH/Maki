@@ -15135,6 +15135,10 @@ msgstr "page background, white, grey, gray, auto background, page colour"
 msgid "Page conversion"
 msgstr "Page conversion"
 
+#: src/components/settings/RootFolderPathModal.tsx
+msgid "Page conversion is rewriting a file in this folder."
+msgstr "Page conversion is rewriting a file in this folder."
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"

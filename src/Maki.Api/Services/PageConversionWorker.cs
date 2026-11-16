@@ -89,6 +89,7 @@ public class PageConversionWorker(
     private PageConversionPassTotals? _current;
     private string? _currentFile;
     private (string Path, DateTime StartedAtUtc)? _working;
+    private int? _workingFileId;
     private PageConversionHold _hold;
 
     // Bumped by every start and pause, so a run that outlives one (busy on a file while the wizard
@@ -109,6 +110,18 @@ public class PageConversionWorker(
             lock (_sync)
             {
                 return _working;
+            }
+        }
+    }
+
+    /// <summary>The id of the file being converted right now, or null.</summary>
+    public int? WorkingFileId
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _workingFileId;
             }
         }
     }
@@ -345,7 +358,7 @@ public class PageConversionWorker(
                     {
                         if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                         using var fileScope = scopes.CreateScope();
-                        using var converting = Converting(file.RelativePath);
+                        using var converting = Converting(file.Id, file.RelativePath);
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                             .ConvertAsync(file.Id, plan, cache, ct);
                     }
@@ -467,7 +480,7 @@ public class PageConversionWorker(
                 {
                     if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                     using var fileScope = scopes.CreateScope();
-                    using var converting = Converting(file.RelativePath);
+                    using var converting = Converting(file.Id, file.RelativePath);
                     result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                         .ConvertAsync(file.Id, plan, cache, ct, queued: true);
                 }
@@ -490,11 +503,12 @@ public class PageConversionWorker(
         }
     }
 
-    private Releaser Converting(string path)
+    private Releaser Converting(int fileId, string path)
     {
         lock (_sync)
         {
             _working = (path, DateTime.UtcNow);
+            _workingFileId = fileId;
         }
 
         return new Releaser(this);
@@ -507,6 +521,7 @@ public class PageConversionWorker(
             lock (worker._sync)
             {
                 worker._working = null;
+                worker._workingFileId = null;
             }
         }
     }

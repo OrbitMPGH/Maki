@@ -8,7 +8,7 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// What pointing a root folder at a new path would find. <c>Busy</c> and <c>Warnings</c> are codes the
-/// client words: busy is <c>downloads</c>, <c>imports</c>, <c>moves</c> or <c>scans</c>; a warning is
+/// client words: busy is <c>downloads</c>, <c>imports</c>, <c>moves</c>, <c>scans</c> or <c>conversions</c>; a warning is
 /// <c>kavitaPathMap</c>, <c>downloadPathMap</c> or <c>overlapsRoot</c>.
 /// </summary>
 public sealed record RootFolderPathCheck(
@@ -36,8 +36,12 @@ public sealed record RootFolderPathOutcome(
 /// binned from. Nothing on disk is moved: the files must already be at the new path.
 /// </summary>
 public sealed class RootFolderPathService(
-    MakiDbContext db, SeriesBulkOperations bulk, ReaderArchiveCache archives, IAppSettings settings)
+    MakiDbContext db, SeriesBulkOperations bulk, ReaderArchiveCache archives, IAppSettings settings,
+    PageConversionWorker? conversions = null)
 {
+    /// <summary>The file page conversion is rewriting now; it holds an absolute path under the old root.</summary>
+    internal Func<int?> ConvertingFileId { get; init; } = () => conversions?.WorkingFileId;
+
     private const int MissingShown = 20;
 
     private static readonly QueueStatus[] Working =
@@ -196,6 +200,12 @@ public sealed class RootFolderPathService(
                 && o.Status != "cancelled" && files.Any(f => f.Id == o.FileId), ct))
         {
             busy.Add("scans");
+        }
+
+        if (ConvertingFileId() is { } converting &&
+            await db.ChapterFiles.IgnoreQueryFilters().AnyAsync(f => f.Id == converting && series.Any(s => s.Id == f.SeriesId), ct))
+        {
+            busy.Add("conversions");
         }
 
         return busy;

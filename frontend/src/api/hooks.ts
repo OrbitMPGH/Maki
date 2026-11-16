@@ -4693,7 +4693,7 @@ export interface RootFolderPathCheck {
   foldersFound: number
   foldersMissing: number
   missingFolders: string[]
-  busy: ('downloads' | 'imports' | 'moves' | 'scans')[]
+  busy: ('downloads' | 'imports' | 'moves' | 'scans' | 'conversions')[]
   warnings: ('kavitaPathMap' | 'downloadPathMap' | 'overlapsRoot')[]
 }
 
