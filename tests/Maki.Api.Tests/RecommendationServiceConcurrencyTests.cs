@@ -53,7 +53,7 @@ public class RecommendationServiceConcurrencyTests : IDisposable
             IReadOnlyDictionary<long, double>? seedWeights = null,
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-            bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref _scans);

@@ -69,7 +69,7 @@ public class SemanticRecommender(
     /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
 
-    /// <summary>Off unless both a cache and a positive weight are passed, which only the eval does.</summary>
+    /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly EaseTuning _easeTuning = easeTuning ?? EaseTuning.Default;
 
 
@@ -284,6 +284,12 @@ public class SemanticRecommender(
     /// modes, published and installed independently, and an install can easily have one and not the
     /// other. A single flag would make "turn off the noisy one" impossible to express.
     /// </param>
+    /// <param name="ease">
+    /// Whether the readers-also-finished table (<see cref="EaseCache"/>) may contribute. Personal
+    /// recommendations pass the instance switch; the series page's rail passes false, since it is a
+    /// claim about two works rather than about a reader. Off also when no cache was passed or the
+    /// tuned weight is 0.
+    /// </param>
     /// <param name="avoidWeights">
     /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
     /// Scanned as extra queries in the same pass, and each candidate's best strength-weighted
@@ -309,7 +315,7 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? seedWeights = null,
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
@@ -323,7 +329,7 @@ public class SemanticRecommender(
         // vector index instead of after it. The awaits further down join these same loads.
         Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
         Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
-        var easeLive = easeCache is not null && _easeTuning.Weight > 0;
+        var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0;
         Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
         var index = await cache.GetAsync(ct);
@@ -762,6 +768,12 @@ public class SemanticRecommender(
         var coReadSeedsByRow = coReadSeedByRow.Count > 0 && winners.Any(c => c.CoRead)
             ? await CoReadSeedsForAsync(index, winners.Where(c => c.CoRead).ToList(), seedIds, seedWeights, ct)
             : [];
+        if (easeByRow.Count > 0)
+        {
+            winners = await AttributeEaseAsync(
+                index, winners, easeByRow, coReadSeedByRow, coReadSeedsByRow, seedIds, seedWeights, ct);
+        }
+
         var results = await HydrateAsync(
             conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
             cutoff, coReadSeedByRow, feelQueriesByRow, coReadSeedsByRow, ct);
@@ -2024,6 +2036,55 @@ public class SemanticRecommender(
         }
 
         return byRow;
+    }
+
+    /// <summary>
+    /// Gives a pick the EASE table pushed up the co-read card reason, "Readers who finished X also
+    /// finished this", naming the seed with the largest positive weighted weight. That is literally
+    /// what the table measures (it is fitted on finished lists), so no new wording is needed. Only
+    /// picks with no co-read reason of their own, and only where some seed weighs them up: a row the
+    /// table scores at or below zero keeps whatever reason it had. Rewrites the reason fields only,
+    /// never the order or the score.
+    /// </summary>
+    private async Task<List<Candidate>> AttributeEaseAsync(
+        VectorIndex index,
+        List<Candidate> winners,
+        Dictionary<int, double> easeByRow,
+        Dictionary<int, long> coReadSeedByRow,
+        Dictionary<int, List<long>> coReadSeedsByRow,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var unexplained = winners
+            .Where(c => !c.CoRead && easeByRow.GetValueOrDefault(c.Row) > 0)
+            .ToDictionary(c => index.IdAt(c.Row), c => c.Row);
+        if (unexplained.Count == 0 || await easeCache!.GetAsync(ct) is not { } table)
+        {
+            return winners;
+        }
+
+        var seedsById = EaseScorer.SeedsFor(table, seedIds, seedWeights, unexplained.Keys.ToHashSet());
+        if (seedsById.Count == 0)
+        {
+            return winners;
+        }
+
+        var attributed = new HashSet<int>();
+        foreach (var (id, seeds) in seedsById)
+        {
+            if (seeds.Count == 0)
+            {
+                continue;
+            }
+
+            var row = unexplained[id];
+            coReadSeedByRow[row] = seeds[0];
+            coReadSeedsByRow[row] = seeds;
+            attributed.Add(row);
+        }
+
+        return [.. winners.Select(c => attributed.Contains(c.Row) ? c with { CoRead = true } : c)];
     }
 
     /// <summary>

@@ -18,6 +18,7 @@ using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
@@ -65,6 +66,8 @@ public class SettingsController(
     RecoGraphCache recoGraphCache,
     CoReadInstaller coReadInstaller,
     CoReadCache coReadCache,
+    EaseInstaller easeInstaller,
+    EaseCache easeCache,
     ReaderCohortInstaller readerCohortInstaller,
     ReaderCohortCache readerCohortCache,
     TasteVectorInstaller tasteVectorInstaller,
@@ -2359,6 +2362,58 @@ public class SettingsController(
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
+    }
+
+    public record EaseStatus(bool Enabled, bool Installed, int SeedCount, int WeightCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether personal recommendations may use the EASE table (what readers who finished one series
+    /// also finished, fitted on AniList reading lists) and whether the artifact is here. On by
+    /// default, own endpoint like co-read's, and no UI, same as the other crowd switches.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/ease")]
+    public async Task<IActionResult> GetEase(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsEase, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var table = enabled ? await easeCache.GetAsync(ct) : null;
+        return Ok(new EaseStatus(
+            enabled,
+            table is not null || (!enabled && System.IO.File.Exists(easeCache.DatabasePath)),
+            table?.Count ?? 0,
+            table?.WeightCount ?? 0,
+            table?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the EASE channel off, leaving every other channel alone. Takes effect on the next
+    /// uncached pool, since the flag is part of the cache key; off also stops the download and,
+    /// once the idle unload runs, frees the table.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/ease")]
+    public async Task<IActionResult> SetEase(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsEase, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the EASE table now, ignoring the freshness check but not the compatibility or
+    /// safety ones. Runs inline so the caller sees exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/ease/download")]
+    public async Task<IActionResult> DownloadEase(CancellationToken ct)
+    {
+        var result = await easeInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), weightCount = result.WeightCount });
     }
 
     public record ReaderCohortStatus(

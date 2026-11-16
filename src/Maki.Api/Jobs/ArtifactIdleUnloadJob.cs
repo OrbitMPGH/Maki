@@ -2,6 +2,7 @@ using Maki.Core.Io;
 using Maki.Core.Sources;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
@@ -49,6 +50,7 @@ public class ArtifactIdleUnloadJob(
     CatalogueIndexCache catalogue,
     VectorIndexCache vectors,
     CoReadCache coRead,
+    EaseCache ease,
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
     SourceChapterListCache chapterLists,
@@ -83,6 +85,7 @@ public class ArtifactIdleUnloadJob(
             var idleFor = TimeSpan.FromMinutes(minutes);
             released += catalogue.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += coRead.ReleaseIfIdle(idleFor) ? 1 : 0;
+            released += ease.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += recoGraph.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += cohorts.ReleaseIfIdle(idleFor) ? 1 : 0;
         }

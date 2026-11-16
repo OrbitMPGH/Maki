@@ -160,6 +160,7 @@ public class SimilarSeriesService(
                     coGraph: false,
                     coRead: false,
                     taste: taste,
+                    ease: false,
                     ct: ct);
 
                 // The card reads TasteMatch as "Close to your taste". This pool is shared by every

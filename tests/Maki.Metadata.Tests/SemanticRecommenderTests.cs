@@ -773,7 +773,7 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
-    public async Task TheEaseChannel_ChangesNothing_WithoutATableOrAtTheDefaultWeight()
+    public async Task TheEaseChannel_ChangesNothing_WithoutATable_AtWeightZero_OrSwitchedOffPerCall()
     {
         Add(1, "Seed");
         Add(2, "Second seed");
@@ -795,10 +795,44 @@ public class SemanticRecommenderTests : IDisposable
         var absent = Json(await Recommender(
                 easePath: Path.Combine(_dir, "absent-ease.db"), easeTuning: EaseTuning.Default with { Weight = 2 })
             .GetSimilarAsync([1, 2], [], limit: 5));
-        var defaultWeight = Json(await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5));
+        var zeroWeight = Json(await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 0 })
+            .GetSimilarAsync([1, 2], [], limit: 5));
+        var switchedOff = Json(await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5, ease: false));
 
         Assert.Equal(baseline, absent);
-        Assert.Equal(baseline, defaultWeight);
+        Assert.Equal(baseline, zeroWeight);
+        Assert.Equal(baseline, switchedOff);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_RunsAtTheShippedWeight_AndExplainsItsPickWithTheSeedThatPushedIt()
+    {
+        Add(1, "Seed");
+        Add(2, "Other seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.3f)),
+        ]);
+        var table = WriteEase((1, 11, 0.02f), (2, 11, 0.08f), (1, 12, -0.08f));
+
+        var off = await Recommender().GetSimilarAsync([1, 2], [], limit: 5);
+        var on = await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5);
+
+        Assert.NotEqual(off.Select(p => p.ProviderId), on.Select(p => p.ProviderId));
+        Assert.Equal("11", on[0].ProviderId);
+        var pick = on[0];
+        Assert.True(pick.CoRead);
+        Assert.Equal("Other seed", pick.CoReadWithTitle);
+        Assert.Equal("2", pick.CoReadWithId);
+        Assert.Equal(["2", "1"], pick.CoReadSeeds!.Select(s => s.Id));
+        Assert.False(on.Single(p => p.ProviderId == "12").CoRead);
     }
 
     [Fact]

@@ -36,6 +36,7 @@ public class SimilarSeriesServiceTests
         public bool LastCoGraph = true;
         public bool LastCoRead = true;
         public bool LastTaste = true;
+        public bool LastEase = true;
 
         public string? Stamp;
 
@@ -49,7 +50,7 @@ public class SimilarSeriesServiceTests
             IReadOnlyDictionary<long, double>? seedWeights = null,
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-            bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
@@ -58,6 +59,7 @@ public class SimilarSeriesServiceTests
             LastCoGraph = coGraph;
             LastCoRead = coRead;
             LastTaste = taste;
+            LastEase = ease;
             if (Gate is not null)
             {
                 await Gate.Task;
@@ -86,6 +88,21 @@ public class SimilarSeriesServiceTests
         Assert.False(recommender.LastCoGraph);
         Assert.False(recommender.LastCoRead);
         Assert.True(recommender.LastTaste);
+    }
+
+    [Fact]
+    public async Task The_rail_never_runs_the_also_finished_table()
+    {
+        // The table is fitted on reading lists, the same "who else read this" evidence as the pair
+        // graphs, and it shipped for personal recommendations only. Its instance switch being on
+        // must not reach the rail.
+        var recommender = new CountingRecommender();
+        var settings = new FakeAppSettings();
+        await settings.SetAsync(SettingKeys.RecommendationsEase, "true");
+
+        await Service(recommender, settings).GetAsync(1, ["safe"]);
+
+        Assert.False(recommender.LastEase);
     }
 
     [Fact]

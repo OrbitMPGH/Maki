@@ -78,6 +78,83 @@ public class EaseTests : IDisposable
     }
 
     [Fact]
+    public void Build_SortsUnorderedRows_AndKeepsTheFirstOfADuplicatePair()
+    {
+        var table = EaseTable.Build([(2, 20, 0.1f), (1, 11, 0.3f), (1, 10, 0.2f), (1, 11, 0.9f), (3, 3, 1f), (2, 21, 0f)]);
+
+        Assert.Equal(2, table.Count);
+        Assert.Equal(3, table.WeightCount);
+        Assert.True(table.TryGetSeed(1, out var seed));
+        Assert.Equal([10L, 11L], table.TargetsAt(seed).ToArray());
+        Assert.Equal(0.3f, table.WeightOf(seed, 11));
+        Assert.Equal(0f, table.WeightOf(seed, 99));
+    }
+
+    [Fact]
+    public void SeedsFor_NamesOnlySeedsThatPushAPickUp_StrongestWeightedFirst()
+    {
+        var table = EaseTable.Build([(1, 10, 0.2f), (2, 10, 0.3f), (3, 10, -0.5f), (1, 11, 0.1f)]);
+
+        var plain = EaseScorer.SeedsFor(table, [1, 2, 3], null, new HashSet<long> { 10, 11 });
+        var weighted = EaseScorer.SeedsFor(
+            table, [1, 2, 3], new Dictionary<long, double> { [1] = 2.0 }, new HashSet<long> { 10 });
+
+        Assert.Equal([2L, 1L], plain[10]);
+        Assert.Equal([1L], plain[11]);
+        Assert.Equal([1L, 2L], weighted[10]);
+    }
+
+    [Fact]
+    public async Task TheCache_ReloadsFromItsSnapshot_AndUnloadsWhenIdle()
+    {
+        var path = Path.Combine(_dir, "ease-table.db");
+        using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE weight (seed_id INTEGER, item_id INTEGER, weight REAL, PRIMARY KEY (seed_id, item_id)) WITHOUT ROWID;
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO weight VALUES (1, 10, 0.4), (1, 11, -0.2), (2, 10, 0.1);
+                INSERT INTO meta VALUES ('generatedAt', '2026-11-15T20:39:26.958305+00:00');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var first = new EaseCache(new EaseOptions(path), NullLogger<EaseCache>.Instance);
+        var built = await first.GetAsync();
+        Assert.NotNull(built);
+        await first.SnapshotSavedForTest;
+        Assert.True(File.Exists(first.SnapshotPath));
+        Assert.True(first.IsLoaded);
+        Assert.True(first.ReleaseIfIdle(TimeSpan.Zero));
+        Assert.False(first.IsLoaded);
+
+        var second = new EaseCache(new EaseOptions(path), NullLogger<EaseCache>.Instance);
+        var reloaded = await second.GetAsync();
+        Assert.NotNull(reloaded);
+        Assert.Equal(built.WeightCount, reloaded.WeightCount);
+        Assert.Equal(built.GeneratedAt, reloaded.GeneratedAt);
+        Assert.Equal(
+            EaseScorer.Score(built, [1, 2], null, EaseTuning.Default),
+            EaseScorer.Score(reloaded, [1, 2], null, EaseTuning.Default));
+
+        second.Invalidate();
+        Assert.False(File.Exists(second.SnapshotPath));
+        reloaded = null;
+        built = null;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+    }
+
+    [Fact]
+    public void TheShippedWeight_IsFour()
+    {
+        Assert.Equal(4, EaseTuning.Default.Weight);
+    }
+
+    [Fact]
     public void TheFoldInSolver_SolvesASymmetricPositiveDefiniteSystem()
     {
         double[] a = [4, 2, 0, 2, 5, 1, 0, 1, 3];
@@ -100,6 +177,9 @@ public class EaseTests : IDisposable
             Directory.Delete(_dir, recursive: true);
         }
         catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
         {
         }
     }

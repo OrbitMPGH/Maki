@@ -65,6 +65,13 @@ public class AppPaths
     public string TasteVectorsDbPath => Path.Combine(ConfigDir, "taste-vectors.db");
 
     /// <summary>
+    /// The EASE "readers who finished X also finished Y" weight table. Absent is the normal state:
+    /// the channel then contributes nothing. Like the other reading-list artifacts it never holds a
+    /// per-user row.
+    /// </summary>
+    public string EaseDbPath => Path.Combine(ConfigDir, "ease-table.db");
+
+    /// <summary>
     /// The reader-cohort aggregates. Never <c>coread-graph.db</c>, which is the fetcher's working
     /// state and holds per-user reading data; this file has no user axis at all. Absent is the
     /// normal state: the hint does not render, the rail returns nothing and the taste page falls

@@ -815,6 +815,23 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsReaderCohortsGeneratedAt = "recommendations.readercohortsgeneratedat";
 
+    /// <summary>
+    /// Kill switch for the EASE channel (the "readers who finished X also finished Y" weight table,
+    /// <c>ease-table.db</c>), the same shape as <see cref="RecommendationsCoRead"/>: default on, no
+    /// UI, read per uncached request and folded into the pool cache key. Off means no download, no
+    /// load and no scoring.
+    /// </summary>
+    public const string RecommendationsEase = "recommendations.ease";
+
+    /// <summary>Manifest the EASE table is downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsEaseUrl = "recommendations.easeurl";
+
+    /// <summary>
+    /// The installer's own record of what it put on disk, never read back out of the file, so a
+    /// hand-placed table is replaced by the first download rather than mistaken for a current one.
+    /// </summary>
+    public const string RecommendationsEaseGeneratedAt = "recommendations.easegeneratedat";
+
     /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
     /// <see cref="RecommendationsCoGraphUrl"/>.</summary>
     public const string RecommendationsCoReadUrl = "recommendations.coreadurl";

@@ -2,9 +2,9 @@ namespace Maki.Metadata.Ease;
 
 /// <summary>
 /// The knobs behind the EASE channel, a signed item-item table fitted on AniList reading lists
-/// (<see cref="EaseScorer"/>). Measurement only: nothing in the app constructs an
-/// <see cref="EaseCache"/>, and <see cref="Weight"/> ships at 0, so every result is what it was
-/// before the channel existed. <c>distribution/CLAUDE.md</c> has the numbers.
+/// (<see cref="EaseScorer"/>, artifact <c>ease-table.db</c>, kill switch
+/// <c>recommendations.ease</c>). It runs on personal recommendations only: the series page's "More
+/// like this" passes <c>ease: false</c>. <c>distribution/CLAUDE.md</c> has the numbers.
 /// </summary>
 public sealed record EaseTuning
 {
@@ -12,9 +12,10 @@ public sealed record EaseTuning
 
     /// <summary>
     /// The channel's coefficient in <c>EmbeddingMath.HybridScore</c>, against a score whose best
-    /// candidate is 1. 0 switches the channel off entirely.
+    /// candidate is 1. 0 switches the channel off entirely. Ships at 4: +0.083 nDCG@40 on held-out
+    /// readers, neutral at one and three seeds, and a measured lean toward better-known titles.
     /// </summary>
-    public double Weight { get; init; }
+    public double Weight { get; init; } = 4;
 
     /// <summary>
     /// Whether negative weights count. On is what the research measured best: readers who finished
