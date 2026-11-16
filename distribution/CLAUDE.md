@@ -893,3 +893,30 @@ Grid, logs and the invocation (`run-grid.sh`) are in `research/recommender/2026-
 - **Shipped, and confirmed on the holdout panel.** `SimilarSeriesService` passes `coGraph` from `recommendations.cograph` (in its cache key beside the taste switch), `graphWeight: SingleSeedWeight`, and `coRead` and `ease` as `false`. A vote is a reader saying "if you liked this, try that", a claim about two works, which is what "More like this" says; co-read and EASE are "who else read this" and stay off. The service clears `CoRecommended` as well as `TasteMatch`, because the card prints it as "Readers like you also recommended this" and the pool is shared by every viewer. A cached pool also goes stale when the vote graph is installed or replaced (`RecoGraphCache.Generation`), so a page opened before the graph's first download does not keep a rail without votes for twelve hours. This replaces the "taste vectors only" call two sections up. The eval's `rail` is the new rail, `railtaste` the one before it, `railcontent` the one before that; on the dev panel they score 1.654, 1.567 and 1.448. The holdout set's one look (100 seeds, every pick judged, 1,201 pairs, about $4): `rail` 1.740 against `railtaste` 1.679, paired **+0.0616 [+0.0396, +0.0851]**, good picks 66% against 61%, poor 1% each, `pop` 8,297 against 8,374, top-1k 20% against 19%. By band: top 1k 1.980 against 1.860, 1k to 5k 1.709 against 1.656, 5k to 20k 1.665 against 1.605, past 20k 1.607 against 1.595. The holdout pairs are judged now, so a later look at that set is no longer a first look.
 - **Under `--labels reco` the eval's `rail` equals `railtaste`.** The leakage guard switches the vote channel off for any variant that runs it when the labels are the vote graph itself, and prints a note. The suite's reco steps therefore do not grade the shipped rail; mu-human and the panel do.
 - **Not done:** fitting the other weights for one seed on the judged pairs; the two-row "Reads alike / Readers also" design; a check on a running instance.
+
+## v7: the EASE table is popularity-damped, after it turned a real page into a chart of hits
+
+Scripts, logs and the probe are in `research/recommender/2026-11-15-v7/step6-fame/` in the main checkout.
+
+- **What went wrong.** The day the channel merged, the owner's Recommended tab went from niche romcoms to cross-genre hits (SPY x FAMILY, One-Punch Man, Frieren), nearly every card "Fans of X". Raw EASE weights favour whatever many readers finished, the popular seeds on a mixed shelf all point at the same hits, and at weight 4 the channel outvotes the content and taste channels. The section above reported top-1k share 48% to 56% and called it a lean. On a shelf that is partly niche it is the whole page.
+- **Why the grader did not object.** `library` mode hides part of real readers' lists. Those lists are mostly popular series, so a channel that pushes popular series finds more of them. The `pop` and `top1k` columns said so and were read as a side note. **On a reader grader a gain that moves `top1k` up is not a gain until the same gain is shown at the old `top1k`.**
+- **The fix is in the table, not the app.** `build-ease-table.py --pop-damp d` divides each candidate's column of B by (its completers / the median completers) ** d before the top 100 per seed are kept, and records `meta.popDamp`. The default is 0.35. Held-out readers, fold 0 of 4, dev, 500 libraries, weight 4 unless said:
+
+  | table | nDCG@40 | paired vs no EASE | pop | top1k |
+  |---|---|---|---|---|
+  | no EASE | 0.199 | - | 1,125 | 48% |
+  | damp 0 (what shipped first) | 0.283 | +0.0834 | 727 | 56% |
+  | damp 0, weight 2 | 0.264 | | 821 | 55% |
+  | damp 0, weight 1 | 0.243 | | 883 | 53% |
+  | damp 0.25 | 0.283 | +0.0844 [+0.0764, +0.0925] | 1,166 | 49% |
+  | damp 0.35 (ships) | 0.277 | +0.0782 [+0.0702, +0.0862] | 1,481 | 45% |
+  | damp 0.5 | 0.253 | | 2,249 | 38% |
+  | damp 0.5, weight 8 | 0.246 | | 3,191 | 33% |
+  | damp 1.0 | 0.155 | below no EASE | 6,274 | 30% |
+
+  Damp 0.35 against damp 0 is -0.0053 [-0.0106, -0.0001]; damp 0.25 against damp 0 is +0.0010 and spans zero. One look at the confirm split for 0.35: 0.306 against 0.222 without the channel, +0.0842 [+0.0757, +0.0925], `pop` 1,166 against 892 and top-1k 46% against 51%; against damp 0 it is -0.0039 [-0.0096, +0.0017].
+- **Lowering the weight does not fix it.** At weight 1 the top-1k share is still 53% and most of the gain is gone. The skew is in which candidates the table prefers, so the coefficient only scales it.
+- **0.35 and not 0.25.** 0.25 keeps the whole gain at the fame level the engine had without the channel. 0.35 gives up half a hundredth and returns picks less mainstream than before the channel existed. The complaint was fame and the grader is biased toward fame, so the choice leans away from it. Past 0.5 the gain goes, and at 1.0 the channel is worse than nothing.
+- **On a mixed shelf.** `.simulated` restricted to seeds past popularity rank 500 (82 seeds, 19% of them top-1k), top 40 (`step6-fame/probe.cs`): no EASE `pop` 1,655 and 40% top-1k; damp 0 1,012 and 50%; damp 0.35 1,681 and 40%. The whole simulated shelf is nearly half top-1k seeds and saturates: 85% top-1k without the channel and 97 to 100% with any table, so it cannot show this failure and a shelf like it would not have caught it.
+- **Published** on `ease-table-latest` the same day (13.1 MB, 2,000,000 weights, 20,179 readers, `popDamp` 0.35). No released version reads that tag yet, since v0.37.0 predates the channel. `.simulated/ease-table.db` is the published table. A fold-limited table for `library` mode has to be rebuilt with the same damp, or `default` grades a table nobody ships: `.artifacts/ease-work/ease-fold0.db` is the undamped one and `ease-fold0-d0.35.db` the damped one.
+- **Still unmeasured:** judged feel at two or more seeds, because the panel is single-seed. About half the page is still picks the channel brought in.

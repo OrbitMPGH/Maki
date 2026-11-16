@@ -9,6 +9,13 @@ binary reader x item matrix of COMPLETED rows. B[i, j] is how much having finish
 and it is signed: a negative weight says readers who finished i tend not to finish j. A seed set
 scores a candidate j as the sum of B[s, j] over its seeds.
 
+Raw B favours whatever many readers finished, and inside the blend that turned a personal page
+into a chart of hits. So each candidate's column is divided by (its completers / the median
+completers) ** --pop-damp before anything is kept. 0.35 keeps the held-out gain (nDCG@40 0.277
+against 0.283 undamped and 0.199 without the channel) with picks less mainstream than without the
+channel; 0 is the raw table, 1 loses the gain (distribution/CLAUDE.md, "v7: the EASE table is
+popularity-damped").
+
 The dense B is items x items, so the artifact keeps each seed row's top N weights by ABSOLUTE value.
 Dropping the negatives instead costs three times as much on held-out readers and makes the picks
 much more famous (research/recommender/2026-11-15-v7/exp-behaviour/report.md in the main checkout).
@@ -69,6 +76,8 @@ def main():
     p.add_argument("--items", type=int, default=20000, help="most-completed items kept")
     p.add_argument("--lam", type=float, default=300.0)
     p.add_argument("--top", type=int, default=100, help="weights kept per seed, by absolute value")
+    p.add_argument("--pop-damp", type=float, default=0.35,
+                   help="divide each candidate's column by (completers / median completers) ** this")
     p.add_argument("--min-reader-entries", type=int, default=300,
                    help="floor on a reader's whole list, every status, as build-taste-vectors.cs")
     a = p.parse_args()
@@ -154,6 +163,11 @@ def main():
     # B = -P / diag(P) column-wise, zero diagonal. Row i is seed i.
     P /= -d[None, :]
     P[np.diag_indices(n)] = 0.0
+    if a.pop_damp > 0:
+        completers = counts[top].astype(np.float64)
+        scale = (completers / np.median(completers)) ** -a.pop_damp
+        P *= scale[None, :].astype(np.float32)
+        log(f"pop damp {a.pop_damp:g}: column scale {scale.min():.3f} to {scale.max():.3f}")
     P = np.ascontiguousarray(P)
     log(f"solve done ({time.time() - t:.0f}s)")
 
@@ -197,6 +211,7 @@ def main():
         "trainingFold": trained_on,
         "statuses": "COMPLETED",
         "lambda": f"{a.lam:g}",
+        "popDamp": f"{a.pop_damp:g}",
         "topPerItem": str(k),
         "minReaderEntries": str(a.min_reader_entries),
         "source": "anilist-lists-ease",
