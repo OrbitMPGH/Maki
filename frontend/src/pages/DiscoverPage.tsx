@@ -7,12 +7,9 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import {
   ActionIcon,
   Button,
-  Collapse,
   Group,
   Menu,
   Modal,
-  MultiSelect,
-  RangeSlider,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -25,23 +22,20 @@ import {
   IconAffiliate,
   IconAlertTriangle,
   IconCompass,
-  IconDeviceFloppy,
   IconFlame,
   IconLayoutDashboard,
   IconLayoutGrid,
   IconLibrary,
+  IconPlant,
   IconPlus,
   IconRefresh,
   IconUsers,
 } from '../lib/icons'
 import { useIsFetching } from '@tanstack/react-query'
-import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { plural, t as now } from '@lingui/core/macro'
+import { t as now } from '@lingui/core/macro'
 import { notifications } from '../lib/toast'
 import {
-  allowedContentRatings,
-  CONTENT_RATING_LABELS,
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
@@ -49,7 +43,6 @@ import {
   useDiscoverRecentActivity,
   useDiscoverSideInterests,
   READER_COHORT_FEED,
-  useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
   useRootFolders,
@@ -59,6 +52,7 @@ import {
   useUiSettings,
   isRailKey,
   railIdOf,
+  type CatalogueCredit,
   type DiscoverRail,
   type DiscoverSectionKey,
   type RecommendationDefaults,
@@ -68,8 +62,7 @@ import {
   type RecommendationRequest,
   type RecommendationApplyState,
 } from '../api/hooks'
-import { useAuth } from '../auth/AuthProvider'
-import { useLabel } from '../i18n-context'
+import { useLibraryCoverLookup } from '../api/seriesLookup'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -77,12 +70,17 @@ import {
   CHAPTER_MIN,
   filtersFromSpec,
   normalizeStoredYears,
-  useStatusOptions,
-  useTypeOptions,
   useCatalogueFilters,
   YEAR_MAX,
   YEAR_MIN,
 } from '../components/CatalogueFilters'
+import {
+  CatalogueFilterBar,
+  SeedPicker,
+  SeedThumb,
+  useCatalogueFilterSlots,
+  type FilterSlot,
+} from '../components/CatalogueFilterBar'
 import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
 import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
 import { DiscoverHero } from '../components/discover/DiscoverHero'
@@ -103,8 +101,7 @@ import {
   type OpenItem,
 } from '../components/ui/DiscoverRail'
 import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
-import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
-import { MinRatingSlider } from '../components/MinRatingSlider'
+import { FilterMatchCount, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -122,7 +119,6 @@ import { Panel } from '../components/ui/Panel'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { DelayedLoader } from '../components/ui/DelayedLoader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
@@ -139,7 +135,6 @@ import {
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
-import { formatFixedDecimal } from '../format'
 import { useModalHistory } from '../lib/useModalHistory'
 import { Callout } from '../components/ui/Callout'
 
@@ -162,6 +157,20 @@ function migrateBrowseDensity() {
  * because the tab is reached at one path and nothing else on Discover shares its controls.
  */
 const MEM = 'discover-recommended'
+const NO_CREDITS: CatalogueCredit[] = []
+const ignoreCredits = () => {}
+
+/** Longer than the catalogue's 400 ms: a recommendation rebuild costs seconds on a whole library. */
+const LIVE_APPLY_MS = 600
+
+/** JSON with object keys sorted at every level, so two builds of one request compare equal. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
+      : v,
+  )
+}
 
 // Pulls in the charting library, which the Browse tab never needs.
 const TasteTab = lazy(() => import('./discover/TasteTab').then((m) => ({ default: m.TasteTab })))
@@ -257,43 +266,27 @@ function DiscoverGenreSkeleton() {
  * portals into `toolsTarget`, a slot in the page header, rather than taking a row of its own.
  */
 function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget: HTMLElement | null }) {
-  const renderLabel = useLabel()
-  const { t, i18n } = useLingui()
+  const { t } = useLingui()
   const { data: library } = useSeries()
+  const coverFor = useLibraryCoverLookup()
   const { data: rootFolders } = useRootFolders()
   const { viewMode, density } = prefs
 
   // --- customization controls ---
-  // Remembered for the tab session (see usePageState): the panel is a dozen controls, and losing
-  // it because you opened one of its own results and came back is losing real work.
-  const [customizeOpen, setCustomizeOpen] = usePageState(`${MEM}:panel-open`, false)
+  // Remembered for the tab session (see usePageState): the bar is a dozen controls, and losing
+  // them because you opened one of its own results and came back is losing real work.
   const [seedIds, setSeedIds] = usePageState<string[]>(`${MEM}:seeds`, [])
-  const [seedSearch, setSeedSearch] = useState('')
-  const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
-  const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
   const [yearsStored, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
   const years = normalizeStoredYears(yearsStored)
   const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
   const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
   const terms = useTermFilters(`${MEM}:terms`)
   const { hydrate: hydrateTerms, reset: resetTerms } = terms
-  const ruleChips = useRuleChips()
-  const typeOptions = useTypeOptions()
-  const statusOptions = useStatusOptions()
   const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
   const [diversity, setDiversity] = usePageState(`${MEM}:diversity`, 0)
   const [contentRatings, setContentRatings] = usePageState<string[]>(`${MEM}:content-ratings`, [])
-  const { me } = useAuth()
-  const contentRatingOptions = useMemo(
-    () =>
-      allowedContentRatings(me?.maxContentRating).map((value) => ({
-        value,
-        label: renderLabel(CONTENT_RATING_LABELS[value]),
-      })),
-    [me?.maxContentRating, renderLabel, i18n.locale],
-  )
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -305,14 +298,9 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       for (const s of library ?? []) {
         if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.displayTitle
       }
-      for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
     })
-  }, [library, seedSearchResults, setLabelCache])
-  const seedOptions = useMemo(
-    () => Object.entries(labelCache).map(([value, label]) => ({ value, label })),
-    [labelCache],
-  )
+  }, [library, setLabelCache])
 
   // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
   const [applied, setApplied] = usePageState<RecommendationRequest & { nonce: number }>(
@@ -358,7 +346,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     // before the saved default is consulted too, so a slow /defaults response cannot race in and
     // overwrite what the user just chose to apply.
     if (carried) {
-      const { filters: carriedFilters, seeds: carriedSeeds, source } = carried
+      const { filters: carriedFilters, seeds: carriedSeeds } = carried
       setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
       setTypes(carriedFilters.types ?? [])
       setStatuses(carriedFilters.statuses ?? [])
@@ -368,7 +356,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       setContentRatings(carriedFilters.contentRatings ?? [])
       setObscurity(carried.obscurity)
       setDiversity(carried.diversity)
-      if (source === 'discover-hero') setCustomizeOpen(true)
       // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
       // some carry titles, so the label cache is filled from what there is and the rest resolve
       // once the library query lands.
@@ -433,12 +420,12 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   }, [
     hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
     setSeedIds, setLabelCache, setYears, setTypes, setStatuses, hydrateTerms, setChapters,
-    setMinRating, setObscurity, setDiversity, setContentRatings, setCustomizeOpen, setApplied,
+    setMinRating, setObscurity, setDiversity, setContentRatings, setApplied,
     setHydrated,
   ])
 
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useRecommendations(applied, hydrated)
+    useRecommendations(applied, hydrated, true)
   const related = data?.pages[0]?.related ?? []
   const similar = data?.pages.flatMap((p) => p.similar) ?? []
 
@@ -478,6 +465,27 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       nonce: prev.nonce + 1,
     }))
   }
+
+  // Live apply: the request follows the bar a beat after it stops changing. The nonce is kept, so
+  // stepping back to an earlier set of filters is a cache hit rather than a rebuild.
+  const liveFilters = currentFilters()
+  const liveKey = canonicalJson({
+    seedIds: seedIds.length ? seedIds.map(Number) : undefined,
+    filters: Object.keys(liveFilters).length ? liveFilters : undefined,
+    obscurity: obscurity !== 0 ? obscurity : undefined,
+    diversity: diversity !== 0 ? diversity : undefined,
+  })
+  useEffect(() => {
+    if (!hydrated) return
+    const id = window.setTimeout(() => {
+      setApplied((prev) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { nonce, refresh, ...identity } = prev
+        return canonicalJson(identity) === liveKey ? prev : { ...JSON.parse(liveKey), nonce }
+      })
+    }, LIVE_APPLY_MS)
+    return () => window.clearTimeout(id)
+  }, [liveKey, hydrated, setApplied])
 
   /**
    * Stores the panel as this user's default, so the next visit opens with it already applied.
@@ -532,33 +540,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     diversity !== 0 ||
     contentRatings.length > 0
 
-  // Compact summary of active constraints, shown under the header when the panel is closed.
-  const activeFilterChips = useMemo(() => {
-    const chips: string[] = []
-    if (seedIds.length > 0) {
-      chips.push(plural(seedIds.length, { one: '# seed', other: '# seeds' }))
-    }
-    if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
-    if (minRating > 0) chips.push(`★ ≥ ${formatFixedDecimal(minRating, 1)}`)
-    if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
-      const chapterMinChip = chapters[0]
-      const chapterMaxChip = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
-      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch.`)
-    }
-    if (obscurity !== 0) chips.push(obscurity > 0 ? t`hidden gems` : t`mainstream`)
-    if (diversity !== 0) {
-      const diversityChip = formatFixedDecimal(diversity, 2)
-      chips.push(t`varied (${diversityChip})`)
-    }
-    chips.push(...ruleChips(terms.rules))
-    for (const typeName of types) chips.push(typeName)
-    for (const s of statuses) chips.push(s)
-    for (const c of contentRatings) chips.push(renderLabel(CONTENT_RATING_LABELS[c] ?? c))
-    return chips
-  }, [
-    seedIds, years, minRating, chapters, obscurity, diversity, terms.rules, ruleChips, types,
-    statuses, contentRatings, renderLabel, i18n.locale, t,
-  ])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -598,13 +579,66 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     if (next) setDetailItem(next)
   }
 
-  // Named locals for the panel's caption sentences below: Lingui names a placeholder after the
-  // expression only when it is a plain identifier, so a member access or method call has to be
-  // hoisted first or it extracts as an unlabelled {0}.
-  const chapterRangeMin = chapters[0]
-  const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
-  const yearRangeMin = years[0]
-  const yearRangeMax = years[1]
+  const catalogueSlots = useCatalogueFilterSlots({
+    terms: { state: terms.state, setState: terms.setState },
+    types, setTypes,
+    statuses, setStatuses,
+    years, setYears,
+    chapters, setChapters,
+    minRating, setMinRating,
+    contentRatings, setContentRatings,
+    credits: NO_CREDITS, setCredits: ignoreCredits,
+  })
+  const firstSeed = seedIds[0]
+  const firstSeedTitle = firstSeed == null ? null : (labelCache[firstSeed] ?? firstSeed)
+  const extraSeeds = seedIds.length - 1
+  const tuningParts = [
+    obscurity > 0 ? t`Hidden gems` : obscurity < 0 ? t`Mainstream` : null,
+    diversity > 0 ? t`Varied` : null,
+  ].filter((part): part is string => part != null)
+  const filterSlots: FilterSlot[] = [
+    {
+      id: 'seeds',
+      icon: IconPlant,
+      label: t`Seeds`,
+      value:
+        firstSeedTitle == null ? null : extraSeeds > 0 ? t`${firstSeedTitle} +${extraSeeds}` : firstSeedTitle,
+      thumb: firstSeed == null ? undefined : <SeedThumb url={coverFor(firstSeed)} />,
+      width: 360,
+      onClear: () => setSeedIds([]),
+      editor: (
+        <SeedPicker
+          value={seedIds}
+          labels={labelCache}
+          onPick={(pick) => {
+            setLabelCache((prev) => ({ ...prev, [pick.id]: pick.title }))
+            setSeedIds((prev) => (prev.includes(pick.id) ? prev : [...prev, pick.id]))
+          }}
+          onRemove={(id) => setSeedIds((prev) => prev.filter((s) => s !== id))}
+        />
+      ),
+    },
+    ...catalogueSlots,
+    {
+      id: 'tuning',
+      icon: IconAdjustmentsHorizontal,
+      label: t`Tuning`,
+      value: tuningParts.length > 0 ? tuningParts.join(', ') : null,
+      width: 380,
+      onClear: () => {
+        setObscurity(0)
+        setDiversity(0)
+      },
+      editor: (
+        <RecommenderDials
+          obscurity={obscurity}
+          setObscurity={setObscurity}
+          diversity={diversity}
+          setDiversity={setDiversity}
+        />
+      ),
+    },
+  ]
 
   return (
     <div className="discover-tab-body">
@@ -612,13 +646,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
         createPortal(
           <>
             <ViewModeToggle value={prefs.viewMode} onChange={prefs.setViewMode} />
-            <Button
-              variant={isCustomized ? 'light' : 'default'}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
-              onClick={() => setCustomizeOpen((o) => !o)}
-            >
-              {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
-            </Button>
             <LuckyButton
               candidates={luckyPool}
               onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
@@ -635,154 +662,27 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
           toolsTarget,
         )}
 
-      <Collapse expanded={customizeOpen}>
-        <Panel p="md" mb="md" className="discover-recommended-customize">
-          <Stack gap="md">
-            <MultiSelect
-              label={t`Seed from`}
-              description={t`Empty uses your whole library.`}
-              placeholder={seedIds.length ? undefined : t`Whole library`}
-              data={seedOptions}
-              value={seedIds}
-              onChange={setSeedIds}
-              searchable
-              searchValue={seedSearch}
-              onSearchChange={setSeedSearch}
-              nothingFoundMessage={debouncedSearch.length > 1 ? t`No matches` : t`Type to search…`}
-              clearable
-              hidePickedOptions
-              maxDropdownHeight={260}
-            />
-
-            <TermFilters controls={terms} />
-
-            <MultiSelect
-                label={t`Type`}
-                className="field-default-value"
-                placeholder={types.length ? undefined : t`Any`}
-                data={typeOptions}
-                value={types}
-                onChange={setTypes}
-                clearable
-            />
-            <MultiSelect
-                label={t`Status`}
-                className="field-default-value"
-                placeholder={statuses.length ? undefined : t`Any`}
-                data={statusOptions}
-                value={statuses}
-                onChange={setStatuses}
-                clearable
-            />
-            <MultiSelect
-                label={t`Content rating`}
-                className="field-default-value"
-                placeholder={contentRatings.length ? undefined : t`Any`}
-                data={contentRatingOptions}
-                value={contentRatings}
-                onChange={setContentRatings}
-                clearable
-            />
-
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  <Trans>Chapters: {chapterRangeMin}–{chapterRangeMax}</Trans>
-                </Text>
-                <RangeSlider
-                  thumbFromLabel={t`Fewest chapters`}
-                  thumbToLabel={t`Most chapters`}
-                  min={CHAPTER_MIN}
-                  max={CHAPTER_MAX}
-                  step={5}
-                  value={chapters}
-                  onChange={setChapters}
-                  minRange={0}
-                  label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
-                  marks={[
-                    { value: CHAPTER_MIN, label: '0' },
-                    { value: 250, label: '250' },
-                    { value: CHAPTER_MAX, label: '500+' },
-                  ]}
-                />
-              </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  <Trans>Year: {yearRangeMin}–{yearRangeMax}</Trans>
-                </Text>
-                <RangeSlider
-                  thumbFromLabel={t`Earliest year`} thumbToLabel={t`Latest year`}
-                  min={YEAR_MIN}
-                  max={YEAR_MAX}
-                  value={years}
-                  onChange={setYears}
-                  minRange={0}
-                  marks={[
-                    { value: YEAR_MIN, label: `${YEAR_MIN}` },
-                    { value: YEAR_MAX, label: `${YEAR_MAX}` },
-                  ]}
-                />
-              </div>
-              <MinRatingSlider value={minRating} onChange={setMinRating} />
-              <RecommenderDials
-                obscurity={obscurity}
-                setObscurity={setObscurity}
-                diversity={diversity}
-                setDiversity={setDiversity}
-              />
-            </SimpleGrid>
-
-            <Group justify="space-between">
-              <Group gap="xs">
-                <PresetMenu
-                  current={currentFilters}
-                  onLoad={loadCatalogueFilters}
-                  railDraft={() => ({
-                    source: 'recommendations',
-                    filters: currentFilters(),
-                    seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
-                    obscurity,
-                    diversity,
-                  })}
-                />
-                <HiddenContentButton />
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<IconDeviceFloppy size={16} />}
-                  loading={saveDefaults.isPending}
-                  // Nothing set and nothing stored: there is neither a default to save nor one to clear.
-                  disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
-                  onClick={saveAsDefault}
-                  title={
-                    isCustomized
-                      ? t`Open Recommended with these filters from now on`
-                      : t`Clear your saved default`
-                  }
-                >
-                  {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
-                </Button>
-              </Group>
-              <Group gap="xs">
-                <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
-                  <Trans>Reset</Trans>
-                </Button>
-                <Button size="xs" onClick={() => apply(false)}>
-                  <Trans>Apply</Trans>
-                </Button>
-              </Group>
-            </Group>
-          </Stack>
-        </Panel>
-      </Collapse>
-
-      {isCustomized && !customizeOpen && (
-        <TagChips style={{ marginBottom: 'var(--mantine-spacing-md)' }}>
-          {activeFilterChips.map((chip) => (
-            <TagChip key={chip}>{chip}</TagChip>
-          ))}
-        </TagChips>
-      )}
+      <CatalogueFilterBar
+        slots={filterSlots}
+        isCustomized={isCustomized}
+        onReset={reset}
+        saved={
+          <PresetMenu
+                compact
+            current={currentFilters}
+            onLoad={loadCatalogueFilters}
+            railDraft={() => ({
+              source: 'recommendations',
+              filters: currentFilters(),
+              seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
+              obscurity,
+              diversity,
+            })}
+          />
+        }
+        onSaveAsDefault={!isCustomized && !hasAnyDefault(savedDefaults) ? undefined : saveAsDefault}
+        savingDefault={saveDefaults.isPending}
+      />
 
       {error && (
         <Callout tone="warn" role="alert">
@@ -1504,7 +1404,7 @@ function DiscoverBrowseTab({
               leftSection={<IconAdjustmentsHorizontal size={16} />}
               onClick={() =>
                 navigate('/add', {
-                  state: { catalogueSeed: { sort: 'popular', filters: {}, openFilters: true } satisfies CatalogueSeed },
+                  state: { catalogueSeed: { sort: 'popular', filters: {} } satisfies CatalogueSeed },
                 })
               }
             >

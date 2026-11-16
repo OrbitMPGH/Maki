@@ -404,12 +404,6 @@ msgstr "{0, plural, other {# 个结果}}"
 msgid "{0, plural, one {# season} other {# seasons}}"
 msgstr "{0, plural, other {# 季}}"
 
-#. placeholder {0}: seedIds.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0, plural, one {# seed} other {# seeds}}"
-msgstr "{0, plural, other {# 个种子}}"
-
 #. placeholder {0}: selected.size
 #. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
@@ -1072,11 +1066,6 @@ msgstr "{chapterCount, plural, other {# 个章节}}"
 #, fuzzy
 msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
 msgstr "{chapterLabel}，第 {pageNumber} 页，高 {pageHeight} 像素"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{chapterMinChip}–{chapterMaxChip} ch."
-msgstr "{chapterMinChip}–{chapterMaxChip} 章"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1783,6 +1772,10 @@ msgstr "{files, plural, other {{used} / {limit}，# 页}}"
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, other {已完成 # 个系列}}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "{firstSeedTitle} +{extraSeeds}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -3987,6 +3980,10 @@ msgstr "18+"
 msgid "18+ only"
 msgstr "仅限 18+"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "2000s"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "25 / page"
@@ -4007,6 +4004,10 @@ msgstr "30 天"
 #, fuzzy
 msgid "50 / page"
 msgstr "每页 50 个"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "50 to 200"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4562,6 +4563,10 @@ msgstr "为规则 {number} 添加条件"
 #, fuzzy
 msgid "Add connection"
 msgstr "添加连接"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Add filter"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -5284,11 +5289,11 @@ msgstr "其他用户"
 msgid "any"
 msgstr "任意"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Any"
@@ -5424,7 +5429,6 @@ msgstr "适用于资料库处理和新下载。数值越高完成越快，但运
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -6081,6 +6085,10 @@ msgstr "原因：{reasonList}"
 #, fuzzy
 msgid "becomes readable"
 msgstr "变为可阅读"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Before 2000"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7035,6 +7043,7 @@ msgstr "章节已升级"
 msgid "chapters"
 msgstr "章节"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
@@ -7206,11 +7215,6 @@ msgstr "你想要但尚未在磁盘上的章节。"
 #, fuzzy
 msgid "Chapters, year, minimum rating"
 msgstr "章节数、年份、最低评分"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
-msgstr "章节：{chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7413,6 +7417,7 @@ msgstr "清理已读章节"
 msgid "Clean up read files"
 msgstr "清理已读文件"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -7447,7 +7452,7 @@ msgstr "清除所有通知？"
 msgid "Clear cache"
 msgstr "清除缓存"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueFilterBar.tsx
 #, fuzzy
 msgid "Clear default"
 msgstr "清除默认设置"
@@ -7513,7 +7518,6 @@ msgid "Clear the thumbs up"
 msgstr "清除点赞"
 
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
 msgstr "清除已保存的默认设置"
@@ -7996,6 +8000,7 @@ msgstr "可以考虑禁用两个来源映射中的一个；警告会在下次刷
 msgid "Contained in a volume/compilation file"
 msgstr "包含在卷文件或合集文件中"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8003,6 +8008,7 @@ msgid "Content"
 msgstr "内容"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -8010,7 +8016,6 @@ msgstr "内容"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -8652,6 +8657,7 @@ msgstr "在 Gotify 的 Apps 下创建。"
 msgid "Creator"
 msgstr "创作者"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Creators"
@@ -8792,16 +8798,6 @@ msgstr "自定义推荐栏"
 #, fuzzy
 msgid "Custom source updated by its repository"
 msgstr "自定义来源已由其仓库更新"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customize"
-msgstr "自定义"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customized"
-msgstr "已自定义"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9992,9 +9988,9 @@ msgstr "每页需要占用服务器 CPU 数秒，放大后的页面会保存在�
 msgid "Each person gets their own account and reading history."
 msgstr "每个人都有自己的账户和阅读历史。"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Earliest year"
 msgstr "最早年份"
@@ -10191,11 +10187,6 @@ msgstr "要清空回收站吗？"
 #, fuzzy
 msgid "Empty uses the server's timezone."
 msgstr "留空则使用服务器的时区。"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Empty uses your whole library."
-msgstr "留空则使用整个资料库。"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10946,8 +10937,8 @@ msgstr "正在获取页面……"
 msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
 msgstr "做种者少于 {minSeeders}，因此 Maki 不会自动抓取。你仍可以在此手动抓取。"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Fewest chapters"
 msgstr "章节最少"
@@ -11168,9 +11159,8 @@ msgstr "筛选条件已保存"
 msgid "Filter the catalogue"
 msgstr "筛选目录"
 
-#: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11739,6 +11729,7 @@ msgstr "常规"
 msgid "Genre"
 msgstr "类型"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -11750,6 +11741,7 @@ msgstr "类型"
 msgid "Genres"
 msgstr "类型"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12242,9 +12234,8 @@ msgid "Hidden from recommendations"
 msgstr "已从推荐中隐藏"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "hidden gems"
-msgstr "隐藏宝藏"
+msgid "Hidden gems"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -13637,10 +13628,18 @@ msgstr "超过自动抓取的大小上限"
 msgid "Last {lastSync}"
 msgstr "上次 {lastSync}"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 10 years"
+msgstr ""
+
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Last 5 weeks"
 msgstr "最近 5 周"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 5 years"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -13814,9 +13813,9 @@ msgstr "最新章节发布"
 msgid "Latest release"
 msgstr "最新发布"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Latest year"
 msgstr "最晚年份"
@@ -14532,9 +14531,8 @@ msgid "Main story of {relatedTo}"
 msgstr "{relatedTo} 的正篇"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "mainstream"
-msgstr "主流"
+msgid "Mainstream"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -15277,6 +15275,7 @@ msgstr "最小章节数"
 msgid "Minimum pages"
 msgstr "最少页数"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "Minimum rating"
@@ -15434,6 +15433,10 @@ msgstr "更多下载选项"
 msgid "More feedback options"
 msgstr "更多反馈选项"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "More filter actions"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "More for {label}"
@@ -15490,8 +15493,8 @@ msgstr "更多让 Maki 更合你心意的方式"
 msgid "Moss"
 msgstr "苔藓绿"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Most chapters"
 msgstr "章节最多"
@@ -18498,11 +18501,6 @@ msgstr "在 {label} 上打开，评分 {score}"
 msgid "Open on MangaBaka"
 msgstr "在 MangaBaka 上打开"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Open Recommended with these filters from now on"
-msgstr "以后使用这些筛选条件打开推荐内容"
-
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Open recycle bin"
@@ -18726,6 +18724,10 @@ msgstr "高于 {low}"
 #, fuzzy
 msgid "over {low}, under {high}"
 msgstr "高于 {low}，低于 {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Over 200"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -20053,6 +20055,7 @@ msgstr "评分在 {ratingLabel} 及以上"
 msgid "Rated {score}"
 msgstr "评分 {score}"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21724,9 +21727,9 @@ msgstr "重新扫描完成：新增 {newFiles} 个，重新关联 {relinked} 个
 msgid "Rescanning series files"
 msgstr "正在重新扫描系列文件"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/DrillControls.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
 msgstr "重置"
@@ -22555,8 +22558,8 @@ msgstr "仍然保存"
 msgid "Save as a rail…"
 msgstr "另存为推荐栏…"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
 msgstr "保存为默认设置"
@@ -23191,6 +23194,10 @@ msgstr "搜索发布内容"
 msgid "Search section"
 msgstr "搜索部分"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Search series"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Search shows"
@@ -23333,11 +23340,6 @@ msgstr "查看进度"
 msgid "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
 msgstr "查看 Maki 所隐藏的署名页和广告背后的发布组，并更正它从中读取的内容。"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Seed from"
-msgstr "种子来源"
-
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Seed ratio"
@@ -23366,6 +23368,7 @@ msgid "Seeding time (minutes)"
 msgstr "做种时间（分钟）"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Seeds"
 msgstr "种子"
@@ -25082,6 +25085,7 @@ msgstr "统计内容"
 msgid "Stats, Rewind, XP"
 msgstr "统计、回顾、经验值"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
@@ -25091,7 +25095,6 @@ msgstr "统计、回顾、经验值"
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -27456,6 +27459,10 @@ msgstr "尝试清除筛选条件。"
 msgid "Try the preview again"
 msgstr "重新预览"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Tuning"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Turkish"
@@ -27542,6 +27549,7 @@ msgid "Two-factor turned off for this account"
 msgstr "已关闭此账户的双重身份验证"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -27550,7 +27558,6 @@ msgstr "已关闭此账户的双重身份验证"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Type"
@@ -27566,7 +27573,6 @@ msgid "Type mix"
 msgstr "类型分布"
 
 #: src/components/CreditPicker.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Type to search…"
 msgstr "输入内容以搜索……"
@@ -27621,6 +27627,10 @@ msgstr "小于"
 #, fuzzy
 msgid "under {high}"
 msgstr "低于 {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Under 50"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -28456,9 +28466,8 @@ msgid "varied"
 msgstr "多样"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "varied ({diversityChip})"
-msgstr "多样（{diversityChip}）"
+msgid "Varied"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -29153,7 +29162,6 @@ msgstr "整个章节"
 msgid "Whole franchise"
 msgstr "整个系列"
 
-#: src/pages/DiscoverPage.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Whole library"
@@ -29198,6 +29206,10 @@ msgstr "在 KOReader 中打开一本书，依次进入「工具」、「进度�
 #, fuzzy
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
 msgstr "设置任一声明后，提供方就是权限的权威来源：每次登录都会重新计算权限，因此在用户页面所作的更改会在该用户下次登录时被覆盖。两者都留空即可在此处保留权限。"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "With no series picked, your whole library is used."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -29279,6 +29291,7 @@ msgstr "格式为 <0>claim=value</0>，例如 <1>groups=maki-admins</1>。"
 msgid "Written in a different language from your files"
 msgstr "使用与你的文件不同的语言撰写"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -29295,11 +29308,6 @@ msgstr "年份"
 #, fuzzy
 msgid "Year: {yearMin}–{yearMax}"
 msgstr "年份：{yearMin}–{yearMax}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Year: {yearRangeMin}–{yearRangeMax}"
-msgstr "年份：{yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

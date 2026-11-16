@@ -99,18 +99,22 @@ export const SmartSearchOff: Story = {
 }
 
 export const FiltersPanel: Story = {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
-    await expect(await canvas.findByText('Genres and tags')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Save as default' })).toBeVisible()
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Genres' }))
+    await expect(await body.findByText('Genres and tags')).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(await canvas.findByRole('button', { name: 'More filter actions' }))
+    await expect(await body.findByRole('menuitem', { name: 'Clear default' })).toBeVisible()
   },
 }
 
 export const SaveFiltersAsDefault: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Save as default' }))
-    await expect(await within(canvasElement.ownerDocument.body).findByText('Default cleared')).toBeVisible()
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: 'More filter actions' }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Clear default' }))
+    await expect(await body.findByText('Default cleared')).toBeVisible()
   },
 }
 
@@ -123,9 +127,8 @@ export const SavedDefaultApplied: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Filters 2' })).toBeVisible()
-    // The defaults are named beside the results, not only counted on the button.
-    await expect(await canvas.findByText('Rated ★ 7.0 or more')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Type: Manhwa' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Rating: 7.0+' })).toBeVisible()
   },
 }
 

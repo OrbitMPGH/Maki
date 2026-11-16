@@ -404,12 +404,6 @@ msgstr "{0, plural, other {결과 #개}}"
 msgid "{0, plural, one {# season} other {# seasons}}"
 msgstr "{0, plural, other {시즌 #개}}"
 
-#. placeholder {0}: seedIds.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0, plural, one {# seed} other {# seeds}}"
-msgstr "{0, plural, other {시드 #개}}"
-
 #. placeholder {0}: selected.size
 #. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
@@ -1072,11 +1066,6 @@ msgstr "{chapterCount, plural, other {챕터 #개}}"
 #, fuzzy
 msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
 msgstr "{chapterLabel}, {pageNumber} 페이지, 높이 {pageHeight}px"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{chapterMinChip}–{chapterMaxChip} ch."
-msgstr "{chapterMinChip}–{chapterMaxChip}화"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1783,6 +1772,10 @@ msgstr "{files, plural, other {{used} / {limit}, 페이지 #개}}"
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, other {완료된 시리즈 #개}}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "{firstSeedTitle} +{extraSeeds}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -3987,6 +3980,10 @@ msgstr "18+"
 msgid "18+ only"
 msgstr "18+만"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "2000s"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "25 / page"
@@ -4007,6 +4004,10 @@ msgstr "30일"
 #, fuzzy
 msgid "50 / page"
 msgstr "페이지당 50개"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "50 to 200"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4562,6 +4563,10 @@ msgstr "규칙 {number}에 조건 추가"
 #, fuzzy
 msgid "Add connection"
 msgstr "연결 추가"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Add filter"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -5284,11 +5289,11 @@ msgstr "다른 사용자"
 msgid "any"
 msgstr "임의"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Any"
@@ -5424,7 +5429,6 @@ msgstr "라이브러리 검사와 새 다운로드에 적용됩니다. 높을수
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -6081,6 +6085,10 @@ msgstr "이유: {reasonList}"
 #, fuzzy
 msgid "becomes readable"
 msgstr "읽을 수 있게 됨"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Before 2000"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7035,6 +7043,7 @@ msgstr "챕터 업그레이드됨"
 msgid "chapters"
 msgstr "챕터"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
@@ -7206,11 +7215,6 @@ msgstr "원하지만 아직 디스크에 없는 챕터입니다."
 #, fuzzy
 msgid "Chapters, year, minimum rating"
 msgstr "챕터, 연도, 최소 평점"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
-msgstr "챕터: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7413,6 +7417,7 @@ msgstr "읽은 챕터 정리"
 msgid "Clean up read files"
 msgstr "읽은 파일 정리"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -7447,7 +7452,7 @@ msgstr "모든 알림을 지울까요?"
 msgid "Clear cache"
 msgstr "캐시 비우기"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueFilterBar.tsx
 #, fuzzy
 msgid "Clear default"
 msgstr "기본값 지우기"
@@ -7513,7 +7518,6 @@ msgid "Clear the thumbs up"
 msgstr "좋아요 해제"
 
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
 msgstr "저장된 기본값 지우기"
@@ -7996,6 +8000,7 @@ msgstr "두 소스 매핑 중 하나를 비활성화하는 것을 고려하세�
 msgid "Contained in a volume/compilation file"
 msgstr "볼륨/모음 파일에 포함됨"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8003,6 +8008,7 @@ msgid "Content"
 msgstr "콘텐츠"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -8010,7 +8016,6 @@ msgstr "콘텐츠"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -8652,6 +8657,7 @@ msgstr "Gotify의 Apps에서 만듭니다."
 msgid "Creator"
 msgstr "창작자"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Creators"
@@ -8792,16 +8798,6 @@ msgstr "사용자 지정 섹션"
 #, fuzzy
 msgid "Custom source updated by its repository"
 msgstr "저장소에서 업데이트된 커스텀 소스"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customize"
-msgstr "사용자 지정"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customized"
-msgstr "사용자 지정됨"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9992,9 +9988,9 @@ msgstr "페이지 하나를 처리하는 데 서버 CPU가 몇 초 걸리며, �
 msgid "Each person gets their own account and reading history."
 msgstr "사람마다 각자 계정과 읽기 기록을 가집니다."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Earliest year"
 msgstr "가장 이른 연도"
@@ -10191,11 +10187,6 @@ msgstr "휴지통을 비울까요?"
 #, fuzzy
 msgid "Empty uses the server's timezone."
 msgstr "비워 두면 서버의 시간대를 사용합니다."
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Empty uses your whole library."
-msgstr "비워 두면 라이브러리 전체를 사용합니다."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10946,8 +10937,8 @@ msgstr "페이지 가져오는 중…"
 msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
 msgstr "시더가 {minSeeders}명보다 적어서 Maki가 자동으로 가져오지 않습니다. 여기서 직접 가져올 수는 있습니다."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Fewest chapters"
 msgstr "챕터 적은 순"
@@ -11168,9 +11159,8 @@ msgstr "필터 저장됨"
 msgid "Filter the catalogue"
 msgstr "카탈로그 필터링"
 
-#: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11739,6 +11729,7 @@ msgstr "일반"
 msgid "Genre"
 msgstr "장르"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -11750,6 +11741,7 @@ msgstr "장르"
 msgid "Genres"
 msgstr "장르"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12242,9 +12234,8 @@ msgid "Hidden from recommendations"
 msgstr "추천에서 숨겨짐"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "hidden gems"
-msgstr "숨은 보석"
+msgid "Hidden gems"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -13637,10 +13628,18 @@ msgstr "자동 가져오기 크기 제한보다 큽니다"
 msgid "Last {lastSync}"
 msgstr "마지막 {lastSync}"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 10 years"
+msgstr ""
+
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Last 5 weeks"
 msgstr "최근 5주"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 5 years"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -13814,9 +13813,9 @@ msgstr "최신 챕터 공개"
 msgid "Latest release"
 msgstr "최신 릴리스"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Latest year"
 msgstr "가장 최근 연도"
@@ -14532,9 +14531,8 @@ msgid "Main story of {relatedTo}"
 msgstr "{relatedTo}의 본편"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "mainstream"
-msgstr "메인스트림"
+msgid "Mainstream"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -15277,6 +15275,7 @@ msgstr "최소 챕터 수"
 msgid "Minimum pages"
 msgstr "최소 페이지 수"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "Minimum rating"
@@ -15434,6 +15433,10 @@ msgstr "추가 다운로드 옵션"
 msgid "More feedback options"
 msgstr "추가 피드백 옵션"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "More filter actions"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "More for {label}"
@@ -15490,8 +15493,8 @@ msgstr "Maki를 내 취향대로 꾸미는 더 많은 방법"
 msgid "Moss"
 msgstr "모스"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Most chapters"
 msgstr "챕터 많은 순"
@@ -18498,11 +18501,6 @@ msgstr "{label}에서 열기, 평점 {score}"
 msgid "Open on MangaBaka"
 msgstr "MangaBaka에서 열기"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Open Recommended with these filters from now on"
-msgstr "앞으로 이 필터로 Recommended 열기"
-
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Open recycle bin"
@@ -18726,6 +18724,10 @@ msgstr "{low} 초과"
 #, fuzzy
 msgid "over {low}, under {high}"
 msgstr "{low} 초과, {high} 미만"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Over 200"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -20053,6 +20055,7 @@ msgstr "{ratingLabel} 이상 평가"
 msgid "Rated {score}"
 msgstr "평점 {score}"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21724,9 +21727,9 @@ msgstr "다시 스캔 완료: 새 파일 {newFiles}개, 다시 연결됨 {relink
 msgid "Rescanning series files"
 msgstr "시리즈 파일 다시 검사 중"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/DrillControls.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
 msgstr "초기화"
@@ -22555,8 +22558,8 @@ msgstr "그래도 저장"
 msgid "Save as a rail…"
 msgstr "섹션으로 저장…"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
 msgstr "기본값으로 저장"
@@ -23191,6 +23194,10 @@ msgstr "릴리스 검색"
 msgid "Search section"
 msgstr "검색 섹션"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Search series"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Search shows"
@@ -23333,11 +23340,6 @@ msgstr "진행 상황 보기"
 msgid "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
 msgstr "Maki가 숨기는 크레딧 페이지와 광고 뒤의 릴리스 그룹을 보고, 거기서 읽은 내용을 고치세요."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Seed from"
-msgstr "다음에서 시드:"
-
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Seed ratio"
@@ -23366,6 +23368,7 @@ msgid "Seeding time (minutes)"
 msgstr "시딩 시간 (분)"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Seeds"
 msgstr "시드"
@@ -25082,6 +25085,7 @@ msgstr "통계 섹션"
 msgid "Stats, Rewind, XP"
 msgstr "통계, Rewind, XP"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
@@ -25091,7 +25095,6 @@ msgstr "통계, Rewind, XP"
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -27456,6 +27459,10 @@ msgstr "필터를 지워 보세요."
 msgid "Try the preview again"
 msgstr "미리보기 다시 시도"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Tuning"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Turkish"
@@ -27542,6 +27549,7 @@ msgid "Two-factor turned off for this account"
 msgstr "이 계정의 2단계 인증을 껐습니다"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -27550,7 +27558,6 @@ msgstr "이 계정의 2단계 인증을 껐습니다"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Type"
@@ -27566,7 +27573,6 @@ msgid "Type mix"
 msgstr "유형 구성"
 
 #: src/components/CreditPicker.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Type to search…"
 msgstr "입력하여 검색…"
@@ -27621,6 +27627,10 @@ msgstr "미만"
 #, fuzzy
 msgid "under {high}"
 msgstr "{high} 미만"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Under 50"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -28456,9 +28466,8 @@ msgid "varied"
 msgstr "다양함"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "varied ({diversityChip})"
-msgstr "다양함 ({diversityChip})"
+msgid "Varied"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -29153,7 +29162,6 @@ msgstr "챕터 전체"
 msgid "Whole franchise"
 msgstr "프랜차이즈 전체"
 
-#: src/pages/DiscoverPage.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Whole library"
@@ -29198,6 +29206,10 @@ msgstr "KOReader에서 책을 연 상태로 도구 > 진행 상황 동기화 > �
 #, fuzzy
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
 msgstr "두 클레임 중 하나라도 설정하면 권한의 기준은 제공자입니다. 로그인할 때마다 권한이 다시 계산되므로 Users 페이지에서 변경한 내용은 해당 사용자가 다음에 로그인할 때 덮어써집니다. 두 항목을 모두 비워 두면 여기의 권한을 유지합니다."
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "With no series picked, your whole library is used."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -29279,6 +29291,7 @@ msgstr "<0>claim=value</0> 작성됨. 예: <1>groups=maki-admins</1>."
 msgid "Written in a different language from your files"
 msgstr "파일과 다른 언어로 쓰임"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -29295,11 +29308,6 @@ msgstr "연도"
 #, fuzzy
 msgid "Year: {yearMin}–{yearMax}"
 msgstr "연도: {yearMin}–{yearMax}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Year: {yearRangeMin}–{yearRangeMax}"
-msgstr "연도: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

@@ -49,9 +49,9 @@ export const Studio: Story = {
 }
 
 export const FiltersOpen: Story = {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
-    await expect(await canvas.findByText('Genres and tags')).toBeVisible()
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Genres' }))
+    await expect(await within(canvasElement.ownerDocument.body).findByText('Genres and tags')).toBeVisible()
   },
 }
 
