@@ -74,6 +74,10 @@ def main():
     a = p.parse_args()
 
     dump = a.dump or os.path.join(os.environ.get("MAKI_CONFIG_DIR", ""), "mangabaka.db")
+    # --out is deleted before it is written, and the working database is days of fetching.
+    inputs = [os.path.realpath(p) for p in (a.work, dump)]
+    if os.path.realpath(a.out) in inputs:
+        sys.exit("error: --out names an input file; it would be deleted")
     if not os.path.exists(dump):
         sys.exit(f"error: no dump at {dump}")
     fold_k, fold_n = -1, 0

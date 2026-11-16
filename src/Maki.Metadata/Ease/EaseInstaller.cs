@@ -261,6 +261,13 @@ public class EaseInstaller(
                 throw new InvalidOperationException("downloaded file has no meta table");
             }
 
+            // The builder always writes the key, so a file without it did not come from the builder
+            // and nothing says which readers it saw.
+            if (string.IsNullOrWhiteSpace(trained))
+            {
+                throw new InvalidOperationException("downloaded table does not say which readers it was trained on");
+            }
+
             if (IsFoldLimited(trained))
             {
                 throw new InvalidOperationException(

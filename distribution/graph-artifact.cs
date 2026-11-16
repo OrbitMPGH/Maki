@@ -491,6 +491,16 @@ else
         problems.Add("meta has no userCount, so nothing records how many readers this was built from");
     }
 
+    // An export from before `build --fold-out` existed carries no trainingFold, and it saw every
+    // reader, so only a stated fold is refused here.
+    var graphFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'trainingFold'") : "";
+    if (!string.IsNullOrWhiteSpace(graphFold) && !graphFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.trainingFold is '{graphFold}', so this is a fold-limited EVALUATION graph "
+            + "(fetch-coread-graph.cs build --fold-out). Rebuild without --fold-out before publishing");
+    }
+
     manifest["userCount"] = users;
 }
 

@@ -119,6 +119,28 @@ public class CoReadInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task Refuses_AGraphBuiltWithoutSomeOfTheReaders()
+    {
+        Publish(pairs: 2000, trainingFold: "1,2,3");
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.False(result.Installed);
+        Assert.Contains("fold-limited", result.Reason);
+        Assert.False(File.Exists(_graphPath));
+    }
+
+    [Fact]
+    public async Task Installs_AGraphThatSaysItSawEveryReader()
+    {
+        Publish(pairs: 2000, trainingFold: "all");
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.True(result.Installed);
+    }
+
+    [Fact]
     public async Task Refuses_AnArtifactWithSelfPairs()
     {
         Publish(pairs: 2000, selfPairRows: 3);
@@ -284,7 +306,8 @@ public class CoReadInstallerTests : IDisposable
         int zeroStrengthRows = 0,
         int selfPairRows = 0,
         string? sha256Override = null,
-        bool withBom = false)
+        bool withBom = false,
+        string? trainingFold = null)
     {
         var sourcePath = Path.Combine(_dir, $"artifact-{Guid.NewGuid():N}.db");
         using (var conn = new SqliteConnection($"Data Source={sourcePath};Pooling=False"))
@@ -304,6 +327,14 @@ public class CoReadInstallerTests : IDisposable
             meta.Parameters.AddWithValue("$s", schemaVersion.ToString());
             meta.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
             meta.ExecuteNonQuery();
+
+            if (trainingFold is not null)
+            {
+                using var fold = conn.CreateCommand();
+                fold.CommandText = "INSERT INTO meta (key, value) VALUES ('trainingFold', $f)";
+                fold.Parameters.AddWithValue("$f", trainingFold);
+                fold.ExecuteNonQuery();
+            }
         }
 
         SqliteConnection.ClearAllPools();

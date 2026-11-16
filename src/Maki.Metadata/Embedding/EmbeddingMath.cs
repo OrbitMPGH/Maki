@@ -518,7 +518,7 @@ public static class EmbeddingMath
         // "v5.2: negative signals, neutralized", including what it does NOT do.
         double Avoid = 12.0,
         // The EASE item-item channel (Maki.Metadata.Ease). Set from EaseTuning.Weight only when its
-        // table returned evidence, like Graph and CoRead; it ships off.
+        // table returned evidence, like Graph and CoRead, so it is 0 here and 4 on a request that has it.
         double Ease = 0.0);
 
     /// <summary>

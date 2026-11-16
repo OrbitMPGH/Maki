@@ -80,6 +80,18 @@ public class EaseInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileThatDoesNotSayWhoItWasTrainedOn_IsRefused()
+    {
+        Publish(Build(trainingFold: ""));
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.False(result.Installed);
+        Assert.Contains("which readers", result.Reason);
+        Assert.False(File.Exists(_tablePath));
+    }
+
+    [Fact]
     public async Task AFoldLimitedFile_IsRefused_EvenWhenTheManifestSaysAll()
     {
         Publish(Build(trainingFold: "1,2,3"));

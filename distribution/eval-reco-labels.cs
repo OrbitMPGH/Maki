@@ -1093,7 +1093,7 @@ async Task<ResultRow> Score(Variant variant)
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
-        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,avoidtag,pop\n")
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,ease,avoidtag,pop\n")
         : null;
 
     var reciprocal = new double[requests.Count];
@@ -1146,7 +1146,7 @@ async Task<ResultRow> Score(Variant variant)
                     .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
                     .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
                     .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Avoid)).Append(',')
-                    .Append(Csv(f.AvoidTag)).Append(',')
+                    .Append(Csv(f.Ease)).Append(',').Append(Csv(f.AvoidTag)).Append(',')
                     .Append(Csv(f.Percentile)).Append('\n');
             }
         }

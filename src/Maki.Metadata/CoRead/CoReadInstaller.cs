@@ -266,6 +266,28 @@ public class CoReadInstaller(
             }
         }
 
+        // fetch-coread-graph.cs build --fold-out leaves a quarter of the readers out so the eval
+        // can grade the graph. Such a file looks fine at runtime, so it is refused by its own
+        // label. Exports from before that option carry no trainingFold and saw every reader.
+        using (var fold = conn.CreateCommand())
+        {
+            fold.CommandText = "SELECT value FROM meta WHERE key = 'trainingFold'";
+            string? trained = null;
+            try
+            {
+                trained = fold.ExecuteScalar()?.ToString();
+            }
+            catch (SqliteException)
+            {
+            }
+
+            if (trained is { Length: > 0 } && !trained.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"downloaded graph is a fold-limited evaluation build (trained on folds '{trained}')");
+            }
+        }
+
         using var stats = conn.CreateCommand();
         stats.CommandText = """
             SELECT COUNT(*),

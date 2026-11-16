@@ -134,7 +134,7 @@ $profiles = @{
     OutArg     = "--out"
     IsBuild    = $true
     IsPython   = $true
-    DumpDb     = "mangabaka.db"
+    DumpDb     = "mangabaka.full.db"
     MinPairs   = 1000000
     Notes      = "Item-item weights fitted (EASE) on AniList reading lists: how much finishing one series predicts finishing another, keyed by MangaBaka id, for Maki's personal recommendations. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
   }

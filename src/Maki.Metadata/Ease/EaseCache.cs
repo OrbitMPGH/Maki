@@ -19,7 +19,7 @@ public record EaseOptions(string DatabasePath, string? StagingDirectory = null);
 /// <para>
 /// Mirrors <see cref="CoRead.CoReadCache"/> on purpose, because the file arrives the same way: a
 /// downloaded artifact replaced whole under a running process. That includes the idle unload, the
-/// swap under the load lock and the memory-mapped snapshot, which turns a ~1 s, 23 MB rebuild from
+/// swap under the load lock and the memory-mapped snapshot, which turns a ~1 s, 24 MB rebuild from
 /// SQLite into a near-instant reload whose pages live in the file rather than on the heap.
 /// </para>
 ///
