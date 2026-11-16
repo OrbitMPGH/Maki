@@ -10,6 +10,10 @@ For what each section measures, see [Stats](/Maki/features/stats/).
 Six presets: **30 days**, **This month**, **90 days**, **12 months**, **Year** and **All time**.
 **Year** adds a picker for **Whole year** or a single month.
 
+Each figure compares against the window before it. The current year compares against the same days
+of last year, the current month against the same days of last month, and a past month against the
+whole month before it.
+
 ## Sections
 
 **Reading**, **Rhythm**, **Taste**, **Habits**, **Library** and **Progress**. **Progress** shows

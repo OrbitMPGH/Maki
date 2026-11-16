@@ -12,8 +12,8 @@ or another reader.
 - `ComicInfo.xml` at the root.
 - One image per page, numbered `001`, `002` and so on, with the source page's extension. Numbers have
   at least three digits, so readers that sort names as text still get the pages in order. Page
-  conversion can rewrite the pages as WebP or AVIF and keep the numbers. See
-  [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
+  conversion can rewrite the pages as WebP, AVIF or JPEG XL and keep the numbers. See
+  [Page conversion](/Maki/guides/library/page-conversion/).
 
 Page images are stored without compression, since JPEG and PNG are already compressed. Maki writes
 the archive to a `.partial` file and moves it into place when complete, so a reader never opens a
@@ -46,7 +46,10 @@ inside them.
 | `Manga` | Reading direction, from the series type (see below) |
 | `AgeRating` | From the series content rating (see below) |
 | `ScanInformation` | The scanlation group. A scanlator site with no group on the chapter uses the site name |
+| `Translator` | The same scanlation group |
+| `Notes` | The source, the chapter's URL there and the file's quality tier |
 | `PageCount` | Number of pages in the chapter |
+| `Pages` | Marks the cover and every two-page spread |
 
 `Manga` follows the series type:
 
@@ -72,8 +75,9 @@ ComicInfo.xml rewritten. The **Write ComicInfo.xml into imported files** switch,
 - Number and volume always come from the linked chapter or the file name. The date comes from the
   chapter when it has one. Title is kept unless it is empty.
 - `SeriesGroup` takes the series' tags. A series with no tags keeps whatever the file already had.
-- Fields Maki has no opinion on, such as translator or characters, and unknown elements stay as
-  they were.
+- `ScanInformation` and `Translator` take the chapter's scanlation group when Maki knows it, and
+  `Notes` takes the source and quality tier when the file came from a source.
+- Fields Maki has no opinion on, such as characters, and unknown elements stay as they were.
 
 Adding or removing a tag does not rewrite any files, since that would mean rewriting every chapter
 of the series at once. New downloads and newly adopted files pick up the current tags. To bring

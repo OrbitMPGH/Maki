@@ -31,13 +31,17 @@ or **Has none of**.
 
 | Source | Shows | Notes |
 | --- | --- | --- |
-| **Your library** | Series you already have that match the filters | Home only, since Discover is about what you do not own |
+| **Your library** | Series you already have that match the filters, or the series one of your saved Library filters shows | Home only, since Discover is about what you do not own |
 | **Recommendations** | Picks ranked the same way as the Recommended tab, with the same settings | Can be seeded with specific series. Needs the local MangaBaka database. No sort, because the ranking is the order |
 | **Catalogue** | Anything in the MangaBaka catalogue that matches | Needs the local MangaBaka database |
 
 If a source needs the database and it is not ready, the rail says **This rail needs the local
 MangaBaka database, which is switched off or still downloading.** See
 [The local MangaBaka database](/Maki/guides/recommendations/local-database/).
+
+A **Your library** rail can use a **Saved Library filter** instead of its own filters. The rail then
+lists what that filter shows in the Library, in the filter's own sort, and follows any later change
+to it. If the filter is deleted, the rail says so instead of showing your whole library.
 
 Sort options:
 

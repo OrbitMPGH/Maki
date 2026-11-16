@@ -35,6 +35,9 @@ series has no tags yet, so a tag-scoped connection never sees **Series added**.
 ### What messages contain
 
 - Discord, Telegram and Pushover upload the series cover with the message.
+- Discord messages have their own colour and icon for every event, and ntfy messages their own tag.
+  ntfy sends download failures and health problems at high priority unless the connection sets its
+  own priority.
 - Links in messages are relative paths, because Maki has no setting for its public address, and most
   providers leave them out.
 - Discord and Webhook messages use the instance's default language, because a channel has no
@@ -56,6 +59,10 @@ Each account picks its own events under **Settings → Preferences → Notificat
 - **Which series notify me** sets a rule per series, from its own page: **Default**, **Every
   chapter**, **While reading** (series you are partway through) or **Muted**. Muted sends nothing
   from that series, except that admins still get download failures.
+
+The **Discover** group has **New sequels and spin-offs**, which tells you when the catalogue lists a
+new sequel, prequel, spin-off or side story of a series you read, and opens it in Discover. Series
+already in your library before v0.37.0 don't announce the related works they already had.
 
 Series events go to people who have read or requested that series. If nobody has, admins receive the
 event, so a new series is never silent.

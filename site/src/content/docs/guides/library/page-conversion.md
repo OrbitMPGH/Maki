@@ -1,10 +1,10 @@
 ---
-title: WebP and AVIF conversion
-description: Store chapter pages as WebP or AVIF to save space, which readers can open them, and how Maki converts new downloads and files already on disk.
+title: Page conversion
+description: Store chapter pages as WebP, AVIF or JPEG XL to save space, split tall webtoon pages, which readers can open each format, and how Maki converts new downloads and files already on disk.
 ---
 
-Page conversion shrinks chapter files by re-encoding their pages as WebP or AVIF. It is off by
-default. Turn it on under **Settings, Library, Page conversion**, then pick a format and a quality.
+Page conversion shrinks chapter files by re-encoding their pages as WebP, AVIF or JPEG XL. It is off
+by default. Turn it on under **Settings, Library, Page conversion** and click **Set up conversion**.
 New downloads, upgrades and torrent imports go through a background queue after they land, so
 downloads finish without waiting on the encoder. A file waits in the queue while someone is reading
 it, and the Page conversion card shows how many are queued. A pausable pass works through files
@@ -14,17 +14,22 @@ already on disk.
 
 - **WebP** opens in every reader Maki works with: browsers, Kavita, Komga, KOReader, Mihon and
   Panels.
-- **AVIF** does not open in KOReader or on iOS before 16.
+- **AVIF** makes the smallest files. It does not open in KOReader or on iOS before 16.
+- **JPEG XL** is about the size of WebP (a tenth smaller at High) and converts about three times
+  faster. Maki's reader shows it as it is in browsers that support JPEG XL and as WebP everywhere
+  else, and OPDS, Komga and KOReader always get WebP pages. A CBZ you download keeps its JPEG XL
+  pages, which KOReader and most comic apps cannot open.
 
-If you read on KOReader or an iPhone, keep WebP. JPEG XL is not offered, because the image library
-Maki bundles cannot write it and Kavita and KOReader cannot read it.
+If you read downloaded files on KOReader or an iPhone, keep WebP. JPEG XL needs libjxl, which the
+Docker image and the Windows and Linux builds include.
 
 Clients that cannot decode a page's format can ask Maki for JPEG or PNG instead. See
 [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).
 
 ## Quality stops
 
-There are five stops. **High** is the default. The wizard describes each one like this:
+There are five stops. **High** is the default. For black-and-white pages each one is described like
+this:
 
 - **Smallest**: Screentone is smoothed away, lines stay intact.
 - **Compact**: Screentone gets lighter but stays visible.
@@ -32,30 +37,45 @@ There are five stops. **High** is the default. The wizard describes each one lik
 - **High**: No difference we could see.
 - **Lossless**: Identical pixels.
 
-## Set it up with the wizard
+Colour pages have no screentone, so their descriptions talk about skies, skin and dark gradients
+instead. At **High** a colour page is hard to tell from the original.
 
-**Set up conversion** on the Page conversion card opens a wizard with five steps: **Format**,
-**Compare**, **What to convert**, **Review** and **Start**. Nothing is saved until you press a button
-on the last step.
+## Set it up
 
-- **Format** picks WebP or AVIF, or Off.
-- **Compare** shows one of your pages before and after at the stop you pick. Maki suggests a page
-  from the middle of a file. **Pick another page** searches your series, and **Loupe, 2x** zooms in.
-- **What to convert** holds the per-file rules, described below.
-- **Review** estimates sizes and time by encoding a sample of the files each rule covers. Nothing
-  changes, and **Re-estimate** runs it again.
-- **Start** offers **Save and start**, which also starts the library pass, and **Save only**.
+**Set up conversion** opens one page that holds the whole plan. Nothing is saved until you press
+**Save only**, or **Save and start**, which also starts the library pass.
 
-## Per-file rules and series settings
+The plan is a table. Each row is a rule, and the last row, **Files no rule above matches**, is the
+default. Every row has two targets, a format and a quality for **Black-and-white pages** and one for
+**Colour pages**, so colour inserts can go to JPEG XL while the manga around them goes to AVIF. A
+colour target can also be **Same as black-and-white**.
+
+Click a target to see it on one of your own pages of that kind, taken from the files that row
+covers, with the page's size in the other formats beside it. **Fit** and **100%** set the zoom, and
+**Pick another page** chooses a different one. Each row shows how big its files would end up, and
+the total for the library updates as you edit.
+
+## Rules and series settings
 
 Rules are checked from the top, and the first one a file matches decides what happens to it. A rule
 can match on **Kind of release**, **Source**, **Page format**, **Series type**, **Series tags**,
-**Bits per pixel** or **File size**. Its action is **Convert at** one of the stops, or **Skip**. A
-file no rule matches is converted at the stop set under **Everything else**.
+**Bits per pixel** or **File size**. **Matching files are** sets whether the files it matches are
+**Converted**, at that row's targets, or **Skipped**. **Start from a template** offers common rules.
 
 An admin can also set one series' pages from its actions menu, under **Files → Page conversion**:
 **Follow the rules**, **Never**, or a stop. A series set to **Never** or to a fixed stop ignores the rules.
 Files already converted stay as they are.
+
+## Split tall pages
+
+Very tall webtoon pages are hard on e-readers and KOReader. Turn on **Split very tall pages** and set
+**Split pages taller than** to cut them into several shorter pages, in the blank gaps between panels
+where there are any. Only strips at least two and a half times as tall as they are wide are split.
+The setup shows where the cuts land on the tallest page in your library.
+
+Splitting applies to new downloads and, through the library pass, to files you already have,
+including ones that are already WebP or were converted before. Reading positions, bookmarks and page
+notes move with their page, and undoing a conversion puts them back.
 
 ## What gets converted
 
@@ -65,7 +85,8 @@ lossy stop they become the chosen format too.
 
 Left as they are:
 
-- Pages that are already WebP or AVIF, and animated pages.
+- Pages that are already WebP, AVIF or JPEG XL, animated pages, and pages with more than 8 bits
+  per channel.
 - Pages under 16 KB, and pages over 16,383 pixels on a side.
 - A page or file that would not come out at least 5% smaller.
 - Files hardlinked to a torrent client's copy. Rewriting one would store a second copy beside the
@@ -94,8 +115,8 @@ original and which settings they were converted with. Then choose one of two opt
 
 **Also set this series to Never** stops the series being converted again. It is unavailable with
 **Restore and convert again with the current settings**. An original that housekeeping has deleted
-cannot be restored. The Review step lists files converted earlier under **Converted earlier**, and
-those are never converted again.
+cannot be restored. Files converted earlier are listed under **Converted earlier**, and those are
+never converted again.
 
 ## Upgrades and quality
 

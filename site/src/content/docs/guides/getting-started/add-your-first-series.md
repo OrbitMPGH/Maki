@@ -14,8 +14,10 @@ If a source you want needs Cloudflare solving, set up FlareSolverr first. See
 
 ## Already have a library?
 
-The Import page can bring in an existing folder of CBZ files and a Mihon backup
-(`.tachibk` or `.proto.gz`). See [Import an existing library](/Maki/guides/getting-started/import-existing-library/)
+The Import page can bring in an existing folder of CBZ files, single files from anywhere on the
+server (**Manual import**) and a Mihon backup (`.tachibk` or `.proto.gz`). A drop folder under
+**Settings → Library** imports files that land in it on their own. See
+[Import an existing library](/Maki/guides/getting-started/import-existing-library/)
 and [Import a Mihon backup](/Maki/guides/getting-started/import-mihon-backup/).
 
 ## Next

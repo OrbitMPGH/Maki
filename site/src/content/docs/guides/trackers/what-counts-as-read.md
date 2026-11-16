@@ -16,6 +16,8 @@ that mark to every connected tracker that has the series.
 - Trackers only move forward, as described in [Connect a tracker](/Maki/guides/trackers/connect/).
 - Chapters you tick off as watched also move the mark, so a watched anime season updates your manga
   progress too.
+- A series you mark Completed is sent as completed with the tracker's own full chapter count, not
+  the mark.
 
 ## Maki reader
 

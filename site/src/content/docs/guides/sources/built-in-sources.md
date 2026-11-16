@@ -12,7 +12,7 @@ extensions. A site that isn't built in can be added as a
 
 | Source | Notes |
 |---|---|
-| MangaDex | Official API, language filter |
+| MangaDex | Official API, language filter, preferred and blocked [scanlation groups](/Maki/guides/sources/choosing-sources/#scanlation-groups-on-mangadex) |
 | MANGA Plus | Official (Shueisha), language-specific mappings |
 | WEBTOON | Official (webtoons.com), ORIGINALS and CANVAS in en, id, th, es, fr, zh-Hant, de |
 | Naver Webtoon | Official (comic.naver.com), Korean, WEBTOON tier only |

@@ -22,12 +22,16 @@ one and appears in **Manage sources** with a **Custom** tag. See
 4. Check the guesses. If Maki couldn't find something, describe it under **Advanced**, or edit the
    definition as a form or as JSON.
 5. Run the test. It runs against the sample series and chapter, and each check shows as passed or failed.
-   A new source can only be saved once the test passes.
+   It also reports how many chapters are locked and which scanlation groups it found. A new source can
+   only be saved once the test passes.
 
 - Sites on the Madara, MangaThemesia, Keyoapp and HeanCMS themes are recognised, so the guessing is
   skipped.
 - If the wizard finds no search, the source still works, but you link each series by pasting its
   address on the series page.
+- A definition can mark locked or premium chapters, for example by a coin or lock icon, and read the
+  scanlation group credited on each chapter. A locked chapter stays listed and waits for its unlock,
+  or comes from another source, instead of failing. The group shows up in file names and ComicInfo.
 - If the site needs FlareSolverr, the test offers to read it through FlareSolverr, and the source
   then uses it too. See [FlareSolverr for Cloudflare](/Maki/guides/sources/flaresolverr/).
 

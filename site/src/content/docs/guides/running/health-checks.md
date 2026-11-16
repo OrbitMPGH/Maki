@@ -26,7 +26,9 @@ an error.
   Also notification connections that keep failing, custom sources that no longer match their site,
   and the MangaBaka dump (missing, damaged or stale).
 - **System:** backup freshness, the scheduler, the database and the migration history. A backup is
-  fresh if newer than the **Backup freshness** threshold, 7 days by default.
+  fresh if newer than the **Backup freshness** threshold, 7 days by default. A database written by a
+  newer version of Maki shows as an error, with a link to the backups so you can restore the one
+  taken before the upgrade.
 - **Downloads:** failed downloads, and sources cooling down after failures.
 - **Scheduled jobs:** background jobs that are failing.
 
@@ -67,8 +69,9 @@ For files:
 ### Missing files that moved
 
 When an archive goes missing, Maki looks for it elsewhere in the same root folder, by file name, size
-and page hashes. A match can be relinked in one step, and the chapter keeps its read state and
-history. A match on the file name alone waits for you to confirm it.
+and page hashes. A match on all three is relinked by itself after each library scan, for example when
+a series folder was renamed outside Maki, and the chapter keeps its read state and history. A match
+on the file name alone waits on the **Missing** filter for you to confirm it.
 
 Until a missing file is relinked or dealt with, its chapter says **File missing** on the series
 page and is left out of the downloaded count. The series page has a **Relink files** button and a
@@ -91,7 +94,18 @@ Maki has no other copy to replace it from.
 
 The **History** tab is a timeline of status changes, newest first and grouped by day. A check's
 entry names the problem and shows the status it moved from. Background jobs appear there too when
-their status changes.
+their status changes, under readable names. History keeps 90 days of events, and always at least the
+newest 300.
+
+## Running now and scheduled jobs
+
+The **Overview** tab shows what Maki is busy with right now, next to its current processor and memory
+use: scheduled jobs mid-run, server Enhance for readers, Prepare ahead, page conversion, downloads,
+bulk series edits, source matching and the background credit page scan. A job or bulk edit can be
+stopped from there, and the conversion pass, the credit scan and the download queue paused.
+
+Below the checks, **Scheduled jobs** lists each background job with when it last ran and when it
+runs next. **Run now** starts one straight away.
 
 ## Image cache
 

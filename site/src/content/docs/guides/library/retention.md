@@ -9,7 +9,7 @@ library, it goes to one of three places.
 | Where it goes | What puts it there | How long it stays |
 | --- | --- | --- |
 | Recycle bin | Deleting a file, removing chapters, deleting a series with its files, archiving with files removed | **Keep deleted files (days)**, default 14 |
-| Upgrade trash | A chapter replaced by a better copy, a page conversion original, a file superseded by a torrent import | **Trash retention (days)**, default 14 |
+| Upgrade trash | A chapter replaced by a better copy, a page conversion original, a file superseded by a torrent import | **Trash retention**, default 14 |
 | Gone for good | Automatic read file cleanup | No trash, deleted by the cleanup job |
 
 Both trash folders live in `.maki-trash/` inside the root folder the file came from. Files move there
@@ -23,7 +23,10 @@ path. Restore entries from Settings until they are deleted. Restores never overw
 file, and if the series has moved to a new folder, the file goes to the new one.
 
 Set **Keep deleted files (days)** under **Settings, Library, Recycle bin**. `0` deletes binned files
-on the next housekeeping pass. **Empty bin** is on the same card.
+on the next housekeeping pass. **Open recycle bin** on the same card lists the files grouped by
+series, newest deletions first, with a filter by series, file name or why the file was removed. A
+series that was removed whole can be restored or deleted in one go, and **Empty bin** is in that
+window.
 
 - **Delete file** on a chapter moves the file into the bin. The chapter stays in the list with a **File
   removed** badge.
@@ -42,7 +45,7 @@ refuses the delete and offers to delete the files for good instead.
 
 When a better copy replaces a chapter, the old file goes to `.maki-trash/<SeriesId>/` and a history
 entry records the change. The same folder holds page conversion originals and files a torrent import
-superseded. They stay for **Trash retention (days)**, set under **Settings, Downloads, Upgrade
+superseded. They stay for **Trash retention**, set under **Settings, Downloads, Upgrade
 scan** (default 14). Until housekeeping purges a replaced file, the replacement can be reverted.
 
 ## Read file cleanup

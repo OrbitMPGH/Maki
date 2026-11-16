@@ -22,7 +22,7 @@ Edit `config.json` in the config folder and restart Maki, since logging settings
 
 ### What is the Health page?
 
-An admin page (**Health** in the sidebar) that checks your library for missing, unreadable, duplicate and suspicious files. Scans only read files. Repeated findings of one kind fold into one row, cleared with **Acknowledge all**. Schedule and thresholds are under **Settings → System → Library health**. See
+An admin page (**Health** in the sidebar) that checks your library for missing, unreadable, duplicate and suspicious files. Scans only read files. It also shows what Maki is busy with right now and when each scheduled job runs, with **Run now**. Repeated findings of one kind fold into one row, cleared with **Acknowledge all**. Schedule and thresholds are under **Settings → System → Library health**. See
 [Files and library](/Maki/features/files-and-library/).
 
 ### Maki uses a lot of memory. Is that a problem?

@@ -22,9 +22,9 @@ connection comes back. Reads show up in Stats and Rewind as they happen.
 
 ## OPDS apps
 
-Each page an app loads counts as read, if **Track reading progress from OPDS** is on under **Settings
-→ Reading → OPDS catalogue**. Many apps load the last page early to size their page bar, so Maki
-does not count that alone as a read. Turn the switch off if an app reports progress you did not make.
+Each page an app loads saves your position, if **Track reading progress from OPDS** is on under
+**Settings → Reading → OPDS catalogue**, and a chapter counts as read on its last page. Many apps
+load the last page early to size their page bar, so Maki does not count that alone as a read. Turn the switch off if an app reports progress you did not make.
 
 See [Reading over OPDS](/Maki/guides/reading/opds-apps/) for setup.
 
@@ -58,6 +58,15 @@ switch, so you can turn one tracker off without disconnecting it.
 
 Maki sends progress every 30 minutes by default. **Sync now** on the Scrobble page sends it straight
 away. Progress on a tracker is never lowered.
+
+Your reading status goes too: On hold is sent as paused, Dropped as dropped, and Completed as
+completed with the tracker's full chapter count. A completed entry on a tracker is never changed.
+
+## Reading status
+
+Reading a series anywhere Maki can see, in its own reader, an OPDS or Komga app, KOReader or Kavita,
+moves it from Plan to read to Reading. On hold and Dropped series stay as they are until you read
+them again, then they move back to Reading.
 
 ## Incognito
 

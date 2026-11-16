@@ -9,7 +9,7 @@ A series can carry one rating from 1 to 10, set with stars in half steps. Partwa
 
 On the series page, press the stars. A series you have not started, or have finished, takes a final rating. A series you are partway through takes a "so far" score, shown with the chapter it was set at, for example "so far, at ch. 34".
 
-Once you finish a series, the series page asks "You've finished this. How was it?" The stars there set the final rating. Maki refuses a "so far" score on a finished series.
+Once you finish a series, the series page asks "You've finished this. How was it?" The stars there set the final rating. The reader's end screen asks the same on the last chapter of a series you have finished, with a one-tap **Keep** if you gave it a score so far. Maki refuses a "so far" score on a finished series.
 
 To turn a "so far" score into your final rating, press **Make this my rating** beside it, or **Keep** on the finished-series line. A final rating replaces the "so far" score. **Clear rating** removes either one.
 

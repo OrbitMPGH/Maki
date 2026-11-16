@@ -17,7 +17,7 @@ New accounts have no root folder access. Grant folders under **Settings → User
 
 ### Can I sign in with my identity provider?
 
-Yes, with OpenID Connect alongside local passwords. Fill in **Settings → Users & security → Single sign-on** and restart Maki. The [single sign-on guide](/Maki/installation/single-sign-on/) covers the redirect URI and claim mapping.
+Yes, with OpenID Connect alongside local passwords. Fill in **Settings → Users & security → Single sign-on** and restart Maki. The [single sign-on guide](/Maki/installation/single-sign-on/) covers the redirect URI and claim mapping. An account that signs in only through single sign-on has no password to confirm, so creating an API key or turning on OPDS asks for a sign-in from the last ten minutes instead.
 
 ### I lost an API key or OPDS link. Can I get it back?
 

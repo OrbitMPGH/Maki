@@ -4,7 +4,8 @@ description: What the Discover engine does, and what stays on your server.
 ---
 
 Recommendations are computed on your server. Your reading is sent only to the trackers you connect.
-Anime lookups go to AniList and MyAnimeList, and detail cards fetch MyAnimeList reviews.
+Anime lookups go to AniList and MyAnimeList, and detail cards fetch reviews from AniList,
+MyAnimeList and Kitsu.
 
 ## The index
 
@@ -32,5 +33,5 @@ The other tabs are **Recommended**, **Your taste** and **Shortlist**. **Your tas
 reading behaviour, grouped interests, the tags steering your picks and how your taste has moved.
 **Shortlist** holds titles you saved for later. See [Discover](/Maki/features/discover/).
 
-Detail cards show categorized tags, alternate titles, creators, per-source ratings and MyAnimeList
-reviews. The Discover page itself is described in [Discover](/Maki/features/discover/).
+Detail cards show categorized tags, alternate titles, creators, per-source ratings and reviews from
+AniList, MyAnimeList and Kitsu. The Discover page itself is described in [Discover](/Maki/features/discover/).

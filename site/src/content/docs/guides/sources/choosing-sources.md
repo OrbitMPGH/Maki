@@ -24,6 +24,10 @@ Each linked source shows how it got there: **Title search**, **Cross-id** or **M
 search is reported as a failed source, not "no match", so a broken site does not look like a missing
 series.
 
+When a result comes close to the series title but not close enough to link on its own, the Sources
+section shows it as **Is this it?** with **Link** and **Dismiss**, so an odd romanisation does not
+need a manual search. A dismissed suggestion is not offered again for that source.
+
 **Auto-match** in the Sources section of the series page searches again. It only tries sources that
 are not linked yet.
 
@@ -37,6 +41,14 @@ Languages affect the order too. In **Settings → Downloads → Languages**, lis
 preferred first. Maki ranks each source by the most preferred enabled language it publishes in, and
 uses the priority order to break ties inside that group. A source that publishes none of your
 enabled languages is skipped by auto-match, but you can still link it by hand.
+
+### Scanlation groups on MangaDex
+
+MangaDex often has several uploads of one chapter by different groups. An admin can set preferred
+groups, in order, and blocked groups for every series from the scanlation groups button on the
+MangaDex row in **Manage sources**. A series can override them from its actions menu, which
+suggests the groups that actually upload that series. A chapter released only by blocked groups is
+taken from another source instead.
 
 ## Download order
 

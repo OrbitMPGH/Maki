@@ -22,7 +22,7 @@ The config folder is `/config` in the container. The Windows app uses `%LOCALAPP
 | `mangabaka.db` | The local MangaBaka metadata database. Maki downloads it in the background. |
 | `embeddings.db` | The embeddings database used by semantic search. |
 | `reco-edges.db`, `coread-edges.db`, `taste-vectors.db`, `reader-cohorts.db` | Precomputed recommendation data. Optional: a missing file leaves its signal empty. |
-| `models/` | Downloaded embedding model files. |
+| `models/` | Downloaded embedding model files, and `model.mapped.onnx` with its data and stamp files (about 110 MB), a memory-mapped copy written on the first search by meaning. |
 | `logs/` | Rolling log files. `config.json` sets the size cap per file (20 MB) and files kept (7). |
 | `cache/` | Downloads, reader thumbnails, source and conversion previews. Regenerated as needed and cleaned automatically. |
 | `MediaCover/` | Cover images for the library. |

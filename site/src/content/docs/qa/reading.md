@@ -18,7 +18,7 @@ Safari clears a site's data after seven days without use unless Maki is on the h
 
 ### An AVIF page will not open in KOReader or on iOS. What do I do?
 
-KOReader and iOS before 16 cannot open AVIF. Under **Settings → Library → Page conversion**, turn conversion on and pick WebP. New downloads use it, and a library pass converts existing files. Every reader Maki works with opens WebP.
+KOReader and iOS before 16 cannot open AVIF, and KOReader and most comic apps cannot open JPEG XL either. Under **Settings → Library → Page conversion**, pick WebP for the files you read there. New downloads use it, and a library pass converts existing files. Every reader Maki works with opens WebP. Pages streamed over OPDS or the Komga API are sent as WebP when they are JPEG XL, but a downloaded CBZ keeps the format it was stored in.
 
 ### KOReader does not sync my progress or does not recognise a book. Why?
 
@@ -26,4 +26,4 @@ Set **Document matching method** to **Binary**. It needs the device copy to be b
 
 ### Does reading in another app count in Maki?
 
-Yes. Pages streamed over OPDS count as read, and KOReader progress uses the same path as Maki's reader. Progress reaches AniList, MyAnimeList, Kitsu, MangaBaka and MangaUpdates whether you read in Maki, over OPDS or in Kavita.
+Yes. Pages streamed over OPDS count as read, and KOReader progress uses the same path as Maki's reader. Reading anywhere Maki can see also moves a series from Plan to read to Reading. Progress reaches AniList, MyAnimeList, Kitsu, MangaBaka and MangaUpdates whether you read in Maki, over OPDS or in Kavita.

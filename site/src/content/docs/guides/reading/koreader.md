@@ -16,6 +16,10 @@ regenerate the token. The token is the part after `/api/v1/opds/`.
 In KOReader's file browser, open **OPDS catalog**, add a catalogue and paste the feed URL. From
 outside your network, swap the host for the address you use there.
 
+A downloaded chapter is the CBZ as Maki stores it. KOReader cannot open JPEG XL or AVIF pages, so
+if page conversion is on, use WebP for the files you read here. JPEG XL pages streamed over OPDS
+are sent as WebP.
+
 ## Sync progress
 
 1. Open a book in KOReader and go to **Tools → Progress sync → Custom sync server**. Enter your

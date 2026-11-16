@@ -30,8 +30,11 @@ runs, and a copy taken during a write can be unusable.
 
 ## Changing the library path
 
-If your manga is on a different share, point the **Library** mapping in the template at that folder,
-then add `/library` under **Settings → Library → Root folders**.
+If your manga is on a different share, point the **Library** mapping in the template at that folder.
+The path inside the container stays `/library`, so a root folder already set to `/library` needs no
+change. If none is set yet, add `/library` under **Settings → Library → Root folders**. A root folder
+whose path did change has an edit button there, which checks the new path and counts the series
+folders it finds before saving. It never moves files.
 
 To read the same files in Kavita, mount that folder into the Kavita container too and point a Kavita
 library at it.

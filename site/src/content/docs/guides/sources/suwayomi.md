@@ -18,7 +18,8 @@ pages through Suwayomi's API, so a source that works in Suwayomi usually works i
 3. Enter the **URL**, such as `http://suwayomi:4567` in the same compose file. Include the subpath if
    Suwayomi runs under one.
 4. Set **Sign-in** to match Suwayomi's own auth mode (see below).
-5. Select **Test**, then save.
+5. Select **Test**, then save. The card keeps the last result, **Connected** or **Failed** with the
+   reason and when it ran, until you change the address or credentials.
 
 The test checks the server version. Suwayomi v2.1 or later is supported, and UI login needs v2.2 or
 later, so an older server fails the test if you choose it. Changing the URL clears the saved

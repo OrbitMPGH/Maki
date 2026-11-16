@@ -17,9 +17,12 @@ Everything Maki needs to run:
 - logs
 - covers and the page cache
 - the local MangaBaka database, the embedding index and the precomputed recommendation data
+- the search model under `models`, including a memory-mapped copy of about 110 MB written on the
+  first search by meaning (set `MAKI_EMBED_MMAP=0` if your filesystem has trouble with
+  memory-mapped files)
 - backups, under `backups`
 
-Backups skip the MangaBaka database, embeddings, covers and cache, so they stay small. They include
+Backups skip the MangaBaka database, embeddings, models, covers and cache, so they stay small. They include
 your settings in plain text, so treat a backup, `config.json` and a copy of the database like
 passwords. See [Backup and restore](/Maki/guides/running/backup-restore/).
 
@@ -33,6 +36,13 @@ library folder in the setup guide. See [First-run setup](/Maki/installation/firs
 
 Maki does not change the ownership of `/library`. The `PUID`/`PGID` user has to be able to write
 there already.
+
+## A drop folder
+
+The drop folder under **Settings → Library** can be any folder Maki can see. If yours sits outside
+`/library`, mount it as a third volume, such as `/downloads/manga:/drop`, and enter `/drop` in the
+setting. Maki moves or copies files out of it, so the `PUID`/`PGID` user needs write access there
+too.
 
 ## PUID and PGID
 
