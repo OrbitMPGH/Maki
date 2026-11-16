@@ -457,6 +457,11 @@ msgstr "{0, plural, other {스포일러 태그 #개}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, other {제목 #개}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7769,6 +7774,10 @@ msgstr "조건"
 #, fuzzy
 msgid "Config key"
 msgstr "설정 키"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20338,6 +20347,10 @@ msgstr "{label}에서 평점 읽는 중…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "모든 바이트를 읽어 손상된 파일을 찾습니다. 100 GB당 약 30분 걸립니다."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27523,6 +27536,10 @@ msgstr "모니터링하지 않음"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "알림 음소거 해제"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy

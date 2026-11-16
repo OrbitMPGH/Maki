@@ -91,22 +91,29 @@ public sealed class CreditGroupsService(
         var clusterOf = clusters.SelectMany(c => c.Keys.Select(k => (Key: "group:" + k, Cluster: c)))
             .ToDictionary(c => c.Key, c => c.Cluster);
 
+        var named = exact
+            .GroupBy(b => clusterOf.TryGetValue(b.Key, out var c) ? "group:" + c.Key : b.Key)
+            .Select(g => new Bucket(g.Key, g.SelectMany(b => b.Value).ToList(), clusterOf.GetValueOrDefault(g.First().Key)))
+            .ToList();
+        var titles = await SeriesTitlesAsync(allLinks.Select(l => l.SeriesId).Distinct().ToList(), ct);
+        var buckets = Join(named, links, titles);
+
         var groups = new List<CreditGroupDto>();
-        foreach (var bucket in exact.GroupBy(b => clusterOf.TryGetValue(b.Key, out var c) ? "group:" + c.Key : b.Key))
+        foreach (var bucket in buckets)
         {
-            var members = bucket.SelectMany(b => b.Value).ToList();
-            var cluster = clusterOf.GetValueOrDefault(bucket.First().Key);
+            var members = bucket.Members;
             var memberLinks = members.SelectMany(n => links[n.Id]).ToList();
             var chapters = memberLinks.DistinctBy(l => l.ChapterId).ToList();
             // What apply would change for these notices, by the same rule ApplyAsync follows.
             var applies = memberLinks
                 .Where(l => applicable.ContainsKey(l.NoticeId) && l.Ungrouped && !conflicted.Contains(l.FileId!.Value))
                 .Select(l => l.ChapterId).Distinct().Count();
-            var source = cluster is null ? "none" : NameOf(members).Source;
+            var source = bucket.Cluster is null ? "none" : NameOf(members).Source;
             var kind = bucket.Key == "site" ? "site" : members.Any(n => n.Kind == CreditNoticeKind.Group) ? "group" : "unknown";
+            var unconfirmed = bucket.Key == "site" ? 0 : members.Count(n => n.GroupSource == CreditGroupSource.None);
             groups.Add(new CreditGroupDto(
-                bucket.Key, cluster?.Name, source, kind, members.Select(n => n.Id).Order().ToList(), members.Count,
-                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, applies, cluster?.Variants ?? []));
+                bucket.Key, bucket.Cluster?.Name, source, kind, members.Select(n => n.Id).Order().ToList(), members.Count,
+                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, applies, bucket.Variants, bucket.Joined, unconfirmed));
         }
 
         return new CreditGroupListDto(groups
@@ -115,6 +122,94 @@ public sealed class CreditGroupsService(
             .ThenBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(g => g.Key, StringComparer.Ordinal)
             .ToList());
+    }
+
+    /// <summary>
+    /// A bucket of the list: its key, notices and name cluster (null for Site, Unnamed and a bucket of unnamed notices
+    /// that read alike), the other spellings folded in, and the notices that joined by their text rather than their name.
+    /// </summary>
+    private sealed record Bucket(string Key, List<NoticeRow> Members, CreditNameCluster? Cluster)
+    {
+        public IReadOnlyList<string> Variants { get; init; } = Cluster?.Variants ?? [];
+
+        public IReadOnlyList<int> Joined { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Joins the name buckets over the text their notices share (<see cref="CreditNoticeLinks"/>), so a notice OCR read no
+    /// name off, or a misread one, is listed with the group it reads like. Each unnamed notice takes part on its own,
+    /// confirmed and propagated names never join each other, and only hidden notices that are not Site link. A joined
+    /// bucket takes the key and name of its strongest name; unnamed notices that read alike and join no name become an
+    /// <c>alike:</c> bucket.
+    /// </summary>
+    private static List<Bucket> Join(List<Bucket> named, ILookup<int, LinkRow> links, Dictionary<int, string> titles)
+    {
+        int ChaptersOf(IEnumerable<NoticeRow> members) => members.SelectMany(n => links[n.Id]).Select(l => l.ChapterId).Distinct().Count();
+        bool Anchored(Bucket b) => b.Cluster is not null && NameOf(b.Members).Source is "confirmed" or "propagated";
+
+        var nodes = named
+            .Where(b => b.Key != "site")
+            .SelectMany(b => b.Key == "unnamed" ? b.Members.Select(n => new Bucket(b.Key, [n], null)) : [b])
+            .ToList();
+        var linkable = nodes.SelectMany(n => n.Members)
+            .Where(n => n.Kind != CreditNoticeKind.Site && Hidden(n.Override, n.Accepted) && !string.IsNullOrWhiteSpace(n.Text))
+            .ToDictionary(n => n.Id);
+        var similarities = CreditNoticeLinks.Measure(linkable.Values.Select(n => new CreditLinkText(n.Id, n.Text,
+            links[n.Id].Select(l => l.SeriesId).Distinct().Select(titles.GetValueOrDefault).OfType<string>().ToList())));
+        var sets = CreditNoticeLinks.Join(nodes
+            .Select(b => new CreditLinkNode(b.Members.Where(n => linkable.ContainsKey(n.Id)).Select(n => n.Id).ToList(),
+                Anchored(b) ? b.Key : null, b.Cluster is not null))
+            .ToList(), similarities);
+
+        var buckets = new List<Bucket>();
+        var unnamed = new List<NoticeRow>();
+        foreach (var set in sets)
+        {
+            var parts = set.Select(i => nodes[i]).ToList();
+            if (parts is [{ Cluster: null } lone])
+            {
+                unnamed.AddRange(lone.Members);
+                continue;
+            }
+
+            if (parts.Count == 1)
+            {
+                buckets.Add(parts[0]);
+                continue;
+            }
+
+            var head = parts
+                .OrderByDescending(p => p.Cluster is not null)
+                .ThenByDescending(Anchored)
+                .ThenByDescending(p => ChaptersOf(p.Members))
+                .ThenByDescending(p => p.Members.Count)
+                .ThenBy(p => p.Key, StringComparer.Ordinal)
+                .ThenBy(p => p.Members.Min(n => n.Id))
+                .First();
+            var others = parts.Where(p => !ReferenceEquals(p, head)).ToList();
+            var members = parts.SelectMany(p => p.Members).ToList();
+            var joined = others.SelectMany(p => p.Members).Select(n => n.Id).Order().ToList();
+            if (head.Cluster is not { } cluster)
+            {
+                buckets.Add(new Bucket("alike:" + members.Min(n => n.Id), members, null) { Joined = joined });
+                continue;
+            }
+
+            var variants = cluster.Variants
+                .Concat(others.Where(p => p.Cluster is not null).SelectMany(p => p.Cluster!.Variants.Prepend(p.Cluster.Name)))
+                .Where(v => !string.Equals(v, cluster.Name, StringComparison.Ordinal))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            buckets.Add(new Bucket(head.Key, members, cluster) { Variants = variants, Joined = joined });
+        }
+
+        if (unnamed.Count > 0)
+        {
+            buckets.Add(new Bucket("unnamed", unnamed, null));
+        }
+
+        buckets.AddRange(named.Where(b => b.Key == "site"));
+        return buckets;
     }
 
     /// <summary>The bucket a notice is listed under: its Site kind, else the key of its name, else Unnamed.</summary>
@@ -591,6 +686,21 @@ public sealed class CreditGroupsService(
             .Select(n => new NoticeRow(n.Id, n.Accepted, n.Override, n.Kind, n.GroupName, n.GroupSource, n.SuggestedName, n.Invite, n.Text,
                 n.Whole, n.Share))
             .ToListAsync(ct);
+    }
+
+    private async Task<Dictionary<int, string>> SeriesTitlesAsync(List<int> ids, CancellationToken ct)
+    {
+        var titles = new Dictionary<int, string>();
+        foreach (var batch in ids.Chunk(500))
+        {
+            var rows = await db.Series.AsNoTracking().Where(s => batch.Contains(s.Id)).Select(s => new { s.Id, s.Title }).ToListAsync(ct);
+            foreach (var row in rows)
+            {
+                titles[row.Id] = row.Title;
+            }
+        }
+
+        return titles;
     }
 
     /// <summary>The links of the listed notices (every notice when null), for the series the caller can see.</summary>

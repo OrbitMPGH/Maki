@@ -458,6 +458,11 @@ msgstr "{0, plural, one {# spoiler etiketi} other {# spoiler etiketi}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# başlık} other {# başlık}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7770,6 +7775,10 @@ msgstr "Koşullar"
 #, fuzzy
 msgid "Config key"
 msgstr "Yapılandırma anahtarı"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20339,6 +20348,10 @@ msgstr "{label} üzerindeki puanlarınız okunuyor…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Bozulmuş dosyaları yakalamak için her baytı okur. 100 GB başına yaklaşık yarım saat."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27524,6 +27537,10 @@ msgstr "İzlenmiyor"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "Bildirimleri sesli yap"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy

@@ -458,6 +458,11 @@ msgstr "{0, plural, one {# тег-спойлер} few {# тега-спойлер
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# название} few {# названия} many {# названий} other {# названия}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7770,6 +7775,10 @@ msgstr "Условия"
 #, fuzzy
 msgid "Config key"
 msgstr "Ключ конфигурации"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20339,6 +20348,10 @@ msgstr "Чтение ваших оценок из {label}…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Читает каждый байт, чтобы найти испорченные файлы. Примерно полчаса на 100 ГБ."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27524,6 +27537,10 @@ msgstr "Не отслеживается"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "Включить уведомления"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy

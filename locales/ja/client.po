@@ -457,6 +457,11 @@ msgstr "{0, plural, other {#件のネタバレタグ}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, other {#件のタイトル}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7769,6 +7774,10 @@ msgstr "条件"
 #, fuzzy
 msgid "Config key"
 msgstr "設定キー"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20338,6 +20347,10 @@ msgstr "{label}から評価を読み込み中…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "壊れたファイルを見つけるため、すべてのバイトを読み取ります。100 GBあたり約30分です。"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27523,6 +27536,10 @@ msgstr "未監視"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "通知のミュートを解除"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy

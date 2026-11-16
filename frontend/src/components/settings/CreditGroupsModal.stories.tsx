@@ -57,6 +57,51 @@ export const SuggestedName: Story = {
   },
 }
 
+const onJoinedConfirm = fn()
+
+/** A notice with no name of its own whose text matches a group's is listed there, waiting for a confirm. */
+export const JoinedByText: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/creditgroups/notices/:id'), async ({ params, request }) => {
+        onJoinedConfirm(Number(params.id), await request.json())
+        return HttpResponse.json({ named: 1 })
+      }),
+    ),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await dialog.findByText('1 to confirm')).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'Confirm name' })).toBeVisible()
+    const notice = within(await dialog.findByRole('article', { name: 'Notice 11' }))
+    await expect(await notice.findByText('Reads like Moonlit Scans')).toBeVisible()
+    await userEvent.click(await notice.findByRole('button', { name: 'Confirm' }))
+    await waitFor(() => expect(onJoinedConfirm).toHaveBeenCalledWith(11, { groupName: 'Moonlit Scans' }))
+  },
+}
+
+const onAlikeName = fn()
+
+/** Notices with no name that read alike are one group, so naming it once names them all. */
+export const UnnamedGroupReadsAlike: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/creditgroups/name'), async ({ request }) => {
+        const body = (await request.json()) as { noticeIds: number[]; name: string }
+        onAlikeName(body)
+        return HttpResponse.json({ named: body.noticeIds.length })
+      }),
+    ),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: /^Unnamed group/ }))
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Group name' }), 'Rook Scans')
+    await userEvent.click(await dialog.findByRole('button', { name: 'Save name' }))
+    await waitFor(() => expect(onAlikeName).toHaveBeenCalledWith({ noticeIds: [12, 13], name: 'Rook Scans' }))
+  },
+}
+
 const onMerge = fn()
 
 /** Two groups that are one: every notice of both takes the name of the group merged into. */
@@ -81,7 +126,7 @@ export const MergeGroups: Story = {
     await waitFor(() => expect(merge).toBeDisabled())
     await userEvent.click(await targets.findByRole('button', { name: /^Moonlit Scans/ }))
     await userEvent.click(await body.findByRole('button', { name: 'Merge into Moonlit Scans' }))
-    await waitFor(() => expect(onMerge).toHaveBeenCalledWith({ noticeIds: [4, 5, 1, 2], name: 'Moonlit Scans' }))
+    await waitFor(() => expect(onMerge).toHaveBeenCalledWith({ noticeIds: [4, 5, 1, 2, 11], name: 'Moonlit Scans' }))
     await expect(await body.findByText('Merged Paper Crane into Moonlit Scans')).toBeVisible()
   },
 }
@@ -99,6 +144,8 @@ const manyGroups = {
       chapters: 40,
       chaptersWithoutGroup: 0,
       variants: [],
+      joinedNoticeIds: [],
+      unconfirmed: 0,
     },
     ...Array.from({ length: 28 }, (_, i) => ({
       key: `group:team ${i + 1}`,
@@ -111,6 +158,8 @@ const manyGroups = {
       chapters: 30 - i,
       chaptersWithoutGroup: 0,
       variants: [],
+      joinedNoticeIds: [],
+      unconfirmed: 0,
     })),
     {
       key: 'group:omega scans',
@@ -123,6 +172,8 @@ const manyGroups = {
       chapters: 2,
       chaptersWithoutGroup: 0,
       variants: [],
+      joinedNoticeIds: [],
+      unconfirmed: 0,
     },
   ],
 }

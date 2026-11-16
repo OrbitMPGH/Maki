@@ -89,7 +89,9 @@ function useLayer(open: boolean) {
 function useGroupTitle() {
   const { t } = useLingui()
   return (group: CreditGroup) =>
-    group.kind === 'site' ? t`Site ads` : (group.name ?? t`No group name`)
+    group.kind === 'site'
+      ? t`Site ads`
+      : (group.name ?? (group.key.startsWith('alike:') ? t`Unnamed group` : t`No group name`))
 }
 
 /** Whether giving this group to chapters can run now, and if not, why. */
@@ -309,6 +311,11 @@ function GroupList({
                           {plural(missing, { one: '# without a group', other: '# without a group' })}
                         </span>
                       ),
+                      (group.nameSource === 'confirmed' || group.nameSource === 'propagated') && group.unconfirmed > 0 && (
+                        <span key="confirm" className="credit-group-missing">
+                          {plural(group.unconfirmed, { one: '# to confirm', other: '# to confirm' })}
+                        </span>
+                      ),
                     ]}
                   />
                 </Text>
@@ -393,7 +400,12 @@ function GroupDetail({ group, groups }: { group: CreditGroup; groups: CreditGrou
             </Text>
             <Stack gap="sm">
               {data.notices.map((notice) => (
-                <NoticeCard key={notice.id} notice={notice} knownNames={knownNames} />
+                <NoticeCard
+                  key={notice.id}
+                  notice={notice}
+                  knownNames={knownNames}
+                  readsLike={group.name && group.joinedNoticeIds.includes(notice.id) ? group.name : null}
+                />
               ))}
             </Stack>
           </section>
@@ -453,7 +465,7 @@ function GroupNameForm({ group }: { group: CreditGroup }) {
         onChange={(e) => setDraft(e.currentTarget.value)}
         style={{ flex: '1 1 14rem' }}
       />
-      {(changed || !confirmed) && (
+      {(changed || !confirmed || group.unconfirmed > 0) && (
         <Button type="submit" variant={changed ? 'filled' : 'default'} disabled={!typed} loading={name.isPending}>
           {changed ? <Trans>Save name</Trans> : <Trans>Confirm name</Trans>}
         </Button>
@@ -634,7 +646,16 @@ function NoticeImage({ notice }: { notice: CreditNotice }) {
   )
 }
 
-function NoticeCard({ notice, knownNames }: { notice: CreditNotice; knownNames: string[] }) {
+function NoticeCard({
+  notice,
+  knownNames,
+  readsLike,
+}: {
+  notice: CreditNotice
+  knownNames: string[]
+  /** The group this notice is listed under because its text matches that group's notices. */
+  readsLike: string | null
+}) {
   const { t } = useLingui()
   const update = useUpdateCreditNotice()
   const pending = update.isPending ? update.variables?.change : undefined
@@ -700,7 +721,13 @@ function NoticeCard({ notice, knownNames }: { notice: CreditNotice; knownNames: 
           </Text>
         )}
 
-        <NoticeName notice={notice} knownNames={knownNames} onSave={(groupName) => change({ groupName })} busy={update.isPending} />
+        <NoticeName
+          notice={notice}
+          knownNames={knownNames}
+          readsLike={readsLike}
+          onSave={(groupName) => change({ groupName })}
+          busy={update.isPending}
+        />
 
         <div className="credit-notice-controls">
           <div>
@@ -738,11 +765,13 @@ function NoticeCard({ notice, knownNames }: { notice: CreditNotice; knownNames: 
 function NoticeName({
   notice,
   knownNames,
+  readsLike,
   onSave,
   busy,
 }: {
   notice: CreditNotice
   knownNames: string[]
+  readsLike: string | null
   onSave: (groupName: string) => void
   busy: boolean
 }) {
@@ -763,11 +792,15 @@ function NoticeName({
     setOpened(false)
   }
   const picks = knownNames.filter((n) => n !== groupName).slice(0, 6)
+  // Only a notice without a name of its own: one confirmed or carried elsewhere keeps saying so.
+  const likeGroup = readsLike && notice.groupSource === 'none' ? readsLike : null
 
   return (
     <Group gap="xs" wrap="wrap" className="credit-notice-name">
       <Text size="sm">
-        {groupName ? (
+        {likeGroup ? (
+          <Trans>Reads like {likeGroup}</Trans>
+        ) : groupName ? (
           notice.groupSource === 'confirmed' ? (
             <Trans>Group: {groupName}, set by you</Trans>
           ) : (
@@ -781,10 +814,15 @@ function NoticeName({
           </span>
         )}
       </Text>
+      {likeGroup && (
+        <Button size="compact-xs" variant="light" onClick={() => onSave(likeGroup)} loading={busy}>
+          <Trans>Confirm</Trans>
+        </Button>
+      )}
       <Popover opened={opened} onChange={setOpened} position="bottom-start" withinPortal trapFocus>
         <Popover.Target>
           <Button size="compact-xs" variant="subtle" leftSection={<IconPencil size={14} />} onClick={open}>
-            {groupName || suggested ? <Trans>Change group</Trans> : <Trans>Name group</Trans>}
+            {groupName || suggested || likeGroup ? <Trans>Change group</Trans> : <Trans>Name group</Trans>}
           </Button>
         </Popover.Target>
         <Popover.Dropdown className="credit-name-popover">

@@ -10,11 +10,15 @@ public record CreditGroupListDto(IReadOnlyList<CreditGroupDto> Groups);
 /// strongest source among its notices: <c>confirmed</c>, <c>propagated</c>, <c>suggested</c> or <c>none</c>.
 /// <see cref="Kind"/> is <c>group</c>, <c>site</c> or <c>unknown</c>. <see cref="Variants"/> are the other spellings folded
 /// into this group as OCR variants of its name, heaviest first, empty when there are none; two real groups with close
-/// names ("Rest Scans", "Reset Scans") can share a bucket, and this is how the view says so.
+/// names ("Rest Scans", "Reset Scans") can share a bucket, and this is how the view says so. <see cref="JoinedNoticeIds"/>
+/// are the notices that joined because their text reads like the others' (<c>CreditNoticeLinks</c>) rather than by their
+/// name; unnamed notices that read alike and join no name are a bucket keyed <c>alike:&lt;lowest notice id&gt;</c>.
+/// <see cref="Unconfirmed"/> counts the notices with neither a confirmed nor a propagated name: the ones confirming the bucket's name gives a group to.
 /// </summary>
 public record CreditGroupDto(
     string Key, string? Name, string NameSource, string Kind, IReadOnlyList<int> NoticeIds,
-    int Notices, int Series, int Chapters, int ChaptersWithoutGroup, IReadOnlyList<string> Variants);
+    int Notices, int Series, int Chapters, int ChaptersWithoutGroup, IReadOnlyList<string> Variants,
+    IReadOnlyList<int> JoinedNoticeIds, int Unconfirmed);
 
 public record CreditGroupDetailDto(IReadOnlyList<CreditNoticeDto> Notices, IReadOnlyList<CreditGroupSeriesDto> Series);
 
