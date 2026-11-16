@@ -219,6 +219,29 @@ function rise(fade: boolean, drift = true) {
 }
 
 /**
+ * The installed iOS app scrolls <main>, so a flight's copy sits in <main> and <main> has to be its
+ * containing block. Held until the last copy is gone: dropped while a copy was still fading out, the
+ * copy re-anchored outside the scroller and jumped by the scroll offset.
+ */
+let anchors = 0
+let anchorSet = false
+function anchorIn(scroller: HTMLElement): () => void {
+  if (anchors++ === 0 && getComputedStyle(scroller).position === 'static') {
+    scroller.style.position = 'relative'
+    anchorSet = true
+  }
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    if (--anchors === 0 && anchorSet) {
+      scroller.style.removeProperty('position')
+      anchorSet = false
+    }
+  }
+}
+
+/**
  * Flies a copy of the cover from `from` (where it was on screen) into `target`, which stays hidden
  * until it lands.
  *
@@ -240,11 +263,10 @@ function flyCover(
   const src = img?.currentSrc || img?.src
   if (!src) return null
   // The installed iOS app scrolls <main> rather than the window (lib/pageScroll.ts), so the copy has
-  // to sit in <main> to move with it, and <main> has to contain it for that.
+  // to sit in <main> to move with it.
   const scroller = pageScroller()
   const host = scroller ?? document.body
-  const restorePosition = scroller && getComputedStyle(scroller).position === 'static'
-  if (restorePosition) scroller.style.position = 'relative'
+  const unanchor = scroller ? anchorIn(scroller) : () => {}
   const origin = scroller
     ? (() => {
         const r = scroller.getBoundingClientRect()
@@ -274,9 +296,11 @@ function flyCover(
     if (ended) return
     ended = true
     target.style.removeProperty('visibility')
-    if (restorePosition) scroller.style.removeProperty('position')
     // The card underneath carries its title and badges, which the copy doesn't; a short fade hands over.
-    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => ghost.remove())
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => {
+      ghost.remove()
+      unanchor()
+    })
   }
   return {
     decoded: ghost.decode().catch(() => {}),
@@ -288,8 +312,28 @@ function flyCover(
       ghost.remove()
       ended = true
       target.style.removeProperty('visibility')
-      if (restorePosition) scroller.style.removeProperty('position')
+      unanchor()
     },
+  }
+}
+
+/**
+ * Hides the cover the flight will land on while the held copy waits, so the new page doesn't show
+ * the same cover twice before the flight hides its target. A stylesheet, since the page that holds
+ * it hasn't rendered yet. Returns its removal; it also lifts itself in case the flight never starts.
+ */
+function hideLanding(opening: string | null, leaving: string | null): () => void {
+  const id = opening ?? leaving
+  if (!id) return () => {}
+  const style = document.createElement('style')
+  style.textContent = opening
+    ? 'img.series-hero-poster{visibility:hidden}'
+    : `:is(a[href="/series/${id}"],a[href^="/series/${id}?"],a[href^="/series/${id}#"],[data-series-cover="${id}"]) img{visibility:hidden}`
+  document.head.append(style)
+  const timer = window.setTimeout(() => style.remove(), 1500)
+  return () => {
+    window.clearTimeout(timer)
+    style.remove()
   }
 }
 
@@ -297,7 +341,7 @@ function flyCover(
  * Without a view transition the old page is gone the moment the route changes, so a copy of the cover
  * stays where it was until the new page has somewhere for it to fly. Returns its removal.
  */
-function holdCover(cover: HTMLElement, at: DOMRect): (fade: boolean) => void {
+function holdCover(cover: HTMLElement, at: DOMRect, opening: string | null, leaving: string | null): (fade: boolean) => void {
   const img = cover instanceof HTMLImageElement ? cover : cover.querySelector('img')
   const src = img?.currentSrc || img?.src
   if (!src) return () => {}
@@ -314,7 +358,9 @@ function holdCover(cover: HTMLElement, at: DOMRect): (fade: boolean) => void {
     borderRadius: getComputedStyle(cover).borderTopLeftRadius,
   })
   document.body.append(held)
+  const showLanding = hideLanding(opening, leaving)
   return (fade) => {
+    showLanding()
     if (!fade) return held.remove()
     held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => held.remove())
   }
@@ -358,7 +404,7 @@ appHistory.listen = (listener) =>
     const fromRect = outgoing?.getBoundingClientRect()
 
     if (!document.startViewTransition || skipViewTransitions) {
-      const release = outgoing && fromRect ? holdCover(outgoing, fromRect) : null
+      const release = outgoing && fromRect ? holdCover(outgoing, fromRect, opening, leaving) : null
       listener(update)
       settle = () => {
         settle = null
