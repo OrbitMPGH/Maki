@@ -53,7 +53,7 @@ public class SimilarSeriesService(
     /// </summary>
     private const int PoolSize = 60;
 
-    /// <summary>One entry per (series, content-rating ceiling) actually being looked at.</summary>
+    /// <summary>One entry per (series, content-rating ceiling, channel switches) actually being looked at.</summary>
     private const int MaxEntries = 256;
 
     /// <summary>
