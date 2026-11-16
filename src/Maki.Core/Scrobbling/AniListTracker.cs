@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Ratings;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Scrobbling;
@@ -22,6 +23,7 @@ public class AniListTracker(
     public const string HttpClientName = "scrobble";
 
     public string Name => "anilist";
+    public double ScoreStep => 0.1;
     public string Label => "AniList";
     public bool UsesOAuth => true;
 
@@ -238,7 +240,7 @@ public class AniListTracker(
             """
             query($id:Int){ Media(id:$id, type:MANGA){
               chapters volumes status title{ romaji english }
-              mediaListEntry{ status progress progressVolumes score(format: POINT_10) } } }
+              mediaListEntry{ status progress progressVolumes score(format: POINT_100) } } }
             """,
             new { id = int.Parse(remoteId) }, auth: true, ct);
         if (data.TryGetProperty("Media", out var media) is false || media.ValueKind == JsonValueKind.Null)
@@ -260,8 +262,8 @@ public class AniListTracker(
             Title: (titles.ValueKind == JsonValueKind.Object
                        ? GetString(titles, "english") ?? GetString(titles, "romaji")
                        : null) ?? "",
-            // score(format: POINT_10) comes back as a Float (e.g. 8.0); 0 means unrated.
-            Score: hasEntry ? ScoreOf(entry, "score") : null,
+            // score(format: POINT_100) is 0-100; 0 means unrated.
+            Score: hasEntry ? DecimalScoreOf(entry, "score") : null,
             Releasing: GetString(media, "status") switch
             {
                 "RELEASING" or "HIATUS" or "NOT_YET_RELEASED" => true,
@@ -302,11 +304,11 @@ public class AniListTracker(
     }
 
     public async Task UpdateRatingAsync(
-        int userId, string remoteId, int score, CancellationToken ct = default)
+        int userId, string remoteId, double score, CancellationToken ct = default)
     {
-        // scoreRaw is always on AniList's 100-point scale regardless of the user's display format,
-        // so our 1–10 maps to 0–100 by *10. Creates the list entry if one doesn't exist yet.
-        var raw = Math.Clamp(score, 0, 10) * 10;
+        // scoreRaw is always on AniList's 100-point scale regardless of the user's display format.
+        // Creates the list entry if one doesn't exist yet.
+        var raw = TrackerScore.AniListRaw(score);
         await QueryAsync(
             userId,
             "mutation($mediaId:Int,$scoreRaw:Int){ SaveMediaListEntry(mediaId:$mediaId,scoreRaw:$scoreRaw){ id } }",
@@ -476,6 +478,18 @@ public class AniListTracker(
 
     private static int? GetInt(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number ? p.GetInt32() : null;
+
+    /// <summary>A POINT_100 score as 1-10 with one decimal; null when absent or 0 (unrated).</summary>
+    private static double? DecimalScoreOf(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var p) || p.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        var score = RatingScale.Round(p.GetDouble() / 10.0);
+        return score is >= 1 and <= 10 ? score : null;
+    }
 
     /// <summary>Rounds a POINT_10 score (a Float) to 1–10; null when absent or 0 (unrated).</summary>
     private static int? ScoreOf(JsonElement element, string name)

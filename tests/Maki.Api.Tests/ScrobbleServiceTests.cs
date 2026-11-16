@@ -841,7 +841,7 @@ public class ScrobbleServiceTests
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
             CancellationToken ct = default, bool keepStatus = false) => Task.CompletedTask;
 
-        public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
+        public Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default) =>
             Task.CompletedTask;
 
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
@@ -879,7 +879,7 @@ public class ScrobbleServiceTests
             return Task.CompletedTask;
         }
 
-        public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
+        public Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default) =>
             Task.CompletedTask;
 
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
@@ -926,7 +926,7 @@ public class ScrobbleServiceTests
                 [.. writes.Select(w => w.RemoteId == FailFor ? (BackOff ? new TrackerBackOffException("backed off", DateTimeOffset.UtcNow.AddMinutes(30)) : new TrackerException("refused")) : (Exception?)null)]);
         }
 
-        public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
+        public Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default) =>
             Task.CompletedTask;
 
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(

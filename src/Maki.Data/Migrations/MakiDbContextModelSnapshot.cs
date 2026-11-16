@@ -3583,6 +3583,9 @@ namespace Maki.Data.Migrations
                     b.Property<double?>("AtChapter")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("BreakdownJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -3592,8 +3595,8 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Origin")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Rating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double>("Rating")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
@@ -3714,14 +3717,17 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("ProvisionalRatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProvisionalRating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("ProvisionalRating")
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("RateHintDismissedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("Rating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("Rating")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("RatingBreakdownJson")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("RatingCheckpointsSeen")
                         .HasColumnType("INTEGER");

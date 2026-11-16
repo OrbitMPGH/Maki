@@ -50,7 +50,7 @@ public static class ProvisionalRatingPolicy
     }
 
     /// <summary>The seed weight for a provisional rating of 5 or more, rounded like every other weight.</summary>
-    public static double Weight(int rating, double confidence, TasteTuning tuning)
+    public static double Weight(double rating, double confidence, TasteTuning tuning)
     {
         var weight = TasteWeights.Neutral + confidence * (rating / 5.0 - TasteWeights.Neutral);
         return tuning.WeightQuantum <= 0
@@ -62,6 +62,6 @@ public static class ProvisionalRatingPolicy
     /// The avoid strength for a provisional rating, the final rating's strength scaled by the
     /// confidence. Zero at or above the neutral point.
     /// </summary>
-    public static double AvoidStrength(int rating, double confidence) =>
+    public static double AvoidStrength(double rating, double confidence) =>
         RecommendationFeedbackPolicy.AvoidStrength(rating) * confidence;
 }

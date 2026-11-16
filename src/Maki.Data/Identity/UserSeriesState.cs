@@ -27,7 +27,7 @@ public class UserSeriesState : IUserOwned
     /// connected trackers (MAL 0–10, AniList 0–100, MangaBaka) and used to weight the recommendation
     /// seed vector — highly-rated series pull recommendations harder than unrated ones.
     /// </summary>
-    public int? Rating { get; set; }
+    public double? Rating { get; set; }
 
     /// <summary>
     /// A "so far" score on the same 1–10 scale, set while the reader is partway through. Not pushed
@@ -35,9 +35,15 @@ public class UserSeriesState : IUserOwned
     /// Cleared whenever <see cref="Rating"/> is set: the final rating wins, and two live scores
     /// would leave the page showing one number while the recommender uses the other.
     /// </summary>
-    public int? ProvisionalRating { get; set; }
+    public double? ProvisionalRating { get; set; }
 
     public DateTime? ProvisionalRatedAt { get; set; }
+
+    /// <summary>
+    /// Per-category scores as a JSON object of category key to a whole 1-10 score. Display and
+    /// history only: it never sets <see cref="Rating"/> by itself.
+    /// </summary>
+    public string? RatingBreakdownJson { get; set; }
 
     /// <summary>
     /// The highest chapter number read when <see cref="ProvisionalRating"/> was set, for the

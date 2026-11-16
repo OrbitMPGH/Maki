@@ -25,7 +25,7 @@ public record RemoteEntry(
     int? TotalVolumes = null,
     string Title = "",
     /// <summary>The user's score on the tracker, normalized to 1–10; null = unrated there.</summary>
-    int? Score = null,
+    double? Score = null,
     /// <summary>
     /// Whether the tracker says the work is still being published (releasing, on hiatus, not yet
     /// out); null when it doesn't say.
@@ -144,7 +144,10 @@ public interface IScrobbleTracker
     /// scale (0 clears the score where the tracker supports it). Implementations map to their own
     /// scale (MAL 0–10, AniList 0–100).
     /// </summary>
-    Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default);
+    Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default);
+
+    /// <summary>The finest score step the tracker stores, on the 1-10 scale (AniList 0.1, Kitsu 0.5).</summary>
+    double ScoreStep => 1;
 
     Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(int userId, string title, CancellationToken ct = default);
 

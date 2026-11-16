@@ -11,6 +11,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Indexers;
 using Maki.Core.Parsing;
+using Maki.Core.Ratings;
 using Maki.Core.Scrobbling;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -742,6 +743,47 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.RatingPrompts, request.Enabled ? "" : "off", ct);
         await userSettings.SetAsync(SettingKeys.RatingPromptsVolumes, request.Volumes ? "on" : "", ct);
         return Ok(request);
+    }
+
+    public record RatingCategoryRequest(string? Key, string? Name, bool Enabled, double Weight);
+
+    /// <param name="Precision">"whole" or "decimal".</param>
+    /// <param name="Categories">The breakdown categories in display order.</param>
+    public record RatingsSettingsRequest(string? Precision, List<RatingCategoryRequest?>? Categories);
+
+    public record RatingsSettings(string Precision, IReadOnlyList<RatingCategory> Categories);
+
+    /// <summary>How the caller rates: whole or one-decimal scores, and their breakdown categories.</summary>
+    [HttpGet("ratings")]
+    public async Task<IActionResult> GetRatings(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync([SettingKeys.RatingPrecision, SettingKeys.RatingCategories], ct);
+        return Ok(new RatingsSettings(
+            rows.GetValueOrDefault(SettingKeys.RatingPrecision) == "decimal" ? "decimal" : "whole",
+            RatingCategoryDefaults.Parse(rows.GetValueOrDefault(SettingKeys.RatingCategories))));
+    }
+
+    [HttpPut("ratings")]
+    public async Task<IActionResult> SetRatings([FromBody] RatingsSettingsRequest request, CancellationToken ct)
+    {
+        if (request.Precision is not ("whole" or "decimal"))
+        {
+            return this.Fail(localizer, "error.settings.invalidRatingPrecision");
+        }
+
+        var categories = request.Categories?
+            .Select(c => c?.Key is null ? null : new RatingCategory(c.Key, c.Name, c.Enabled, c.Weight))
+            .ToList();
+        if (RatingCategoryDefaults.Normalize(categories) is not { } normalized)
+        {
+            return this.Fail(localizer, "error.settings.invalidRatingCategories");
+        }
+
+        // Each default is the absence of a row, so going back to it deletes the row.
+        await userSettings.SetAsync(SettingKeys.RatingPrecision, request.Precision == "decimal" ? "decimal" : "", ct);
+        await userSettings.SetAsync(SettingKeys.RatingCategories,
+            normalized.SequenceEqual(RatingCategoryDefaults.Defaults) ? "" : RatingCategoryDefaults.Serialize(normalized), ct);
+        return Ok(new RatingsSettings(request.Precision, normalized));
     }
 
     /// <summary>Days without reading before each auto rule moves a series; null = that rule is off.</summary>

@@ -810,10 +810,11 @@ public class MangaUpdatesTracker(
     /// would otherwise queue behind it). A 401 here is MangaUpdates saying the account lacks the role
     /// to rate, so a fresh token is not thrown away over it.
     /// </summary>
-    public async Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default)
+    public async Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default)
     {
         var seriesId = SeriesIdOf(remoteId);
-        if (score <= 0)
+        var whole = TrackerScore.Whole(score);
+        if (whole <= 0)
         {
             await RequestAsync(userId, HttpMethod.Delete, $"/series/{seriesId}/rating",
                 auth: true, relogin: Relogin.IfStale, ct: ct);
@@ -821,7 +822,7 @@ public class MangaUpdatesTracker(
         else
         {
             await RequestAsync(userId, HttpMethod.Put, $"/series/{seriesId}/rating",
-                new JsonObject { ["rating"] = Math.Clamp(score, 1, 10) },
+                new JsonObject { ["rating"] = Math.Clamp(whole, 1, 10) },
                 auth: true, relogin: Relogin.IfStale, ct: ct);
         }
 

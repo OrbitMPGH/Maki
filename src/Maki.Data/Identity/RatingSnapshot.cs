@@ -13,8 +13,11 @@ public class RatingSnapshot : IUserOwned
     public long Id { get; set; }
     public int UserId { get; set; }
     public int SeriesId { get; set; }
-    public int Rating { get; set; }
+    public double Rating { get; set; }
     public bool Final { get; set; }
+
+    /// <summary>The reader's rating breakdown when the score was set, copied from <c>UserSeriesState</c>.</summary>
+    public string? BreakdownJson { get; set; }
 
     /// <summary>The highest chapter number read when the score was set, or null with nothing read.</summary>
     public double? AtChapter { get; set; }

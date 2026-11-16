@@ -1186,7 +1186,7 @@ public sealed class ArchiveGuardTests : IDisposable
             return Task.CompletedTask;
         }
 
-        public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
+        public Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default) =>
             Task.CompletedTask;
 
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(int userId, string title, CancellationToken ct = default) =>

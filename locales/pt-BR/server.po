@@ -2413,6 +2413,11 @@ msgstr "A quantidade deve ser pelo menos 1."
 msgid "error.series.invalidRating"
 msgstr "A classificação deve estar entre 1 e 10, ou ser nula para limpar"
 
+#. English: Each category score must be a whole number from 1 to 10, for at most 16 categories
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidRatingBreakdown"
+msgstr ""
+
 #. English: There is no "so far" rating to keep
 #: src/Maki.Api/Controllers/SeriesController.cs
 #, fuzzy
@@ -2546,6 +2551,16 @@ msgstr ""
 #. English: Days must be between 1 and {max}.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.readingStatusDays"
+msgstr ""
+
+#. English: Rating precision must be whole or decimal.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidRatingPrecision"
+msgstr ""
+
+#. English: Rating categories are invalid. Use at most 8 enabled and 8 custom categories, each custom one with a name of up to 40 characters and a weight of 0.5, 1 or 2.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidRatingCategories"
 msgstr ""
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.

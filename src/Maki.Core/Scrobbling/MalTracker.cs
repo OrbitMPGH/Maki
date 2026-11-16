@@ -341,11 +341,11 @@ public class MalTracker(
     }
 
     public async Task UpdateRatingAsync(
-        int userId, string remoteId, int score, CancellationToken ct = default)
+        int userId, string remoteId, double score, CancellationToken ct = default)
     {
-        // MAL's score is 0–10, matching our internal scale; a score-only update leaves the rest of
-        // the list entry untouched and adds the series to the list if it isn't there. 0 clears it.
-        var clamped = Math.Clamp(score, 0, 10);
+        // MAL's score is a whole 0–10; a score-only update leaves the rest of the list entry
+        // untouched and adds the series to the list if it isn't there. 0 clears it.
+        var clamped = TrackerScore.Whole(score);
         await RequestAsync(userId, HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
             new FormUrlEncodedContent(new Dictionary<string, string> { ["score"] = clamped.ToString() }), ct);
     }
