@@ -68,12 +68,14 @@ export interface SeriesDto {
   authorStory: string | null
   authorArt: string | null
   publisher: string | null
-  /** The user's own rating on a 1–10 scale, or null if unrated. */
+  /** The user's own rating on a 1–10 scale, to one decimal, or null if unrated. */
   rating: number | null
   /** The user's "so far" score while partway through, or null. Never set alongside `rating`. Absent on older responses. */
   provisionalRating?: number | null
   /** The highest chapter number read when `provisionalRating` was set. */
   provisionalAtChapter?: number | null
+  /** The reader's category scores (key to whole points 1-10). Series detail only. */
+  ratingBreakdown?: Record<string, number> | null
   /** You finished this series. The stars set a "so far" score only while it is part-read. */
   finished?: boolean
   /** The "how is it so far?" prompt waiting for you. Detail endpoint only. */

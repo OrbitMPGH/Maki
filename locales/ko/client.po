@@ -2514,6 +2514,10 @@ msgstr "{noticeTotal, plural, other {고지 #개}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, other {목록에 #개 더, 원하지 않음}}"
 
+#: src/components/series/RatingPanel.tsx
+msgid "{of} on"
+msgstr ""
+
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
 msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
@@ -2917,6 +2921,10 @@ msgstr "{sampleChapters, plural, other {비슷하게 읽은 작품 #개를 기�
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
+
+#: src/components/series/RatingPanel.tsx
+msgid "{scoredCount} of {of} scored"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3748,6 +3756,11 @@ msgstr "{who}, {when}"
 msgid "{width}px, {bpp} bpp"
 msgstr "{width}px, 픽셀당 {bpp}비트"
 
+#. A rating word and its score, such as "Very good 7.8".
+#: src/api/ratings.ts
+msgid "{word} {score}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "{workCount, plural, one {Showing {shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.} other {Showing {shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.}}"
@@ -3762,6 +3775,10 @@ msgstr "{year} – 현재"
 #, fuzzy
 msgid "{zone} (this browser)"
 msgstr "{zone} (이 브라우저)"
+
+#: src/components/series/RatingPanel.tsx
+msgid "/10 so far"
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
@@ -4484,6 +4501,7 @@ msgstr "활동 로그"
 msgid "Adaptation"
 msgstr "적용"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
@@ -4759,6 +4777,10 @@ msgstr "영향받는 챕터:"
 #, fuzzy
 msgid "After seeding"
 msgstr "시딩 후"
+
+#: src/components/series/RatingPanel.tsx
+msgid "After the last chapter"
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -5570,6 +5592,7 @@ msgctxt "series"
 msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
 msgstr "완결된 시리즈를 보관하면 Maki가 소스를 확인하지 않으며, 읽기 기록과 평점은 그대로 남습니다. 보관된 시리즈는 여기에 표시됩니다."
 
+#: src/api/ratings.ts
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -5828,6 +5851,11 @@ msgstr "자동 업그레이드가 꺼져 있어 직접 결정해야 합니다"
 msgid "Automation"
 msgstr "자동화"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Average"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Average score"
@@ -5981,6 +6009,11 @@ msgstr "백업에는 API 키와 비밀번호가 일반 텍스트로 저장됩니
 #, fuzzy
 msgid "Backups to keep"
 msgstr "보관할 백업 개수"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Bad"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -6260,6 +6293,18 @@ msgstr "페이지의 아래 {percent}%"
 #, fuzzy
 msgid "Boys Love"
 msgstr "보이즈 러브"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/RateHint.tsx
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Break it down"
+msgstr ""
+
+#: src/components/settings/RatingCategoriesModal.tsx
+#: src/components/settings/RatingsSection.tsx
+msgid "Breakdown categories"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -7177,6 +7222,10 @@ msgstr "챕터: {chapters}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "챕터: {chaptersMin}–{chaptersMax}"
 
+#: src/api/ratings.ts
+msgid "Characters"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Charcoal"
@@ -7373,6 +7422,10 @@ msgstr "읽은 파일 정리"
 msgid "Clear"
 msgstr "지우기"
 
+#: src/components/series/RatingPanel.tsx
+msgid "Clear {name}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7413,7 +7466,7 @@ msgstr "대기열 지우기"
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPanel.tsx
 #, fuzzy
 msgid "Clear rating"
 msgstr "평점 지우기"
@@ -8724,6 +8777,7 @@ msgstr "현재: {tierLabel}, 점수 {score}"
 msgid "Currently popular"
 msgstr "현재 인기"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Custom"
@@ -8856,6 +8910,11 @@ msgstr "시리즈를 제외하기 전까지 읽지 않은 날 수"
 #, fuzzy
 msgid "Days without reading before a series is put on hold"
 msgstr "시리즈를 보류하기 전까지 읽지 않은 날 수"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Decent"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -9502,6 +9561,7 @@ msgstr "원하지 않음"
 msgid "Done"
 msgstr "완료"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -9967,6 +10027,7 @@ msgstr "가장자리"
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
+#: src/components/settings/RatingsSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9995,6 +10056,10 @@ msgstr "폼으로 편집"
 #, fuzzy
 msgid "Edit as JSON"
 msgstr "JSON으로 편집"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Edit categories"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10200,6 +10265,10 @@ msgstr "이 챕터에서 숨겨진 마지막 페이지의 끝부분"
 msgid "End of the preview"
 msgstr "미리보기 끝"
 
+#: src/api/ratings.ts
+msgid "Ending"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "English"
@@ -10255,6 +10324,10 @@ msgstr "향상: 끔"
 #, fuzzy
 msgid "Enhancing pages for readers"
 msgstr "독자를 위해 페이지 향상 중"
+
+#: src/api/ratings.ts
+msgid "Enjoyment"
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -10559,6 +10632,11 @@ msgstr "예시"
 #, fuzzy
 msgid "Example: {example}"
 msgstr "예: {example}"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Excellent"
+msgstr ""
 
 #: src/components/discover/ScoreFigure.tsx
 #, fuzzy
@@ -11196,6 +11274,10 @@ msgstr "누락, 새로 생기거나 깨진 파일을 찾습니다. 몇 초면 �
 msgid "Fine detail gets softer. Check dark gradients."
 msgstr "세밀한 부분이 부드러워집니다. 어두운 그라데이션을 확인하세요."
 
+#: src/components/series/RatingPanel.tsx
+msgid "Fine-tune"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Finish"
@@ -11814,6 +11896,11 @@ msgstr "디스크에서 사라짐"
 msgid "Good"
 msgstr "좋음"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Good"
+msgstr ""
+
 #: src/components/discover/ScoreFigure.tsx
 #, fuzzy
 msgctxt "score"
@@ -11974,6 +12061,10 @@ msgstr "습관"
 #, fuzzy
 msgid "Habits in numbers"
 msgstr "숫자로 보는 습관"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Half"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12387,6 +12478,10 @@ msgstr "추가된 방식"
 #, fuzzy
 msgid "How many"
 msgstr "개수"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "How much {text} counts"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -14353,6 +14448,15 @@ msgstr "낮은 품질"
 msgid "Lower bars mean your taste moved."
 msgstr "막대가 낮을수록 취향이 바뀐 것입니다."
 
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Lower by 0.1"
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "Lower by 1"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Lower Case"
@@ -14831,6 +14935,11 @@ msgstr "시청함으로 표시됨, 읽지는 않음. 읽기 통계에 포함되�
 msgid "Martial Arts"
 msgstr "무술"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Masterpiece"
+msgstr ""
+
 #: src/components/import/MihonReview.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/ImportPage.tsx
@@ -14897,6 +15006,10 @@ msgstr "의미, 설명 및 분위기를 기준으로 일치 항목을 찾습니�
 #, fuzzy
 msgid "Matches your naming formats. Only the highlighted parts change."
 msgstr "이름 형식과 맞습니다. 강조된 부분만 바뀝니다."
+
+#: src/components/series/RatingPanel.tsx
+msgid "Matches your rating"
+msgstr ""
 
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
@@ -15863,6 +15976,10 @@ msgstr "새로 만들기"
 msgctxt "recently added setting"
 msgid "New"
 msgstr "새 항목"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "New category"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
@@ -16954,6 +17071,10 @@ msgstr "아직 없음"
 msgid "None, use the filters below"
 msgstr "없음, 아래 필터 사용"
 
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Normal"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"
@@ -17190,7 +17311,7 @@ msgstr "모니터링하지 않음"
 msgid "Not muted"
 msgstr "음소거 아님"
 
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPanel.tsx
 #, fuzzy
 msgid "Not rated"
 msgstr "평점 없음"
@@ -17241,6 +17362,10 @@ msgstr "저장되지 않음"
 msgid "Not scanned"
 msgstr "아직 스캔하지 않음"
 
+#: src/components/series/RatingPanel.tsx
+msgid "Not scored"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DropFolderSection.tsx
 #, fuzzy
@@ -17269,6 +17394,7 @@ msgstr "아직 설정되지 않았습니다. 관리자가 설정에서 추가할
 msgid "Not set up."
 msgstr "설정되지 않음."
 
+#: src/components/series/RatingPanel.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Not started"
@@ -18085,10 +18211,18 @@ msgstr "라이브러리에 있음, 순위 산정에 사용되지 않음"
 msgid "On your shortlist"
 msgstr "찜 목록에 있음"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "One decimal"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "One missed day a week is forgiven, and today never breaks a streak."
 msgstr "일주일에 하루 빠진 것은 허용되며, 오늘은 연속 기록을 깨지 않습니다."
+
+#: src/components/series/RatingPanel.tsx
+msgid "One more to get a suggestion"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -18526,6 +18660,10 @@ msgstr "원본 크기 (1:1)"
 msgid "Original title"
 msgstr "원제"
 
+#: src/api/ratings.ts
+msgid "Originality"
+msgstr ""
+
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/TagBuckets.tsx
@@ -18613,6 +18751,10 @@ msgstr "자체 설정"
 #, fuzzy
 msgid "Pace"
 msgstr "속도"
+
+#: src/api/ratings.ts
+msgid "Pacing"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -19814,6 +19956,15 @@ msgstr "섹션 옵션"
 msgid "Rail saved"
 msgstr "섹션 저장됨"
 
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Raise by 0.1"
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "Raise by 1"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Ran out of probes for this run"
@@ -19823,6 +19974,10 @@ msgstr "이번 실행의 측정 시도 횟수를 모두 사용했습니다"
 #, fuzzy
 msgid "Rank"
 msgstr "순위"
+
+#: src/components/series/RatingPill.tsx
+msgid "Rate"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -19853,6 +20008,7 @@ msgid "Rate limited. Retrying soon."
 msgstr "요청 제한에 걸렸습니다. 곧 다시 시도합니다."
 
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingPill.tsx
 #, fuzzy
 msgid "Rate this series"
 msgstr "이 시리즈 평가하기"
@@ -19922,6 +20078,10 @@ msgstr "평점 지움"
 msgid "Rating from"
 msgstr "평점 최소"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Rating precision"
+msgstr ""
+
 #: src/components/settings/RatingPromptsSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -19935,9 +20095,19 @@ msgstr "평점 최대"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "rating, decimal, precision, breakdown, category, categories, story, art, characters, weight, score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
 msgstr "평점, 평가, 지금까지, 임시, 점수, 알림, 묻기, 별"
+
+#: src/components/settings/RatingsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Ratings"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -20922,6 +21092,10 @@ msgstr "{removingSourceName}을(를) 제거할까요?"
 #, fuzzy
 msgid "Remove {seriesTitle} from this device"
 msgstr "이 기기에서 {seriesTitle} 제거"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Remove {text}"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -22472,6 +22646,7 @@ msgstr "복구 코드 저장"
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/SaveActions.tsx
 #: src/components/settings/RatingPromptsSection.tsx
+#: src/components/settings/RatingsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/ReadingStatusSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -22766,6 +22941,10 @@ msgstr "점수 {score}"
 #, fuzzy
 msgid "Score for {0}"
 msgstr "{0}의 점수"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Score two to get a suggestion"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
@@ -24456,7 +24635,7 @@ msgstr "디스크의 스냅샷: {snapshotSize}, {refreshedAtLabel}에 새로 고
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "디스크의 스냅샷: {snapshotSize}, 새로 고침 시간 알 수 없음"
 
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPill.tsx
 #, fuzzy
 msgid "so far"
 msgstr "지금까지"
@@ -24465,11 +24644,6 @@ msgstr "지금까지"
 #, fuzzy
 msgid "So far"
 msgstr "지금까지"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "so far, at ch. {soFarChapter}"
-msgstr "지금까지, 챕터 {soFarChapter} 시점"
 
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
@@ -25063,6 +25237,7 @@ msgstr "이 기기의 저장 공간"
 msgid "Storage used"
 msgstr "사용 중인 저장 공간"
 
+#: src/api/ratings.ts
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -25127,6 +25302,10 @@ msgstr "추천 이름: {suggested}"
 #, fuzzy
 msgid "Suggestive"
 msgstr "선정적"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Suggests <0>{suggested}</0>"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -27169,6 +27348,10 @@ msgstr "트래커"
 msgid "Trackers"
 msgstr "트래커"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Trackers that only take whole numbers get the rounded score."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Trackers you have connected are updated too."
@@ -27372,6 +27555,10 @@ msgstr "이 계정의 2단계 인증을 껐습니다"
 #, fuzzy
 msgid "Type"
 msgstr "유형"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Type a rating"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -27761,6 +27948,10 @@ msgstr "다음 항목"
 msgid "Up one folder"
 msgstr "상위 폴더로"
 
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Up to {MAX_ENABLED_CATEGORIES} on at once. Changing these never changes a rating you already set."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Up to {max}"
@@ -28036,6 +28227,7 @@ msgid "URL"
 msgstr "URL"
 
 #: src/components/import/ImportMatchFinder.tsx
+#: src/components/series/RatingPanel.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -28342,6 +28534,11 @@ msgstr "매우 비슷함"
 #, fuzzy
 msgid "Very fast"
 msgstr "매우 빠름"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Very good"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -28962,6 +29159,10 @@ msgstr "프랜차이즈 전체"
 msgid "Whole library"
 msgstr "전체 라이브러리"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Whole numbers"
+msgstr ""
+
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
 msgid "Whole page"
@@ -29032,6 +29233,10 @@ msgstr "이 애니메이션을 기준으로 다시 읽기를 이어가도록 제
 #, fuzzy
 msgid "Working"
 msgstr "작업 중"
+
+#: src/api/ratings.ts
+msgid "World"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -29413,16 +29618,11 @@ msgstr "내가 고른 것"
 msgid "Your priority order"
 msgstr "내 우선순위 순서"
 
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPanel.tsx
+#: src/components/series/RatingPanelOpener.tsx
 #, fuzzy
 msgid "Your rating"
 msgstr "내 평점"
-
-#: src/components/library/ArchivedList.tsx
-#: src/components/series/ArchivedSeriesCard.tsx
-#, fuzzy
-msgid "Your rating for {displayTitle}"
-msgstr "{displayTitle}의 내 평점"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
@@ -29433,6 +29633,14 @@ msgstr "{title}의 내 평점"
 #, fuzzy
 msgid "Your rating over time"
 msgstr "시간에 따른 내 평점"
+
+#: src/components/series/RatingPill.tsx
+msgid "Your rating: {shown}"
+msgstr ""
+
+#: src/components/series/RatingPill.tsx
+msgid "Your rating: {shown} so far"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 #, fuzzy

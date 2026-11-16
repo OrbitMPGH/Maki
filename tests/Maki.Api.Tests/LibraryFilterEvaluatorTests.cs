@@ -102,6 +102,19 @@ public sealed class LibraryFilterEvaluatorTests
     }
 
     [Fact]
+    public void A_half_point_rating_window_compares_decimal_ratings()
+    {
+        var rows = new[]
+        {
+            Row(1, "Seven eight", r => r with { Rating = 7.8 }),
+            Row(2, "Seven four", r => r with { Rating = 7.4 }),
+        };
+
+        Assert.Equal([1], Ids(rows, new LibraryFilterSpec(RatingState: "rated", RatingMin: 7.5)));
+        Assert.Equal([2], Ids(rows, new LibraryFilterSpec(RatingState: "rated", RatingMax: 7.5)));
+    }
+
+    [Fact]
     public void A_narrowed_community_window_drops_unscored_series()
     {
         var rows = new[]

@@ -110,7 +110,7 @@ public static class LibraryFilterEvaluator
             return false;
         }
 
-        if (f.RatingState == "rated" && (shown is not int r || r < f.RatingMin || r > f.RatingMax))
+        if (f.RatingState == "rated" && (shown is not double r || r < f.RatingMin || r > f.RatingMax))
         {
             return false;
         }

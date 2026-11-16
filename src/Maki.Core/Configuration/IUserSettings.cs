@@ -93,6 +93,8 @@ public static class UserSettingKeys
         SettingKeys.UserGamification,
         SettingKeys.RatingPrompts,
         SettingKeys.RatingPromptsVolumes,
+        SettingKeys.RatingPrecision,
+        SettingKeys.RatingCategories,
         SettingKeys.ReadingAutoHoldDays,
         SettingKeys.ReadingAutoDropDays,
         SettingKeys.NotificationsInbox,

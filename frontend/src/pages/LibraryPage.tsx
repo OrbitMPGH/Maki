@@ -112,6 +112,7 @@ import {
   useRateSeries,
   useTags,
 } from '../api/hooks'
+import { useRatingFormat } from '../api/ratings'
 import { offersPermanentDelete } from '../api/recycleBin'
 import { affectedKeys } from '../api/recommendationFeedback'
 import { useUpgradeProfiles } from '../api/upgrades'
@@ -626,6 +627,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const removeArchivedFiles = useRemoveArchivedFiles()
   const deleteSeries = useDeleteSeries()
   const rateSeries = useRateSeries()
+  const { format: formatRating } = useRatingFormat()
   const canArchive = can('ArchiveSeries')
   const canDelete = can('DeleteSeries')
   const queryClient = useQueryClient()
@@ -1521,16 +1523,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   // Stable so the memoized archived cards don't re-render on every library change; the series is
   // looked up at call time, since whether the stars set a "so far" score depends on its progress.
   const { onRate } = useStableActions({
-    onRate: (seriesId: number, rating: number | null) => {
+    onRate: (seriesId: number, value: number | null) => {
       const series = seriesById(seriesId)
       if (!series) return
-      rateSeries.rate(series, rating, (soFar) =>
+      rateSeries.rate(series, value, (soFar) => {
+        const rating = value === null ? null : formatRating(value)
         notifications.show({
           color: 'var(--ok)',
           message:
             rating === null ? now`Rating cleared` : soFar ? now`Rated ${rating}/10 so far` : now`Rated ${rating}/10`,
-        }),
-      )
+        })
+      })
     },
   })
 

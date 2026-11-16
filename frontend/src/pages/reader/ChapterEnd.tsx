@@ -177,6 +177,10 @@ export default function ChapterEnd({
   const hasNext = nextChapterId != null
   const finished = seriesFinishedHere(manifest, ending, readingCounted)
   const askRating = finished && ending != null && ending.rating == null && !ending.rateHintDismissed
+  // Once asked, the line stays: rating refetches the ending with a rating, and the answer it shows
+  // (the nudges, Break it down) has to outlive that.
+  const [askedRating, setAskedRating] = useState(false)
+  if (askRating && !askedRating) setAskedRating(true)
   const timeLeft = finished ? null : seriesSecondsLeft(manifest.readingPace, readCount)
   const timeLeftText = timeLeft != null ? formatReadingTime(timeLeft) : ''
   const queue = useSeriesQueue(manifest.seriesId, !hasNext && pending > 0)
@@ -236,7 +240,7 @@ export default function ChapterEnd({
                 <Trans>About {timeLeftText} left in the series</Trans>
               </span>
             )}
-            {finished ? askRating && <ChapterEndRating seriesId={manifest.seriesId} soFar={ending?.provisionalRating ?? null} /> : ratingPrompt}
+            {finished ? (askRating || askedRating) && <ChapterEndRating seriesId={manifest.seriesId} soFar={ending?.provisionalRating ?? null} /> : ratingPrompt}
           </div>
         </div>
 

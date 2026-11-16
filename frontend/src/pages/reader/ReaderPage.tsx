@@ -29,6 +29,7 @@ import ChapterEnd from './ChapterEnd'
 import NotesMargin from './NotesMargin'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
 import { useDismissRatingCheckpoint, useRatingCheckpoint, useSetProvisionalRating } from '../../api/hooks'
+import { useRatingFormat } from '../../api/ratings'
 import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
@@ -1175,6 +1176,7 @@ export default function ReaderPage() {
   // nothing to ask while the chapter is still open. Incognito reading writes nothing to arm one.
   const { data: checkpoint } = useRatingCheckpoint(manifest?.seriesId, chapterId, atEnd && !incognito)
   const setSoFar = useSetProvisionalRating()
+  const { format: formatRating } = useRatingFormat()
   const dismissCheckpoint = useDismissRatingCheckpoint()
 
   /**
@@ -1382,10 +1384,15 @@ export default function ReaderPage() {
               <RatingCheckpointPrompt
                 checkpoint={checkpoint.checkpoint}
                 soFar={checkpoint.provisionalRating}
-                onRate={(rating) =>
+                onRate={(value) =>
                   setSoFar.mutate(
-                    { seriesId: manifest.seriesId, rating },
-                    { onSuccess: () => notifications.show({ color: 'var(--ok)', message: now`Rated ${rating}/10 so far` }) },
+                    { seriesId: manifest.seriesId, rating: value },
+                    {
+                      onSuccess: () => {
+                        const rating = formatRating(value)
+                        notifications.show({ color: 'var(--ok)', message: now`Rated ${rating}/10 so far` })
+                      },
+                    },
                   )
                 }
                 onDismiss={() => dismissCheckpoint.mutate(manifest.seriesId)}

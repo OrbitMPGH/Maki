@@ -1,5 +1,7 @@
 import { memo, useMemo } from 'react'
-import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Group, Menu, Stack, Text, Tooltip } from '@mantine/core'
+import { RatingPanelOpener } from './RatingPanelOpener'
+import { RatingPill } from './RatingPill'
 import { IconArchiveOff, IconArrowRight, IconFileOff, IconTrash, IconX } from '../../lib/icons'
 import { OverflowButton } from '../ui/OverflowButton'
 import { Link } from 'react-router-dom'
@@ -105,16 +107,25 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   const score = shownRating(series)
   const rating = (
     <Group gap={2} wrap="nowrap">
-      <Rating
-        size="sm"
-        count={5}
-        fractions={2}
-        value={score ? score / 2 : 0}
-        color={isProvisional(series) ? 'var(--ink-3)' : undefined}
-        readOnly={selectMode}
-        role="group"
-        aria-label={t`Your rating for ${displayTitle}`}
-        onChange={(v) => onRate(series.id, Math.round(v * 2) || null)}
+      <RatingPanelOpener
+        panel={{
+          seriesId: series.id,
+          value: score,
+          soFar: isProvisional(series),
+          finished: false,
+          breakdown: undefined,
+          onChange: (v) => onRate(series.id, v),
+        }}
+        target={(toggle, opened) => (
+          <RatingPill
+            size="sm"
+            value={score}
+            soFar={isProvisional(series)}
+            opened={opened}
+            disabled={selectMode}
+            onClick={toggle}
+          />
+        )}
       />
       {score && !selectMode ? (
         <Tooltip label={t`Clear rating`} withArrow>

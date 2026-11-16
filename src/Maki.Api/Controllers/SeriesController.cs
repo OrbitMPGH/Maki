@@ -16,6 +16,7 @@ using Maki.Core.Naming;
 using Maki.Core.Notifications;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Ratings;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
 using Maki.Core.Security;
@@ -120,6 +121,7 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             ProvisionalRating = refreshed.ProvisionalRating,
+            RatingBreakdown = refreshed.RatingBreakdown,
             ProvisionalAtChapter = refreshed.ProvisionalAtChapter,
             Finished = refreshed.Finished,
             ReadingStatus = refreshed.Status.ToString(),
@@ -399,8 +401,9 @@ public class SeriesController(
     /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
     /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<(int? Rating, SeriesNotificationMode NotificationMode, int? ProvisionalRating,
-        double? ProvisionalAtChapter, bool Finished, ReadingStatus Status, bool StatusAuto)> UserStateForAsync(
+    private async Task<(double? Rating, SeriesNotificationMode NotificationMode, double? ProvisionalRating,
+        double? ProvisionalAtChapter, bool Finished, ReadingStatus Status, bool StatusAuto,
+        IReadOnlyDictionary<string, int>? RatingBreakdown)> UserStateForAsync(
         int seriesId, CancellationToken ct)
     {
         var state = await db.UserSeriesStates
@@ -408,13 +411,15 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter, x.Status, x.StatusAuto,
+                x.RatingBreakdownJson,
             })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
 
         return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default,
             state?.ProvisionalRating, state?.ProvisionalAtChapter, finished,
-            state?.Status ?? ReadingStatus.PlanToRead, state?.StatusAuto ?? false);
+            state?.Status ?? ReadingStatus.PlanToRead, state?.StatusAuto ?? false,
+            RatingBreakdown.Parse(state?.RatingBreakdownJson));
     }
 
     /// <summary>
@@ -978,7 +983,7 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
-                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto,
+                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto, x.RatingBreakdownJson,
             })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
@@ -1011,6 +1016,7 @@ public class SeriesController(
             ProgressSkipped = progress.Skipped,
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
+            RatingBreakdown = RatingBreakdown.Parse(userState?.RatingBreakdownJson),
             Finished = finished,
             ReadingStatus = (userState?.Status ?? ReadingStatus.PlanToRead).ToString(),
             ReadingStatusAuto = userState?.StatusAuto ?? false,
@@ -1541,6 +1547,7 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             ProvisionalRating = moved.ProvisionalRating,
+            RatingBreakdown = moved.RatingBreakdown,
             ProvisionalAtChapter = moved.ProvisionalAtChapter,
             Finished = moved.Finished,
             ReadingStatus = moved.Status.ToString(),
@@ -1733,8 +1740,11 @@ public class SeriesController(
 
     public record MonitorModeRequest(string Mode);
 
-    /// <summary>Rating on a 1–10 scale, or null to clear it.</summary>
-    public record SetRatingRequest(int? Rating);
+    /// <summary>Rating on a 1–10 scale (stored to one decimal), or null to clear it.</summary>
+    public record SetRatingRequest(double? Rating);
+
+    /// <summary>Category key to a whole 1-10 score; an empty object clears the breakdown.</summary>
+    public record SetRatingBreakdownRequest(Dictionary<string, JsonElement>? Scores);
 
     /// <summary>
     /// Sets the monitor mode, which governs chapters released <em>later</em> and nothing else.
@@ -1936,10 +1946,12 @@ public class SeriesController(
     private async Task<IActionResult> SetRatingCoreAsync(int id, SetRatingRequest request,
         RatingSnapshotOrigin? origin, CancellationToken ct)
     {
-        if (request.Rating is { } r && r is < 1 or > 10)
+        if (request.Rating is { } r && !RatingScale.InRange(r))
         {
             return this.Fail(localizer, "error.series.invalidRating");
         }
+
+        request = request with { Rating = request.Rating is { } given ? RatingScale.Round(given) : null };
 
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -1980,10 +1992,12 @@ public class SeriesController(
     [HttpPut("{id:int}/rating/provisional")]
     public async Task<IActionResult> SetProvisionalRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
     {
-        if (request.Rating is { } r && r is < 1 or > 10)
+        if (request.Rating is { } r && !RatingScale.InRange(r))
         {
             return this.Fail(localizer, "error.series.invalidRating");
         }
+
+        request = request with { Rating = request.Rating is { } given ? RatingScale.Round(given) : null };
 
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -2054,6 +2068,29 @@ public class SeriesController(
         return provisional is { } rating
             ? await SetRatingCoreAsync(id, new SetRatingRequest(rating), RatingSnapshotOrigin.Finish, ct)
             : this.Fail(localizer, "error.series.noProvisionalRating");
+    }
+
+    /// <summary>
+    /// Replaces the caller's per-category scores. Never touches the rating itself, checkpoints,
+    /// history or trackers: the client offers the weighted average and sets it through the rating
+    /// endpoint if the reader wants it.
+    /// </summary>
+    [HttpPut("{id:int}/rating/breakdown")]
+    public async Task<IActionResult> SetRatingBreakdown(int id, [FromBody] SetRatingBreakdownRequest request,
+        CancellationToken ct)
+    {
+        if (RatingBreakdown.Validate(request.Scores) is not { } scores)
+        {
+            return this.Fail(localizer, "error.series.invalidRatingBreakdown");
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var state = await UpsertUserStateAsync(id, s => s.RatingBreakdownJson = RatingBreakdown.Serialize(scores), ct);
+        return Ok(new { ratingBreakdown = RatingBreakdown.Parse(state.RatingBreakdownJson) });
     }
 
     /// <summary>The caller's score on this series over time, oldest first.</summary>

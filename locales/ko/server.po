@@ -2444,6 +2444,11 @@ msgstr "개수는 1 이상이어야 합니다."
 msgid "error.series.invalidRating"
 msgstr "평점은 1에서 10 사이이거나 지우려면 null이어야 합니다"
 
+#. English: Each category score must be a whole number from 1 to 10, for at most 16 categories
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidRatingBreakdown"
+msgstr ""
+
 #. English: There is no "so far" rating to keep
 #: src/Maki.Api/Controllers/SeriesController.cs
 #, fuzzy
@@ -2580,6 +2585,16 @@ msgstr "알 수 없는 읽기 상태: {status}"
 #, fuzzy
 msgid "error.settings.readingStatusDays"
 msgstr "일수는 1에서 {max} 사이여야 합니다."
+
+#. English: Rating precision must be whole or decimal.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidRatingPrecision"
+msgstr ""
+
+#. English: Rating categories are invalid. Use at most 8 enabled and 8 custom categories, each custom one with a name of up to 40 characters and a weight of 0.5, 1 or 2.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidRatingCategories"
+msgstr ""
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin

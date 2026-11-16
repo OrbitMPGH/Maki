@@ -96,8 +96,8 @@ public record SeriesDto(
     string? AuthorStory,
     string? AuthorArt,
     string? Publisher,
-    /// <summary>The user's own rating on a 1–10 scale, or null if unrated.</summary>
-    int? Rating,
+    /// <summary>The user's own rating on a 1–10 scale with up to one decimal, or null if unrated.</summary>
+    double? Rating,
     int? MangaBakaId,
     int? AniListId,
     int? MalId,
@@ -268,7 +268,10 @@ public record SeriesDto(
     public bool RateHintEligible { get; init; }
 
     /// <summary>The caller's "so far" score (1–10), or null. Never set alongside <see cref="Rating"/>.</summary>
-    public int? ProvisionalRating { get; init; }
+    public double? ProvisionalRating { get; init; }
+
+    /// <summary>The caller's category scores (key to a whole 1-10), or null. Detail endpoint only.</summary>
+    public IReadOnlyDictionary<string, int>? RatingBreakdown { get; init; }
 
     /// <summary>The highest chapter number read when <see cref="ProvisionalRating"/> was set.</summary>
     public double? ProvisionalAtChapter { get; init; }
@@ -394,7 +397,7 @@ public record SeriesDto(
     public static SeriesDto FromEntity(
         Series s, int wantedChapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null, int? rating = null, bool isAdmin = false,
+        List<int>? tagIds = null, double? rating = null, bool isAdmin = false,
         SeriesNotificationMode notificationMode = SeriesNotificationMode.Default,
         string? titleLanguage = null) => new(
         s.Id,

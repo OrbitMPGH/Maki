@@ -110,6 +110,7 @@ import {
   useRecommendationDetail,
   hasReviewIds,
 } from '../api/hooks'
+import { useRatingFormat } from '../api/ratings'
 import {
   useContinueReading,
   useReadTracking,
@@ -718,6 +719,7 @@ function SeriesDetailBody() {
   const setPrepareAhead = useSetSeriesPrepareAhead()
   const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
+  const { format: formatRating } = useRatingFormat()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
   const setSoFar = useSetProvisionalRating()
@@ -1849,23 +1851,26 @@ function SeriesDetailBody() {
     queueAllWanted()
   }
 
-  const submitRating = (rating: number | null) => {
+  const submitRating = (value: number | null) => {
     if (!series) return
-    rateSeries.rate(series, rating, (soFar) =>
-        notify.ok(
-            rating === null
-                ? staticT`Rating cleared`
-                : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
-        ),
-    )
+    rateSeries.rate(series, value, (soFar) => {
+      const rating = value === null ? null : formatRating(value)
+      notify.ok(
+          rating === null
+              ? staticT`Rating cleared`
+              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
+      )
+    })
   }
 
   const keepRating = () =>
       finalizeRating.mutate(
           { seriesId },
           {
-            onSuccess: ({ rating }) => {
-              if (rating != null) notify.ok(staticT`Rated ${rating}/10`)
+            onSuccess: ({ rating: kept }) => {
+              if (kept == null) return
+              const rating = formatRating(kept)
+              notify.ok(staticT`Rated ${rating}/10`)
             },
           },
       )
@@ -2566,15 +2571,27 @@ function SeriesDetailBody() {
             onRate={submitRating}
             onKeep={keepRating}
             onDismiss={() => dismissRateHint.mutate(series.id)}
+            panel={{
+              seriesId: series.id,
+              value: series.rating,
+              finished: true,
+              breakdown: series.ratingBreakdown ?? null,
+              onChange: submitRating,
+            }}
           />
         ) : series.ratingCheckpoint ? (
           <RatingCheckpointPrompt
             checkpoint={series.ratingCheckpoint}
             soFar={series.provisionalRating ?? null}
-            onRate={(rating) =>
+            onRate={(value) =>
               setSoFar.mutate(
-                { seriesId: series.id, rating },
-                { onSuccess: () => notify.ok(staticT`Rated ${rating}/10 so far`) },
+                { seriesId: series.id, rating: value },
+                {
+                  onSuccess: () => {
+                    const rating = formatRating(value)
+                    notify.ok(staticT`Rated ${rating}/10 so far`)
+                  },
+                },
               )
             }
             onDismiss={() => dismissCheckpoint.mutate(series.id)}
@@ -3830,7 +3847,12 @@ function SeriesDetailBody() {
           onConfirmPermanent={binRefused === 'archive' ? () => archiveCurrent(true) : undefined}
           leavingRating={
             ratesProvisionally(series)
-              ? { value: leavingRating, soFar: series.provisionalRating ?? null, onChange: setLeavingRating }
+              ? {
+                  value: leavingRating,
+                  soFar: series.provisionalRating ?? null,
+                  onChange: setLeavingRating,
+                  breakdown: series.ratingBreakdown ?? null,
+                }
               : undefined
           }
         />

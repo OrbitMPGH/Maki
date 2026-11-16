@@ -8,6 +8,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Parsing;
+using Maki.Core.Ratings;
 using Maki.Core.Scrobbling;
 using Maki.Core.Security;
 using Maki.Data;
@@ -1154,12 +1155,19 @@ public class ScrobbleService(
     /// swallowed here — PushRatingAsync already logs per-tracker.
     /// </summary>
     /// <param name="soFar">A "so far" score: only trackers with that switch on as well as "Sync ratings" get it.</param>
-    public void QueueRatingPush(int userId, Series series, int score, bool soFar = false)
+    public void QueueRatingPush(int userId, Series series, double score, bool soFar = false)
     {
         if (series.Incognito != IncognitoMode.Off)
         {
             return;
         }
+
+        // A burst of nudges (7.6, 7.7, 7.8) sends one push: each queue takes a ticket, and only the
+        // latest ticket for this series pushes once the debounce has passed. "So far" and final share
+        // the key, so a final score set right after a "so far" one is the one that lands.
+        var key = (userId, series.Id);
+        var ticket = Interlocked.Increment(ref _ratingPushTicket);
+        _ratingPushTickets[key] = ticket;
 
         // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
         // its DbContext is disposed.
@@ -1177,6 +1185,12 @@ public class ScrobbleService(
         {
             try
             {
+                await Task.Delay(RatingPushDebounce, CancellationToken.None);
+                if (!_ratingPushTickets.TryRemove(new KeyValuePair<(int, int), long>(key, ticket)))
+                {
+                    return;
+                }
+
                 await PushRatingAsync(userId, snapshot, score, CancellationToken.None, soFar);
             }
             catch (Exception e)
@@ -1186,6 +1200,12 @@ public class ScrobbleService(
         });
     }
 
+    /// <summary>How long a queued rating push waits for a newer score on the same series.</summary>
+    internal TimeSpan RatingPushDebounce { get; set; } = TimeSpan.FromSeconds(3);
+
+    private long _ratingPushTicket;
+    private readonly ConcurrentDictionary<(int UserId, int SeriesId), long> _ratingPushTickets = new();
+
     /// <summary>
     /// Best-effort push of a user rating (1–10, or 0 to clear) to every connected tracker,
     /// resolving the remote id from the series' own stored cross-ids rather than the Kavita
@@ -1193,7 +1213,7 @@ public class ScrobbleService(
     /// accepted the write; a per-tracker failure is logged and skipped, never thrown.
     /// </summary>
     public async Task<IReadOnlyList<string>> PushRatingAsync(
-        int userId, Series series, int score, CancellationToken ct = default, bool soFar = false)
+        int userId, Series series, double score, CancellationToken ct = default, bool soFar = false)
     {
         var synced = new List<string>();
         foreach (var tracker in await ActiveTrackersAsync(userId, ct))
@@ -1224,7 +1244,7 @@ public class ScrobbleService(
                 await tracker.UpdateRatingAsync(userId, remoteId, score, ct);
                 synced.Add(tracker.Label);
                 await AddKeyedLogAsync(userId, "info", tracker.Name, series.Title,
-                    "scrobble.log.rated", new { score }, ct);
+                    "scrobble.log.rated", new { score = TrackerScore.ToStep(score, tracker.ScoreStep) }, ct);
             }
             catch (Exception e)
             {
@@ -1384,7 +1404,7 @@ public class ScrobbleService(
 
     // ---- rating import (preview → apply) ----
 
-    public record RatingImportItem(int SeriesId, string Title, int? LocalRating, int RemoteScore);
+    public record RatingImportItem(int SeriesId, string Title, double? LocalRating, double RemoteScore);
 
     public sealed class RatingImportState
     {
@@ -1439,9 +1459,9 @@ public class ScrobbleService(
                     try
                     {
                         var entry = await tracker.GetEntryWithScoreAsync(userId, remoteId, CancellationToken.None);
-                        if (entry.Score is { } score && score != localRating)
+                        if (entry.Score is { } score && TrackerScore.Differs(localRating, score, tracker.ScoreStep))
                         {
-                            local.Add(new RatingImportItem(seriesId, title, localRating, score));
+                            local.Add(new RatingImportItem(seriesId, title, localRating, RatingScale.Round(score)));
                             state.Items = local.ToArray();
                         }
                     }
@@ -1474,7 +1494,7 @@ public class ScrobbleService(
         var wanted = new HashSet<int>(seriesIds);
         var scores = GetRatingImport(userId, service).Items
             .Where(i => wanted.Contains(i.SeriesId))
-            .ToDictionary(i => i.SeriesId, i => i.RemoteScore);
+            .ToDictionary(i => i.SeriesId, i => RatingScale.Round(i.RemoteScore));
         if (scores.Count == 0)
         {
             return 0;
@@ -1503,7 +1523,7 @@ public class ScrobbleService(
             db.RatingSnapshots.Add(new RatingSnapshot
             {
                 UserId = userId, SeriesId = seriesId, Rating = scores[seriesId], Final = true,
-                Origin = RatingSnapshotOrigin.Import, CreatedAt = DateTime.UtcNow,
+                BreakdownJson = state.RatingBreakdownJson, Origin = RatingSnapshotOrigin.Import, CreatedAt = DateTime.UtcNow,
             });
             // The final rating wins, the same as a rating set on the series page.
             state.ProvisionalRating = null;
@@ -1517,7 +1537,7 @@ public class ScrobbleService(
     }
 
     /// <summary>Library series carrying a remote id for the given tracker: (id, title, localRating, remoteId).</summary>
-    private async Task<List<(int SeriesId, string Title, int? LocalRating, string RemoteId)>>
+    private async Task<List<(int SeriesId, string Title, double? LocalRating, string RemoteId)>>
         LibraryRemoteIdsAsync(int userId, bool allRootFolders, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();

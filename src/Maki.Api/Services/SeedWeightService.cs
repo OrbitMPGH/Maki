@@ -404,7 +404,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
 
     /// <param name="Provisional">The "so far" score, only when there is no final <paramref name="Rating"/>.</param>
     private sealed record SeedRow(
-        long Id, int? Rating, DateTime? AddedAt, int? Provisional = null, bool Completed = false,
+        long Id, double? Rating, DateTime? AddedAt, double? Provisional = null, bool Completed = false,
         int? TotalChapters = null);
 
     /// <summary>

@@ -404,6 +404,12 @@ public static class SettingKeys
     /// <summary>Per user: "on" also asks at the end of each volume. Unset = off.</summary>
     public const string RatingPromptsVolumes = "ratings.prompts.volumes";
 
+    /// <summary>Per user: "decimal" allows ratings like 7.8. Unset = whole numbers.</summary>
+    public const string RatingPrecision = "ratings.precision";
+
+    /// <summary>Per user: the rating breakdown categories as a JSON array (<c>RatingCategoryDefaults</c>). Unset = defaults.</summary>
+    public const string RatingCategories = "ratings.categories";
+
     /// <summary>
     /// Per user: days without reading before a Reading series with unread chapters downloaded is
     /// put on hold. Unset = off.

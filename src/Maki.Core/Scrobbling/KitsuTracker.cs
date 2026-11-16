@@ -28,6 +28,7 @@ public class KitsuTracker(
     private static readonly MediaTypeWithQualityHeaderValue JsonApiAcceptType = new("application/vnd.api+json");
 
     public string Name => "kitsu";
+    public double ScoreStep => 0.5;
     public string Label => "Kitsu";
     public bool UsesOAuth => false;
 
@@ -448,7 +449,7 @@ public class KitsuTracker(
             Title: attrs.ValueKind == JsonValueKind.Object ? GetString(attrs, "canonicalTitle") ?? "" : "",
             // ratingTwenty is 2-20 in half-point steps; our internal scale is 1-10.
             Score: hasEntry && GetInt(entryAttrs, "ratingTwenty") is > 0 and { } rt
-                ? Math.Clamp((int)Math.Round(rt / 2.0), 1, 10)
+                ? Math.Clamp(rt / 2.0, 1, 10)
                 : null);
     }
 
@@ -465,12 +466,12 @@ public class KitsuTracker(
     }
 
     public async Task UpdateRatingAsync(
-        int userId, string remoteId, int score, CancellationToken ct = default)
+        int userId, string remoteId, double score, CancellationToken ct = default)
     {
         // 0 clears the rating; otherwise our 1-10 maps to Kitsu's 2-20 half-point scale.
         var attributes = new JsonObject
         {
-            ["ratingTwenty"] = score <= 0 ? null : Math.Clamp(score, 1, 10) * 2,
+            ["ratingTwenty"] = TrackerScore.KitsuTwenty(score),
         };
         await UpsertLibraryEntryAsync(userId, remoteId, attributes, ct);
     }

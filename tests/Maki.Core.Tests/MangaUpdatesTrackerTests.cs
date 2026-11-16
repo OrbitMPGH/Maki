@@ -450,8 +450,8 @@ public class MangaUpdatesTrackerTests
         var first = await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
         var second = await rig.Tracker.GetEntryWithScoreAsync(UserId, OnePiece);
 
-        Assert.Equal(7, first.Score);
-        Assert.Equal(7, second.Score);
+        Assert.Equal(6.5, first.Score);
+        Assert.Equal(6.5, second.Score);
         Assert.Single(handler.To(HttpMethod.Post, "/lists/0/search"));
         Assert.Single(handler.To(HttpMethod.Post, "/lists/4/search"));
         Assert.DoesNotContain(handler.Requests, r => r.Path.EndsWith("/rating"));
@@ -742,9 +742,12 @@ public class MangaUpdatesTrackerTests
         var tracker = (Build(handler)).Tracker;
 
         await tracker.UpdateRatingAsync(UserId, OnePiece, 8);
+        await tracker.UpdateRatingAsync(UserId, OnePiece, 7.8);
         await tracker.UpdateRatingAsync(UserId, OnePiece, 0);
 
-        Assert.Equal("""{"rating":8}""", Assert.Single(handler.To(HttpMethod.Put, $"/series/{OnePieceId}/rating")).Body);
+        Assert.Equal(
+            ["""{"rating":8}""", """{"rating":7.8}"""],
+            handler.To(HttpMethod.Put, $"/series/{OnePieceId}/rating").Select(r => r.Body));
         Assert.Single(handler.To(HttpMethod.Delete, $"/series/{OnePieceId}/rating"));
     }
 

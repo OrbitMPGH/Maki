@@ -1,6 +1,8 @@
 import type { HTMLAttributes } from 'react'
 import { formatFixedDecimal } from '../../format'
 import { IconStarFilled } from '../../lib/icons'
+import { useRatingFormat } from '../../api/ratings'
+import { useRatingWord } from '../../lib/ratingWords'
 
 type Size = 'sm' | 'md'
 type Tone = 'community' | 'yours'
@@ -35,12 +37,14 @@ export function ScoreInline({
   )
 }
 
-/** The user's own 1-10 rating: the integer, with the accent star. */
+/** The user's own 1-10 rating in their precision ("8" or "7.8"), with the accent star and its word on hover. */
 export function YourScoreInline({
   rating,
   size,
   className,
   ...rest
 }: { rating: number; size?: Size; className?: string } & SpanProps) {
-  return <ScoreInlineMark text={String(rating)} size={size} tone="yours" className={className} {...rest} />
+  const { format } = useRatingFormat()
+  const word = useRatingWord()
+  return <ScoreInlineMark text={format(rating)} size={size} tone="yours" className={className} {...rest} title={rest.title ?? word(rating)} />
 }

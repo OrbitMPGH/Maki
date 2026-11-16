@@ -36,7 +36,7 @@ public record CreatorReturnDto(string Name, bool Story, bool Art, int SeriesRead
 
 /// <param name="Yours">The reader's rating, 1 to 10.</param>
 /// <param name="Community">MangaBaka's rating scaled to 0 to 10.</param>
-public record RatedSeriesDto(int SeriesId, string Title, string? CoverUrl, int Yours, double Community);
+public record RatedSeriesDto(int SeriesId, string Title, string? CoverUrl, double Yours, double Community);
 
 /// <param name="MeanGap">Mean of yours minus community; positive means the reader rates higher.</param>
 /// <param name="Rated">Series with both ratings.</param>
