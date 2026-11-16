@@ -17,6 +17,10 @@
              pending_user, before it checks anything else and with no override - see the
              PUBLISHING SAFELY note below.
 
+    ease   - ease-table.db, the EASE item-item weights build-ease-table.py fits on the same reading
+             lists (Python, numpy and scipy). Packed with the same per-user refusal, plus a refusal
+             of any fold-limited evaluation build.
+
   Three steps per graph, all inside the git-ignored .artifacts folder:
 
     1. The fetcher's `export` mode folds its resumable working database into the shippable pair
@@ -68,7 +72,7 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("reco", "coread", "taste", "cohorts", "both", "all")]
+  [ValidateSet("reco", "coread", "taste", "cohorts", "ease", "both", "all")]
   [string]$Graph = "both",
   [string]$ArtifactsDir = "",
   [long]$MinPairs = 0,
@@ -119,6 +123,21 @@ $profiles = @{
     MinPairs   = 20000
     Notes      = "Item vectors factorized from AniList reading lists, keyed by MangaBaka id, for Maki's recommendation engine. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
   }
+  ease = [pscustomobject]@{
+    Name       = "ease"
+    Label      = "Also-finished table"
+    Tag        = "ease-table-latest"
+    Fetcher    = "build-ease-table.py"
+    WorkingDb  = "coread-graph.db"
+    ExportDb   = "ease-table.db"
+    WorkingArg = "--work"
+    OutArg     = "--out"
+    IsBuild    = $true
+    IsPython   = $true
+    DumpDb     = "mangabaka.full.db"
+    MinPairs   = 1000000
+    Notes      = "Item-item weights fitted (EASE) on AniList reading lists: how much finishing one series predicts finishing another, keyed by MangaBaka id, for Maki's personal recommendations. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
+  }
   cohorts = [pscustomobject]@{
     Name       = "cohorts"
     Label      = "Reader cohorts"
@@ -138,7 +157,7 @@ $profiles = @{
 
 $selected = switch ($Graph) {
   "both" { @($profiles.reco, $profiles.coread) }
-  "all"  { @($profiles.reco, $profiles.coread, $profiles.taste, $profiles.cohorts) }
+  "all"  { @($profiles.reco, $profiles.coread, $profiles.taste, $profiles.cohorts, $profiles.ease) }
   default { @($profiles[$Graph]) }
 }
 
@@ -168,6 +187,9 @@ function Invoke-Native {
 }
 
 Require-Command -Name "dotnet" -Hint "Install the .NET SDK (the export/pack tools are file-based C# apps)."
+if (-not $SkipExport -and ($selected | Where-Object { $_.IsPython })) {
+  Require-Command -Name "python" -Hint "build-ease-table.py needs Python with numpy and scipy."
+}
 if ($Publish) {
   Require-Command -Name "gh" -Hint "Install the GitHub CLI: https://cli.github.com"
 }
@@ -214,7 +236,13 @@ foreach ($g in $selected) {
       $extra = @()
       if ($g.DumpDb) { $extra += "--dump"; $extra += (Join-Path $ArtifactsDir $g.DumpDb) }
       if ($g.TasteDb) { $extra += "--taste"; $extra += (Join-Path $ArtifactsDir $g.TasteDb) }
-      Invoke-Native { & dotnet run $fetcher -- $g.WorkingArg $workDb $g.OutArg $edgesDb @extra }
+      if ($g.IsPython) {
+        # build-ease-table.py writes generatedAt, trainedReaders and trainingFold into its meta
+        # table, which graph-artifact.cs then insists on.
+        Invoke-Native { & python $fetcher $g.WorkingArg $workDb $g.OutArg $edgesDb @extra }
+      } else {
+        Invoke-Native { & dotnet run $fetcher -- $g.WorkingArg $workDb $g.OutArg $edgesDb @extra }
+      }
     } else {
       Invoke-Native { & dotnet run $fetcher -- export $g.WorkingArg $workDb --out-db $edgesDb }
     }
@@ -250,6 +278,8 @@ foreach ($g in $selected) {
   # rather than like the wrong field.
   $counts = if ($manifest.PSObject.Properties.Name -contains "pairCount") {
     "$($manifest.pairCount) pairs over $($manifest.seriesCount) series"
+  } elseif ($manifest.PSObject.Properties.Name -contains "weightCount") {
+    "$($manifest.weightCount) weights over $($manifest.itemCount) seeds, $($manifest.trainedReaders) readers"
   } elseif ($manifest.PSObject.Properties.Name -contains "cohortItemCount") {
     "$($manifest.cohortItemCount) cohort rows over $($manifest.itemCount) series, $($manifest.cohortCount) cohorts"
   } else {
@@ -284,7 +314,8 @@ foreach ($b in $built) {
   $viewExit = Invoke-Native { & gh release view $b.Profile.Tag --json tagName | Out-Null }
   if ($viewExit -ne 0) {
     Write-Host "Creating release '$($b.Profile.Tag)'…"
-    & gh release create $b.Profile.Tag --title $b.Profile.Label --notes $b.Profile.Notes
+    # Not the Latest release: UpdateCheckService reads releases/latest for the app version.
+    & gh release create $b.Profile.Tag --title $b.Profile.Label --notes $b.Profile.Notes --latest=false
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed for $($b.Profile.Tag)" }
   }
 

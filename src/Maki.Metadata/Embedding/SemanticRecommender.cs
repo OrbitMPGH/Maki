@@ -3,6 +3,7 @@ using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.RecoGraph;
 using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
@@ -53,7 +54,9 @@ public class SemanticRecommender(
     CoReadTuning coReadTuning,
     ILogger<SemanticRecommender> logger,
     RecommenderTuning? tuning = null,
-    TasteVectorTuning? tasteTuning = null)
+    TasteVectorTuning? tasteTuning = null,
+    EaseCache? easeCache = null,
+    EaseTuning? easeTuning = null)
 {
     private static readonly EmbeddingMath.Weights Weights = new();
 
@@ -65,6 +68,9 @@ public class SemanticRecommender(
 
     /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
+
+    /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
+    private readonly EaseTuning _easeTuning = easeTuning ?? EaseTuning.Default;
 
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
@@ -278,6 +284,12 @@ public class SemanticRecommender(
     /// modes, published and installed independently, and an install can easily have one and not the
     /// other. A single flag would make "turn off the noisy one" impossible to express.
     /// </param>
+    /// <param name="ease">
+    /// Whether the readers-also-finished table (<see cref="EaseCache"/>) may contribute. Personal
+    /// recommendations pass the instance switch; the series page's rail passes false, since it is a
+    /// claim about two works rather than about a reader. Off also when no cache was passed or the
+    /// tuned weight is 0.
+    /// </param>
     /// <param name="avoidWeights">
     /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
     /// Scanned as extra queries in the same pass, and each candidate's best strength-weighted
@@ -303,7 +315,7 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? seedWeights = null,
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
@@ -317,6 +329,9 @@ public class SemanticRecommender(
         // vector index instead of after it. The awaits further down join these same loads.
         Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
         Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
+        var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0
+            && seedIds.Count >= _easeTuning.MinSeeds;
+        Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -361,6 +376,14 @@ public class SemanticRecommender(
         if (coReadByRow.Count > 0)
         {
             w = w with { CoRead = coReadTuning.Weight };
+        }
+
+        var easeByRow = easeLive
+            ? await BuildEaseScoresAsync(index, seedIds, seedWeights, ct)
+            : [];
+        if (easeByRow.Count > 0)
+        {
+            w = w with { Ease = _easeTuning.Weight };
         }
 
         SqliteKeeper.For(store.DbPath).Attach();
@@ -510,11 +533,13 @@ public class SemanticRecommender(
         // quality too - so it is gated on corroboration exactly like the two crowd channels.
         var tasteInjected = InjectTasteCandidates(
             cosines, pooled, injected.Concat(coReadInjected), tasteByRow, _tasteTuning);
+        var easeInjected = InjectEaseCandidates(
+            cosines, pooled, [.. injected, .. coReadInjected, .. tasteInjected], easeByRow, _easeTuning);
 
         // Which rows got here on crowd evidence rather than on cosine. Only used to decide whether
         // the cosine floor may drop them, and only when the tuning says so.
         var crowdInjected = _tuning.CrowdBypassesCosineFloor
-            ? new HashSet<int>(injected.Concat(coReadInjected).Concat(tasteInjected))
+            ? new HashSet<int>(injected.Concat(coReadInjected).Concat(tasteInjected).Concat(easeInjected))
             : [];
 
         // Per-query mean and spread, so the loop below can ask which query finds a row unusually
@@ -525,7 +550,7 @@ public class SemanticRecommender(
             : MeasureQueries(cosines, scan.Rows);
 
         var poolRows = pooled
-            .Concat(injected).Concat(coReadInjected).Concat(tasteInjected).ToList();
+            .Concat(injected).Concat(coReadInjected).Concat(tasteInjected).Concat(easeInjected).ToList();
 
         // First pass over the pool, before anything is scored: the raw resemblance to the avoided
         // set per row, and whatever the neutralization needs from the pool as a whole. Relative is
@@ -630,6 +655,7 @@ public class SemanticRecommender(
 
             var graphScore = graphByRow.GetValueOrDefault(row);
             var coReadScore = coReadByRow.GetValueOrDefault(row);
+            var easeScore = easeByRow.GetValueOrDefault(row);
             // Floored at 0 in BestPerRow, so a row the artifact does not cover and a row it covers
             // and finds dissimilar are both worth nothing here rather than one being a penalty.
             var tasteScore = tasteByRow.Length > row && !float.IsNegativeInfinity(tasteByRow[row])
@@ -708,7 +734,7 @@ public class SemanticRecommender(
             features?.Add(new EmbeddingMath.CandidateFeatures(
                 index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
                 index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
-                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid));
+                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid, easeScore));
 
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
@@ -723,7 +749,8 @@ public class SemanticRecommender(
                 coReadScore,
                 Math.Max(0, distinctiveness),
                 tasteScore,
-                avoidScore);
+                avoidScore,
+                easeScore);
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
                 graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
@@ -742,6 +769,12 @@ public class SemanticRecommender(
         var coReadSeedsByRow = coReadSeedByRow.Count > 0 && winners.Any(c => c.CoRead)
             ? await CoReadSeedsForAsync(index, winners.Where(c => c.CoRead).ToList(), seedIds, seedWeights, ct)
             : [];
+        if (easeByRow.Count > 0)
+        {
+            winners = await AttributeEaseAsync(
+                index, winners, easeByRow, coReadSeedByRow, coReadSeedsByRow, seedIds, seedWeights, ct);
+        }
+
         var results = await HydrateAsync(
             conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
             cutoff, coReadSeedByRow, feelQueriesByRow, coReadSeedsByRow, ct);
@@ -1357,7 +1390,10 @@ public class SemanticRecommender(
         }
 
         var queries = new List<SeedQuery>(tuning.MaxSeedQueries + 1);
-        if (EmbeddingMath.WeightedMean(vectors) is { } centroid)
+        var centre = tuning.UserSolve
+            ? TasteFoldIn.Solve(index, vectors, tuning.UserSolveLambda, tuning.UserSolveAlpha)
+            : EmbeddingMath.WeightedMean(vectors);
+        if (centre is { } centroid)
         {
             queries.Add(Pack(centroid));
             if (vectors.Count == 1)
@@ -1976,6 +2012,116 @@ public class SemanticRecommender(
         }
 
         return (byRow, seedByRow);
+    }
+
+    /// <summary>EASE scores keyed by index row; rows the index does not hold are dropped.</summary>
+    private async Task<Dictionary<int, double>> BuildEaseScoresAsync(
+        VectorIndex index,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var table = await easeCache!.GetAsync(ct);
+        if (table is null)
+        {
+            return [];
+        }
+
+        var byRow = new Dictionary<int, double>();
+        foreach (var (id, score) in EaseScorer.Score(table, seedIds, seedWeights, _easeTuning))
+        {
+            if (index.TryGetRow(id, out var row))
+            {
+                byRow[row] = score;
+            }
+        }
+
+        return byRow;
+    }
+
+    /// <summary>
+    /// Gives a pick the EASE table pushed up the co-read card reason, "Readers who finished X also
+    /// finished this", naming the seed with the largest positive weighted contribution. That is literally
+    /// what the table measures (it is fitted on finished lists), so no new wording is needed. Only
+    /// picks with no co-read reason of their own, and only where some seed weighs them up: a row the
+    /// table scores at or below zero keeps whatever reason it had. Rewrites the reason fields only,
+    /// never the order or the score.
+    /// </summary>
+    private async Task<List<Candidate>> AttributeEaseAsync(
+        VectorIndex index,
+        List<Candidate> winners,
+        Dictionary<int, double> easeByRow,
+        Dictionary<int, long> coReadSeedByRow,
+        Dictionary<int, List<long>> coReadSeedsByRow,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var unexplained = winners
+            .Where(c => !c.CoRead && easeByRow.GetValueOrDefault(c.Row) > 0)
+            .ToDictionary(c => index.IdAt(c.Row), c => c.Row);
+        if (unexplained.Count == 0 || await easeCache!.GetAsync(ct) is not { } table)
+        {
+            return winners;
+        }
+
+        var seedsById = EaseScorer.SeedsFor(table, seedIds, seedWeights, unexplained.Keys.ToHashSet());
+        if (seedsById.Count == 0)
+        {
+            return winners;
+        }
+
+        var attributed = new HashSet<int>();
+        foreach (var (id, seeds) in seedsById)
+        {
+            if (seeds.Count == 0)
+            {
+                continue;
+            }
+
+            var row = unexplained[id];
+            coReadSeedByRow[row] = seeds[0];
+            coReadSeedsByRow[row] = seeds;
+            attributed.Add(row);
+        }
+
+        return [.. winners.Select(c => attributed.Contains(c.Row) ? c with { CoRead = true } : c)];
+    }
+
+    /// <summary>
+    /// Rows the EASE table vouches for that nothing else pooled, best first and capped. Same
+    /// contract as <see cref="InjectCoReadCandidates"/>.
+    /// </summary>
+    internal static List<int> InjectEaseCandidates(
+        float[][] cosines,
+        List<int> pooled,
+        List<int> alreadyInjected,
+        Dictionary<int, double> easeByRow,
+        EaseTuning tuning)
+    {
+        if (easeByRow.Count == 0 || tuning.MaxInjected <= 0)
+        {
+            return [];
+        }
+
+        var already = new HashSet<int>(pooled);
+        already.UnionWith(alreadyInjected);
+        var candidates = new List<(int Row, double Score)>();
+        foreach (var (row, score) in easeByRow)
+        {
+            if (score >= tuning.MinInjectedScore && !already.Contains(row) && !float.IsNegativeInfinity(cosines[0][row]))
+            {
+                candidates.Add((row, score));
+            }
+        }
+
+        candidates.Sort((a, b) => b.Score != a.Score ? b.Score.CompareTo(a.Score) : a.Row.CompareTo(b.Row));
+        if (candidates.Count > tuning.MaxInjected)
+        {
+            candidates.RemoveRange(tuning.MaxInjected, candidates.Count - tuning.MaxInjected);
+        }
+
+        return [.. candidates.Select(c => c.Row)];
     }
 
     /// <summary>

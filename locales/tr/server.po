@@ -6452,6 +6452,11 @@ msgstr "Özel kaynak depolarını güncelle"
 msgid "health.job.discoverCacheWarm"
 msgstr "Keşfet'i hazırla"
 
+#. English: Install the also-finished table
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.ease"
+msgstr ""
+
 #. English: Check the drop folder
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy
@@ -7346,6 +7351,47 @@ msgstr "Birlikte okuma grafiği bildirimi bozuk biçimli."
 #, fuzzy
 msgid "install.coread.manifestUnavailable"
 msgstr "Birlikte okuma grafiği bildirimi okunamadı."
+
+#. English: The local also-finished table is already current.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.current"
+msgstr ""
+
+#. English: The also-finished channel is turned off.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.disabled"
+msgstr ""
+
+#. English: The published also-finished table is an evaluation build.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.evaluationBuild"
+msgstr ""
+
+#. {weights} is the raw install count.
+#. English: Installed {weights, plural, one {# also-finished weight} other {# also-finished weights}}
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.installed"
+msgstr ""
+
+#. English: The also-finished table manifest is malformed.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.manifestMalformed"
+msgstr ""
+
+#. English: Could not read the also-finished table manifest.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.manifestUnavailable"
+msgstr ""
+
+#. English: The published also-finished table uses a newer schema than this build reads.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.schemaNewer"
+msgstr ""
+
+#. English: The published also-finished table looks truncated; ignoring it.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.truncated"
+msgstr ""
 
 #. English: The local index is already current.
 #: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs

@@ -235,6 +235,7 @@ public class RecommendationService(
         // Named for the artifact, not "taste": SeedWeightService's behavioural channel weights
         // SEEDS and is a different feature entirely.
         var tasteVectors = await TasteEnabledAsync(ct);
+        var ease = await EaseEnabledAsync(ct);
         // Keyed on the inputs, not on who asked. The seed list already carries everything personal
         // that reaches the pool — root-folder visibility, the content ceiling and ignored sources
         // all narrow it before it gets here — so two readers with the same seeds want the same 200
@@ -249,7 +250,7 @@ public class RecommendationService(
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|a:{avoidKey}";
+                  $"|e:{(ease ? 1 : 0)}|a:{avoidKey}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
@@ -269,7 +270,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors));
+                        coGraph, coRead, tasteVectors, ease));
                     _building[key] = created;
                     build = created;
                 }
@@ -327,7 +328,7 @@ public class RecommendationService(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
-        bool coGraph, bool coRead, bool tasteVectors)
+        bool coGraph, bool coRead, bool tasteVectors, bool ease)
     {
         var entered = false;
         try
@@ -354,7 +355,7 @@ public class RecommendationService(
                 ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
-                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: CancellationToken.None)
+                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease, ct: CancellationToken.None)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)
@@ -495,6 +496,13 @@ public class RecommendationService(
     private async Task<bool> TasteEnabledAsync(CancellationToken ct)
     {
         var value = await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The same, for the EASE channel (<c>recommendations.ease</c>).</summary>
+    private async Task<bool> EaseEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsEase, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 

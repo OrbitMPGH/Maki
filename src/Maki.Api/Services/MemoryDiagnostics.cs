@@ -4,6 +4,7 @@ using Maki.Core.Images;
 using Maki.Core.Io;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
@@ -39,6 +40,7 @@ namespace Maki.Api.Services;
 public sealed class MemoryDiagnostics(
     CatalogueIndexCache catalogue,
     CoReadCache coRead,
+    EaseCache ease,
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
     VectorIndexCache vectors,
@@ -106,6 +108,7 @@ public sealed class MemoryDiagnostics(
             {
                 Artifact("catalogue-indexes", catalogue.IsLoaded, catalogue.IdleFor),
                 Artifact("co-read-graph", coRead.IsLoaded, coRead.IdleFor),
+                Artifact("ease-table", ease.IsLoaded, ease.IdleFor),
                 Artifact("reco-graph", recoGraph.IsLoaded, recoGraph.IdleFor),
                 Artifact("reader-cohorts", cohorts.IsLoaded, cohorts.IdleFor),
                 Artifact("search-vectors", vectors.IsLoaded, vectors.IdleFor),

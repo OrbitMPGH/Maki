@@ -84,16 +84,23 @@ if (!File.Exists(path))
 // `avoidtag` is the contrastive tag half of that column on its own. It is held out of every fit the
 // way popularity is, and for the same reason: the scorer has no coefficient for it, so a number
 // fitted against it could not be expressed as a variant. It is read to be reported.
-string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct", "avoid"];
-const int AvoidTagColumn = 10;
-const int PopColumn = 11;
+string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct", "avoid", "ease"];
 var featureCount = names.Length;
+var AvoidTagColumn = featureCount;
+var PopColumn = featureCount + 1;
 
 var byRequest = new Dictionary<int, (List<double[]> Positive, List<double[]> Negative)>();
 var rows = 0;
 using (var reader = new StreamReader(path))
 {
-    _ = reader.ReadLine(); // header
+    // A dump from before the EASE column has one column fewer and would be read shifted.
+    var header = reader.ReadLine() ?? string.Empty;
+    if (!header.Split(',').Skip(2).Take(featureCount).SequenceEqual(names))
+    {
+        Console.WriteLine("error: the header does not match this tool's columns. Dump the file again.");
+        return 2;
+    }
+
     while (reader.ReadLine() is { } line)
     {
         var parts = line.Split(',');
@@ -176,6 +183,7 @@ var shipped = new Dictionary<string, double>
     ["taste"] = 1.5,
     ["distinct"] = 0.0,
     ["avoid"] = 0.0,
+    ["ease"] = 4.0,
 };
 
 var baseline = names.Select(n => shipped[n]).ToArray();
@@ -219,7 +227,7 @@ for (var f = 0; f < featureCount; f++)
         value = -value;
     }
 
-    var key = names[f] == "taste" ? "tasteweight" : $"w{names[f]}";
+    var key = names[f] is "taste" or "ease" ? $"{names[f]}weight" : $"w{names[f]}";
     overrides.Add($"{key}={value.ToString("0.##", CultureInfo.InvariantCulture)}");
     Console.WriteLine(
         $"  {names[f],-9} {shipped[names[f]],6:F2} -> {value,6:F2}"

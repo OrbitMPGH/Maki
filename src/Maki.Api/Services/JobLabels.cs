@@ -22,6 +22,7 @@ public static class JobLabels
         [nameof(CustomSourceHealthJob)] = "health.job.customSourceHealth",
         [nameof(CustomSourceRepositoryJob)] = "health.job.customSourceRepositories",
         [nameof(DiscoverCacheWarmJob)] = "health.job.discoverCacheWarm",
+        [nameof(EaseJob)] = "health.job.ease",
         [nameof(EmbedderIdleUnloadJob)] = "health.job.embedderIdleUnload",
         [nameof(EmbeddingIndexJob)] = "health.job.embeddingIndex",
         [nameof(FollowedCreatorReleaseJob)] = "health.job.followedCreatorReleases",

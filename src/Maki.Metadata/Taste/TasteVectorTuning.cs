@@ -67,6 +67,19 @@ public sealed record TasteVectorTuning
     public int MaxSeedQueries { get; init; }
 
     /// <summary>
+    /// Replaces the seed centroid with the implicit-ALS user solve (<see cref="TasteFoldIn"/>).
+    /// Measurement only, ships off; numbers in <c>distribution/CLAUDE.md</c>. Eval knob:
+    /// <c>tasteusersolve</c>.
+    /// </summary>
+    public bool UserSolve { get; init; }
+
+    /// <summary>The solve's ridge, the trainer's <c>--lambda</c>. Eval knob: <c>tastesolvelambda</c>.</summary>
+    public double UserSolveLambda { get; init; } = 6;
+
+    /// <summary>The solve's confidence scale, the trainer's <c>--alpha</c>. Eval knob: <c>tastesolvealpha</c>.</summary>
+    public double UserSolveAlpha { get; init; } = 12;
+
+    /// <summary>
     /// Cosine a row must reach, as a fraction of the best behavioural candidate's, before the
     /// channel may inject it into a pool the text channels never selected.
     ///

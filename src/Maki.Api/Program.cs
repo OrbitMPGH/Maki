@@ -19,6 +19,7 @@ using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Taste;
 using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
@@ -291,6 +292,18 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<CoReadInstaller>();
+
+    // EASE weight table. Personal recommendations only; SemanticRecommender takes the cache and the
+    // tuning as optional constructor arguments, and SimilarSeriesService passes `ease: false`.
+    builder.Services.AddSingleton(new EaseOptions(paths.EaseDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<EaseCache>();
+    builder.Services.AddSingleton(EaseTuning.Default);
+    builder.Services.AddHttpClient(EaseInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<EaseInstaller>();
 
     // Reader cohorts. Its own cache rather than a layer inside VectorIndexCache, because nothing
     // here is scanned per catalogue row: placement is one lookup per series the reader finished.
@@ -1431,6 +1444,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
+        // EASE table, a swapped file like co-read. After the taste vectors, so the index rebuild
+        // that install triggers is not competing with a download on a fresh install.
+        q.AddJob<Maki.Api.Jobs.EaseJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EaseJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.EaseJob.Key)
+            .WithIdentity("ease-table-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
         // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
         // file in rather than invalidating the index, so it is last for bandwidth rather than for
         // correctness: the surfaces reading it are a hint and a rail.
@@ -1439,7 +1462,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
             .WithIdentity("reader-cohorts-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // New series from followed creators. Triggered after a dump install too; this daily run only

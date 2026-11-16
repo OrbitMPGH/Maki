@@ -4550,6 +4550,10 @@ msgid "health.job.discoverCacheWarm"
 msgstr "Prepare Discover"
 
 #: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.ease"
+msgstr "Install the also-finished table"
+
+#: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.dropFolder"
 msgstr "Check the drop folder"
 
@@ -5163,6 +5167,39 @@ msgstr "The co-read graph manifest is malformed."
 #: src/Maki.Metadata/CoRead/CoReadInstaller.cs
 msgid "install.coread.manifestUnavailable"
 msgstr "Could not read the co-read graph manifest."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.current"
+msgstr "The local also-finished table is already current."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.disabled"
+msgstr "The also-finished channel is turned off."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.evaluationBuild"
+msgstr "The published also-finished table is an evaluation build."
+
+#. {weights} is the raw install count.
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.installed"
+msgstr "Installed {weights, plural, one {# also-finished weight} other {# also-finished weights}}"
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.manifestMalformed"
+msgstr "The also-finished table manifest is malformed."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.manifestUnavailable"
+msgstr "Could not read the also-finished table manifest."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.schemaNewer"
+msgstr "The published also-finished table uses a newer schema than this build reads."
+
+#: src/Maki.Metadata/Ease/EaseInstaller.cs
+msgid "install.ease.truncated"
+msgstr "The published also-finished table looks truncated; ignoring it."
 
 #: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
 msgid "install.prebuiltIndex.current"

@@ -4,7 +4,7 @@
 
 // Validates an exported artifact and packs it into a publishable one.
 // Driven by publish-graph.ps1; run directly with:
-//   dotnet run distribution/graph-artifact.cs -- <reco|coread|taste> <db> <outDir> <minRows>
+//   dotnet run distribution/graph-artifact.cs -- <reco|coread|taste|cohorts|ease> <db> <outDir> <minRows>
 //
 // One tool for all three because the packing is identical - integrity check, zstd, manifest,
 // checksum - and only the table-level validation differs. Copies would be copies to keep in step,
@@ -12,7 +12,9 @@
 //
 // `taste` is not a graph. It is the behavioural factor matrix from build-taste-vectors.cs, and it
 // is here rather than in a tool of its own for the same reason the second graph was: everything
-// except which tables it looks at is the same, including the check that matters most.
+// except which tables it looks at is the same, including the check that matters most. `ease` is
+// the EASE weight table from build-ease-table.py, here for the same reason and with the same two
+// refusals as `taste`: per-user tables, and a fold-limited evaluation build.
 //
 // The shape is deliberately the same as embeddings-artifact.cs, including the reason for it: under
 // Windows PowerShell a native command's stderr line becomes an ErrorRecord, so everything is
@@ -38,19 +40,20 @@ using ZstdSharp;
 
 if (args.Length < 4)
 {
-    Console.WriteLine("usage: graph-artifact.cs <reco|coread|taste> <db> <outDir> <minRows>");
+    Console.WriteLine("usage: graph-artifact.cs <reco|coread|taste|cohorts|ease> <db> <outDir> <minRows>");
     return 2;
 }
 
 var kind = args[0].Trim().ToLowerInvariant();
-if (kind is not ("reco" or "coread" or "taste" or "cohorts"))
+if (kind is not ("reco" or "coread" or "taste" or "cohorts" or "ease"))
 {
-    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread, taste or cohorts)");
+    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread, taste, cohorts or ease)");
     return 2;
 }
 
 var isTaste = kind == "taste";
 var isCohorts = kind == "cohorts";
+var isEase = kind == "ease";
 
 var dbPath = args[1];
 var outDir = args[2];
@@ -112,9 +115,16 @@ if (!string.Equals(integrity, "ok", StringComparison.OrdinalIgnoreCase))
 // The working database and the artifact are both SQLite files with similar names sitting in the
 // same folder, and packing the wrong one would publish fetch bookkeeping instead of edges. The
 // table list is what tells them apart.
-var payloadTable = isTaste ? "item_vectors" : isCohorts ? "cohort_item" : "pair";
+var payloadTable = isTaste ? "item_vectors" : isCohorts ? "cohort_item" : isEase ? "weight" : "pair";
 if (!HasTable(payloadTable))
 {
+    if (isEase)
+    {
+        Console.WriteLine("error: no 'weight' table. This is not an EASE table export.");
+        Console.WriteLine("       Run `build-ease-table.py` and publish what it writes.");
+        return 1;
+    }
+
     if (isCohorts)
     {
         Console.WriteLine("error: no 'cohort_item' table. This is not a reader-cohort export.");
@@ -150,12 +160,16 @@ var pairs = isTaste
     ? Count("SELECT COUNT(*) FROM item_vectors")
     : isCohorts
         ? Count("SELECT COUNT(*) FROM cohort_item")
-        : Count("SELECT COUNT(*) FROM pair");
+        : isEase
+            ? Count("SELECT COUNT(*) FROM weight")
+            : Count("SELECT COUNT(*) FROM pair");
 var series = isTaste
     ? pairs
     : isCohorts
         ? Count("SELECT COUNT(*) FROM item_global")
-        : Count("SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair)");
+        : isEase
+            ? Count("SELECT COUNT(*) FROM (SELECT DISTINCT seed_id FROM weight)")
+            : Count("SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair)");
 
 if (pairs < minRows)
 {
@@ -164,7 +178,7 @@ if (pairs < minRows)
 
 // Both directions are materialized at load time from this one table, so a row naming the same
 // series twice becomes a self-loop that scores a seed against itself.
-if (!isTaste && !isCohorts && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
+if (!isTaste && !isCohorts && !isEase && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
 {
     problems.Add("some rows pair a series with itself; the export folded two remote ids onto one MangaBaka row");
 }
@@ -194,6 +208,8 @@ else
 
 var manifest = isTaste
     ? new JsonObject { ["itemCount"] = pairs }
+    : isEase
+        ? new JsonObject { ["weightCount"] = pairs, ["itemCount"] = series }
     : isCohorts
         ? new JsonObject { ["cohortItemCount"] = pairs, ["itemCount"] = series }
         : new JsonObject { ["pairCount"] = pairs, ["seriesCount"] = series };
@@ -320,6 +336,49 @@ if (isCohorts)
     manifest["trainedReaders"] = trainedReaders;
     manifest["trainingFold"] = cohortFold;
 }
+else if (isEase)
+{
+    if (Count("SELECT COUNT(*) FROM weight WHERE seed_id = item_id") > 0)
+    {
+        problems.Add("some rows weigh a series against itself, which the serving side would score as its own pick");
+    }
+
+    // `weight IS NULL OR weight = 0`, never `weight = 0` alone: SQLite stores a NaN as NULL, and a
+    // comparison against NULL lets exactly that row through. A zero carries nothing either, and the
+    // ABS bound catches an infinity or a double that would read back as one in float.
+    if (Count("SELECT COUNT(*) FROM weight WHERE weight IS NULL OR weight = 0 OR ABS(weight) > 3.4028234663852886e38") > 0)
+    {
+        problems.Add("some weights are missing, zero or non-finite, so the export did not drop what it should have");
+    }
+
+    // AN EVALUATION BUILD MUST NEVER BE PUBLISHED: build-ease-table.py --fold-out holds a quarter of
+    // the readers back so the eval can grade the table, and nothing about one looks wrong at runtime.
+    var trainingFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'trainingFold'") : "";
+    if (string.IsNullOrWhiteSpace(trainingFold))
+    {
+        problems.Add("meta has no trainingFold, so nothing records whether this saw every reader");
+    }
+    else if (!trainingFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.trainingFold is '{trainingFold}', so this is a fold-limited EVALUATION build "
+            + "and is missing readers on purpose");
+    }
+
+    var trainedReaders = metaPresent && long.TryParse(
+        Scalar("SELECT value FROM meta WHERE key = 'trainedReaders'"), NumberStyles.Integer,
+        CultureInfo.InvariantCulture, out var readers)
+        ? readers
+        : 0;
+
+    if (trainedReaders == 0)
+    {
+        problems.Add("meta has no trainedReaders, so nothing records how many readers this learned from");
+    }
+
+    manifest["trainingFold"] = trainingFold;
+    manifest["trainedReaders"] = trainedReaders;
+}
 else if (isTaste)
 {
     var dimensions = metaPresent && int.TryParse(
@@ -433,6 +492,16 @@ else
         problems.Add("meta has no userCount, so nothing records how many readers this was built from");
     }
 
+    // An export from before `build --fold-out` existed carries no trainingFold, and it saw every
+    // reader, so only a stated fold is refused here.
+    var graphFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'trainingFold'") : "";
+    if (!string.IsNullOrWhiteSpace(graphFold) && !graphFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.trainingFold is '{graphFold}', so this is a fold-limited EVALUATION graph "
+            + "(fetch-coread-graph.cs build --fold-out). Rebuild without --fold-out before publishing");
+    }
+
     manifest["userCount"] = users;
 }
 
@@ -457,6 +526,7 @@ var baseName = kind switch
     "reco" => "reco-edges",
     "coread" => "coread-edges",
     "cohorts" => "reader-cohorts",
+    "ease" => "ease-table",
     _ => "taste-vectors",
 };
 var archiveName = $"{baseName}-{stamp}.db.zst";
@@ -489,6 +559,8 @@ File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions 
 
 Console.WriteLine(isTaste
     ? $"vectors    : {pairs}"
+    : isEase
+        ? $"weights    : {pairs} over {series} seeds"
     : isCohorts
         ? $"cohort rows: {pairs} over {series} series"
         : $"pairs      : {pairs} over {series} series");
@@ -503,6 +575,10 @@ else if (kind == "coread")
 else if (isCohorts)
 {
     Console.WriteLine($"built from : {cohorts} cohorts over {cohortReaders} readers");
+}
+else if (isEase)
+{
+    Console.WriteLine($"built from : {manifest["trainedReaders"]} readers");
 }
 else
 {
