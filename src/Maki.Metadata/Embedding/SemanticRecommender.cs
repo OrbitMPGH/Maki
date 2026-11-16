@@ -109,6 +109,12 @@ public class SemanticRecommender(
     public virtual string? IndexStamp => cache.Stamp;
 
     /// <summary>
+    /// Goes up when the vote graph is installed or replaced, for a caller that caches results the
+    /// graph took part in.
+    /// </summary>
+    public virtual int VoteGraphGeneration => graphCache.Generation;
+
+    /// <summary>
     /// Which same-work component each of <paramref name="ids"/> sits in
     /// (<see cref="MangaBaka.FranchiseGraph"/>). Ids the index does not know, and ids in no
     /// franchise at all, are simply absent from the result rather than mapped to a placeholder:

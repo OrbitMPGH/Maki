@@ -34,11 +34,20 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
     /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
 
+    private int _generation;
+
+    /// <summary>
+    /// Goes up whenever the artifact on disk may have changed, so a caller holding results that
+    /// used the graph can tell they are stale. An idle unload does not move it.
+    /// </summary>
+    public int Generation => Volatile.Read(ref _generation);
+
     /// <summary>Drops the loaded graph so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
         _graph = null;
         _failed.Clear();
+        Interlocked.Increment(ref _generation);
         logger.LogDebug("Co-recommendation graph invalidated");
     }
 
@@ -67,6 +76,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
             _failed.Clear();
+            Interlocked.Increment(ref _generation);
             logger.LogInformation("Swapped in a new co-recommendation graph at {Path}", options.DatabasePath);
         }
         finally

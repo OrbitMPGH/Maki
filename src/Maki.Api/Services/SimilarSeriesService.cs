@@ -94,6 +94,7 @@ public class SimilarSeriesService(
         public IReadOnlyList<MangaBakaRecommendation>? Results;
         public DateTime ComputedAt = DateTime.MinValue;
         public string? Stamp;
+        public int VoteGraph;
         public long LastUsedTicks;
     }
 
@@ -138,7 +139,7 @@ public class SimilarSeriesService(
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
-        if (IsFresh(entry, now, semantic.IndexStamp))
+        if (IsFresh(entry, now))
         {
             return entry.Results!;
         }
@@ -147,11 +148,13 @@ public class SimilarSeriesService(
         try
         {
             // Somebody else computed it while this call waited for the gate.
-            if (IsFresh(entry, DateTime.UtcNow, semantic.IndexStamp))
+            if (IsFresh(entry, DateTime.UtcNow))
             {
                 return entry.Results!;
             }
 
+            // Read before the scan, so a graph installed while it runs leaves the entry stale.
+            var voteGraph = semantic.VoteGraphGeneration;
             IReadOnlyList<MangaBakaRecommendation> results;
             await _scans.WaitAsync(ct);
             try
@@ -187,6 +190,7 @@ public class SimilarSeriesService(
 
             entry.Results = results;
             entry.Stamp = semantic.IndexStamp;
+            entry.VoteGraph = voteGraph;
             entry.ComputedAt = DateTime.UtcNow;
             logger.LogInformation(
                 "Computed {Count} similar series for MangaBaka {Id}", results.Count, mangaBakaId);
@@ -199,9 +203,18 @@ public class SimilarSeriesService(
         }
     }
 
-    private static bool IsFresh(Entry entry, DateTime now, string? stamp) =>
-        entry.Results is not null && now - entry.ComputedAt < Ttl &&
-        (stamp is null || entry.Stamp is null || entry.Stamp == stamp);
+    /// <summary>
+    /// A pool goes stale with its age, with the vector index, and with the vote graph: a page
+    /// opened before the graph's first download would otherwise keep a rail without votes for
+    /// the whole <see cref="Ttl"/>.
+    /// </summary>
+    private bool IsFresh(Entry entry, DateTime now)
+    {
+        var stamp = semantic.IndexStamp;
+        return entry.Results is not null && now - entry.ComputedAt < Ttl &&
+            (stamp is null || entry.Stamp is null || entry.Stamp == stamp) &&
+            entry.VoteGraph == semantic.VoteGraphGeneration;
+    }
 
     /// <summary>Evicts the least recently used entries once over capacity.</summary>
     private void Trim()

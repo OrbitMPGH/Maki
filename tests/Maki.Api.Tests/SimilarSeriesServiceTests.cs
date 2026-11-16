@@ -45,6 +45,10 @@ public class SimilarSeriesServiceTests
 
         public override string? IndexStamp => Stamp;
 
+        public int VoteGraph;
+
+        public override int VoteGraphGeneration => VoteGraph;
+
         public override async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
@@ -210,6 +214,23 @@ public class SimilarSeriesServiceTests
         Assert.Equal(1, recommender.Calls);
 
         recommender.Stamp = "dump-2";
+        await service.GetAsync(1, ["safe"]);
+        Assert.Equal(2, recommender.Calls);
+    }
+
+    [Fact]
+    public async Task A_newly_installed_vote_graph_recomputes_a_cached_pool()
+    {
+        // A series page opened before the graph's first download caches a rail without votes.
+        var recommender = new CountingRecommender();
+        var service = Service(recommender);
+
+        await service.GetAsync(1, ["safe"]);
+        await service.GetAsync(1, ["safe"]);
+        Assert.Equal(1, recommender.Calls);
+
+        recommender.VoteGraph++;
+        await service.GetAsync(1, ["safe"]);
         await service.GetAsync(1, ["safe"]);
         Assert.Equal(2, recommender.Calls);
     }
