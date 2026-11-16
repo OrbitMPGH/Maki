@@ -1,7 +1,9 @@
-import { ActionIcon, Button, Group, Rating, Text } from '@mantine/core'
+import { ActionIcon, Button, Group, Text } from '@mantine/core'
+import { RatingWordGrid } from './RatingWordGrid'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { IconStar, IconX } from '../../lib/icons'
 import type { RatingCheckpoint } from '../../api/hooks'
+import { useRatingFormat } from '../../api/ratings'
 
 /**
  * "How is it so far?", asked at a checkpoint while the reader is partway through. The stars set a
@@ -10,7 +12,7 @@ import type { RatingCheckpoint } from '../../api/hooks'
  */
 export function RatingCheckpointPrompt({
   checkpoint,
-  soFar = null,
+  soFar: soFarScore = null,
   onRate,
   onDismiss,
 }: {
@@ -20,38 +22,36 @@ export function RatingCheckpointPrompt({
   onDismiss: () => void
 }) {
   const { t } = useLingui()
+  const { format } = useRatingFormat()
+  const soFar = soFarScore != null ? format(soFarScore) : null
   return (
-    <Group className="series-rate-hint" gap="xs" mt="md" wrap="wrap">
-      <IconStar size={16} style={{ flexShrink: 0, color: 'var(--ink-3)' }} aria-hidden />
-      <Text size="sm" c="var(--ink-3)">
-        {checkpoint === 'caughtUp' ? (
-          <Trans>You're caught up. How is it so far?</Trans>
-        ) : checkpoint === 'volumeEnd' ? (
-          <Trans>That's the end of a volume. How is it so far?</Trans>
-        ) : (
-          <Trans>How is it going so far?</Trans>
+    <div className="series-rate-hint rating-prompt">
+      <Group gap="xs" wrap="wrap">
+        <IconStar size={16} style={{ flexShrink: 0, color: 'var(--ink-3)' }} aria-hidden />
+        <Text size="sm" c="var(--ink-3)">
+          {checkpoint === 'caughtUp' ? (
+            <Trans>You're caught up. How is it so far?</Trans>
+          ) : checkpoint === 'volumeEnd' ? (
+            <Trans>That's the end of a volume. How is it so far?</Trans>
+          ) : (
+            <Trans>How is it going so far?</Trans>
+          )}
+        </Text>
+        {soFarScore != null && (
+          <Button size="compact-sm" variant="light" onClick={() => onRate(soFarScore)}>
+            <Trans>Still a {soFar}</Trans>
+          </Button>
         )}
-      </Text>
-      <Rating
-        size="sm"
-        count={5}
-        fractions={2}
-        defaultValue={soFar != null ? soFar / 2 : 0}
-        role="group"
-        aria-label={t`Rate this series so far`}
-        onChange={(v) => {
-          const rating = Math.round(v * 2)
-          if (rating > 0) onRate(rating)
-        }}
+        <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Dismiss`} onClick={onDismiss}>
+          <IconX size={16} />
+        </ActionIcon>
+      </Group>
+      <RatingWordGrid layout="row"
+        label={t`Rate this series so far`}
+        soFar={soFarScore}
+        onPick={onRate}
+        onKeep={soFarScore != null ? () => onRate(soFarScore) : undefined}
       />
-      {soFar != null && (
-        <Button size="compact-sm" variant="light" onClick={() => onRate(soFar)}>
-          <Trans>Still a {soFar}</Trans>
-        </Button>
-      )}
-      <ActionIcon size="sm" variant="subtle" color="var(--neutral)" aria-label={t`Dismiss`} onClick={onDismiss}>
-        <IconX size={16} />
-      </ActionIcon>
-    </Group>
+    </div>
   )
 }

@@ -68,7 +68,7 @@ export const Rated: Story = {
 export const RatedSoFar: Story = {
   args: { series: seriesDto(3, { rating: null, provisionalRating: 7, provisionalAtChapter: 34, readChapterCount: 34 }) },
   play: async ({ canvas, args, userEvent }) => {
-    await expect(await canvas.findByText('so far, at ch. 34')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Your rating: Good 7 so far' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Make this my rating' }))
     await waitFor(() => expect(args.onFinalize).toHaveBeenCalledOnce())
   },

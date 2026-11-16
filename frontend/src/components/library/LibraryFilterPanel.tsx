@@ -29,7 +29,8 @@ import {
   IconTags,
   IconWorld,
 } from '../../lib/icons'
-import { formatDecimal, formatNumber, formatPercent } from '../../format'
+import { formatDecimal, formatNumber, formatPercent, formatFixedDecimal } from '../../format'
+import { useRatingFormat } from '../../api/ratings'
 import { DrillPanes } from '../ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages, type DrillChoice } from '../ui/DrillPanel'
 import {
@@ -216,6 +217,8 @@ export function LibraryFilterPanel({
   onManageTags,
 }: LibraryFilterPanelProps) {
   const { t } = useLingui()
+  const { precision: ratingPrecision } = useRatingFormat()
+  const formatRatingBound = (n: number) => (Number.isInteger(n) ? formatNumber(n) : formatFixedDecimal(n, 1))
   const pages = useDrillPages<FilterPage>('root', PARENTS)
   const { page, open, back, backRef } = pages
 
@@ -326,7 +329,7 @@ export function LibraryFilterPanel({
   const myRatingValue =
     v.ratingState === 'rated'
       ? v.ratingRange[0] > 1 || v.ratingRange[1] < 10
-        ? boundsValue(v.ratingRange[0], v.ratingRange[1])
+        ? boundsValue(v.ratingRange[0], v.ratingRange[1], formatRatingBound)
         : nameOf(options.ratingStates, 'rated')
       : choiceValue(options.ratingStates, v.ratingState)
   const { addedWithin } = v
@@ -512,12 +515,12 @@ export function LibraryFilterPanel({
               <DrillSliderLines
                 min={1}
                 max={10}
-                step={1}
+                step={ratingPrecision === 'decimal' ? 0.5 : 1}
                 value={v.ratingRange}
                 onChange={set.ratingRange}
                 fromLabel={t`My rating from`}
                 toLabel={t`My rating to`}
-                format={formatNumber}
+                format={formatRatingBound}
               />
             )}
           </DrillField>,

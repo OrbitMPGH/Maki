@@ -41,10 +41,9 @@ export const RateBeforeLeaving: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByText('Want to rate it before it goes? You had it at 6 so far.')).toBeVisible()
-    const stars = await within(dialog).findByRole('group', { name: 'Your rating for Lanterns Over Kasumi' })
-    // Mantine commits a rating from the star's label; the radio itself only previews it.
-    await userEvent.click((within(stars).getByRole('radio', { name: '2' }) as HTMLInputElement).labels![0])
-    await waitFor(() => expect(args.leavingRating!.onChange).toHaveBeenCalledWith(4))
+    const words = await within(dialog).findByRole('group', { name: 'Your rating for Lanterns Over Kasumi' })
+    await userEvent.click(within(words).getByRole('button', { name: 'Excellent' }))
+    await waitFor(() => expect(args.leavingRating!.onChange).toHaveBeenCalledWith(9))
   },
 }
 

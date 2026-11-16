@@ -5,6 +5,7 @@ import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { IconArrowRight } from '../lib/icons'
+import { formatDecimal } from '../format'
 import { EmptyState } from './ui/EmptyState'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 import { useQueryClient } from '@tanstack/react-query'
@@ -166,9 +167,9 @@ export function RatingImportModal({
               <Text size="sm" lineClamp={1} className="modal-row-grow" c="var(--ink-hi)">
                 {i.title}
               </Text>
-              <span className="modal-score-old tnum">{i.localRating ? i.localRating : '-'}</span>
+              <span className="modal-score-old tnum">{i.localRating ? formatDecimal(i.localRating) : '-'}</span>
               <IconArrowRight size={14} aria-hidden style={{ color: 'var(--ink-4)' }} />
-              <span className="modal-score-new tnum">{i.remoteScore}</span>
+              <span className="modal-score-new tnum">{formatDecimal(i.remoteScore)}</span>
             </label>
           ))}
         </div>

@@ -4,7 +4,6 @@ import {
     Box,
     Group,
     Paper,
-    Rating,
     Skeleton,
     Stack,
     Text,
@@ -12,7 +11,7 @@ import {
     Tooltip,
     VisuallyHidden,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconCircleCheck, IconDownload, IconX } from '../../lib/icons'
+import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconCircleCheck, IconDownload } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
@@ -21,8 +20,9 @@ import { HeroChips } from './HeroChips'
 import { ChapterCountsInfo } from './ChapterCountsInfo'
 import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
-import { formatDecimal } from '../../format'
-import { isProvisional, shownRating } from '../../lib/rating'
+import { isProvisional, ratesProvisionally, shownRating } from '../../lib/rating'
+import { RatingPill } from './RatingPill'
+import { RatingPanelOpener } from './RatingPanelOpener'
 import { RatingHistoryButton } from './RatingHistoryButton'
 import { ReadingStatusMenu } from './ReadingStatus'
 import type { ReadingStatus } from '../ui/status'
@@ -98,7 +98,6 @@ export function SeriesHero({
     const author = series.authorStory ?? series.authorArt
     const rating = shownRating(series)
     const soFar = isProvisional(series)
-    const soFarChapter = series.provisionalAtChapter != null ? formatDecimal(series.provisionalAtChapter) : null
     const { data: chapters } = useChapters(series.id)
     // Wherever you came from, not a fixed destination: reached from Discover with a panel full of
     // filters, this walks back to that panel with the filters still on it. The library is only the
@@ -334,26 +333,25 @@ export function SeriesHero({
                                 <span className="hero-chips-break" aria-hidden />
                                 <div className="hero-yours">
                                     <Group gap={8} wrap="nowrap" className="hero-rating">
-                                        <Rating
-                                            count={5}
-                                            fractions={2}
-                                            value={rating ? rating / 2 : 0}
-                                            color={soFar ? 'var(--ink-3)' : undefined}
-                                            onChange={(v) => onRate(Math.round(v * 2) || null)}
-                                            aria-label={t`Your rating`}
+                                        <RatingPanelOpener
+                                            panel={{
+                                                seriesId: series.id,
+                                                value: rating,
+                                                soFar: rating == null ? ratesProvisionally(series) : soFar,
+                                                finished: series.finished ?? false,
+                                                breakdown: series.ratingBreakdown ?? null,
+                                                onChange: onRate,
+                                                onClear: () => onRate(null),
+                                                canEditCategories: true,
+                                            }}
+                                            target={(toggle, opened) => (
+                                                <RatingPill value={rating} soFar={soFar} opened={opened} onClick={toggle} />
+                                            )}
                                         />
                                         {rating ? (
                                             <>
-                                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                                    {rating}/10
-                                                </Text>
                                                 {soFar && (
                                                     <>
-                                                        <Text size="sm" c="var(--ink-4)">
-                                                            {soFarChapter != null
-                                                                ? <Trans>so far, at ch. {soFarChapter}</Trans>
-                                                                : <Trans>so far</Trans>}
-                                                        </Text>
                                                         <Tooltip label={t`Make this my rating`} withArrow>
                                                             <ActionIcon
                                                                 size="sm"
@@ -367,24 +365,9 @@ export function SeriesHero({
                                                         </Tooltip>
                                                     </>
                                                 )}
-                                                <Tooltip label={t`Clear rating`} withArrow>
-                                                    <ActionIcon
-                                                        size="sm"
-                                                        variant="subtle"
-                                                        color="var(--neutral)"
-                                                        onClick={() => onRate(null)}
-                                                        aria-label={t`Clear rating`}
-                                                    >
-                                                        <IconX size={16} />
-                                                    </ActionIcon>
-                                                </Tooltip>
                                                 <RatingHistoryButton seriesId={series.id} />
                                             </>
-                                        ) : (
-                                            <Text size="sm" c="var(--ink-4)">
-                                                <Trans>Not rated</Trans>
-                                            </Text>
-                                        )}
+                                        ) : null}
                                     </Group>
                                     {onSetReadingStatus && (
                                         <ReadingStatusMenu

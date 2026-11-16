@@ -2359,6 +2359,10 @@ msgstr ""
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {ещё # в списке, не нужна} few {ещё # в списке, не нужны} many {ещё # в списке, не нужны} other {ещё # в списке, не нужны}}"
 
+#: src/components/series/RatingPanel.tsx
+msgid "{of} on"
+msgstr ""
+
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
 msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
@@ -2750,6 +2754,10 @@ msgstr "{sampleChapters, plural, one {на основе # похожего пр�
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Измерено по # главе, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} few {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} many {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.} other {Измерено по # главам, серий в вашей библиотеке: {series}. {bpp} бит на пиксель, эквивалент JPG.}}"
+
+#: src/components/series/RatingPanel.tsx
+msgid "{scoredCount} of {of} scored"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "{seconds, plural, one {Every second} other {Every # seconds}}"
@@ -3570,6 +3578,10 @@ msgstr "{year} – по настоящее время"
 msgid "{zone} (this browser)"
 msgstr "{zone} (этот браузер)"
 
+#: src/components/series/RatingPanel.tsx
+msgid "/10 so far"
+msgstr ""
+
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
 msgid "/downloads (optional)"
@@ -4259,6 +4271,7 @@ msgstr "Журнал активности"
 msgid "Adaptation"
 msgstr "Адаптация"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
@@ -4521,6 +4534,10 @@ msgstr "Затронутые главы:"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "After seeding"
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "After the last chapter"
 msgstr ""
 
 #: src/api/upgrades.ts
@@ -5301,6 +5318,7 @@ msgctxt "series"
 msgid "Archiving a finished series stops Maki checking its sources and keeps your reading history and rating. Archived series show up here."
 msgstr "Архивация завершённой серии останавливает проверку источников Maki и сохраняет историю чтения и оценку. Архивные серии показываются здесь."
 
+#: src/api/ratings.ts
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -5548,6 +5566,11 @@ msgstr "Автоматические улучшения отключены, ну
 msgid "Automation"
 msgstr "Автоматизация"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Average"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Average score"
@@ -5697,6 +5720,11 @@ msgstr "Резервные копии содержат API-ключи и пар�
 #, fuzzy
 msgid "Backups to keep"
 msgstr "Сколько копий хранить"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Bad"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -5962,6 +5990,18 @@ msgstr ""
 #, fuzzy
 msgid "Boys Love"
 msgstr "Boys Love"
+
+#: src/components/series/ArchiveSeriesDialog.tsx
+#: src/components/series/RateHint.tsx
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Break it down"
+msgstr ""
+
+#: src/components/settings/RatingCategoriesModal.tsx
+#: src/components/settings/RatingsSection.tsx
+msgid "Breakdown categories"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -6860,6 +6900,10 @@ msgstr "Главы: {chapters}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Главы: {chaptersMin}–{chaptersMax}"
 
+#: src/api/ratings.ts
+msgid "Characters"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Charcoal"
@@ -7047,6 +7091,10 @@ msgstr "Очистить прочитанные файлы"
 msgid "Clear"
 msgstr "Очистить"
 
+#: src/components/series/RatingPanel.tsx
+msgid "Clear {name}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7087,7 +7135,7 @@ msgstr "Очистить очередь"
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPanel.tsx
 #, fuzzy
 msgid "Clear rating"
 msgstr "Очистить оценку"
@@ -8358,6 +8406,7 @@ msgstr "Сейчас: {tierLabel}, оценка {score}"
 msgid "Currently popular"
 msgstr "Сейчас популярно"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Custom"
@@ -8486,6 +8535,11 @@ msgstr ""
 
 #: src/components/settings/ReadingStatusSection.tsx
 msgid "Days without reading before a series is put on hold"
+msgstr ""
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Decent"
 msgstr ""
 
 #: src/components/ImportReviewModal.tsx
@@ -9125,6 +9179,7 @@ msgstr "Не хочу"
 msgid "Done"
 msgstr "Готово"
 
+#: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -9569,6 +9624,7 @@ msgstr ""
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
+#: src/components/settings/RatingsSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9597,6 +9653,10 @@ msgstr "Изменить как форму"
 #, fuzzy
 msgid "Edit as JSON"
 msgstr "Изменить как JSON"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Edit categories"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -9797,6 +9857,10 @@ msgstr ""
 msgid "End of the preview"
 msgstr "Конец предпросмотра"
 
+#: src/api/ratings.ts
+msgid "Ending"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "English"
@@ -9845,6 +9909,10 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Enhancing pages for readers"
+msgstr ""
+
+#: src/api/ratings.ts
+msgid "Enjoyment"
 msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
@@ -10142,6 +10210,11 @@ msgstr ""
 #, fuzzy
 msgid "Example: {example}"
 msgstr "Пример: {example}"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Excellent"
+msgstr ""
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -10758,6 +10831,10 @@ msgstr "Находит пропавшие, новые или сломанные 
 msgid "Fine detail gets softer. Check dark gradients."
 msgstr ""
 
+#: src/components/series/RatingPanel.tsx
+msgid "Fine-tune"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Finish"
@@ -11352,6 +11429,11 @@ msgstr "Нет на диске"
 msgid "Good"
 msgstr "Хорошее"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Good"
+msgstr ""
+
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
 msgid "Good"
@@ -11496,6 +11578,10 @@ msgstr "Привычки"
 #, fuzzy
 msgid "Habits in numbers"
 msgstr "Привычки в цифрах"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Half"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11898,6 +11984,10 @@ msgstr ""
 #, fuzzy
 msgid "How many"
 msgstr "Сколько"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "How much {text} counts"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -13806,6 +13896,15 @@ msgstr "Низкое качество"
 msgid "Lower bars mean your taste moved."
 msgstr "Более низкие полосы означают, что ваш вкус изменился."
 
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Lower by 0.1"
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "Lower by 1"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Lower Case"
@@ -14269,6 +14368,11 @@ msgstr "Отмечено просмотренным, но не прочитан�
 msgid "Martial Arts"
 msgstr "Боевые искусства"
 
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Masterpiece"
+msgstr ""
+
 #: src/components/import/MihonReview.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/ImportPage.tsx
@@ -14330,6 +14434,10 @@ msgstr "Совпадения по смыслу, описанию и атмосф
 
 #: src/components/RenameSeriesModal.tsx
 msgid "Matches your naming formats. Only the highlighted parts change."
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "Matches your rating"
 msgstr ""
 
 #: src/components/pageconversion/RuleEditor.tsx
@@ -15270,6 +15378,10 @@ msgstr "Новый"
 #: src/pages/SettingsPage.tsx
 msgctxt "recently added setting"
 msgid "New"
+msgstr ""
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "New category"
 msgstr ""
 
 #: src/components/home/ContinueHero.tsx
@@ -16303,6 +16415,10 @@ msgstr "пока ничего"
 msgid "None, use the filters below"
 msgstr ""
 
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Normal"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"
@@ -16535,10 +16651,9 @@ msgstr "Не отслеживается"
 msgid "Not muted"
 msgstr ""
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
+#: src/components/series/RatingPanel.tsx
 msgid "Not rated"
-msgstr "Без оценки"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Not reachable right now"
@@ -16585,6 +16700,10 @@ msgstr "Не сохранено"
 msgid "Not scanned"
 msgstr "Не просканировано"
 
+#: src/components/series/RatingPanel.tsx
+msgid "Not scored"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DropFolderSection.tsx
 #, fuzzy
@@ -16612,6 +16731,7 @@ msgstr "Пока не настроено. Администратор может 
 msgid "Not set up."
 msgstr ""
 
+#: src/components/series/RatingPanel.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Not started"
@@ -17404,10 +17524,18 @@ msgstr "На вашей полке, не используется для ран�
 msgid "On your shortlist"
 msgstr "В вашем шорт-листе"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "One decimal"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "One missed day a week is forgiven, and today never breaks a streak."
 msgstr "Один пропущенный день в неделю прощается, а сегодняшний день никогда не прерывает серию."
+
+#: src/components/series/RatingPanel.tsx
+msgid "One more to get a suggestion"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17822,6 +17950,10 @@ msgstr "Исходный размер (1:1)"
 msgid "Original title"
 msgstr "Исходное название"
 
+#: src/api/ratings.ts
+msgid "Originality"
+msgstr ""
+
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/TagBuckets.tsx
@@ -17903,6 +18035,10 @@ msgstr ""
 #, fuzzy
 msgid "Pace"
 msgstr "Темп"
+
+#: src/api/ratings.ts
+msgid "Pacing"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -19062,6 +19198,15 @@ msgstr "Параметры подборки"
 msgid "Rail saved"
 msgstr "Подборка сохранена"
 
+#: src/components/series/RatingPanel.tsx
+#: src/pages/reader/ChapterEndRating.tsx
+msgid "Raise by 0.1"
+msgstr ""
+
+#: src/components/series/RatingPanel.tsx
+msgid "Raise by 1"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Ran out of probes for this run"
@@ -19069,6 +19214,10 @@ msgstr "В этом запуске закончились пробы"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Rank"
+msgstr ""
+
+#: src/components/series/RatingPill.tsx
+msgid "Rate"
 msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
@@ -19100,6 +19249,7 @@ msgid "Rate limited. Retrying soon."
 msgstr "Превышен лимит запросов. Скоро повтор."
 
 #: src/components/series/RateHint.tsx
+#: src/components/series/RatingPill.tsx
 #, fuzzy
 msgid "Rate this series"
 msgstr "Оцените эту серию"
@@ -19167,6 +19317,10 @@ msgstr "Оценка очищена"
 msgid "Rating from"
 msgstr "Рейтинг от"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Rating precision"
+msgstr ""
+
 #: src/components/settings/RatingPromptsSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -19180,9 +19334,19 @@ msgstr "Рейтинг до"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "rating, decimal, precision, breakdown, category, categories, story, art, characters, weight, score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
 msgstr "оценка, оценить, на данный момент, предварительная, балл, напоминание, спросить, звёзды"
+
+#: src/components/settings/RatingsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Ratings"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -20100,6 +20264,10 @@ msgstr "Удалить {removingSourceName}?"
 #, fuzzy
 msgid "Remove {seriesTitle} from this device"
 msgstr "Удалить {seriesTitle} с этого устройства"
+
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Remove {text}"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -21616,6 +21784,7 @@ msgstr "Сохранить коды восстановления"
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/SaveActions.tsx
 #: src/components/settings/RatingPromptsSection.tsx
+#: src/components/settings/RatingsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/ReadingStatusSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -21904,6 +22073,10 @@ msgstr "Оценка {score}"
 #, fuzzy
 msgid "Score for {0}"
 msgstr "Балл для {0}"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Score two to get a suggestion"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
@@ -23529,7 +23702,7 @@ msgstr "Снимок на диске: {snapshotSize}, обновлён {refreshe
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Снимок на диске: {snapshotSize}, время обновления неизвестно"
 
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPill.tsx
 #, fuzzy
 msgid "so far"
 msgstr "на данный момент"
@@ -23537,11 +23710,6 @@ msgstr "на данный момент"
 #: src/components/library/LibraryTable.tsx
 msgid "So far"
 msgstr ""
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "so far, at ch. {soFarChapter}"
-msgstr "на данный момент, на гл. {soFarChapter}"
 
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
@@ -24120,6 +24288,7 @@ msgstr "Хранилище этого устройства"
 msgid "Storage used"
 msgstr "Занято места"
 
+#: src/api/ratings.ts
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -24182,6 +24351,10 @@ msgstr ""
 #, fuzzy
 msgid "Suggestive"
 msgstr "Пикантно"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Suggests <0>{totalWord} {total}</0>"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -26153,6 +26326,10 @@ msgstr "Трекер"
 msgid "Trackers"
 msgstr "Трекеры"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Trackers that only take whole numbers get the rounded score."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Trackers you have connected are updated too."
 msgstr ""
@@ -26350,6 +26527,10 @@ msgstr "Двухфакторная аутентификация отключен
 #, fuzzy
 msgid "Type"
 msgstr "Тип"
+
+#: src/components/series/RatingPanel.tsx
+msgid "Type a rating"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -26726,6 +26907,10 @@ msgstr "Дальше"
 msgid "Up one folder"
 msgstr "На папку выше"
 
+#: src/components/settings/RatingCategoriesModal.tsx
+msgid "Up to {MAX_ENABLED_CATEGORIES} on at once. Changing these never changes a rating you already set."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Up to {max}"
@@ -26995,6 +27180,7 @@ msgid "URL"
 msgstr "URL"
 
 #: src/components/import/ImportMatchFinder.tsx
+#: src/components/series/RatingPanel.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -27294,6 +27480,11 @@ msgstr "очень похожи"
 #, fuzzy
 msgid "Very fast"
 msgstr "Очень быстро"
+
+#: src/lib/ratingWords.ts
+msgctxt "rating"
+msgid "Very good"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -27884,6 +28075,10 @@ msgstr "Вся франшиза"
 msgid "Whole library"
 msgstr "Вся библиотека"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Whole numbers"
+msgstr ""
+
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "Whole page"
 msgstr ""
@@ -27950,6 +28145,10 @@ msgstr "Больше не будет предлагаться продолжит
 
 #: src/pages/MetadataGatePage.tsx
 msgid "Working"
+msgstr ""
+
+#: src/api/ratings.ts
+msgid "World"
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
@@ -28325,15 +28524,10 @@ msgstr "Ваш выбор"
 msgid "Your priority order"
 msgstr "Ваш порядок приоритетов"
 
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/RatingPanel.tsx
+#: src/components/series/RatingPanelOpener.tsx
 msgid "Your rating"
 msgstr ""
-
-#: src/components/library/ArchivedList.tsx
-#: src/components/series/ArchivedSeriesCard.tsx
-#, fuzzy
-msgid "Your rating for {displayTitle}"
-msgstr "Ваша оценка для {displayTitle}"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
@@ -28344,6 +28538,14 @@ msgstr "Ваша оценка для {title}"
 #, fuzzy
 msgid "Your rating over time"
 msgstr "Ваши оценки по времени"
+
+#: src/components/series/RatingPill.tsx
+msgid "Your rating: {shown}"
+msgstr ""
+
+#: src/components/series/RatingPill.tsx
+msgid "Your rating: {shown} so far"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Your reading"
