@@ -154,8 +154,8 @@ public sealed class CreditGroupsService(
         var linkable = nodes.SelectMany(n => n.Members)
             .Where(n => n.Kind != CreditNoticeKind.Site && Hidden(n.Override, n.Accepted) && !string.IsNullOrWhiteSpace(n.Text))
             .ToDictionary(n => n.Id);
-        var similarities = CreditNoticeLinks.Measure(linkable.Values.Select(n => new CreditLinkText(n.Id, n.Text,
-            links[n.Id].Select(l => l.SeriesId).Distinct().Select(titles.GetValueOrDefault).OfType<string>().ToList())));
+        var similarities = Measured(linkable.Values.OrderBy(n => n.Id).Select(n => new CreditLinkText(n.Id, n.Text,
+            links[n.Id].Select(l => l.SeriesId).Distinct().Order().Select(titles.GetValueOrDefault).OfType<string>().ToList())).ToList());
         var sets = CreditNoticeLinks.Join(nodes
             .Select(b => new CreditLinkNode(b.Members.Where(n => linkable.ContainsKey(n.Id)).Select(n => n.Id).ToList(),
                 Anchored(b) ? b.Key : null, b.Cluster is not null))
@@ -178,15 +178,15 @@ public sealed class CreditGroupsService(
                 continue;
             }
 
-            var head = parts
+            var ranked = parts
                 .OrderByDescending(p => p.Cluster is not null)
                 .ThenByDescending(Anchored)
                 .ThenByDescending(p => ChaptersOf(p.Members))
                 .ThenByDescending(p => p.Members.Count)
                 .ThenBy(p => p.Key, StringComparer.Ordinal)
                 .ThenBy(p => p.Members.Min(n => n.Id))
-                .First();
-            var others = parts.Where(p => !ReferenceEquals(p, head)).ToList();
+                .ToList();
+            var (head, others) = (ranked[0], ranked[1..]);
             var members = parts.SelectMany(p => p.Members).ToList();
             var joined = others.SelectMany(p => p.Members).Select(n => n.Id).Order().ToList();
             if (head.Cluster is not { } cluster)
@@ -210,6 +210,34 @@ public sealed class CreditGroupsService(
 
         buckets.AddRange(named.Where(b => b.Key == "site"));
         return buckets;
+    }
+
+    private static readonly Lock MeasureGate = new();
+    private static (List<CreditLinkText> Input, CreditNoticeLinks.Similarities Result)? _lastMeasure;
+
+    /// <summary>
+    /// <see cref="CreditNoticeLinks.Measure"/>, kept for the last input: the modal lists again after every confirm,
+    /// rename or override, and none of those changes the text. Any change to an id, a text or a title measures again.
+    /// </summary>
+    private static CreditNoticeLinks.Similarities Measured(List<CreditLinkText> input)
+    {
+        lock (MeasureGate)
+        {
+            if (_lastMeasure is { } last && last.Input.Count == input.Count && last.Input.Zip(input).All(p =>
+                    p.First.Id == p.Second.Id && string.Equals(p.First.Text, p.Second.Text, StringComparison.Ordinal) &&
+                    p.First.Titles.SequenceEqual(p.Second.Titles, StringComparer.Ordinal)))
+            {
+                return last.Result;
+            }
+        }
+
+        var result = CreditNoticeLinks.Measure(input);
+        lock (MeasureGate)
+        {
+            _lastMeasure = (input, result);
+        }
+
+        return result;
     }
 
     /// <summary>The bucket a notice is listed under: its Site kind, else the key of its name, else Unnamed.</summary>

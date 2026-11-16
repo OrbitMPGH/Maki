@@ -442,7 +442,7 @@ function GroupNameForm({ group }: { group: CreditGroup }) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!typed || (!changed && confirmed)) return
+    if (!typed || (!changed && confirmed && group.unconfirmed === 0)) return
     name.mutate(
       { noticeIds: group.noticeIds, name: typed },
       {

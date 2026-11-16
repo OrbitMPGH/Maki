@@ -80,6 +80,26 @@ export const JoinedByText: Story = {
   },
 }
 
+const onConfirmRest = fn()
+
+/** A confirmed group with a joined notice still confirms: the name goes to every notice in it. */
+export const ConfirmJoinedNotices: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/creditgroups/name'), async ({ request }) => {
+        const body = (await request.json()) as { noticeIds: number[]; name: string }
+        onConfirmRest(body)
+        return HttpResponse.json({ named: body.noticeIds.length })
+      }),
+    ),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Confirm name' }))
+    await waitFor(() => expect(onConfirmRest).toHaveBeenCalledWith({ noticeIds: [1, 2, 11], name: 'Moonlit Scans' }))
+  },
+}
+
 const onAlikeName = fn()
 
 /** Notices with no name that read alike are one group, so naming it once names them all. */

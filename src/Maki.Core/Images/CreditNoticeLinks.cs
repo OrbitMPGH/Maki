@@ -78,12 +78,13 @@ public static partial class CreditNoticeLinks
 
         public double Of(int a, int b) => _near.TryGetValue(a, out var row) && row.TryGetValue(b, out var s) ? s : 0;
 
-        public IReadOnlyDictionary<int, double> Near(int id) =>
-            _near.TryGetValue(id, out var row) ? row : (IReadOnlyDictionary<int, double>)new Dictionary<int, double>();
+        /// <summary>Every kept pair once, in no particular order.</summary>
+        internal IEnumerable<(int A, int B, double Similarity)> Each() =>
+            _near.SelectMany(r => r.Value.Where(p => r.Key < p.Key).Select(p => (A: r.Key, B: p.Key, Similarity: p.Value)));
 
-        /// <summary>Every kept pair once, strongest first, ties by id.</summary>
-        public IEnumerable<(int A, int B, double Similarity)> Pairs() => _near
-            .SelectMany(r => r.Value.Where(p => r.Key < p.Key).Select(p => (A: r.Key, B: p.Key, Similarity: p.Value)))
+        /// <summary>Every kept pair at or above <paramref name="from"/> once, strongest first, ties by id.</summary>
+        public IEnumerable<(int A, int B, double Similarity)> Pairs(double from = 0) => _near
+            .SelectMany(r => r.Value.Where(p => r.Key < p.Key && p.Value >= from).Select(p => (A: r.Key, B: p.Key, Similarity: p.Value)))
             .OrderByDescending(p => p.Similarity).ThenBy(p => p.A).ThenBy(p => p.B);
     }
 
@@ -93,8 +94,10 @@ public static partial class CreditNoticeLinks
     /// </summary>
     public static Similarities Measure(IEnumerable<CreditLinkText> notices)
     {
+        // In id order, so the sums are added in the same order whatever order the caller's query returned.
         var grams = notices
             .Where(n => !string.IsNullOrWhiteSpace(n.Text))
+            .OrderBy(n => n.Id)
             .DistinctBy(n => n.Id)
             .Select(n => (n.Id, Counts: Grams(n.Text!, n.Titles)))
             .Where(n => n.Counts.Count > 0)
@@ -186,7 +189,6 @@ public static partial class CreditNoticeLinks
         var parent = Enumerable.Range(0, nodes.Count).ToArray();
         var anchor = nodes.Select(n => n.Anchor).ToArray();
         var named = nodes.Select(n => n.Named).ToArray();
-        var notices = nodes.Select(n => n.Notices.ToList()).ToArray();
         var nodeOf = new Dictionary<int, int>();
         for (var i = 0; i < nodes.Count; i++)
         {
@@ -196,13 +198,21 @@ public static partial class CreditNoticeLinks
             }
         }
 
-        foreach (var (a, b, s) in similarities.Pairs())
+        var size = Enumerable.Range(0, nodes.Count).Select(i => nodes[i].Notices.Count(id => nodeOf[id] == i)).ToArray();
+        // The summed cosine between every two buckets with a kept pair across them, kept up to date as they join, so a
+        // join's mean is one lookup rather than a walk over both buckets' notices.
+        var cross = new Dictionary<int, Dictionary<int, double>>();
+        foreach (var (a, b, s) in similarities.Each())
         {
-            if (s < LinkAt)
+            if (nodeOf.TryGetValue(a, out var na) && nodeOf.TryGetValue(b, out var nb) && na != nb)
             {
-                break;
+                Add(na, nb, s);
+                Add(nb, na, s);
             }
+        }
 
+        foreach (var (a, b, _) in similarities.Pairs(LinkAt))
+        {
             if (!nodeOf.TryGetValue(a, out var na) || !nodeOf.TryGetValue(b, out var nb))
             {
                 continue;
@@ -214,29 +224,29 @@ public static partial class CreditNoticeLinks
                 continue;
             }
 
-            var (small, large) = notices[ra].Count <= notices[rb].Count ? (ra, rb) : (rb, ra);
-            var cross = 0.0;
-            foreach (var id in notices[small])
-            {
-                foreach (var (other, sim) in similarities.Near(id))
-                {
-                    if (nodeOf.TryGetValue(other, out var n) && Find(n) == large)
-                    {
-                        cross += sim;
-                    }
-                }
-            }
-
-            if (cross / ((double)notices[small].Count * notices[large].Count) < (named[small] && named[large] ? NamedJoinMean : JoinMean))
+            var between = cross.TryGetValue(ra, out var row) ? row.GetValueOrDefault(rb) : 0;
+            if (between / ((double)size[ra] * size[rb]) < (named[ra] && named[rb] ? NamedJoinMean : JoinMean))
             {
                 continue;
             }
 
+            var (small, large) = size[ra] <= size[rb] ? (ra, rb) : (rb, ra);
             parent[small] = large;
             anchor[large] ??= anchor[small];
             named[large] |= named[small];
-            notices[large].AddRange(notices[small]);
-            notices[small] = [];
+            size[large] += size[small];
+            if (cross.Remove(small, out var moved))
+            {
+                foreach (var (other, sum) in moved)
+                {
+                    cross[other].Remove(small);
+                    if (other != large)
+                    {
+                        Add(large, other, sum);
+                        Add(other, large, sum);
+                    }
+                }
+            }
         }
 
         return Enumerable.Range(0, nodes.Count)
@@ -244,6 +254,16 @@ public static partial class CreditNoticeLinks
             .OrderBy(g => g.Min())
             .Select(g => (IReadOnlyList<int>)g.Order().ToList())
             .ToList();
+
+        void Add(int from, int to, double s)
+        {
+            if (!cross.TryGetValue(from, out var row))
+            {
+                cross[from] = row = [];
+            }
+
+            row[to] = row.GetValueOrDefault(to) + s;
+        }
 
         int Find(int i)
         {
