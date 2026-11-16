@@ -13,9 +13,16 @@ public sealed record EaseTuning
     /// <summary>
     /// The channel's coefficient in <c>EmbeddingMath.HybridScore</c>, against a score whose best
     /// candidate is 1. 0 switches the channel off entirely. Ships at 4: +0.083 nDCG@40 on held-out
-    /// readers, neutral at one and three seeds, and a measured lean toward better-known titles.
+    /// readers, neutral at three seeds on human pairs, and a measured lean toward better-known titles.
     /// </summary>
     public double Weight { get; init; } = 4;
+
+    /// <summary>
+    /// Seeds a request needs before the channel runs. From one seed it gains nothing on
+    /// human-recommended pairs and costs 0.096 of judged feel@10 (1.633 to 1.537), so it stays out;
+    /// from two to four seeds it is already +0.027 nDCG@40 on held-out readers.
+    /// </summary>
+    public int MinSeeds { get; init; } = 2;
 
     /// <summary>
     /// Whether negative weights count. On is what the research measured best: readers who finished

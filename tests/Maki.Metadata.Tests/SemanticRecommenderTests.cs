@@ -852,11 +852,15 @@ public class SemanticRecommenderTests : IDisposable
         var table = WriteEase((1, 11, 0.08f), (1, 12, -0.08f));
 
         var off = await Recommender().GetSimilarAsync([1], [], limit: 5);
-        var on = await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 2 })
+        var on = await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 2, MinSeeds = 1 })
             .GetSimilarAsync([1], [], limit: 5);
+        var shipped = await Recommender(easePath: table).GetSimilarAsync([1], [], limit: 5);
 
         Assert.Equal(["12", "10", "11"], off.Select(p => p.ProviderId));
         Assert.Equal(["11", "10", "12"], on.Select(p => p.ProviderId));
+        // One seed is under the shipped MinSeeds, so the table stays out of it.
+        Assert.Equal(off.Select(p => p.ProviderId), shipped.Select(p => p.ProviderId));
+        Assert.DoesNotContain(shipped, p => p.CoRead);
     }
 
     [Fact]

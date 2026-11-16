@@ -329,7 +329,8 @@ public class SemanticRecommender(
         // vector index instead of after it. The awaits further down join these same loads.
         Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
         Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
-        var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0;
+        var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0
+            && seedIds.Count >= _easeTuning.MinSeeds;
         Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
         var index = await cache.GetAsync(ct);
