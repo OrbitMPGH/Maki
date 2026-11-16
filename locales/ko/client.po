@@ -30,8 +30,9 @@ msgid "-2 (lowest) to 2 (emergency)."
 msgstr "-2 (최저)부터 2 (긴급)까지."
 
 #: src/components/pageconversion/TargetSheet.tsx
+#, fuzzy
 msgid ", recommended"
-msgstr ""
+msgstr ", 추천됨"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -57,8 +58,9 @@ msgstr "(되돌릴 수 없음)"
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
 #: src/components/series/UndoConversionModal.tsx
+#, fuzzy
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
-msgstr ""
+msgstr "{0, plural, other {{1} / #개 파일{2, select, other {}}}}"
 
 #. placeholder {0}: line.files
 #: src/components/pageconversion/PlanEstimate.tsx
@@ -463,8 +465,9 @@ msgstr "{0, plural, other {제목 #개}}"
 
 #. placeholder {0}: group.unconfirmed
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# to confirm} other {# to confirm}}"
-msgstr ""
+msgstr "{0, plural, other {확인 대기 #개}}"
 
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
@@ -1822,8 +1825,9 @@ msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{formatName} {stopName}"
-msgstr ""
+msgstr "{formatName} {stopName}"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -1873,8 +1877,9 @@ msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, other {권한 #개}}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{grey} for black-and-white, {colour} for colour"
-msgstr ""
+msgstr "흑백은 {grey}, 컬러는 {colour}"
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5022,12 +5027,14 @@ msgid "Also for you"
 msgstr "나에게도 적용"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in apps like Mihon"
-msgstr ""
+msgstr "Mihon 같은 앱에서도"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in KOReader or on an e-reader"
-msgstr ""
+msgstr "KOReader나 전자책 리더에서도"
 
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
@@ -7796,8 +7803,9 @@ msgid "Config key"
 msgstr "설정 키"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Confirm"
-msgstr ""
+msgstr "확인"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -18148,8 +18156,9 @@ msgid "Only for tagged series"
 msgstr "태그가 있는 시리즈에만"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Only in Maki"
-msgstr ""
+msgstr "Maki에서만"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -20367,8 +20376,9 @@ msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "모든 바이트를 읽어 손상된 파일을 찾습니다. 100 GB당 약 30분 걸립니다."
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Reads like {likeGroup}"
-msgstr ""
+msgstr "비슷한 그룹: {likeGroup}"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -20529,28 +20539,34 @@ msgid "Recommended"
 msgstr "추천됨"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended for most libraries, with no difference you would notice while reading."
-msgstr ""
+msgstr "대부분의 라이브러리에 추천합니다. 읽을 때 차이를 느끼지 못합니다."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended if you read in Maki."
-msgstr ""
+msgstr "Maki에서 읽는다면 추천합니다."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when apps like Mihon read your library."
-msgstr ""
+msgstr "Mihon 같은 앱이 라이브러리를 읽는다면 추천합니다."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when KOReader or an e-reader reads your library."
-msgstr ""
+msgstr "KOReader나 전자책 리더가 라이브러리를 읽는다면 추천합니다."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this browser cannot show JPEG XL."
-msgstr ""
+msgstr "이 브라우저는 JPEG XL을 표시할 수 없으므로 추천합니다."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this server cannot write JPEG XL."
-msgstr ""
+msgstr "이 서버는 JPEG XL을 쓸 수 없으므로 추천합니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23725,8 +23741,9 @@ msgid "Set up trackers"
 msgstr "트래커 설정"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Sets the targets for files no rule covers."
-msgstr ""
+msgstr "어떤 규칙도 적용되지 않는 파일의 대상을 설정합니다."
 
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
@@ -27581,8 +27598,9 @@ msgid "Unmute notifications"
 msgstr "알림 음소거 해제"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Unnamed group"
-msgstr ""
+msgstr "이름 없는 그룹"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -28814,8 +28832,9 @@ msgid "When to remove"
 msgstr "제거 시점"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Where do you read?"
-msgstr ""
+msgstr "어디에서 읽나요?"
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy

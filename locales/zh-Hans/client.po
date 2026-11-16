@@ -30,8 +30,9 @@ msgid "-2 (lowest) to 2 (emergency)."
 msgstr "-2（最低）到 2（紧急）。"
 
 #: src/components/pageconversion/TargetSheet.tsx
+#, fuzzy
 msgid ", recommended"
-msgstr ""
+msgstr "，推荐"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -57,8 +58,9 @@ msgstr "（无法撤销）"
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
 #: src/components/series/UndoConversionModal.tsx
+#, fuzzy
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
-msgstr ""
+msgstr "{0, plural, other {{1} / # 个文件{2, select, other {}}}}"
 
 #. placeholder {0}: line.files
 #: src/components/pageconversion/PlanEstimate.tsx
@@ -463,8 +465,9 @@ msgstr "{0, plural, other {# 个标题}}"
 
 #. placeholder {0}: group.unconfirmed
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# to confirm} other {# to confirm}}"
-msgstr ""
+msgstr "{0, plural, other {# 项待确认}}"
 
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
@@ -1822,8 +1825,9 @@ msgid "{format}, {stop}"
 msgstr "{format}，{stop}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{formatName} {stopName}"
-msgstr ""
+msgstr "{formatName} {stopName}"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -1873,8 +1877,9 @@ msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, other {# 项权限}}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{grey} for black-and-white, {colour} for colour"
-msgstr ""
+msgstr "黑白用 {grey}，彩色用 {colour}"
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5022,12 +5027,14 @@ msgid "Also for you"
 msgstr "也适合你"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in apps like Mihon"
-msgstr ""
+msgstr "也适用于 Mihon 等应用"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in KOReader or on an e-reader"
-msgstr ""
+msgstr "也适用于 KOReader 或电子书阅读器"
 
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
@@ -7796,8 +7803,9 @@ msgid "Config key"
 msgstr "配置密钥"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Confirm"
-msgstr ""
+msgstr "确认"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -18148,8 +18156,9 @@ msgid "Only for tagged series"
 msgstr "仅适用于带标签的系列"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Only in Maki"
-msgstr ""
+msgstr "仅限 Maki"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -20367,8 +20376,9 @@ msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "读取每个字节以发现损坏的文件。每 100 GB 约需半小时。"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Reads like {likeGroup}"
-msgstr ""
+msgstr "与 {likeGroup} 相似"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -20529,28 +20539,34 @@ msgid "Recommended"
 msgstr "推荐"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended for most libraries, with no difference you would notice while reading."
-msgstr ""
+msgstr "推荐用于大多数资料库，阅读时不会察觉到差别。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended if you read in Maki."
-msgstr ""
+msgstr "如果你在 Maki 中阅读，推荐此项。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when apps like Mihon read your library."
-msgstr ""
+msgstr "如果 Mihon 等应用读取你的资料库，推荐此项。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when KOReader or an e-reader reads your library."
-msgstr ""
+msgstr "如果 KOReader 或电子书阅读器读取你的资料库，推荐此项。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this browser cannot show JPEG XL."
-msgstr ""
+msgstr "推荐，因为此浏览器无法显示 JPEG XL。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this server cannot write JPEG XL."
-msgstr ""
+msgstr "推荐，因为此服务器无法写入 JPEG XL。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -20751,8 +20767,9 @@ msgid "Related to your seeds"
 msgstr "与你的种子相关"
 
 #: src/components/settings/DeclinedReleasesModal.tsx
+#, fuzzy
 msgid "Release"
-msgstr ""
+msgstr "发布"
 
 #: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
@@ -23724,8 +23741,9 @@ msgid "Set up trackers"
 msgstr "配置跟踪器"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Sets the targets for files no rule covers."
-msgstr ""
+msgstr "为没有任何规则覆盖的文件设置目标。"
 
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
@@ -27580,8 +27598,9 @@ msgid "Unmute notifications"
 msgstr "取消静音通知"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Unnamed group"
-msgstr ""
+msgstr "未命名的组"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -28813,8 +28832,9 @@ msgid "When to remove"
 msgstr "何时移除"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Where do you read?"
-msgstr ""
+msgstr "你在哪里阅读？"
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy

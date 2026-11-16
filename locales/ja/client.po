@@ -30,8 +30,9 @@ msgid "-2 (lowest) to 2 (emergency)."
 msgstr "-2（最低）から 2（緊急）。"
 
 #: src/components/pageconversion/TargetSheet.tsx
+#, fuzzy
 msgid ", recommended"
-msgstr ""
+msgstr "、推薦"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -57,8 +58,9 @@ msgstr "（元に戻せません）"
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
 #: src/components/series/UndoConversionModal.tsx
+#, fuzzy
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
-msgstr ""
+msgstr "{0, plural, other {{1} / #ファイル{2, select, other {}}}}"
 
 #. placeholder {0}: line.files
 #: src/components/pageconversion/PlanEstimate.tsx
@@ -463,8 +465,9 @@ msgstr "{0, plural, other {#件のタイトル}}"
 
 #. placeholder {0}: group.unconfirmed
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# to confirm} other {# to confirm}}"
-msgstr ""
+msgstr "{0, plural, other {確認待ち#件}}"
 
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
@@ -1822,8 +1825,9 @@ msgid "{format}, {stop}"
 msgstr "{format}、{stop}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{formatName} {stopName}"
-msgstr ""
+msgstr "{formatName} {stopName}"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -1873,8 +1877,9 @@ msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, other {#件の権限}}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{grey} for black-and-white, {colour} for colour"
-msgstr ""
+msgstr "白黒は{grey}、カラーは{colour}"
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5022,12 +5027,14 @@ msgid "Also for you"
 msgstr "あなた向けにも"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in apps like Mihon"
-msgstr ""
+msgstr "Mihonなどのアプリでも"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in KOReader or on an e-reader"
-msgstr ""
+msgstr "KOReaderや電子書籍リーダーでも"
 
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
@@ -7796,8 +7803,9 @@ msgid "Config key"
 msgstr "設定キー"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Confirm"
-msgstr ""
+msgstr "確定"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -18148,8 +18156,9 @@ msgid "Only for tagged series"
 msgstr "タグ付きシリーズのみ"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Only in Maki"
-msgstr ""
+msgstr "Makiのみ"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -20367,8 +20376,9 @@ msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "壊れたファイルを見つけるため、すべてのバイトを読み取ります。100 GBあたり約30分です。"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Reads like {likeGroup}"
-msgstr ""
+msgstr "{likeGroup}に似ています"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -20529,28 +20539,34 @@ msgid "Recommended"
 msgstr "推薦"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended for most libraries, with no difference you would notice while reading."
-msgstr ""
+msgstr "ほとんどのライブラリに推奨です。読んでいて違いに気づくことはありません。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended if you read in Maki."
-msgstr ""
+msgstr "Makiで読む場合に推奨です。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when apps like Mihon read your library."
-msgstr ""
+msgstr "Mihonなどのアプリがライブラリを読む場合に推奨です。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when KOReader or an e-reader reads your library."
-msgstr ""
+msgstr "KOReaderや電子書籍リーダーがライブラリを読む場合に推奨です。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this browser cannot show JPEG XL."
-msgstr ""
+msgstr "このブラウザはJPEG XLを表示できないため推奨です。"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this server cannot write JPEG XL."
-msgstr ""
+msgstr "このサーバーはJPEG XLを書き出せないため推奨です。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23725,8 +23741,9 @@ msgid "Set up trackers"
 msgstr "トラッカーを設定"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Sets the targets for files no rule covers."
-msgstr ""
+msgstr "どのルールにも当てはまらないファイルの変換先を設定します。"
 
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
@@ -27581,8 +27598,9 @@ msgid "Unmute notifications"
 msgstr "通知のミュートを解除"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Unnamed group"
-msgstr ""
+msgstr "名前のないグループ"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -28814,8 +28832,9 @@ msgid "When to remove"
 msgstr "削除するタイミング"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Where do you read?"
-msgstr ""
+msgstr "どこで読みますか?"
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy

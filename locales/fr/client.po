@@ -30,8 +30,9 @@ msgid "-2 (lowest) to 2 (emergency)."
 msgstr "De -2 (le moins intrusif) à 2 (urgence)."
 
 #: src/components/pageconversion/TargetSheet.tsx
+#, fuzzy
 msgid ", recommended"
-msgstr ""
+msgstr ", recommandé"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -464,8 +465,9 @@ msgstr "{0, plural, one {# titre} many {# titres} other {# titres}}"
 
 #. placeholder {0}: group.unconfirmed
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# to confirm} other {# to confirm}}"
-msgstr ""
+msgstr "{0, plural, one {# à confirmer} many {# à confirmer} other {# à confirmer}}"
 
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
@@ -1823,8 +1825,9 @@ msgid "{format}, {stop}"
 msgstr "{format}, {stop}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{formatName} {stopName}"
-msgstr ""
+msgstr "{formatName} {stopName}"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -1874,8 +1877,9 @@ msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, one {# permission} many {# permissions} other {# permissions}}"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "{grey} for black-and-white, {colour} for colour"
-msgstr ""
+msgstr "{grey} pour le noir et blanc, {colour} pour la couleur"
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -5023,12 +5027,14 @@ msgid "Also for you"
 msgstr "Aussi pour vous"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in apps like Mihon"
-msgstr ""
+msgstr "Aussi dans des applis comme Mihon"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Also in KOReader or on an e-reader"
-msgstr ""
+msgstr "Aussi dans KOReader ou sur une liseuse"
 
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
@@ -7797,8 +7803,9 @@ msgid "Config key"
 msgstr "Clé de configuration"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Confirm"
-msgstr ""
+msgstr "Confirmer"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -18149,8 +18156,9 @@ msgid "Only for tagged series"
 msgstr "Uniquement pour les séries avec un tag"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Only in Maki"
-msgstr ""
+msgstr "Seulement dans Maki"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -20368,8 +20376,9 @@ msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Lit chaque octet pour repérer les fichiers corrompus. Environ une demi-heure pour 100 Go."
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Reads like {likeGroup}"
-msgstr ""
+msgstr "Ressemble à {likeGroup}"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -20530,28 +20539,34 @@ msgid "Recommended"
 msgstr "Recommandé"
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended for most libraries, with no difference you would notice while reading."
-msgstr ""
+msgstr "Recommandé pour la plupart des bibliothèques, sans différence perceptible à la lecture."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended if you read in Maki."
-msgstr ""
+msgstr "Recommandé si vous lisez dans Maki."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when apps like Mihon read your library."
-msgstr ""
+msgstr "Recommandé quand des applis comme Mihon lisent votre bibliothèque."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended when KOReader or an e-reader reads your library."
-msgstr ""
+msgstr "Recommandé quand KOReader ou une liseuse lit votre bibliothèque."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this browser cannot show JPEG XL."
-msgstr ""
+msgstr "Recommandé, car ce navigateur ne peut pas afficher le JPEG XL."
 
 #: src/components/pageconversion/recommendation.ts
+#, fuzzy
 msgid "Recommended, since this server cannot write JPEG XL."
-msgstr ""
+msgstr "Recommandé, car ce serveur ne peut pas écrire de JPEG XL."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23726,8 +23741,9 @@ msgid "Set up trackers"
 msgstr "Configurer les trackers"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Sets the targets for files no rule covers."
-msgstr ""
+msgstr "Définit les cibles des fichiers qu'aucune règle ne couvre."
 
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
@@ -27582,8 +27598,9 @@ msgid "Unmute notifications"
 msgstr "Réactiver les notifications"
 
 #: src/components/settings/CreditGroupsModal.tsx
+#, fuzzy
 msgid "Unnamed group"
-msgstr ""
+msgstr "Groupe sans nom"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -28815,8 +28832,9 @@ msgid "When to remove"
 msgstr "Quand retirer"
 
 #: src/pages/PageConversionWizardPage.tsx
+#, fuzzy
 msgid "Where do you read?"
-msgstr ""
+msgstr "Où lisez-vous ?"
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
