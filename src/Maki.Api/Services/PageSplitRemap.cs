@@ -69,18 +69,26 @@ public static class PageSplitRemap
 
             var bookmarks = await db.ReaderBookmarks.IgnoreQueryFilters()
                 .Where(b => b.ChapterId == chapter.Id)
-                .Select(b => new { b.Id, b.PageIndex })
+                .OrderBy(b => b.Id)
+                .Select(b => new { b.Id, b.UserId, b.PageIndex })
                 .ToListAsync(ct);
+            var landed = new HashSet<(int UserId, int Page)>();
+            var drop = new List<int>();
+            var moves = new List<(int Id, int Page)>();
             foreach (var row in bookmarks)
             {
                 var page = slice.Move(row.PageIndex, 0).Page;
-                if (page != row.PageIndex)
+                if (!landed.Add((row.UserId, page)))
                 {
-                    moved += await db.ReaderBookmarks.IgnoreQueryFilters()
-                        .Where(b => b.Id == row.Id)
-                        .ExecuteUpdateAsync(set => set.SetProperty(b => b.PageIndex, page), ct);
+                    drop.Add(row.Id);
+                }
+                else if (page != row.PageIndex)
+                {
+                    moves.Add((row.Id, page));
                 }
             }
+
+            moved += await MoveBookmarksAsync(db, drop, moves, ct);
 
             var notes = await db.ChapterNotes.IgnoreQueryFilters()
                 .Where(n => n.ChapterId == chapter.Id && n.PageIndex != null)
@@ -99,6 +107,38 @@ public static class PageSplitRemap
         }
 
         return moved;
+    }
+
+    /// <summary>
+    /// Bookmarks are unique per user, chapter and page, and an undo can put two of one user's on the same
+    /// original page: the extras go, and the rest move through negative indices so no step collides.
+    /// </summary>
+    private static async Task<int> MoveBookmarksAsync(MakiDbContext db, List<int> drop, List<(int Id, int Page)> moves,
+        CancellationToken ct)
+    {
+        var changed = 0;
+        if (drop.Count > 0)
+        {
+            changed += await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => drop.Contains(b.Id))
+                .ExecuteDeleteAsync(ct);
+        }
+
+        foreach (var (id, _) in moves)
+        {
+            await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(b => b.PageIndex, -1 - id), ct);
+        }
+
+        foreach (var (id, page) in moves)
+        {
+            changed += await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(b => b.PageIndex, page), ct);
+        }
+
+        return changed;
     }
 
     /// <summary>One chapter's slice, at <paramref name="start"/> for <paramref name="count"/> pages of the archive the indices refer to now.</summary>
