@@ -54,8 +54,6 @@ import { navSections, isActive, isInSection, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
-// Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
-// (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import { KeptPages } from './components/layout/KeptPages'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
@@ -281,7 +279,8 @@ function usePageTitleAway(active: boolean, pathname: string) {
   useEffect(() => {
     if (!active) return
     const check = () => {
-      const heading = document.querySelector('main h1')
+      // The first one drawn: a kept page (KeptPages) holds its hidden heading ahead of this page's.
+      const heading = [...document.querySelectorAll('main h1')].find((h) => h.getClientRects().length > 0)
       setAway(!heading || heading.getBoundingClientRect().bottom < 64)
     }
     // A lazy route renders its heading a moment after the path changes; checking at once would
@@ -650,7 +649,7 @@ function AppShellRoutes() {
             nav and header standing. */}
         <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
-          <KeptPages homeEnabled={homeEnabled} discover={<DiscoverPage />} />
+          <KeptPages homeEnabled={homeEnabled} Discover={DiscoverPage} />
           <Routes>
             <Route
               path="/"

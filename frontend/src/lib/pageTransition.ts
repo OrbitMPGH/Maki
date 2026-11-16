@@ -101,9 +101,9 @@ function visibleCover(els: HTMLElement[]): HTMLElement | null {
 
 const linkedCover = (id: string) => visibleCover(coversFor(id, document))
 
+// Every match, not the first: a kept Discover page (KeptPages) holds a hidden one ahead of the series page's.
 function heroPoster(): HTMLImageElement | null {
-  const img = document.querySelector<HTMLImageElement>('img.series-hero-poster')
-  return img && onScreen(img) ? img : null
+  return [...document.querySelectorAll<HTMLImageElement>('img.series-hero-poster')].find(onScreen) ?? null
 }
 
 /**
@@ -337,15 +337,17 @@ async function reveal(
   const settled = settleLayout()
   // ScrollMemory's restore runs in the commit's passive effects, and the landing spot depends on it.
   await tick()
+  if (from && release) {
+    const incoming = opening ? await posterReady(performance.now() + COMMIT_TIMEOUT_MS) : leaving ? linkedCover(leaving) : null
+    const flight = incoming ? flyCover(from, incoming) : null
+    if (flight) {
+      await Promise.race([flight.decoded, tick(100)])
+      // The flight's copy starts on the same spot, so the held one can go in the same frame.
+      release(false)
+      flight.start()
+    } else release(true)
+  }
   requestAnimationFrame(() => requestAnimationFrame(() => unsettleLayout(settled)))
-  if (!from || !release) return
-  const incoming = opening ? await posterReady(performance.now() + COMMIT_TIMEOUT_MS) : leaving ? linkedCover(leaving) : null
-  const flight = incoming ? flyCover(from, incoming) : null
-  if (!flight) return release(true)
-  await Promise.race([flight.decoded, tick(100)])
-  // The flight's copy starts on the same spot, so the held one can go in the same frame.
-  release(false)
-  flight.start()
 }
 
 /**

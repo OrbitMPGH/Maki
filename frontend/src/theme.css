@@ -12636,11 +12636,8 @@ tr:hover .mono-value-copy {
   box-shadow: inset 0 0 0 1px var(--border-control);
 }
 
-/* auto-fill with a floor of one figure's share of the width, rather than auto-fit: Safari gives an
-   auto-fit grid that is also its own size container 0px columns (WebKit bugs 256047, 282326), and
-   the figures piled up in the first few pixels. This fills the width the same way: every figure
-   on one row while each gets 8.5rem, wrapping at 8.5rem below that. `--figures` is set by
-   FigureStrip. */
+/* auto-fill with a floor of one figure's share (`--figures`, set by FigureStrip) fills the row like
+   auto-fit, which Safari gives 0px columns in a grid that is its own size container (WebKit 256047). */
 .figure-strip {
   display: grid;
   container: figure-strip / inline-size;
@@ -18695,6 +18692,9 @@ button.shortlist-title:hover {
   .cover-card:hover,
   .reading-card:hover > .cover-card {
     transform: none;
+  }
+  .cover-card:not([data-selected='true']):hover,
+  .reading-card:hover > .cover-card:not([data-selected='true']) {
     border-color: var(--cover-rim);
     box-shadow: var(--shadow-cover);
   }
