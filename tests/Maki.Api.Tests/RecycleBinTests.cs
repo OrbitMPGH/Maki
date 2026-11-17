@@ -58,6 +58,9 @@ public class RecycleBinTests : IDisposable
     private RecycleBinService Bin(MakiDbContext db, RecycleBinMover? mover = null) =>
         TestRecycleBin.For(db, _settings, mover);
 
+    private static ReadingProgressService Progress(MakiDbContext db) =>
+        new(db, new ReadingProgressGate(), NullLogger<ReadingProgressService>.Instance);
+
     private ChapterFileDeletion Deletion(MakiDbContext db, RecycleBinMover? mover = null) => new(
         db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
         Bin(db, mover), NullLogger<ChapterFileDeletion>.Instance);
@@ -175,7 +178,7 @@ public class RecycleBinTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<OkObjectResult>(await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), default));
+            Assert.IsType<OkObjectResult>(await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), Progress(db), default));
         }
 
         Assert.False(File.Exists(s.Absolute));
@@ -501,7 +504,7 @@ public class RecycleBinTests : IDisposable
         var s = Seed();
         using (var db = _db.NewContext())
         {
-            await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), default);
+            await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), Progress(db), default);
         }
 
         using (var db = _db.NewContext())
@@ -1001,7 +1004,7 @@ public class RecycleBinTests : IDisposable
         var s = Seed();
         using (var db = _db.NewContext())
         {
-            await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), default);
+            await Chapters(db).Delete([s.ChapterId, s.SecondChapterId], Deletion(db), Progress(db), default);
         }
 
         string binFile;

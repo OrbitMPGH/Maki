@@ -32,7 +32,8 @@ public class SourceMappingRemovalService(
     DownloadBatchNotifier batches,
     ReaderArchiveCache archives,
     ChapterFileDeletion deletion,
-    ILogger<SourceMappingRemovalService> logger)
+    ILogger<SourceMappingRemovalService> logger,
+    ReadingProgressService? progress = null)
 {
     public async Task<SourceMappingRemovalResult?> RemoveAsync(
         int mappingId, bool deleteFiles, CancellationToken ct = default)
@@ -156,9 +157,16 @@ public class SourceMappingRemovalService(
             }
         }
 
+        var finished = progress is null
+            ? new Dictionary<int, double>()
+            : await progress.FinishedAmongAsync(removed.Select(c => c.Id).ToList(), ct);
         db.Chapters.RemoveRange(removed);
         db.SourceMappings.Remove(mapping);
         await db.SaveChangesAsync(ct);
+        if (progress is not null)
+        {
+            await progress.WithdrawMarksAsync(mapping.SeriesId, finished, CancellationToken.None);
+        }
 
         // Rows are committed first, so a failure here orphans a file for Health to find rather than
         // leaving a row behind for a file that is gone.

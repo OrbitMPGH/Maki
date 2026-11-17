@@ -411,7 +411,8 @@ public class ChapterController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete]
     public async Task<IActionResult> Delete(
-        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion,
+        [FromServices] ReadingProgressService progress, CancellationToken ct,
         [FromQuery] bool permanent = false)
     {
         if (chapterIds.Length == 0)
@@ -531,8 +532,10 @@ public class ChapterController(
             .Select(f => deletion.Bin.Record(series!, series!.RootFolder!.Path, f.File.RelativePath, f.AbsPath, f.File,
                 f.Chapters, RecycleReason.RemoveChapter))
             .ToList();
+        var finished = await progress.FinishedAmongAsync(deletingIds, ct);
         db.Chapters.RemoveRange(chapters);
         await db.SaveChangesAsync(ct);
+        await progress.WithdrawMarksAsync(seriesId, finished, CancellationToken.None);
 
         // Rows are already committed, so a file that will not move stays where it is, an orphan for
         // Health's "unlinked" detection to pick up, and its entry goes. Runs without the request's
