@@ -133,6 +133,7 @@ var rngSeed = 20260827;
 var strata = false;
 var negatives = false;
 var feel = false;
+var shelfJudged = false;
 string? dumpFeatures = null;
 var foldIndex = -1;
 var foldCount = 0;
@@ -210,6 +211,11 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--feel":
             feel = true;
+            break;
+        // Judges each top pick of a held-out reader's page against two of that reader's own series:
+        // the one nearest to it in the text space, and the one its card names. `library` only.
+        case "--shelf-judged":
+            shelfJudged = true;
             break;
         // Writes every pooled candidate's unblended channel values, with the label, for
         // distribution/fit-weights.cs. Only the first variant is dumped: the point is to fit
@@ -335,6 +341,18 @@ if (panelPath is not null)
     }
 
     labelKind = "judged";
+}
+
+if (shelfJudged && (mode != "library" || panelPath is not null))
+{
+    Console.WriteLine("error: --shelf-judged is library mode only, and replaces --panel there.");
+    return 2;
+}
+
+if (shelfJudged && depth > limit)
+{
+    Console.WriteLine($"error: --depth {depth} is deeper than the {limit} picks each request asks for (--limit).");
+    return 2;
 }
 
 if (labelKind == "judged" && panelPath is null)
@@ -772,6 +790,22 @@ if (panelPath is not null)
     return 0;
 }
 
+if (shelfJudged)
+{
+    var judgements = Judgements.Load(Path.Combine(artifactsDir, "judgements.db"), rubric, ref judge);
+    Console.WriteLine($"judge    : {judge ?? "none yet"}, rubric {rubric}, {judgements.Count} judged pairs");
+    Console.WriteLine();
+    var shelfRows = new List<ShelfRow>();
+    var shelfQueue = new SortedSet<(long Seed, long Candidate)>();
+    foreach (var variant in variants)
+    {
+        shelfRows.Add(await ScoreShelf(variant, judgements, shelfQueue));
+    }
+
+    ReportShelf(shelfRows, shelfQueue);
+    return 0;
+}
+
 foreach (var variant in variants)
 {
     rows.Add(await Score(variant));
@@ -1104,6 +1138,7 @@ async Task<ResultRow> Score(Variant variant)
     var r40 = new double[requests.Count];
     var ndcg = new double[requests.Count];
     var named = new double[requests.Count];
+    var fans = new double[requests.Count];
     var negativeHit = new double[requests.Count];
     var top1k = new double[requests.Count];
     var targetRecall = new double[TargetBounds.Length][];
@@ -1161,6 +1196,10 @@ async Task<ResultRow> Score(Variant variant)
         named[i] = picks.Count == 0
             ? 0
             : (double)picks.Count(p => p.BecauseOfTitle is not null) / picks.Count;
+        // Cards whose visible reason is "Fans of X": a co-read seed and nothing the card ranks above it.
+        fans[i] = picks.Count == 0
+            ? 0
+            : (double)picks.Count(p => p.CoReadWithTitle is not null && p.BecauseOfTitle is null && !p.AuthorMatch) / picks.Count;
         // The column the avoid channel exists to move: what share of the titles this reader
         // actually disliked still made the page. Lower is better, and it is only meaningful read
         // together with nDCG on the positives - dropping everything moves both.
@@ -1275,7 +1314,8 @@ async Task<ResultRow> Score(Variant variant)
             MeanDefined(feelRows, f => f.Publisher),
             MeanDefined(feelRows, f => f.Era),
             MeanDefined(feelRows, f => f.TagTree),
-            MeanDefined(feelRows, f => f.Franchise)));
+            MeanDefined(feelRows, f => f.Franchise)),
+        fans);
 }
 
 /// <summary>
@@ -1469,6 +1509,311 @@ async Task<JudgedRow> ScoreJudged(
         popularity.Count == 0 ? double.NaN : Median(popularity));
 }
 
+/// <summary>
+/// The judged panel for whole-shelf requests. The rubric scores one seed against one pick, so each
+/// pick is scored against the reader's series nearest to it in the text space ("does this feel like
+/// something they read") and against the series its card names ("is the reason true"). The card
+/// kind follows <c>engineWhy</c>: Feels like, then author, then Fans of. The eval never runs
+/// <c>RecommendationReasons.Balance</c>, so the named seed is each card's strongest one; the app
+/// moves some cards to weaker seeds.
+/// </summary>
+async Task<ShelfRow> ScoreShelf(
+    Variant variant, Dictionary<(long Seed, long Candidate), Judgement> judgements,
+    SortedSet<(long Seed, long Candidate)> queue)
+{
+    var coGraph = variant.CoGraph && !forbidGraph;
+    var coRead = variant.CoRead && !forbidCoRead;
+    var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
+    var easeTuning = forbidTaste ? variant.Ease with { Weight = 0 } : variant.Ease;
+    var recommender = RecommenderFor(
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath);
+    var n = requests.Count;
+    var nearFeel = new double[n];
+    var nearPoor = new double[n];
+    var nearGood = new double[n];
+    var judged = new double[n];
+    var top1k = new double[n];
+    string[] kindNames = ["feels", "fans", "author", "other"];
+    var claims = kindNames.ToDictionary(k => k, _ => new List<int>());
+    var kinds = kindNames.ToDictionary(k => k, _ => 0);
+    var fansNearer = new List<int>();
+    var balancedFans = new List<int>();
+    var movedFans = 0;
+    var fansCards = 0;
+    var total = 0;
+    var clock = Stopwatch.StartNew();
+
+    for (var i = 0; i < n; i++)
+    {
+        var request = requests[i];
+        var picks = await recommender.GetSimilarAsync(
+            request.Seeds,
+            request.Seeds,
+            limit,
+            RecommendationFilters.None,
+            obscurity: 0,
+            seedWeights: variant.ScoreWeights ? request.Scores : null,
+            avoidWeights: request.Avoid,
+            diversity: variant.Diversity,
+            weights: variant.Weights,
+            coGraph: coGraph,
+            coRead: coRead);
+
+        var seedRows = new List<(long Id, int Row)>();
+        foreach (var id in request.Seeds)
+        {
+            if (index.TryGetRow(id, out var seedRow))
+            {
+                seedRows.Add((id, seedRow));
+            }
+        }
+
+        var feels = new List<int>();
+        var famous = 0;
+        var shown = picks.Take(depth).ToList();
+        var balancedNames = BalancedFansSeeds(picks);
+        foreach (var pick in shown)
+        {
+            var id = long.Parse(pick.ProviderId, CultureInfo.InvariantCulture);
+            if (!index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            if (index.PopularityAt(row) is > 0 and <= 1000)
+            {
+                famous++;
+            }
+
+            var nearest = seedRows.Count == 0 ? -1L : seedRows.MaxBy(s => index.CosineBetween(s.Row, row)).Id;
+            var (kind, named) = pick.BecauseOfTitle is not null
+                ? ("feels", ParseId(pick.BecauseOfId))
+                : pick.AuthorMatch
+                    ? ("author", (long?)null)
+                    : pick.CoReadWithTitle is not null
+                        ? ("fans", ParseId(pick.CoReadWithId))
+                        : ("other", (long?)null);
+            kinds[kind]++;
+            total++;
+
+            if (nearest >= 0)
+            {
+                if (!judgements.TryGetValue((nearest, id), out var j))
+                {
+                    queue.Add((nearest, id));
+                }
+                else if (!j.Insufficient)
+                {
+                    feels.Add(j.Feel);
+                }
+            }
+
+            if (kind == "fans" && named is { } strongest)
+            {
+                fansCards++;
+                var position = shown.IndexOf(pick);
+                var balanced = ParseId(balancedNames[position]) ?? strongest;
+                if (balanced != strongest)
+                {
+                    movedFans++;
+                }
+
+                if (!judgements.TryGetValue((balanced, id), out var jb))
+                {
+                    queue.Add((balanced, id));
+                }
+                else if (!jb.Insufficient)
+                {
+                    balancedFans.Add(jb.Feel);
+                }
+            }
+
+            if (named is { } seed)
+            {
+                if (!judgements.TryGetValue((seed, id), out var j))
+                {
+                    queue.Add((seed, id));
+                }
+                else if (!j.Insufficient)
+                {
+                    claims[kind].Add(j.Feel);
+                    if (kind == "fans" && nearest >= 0 && nearest != seed
+                        && judgements.TryGetValue((nearest, id), out var jn) && !jn.Insufficient)
+                    {
+                        fansNearer.Add(jn.Feel - j.Feel);
+                    }
+                }
+            }
+        }
+
+        judged[i] = shown.Count == 0 ? 0 : (double)feels.Count / shown.Count;
+        top1k[i] = shown.Count == 0 ? 0 : (double)famous / shown.Count;
+        if (feels.Count == 0)
+        {
+            nearFeel[i] = nearPoor[i] = nearGood[i] = double.NaN;
+        }
+        else
+        {
+            nearFeel[i] = feels.Average();
+            nearPoor[i] = (double)feels.Count(f => f == 0) / feels.Count;
+            nearGood[i] = (double)feels.Count(f => f >= 2) / feels.Count;
+        }
+
+        if (i % 10 == 0 || i == n - 1)
+        {
+            Console.Write($"\r  {variant.Name}: {i + 1}/{n}, {clock.Elapsed.TotalSeconds:F0}s   ");
+        }
+    }
+
+    Console.Write("\r".PadRight(72) + "\r");
+
+    var keys = RequestKeys.Of(requests);
+    var csv = new StringBuilder();
+    for (var i = 0; i < n; i++)
+    {
+        if (!double.IsNaN(nearFeel[i]))
+        {
+            csv.Append(keys[i]).Append(',').Append(Csv(nearFeel[i])).Append('\n');
+        }
+    }
+
+    File.WriteAllText(Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-shelf-feel.csv"), csv.ToString());
+
+    return new ShelfRow(
+        variant.Name, nearFeel, nearGood, nearPoor, judged, top1k.Average(),
+        kinds.ToDictionary(kv => kv.Key, kv => total == 0 ? 0 : (double)kv.Value / total),
+        claims.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<int>)kv.Value),
+        fansNearer, balancedFans, fansCards == 0 ? 0 : (double)movedFans / fansCards);
+
+    static long? ParseId(string? id) =>
+        long.TryParse(id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : null;
+}
+
+/// <summary>
+/// The seed each card names after <c>RecommendationReasons.Balance</c> in <c>Maki.Api</c>, which this
+/// tool cannot reference. A copy of its loop: 20-card window, two namings per seed, the next seed in
+/// <c>FeelSeeds</c>/<c>CoReadSeeds</c> past that. Keep it in step with that class. Returns the
+/// "Fans of" seed per card, null where the card shows another reason.
+/// </summary>
+static string?[] BalancedFansSeeds(IReadOnlyList<MangaBakaRecommendation> ranked)
+{
+    const int window = 20;
+    const int maxPerWindow = 2;
+    var result = new string?[ranked.Count];
+    var named = new string?[ranked.Count];
+    var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+    for (var i = 0; i < ranked.Count; i++)
+    {
+        if (i >= window && named[i - window] is { } leaving)
+        {
+            counts[leaving]--;
+        }
+
+        var pick = ranked[i];
+        IReadOnlyList<ReasonSeed>? seeds = null;
+        var fans = false;
+        if (pick.RelationKind is not null && pick.RelatedToTitle is not null)
+        {
+            seeds = null;
+        }
+        else if (pick.BecauseOfTitle is not null)
+        {
+            seeds = pick.FeelSeeds is { Count: > 0 } feel ? feel : null;
+        }
+        else if (!pick.AuthorMatch && pick.CoRead && pick.CoReadWithTitle is not null
+            && pick.CoReadSeeds is { Count: > 0 } coRead)
+        {
+            seeds = coRead;
+            fans = true;
+        }
+
+        if (seeds is null)
+        {
+            continue;
+        }
+
+        var chosen = seeds.FirstOrDefault(s => counts.GetValueOrDefault(s.Id ?? $"t:{s.Title}") < maxPerWindow) ?? seeds[0];
+        var key = chosen.Id ?? $"t:{chosen.Title}";
+        named[i] = key;
+        counts[key] = counts.GetValueOrDefault(key) + 1;
+        if (fans)
+        {
+            result[i] = chosen.Id;
+        }
+    }
+
+    return result;
+}
+
+void ReportShelf(List<ShelfRow> shelfRows, SortedSet<(long Seed, long Candidate)> queue)
+{
+    static double MeanOf(double[] values)
+    {
+        var defined = values.Where(v => !double.IsNaN(v)).ToList();
+        return defined.Count == 0 ? double.NaN : defined.Average();
+    }
+
+    static string Mean(IReadOnlyList<int> values) =>
+        values.Count == 0 ? "-" : values.Average().ToString("F2", CultureInfo.InvariantCulture);
+
+    Console.WriteLine(
+        $"{"variant",-24}{"judged",8}{$"feel@{depth}",9}{"good",7}{"poor",7}{"top1k",7}" +
+        $"{"feels",8}{"fans",7}{"author",8}{"other",7}");
+    Console.WriteLine(new string('-', 92));
+    foreach (var row in shelfRows)
+    {
+        Console.WriteLine(
+            $"{row.Name,-24}{MeanOf(row.Judged),8:P0}{MeanOf(row.NearFeel),9:F3}" +
+            $"{MeanOf(row.NearGood),7:P0}{MeanOf(row.NearPoor),7:P0}{row.Top1k,7:P0}" +
+            $"{row.Kinds["feels"],8:P0}{row.Kinds["fans"],7:P0}{row.Kinds["author"],8:P0}{row.Kinds["other"],7:P0}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"{"variant",-24}{"claim: feels",14}{"n",6}{"claim: fans",13}{"n",6}{"fans: nearest minus named",28}" +
+        $"{"fans balanced",15}{"n",6}{"moved",7}");
+    Console.WriteLine(new string('-', 119));
+    foreach (var row in shelfRows)
+    {
+        var nearer = row.FansNearer.Count == 0
+            ? "-"
+            : row.FansNearer.Average().ToString("+0.00;-0.00", CultureInfo.InvariantCulture);
+        Console.WriteLine(
+            $"{row.Name,-24}{Mean(row.Claims["feels"]),14}{row.Claims["feels"].Count,6}" +
+            $"{Mean(row.Claims["fans"]),13}{row.Claims["fans"].Count,6}{nearer,28}" +
+            $"{Mean(row.BalancedFans),15}{row.BalancedFans.Count,6}{row.MovedFans,7:P0}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"  feel@{depth} : judged feel (0-3) of each top pick against the reader's series nearest to it");
+    Console.WriteLine("            in the text space, averaged over judged picks. good = 2 or 3, poor = 0.");
+    Console.WriteLine("  feels/fans/author/other : share of top picks whose card shows that reason.");
+    Console.WriteLine("  claim   : judged feel of a pick against the series its card names (strongest seed).");
+    Console.WriteLine("  balanced: the same for \"Fans of\" cards after the app's two-per-20 reason cap;");
+    Console.WriteLine("            moved = share of those cards whose named series the cap changed.");
+
+    var queuePath = Path.Combine(artifactsDir, "eval", "shelf-queue.tsv");
+    var text = new StringBuilder("seed_id\tcand_id\n");
+    foreach (var (s, c) in queue)
+    {
+        text.Append(s).Append('\t').Append(c).Append('\n');
+    }
+
+    File.WriteAllText(queuePath, text.ToString());
+    Console.WriteLine();
+    Console.WriteLine($"  {queue.Count} unjudged pairs written to {queuePath}");
+    if (queue.Count > 0)
+    {
+        Console.WriteLine($"  judge them: python distribution/judge-pairs.py run --queue {queuePath}");
+    }
+
+    if (shelfRows.Count > 1)
+    {
+        Console.WriteLine(
+            $"  paired stats: python distribution/eval-compare.py {shelfRows[1].Name} {shelfRows[0].Name} shelf-feel feel@{depth}");
+    }
+}
+
 // -------------------------------------------------------------------------------------------------
 // Reporting
 // -------------------------------------------------------------------------------------------------
@@ -1477,7 +1822,7 @@ void Report()
 {
     Console.WriteLine(
         $"{"variant",-24}{"R@10",8}{"R@20",8}{$"R@{limit}",8}{$"nDCG@{limit}",10}{"MRR",8}{"hit",8}" +
-        $"{"named",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"top1k",8}{"ms",8}");
+        $"{"named",8}{"fans",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"top1k",8}{"ms",8}");
     Console.WriteLine(new string('-', negatives ? 113 : 105));
     foreach (var row in rows)
     {
@@ -1485,7 +1830,7 @@ void Report()
         Console.WriteLine(
             $"{row.Name,-24}{row.R10.Average(),8:F3}{row.R20.Average(),8:F3}{row.R40.Average(),8:F3}" +
             $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}" +
-            $"{row.Named.Average(),8:P0}"
+            $"{row.Named.Average(),8:P0}{(row.Fans is { Length: > 0 } f ? f.Average() : 0),8:P0}"
             + (negatives ? $"{row.NegativeHit.Average(),8:P0}" : string.Empty)
             + $"{pop,9}{row.Top1k,8:P0}{row.MillisecondsPerRequest,8:F0}");
     }
@@ -2445,7 +2790,7 @@ file record Request(
 file record ResultRow(
     string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
     double[] NegativeHit, double[][] TargetRecall, double Top1k,
-    double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel);
+    double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel, double[]? Fans = null);
 
 /// <param name="Judged">Share of the top picks with a stored judgement, usable or not.</param>
 /// <param name="Insufficient">Share the judge declined to score for lack of information.</param>
@@ -2454,6 +2799,15 @@ file record JudgedRow(
     double[] Judged, double[] Insufficient, double[] Top1k, double[] Franchise, double Popularity);
 
 file readonly record struct Judgement(int Feel, int Enjoy, bool Insufficient);
+
+/// <param name="Kinds">Share of top picks whose card shows each reason, in <c>engineWhy</c> order.</param>
+/// <param name="Claims">Judged feel of each pick against the series its card names, by reason.</param>
+/// <param name="FansNearer">For "Fans of" cards: feel against the nearest series minus feel against the named one.</param>
+file record ShelfRow(
+    string Name, double[] NearFeel, double[] NearGood, double[] NearPoor, double[] Judged, double Top1k,
+    Dictionary<string, double> Kinds, Dictionary<string, IReadOnlyList<int>> Claims, List<int> FansNearer,
+    List<int> BalancedFans, double MovedFans);
+
 
 /// <summary>
 /// The judgement store written by <c>distribution/judge-pairs.py</c>: one row per (seed, candidate,

@@ -920,3 +920,24 @@ Scripts, logs and the probe are in `research/recommender/2026-11-15-v7/step6-fam
 - **On a mixed shelf.** `.simulated` restricted to seeds past popularity rank 500 (82 seeds, 19% of them top-1k), top 40 (`step6-fame/probe.cs`): no EASE `pop` 1,655 and 40% top-1k; damp 0 1,012 and 50%; damp 0.35 1,681 and 40%. The whole simulated shelf is nearly half top-1k seeds and saturates: 85% top-1k without the channel and 97 to 100% with any table, so it cannot show this failure and a shelf like it would not have caught it.
 - **Published** on `ease-table-latest` the same day (13.1 MB, 2,000,000 weights, 20,179 readers, `popDamp` 0.35). No released version reads that tag yet, since v0.37.0 predates the channel. `.simulated/ease-table.db` is the published table. A fold-limited table for `library` mode has to be rebuilt with the same damp, or `default` grades a table nobody ships: `.artifacts/ease-work/ease-fold0.db` is the undamped one and `ease-fold0-d0.35.db` the damped one.
 - **Still unmeasured:** judged feel at two or more seeds, because the panel is single-seed. About half the page is still picks the channel brought in.
+
+## v7: judged feel on whole shelves (`--shelf-judged`)
+
+The owner reported a Recommended tab full of "Fans of X" cards that fit badly (Frieren from Grand Blue Dreaming, One-Punch Man from That Time I Got Reincarnated as a Slime). Logs and notes are in `research/recommender/2026-11-17-fans-of/`.
+
+- **`library --shelf-judged` is the judged panel for multi-series requests.** The rubric scores one seed against one pick, so each top pick is judged against two of the held-out reader's series: the one nearest to it in the text space (`feel@10`, "does this feel like something they read") and the one its card names (`claim`, "is the reason true"). Card kinds follow `engineWhy`. The eval cannot reference `Maki.Api`, so `BalancedFansSeeds` is a copy of `RecommendationReasons.Balance`'s loop and must change with it. Pairs go to `<artifacts>/eval/shelf-queue.tsv`, never the single-seed queue. `fans` is also a column in the plain library table now.
+- **Run as:** `MAKI_CONFIG_DIR=.artifacts/ease-work/cfg-f0 MAKI_ARTIFACTS_DIR=.artifacts dotnet run distribution/eval-reco-labels.cs -- library --fold-users 0/4 --work .artifacts/coread-graph.db --ease .artifacts/ease-work/ease-fold0-d0.35.db --shelf-judged --requests 80 --depth 10 <variants>`. 80 shelves, three variants and both seeds per pick came to 1,396 new pairs, about $4.5 at batch prices.
+- **Results, 80 held-out shelves, dev split, damped fold table:**
+
+  | variant | feel@10 | good | poor | top1k | Feels like | Fans of | author | claim: Feels like | claim: Fans of |
+  |---|---|---|---|---|---|---|---|---|---|
+  | no EASE | 1.602 | 55% | 11% | 61% | 25% | 25% | 50% | 2.23 | 1.69 |
+  | default | 1.722 | 59% | 9% | 52% | 32% | 26% | 42% | 2.26 | 1.65 |
+  | EASE injects nothing | 1.727 | 60% | 9% | 52% | 32% | 27% | 42% | 2.30 | 1.63 |
+  | co-read off | 1.731 | 60% | 9% | 51% | 32% | 25% | 43% | 2.26 | 1.69 |
+  | co-read half weight | 1.726 | 59% | 9% | 51% | 32% | 25% | 43% | 2.25 | 1.65 |
+
+  default against no EASE: **+0.120 [+0.034, +0.226]** on feel@10. Co-read off and half weight against default span zero.
+- **EASE does not cost story fit on a whole shelf; it adds some.** The single-seed loss (-0.096) does not carry over. Picks also get less famous (top-1k 61% to 52%) and "Feels like" cards more common (25% to 32%).
+- **"Fans of" cards are the weak ones whichever channel names them.** Against the series they name they score 1.65 on feel, against 2.26 for "Feels like". Their share holds at about a quarter: with co-read off, EASE names the same cards. The reason cap (`Balance`) moves 4 to 12% of those names and does not change the score.
+- **What this panel cannot see.** Held-out shelves are 20 to 300 finished AniList titles, so a pick nearly always has some close series and `feel@10` is lenient. The owner's shelf is not in it. The judge scores story similarity; it does not say whether a reader would enjoy a crowd pick.
