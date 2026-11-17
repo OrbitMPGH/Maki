@@ -1015,6 +1015,7 @@ try
     builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<ChapterFoldPreviewService>();
     builder.Services.AddScoped<ChapterPageCountService>();
+    builder.Services.AddScoped<ChapterFoldAuditService>();
     builder.Services.AddSingleton<PageCountFailures>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
