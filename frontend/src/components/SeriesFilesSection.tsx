@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDeferredValue, useState } from 'react'
 import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
@@ -88,7 +88,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
+  const { data: fetchedFiles, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
+  // Rows render in a deferred pass, like the chapter table's: a long folder took a second or two to
+  // render, and the old tab stayed on screen until it had. The skeleton shows in the meantime. The
+  // initial value is null, not undefined: React ignores an undefined one, so a cached listing would
+  // render in the click's own pass again.
+  const files = useDeferredValue(fetchedFiles ?? null, null)
+  const rendering = isLoading || (fetchedFiles !== undefined && files === null)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
   const binDays = useRecycleBinDays(confirmOpen)
   const [binRefused, setBinRefused] = useState(false)
@@ -179,7 +185,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               size="xs"
               variant="default"
               leftSection={<IconRefresh size={16} />}
-              loading={isFetching && !isLoading}
+              loading={isFetching && !rendering}
               onClick={() => void refetch()}
             >
               <Trans>Refresh</Trans>
@@ -216,7 +222,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         </Text>
       )}
 
-      {(isLoading ? (
+      {(rendering ? (
           <Panel p={0} className="table-panel" mt="sm">
             <VisuallyHidden role="status">
               <Trans>Scanning folder…</Trans>
