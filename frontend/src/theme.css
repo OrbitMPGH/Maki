@@ -10360,6 +10360,16 @@ body.reader-open {
 .reader-fit-original {
   max-width: none;
 }
+/* In paged mode fit height and fit screen fill the viewport, enlarging a page smaller than it the way
+   fit width does; max-height alone only ever shrank one. The width comes from the page's own ratio
+   (--reader-page-ratio, set by PagedView on the page or its RegionPage box), so the page never distorts. */
+.reader-paged .reader-fit-height,
+.reader-paged .reader-fit-screen,
+.reader-region:is([data-fit='height'], [data-fit='screen']) {
+  width: min(100%, 100dvh * var(--reader-page-ratio, 1000));
+  height: auto;
+  max-height: none;
+}
 
 /* A trimmed, split or turned page (PagedView's RegionPage). The canvas inside takes the fit
    classes and gives the box its size; `clip` rather than `hidden` keeps this from becoming a scroll
