@@ -27,9 +27,9 @@ public class ChapterFoldsController(ChapterFoldPreviewService previews, ISchedul
     /// <summary>Temporary: one source chapter's page hashes, to check a fold against the pages.</summary>
     [HttpGet("{seriesId:int}/pagehashes")]
     public async Task<IActionResult> PageHashes(
-        int seriesId, [FromQuery] string mapping, [FromQuery] decimal number,
+        int seriesId, [FromQuery] string mapping, [FromQuery] decimal number, [FromQuery] bool thumbs,
         [FromServices] ChapterFoldAuditService audit, CancellationToken ct) =>
-        await audit.HashAsync(seriesId, mapping, number, ct) is { } hashes ? Ok(hashes) : NotFound();
+        await audit.HashAsync(seriesId, mapping, number, thumbs, ct) is { } hashes ? Ok(hashes) : NotFound();
 
     /// <summary>Starts fetching the page counts pending folds wait on, instead of at the next scheduled run.</summary>
     [HttpPost("count")]

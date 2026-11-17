@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public sealed record ChapterPageHashes(string Mapping, decimal Number, string SourceChapterId, int Pages, IReadOnlyList<string?> Hashes);
+public sealed record ChapterPageHashes(
+    string Mapping, decimal Number, string SourceChapterId, int Pages, IReadOnlyList<string?> Hashes, IReadOnlyList<string?>? Thumbs);
 
 /// <summary>
 /// Temporary, for checking fold decisions against the pages themselves: fetches one source chapter's
@@ -18,7 +19,7 @@ public class ChapterFoldAuditService(
     PageDownloader pageDownloader,
     ILogger<ChapterFoldAuditService> logger)
 {
-    public async Task<ChapterPageHashes?> HashAsync(int seriesId, string mapping, decimal number, CancellationToken ct)
+    public async Task<ChapterPageHashes?> HashAsync(int seriesId, string mapping, decimal number, bool thumbs, CancellationToken ct)
     {
         var mappings = await db.SourceMappings.AsNoTracking()
             .Where(m => m.SeriesId == seriesId)
@@ -49,8 +50,21 @@ public class ChapterFoldAuditService(
         {
             var files = await pageDownloader.DownloadAsync(pages, source.Name, dir, null, ct, source as IPageClientSource);
             var hashes = new List<string?>();
+            var small = new List<string?>();
             foreach (var file in files)
             {
+                if (thumbs)
+                {
+                    try
+                    {
+                        small.Add(Convert.ToBase64String(ImageCodec.JpegThumbnail(await File.ReadAllBytesAsync(file, ct), 120, 70, false)));
+                    }
+                    catch (Exception)
+                    {
+                        small.Add(null);
+                    }
+                }
+
                 try
                 {
                     hashes.Add(PerceptualHash.OfFile(file).ToString("x16"));
@@ -62,7 +76,7 @@ public class ChapterFoldAuditService(
                 }
             }
 
-            return new ChapterPageHashes(mapping, number, link.SourceChapterId, files.Count, hashes);
+            return new ChapterPageHashes(mapping, number, link.SourceChapterId, files.Count, hashes, thumbs ? small : null);
         }
         finally
         {
