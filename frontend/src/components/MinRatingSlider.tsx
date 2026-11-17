@@ -29,7 +29,16 @@ export function ratingStopIndex(value: number): number {
  * same comparison group and wording as the detail card's score, so a 7.4 reads the same in both.
  * `value` is on the 0-10 scale; callers convert to the dump's 0-100.
  */
-export function MinRatingSlider({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+export function MinRatingSlider({
+  value,
+  onChange,
+  heading = true,
+}: {
+  value: number
+  onChange: (value: number) => void
+  /** Off where a popover header already names the filter. */
+  heading?: boolean
+}) {
   const { t, i18n } = useLingui()
   const { data: shares } = useScoreShares()
   const index = ratingStopIndex(value)
@@ -48,9 +57,11 @@ export function MinRatingSlider({ value, onChange }: { value: number; onChange: 
 
   return (
     <div>
-      <Text size="sm" fw={500} mb={4}>
-        <Trans>Minimum rating: {ratingLabel}</Trans>
-      </Text>
+      {heading && (
+        <Text size="sm" fw={500} mb={4}>
+          <Trans>Minimum rating: {ratingLabel}</Trans>
+        </Text>
+      )}
       <Slider
         thumbLabel={t`Minimum rating`}
         min={0}

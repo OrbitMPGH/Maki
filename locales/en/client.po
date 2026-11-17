@@ -340,11 +340,6 @@ msgstr "{0, plural, one {# result} other {# results}}"
 msgid "{0, plural, one {# season} other {# seasons}}"
 msgstr "{0, plural, one {# season} other {# seasons}}"
 
-#. placeholder {0}: seedIds.length
-#: src/pages/DiscoverPage.tsx
-msgid "{0, plural, one {# seed} other {# seeds}}"
-msgstr "{0, plural, one {# seed} other {# seeds}}"
-
 #. placeholder {0}: selected.size
 #. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
@@ -892,10 +887,6 @@ msgstr "{chapterCount, plural, one {# chapter} other {# chapters}}"
 #: src/components/pageconversion/SplitPreview.tsx
 msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
 msgstr "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
-
-#: src/pages/DiscoverPage.tsx
-msgid "{chapterMinChip}–{chapterMaxChip} ch."
-msgstr "{chapterMinChip}–{chapterMaxChip} ch."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "{chapterPhrase} will read from {pickedName}"
@@ -1462,6 +1453,10 @@ msgstr "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}
 #: src/pages/rewind/slides.tsx
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, one {# series finished} other {# series finished}}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "{firstSeedTitle} +{extraSeeds}"
+msgstr "{firstSeedTitle} +{extraSeeds}"
 
 #: src/components/SetupWizard.tsx
 msgid "{folderCount, plural, one {# folder} other {# folders}}"
@@ -3236,6 +3231,10 @@ msgstr "18+"
 msgid "18+ only"
 msgstr "18+ only"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "2000s"
+msgstr "2000s"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "25 / page"
 msgstr "25 / page"
@@ -3252,6 +3251,10 @@ msgstr "30d"
 #: src/pages/SeriesDetailPage.tsx
 msgid "50 / page"
 msgstr "50 / page"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "50 to 200"
+msgstr "50 to 200"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "75 / page"
@@ -3701,6 +3704,10 @@ msgstr "Add condition to rule {number}"
 #: src/components/NotificationsSection.tsx
 msgid "Add connection"
 msgstr "Add connection"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Add filter"
+msgstr "Add filter"
 
 #: src/components/SetupWizard.tsx
 msgid "Add folder"
@@ -4289,11 +4296,11 @@ msgstr "Another user"
 msgid "any"
 msgstr "any"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Any"
 msgstr "Any"
@@ -4404,7 +4411,6 @@ msgstr "Applies to the library pass and to new downloads. Higher finishes sooner
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Apply"
@@ -4942,6 +4948,10 @@ msgstr "Because: {reasonList}"
 #: src/components/RelinkFilesModal.tsx
 msgid "becomes readable"
 msgstr "becomes readable"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Before 2000"
+msgstr "Before 2000"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held."
@@ -5722,6 +5732,7 @@ msgstr "Chapter upgraded"
 msgid "chapters"
 msgstr "chapters"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
@@ -5861,10 +5872,6 @@ msgstr "Chapters you want that aren't on disk yet."
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters, year, minimum rating"
 msgstr "Chapters, year, minimum rating"
-
-#: src/pages/DiscoverPage.tsx
-msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
-msgstr "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Chapters: {chapters}"
@@ -6029,6 +6036,7 @@ msgstr "Clean up read chapters"
 msgid "Clean up read files"
 msgstr "Clean up read files"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -6058,7 +6066,7 @@ msgstr "Clear all notifications?"
 msgid "Clear cache"
 msgstr "Clear cache"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueFilterBar.tsx
 msgid "Clear default"
 msgstr "Clear default"
 
@@ -6112,7 +6120,6 @@ msgid "Clear the thumbs up"
 msgstr "Clear the thumbs up"
 
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Clear your saved default"
 msgstr "Clear your saved default"
 
@@ -6512,12 +6519,14 @@ msgstr "Consider disabling one source mapping in each pair; the warning clears o
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Content"
 msgstr "Content"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -6525,7 +6534,6 @@ msgstr "Content"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -7047,6 +7055,7 @@ msgstr "Created under Apps in Gotify."
 msgid "Creator"
 msgstr "Creator"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/discover/TasteTab.tsx
 msgid "Creators"
 msgstr "Creators"
@@ -7160,14 +7169,6 @@ msgstr "Custom rail"
 #: src/api/inbox.ts
 msgid "Custom source updated by its repository"
 msgstr "Custom source updated by its repository"
-
-#: src/pages/DiscoverPage.tsx
-msgid "Customize"
-msgstr "Customize"
-
-#: src/pages/DiscoverPage.tsx
-msgid "Customized"
-msgstr "Customized"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Cutoff"
@@ -8143,9 +8144,9 @@ msgstr "Each page takes several seconds of server CPU, and upscaled pages are ke
 msgid "Each person gets their own account and reading history."
 msgstr "Each person gets their own account and reading history."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Earliest year"
 msgstr "Earliest year"
 
@@ -8306,10 +8307,6 @@ msgstr "Empty the recycle bin?"
 #: src/pages/settings/SystemCards.tsx
 msgid "Empty uses the server's timezone."
 msgstr "Empty uses the server's timezone."
-
-#: src/pages/DiscoverPage.tsx
-msgid "Empty uses your whole library."
-msgstr "Empty uses your whole library."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Enable"
@@ -8918,8 +8915,8 @@ msgstr "Fetching pages…"
 msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
 msgstr "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Fewest chapters"
 msgstr "Fewest chapters"
 
@@ -9100,9 +9097,8 @@ msgstr "Filter saved"
 msgid "Filter the catalogue"
 msgstr "Filter the catalogue"
 
-#: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Filters"
@@ -9564,6 +9560,7 @@ msgstr "General"
 msgid "Genre"
 msgstr "Genre"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -9574,6 +9571,7 @@ msgstr "Genre"
 msgid "Genres"
 msgstr "Genres"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 msgid "Genres and tags"
@@ -9974,8 +9972,8 @@ msgid "Hidden from recommendations"
 msgstr "Hidden from recommendations"
 
 #: src/pages/DiscoverPage.tsx
-msgid "hidden gems"
-msgstr "hidden gems"
+msgid "Hidden gems"
+msgstr "Hidden gems"
 
 #: src/components/DiscoverPresets.tsx
 msgid "Hidden list saved"
@@ -11107,9 +11105,17 @@ msgstr "Larger than the auto-grab size limit"
 msgid "Last {lastSync}"
 msgstr "Last {lastSync}"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 10 years"
+msgstr "Last 10 years"
+
 #: src/components/home/ReadingWeeks.tsx
 msgid "Last 5 weeks"
 msgstr "Last 5 weeks"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 5 years"
+msgstr "Last 5 years"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Last chapter {last}."
@@ -11250,9 +11256,9 @@ msgstr "Latest chapter released"
 msgid "Latest release"
 msgstr "Latest release"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Latest year"
 msgstr "Latest year"
 
@@ -11837,8 +11843,8 @@ msgid "Main story of {relatedTo}"
 msgstr "Main story of {relatedTo}"
 
 #: src/pages/DiscoverPage.tsx
-msgid "mainstream"
-msgstr "mainstream"
+msgid "Mainstream"
+msgstr "Mainstream"
 
 #: src/components/series/SeriesHero.tsx
 msgid "Make this my rating"
@@ -12443,6 +12449,7 @@ msgstr "Minimum chapters"
 msgid "Minimum pages"
 msgstr "Minimum pages"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/MinRatingSlider.tsx
 msgid "Minimum rating"
 msgstr "Minimum rating"
@@ -12572,6 +12579,10 @@ msgstr "More download options"
 msgid "More feedback options"
 msgstr "More feedback options"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "More filter actions"
+msgstr "More filter actions"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "More for {label}"
 msgstr "More for {label}"
@@ -12618,8 +12629,8 @@ msgstr "More ways to make Maki yours"
 msgid "Moss"
 msgstr "Moss"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Most chapters"
 msgstr "Most chapters"
 
@@ -13902,6 +13913,10 @@ msgstr "None, use the filters below"
 msgid "Normal"
 msgstr "Normal"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "not {excluded}"
+msgstr "not {excluded}"
+
 #: src/components/library/LibraryFilterPanel.tsx
 msgid "Not {excluded}"
 msgstr "Not {excluded}"
@@ -15064,10 +15079,6 @@ msgstr "Open on {label}, rated {score}"
 msgid "Open on MangaBaka"
 msgstr "Open on MangaBaka"
 
-#: src/pages/DiscoverPage.tsx
-msgid "Open Recommended with these filters from now on"
-msgstr "Open Recommended with these filters from now on"
-
 #: src/pages/settings/LibraryCards.tsx
 msgid "Open recycle bin"
 msgstr "Open recycle bin"
@@ -15250,6 +15261,10 @@ msgstr "over {low}"
 #: src/components/pageconversion/RuleEditor.tsx
 msgid "over {low}, under {high}"
 msgstr "over {low}, under {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Over 200"
+msgstr "Over 200"
 
 #: src/components/NotificationsSection.tsx
 msgid "Overrides the default channel of the webhook."
@@ -16334,6 +16349,7 @@ msgstr "Rated {ratingLabel} or more"
 msgid "Rated {score}"
 msgstr "Rated {score}"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -17693,9 +17709,9 @@ msgstr "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgid "Rescanning series files"
 msgstr "Rescanning series files"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/DrillControls.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Reset"
 msgstr "Reset"
 
@@ -18378,8 +18394,8 @@ msgstr "Save anyway"
 msgid "Save as a rail…"
 msgstr "Save as a rail…"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Save as default"
 msgstr "Save as default"
 
@@ -18898,6 +18914,10 @@ msgstr "Search releases"
 msgid "Search section"
 msgstr "Search section"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Search series"
+msgstr "Search series"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Search shows"
 msgstr "Search shows"
@@ -19012,10 +19032,6 @@ msgstr "See progress"
 msgid "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
 msgstr "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
 
-#: src/pages/DiscoverPage.tsx
-msgid "Seed from"
-msgstr "Seed from"
-
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Seed ratio"
 msgstr "Seed ratio"
@@ -19039,6 +19055,7 @@ msgid "Seeding time (minutes)"
 msgstr "Seeding time (minutes)"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Seeds"
 msgstr "Seeds"
 
@@ -20434,6 +20451,7 @@ msgstr "Stats sections"
 msgid "Stats, Rewind, XP"
 msgstr "Stats, Rewind, XP"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
@@ -20443,7 +20461,6 @@ msgstr "Stats, Rewind, XP"
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Status"
@@ -22362,6 +22379,10 @@ msgstr "Try clearing the filters."
 msgid "Try the preview again"
 msgstr "Try the preview again"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Tuning"
+msgstr "Tuning"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Turkish"
 msgstr "Turkish"
@@ -22431,6 +22452,7 @@ msgid "Two-factor turned off for this account"
 msgstr "Two-factor turned off for this account"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -22439,7 +22461,6 @@ msgstr "Two-factor turned off for this account"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Type"
 msgstr "Type"
@@ -22453,7 +22474,6 @@ msgid "Type mix"
 msgstr "Type mix"
 
 #: src/components/CreditPicker.tsx
-#: src/pages/DiscoverPage.tsx
 msgid "Type to search…"
 msgstr "Type to search…"
 
@@ -22497,6 +22517,10 @@ msgstr "Under"
 #: src/components/pageconversion/RuleEditor.tsx
 msgid "under {high}"
 msgstr "under {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Under 50"
+msgstr "Under 50"
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Under minimum"
@@ -23177,8 +23201,8 @@ msgid "varied"
 msgstr "varied"
 
 #: src/pages/DiscoverPage.tsx
-msgid "varied ({diversityChip})"
-msgstr "varied ({diversityChip})"
+msgid "Varied"
+msgstr "Varied"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "Variety"
@@ -23747,7 +23771,6 @@ msgstr "Whole chapters"
 msgid "Whole franchise"
 msgstr "Whole franchise"
 
-#: src/pages/DiscoverPage.tsx
 #: src/pages/StatsPage.tsx
 msgid "Whole library"
 msgstr "Whole library"
@@ -23784,6 +23807,10 @@ msgstr "With a book open in KOReader, go to Tools, then Progress sync, then Cust
 #: src/components/settings/SecuritySection.tsx
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
 msgstr "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "With no series picked, your whole library is used."
+msgstr "With no series picked, your whole library is used."
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "With no target, torrents stay in the client after import."
@@ -23850,6 +23877,7 @@ msgstr "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 msgid "Written in a different language from your files"
 msgstr "Written in a different language from your files"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -23864,10 +23892,6 @@ msgstr "Year"
 #: src/components/CatalogueFilters.tsx
 msgid "Year: {yearMin}–{yearMax}"
 msgstr "Year: {yearMin}–{yearMax}"
-
-#: src/pages/DiscoverPage.tsx
-msgid "Year: {yearRangeMin}–{yearRangeMax}"
-msgstr "Year: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Yes"

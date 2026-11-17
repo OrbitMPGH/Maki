@@ -4377,7 +4377,8 @@ button.site-chip:hover {
 }
 /* The tab row already spaces the page from what follows, so the rail-scale margin above a first
    section header would double it. */
-.discover-tab-body > .section-header:not(.section-header ~ .section-header) {
+.discover-tab-body > .section-header:not(.section-header ~ .section-header),
+.discover-tab-body > .filter-results > .section-header:not(.section-header ~ .section-header) {
   margin-top: 0;
 }
 
@@ -7022,6 +7023,191 @@ button.site-chip:hover {
 .term-pill[data-state='exclude'] .mantine-Pill-label {
   text-decoration: line-through;
 }
+/* --- Catalogue filter bar ----------------------------------------------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: var(--mantine-spacing-md);
+}
+.filter-bar-row {
+  display: flex;
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.filter-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+.filter-bar-divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--border);
+}
+.filter-bar-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-height-xs);
+  padding: 0 9px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+.filter-bar-button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.filter-bar-button[data-active] {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: var(--brand-soft);
+  color: var(--brand-fg);
+  font-weight: var(--fw-semibold);
+}
+.filter-bar-button[data-open] {
+  border-color: var(--brand);
+}
+.filter-bar-button-icon {
+  flex: none;
+  color: var(--brand);
+}
+.filter-bar-button[data-active] .filter-bar-button-icon {
+  color: inherit;
+}
+.filter-bar-button-chevron {
+  flex: none;
+  opacity: 0.7;
+}
+.filter-bar-button-value {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-bar-excluded {
+  margin-inline-start: 6px;
+  color: var(--danger-fg);
+}
+.filter-results {
+  transition: opacity var(--dur-base);
+}
+.filter-results[data-stale] {
+  opacity: 0.6;
+}
+.filter-bar-add {
+  border-style: dashed;
+  background: transparent;
+}
+.filter-bar-pop {
+  padding: 0;
+}
+.filter-bar-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.filter-bar-pop-title {
+  flex: 1;
+  min-width: 0;
+}
+.filter-bar-pop-body {
+  padding: 12px 14px 14px;
+}
+.filter-bar-pop-drill .drill-panel-back {
+  margin: 6px 6px 0;
+}
+.filter-bar-drill-rows {
+  padding: 6px;
+}
+.filter-chip[data-on] {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: var(--brand-soft);
+  color: var(--ink-hi);
+}
+.filter-chip-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 6px;
+  border-radius: var(--radius-pill);
+}
+.filter-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.filter-presets {
+  margin-top: 12px;
+}
+.filter-bar-hint {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.seed-thumb {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 23px;
+  border-radius: var(--radius-2xs);
+  background: var(--surface-2);
+  object-fit: cover;
+}
+.seed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+.seed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font-size: var(--type-meta);
+}
+.seed-row:hover {
+  background: var(--surface-hover);
+}
+.seed-row[data-on] {
+  background: var(--brand-soft);
+  color: var(--ink-hi);
+}
+.seed-row .seed-thumb {
+  width: 22px;
+  height: 32px;
+}
+.seed-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .term-pill {
   border: 1px solid transparent;
 }

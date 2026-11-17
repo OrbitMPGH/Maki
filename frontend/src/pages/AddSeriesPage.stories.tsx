@@ -56,7 +56,7 @@ export const FromDiscoverFeed: Story = {
     },
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Filters 1' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Type: Manhwa' })).toBeVisible()
   },
 }
 
@@ -185,10 +185,11 @@ export const MeaningSearchUnavailableForReader: Story = {
 }
 
 export const FiltersOpen: Story = {
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByPlaceholderText('Search by title, description, or by feel')
-    await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
-    await expect(await canvas.findByRole('button', { name: /Reset/i })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Status' }))
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'Completed' }))
+    await expect(await canvas.findByRole('button', { name: 'Reset' })).toBeVisible()
   },
 }
 

@@ -7,9 +7,7 @@ import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import {
   
   Anchor,
-  Badge,
   Button,
-  Collapse,
   Group,
   Loader,
   SegmentedControl,
@@ -27,8 +25,7 @@ import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { SearchInput } from './ui/SearchInput'
-import { IconFilter, IconUser } from '../lib/icons'
-import { Panel } from './ui/Panel'
+import { IconUser } from '../lib/icons'
 import { TagChip } from './ui/TagChip'
 import {
   useDiscoverFeed,
@@ -46,10 +43,10 @@ import {
   type ResolvedCredit,
   type SearchFallback,
 } from '../api/hooks'
+import { CatalogueFilterBar, useCatalogueFilterSlots } from './CatalogueFilterBar'
 import {
-  CatalogueFilterActions,
-  CatalogueFilters,
   filtersFromSpec,
+  normalizeFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
   useFilterSummary,
@@ -57,7 +54,7 @@ import {
 } from './CatalogueFilters'
 import { MetaList } from './ui/MetaList'
 import { FilterMatchCount } from './CatalogueRules'
-import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
+import { PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow, type OpenItem } from './ui/DiscoverRail'
@@ -96,7 +93,6 @@ const MAX_SEARCH = 200
 export interface CatalogueSeed {
   sort: BrowseSort
   filters: RecommendationFilters
-  openFilters?: boolean
 }
 
 /**
@@ -173,11 +169,11 @@ export function CatalogueBrowser({
 
   // `applied` trails the live controls by a beat (see useLiveApply), so a slider drag is one
   // query when it settles rather than one per step.
-  const [filtersOpen, setFiltersOpen] = usePageState(memory('filters-open'), false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(memory('applied'), {})
   const [sort, setSort] = usePageState<BrowseSort>(memory('sort'), 'popular')
   const [pages, setPages] = usePageState(memory('pages'), 1)
   const catalogue = useCatalogueFilters(undefined, memory('filters'))
+  const filterSlots = useCatalogueFilterSlots(catalogue.controls, { creators: true })
   useLiveApply(catalogue.build, setApplied)
 
   // Seeded from the saved default exactly once, and nothing queries until that has happened:
@@ -202,7 +198,7 @@ export function CatalogueBrowser({
     }
     if (!defaultsLoaded || !savedDefaults) return
 
-    const filters = filtersFromSpec(savedDefaults)
+    const filters = normalizeFilters(filtersFromSpec(savedDefaults))
     hydrateFilters(filters)
     setApplied(filters)
     setHydrated(true)
@@ -213,12 +209,11 @@ export function CatalogueBrowser({
     if (!seededBrowse) return
     setQuery('')
     hydrateFilters(seededBrowse.filters)
-    setApplied(seededBrowse.filters)
+    setApplied(normalizeFilters(seededBrowse.filters))
     setSort(seededBrowse.sort)
     setPages(1)
-    if (seededBrowse.openFilters) setFiltersOpen(true)
     setHydrated(true)
-  }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setFiltersOpen, setHydrated])
+  }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setHydrated])
 
   const appliedCount = Object.keys(applied).length
   const summarizeFilters = useFilterSummary()
@@ -364,53 +359,29 @@ export function CatalogueBrowser({
                 ]}
               />
             </Tooltip.Group>
-            <Button
-              size="md"
-              variant={appliedCount > 0 ? 'light' : 'default'}
-              leftSection={<IconFilter size={16} />}
-              rightSection={
-                appliedCount > 0 ? (
-                  <Badge size="xs" circle variant="filled">
-                    {appliedCount}
-                  </Badge>
-                ) : undefined
-              }
-              aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((o) => !o)}
-            >
-              <Trans>Filters</Trans>
-            </Button>
           </Group>
 
-          <Collapse expanded={filtersOpen}>
-            <Panel p="md" mb="md">
-              <Stack gap="md">
-                <CatalogueFilters controls={catalogue.controls} />
-                <CatalogueFilterActions
-                  isCustomized={catalogue.isCustomized || appliedCount > 0}
-                  onReset={() => {
-                    catalogue.reset()
-                    setApplied({})
-                  }}
-                  saving={saveDefaults.isPending}
-                  onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
-                  extra={
-                    <>
-                      <PresetMenu
-                        current={catalogue.build}
-                        onLoad={(f) => {
-                          catalogue.hydrate(f)
-                          setApplied(f)
-                        }}
-                      />
-                      <HiddenContentButton />
-                      <FilterMatchCount filters={catalogue.build()} />
-                    </>
-                  }
-                />
-              </Stack>
-            </Panel>
-          </Collapse>
+          <CatalogueFilterBar
+            slots={filterSlots}
+            isCustomized={catalogue.isCustomized || appliedCount > 0}
+            onReset={() => {
+              catalogue.reset()
+              setApplied({})
+            }}
+            count={appliedCount > 0 ? <FilterMatchCount filters={catalogue.build()} /> : undefined}
+            saved={
+              <PresetMenu
+                compact
+                current={catalogue.build}
+                onLoad={(f) => {
+                  catalogue.hydrate(f)
+                  setApplied(f)
+                }}
+              />
+            }
+            onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+            savingDefault={saveDefaults.isPending}
+          />
         </>
       )}
 
@@ -429,7 +400,7 @@ export function CatalogueBrowser({
                   )}
                 </Text>
               )}
-              {filterSummary.length > 0 && (
+              {hideSearch && filterSummary.length > 0 && (
                 <Text c="var(--ink-3)" size="sm" className="catalogue-filter-summary">
                   <MetaList inline items={filterSummary} />
                 </Text>

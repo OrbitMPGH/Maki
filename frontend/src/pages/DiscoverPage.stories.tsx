@@ -141,12 +141,13 @@ export const Recommended: Story = {
   },
 }
 
-export const RecommendedCustomizeOpen: Story = {
+export const RecommendedSeedsOpen: Story = {
   parameters: { router: route('/discover/recommended') },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Customize' }))
-    await expect(await canvas.findByText('Seed from')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Apply' })).toBeVisible()
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Seeds' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('textbox', { name: 'Search series' })).toBeVisible()
+    await expect(await body.findByText('With no series picked, your whole library is used.')).toBeVisible()
   },
 }
 
@@ -156,7 +157,8 @@ export const RecommendedWithSavedDefault: Story = {
     msw: discoverPage(http.get(api('/recommendations/defaults'), () => HttpResponse.json(savedRecommendationDefaults))),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Customized' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Type: Manga' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Rating: 7.0+' })).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Feels like your seeds' })).toBeVisible()
   },
 }

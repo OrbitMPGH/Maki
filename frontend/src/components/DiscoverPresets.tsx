@@ -11,6 +11,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '../lib/toast'
 import {
@@ -49,10 +50,13 @@ export function PresetMenu({
   current,
   onLoad,
   railDraft,
+  compact = false,
 }: {
   current: () => RecommendationFilters
   onLoad: (filters: RecommendationFilters) => void
   railDraft?: () => CustomRailSpec
+  /** An icon button, for the filter bar where width is short. */
+  compact?: boolean
 }) {
   const { t } = useLingui()
   const { data: presets } = useDiscoverPresets()
@@ -102,9 +106,17 @@ export function PresetMenu({
     <>
       <Menu position="bottom-start" withinPortal shadow="md" width={280}>
         <Menu.Target>
-          <Button size="xs" variant="default" leftSection={<IconBookmark size={16} />}>
-            <Trans>Saved filters</Trans>
-          </Button>
+          {compact ? (
+            <Tooltip label={t`Saved filters`} withArrow>
+              <ActionIcon variant="default" size="input-xs" aria-label={t`Saved filters`}>
+                <IconBookmark size={16} />
+              </ActionIcon>
+            </Tooltip>
+          ) : (
+            <Button size="xs" variant="default" leftSection={<IconBookmark size={16} />}>
+              <Trans>Saved filters</Trans>
+            </Button>
+          )}
         </Menu.Target>
         <Menu.Dropdown>
           {(presets ?? []).length === 0 && (
@@ -236,7 +248,18 @@ export function HiddenContentButton() {
   )
 }
 
-function HiddenContentModal({ onClose }: { onClose: () => void }) {
+/** The never-show list as a menu item; the caller owns the modal, since a menu unmounts on click. */
+export function HiddenContentMenuItem({ onOpen }: { onOpen: () => void }) {
+  const { data } = useHiddenContent()
+  const count = data?.terms?.length ?? 0
+  return (
+    <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={onOpen}>
+      {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}
+    </Menu.Item>
+  )
+}
+
+export function HiddenContentModal({ onClose }: { onClose: () => void }) {
   const { t } = useLingui()
   const { data, isLoading, isError } = useHiddenContent()
   const save = useSaveHiddenContent()

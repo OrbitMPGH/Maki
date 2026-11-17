@@ -581,12 +581,19 @@ const REFRESHED_REQUESTS = new Set<string>()
  * without it, and with `retry: false` and no `meta.silent` that surfaces as an error toast on
  * every page load.
  */
-export function useRecommendations(request: RecommendationRequest, enabled = true) {
+export function useRecommendations(
+  request: RecommendationRequest,
+  enabled = true,
+  /** Keeps the previous answer up while a changed request loads, for a request that follows live filters. */
+  keepPrevious = false,
+) {
   const { refresh, ...identity } = request
   const identityKey = JSON.stringify(identity)
   return useInfiniteQuery({
     queryKey: ['recommendations', identity],
-    queryFn: ({ pageParam }) => {
+    // The signal lets a superseded live-apply request go: the server drops a queued pool build once
+    // nobody waits on it.
+    queryFn: ({ pageParam, signal }) => {
       // A refresh recomputes the pool: only bust the cache on the first page, so deeper pages
       // read from the pool that page 0 just rebuilt, and only once per applied request so a
       // later invalidation refetch reads the rebuilt pool instead of rebuilding it again.
@@ -594,6 +601,7 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
       if (bust) REFRESHED_REQUESTS.add(identityKey)
       return api<RecommendationsResult>('/recommendations', {
         method: 'POST',
+        signal,
         body: JSON.stringify({
           ...identity,
           page: pageParam.page,
@@ -619,6 +627,7 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   })
 }
 

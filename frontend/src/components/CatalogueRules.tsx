@@ -122,6 +122,18 @@ function fromFilters(f: RecommendationFilters | undefined | null): TermFilterSta
   return simple ? { ...EMPTY, ...simple, view: 'simple' } : { ...EMPTY, view: 'rules', rules }
 }
 
+/**
+ * A stored or carried filter as the panel will rebuild it: legacy `genres`/`tags` lists folded
+ * into rules. Applying this, not the raw spec, keeps live apply from seeing a change the moment it
+ * hydrates, and keeps the server's pool key the same for both shapes.
+ */
+export function normalizeTerms(f: RecommendationFilters): RecommendationFilters {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { genres, tags, rules: _rules, ...rest } = f
+  const rules = liveRules(fromFilters(f))
+  return rules.length ? { ...rest, rules } : rest
+}
+
 export function liveRules(s: TermFilterState): CatalogueRule[] {
   const rules = s.view === 'simple' ? compileSimple(s) : s.rules
   return rules.filter((rule) => rule.terms.length > 0)

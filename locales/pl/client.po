@@ -404,12 +404,6 @@ msgstr "{0, plural, one {# wynik} few {# wyniki} many {# wyników} other {# wyni
 msgid "{0, plural, one {# season} other {# seasons}}"
 msgstr "{0, plural, one {# sezon} few {# sezony} many {# sezonów} other {# sezonu}}"
 
-#. placeholder {0}: seedIds.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0, plural, one {# seed} other {# seeds}}"
-msgstr "{0, plural, one {# tytuł bazowy} few {# tytuły bazowe} many {# tytułów bazowych} other {# tytułu bazowego}}"
-
 #. placeholder {0}: selected.size
 #. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
@@ -1072,11 +1066,6 @@ msgstr "{chapterCount, plural, one {# rozdział} few {# rozdziały} many {# rozd
 #, fuzzy
 msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
 msgstr "{chapterLabel}, strona {pageNumber}, {pageHeight} px wysokości"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{chapterMinChip}–{chapterMaxChip} ch."
-msgstr "{chapterMinChip}–{chapterMaxChip} rozdz."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1783,6 +1772,10 @@ msgstr "{files, plural, one {{used} z {limit}, # strona} few {{used} z {limit}, 
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, one {# seria ukończona} few {# serie ukończone} many {# serii ukończonych} other {# serii ukończonej}}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "{firstSeedTitle} +{extraSeeds}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -3987,6 +3980,10 @@ msgstr "18+"
 msgid "18+ only"
 msgstr "Tylko dla dorosłych (18+)"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "2000s"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "25 / page"
@@ -4007,6 +4004,10 @@ msgstr "30 dni"
 #, fuzzy
 msgid "50 / page"
 msgstr "50 / stronę"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "50 to 200"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4562,6 +4563,10 @@ msgstr "Dodaj warunek do reguły {number}"
 #, fuzzy
 msgid "Add connection"
 msgstr "Dodaj połączenie"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Add filter"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -5284,11 +5289,11 @@ msgstr "Inny użytkownik"
 msgid "any"
 msgstr "dowolny"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Any"
@@ -5424,7 +5429,6 @@ msgstr "Dotyczy przebiegu po bibliotece i nowych pobrań. Wyższa wartość koń
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -6081,6 +6085,10 @@ msgstr "Ponieważ: {reasonList}"
 #, fuzzy
 msgid "becomes readable"
 msgstr "staje się dostępny do czytania"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Before 2000"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7035,6 +7043,7 @@ msgstr "Rozdział ulepszony"
 msgid "chapters"
 msgstr "rozdziały"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
@@ -7206,11 +7215,6 @@ msgstr "Chciane rozdziały, których jeszcze nie ma na dysku."
 #, fuzzy
 msgid "Chapters, year, minimum rating"
 msgstr "Rozdziały, rok, minimalna ocena"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
-msgstr "Rozdziały: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7413,6 +7417,7 @@ msgstr "Porządkuj przeczytane rozdziały"
 msgid "Clean up read files"
 msgstr "Porządkuj przeczytane pliki"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -7447,7 +7452,7 @@ msgstr "Wyczyścić wszystkie powiadomienia?"
 msgid "Clear cache"
 msgstr "Wyczyść pamięć podręczną"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueFilterBar.tsx
 #, fuzzy
 msgid "Clear default"
 msgstr "Wyczyść domyślne"
@@ -7513,7 +7518,6 @@ msgid "Clear the thumbs up"
 msgstr "Usuń kciuk w górę"
 
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
 msgstr "Wyczyść zapisane ustawienie domyślne"
@@ -8000,6 +8004,7 @@ msgstr ""
 msgid "Contained in a volume/compilation file"
 msgstr "Zawarte w pliku tomu/zbiorczym"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8007,6 +8012,7 @@ msgid "Content"
 msgstr "Treść"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -8014,7 +8020,6 @@ msgstr "Treść"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -8656,6 +8661,7 @@ msgstr "Utworzony w sekcji Apps w Gotify."
 msgid "Creator"
 msgstr "Twórca"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Creators"
@@ -8796,16 +8802,6 @@ msgstr "Własna sekcja"
 #, fuzzy
 msgid "Custom source updated by its repository"
 msgstr "Własne źródło zaktualizowane przez jego repozytorium"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customize"
-msgstr "Dostosuj"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Customized"
-msgstr "Dostosowane"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9996,9 +9992,9 @@ msgstr "Każda strona zużywa kilka sekund procesora serwera, a powiększone str
 msgid "Each person gets their own account and reading history."
 msgstr "Każda osoba dostaje własne konto i własną historię czytania."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Earliest year"
 msgstr "Najwcześniejszy rok"
@@ -10195,11 +10191,6 @@ msgstr "Opróżnić kosz?"
 #, fuzzy
 msgid "Empty uses the server's timezone."
 msgstr "Puste pole oznacza strefę czasową serwera."
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Empty uses your whole library."
-msgstr "Puste oznacza całą bibliotekę."
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10950,8 +10941,8 @@ msgstr "Pobieranie stron…"
 msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
 msgstr "Mniej niż {minSeeders} seederów, więc Maki sam go nie pobierze. Tutaj nadal możesz go pobrać."
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Fewest chapters"
 msgstr "Najmniej rozdziałów"
@@ -11172,9 +11163,8 @@ msgstr "Filtr został zapisany"
 msgid "Filter the catalogue"
 msgstr "Filtruj katalog"
 
-#: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11743,6 +11733,7 @@ msgstr "Ogólne"
 msgid "Genre"
 msgstr "Gatunek"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -11754,6 +11745,7 @@ msgstr "Gatunek"
 msgid "Genres"
 msgstr "Gatunki"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12246,9 +12238,8 @@ msgid "Hidden from recommendations"
 msgstr "Ukryte w rekomendacjach"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "hidden gems"
-msgstr "ukryte perełki"
+msgid "Hidden gems"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -13641,10 +13632,18 @@ msgstr "Większe niż limit rozmiaru automatycznego pobierania"
 msgid "Last {lastSync}"
 msgstr "Ostatnio {lastSync}"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 10 years"
+msgstr ""
+
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Last 5 weeks"
 msgstr "Ostatnie 5 tygodni"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Last 5 years"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -13818,9 +13817,9 @@ msgstr "Ostatni rozdział opublikowany"
 msgid "Latest release"
 msgstr "Ostatnie wydanie"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Latest year"
 msgstr "Najnowszy rok"
@@ -14536,9 +14535,8 @@ msgid "Main story of {relatedTo}"
 msgstr "Główna historia {relatedTo}"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "mainstream"
-msgstr "mainstreamowe"
+msgid "Mainstream"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -15281,6 +15279,7 @@ msgstr "Minimalna liczba rozdziałów"
 msgid "Minimum pages"
 msgstr "Minimalna liczba stron"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "Minimum rating"
@@ -15438,6 +15437,10 @@ msgstr "Więcej opcji pobierania"
 msgid "More feedback options"
 msgstr "Więcej opcji opinii"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "More filter actions"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "More for {label}"
@@ -15494,8 +15497,8 @@ msgstr "Więcej sposobów, by dostosować Maki"
 msgid "Moss"
 msgstr "Mech"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Most chapters"
 msgstr "Najwięcej rozdziałów"
@@ -17079,6 +17082,10 @@ msgstr "Brak, użyj filtrów poniżej"
 msgid "Normal"
 msgstr ""
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "not {excluded}"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"
@@ -18506,11 +18513,6 @@ msgstr "Otwórz na {label}, ocena {score}"
 msgid "Open on MangaBaka"
 msgstr "Otwórz na MangaBaka"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Open Recommended with these filters from now on"
-msgstr "Od teraz otwieraj Polecane z tymi filtrami"
-
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Open recycle bin"
@@ -18734,6 +18736,10 @@ msgstr "powyżej {low}"
 #, fuzzy
 msgid "over {low}, under {high}"
 msgstr "powyżej {low}, poniżej {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Over 200"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -20061,6 +20067,7 @@ msgstr "Oceniono na {ratingLabel} lub więcej"
 msgid "Rated {score}"
 msgstr "Ocena: {score}"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21732,9 +21739,9 @@ msgstr "Przeskanowano ponownie: {newFiles} nowych, {relinked} ponownie połączo
 msgid "Rescanning series files"
 msgstr "Ponowne skanowanie plików serii"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/DrillControls.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
 msgstr "Resetuj"
@@ -22563,8 +22570,8 @@ msgstr "Zapisz mimo to"
 msgid "Save as a rail…"
 msgstr "Zapisz jako sekcję…"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
 msgstr "Zapisz jako domyślne"
@@ -23199,6 +23206,10 @@ msgstr "Szukaj wydań"
 msgid "Search section"
 msgstr "Sekcja wyszukiwania"
 
+#: src/components/CatalogueFilterBar.tsx
+msgid "Search series"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Search shows"
@@ -23341,11 +23352,6 @@ msgstr "Zobacz postęp"
 msgid "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
 msgstr "Zobacz grupy wydań stojące za stronami z creditami i reklamami, które Maki ukrywa, i popraw to, co z nich odczytał."
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Seed from"
-msgstr "Bazuj na"
-
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Seed ratio"
@@ -23374,6 +23380,7 @@ msgid "Seeding time (minutes)"
 msgstr "Czas seedowania (minuty)"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Seeds"
 msgstr "Seedy"
@@ -25090,6 +25097,7 @@ msgstr "Sekcje statystyk"
 msgid "Stats, Rewind, XP"
 msgstr "Statystyki, Rewind, XP"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
@@ -25099,7 +25107,6 @@ msgstr "Statystyki, Rewind, XP"
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -27468,6 +27475,10 @@ msgstr "Spróbuj wyczyścić filtry."
 msgid "Try the preview again"
 msgstr "Spróbuj podglądu ponownie"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Tuning"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Turkish"
@@ -27554,6 +27565,7 @@ msgid "Two-factor turned off for this account"
 msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone dla tego konta"
 
 #: src/api/autoTagRules.ts
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -27562,7 +27574,6 @@ msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone dla tego konta"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Type"
@@ -27578,7 +27589,6 @@ msgid "Type mix"
 msgstr "Podział według typu"
 
 #: src/components/CreditPicker.tsx
-#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Type to search…"
 msgstr "Wpisz, aby wyszukać…"
@@ -27633,6 +27643,10 @@ msgstr "Poniżej"
 #, fuzzy
 msgid "under {high}"
 msgstr "poniżej {high}"
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "Under 50"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -28468,9 +28482,8 @@ msgid "varied"
 msgstr "zróżnicowane"
 
 #: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "varied ({diversityChip})"
-msgstr "zróżnicowane ({diversityChip})"
+msgid "Varied"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -29169,7 +29182,6 @@ msgstr ""
 msgid "Whole franchise"
 msgstr "Całe uniwersum"
 
-#: src/pages/DiscoverPage.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Whole library"
@@ -29214,6 +29226,10 @@ msgstr "Z otwartą książką w KOReader przejdź do Tools, potem do Progress sy
 #, fuzzy
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
 msgstr "Gdy ustawione jest którekolwiek z roszczeń, to dostawca decyduje o uprawnieniach: są one przeliczane przy każdym logowaniu, więc zmiany dokonane na stronie Użytkownicy zostaną nadpisane przy następnym logowaniu tej osoby. Pozostaw oba puste, aby zachować uprawnienia tutaj."
+
+#: src/components/CatalogueFilterBar.tsx
+msgid "With no series picked, your whole library is used."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -29295,6 +29311,7 @@ msgstr "Zapisane jako <0>claim=wartość</0>, np. <1>groups=maki-admins</1>."
 msgid "Written in a different language from your files"
 msgstr "Zapisany w innym języku niż twoje pliki"
 
+#: src/components/CatalogueFilterBar.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -29311,11 +29328,6 @@ msgstr "Rok"
 #, fuzzy
 msgid "Year: {yearMin}–{yearMax}"
 msgstr "Rok: {yearMin}–{yearMax}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Year: {yearRangeMin}–{yearRangeMax}"
-msgstr "Rok: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
