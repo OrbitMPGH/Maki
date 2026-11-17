@@ -1502,6 +1502,41 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// Popularity rank of each series inside <paramref name="maxRank"/> whose anime has aired, read
+    /// off <c>anime_start</c>: <c>has_anime</c> alone also marks announced shows nobody could have
+    /// watched. The ranks come from the browse table's popularity index and the anime range from
+    /// <c>series</c> by id, so this is a few hundred point reads rather than a scan.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, long>> GetAiredAnimeRanksAsync(
+        int maxRank, CancellationToken ct = default)
+    {
+        var ranks = new Dictionary<long, long>();
+        if (maxRank < 1)
+        {
+            return ranks;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT s.id, b.popularity_global_current
+            FROM {MangaBakaDumpService.BrowseSource(conn)} b JOIN series s ON s.id = b.id
+            WHERE b.state = 'active' AND b.type != 'novel' AND b.rating IS NOT NULL
+              AND b.cover_raw_url IS NOT NULL AND b.popularity_global_current IS NOT NULL
+              AND b.popularity_global_current BETWEEN 1 AND $max
+              AND s.anime_start IS NOT NULL
+            """;
+        cmd.Parameters.AddWithValue("$max", maxRank);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            ranks[reader.GetInt64(0)] = reader.GetInt64(1);
+        }
+
+        return ranks;
+    }
+
+    /// <summary>
     /// A catalogue-browse rail for the Discover page: the dump's most-popular / newest /
     /// trending / top-rated titles, independent of the user's library. Each rail is a single
     /// indexed-free full scan (~1.5s), so callers cache the results. Results are deduped by

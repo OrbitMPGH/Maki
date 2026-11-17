@@ -298,6 +298,7 @@ try
     builder.Services.AddSingleton(new EaseOptions(paths.EaseDbPath, paths.CacheDir));
     builder.Services.AddSingleton<EaseCache>();
     builder.Services.AddSingleton(EaseTuning.Default);
+    builder.Services.AddSingleton(KnownTitleTuning.Default);
     builder.Services.AddHttpClient(EaseInstaller.HttpClientName, client =>
     {
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");

@@ -56,7 +56,8 @@ public class SemanticRecommender(
     RecommenderTuning? tuning = null,
     TasteVectorTuning? tasteTuning = null,
     EaseCache? easeCache = null,
-    EaseTuning? easeTuning = null)
+    EaseTuning? easeTuning = null,
+    PageFrequency? pageFrequency = null)
 {
     private static readonly EmbeddingMath.Weights Weights = new();
 
@@ -296,6 +297,15 @@ public class SemanticRecommender(
     /// claim about two works rather than about a reader. Off also when no cache was passed or the
     /// tuned weight is 0.
     /// </param>
+    /// <param name="demote">
+    /// Catalogue id -> score subtracted from that candidate. For titles the caller has a reason to
+    /// rank lower without removing, such as a manga whose anime the reader already watched. Changes
+    /// order only: pool membership and the reasons are untouched.
+    /// </param>
+    /// <param name="common">
+    /// Whether the page-share penalty (<see cref="RecommenderTuning.CommonWeight"/>) may apply.
+    /// Personal recommendations only; off when no <see cref="PageFrequency"/> was passed.
+    /// </param>
     /// <param name="avoidWeights">
     /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
     /// Scanned as extra queries in the same pass, and each candidate's best strength-weighted
@@ -322,6 +332,7 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
         bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
+        IReadOnlyDictionary<long, double>? demote = null, bool common = false,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
@@ -596,6 +607,7 @@ public class SemanticRecommender(
             }
         }
 
+        var commonLive = common && pageFrequency is not null && _tuning.CommonWeight > 0;
         var scored = new List<Candidate>(poolRows.Count);
         var floored = 0;
         // Reported so a run can tell an empty contrastive profile from one that matched nothing.
@@ -758,6 +770,17 @@ public class SemanticRecommender(
                 tasteScore,
                 avoidScore,
                 easeScore);
+            if (demote is not null && demote.TryGetValue(index.IdAt(row), out var demotion))
+            {
+                score -= demotion;
+            }
+
+            if (commonLive)
+            {
+                score -= _tuning.CommonWeight
+                    * Math.Pow(pageFrequency!.ShareOf(index.IdAt(row)), _tuning.CommonPower);
+            }
+
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
                 graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));

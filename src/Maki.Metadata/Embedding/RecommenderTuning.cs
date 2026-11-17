@@ -470,6 +470,20 @@ public sealed record RecommenderTuning
     public double MinReasonShare { get; init; } = 0.25;
 
     /// <summary>
+    /// Score subtracted from a pick that lands on every reader's page: this times its
+    /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0, the shipped value,
+    /// is off. Only applies when a table is registered and the caller asks for it (personal
+    /// recommendations), never on the series-page rail.
+    /// </summary>
+    public double CommonWeight { get; init; }
+
+    /// <summary>
+    /// Shape of the page-share penalty. 1 is linear in the share; below 1 reaches further down the
+    /// list of common titles, above 1 only touches the ones nearly everybody gets.
+    /// </summary>
+    public double CommonPower { get; init; } = 1.0;
+
+    /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own
     /// spread. See <see cref="Embedding.AttributionScale"/>; defaults to
     /// <see cref="AttributionScale.PoolRelative"/>, which is what makes one margin work across

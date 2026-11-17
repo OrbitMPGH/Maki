@@ -54,8 +54,11 @@ public class RecommendationService(
     SemanticRecommender semantic,
     SeedWeightService seedWeights,
     IAppSettings settings,
-    ILogger<RecommendationService> logger)
+    ILogger<RecommendationService> logger,
+    KnownTitleTuning? knownTitles = null)
 {
+    private readonly KnownTitleTuning _known = knownTitles ?? KnownTitleTuning.Default;
+
     private const int PageSize = 40;
 
     /// <summary>Matches the custom rails' seed cap, so a bound request cannot build a megabyte cache key.</summary>
@@ -247,10 +250,18 @@ public class RecommendationService(
         var avoidKey = string.Join(",", snapshot.Avoided
             .OrderBy(x => x.Key)
             .Select(x => $"{x.Key}:{x.Value:F1}"));
+        // Titles the reader most likely knows. A demotion changes the pool's order, so it is in the
+        // key like the avoided set; an exclusion is a per-reader overlay like suppression.
+        var (knownExcluded, demote) = await KnownAsync(snapshot, ct);
+        var demoteKey = demote.Count == 0
+            ? string.Empty
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", demote
+                .OrderBy(x => x.Key)
+                .Select(x => $"{x.Key}:{x.Value:F2}")))))[..16];
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|e:{(ease ? 1 : 0)}|a:{avoidKey}";
+                  $"|e:{(ease ? 1 : 0)}|a:{avoidKey}|k:{demoteKey}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
@@ -270,7 +281,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors, ease));
+                        coGraph, coRead, tasteVectors, ease, demote));
                     _building[key] = created;
                     build = created;
                 }
@@ -303,14 +314,23 @@ public class RecommendationService(
 
 
         var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
+        if (knownExcluded.Count > 0)
+        {
+            // The watch list changes on a tracker sync, with no feedback revision to show for it.
+            version += $":{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..8]}";
+        }
 
         // The caller is paging a pool that no longer exists, so their page number means nothing
         // against this one and honouring it would skip or repeat titles. Serve the new pool from
         // the top and say so, rather than an empty page: the client drops what it had and keeps
         // this, so paging restarts instead of dead-ending mid-scroll.
         var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
+        // Known titles leave the similar picks only: a sequel of something on the shelf is expected
+        // to be familiar, so relations keep theirs.
         var similarVisible = RecommendationReasons.Balance(
-            Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList()));
+            Spread(pool.Similar
+                .Where(p => !suppressed.Contains(CatalogueId(p)) && !knownExcluded.Contains(CatalogueId(p)))
+                .ToList()));
         var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
         var page = restart ? 0 : Math.Max(0, request.Page);
         return pool with
@@ -328,7 +348,7 @@ public class RecommendationService(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
-        bool coGraph, bool coRead, bool tasteVectors, bool ease)
+        bool coGraph, bool coRead, bool tasteVectors, bool ease, IReadOnlyDictionary<long, double> demote)
     {
         var entered = false;
         try
@@ -355,7 +375,8 @@ public class RecommendationService(
                 ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
-                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease, ct: CancellationToken.None)
+                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
+                    demote: demote.Count > 0 ? demote : null, common: true, ct: CancellationToken.None)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)
@@ -399,6 +420,56 @@ public class RecommendationService(
                 _scanGate.Release();
             }
         }
+    }
+
+    /// <summary>
+    /// The titles <see cref="KnownTitleTuning"/> takes out of the similar picks, and the score it
+    /// takes off the ones it only ranks lower. Both empty at the shipped tuning, and for a reader
+    /// with no watch list.
+    /// </summary>
+    private async Task<(IReadOnlySet<long> Excluded, IReadOnlyDictionary<long, double> Demote)> KnownAsync(
+        SeedSnapshot snapshot, CancellationToken ct)
+    {
+        var excluded = new HashSet<long>();
+        var demote = new Dictionary<long, double>();
+        var watched = snapshot.WatchedAnime;
+        if (!_known.Active || watched.Count == 0)
+        {
+            return (excluded, demote);
+        }
+
+        if (_known.WatchedAnime == KnownTitleMode.Exclude)
+        {
+            excluded.UnionWith(watched);
+        }
+        else if (_known.WatchedAnime == KnownTitleMode.Demote && _known.WatchedDemotion > 0)
+        {
+            foreach (var id in watched)
+            {
+                demote[id] = _known.WatchedDemotion;
+            }
+        }
+
+        if (_known.UnwatchedWeight > 0)
+        {
+            var aired = await store.GetAiredAnimeRanksAsync(_known.UnwatchedMaxRank, ct);
+            var watchedFamous = aired.Keys.Count(watched.Contains);
+            foreach (var (id, rank) in aired)
+            {
+                if (watched.Contains(id))
+                {
+                    continue;
+                }
+
+                var strength = _known.UnwatchedStrength(rank, watchedFamous, aired.Count);
+                if (strength > 0)
+                {
+                    demote[id] = _known.UnwatchedWeight * strength;
+                }
+            }
+        }
+
+        return (excluded, demote);
     }
 
     /// <summary>The pick's MangaBaka id, or 0 when it does not parse (nothing in the dump).</summary>
