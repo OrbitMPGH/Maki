@@ -1053,6 +1053,28 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_fetched_page_count_stays_while_the_source_lists_the_same_upload()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("fake")]);
+        var shape = new FakeSource { Name = "fake" };
+        var upload = shape.Chapter(5);
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [upload] };
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        using (var db = _db.NewContext())
+        {
+            db.ChapterSourceLinks.Single().PageCount = 41;
+            db.SaveChanges();
+        }
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        Assert.Equal(41, LinksOf(seriesId).Single().PageCount);
+
+        upload = upload with { SourceChapterId = "re-upload" };
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        Assert.Null(LinksOf(seriesId).Single().PageCount);
+    }
+
+    [Fact]
     public async Task MangaDex_uuid_is_backfilled_from_the_mapping()
     {
         var seriesId = _db.SeedSeries(mappings: new SourceMapping

@@ -528,6 +528,7 @@ public class ChapterSyncService(
                 }
             }
 
+            var sameUpload = link.SourceChapterId == sourceChapter.SourceChapterId;
             link.SourceChapterId = sourceChapter.SourceChapterId;
             link.NumberRaw = sourceChapter.NumberRaw;
             link.Volume = sourceChapter.Volume;
@@ -535,7 +536,8 @@ public class ChapterSyncService(
             link.ReleaseDate = sourceChapter.ReleaseDate;
             link.Group = sourceChapter.Group ?? groupFallback;
             link.Url = sourceChapter.Url;
-            link.PageCount = sourceChapter.PageCount;
+            // A count ChapterPageCountService fetched stays while the source lists the same upload.
+            link.PageCount = sourceChapter.PageCount ?? (sameUpload ? link.PageCount : null);
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);

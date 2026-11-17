@@ -44,10 +44,10 @@ public sealed class FloorDecision(decimal floor)
     /// <summary>The certification behind a looser ceiling: publisher numbering, part titles or a shared title.</summary>
     public string? Certified { get; internal set; }
 
-    /// <summary>Per mapping, the numbers that are parts, in reading order.</summary>
+    /// <summary>Per mapping, the numbers that are parts, in reading order. On a pending floor, the candidates.</summary>
     public Dictionary<string, IReadOnlyList<decimal>> Parts { get; } = [];
 
-    /// <summary>Mappings whose own whole chapter stands for the floor.</summary>
+    /// <summary>Mappings whose own whole chapter stands for the floor. On a pending floor, the candidates.</summary>
     public List<string> Wholes { get; } = [];
 
     /// <summary>Mappings whose listed whole is really part 1 ("part1", or "part1UnderWhole" when it never stands for the chapter).</summary>
@@ -159,16 +159,24 @@ public static partial class ChapterReconciler
             }
 
             // "f, f.2" with no f.1: the f is part 1 when another source's whole matches the sum, or the titles say so.
+            var aliasPending = new Ordered<List<ReconcileEntry>>();
             foreach (var (mapping, firstRun) in firstRuns.Items)
             {
                 var titled = firstRun.Any(e => IsPartMarker(e.Title));
-                var fits = wholes.Items.Any(w =>
-                    w.Key != mapping && Verify(w.Value, firstRun, titled ? HighCertified : High).Verdict == Verdict.Merged);
-                if (fits || (titled && wholes.Count == 1))
+                var checks = wholes.Items
+                    .Where(w => w.Key != mapping)
+                    .Select(w => Verify(w.Value, firstRun, titled ? HighCertified : High).Verdict)
+                    .ToList();
+                if (checks.Contains(Verdict.Merged) || (titled && wholes.Count == 1))
                 {
                     runs.Set(mapping, firstRun);
                     wholes.Remove(mapping);
                     d.Aliases[mapping] = "part1";
+                }
+                else if (checks.Contains(Verdict.Unknown))
+                {
+                    // Another source's whole could settle whether this f is part 1, once it has a page count.
+                    aliasPending.Set(mapping, firstRun);
                 }
             }
 
@@ -180,7 +188,17 @@ public static partial class ChapterReconciler
 
             if (longRuns.Count == 0)
             {
-                Settle(d, FoldState.Keep, "loneSubChapter");
+                if (aliasPending.Count > 0)
+                {
+                    Settle(d, FoldState.Pending, "needsPageCountPart1");
+                    d.Wholes.AddRange(wholes.Items.Select(w => w.Key).Where(m => aliasPending.Items.All(a => a.Key != m)));
+                    AddParts(d, aliasPending, int.MaxValue);
+                }
+                else
+                {
+                    Settle(d, FoldState.Keep, "loneSubChapter");
+                }
+
                 continue;
             }
 
@@ -288,10 +306,33 @@ public static partial class ChapterReconciler
             else
             {
                 Settle(d, FoldState.Pending, d.Certified is null ? "needsPageCount" : $"needsPageCount+{d.Certified}");
+                d.Wholes.AddRange(realWholes);
+                AddParts(d, longRuns, int.MaxValue);
             }
         }
 
         return decisions;
+    }
+
+    /// <summary>
+    /// The chapters a pending floor waits on: each candidate whole and part that has no page count yet.
+    /// A count for every one of them is enough to settle the floor either way.
+    /// </summary>
+    public static IReadOnlyList<(string Mapping, decimal Number)> MissingCounts(
+        FloorDecision decision, IReadOnlyList<ReconcileListing> listings)
+    {
+        if (decision.State != FoldState.Pending)
+        {
+            return [];
+        }
+
+        var entries = listings.ToDictionary(l => l.Mapping, l => l.Entries);
+        var wanted = decision.Wholes.Select(m => (m, decision.Floor))
+            .Concat(decision.Parts.SelectMany(p => p.Value.Select(n => (p.Key, n))));
+        return [.. wanted
+            .Distinct()
+            .Where(w => entries.TryGetValue(w.Item1, out var list) &&
+                        list.FirstOrDefault(e => e.Number == w.Item2) is { } entry && Pages(entry) is null)];
     }
 
     private static void Settle(FloorDecision d, FoldState state, string reason)

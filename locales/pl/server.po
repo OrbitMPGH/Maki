@@ -6419,6 +6419,11 @@ msgstr "Zamknij bezczynną przeglądarkę"
 msgid "health.job.chapterFileMeasure"
 msgstr "Zmierz pliki rozdziałów"
 
+#. English: Count chapter pages
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr ""
+
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy

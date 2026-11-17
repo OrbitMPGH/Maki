@@ -1,7 +1,9 @@
 using Maki.Api.Auth;
+using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -13,7 +15,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Authorize(Policy = Policies.Admin)]
 [Route("api/v1/chapterfolds")]
-public class ChapterFoldsController(ChapterFoldPreviewService previews) : ControllerBase
+public class ChapterFoldsController(ChapterFoldPreviewService previews, ISchedulerFactory schedulers) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Library(CancellationToken ct) => Ok(await previews.ForLibraryAsync(ct));
@@ -21,4 +23,13 @@ public class ChapterFoldsController(ChapterFoldPreviewService previews) : Contro
     [HttpGet("{seriesId:int}")]
     public async Task<IActionResult> Series(int seriesId, CancellationToken ct) =>
         await previews.ForSeriesAsync(seriesId, ct) is { } preview ? Ok(preview) : NotFound();
+
+    /// <summary>Starts fetching the page counts pending folds wait on, instead of at the next scheduled run.</summary>
+    [HttpPost("count")]
+    public async Task<IActionResult> Count(CancellationToken ct)
+    {
+        var scheduler = await schedulers.GetScheduler(ct);
+        await scheduler.TriggerJob(ChapterPageCountJob.Key, ct);
+        return Accepted();
+    }
 }

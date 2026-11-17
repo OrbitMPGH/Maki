@@ -109,6 +109,45 @@ public class ChapterReconcilerTests
     }
 
     [Fact]
+    public void AWholeBesideItsPointTwoWaitsWhenTheOtherWholeHasNoCount()
+    {
+        // Hidden Dungeon: MangaDex lists 8 and 8.2, Weeb Central 8. Only Weeb Central's page count can
+        // tell whether MangaDex's 8 is part 1, so the floor waits for it instead of reading as kept.
+        var listings = new[]
+        {
+            Listing("mangadex", C(8, 24), C(8.2m, 20), C(9, 30)),
+            Listing("weebcentral", C(8), C(9)),
+        };
+
+        var waiting = ChapterReconciler.Decide(listings)[8];
+
+        Assert.Equal(FoldState.Pending, waiting.State);
+        Assert.Equal(["weebcentral"], waiting.Wholes);
+        Assert.Equal([8m, 8.2m], waiting.Parts["mangadex"]);
+        Assert.Equal([("weebcentral", 8m)], ChapterReconciler.MissingCounts(waiting, listings));
+
+        var counted = ChapterReconciler.Decide([listings[0], Listing("weebcentral", C(8, 42), C(9, 30))])[8];
+        Assert.Equal(FoldState.Merged, counted.State);
+        Assert.Equal(["weebcentral"], counted.Wholes);
+    }
+
+    [Fact]
+    public void MissingCountsNamesEveryUncountedCandidate()
+    {
+        var listings = new[]
+        {
+            Listing("mangadex", C(3.1m), C(3.2m, 26), C(4, 50)),
+            Listing("weebcentral", C(3), C(4)),
+        };
+
+        var waiting = ChapterReconciler.Decide(listings)[3];
+
+        Assert.Equal(FoldState.Pending, waiting.State);
+        Assert.Equal([("weebcentral", 3m), ("mangadex", 3.1m)], ChapterReconciler.MissingCounts(waiting, listings));
+        Assert.Empty(ChapterReconciler.MissingCounts(ChapterReconciler.Decide(listings)[4], listings));
+    }
+
+    [Fact]
     public void PublisherNumbersRoundTrip()
     {
         var stored = PublisherNumbering.Format([10.4m, 2.1m, 10.1m, 2.1m]);
