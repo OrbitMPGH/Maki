@@ -776,6 +776,15 @@ public class SemanticRecommender(
         var coReadSeedsByRow = coReadSeedByRow.Count > 0 && winners.Any(c => c.CoRead)
             ? await CoReadSeedsForAsync(index, winners.Where(c => c.CoRead).ToList(), seedIds, seedWeights, ct)
             : [];
+        // No seed carries enough of the pick for its name to mean anything: the card keeps the
+        // co-read reason and says "readers like you" instead.
+        foreach (var (row, seeds) in coReadSeedsByRow)
+        {
+            if (seeds.Count == 0)
+            {
+                coReadSeedByRow.Remove(row);
+            }
+        }
         if (easeByRow.Count > 0)
         {
             winners = await AttributeEaseAsync(
@@ -2051,8 +2060,9 @@ public class SemanticRecommender(
     /// finished this", naming the seed with the largest positive weighted contribution. That is literally
     /// what the table measures (it is fitted on finished lists), so no new wording is needed. Only
     /// picks with no co-read reason of their own, and only where some seed weighs them up: a row the
-    /// table scores at or below zero keeps whatever reason it had. Rewrites the reason fields only,
-    /// never the order or the score.
+    /// table scores at or below zero keeps whatever reason it had. When no seed carries
+    /// <see cref="RecommenderTuning.MinReasonShare"/> of the pick, the reason names no seed ("Readers
+    /// like you also finished this"). Rewrites the reason fields only, never the order or the score.
     /// </summary>
     private async Task<List<Candidate>> AttributeEaseAsync(
         VectorIndex index,
@@ -2072,7 +2082,8 @@ public class SemanticRecommender(
             return winners;
         }
 
-        var seedsById = EaseScorer.SeedsFor(table, seedIds, seedWeights, unexplained.Keys.ToHashSet());
+        var seedsById = EaseScorer.SeedsFor(
+            table, seedIds, seedWeights, unexplained.Keys.ToHashSet(), _tuning.MinReasonShare);
         if (seedsById.Count == 0)
         {
             return winners;
@@ -2081,12 +2092,14 @@ public class SemanticRecommender(
         var attributed = new HashSet<int>();
         foreach (var (id, seeds) in seedsById)
         {
+            var row = unexplained[id];
             if (seeds.Count == 0)
             {
+                // Pushed up by many seeds a little each: a co-read reason with no seed named.
+                attributed.Add(row);
                 continue;
             }
 
-            var row = unexplained[id];
             coReadSeedByRow[row] = seeds[0];
             coReadSeedsByRow[row] = seeds;
             attributed.Add(row);
@@ -2148,7 +2161,8 @@ public class SemanticRecommender(
         }
 
         var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w.Row);
-        var byId = CoReadScorer.SeedsFor(graph, seedIds, seedWeights, coReadTuning, rowById.Keys.ToHashSet());
+        var byId = CoReadScorer.SeedsFor(
+            graph, seedIds, seedWeights, coReadTuning, rowById.Keys.ToHashSet(), _tuning.MinReasonShare);
         return byId.ToDictionary(kv => rowById[kv.Key], kv => kv.Value);
     }
 

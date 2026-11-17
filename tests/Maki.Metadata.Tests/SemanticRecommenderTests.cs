@@ -861,8 +861,33 @@ public class SemanticRecommenderTests : IDisposable
         Assert.True(pick.CoRead);
         Assert.Equal("Other seed", pick.CoReadWithTitle);
         Assert.Equal("2", pick.CoReadWithId);
-        Assert.Equal(["2", "1"], pick.CoReadSeeds!.Select(s => s.Id));
+        // Seed 1 carries 20% of the pick, under RecommenderTuning.MinReasonShare, so the reason cap
+        // has no weaker seed to fall back on.
+        Assert.Equal(["2"], pick.CoReadSeeds!.Select(s => s.Id));
         Assert.False(on.Single(p => p.ProviderId == "12").CoRead);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_NamesNoSeed_WhenNoSeedCarriesEnoughOfThePick()
+    {
+        Add(1, "Seed");
+        Add(2, "Other seed");
+        Add(11, "Weighted by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+        ]);
+        var table = WriteEase((1, 11, 0.05f), (2, 11, 0.05f));
+
+        var picks = await Recommender(easePath: table, tuning: RecommenderTuning.Default with { MinReasonShare = 0.6 })
+            .GetSimilarAsync([1, 2], [], limit: 5);
+
+        var pick = picks.Single(p => p.ProviderId == "11");
+        Assert.True(pick.CoRead);
+        Assert.Null(pick.CoReadWithTitle);
+        Assert.Null(pick.CoReadWithId);
     }
 
     [Fact]

@@ -462,6 +462,14 @@ public sealed record RecommenderTuning
     public double AttributionMargin { get; init; } = 0.5;
 
     /// <summary>
+    /// The share of a crowd pick's positive co-read or EASE total a seed must carry before a "Fans of"
+    /// card may name it (<see cref="ReasonShare"/>). Below it the card says "Readers like you also
+    /// finished this". 0 names the largest contributor however small. Reason fields only, never the
+    /// order or the score.
+    /// </summary>
+    public double MinReasonShare { get; init; } = 0.25;
+
+    /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own
     /// spread. See <see cref="Embedding.AttributionScale"/>; defaults to
     /// <see cref="AttributionScale.PoolRelative"/>, which is what makes one margin work across

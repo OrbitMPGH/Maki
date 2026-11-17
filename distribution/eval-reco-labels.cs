@@ -1533,7 +1533,7 @@ async Task<ShelfRow> ScoreShelf(
     var nearGood = new double[n];
     var judged = new double[n];
     var top1k = new double[n];
-    string[] kindNames = ["feels", "fans", "author", "other"];
+    string[] kindNames = ["feels", "fans", "readers", "author", "other"];
     var claims = kindNames.ToDictionary(k => k, _ => new List<int>());
     var kinds = kindNames.ToDictionary(k => k, _ => 0);
     var fansNearer = new List<int>();
@@ -1592,7 +1592,9 @@ async Task<ShelfRow> ScoreShelf(
                     ? ("author", (long?)null)
                     : pick.CoReadWithTitle is not null
                         ? ("fans", ParseId(pick.CoReadWithId))
-                        : ("other", (long?)null);
+                        : pick.CoRead
+                            ? ("readers", (long?)null)
+                            : ("other", (long?)null);
             kinds[kind]++;
             total++;
 
@@ -1758,14 +1760,15 @@ void ReportShelf(List<ShelfRow> shelfRows, SortedSet<(long Seed, long Candidate)
 
     Console.WriteLine(
         $"{"variant",-24}{"judged",8}{$"feel@{depth}",9}{"good",7}{"poor",7}{"top1k",7}" +
-        $"{"feels",8}{"fans",7}{"author",8}{"other",7}");
-    Console.WriteLine(new string('-', 92));
+        $"{"feels",8}{"fans",7}{"readers",9}{"author",8}{"other",7}");
+    Console.WriteLine(new string('-', 101));
     foreach (var row in shelfRows)
     {
         Console.WriteLine(
             $"{row.Name,-24}{MeanOf(row.Judged),8:P0}{MeanOf(row.NearFeel),9:F3}" +
             $"{MeanOf(row.NearGood),7:P0}{MeanOf(row.NearPoor),7:P0}{row.Top1k,7:P0}" +
-            $"{row.Kinds["feels"],8:P0}{row.Kinds["fans"],7:P0}{row.Kinds["author"],8:P0}{row.Kinds["other"],7:P0}");
+            $"{row.Kinds["feels"],8:P0}{row.Kinds["fans"],7:P0}{row.Kinds["readers"],9:P0}" +
+            $"{row.Kinds["author"],8:P0}{row.Kinds["other"],7:P0}");
     }
 
     Console.WriteLine();
@@ -1787,7 +1790,8 @@ void ReportShelf(List<ShelfRow> shelfRows, SortedSet<(long Seed, long Candidate)
     Console.WriteLine();
     Console.WriteLine($"  feel@{depth} : judged feel (0-3) of each top pick against the reader's series nearest to it");
     Console.WriteLine("            in the text space, averaged over judged picks. good = 2 or 3, poor = 0.");
-    Console.WriteLine("  feels/fans/author/other : share of top picks whose card shows that reason.");
+    Console.WriteLine("  feels/fans/readers/author/other : share of top picks whose card shows that reason;");
+    Console.WriteLine("            readers = \"Readers like you also finished this\", a crowd reason naming no series.");
     Console.WriteLine("  claim   : judged feel of a pick against the series its card names (strongest seed).");
     Console.WriteLine("  balanced: the same for \"Fans of\" cards after the app's two-per-20 reason cap;");
     Console.WriteLine("            moved = share of those cards whose named series the cap changed.");
@@ -3022,6 +3026,10 @@ file static class Variants
             else if (key == "seedweights")
             {
                 scoreWeights = value.Equals("score", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (key == "reasonshare")
+            {
+                recommender = recommender with { MinReasonShare = double.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "cosinefloor")
             {
