@@ -396,14 +396,12 @@ public class SemanticRecommender(
             w = w with { CoRead = coReadTuning.Weight };
         }
 
-        var (easeByRow, easeCoverage) = easeLive
+        var easeByRow = easeLive
             ? await BuildEaseScoresAsync(index, seedIds, seedWeights, ct)
-            : ([], 0);
+            : [];
         if (easeByRow.Count > 0)
         {
-            // A table that sees part of the shelf speaks for that part only.
-            var seen = _easeTuning.CoveragePower > 0 ? Math.Pow(easeCoverage, _easeTuning.CoveragePower) : 1;
-            w = w with { Ease = _easeTuning.Weight * seen };
+            w = w with { Ease = _easeTuning.Weight };
         }
 
         SqliteKeeper.For(store.DbPath).Attach();
@@ -2064,11 +2062,8 @@ public class SemanticRecommender(
         return (byRow, seedByRow);
     }
 
-    /// <summary>
-    /// EASE scores keyed by index row, and the share of the seeds' weight the table holds. Rows the
-    /// index does not hold are dropped.
-    /// </summary>
-    private async Task<(Dictionary<int, double> Scores, double Coverage)> BuildEaseScoresAsync(
+    /// <summary>EASE scores keyed by index row; rows the index does not hold are dropped.</summary>
+    private async Task<Dictionary<int, double>> BuildEaseScoresAsync(
         VectorIndex index,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
@@ -2077,7 +2072,7 @@ public class SemanticRecommender(
         var table = await easeCache!.GetAsync(ct);
         if (table is null)
         {
-            return ([], 0);
+            return [];
         }
 
         var byRow = new Dictionary<int, double>();
@@ -2089,7 +2084,7 @@ public class SemanticRecommender(
             }
         }
 
-        return (byRow, EaseScorer.Coverage(table, seedIds, seedWeights));
+        return byRow;
     }
 
     /// <summary>

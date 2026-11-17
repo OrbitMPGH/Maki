@@ -3306,10 +3306,6 @@ file static class Variants
             {
                 recommender = recommender with { FameCapPseudoSeeds = double.Parse(value, CultureInfo.InvariantCulture) };
             }
-            else if (key == "easecoverage")
-            {
-                ease = ease with { CoveragePower = double.Parse(value, CultureInfo.InvariantCulture) };
-            }
             else if (key == "reasonshare")
             {
                 recommender = recommender with { MinReasonShare = double.Parse(value, CultureInfo.InvariantCulture) };
