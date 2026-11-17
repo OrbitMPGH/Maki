@@ -90,9 +90,11 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { data: fetchedFiles, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   // Rows render in a deferred pass, like the chapter table's: a long folder took a second or two to
-  // render, and the old tab stayed on screen until it had. The skeleton shows in the meantime.
-  const files = useDeferredValue(fetchedFiles, undefined)
-  const rendering = isLoading || (fetchedFiles !== undefined && files === undefined)
+  // render, and the old tab stayed on screen until it had. The skeleton shows in the meantime. The
+  // initial value is null, not undefined: React ignores an undefined one, so a cached listing would
+  // render in the click's own pass again.
+  const files = useDeferredValue(fetchedFiles ?? null, null)
+  const rendering = isLoading || (fetchedFiles !== undefined && files === null)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
   const binDays = useRecycleBinDays(confirmOpen)
   const [binRefused, setBinRefused] = useState(false)

@@ -498,8 +498,12 @@ function SeriesDetailBody() {
     setSyncedUrlTab(urlTab)
     setTab(urlTab)
   }
+  // Only a switch fades the new tab in; on arrival the page transition already brings it in, and
+  // WebKit captures that transition's new page as a still, which would catch the body faded out.
+  const [tabSwitched, setTabSwitched] = useState(false)
   const changeTab = (value: string | null) => {
     if (!value || !TABS.includes(value as Tab)) return
+    setTabSwitched(true)
     setTab(value as Tab)
     const next = new URLSearchParams(searchParams)
     if (value === 'details') next.delete('tab')
@@ -2570,7 +2574,7 @@ function SeriesDetailBody() {
             }
         />
 
-        <div className="series-tab-stage">
+        <div className="series-tab-stage" data-tab-switched={tabSwitched || undefined}>
         {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
