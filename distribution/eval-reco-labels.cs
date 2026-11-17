@@ -137,6 +137,7 @@ var shelfJudged = false;
 string? dumpFeatures = null;
 string? dumpPicks = null;
 string? commonPathOverride = null;
+var shelfStatus = "COMPLETED";
 var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
@@ -233,6 +234,12 @@ for (var i = 0; i < args.Length; i++)
         // The page-frequency table that commonweight variants read (distribution/eval-overlap.py table).
         case "--common":
             commonPathOverride = args[++i];
+            break;
+        // Library mode: which list status makes up a reader's shelf. COMPLETED is what every
+        // recorded number uses. CURRENT builds shelves of series still being read, which is closer
+        // to what an install holds; the reader-trained artifacts never saw those entries.
+        case "--shelf-status":
+            shelfStatus = args[++i].ToUpperInvariant();
             break;
         // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
         // trained on the other slice can be graded without reading its own training data.
@@ -1015,7 +1022,8 @@ List<Request> BuildLibraryRequests()
         using var cmd = conn.CreateCommand();
         // COMPLETED only, exactly the status the co-read matrix is built from: a PLANNING entry is
         // an intention, and asking the recommender to predict one measures something else.
-        cmd.CommandText = "SELECT user_id, media_id, score FROM user_entry WHERE status = 'COMPLETED'";
+        cmd.CommandText = "SELECT user_id, media_id, score FROM user_entry WHERE status = $status";
+        cmd.Parameters.AddWithValue("$status", shelfStatus);
         cmd.CommandTimeout = 600;
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -1056,7 +1064,7 @@ List<Request> BuildLibraryRequests()
     var built = new List<Request>();
     var unscored = 0;
     var unusable = 0;
-    foreach (var (_, entries) in usable.OrderBy(_ => rng.Next()))
+    foreach (var (user, entries) in usable.OrderBy(_ => rng.Next()))
     {
         if (built.Count >= requestCount)
         {
@@ -1121,7 +1129,15 @@ List<Request> BuildLibraryRequests()
             scores.Count > 0 ? scores : null,
             positives,
             avoid.Count > 0 ? avoid : null,
-            heldOutNegatives));
+            heldOutNegatives)
+        {
+            User = user,
+        });
+    }
+
+    if (dumpPicks is not null)
+    {
+        AttachOtherStatuses(built, crossRef);
     }
 
     if (negatives)
@@ -1135,6 +1151,43 @@ List<Request> BuildLibraryRequests()
     }
 
     return built;
+}
+
+/// <summary>
+/// What else each graded reader's list holds: titles they are reading, plan to read, paused or
+/// dropped. None of it is a seed or a label. It goes into the pick dump so a page can be read for
+/// how much of it the reader demonstrably already knew.
+/// </summary>
+void AttachOtherStatuses(List<Request> built, Dictionary<long, long> crossRef)
+{
+    using var conn = new SqliteConnection($"Data Source={workPath};Mode=ReadOnly;Pooling=False");
+    conn.Open();
+    using var cmd = conn.CreateCommand();
+    cmd.CommandText = "SELECT media_id, status FROM user_entry WHERE user_id = $user AND status <> $status";
+    cmd.Parameters.AddWithValue("$status", shelfStatus);
+    var userParameter = cmd.Parameters.Add("$user", SqliteType.Integer);
+    foreach (var request in built)
+    {
+        var listed = new Dictionary<long, char>();
+        userParameter.Value = request.User;
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (crossRef.TryGetValue(reader.GetInt64(0), out var id))
+            {
+                listed[id] = reader.GetString(1) switch
+                {
+                    "CURRENT" or "REPEATING" => 'C',
+                    "COMPLETED" => 'F',
+                    "PLANNING" => 'P',
+                    "DROPPED" => 'D',
+                    _ => 'H',
+                };
+            }
+        }
+
+        request.Listed = listed;
+    }
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1223,7 +1276,8 @@ async Task<ResultRow> Score(Variant variant)
         var ids = picks.Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture)).ToList();
         pickRows?.Append(i).Append(';').Append(string.Join(',', ids)).Append(';')
             .Append(string.Join(',', request.Positives.Keys)).Append(';')
-            .Append(string.Join(',', request.Seeds)).AppendLine();
+            .Append(string.Join(',', request.Seeds)).Append(';')
+            .Append(string.Join(',', (request.Listed ?? []).Select(kv => $"{kv.Key}{kv.Value}"))).AppendLine();
         // The thing `queryattribution` exists to move, and the one column here that is not a
         // relevance measure: what share of the picks can name a seed at all. A variant that raises
         // it while holding nDCG is buying an explanation for free; one that raises it by dropping
@@ -2848,7 +2902,14 @@ file record Request(
     IReadOnlyDictionary<long, double>? Scores,
     Dictionary<long, double> Positives,
     IReadOnlyDictionary<long, double>? Avoid = null,
-    IReadOnlyList<long>? Negatives = null);
+    IReadOnlyList<long>? Negatives = null)
+{
+    /// <summary>The reader behind a library request, for looking up the rest of their list.</summary>
+    public int User { get; init; }
+
+    /// <summary>Titles on the reader's list in another status: C reading, F finished, P planned, D dropped, H paused.</summary>
+    public Dictionary<long, char>? Listed { get; set; }
+}
 
 /// <param name="MillisecondsPerRequest">
 /// Mean wall time for one <c>GetSimilarAsync</c>. Reported because <c>maxseedqueries</c> is a pure

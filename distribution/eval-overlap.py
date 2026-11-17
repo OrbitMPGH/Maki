@@ -1,9 +1,9 @@
 """Cross-reader overlap of recommendation pages, and the page-frequency table built from it.
 
 Reads the files `eval-reco-labels.cs library --dump-picks <dir>` writes: one line per reader,
-`position;ranked ids;held-out ids;seed ids`. A page that is the same for everybody shows up here
-as a high pairwise Jaccard and a few titles on a large share of all pages, which no relevance
-column sees.
+`position;ranked ids;held-out ids;seed ids;other list entries`. A page that is the same for
+everybody shows up here as a high pairwise Jaccard and a few titles on a large share of all pages,
+which no relevance column sees.
 
   python distribution/eval-overlap.py stats <picks.tsv> [--first N] [--top K] [--titles DUMP]
   python distribution/eval-overlap.py table <picks.tsv> --skip N --out <file> [--top K]

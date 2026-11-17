@@ -1498,6 +1498,55 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
     }
 
+    [Fact]
+    public async Task ADemotedTitle_RanksLowerAndStaysOnThePage()
+    {
+        Add(1, "Seed");
+        Add(10, "Closest to the seed");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+
+        var plain = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(["10", "11"], plain.Select(p => p.ProviderId));
+
+        var demoted = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, demote: new Dictionary<long, double> { [10] = 1.0 });
+        Assert.Equal(["11", "10"], demoted.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task ThePageSharePenalty_NeedsATableAWeightAndACallerThatAsks()
+    {
+        Add(1, "Seed");
+        Add(10, "On every page");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+        var table = PageFrequency.From(new Dictionary<long, double> { [10] = 0.5 });
+        var weighted = RecommenderTuning.Default with { CommonWeight = 2 };
+
+        var asked = await Recommender(tuning: weighted, pageFrequency: table)
+            .GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.Equal(["11", "10"], asked.Select(p => p.ProviderId));
+
+        // The series-page rail never asks, the shipped weight is 0, and no table is registered.
+        var rail = await Recommender(tuning: weighted, pageFrequency: table).GetSimilarAsync([1], [], limit: 10);
+        var unweighted = await Recommender(pageFrequency: table).GetSimilarAsync([1], [], limit: 10, common: true);
+        var noTable = await Recommender(tuning: weighted).GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.All(
+            new[] { rail, unweighted, noTable },
+            picks => Assert.Equal(["10", "11"], picks.Select(p => p.ProviderId)));
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,
@@ -1505,7 +1554,8 @@ public class SemanticRecommenderTests : IDisposable
         CoReadTuning? coReadTuning = null,
         RecommenderTuning? tuning = null,
         string? easePath = null,
-        EaseTuning? easeTuning = null)
+        EaseTuning? easeTuning = null,
+        PageFrequency? pageFrequency = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
@@ -1522,7 +1572,8 @@ public class SemanticRecommenderTests : IDisposable
             NullLogger<SemanticRecommender>.Instance,
             tuning,
             easeCache: easePath is null ? null : new EaseCache(new EaseOptions(easePath), NullLogger<EaseCache>.Instance),
-            easeTuning: easeTuning);
+            easeTuning: easeTuning,
+            pageFrequency: pageFrequency);
     }
 
     /// <summary>Writes an EASE table in the shape <c>distribution/build-ease-table.py</c> exports.</summary>
