@@ -1013,6 +1013,7 @@ try
     builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
+    builder.Services.AddScoped<ChapterFoldPreviewService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
     builder.Services.AddSingleton<RivalTitleProvider>();

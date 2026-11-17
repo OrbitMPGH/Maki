@@ -1011,6 +1011,48 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Listed_page_counts_and_publisher_numbers_feed_the_fold_preview()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("parts"), Mapping("whole")]);
+        var partsShape = new FakeSource { Name = "parts" };
+        var parts = new FakeSource
+        {
+            Name = "parts",
+            Publisher = [2.1m, 2.2m],
+            OnListChapters = _ =>
+            [
+                partsShape.Chapter(1.1m) with { PageCount = 27 }, partsShape.Chapter(1.2m) with { PageCount = 23 },
+                partsShape.Chapter(2.1m) with { PageCount = 14 }, partsShape.Chapter(2.2m) with { PageCount = 16 },
+            ]
+        };
+        var wholeShape = new FakeSource { Name = "whole" };
+        var whole = new FakeSource
+        {
+            Name = "whole",
+            OnListChapters = _ =>
+            [
+                wholeShape.Chapter(1) with { PageCount = 43 }, wholeShape.Chapter(2) with { PageCount = 48 },
+                wholeShape.Chapter(3) with { PageCount = 34 },
+            ]
+        };
+
+        await BuildService(null, parts, whole).SyncSeriesAsync(seriesId);
+
+        using var db = _db.NewContext();
+        Assert.Equal("2.1;2.2", db.SourceMappings.Single(m => m.SeriesId == seriesId && m.SourceName == "parts").PublisherNumbers);
+        Assert.Equal(43, LinksOf(seriesId).Single(l => l.SourceChapterId == wholeShape.Chapter(1).SourceChapterId).PageCount);
+        // Nothing is folded yet: the chapter rows are as they were.
+        Assert.Equal(7, ChaptersOf(seriesId).Count);
+
+        var preview = await new ChapterFoldPreviewService(db, Sources.AllEnabled).ForSeriesAsync(seriesId, CancellationToken.None);
+        var one = preview!.Floors.Single(f => f.Floor == 1);
+        Assert.Equal("Merged", one.State);
+        Assert.Equal(["whole"], one.Wholes);
+        Assert.Equal([1.1m, 1.2m], one.Parts["parts"]);
+        Assert.Equal("pageCounts+publisherNumbering", preview.Floors.Single(f => f.Floor == 2).Reason);
+    }
+
+    [Fact]
     public async Task MangaDex_uuid_is_backfilled_from_the_mapping()
     {
         var seriesId = _db.SeedSeries(mappings: new SourceMapping

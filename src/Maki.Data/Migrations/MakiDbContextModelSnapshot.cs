@@ -572,6 +572,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("NumberRaw")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("PageCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("TEXT");
 
@@ -2908,6 +2911,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PublisherNumbers")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");

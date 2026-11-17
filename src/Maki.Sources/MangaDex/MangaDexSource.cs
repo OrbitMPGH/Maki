@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Collections.Concurrent;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
@@ -11,7 +12,8 @@ namespace Maki.Sources.MangaDex;
 /// Page URLs come from the at-home network and expire after ~15 minutes,
 /// so GetPagesAsync must be called at download time.
 /// </summary>
-public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationGroupSource, IChapterVolumeSource
+public class MangaDexSource(IHttpClientFactory httpClientFactory)
+    : IScanlationGroupSource, IChapterVolumeSource, IPublisherNumberingSource
 {
     public const string HttpClientName = "source-mangadex";
 
@@ -91,6 +93,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
         var languageQuery = string.Concat(
             languages.Select(l => $"&translatedLanguage[]={Uri.EscapeDataString(l)}"));
         var chapters = new List<SourceChapter>();
+        var published = new SortedSet<decimal>();
         var offset = 0;
 
         while (true)
@@ -113,6 +116,13 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
                 // or delisted (isUnavailable, common for licensed titles).
                 if (!string.IsNullOrEmpty(c.Attributes.ExternalUrl) || c.Attributes.IsUnavailable)
                 {
+                    // An official release hosted off-site still says how the publisher numbers it.
+                    if (!string.IsNullOrEmpty(c.Attributes.ExternalUrl) && IsOfficial(c) &&
+                        ChapterNumberParser.Parse(c.Attributes.Chapter, c.Attributes.Volume).Number is { } number)
+                    {
+                        published.Add(number);
+                    }
+
                     continue;
                 }
 
@@ -128,7 +138,8 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
                     c.Attributes.TranslatedLanguage ?? languages[0],
                     c.Attributes.PublishAt,
                     $"{BaseUrl}/chapter/{c.Id}",
-                    GroupFor(c)));
+                    GroupFor(c),
+                    PageCount: c.Attributes.Pages > 0 ? c.Attributes.Pages : null));
             }
 
             offset += response.Limit;
@@ -138,8 +149,17 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
             }
         }
 
+        _published[sourceSeriesId] = published.Count > 0 ? [.. published] : null;
         return chapters;
     }
+
+    private readonly ConcurrentDictionary<string, IReadOnlyList<decimal>?> _published = new();
+
+    public IReadOnlyList<decimal>? PublisherNumbers(string sourceSeriesId) =>
+        _published.TryGetValue(sourceSeriesId, out var numbers) ? numbers : null;
+
+    private static bool IsOfficial(MdChapter chapter) =>
+        chapter.Relationships.Any(r => r.Type == "scanlation_group" && r.Attributes?.Official == true);
 
     /// <summary>
     /// Chapter number → volume map from the full feed with includeUnavailable=1: unlike

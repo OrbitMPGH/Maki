@@ -177,6 +177,11 @@ public class ChapterSyncService(
 
                 var listedUpTo = mapping.ChapterLinks.Max(l => l.Chapter?.Number);
 
+                if (listing.Complete && source is IPublisherNumberingSource publisher)
+                {
+                    mapping.PublisherNumbers = PublisherNumbering.Format(publisher.PublisherNumbers(mapping.SourceSeriesId));
+                }
+
                 if (listing.Complete)
                 {
                     chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters, groups);
@@ -530,6 +535,7 @@ public class ChapterSyncService(
             link.ReleaseDate = sourceChapter.ReleaseDate;
             link.Group = sourceChapter.Group ?? groupFallback;
             link.Url = sourceChapter.Url;
+            link.PageCount = sourceChapter.PageCount;
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
@@ -681,6 +687,7 @@ public class ChapterSyncService(
                             ReleaseDate = link.ReleaseDate,
                             Group = link.Group,
                             Url = link.Url,
+                            PageCount = link.PageCount,
                             FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);

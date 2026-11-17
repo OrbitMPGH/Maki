@@ -19,6 +19,9 @@ public class ChapterSourceLink
     public DateTime? ReleaseDate { get; set; }
     public string? Group { get; set; }
 
+    /// <summary>Pages the source's listing reports for this chapter, when its listing says.</summary>
+    public int? PageCount { get; set; }
+
     /// <summary>The chapter's page on the source, when the source lists one. Written into ComicInfo's Notes.</summary>
     public string? Url { get; set; }
 

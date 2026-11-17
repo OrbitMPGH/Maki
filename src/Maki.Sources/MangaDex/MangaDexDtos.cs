@@ -80,6 +80,10 @@ internal class MdRelationshipAttributes
     /// <summary>Scanlation group's display name, present when the relationship is "scanlation_group".</summary>
     [JsonPropertyName("name")]
     public string? Name { get; set; }
+
+    /// <summary>The group is the official publisher's account (Manga UP!, Comikey).</summary>
+    [JsonPropertyName("official")]
+    public bool Official { get; set; }
 }
 
 internal class MdChapter
