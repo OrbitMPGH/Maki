@@ -59,6 +59,7 @@ paths:
   - "distribution/fit-weights.cs"
   - "distribution/run-reco-suite.ps1"
   - "distribution/judge-pairs.py"
+  - "distribution/judge-shelf.py"
   - "distribution/build-eval-panel.py"
   - "distribution/eval-panel.tsv"
   - "distribution/eval-compare.py"
