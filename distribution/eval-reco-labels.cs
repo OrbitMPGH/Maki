@@ -138,6 +138,7 @@ string? dumpFeatures = null;
 string? dumpPicks = null;
 string? commonPathOverride = null;
 var shelfStatus = "COMPLETED";
+string? dumpPool = null;
 var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
@@ -247,6 +248,12 @@ for (var i = 0; i < args.Length; i++)
                 return 1;
             }
 
+            break;
+        // The first variant's whole scored pool as float32 records (see PoolDump), plus
+        // <path>.requests.csv with each request's seeds, labels and picks and their popularity ranks.
+        // For decomposing a ranking by term and for trying a re-ranking offline before building it.
+        case "--dump-pool":
+            dumpPool = args[++i];
             break;
         // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
         // trained on the other slice can be graded without reading its own training data.
@@ -1218,6 +1225,9 @@ async Task<ResultRow> Score(Variant variant)
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
         ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,ease,avoidtag,pop\n")
         : null;
+    using var poolDump = dumpPool is not null && ReferenceEquals(variant, variants[0])
+        ? new PoolDump(dumpPool)
+        : null;
 
     // Request position, ranked ids, held-out ids. Position rather than the request key, so a run
     // over more requests keeps the first N rows identical to an N-request run.
@@ -1232,6 +1242,8 @@ async Task<ResultRow> Score(Variant variant)
     var fans = new double[requests.Count];
     var negativeHit = new double[requests.Count];
     var top1k = new double[requests.Count];
+    var excess = new double[requests.Count];
+    var pickSets = new List<HashSet<long>>(requests.Count);
     var targetRecall = new double[TargetBounds.Length][];
     for (var t = 0; t < targetRecall.Length; t++)
     {
@@ -1248,7 +1260,7 @@ async Task<ResultRow> Score(Variant variant)
         var request = requests[i];
         var seedWeights = variant.ScoreWeights ? request.Scores : null;
 
-        var features = dumping is null ? null : new List<EmbeddingMath.CandidateFeatures>();
+        var features = dumping is null && poolDump is null ? null : new List<EmbeddingMath.CandidateFeatures>();
         var picks = await recommender.GetSimilarAsync(
             request.Seeds,
             request.Seeds,
@@ -1265,7 +1277,9 @@ async Task<ResultRow> Score(Variant variant)
             demote: demote,
             common: true);
 
-        if (features is not null)
+        poolDump?.Write(i, request, seedWeights, features!, picks, RankOf);
+
+        if (dumping is not null && features is not null)
         {
             foreach (var f in features)
             {
@@ -1321,6 +1335,8 @@ async Task<ResultRow> Score(Variant variant)
         }
 
         top1k[i] = ids.Count == 0 ? 0 : (double)ids.Count(id => RankOf(id) is > 0 and <= 1000) / ids.Count;
+        excess[i] = top1k[i] - ((double)request.Seeds.Count(id => RankOf(id) is > 0 and <= 1000) / request.Seeds.Count);
+        pickSets.Add([.. ids]);
 
         // Recall split by how famous the LABEL is. A variant that wins only on top-1k targets is
         // returning famous titles; one that wins past rank 20,000 is finding something.
@@ -1418,7 +1434,33 @@ async Task<ResultRow> Score(Variant variant)
             MeanDefined(feelRows, f => f.Era),
             MeanDefined(feelRows, f => f.TagTree),
             MeanDefined(feelRows, f => f.Franchise)),
-        fans);
+        fans,
+        excess.Average(),
+        Overlap(pickSets));
+}
+
+/// <summary>Mean share of picks two different requests have in common, over fixed pairs of requests.</summary>
+static double Overlap(List<HashSet<long>> picks)
+{
+    var total = 0.0;
+    var pairs = 0;
+    for (var i = 0; i < picks.Count; i++)
+    {
+        for (var step = 1; step <= 8 && step < picks.Count; step++)
+        {
+            var other = picks[(i + step) % picks.Count];
+            var smaller = Math.Min(picks[i].Count, other.Count);
+            if (smaller == 0)
+            {
+                continue;
+            }
+
+            total += (double)picks[i].Count(other.Contains) / smaller;
+            pairs++;
+        }
+    }
+
+    return pairs == 0 ? double.NaN : total / pairs;
 }
 
 /// <summary>
@@ -1521,7 +1563,7 @@ async Task<JudgedRow> ScoreJudged(
             requests[i].Seeds,
             limit,
             RecommendationFilters.None,
-            obscurity: 0,
+            obscurity: variant.Obscurity,
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: variant.CoGraph,
@@ -1957,8 +1999,8 @@ void Report()
 {
     Console.WriteLine(
         $"{"variant",-24}{"R@10",8}{"R@20",8}{$"R@{limit}",8}{$"nDCG@{limit}",10}{"MRR",8}{"hit",8}" +
-        $"{"named",8}{"fans",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"top1k",8}{"ms",8}");
-    Console.WriteLine(new string('-', negatives ? 113 : 105));
+        $"{"named",8}{"fans",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"top1k",8}{"excess",8}{"overlap",9}{"ms",8}");
+    Console.WriteLine(new string('-', negatives ? 130 : 122));
     foreach (var row in rows)
     {
         var pop = double.IsNaN(row.Popularity) ? "-" : row.Popularity.ToString("F0", CultureInfo.InvariantCulture);
@@ -1967,7 +2009,7 @@ void Report()
             $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}" +
             $"{row.Named.Average(),8:P0}{(row.Fans is { Length: > 0 } f ? f.Average() : 0),8:P0}"
             + (negatives ? $"{row.NegativeHit.Average(),8:P0}" : string.Empty)
-            + $"{pop,9}{row.Top1k,8:P0}{row.MillisecondsPerRequest,8:F0}");
+            + $"{pop,9}{row.Top1k,8:P0}{row.Excess,8:+0.0%;-0.0%}{row.Overlap,9:P1}{row.MillisecondsPerRequest,8:F0}");
     }
 
     Console.WriteLine();
@@ -1988,6 +2030,9 @@ void Report()
     Console.WriteLine("            no relevance column here can see that. Read the two together.");
     Console.WriteLine("  top1k   : share of picks inside the 1,000 most popular series. The same warning as");
     Console.WriteLine("            pop, as a share instead of a median.");
+    Console.WriteLine("  excess  : top1k minus the same share over the request's own seeds. Above zero, the picks");
+    Console.WriteLine("            are more famous than what the reader reads.");
+    Console.WriteLine("  overlap : mean share of picks two different requests have in common.");
     Console.WriteLine("  named   : share of picks carrying a BecauseOfTitle, i.e. ones the UI can label");
     Console.WriteLine("            \"Feels like X\" instead of leaving unattributed. Not a quality measure -");
     Console.WriteLine("            read it against nDCG, never on its own.");
@@ -2905,6 +2950,83 @@ file static class RequestKeys
     }
 }
 
+/// <summary>
+/// Writes <c>--dump-pool</c>: one float32 record per scored candidate (the fields of <see cref="Columns"/>
+/// in order) and a text sidecar naming each request's seeds, held-out labels and returned picks.
+/// </summary>
+file sealed class PoolDump : IDisposable
+{
+    public const string Columns =
+        "request,id,label,route,poprank,score,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,ease,avoidtag,pct";
+
+    private readonly BinaryWriter _rows;
+    private readonly StreamWriter _requests;
+
+    public PoolDump(string path)
+    {
+        _rows = new BinaryWriter(new BufferedStream(File.Create(path), 1 << 20));
+        _requests = new StreamWriter(path + ".requests.csv");
+        _requests.WriteLine("request,kind,position,id,poprank,weight,reason");
+        File.WriteAllText(path + ".columns", Columns);
+    }
+
+    public void Write(
+        int request, Request source, IReadOnlyDictionary<long, double>? seedWeights,
+        List<EmbeddingMath.CandidateFeatures> features,
+        IReadOnlyList<MangaBakaRecommendation> picks, Func<long, long> rankOf)
+    {
+        foreach (var f in features)
+        {
+            ReadOnlySpan<float> row =
+            [
+                request, f.Id, source.Positives.ContainsKey(f.Id) ? 1 : 0, f.Route, f.PopularityRank,
+                (float)f.Score, (float)f.Semantic, (float)f.Genre, (float)f.Tag, (float)f.Author,
+                (float)f.Quality, (float)f.Graph, (float)f.CoRead, (float)f.Taste, (float)f.Distinct,
+                (float)f.Avoid, (float)f.Ease, (float)f.AvoidTag, (float)f.Percentile,
+            ];
+            _rows.Write(System.Runtime.InteropServices.MemoryMarshal.AsBytes(row));
+        }
+
+        void Line(string kind, int position, long id, double weight, string reason)
+        {
+            var rank = rankOf(id);
+            _requests.WriteLine(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{request},{kind},{position},{id},{(rank == long.MaxValue ? 0 : rank)},{weight:R},{reason}"));
+        }
+
+        for (var s = 0; s < source.Seeds.Count; s++)
+        {
+            Line("seed", s, source.Seeds[s], seedWeights?.GetValueOrDefault(source.Seeds[s], 1.0) ?? 1.0, string.Empty);
+        }
+
+        var l = 0;
+        foreach (var (id, gain) in source.Positives)
+        {
+            Line("label", l++, id, gain, string.Empty);
+        }
+
+        for (var p = 0; p < picks.Count; p++)
+        {
+            var pick = picks[p];
+            var reason = pick.BecauseOfTitle is not null ? "feels"
+                : pick.AuthorMatch ? "author"
+                : pick.CoRead && pick.CoReadWithTitle is not null ? "fans"
+                : pick.CoRead ? "readers"
+                : pick.CoRecommended ? "votes"
+                : pick.TasteMatch ? "taste"
+                : "similar";
+            Line("pick", p, long.Parse(pick.ProviderId, CultureInfo.InvariantCulture), 0, reason);
+        }
+    }
+
+    public void Dispose()
+    {
+        _rows.Dispose();
+        _requests.Dispose();
+    }
+}
+
 file record Request(
     IReadOnlyList<long> Seeds,
     IReadOnlyDictionary<long, double>? Scores,
@@ -2932,7 +3054,8 @@ file record Request(
 file record ResultRow(
     string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
     double[] NegativeHit, double[][] TargetRecall, double Top1k,
-    double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel, double[]? Fans = null);
+    double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel, double[]? Fans = null,
+    double Excess = double.NaN, double Overlap = double.NaN);
 
 /// <param name="Judged">Share of the top picks with a stored judgement, usable or not.</param>
 /// <param name="Insufficient">Share the judge declined to score for lack of information.</param>
@@ -3174,6 +3297,18 @@ file static class Variants
             else if (key == "seedweights")
             {
                 scoreWeights = value.Equals("score", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (key == "famecap")
+            {
+                recommender = recommender with { FameCapRatio = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "famecappseudo")
+            {
+                recommender = recommender with { FameCapPseudoSeeds = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "easecoverage")
+            {
+                ease = ease with { CoveragePower = double.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "reasonshare")
             {

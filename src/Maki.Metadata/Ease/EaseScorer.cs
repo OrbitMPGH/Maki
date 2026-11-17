@@ -76,6 +76,33 @@ public static class EaseScorer
     }
 
     /// <summary>
+    /// The share of the seeds' weight that sits on series the table holds, 0 to 1. A shelf read
+    /// mostly outside the table's 20,000 most-finished series scores low.
+    /// </summary>
+    public static double Coverage(
+        EaseTable table, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights)
+    {
+        var total = 0.0;
+        var held = 0.0;
+        foreach (var seedId in new HashSet<long>(seedIds))
+        {
+            var weight = seedWeights is not null && seedWeights.TryGetValue(seedId, out var w) ? w : 1.0;
+            if (weight <= 0)
+            {
+                continue;
+            }
+
+            total += weight;
+            if (table.TryGetSeed(seedId, out _))
+            {
+                held += weight;
+            }
+        }
+
+        return total > 0 ? held / total : 0;
+    }
+
+    /// <summary>
     /// The seeds that pushed each of <paramref name="candidates"/> up, strongest weighted
     /// contribution first. Only positive contributions count: a seed that weighs a pick down is not
     /// a reason for it. For the handful of picks a page returns, so a card can name a seed.

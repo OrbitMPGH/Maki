@@ -18,6 +18,15 @@ public sealed record EaseTuning
     public double Weight { get; init; } = 4;
 
     /// <summary>
+    /// Exponent on the share of the shelf the table holds (<see cref="EaseScorer.Coverage"/>), as
+    /// a factor on <see cref="Weight"/>. 0 is off, which is what ships: the weight is the same
+    /// whether the table sees every seed or a tenth of them. Offline it cost held-out readers
+    /// relevance without making their picks less famous, so it is a control, not a candidate
+    /// (eval key <c>easecoverage</c>).
+    /// </summary>
+    public double CoveragePower { get; init; }
+
+    /// <summary>
     /// Seeds a request needs before the channel runs. From one seed it gains nothing on
     /// human-recommended pairs and costs 0.096 of judged feel@10 (1.633 to 1.537), so it stays out;
     /// from two to four seeds it is already +0.027 nDCG@40 on held-out readers.

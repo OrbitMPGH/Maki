@@ -484,6 +484,21 @@ public sealed record RecommenderTuning
     public double CommonPower { get; init; } = 1.0;
 
     /// <summary>
+    /// How many times the shelf's own share of famous titles a list may hold at any point
+    /// (<see cref="ShelfFame"/>). 0 is off, which is what ships. 1.0 holds every prefix of the list
+    /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
+    /// deferred, not dropped, and a one-seed request is never limited. Measured offline and on one
+    /// real shelf only, not yet through <c>eval-reco-labels.cs</c> (key <c>famecap</c>).
+    /// </summary>
+    public double FameCapRatio { get; init; }
+
+    /// <summary>
+    /// Seed weight <see cref="ShelfFame.Limits"/> adds on the famous side, so a shelf of a few
+    /// series is barely limited. Only read when <see cref="FameCapRatio"/> is above 0.
+    /// </summary>
+    public double FameCapPseudoSeeds { get; init; } = 10;
+
+    /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own
     /// spread. See <see cref="Embedding.AttributionScale"/>; defaults to
     /// <see cref="AttributionScale.PoolRelative"/>, which is what makes one margin work across

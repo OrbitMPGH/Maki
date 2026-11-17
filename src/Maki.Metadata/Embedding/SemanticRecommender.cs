@@ -396,12 +396,14 @@ public class SemanticRecommender(
             w = w with { CoRead = coReadTuning.Weight };
         }
 
-        var easeByRow = easeLive
+        var (easeByRow, easeCoverage) = easeLive
             ? await BuildEaseScoresAsync(index, seedIds, seedWeights, ct)
-            : [];
+            : ([], 0);
         if (easeByRow.Count > 0)
         {
-            w = w with { Ease = _easeTuning.Weight };
+            // A table that sees part of the shelf speaks for that part only.
+            var seen = _easeTuning.CoveragePower > 0 ? Math.Pow(easeCoverage, _easeTuning.CoveragePower) : 1;
+            w = w with { Ease = _easeTuning.Weight * seen };
         }
 
         SqliteKeeper.For(store.DbPath).Attach();
@@ -747,14 +749,6 @@ public class SemanticRecommender(
 
             var avoidScore = BlendAvoid(semanticAvoid, tagAvoid, _tuning);
 
-            // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
-            // rows that lost as much as the ones that won, and after this point the pool is
-            // collapsed and diversified.
-            features?.Add(new EmbeddingMath.CandidateFeatures(
-                index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
-                index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
-                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid, easeScore));
-
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
                 genreSum,
@@ -781,12 +775,21 @@ public class SemanticRecommender(
                     * Math.Pow(pageFrequency!.ShareOf(index.IdAt(row)), _tuning.CommonPower);
             }
 
+            // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
+            // rows that lost as much as the ones that won, and after this point the pool is
+            // collapsed and diversified.
+            features?.Add(new EmbeddingMath.CandidateFeatures(
+                index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
+                index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
+                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid, easeScore,
+                RouteOf(poolIndex, pooled.Count, injected.Count, coReadInjected.Count, tasteInjected.Count),
+                storedRank == VectorIndex.Unknown ? 0 : storedRank, score));
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
                 graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
         }
 
-        var winners = SelectWinners(index, scored, limit, diversity, seedIds, _tuning);
+        var winners = SelectWinners(index, scored, limit, diversity, seedIds, seedWeights, _tuning);
         // Calibrated against the winners, not the scored pool. The pool is RRF-fused, so it holds
         // the top slice of every query at once - by construction the most seed-specific rows in the
         // catalogue, and nothing like what comes back. Measured on a 92-seed library the pool ran to
@@ -827,6 +830,14 @@ public class SemanticRecommender(
             injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided), tagAvoidRows);
         return results;
     }
+
+    /// <summary>Which stage put pool row <paramref name="poolIndex"/> in: see <c>CandidateFeatures.Route</c>.</summary>
+    private static int RouteOf(int poolIndex, int pooled, int graph, int coRead, int taste) =>
+        poolIndex < pooled ? 0
+        : poolIndex < pooled + graph ? 1
+        : poolIndex < pooled + graph + coRead ? 2
+        : poolIndex < pooled + graph + coRead + taste ? 3
+        : 4;
 
     /// <summary>
     /// Cosine ∈ [0,1] between the seed genre profile and a candidate's genres, deliberately the same
@@ -2053,8 +2064,11 @@ public class SemanticRecommender(
         return (byRow, seedByRow);
     }
 
-    /// <summary>EASE scores keyed by index row; rows the index does not hold are dropped.</summary>
-    private async Task<Dictionary<int, double>> BuildEaseScoresAsync(
+    /// <summary>
+    /// EASE scores keyed by index row, and the share of the seeds' weight the table holds. Rows the
+    /// index does not hold are dropped.
+    /// </summary>
+    private async Task<(Dictionary<int, double> Scores, double Coverage)> BuildEaseScoresAsync(
         VectorIndex index,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
@@ -2063,7 +2077,7 @@ public class SemanticRecommender(
         var table = await easeCache!.GetAsync(ct);
         if (table is null)
         {
-            return [];
+            return ([], 0);
         }
 
         var byRow = new Dictionary<int, double>();
@@ -2075,7 +2089,7 @@ public class SemanticRecommender(
             }
         }
 
-        return byRow;
+        return (byRow, EaseScorer.Coverage(table, seedIds, seedWeights));
     }
 
     /// <summary>
@@ -2287,7 +2301,8 @@ public class SemanticRecommender(
     /// </summary>
     private static List<Candidate> SelectWinners(
         VectorIndex index, List<Candidate> scored, int limit, double diversity,
-        IReadOnlyCollection<long> seedIds, RecommenderTuning tuning)
+        IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights,
+        RecommenderTuning tuning)
     {
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));
         // Collapsed on the sorted list and BEFORE the pool is trimmed, so a suppressed franchise
@@ -2304,12 +2319,27 @@ public class SemanticRecommender(
         var span = pool[0].Score - pool[^1].Score;
         var relevance = pool.Select(c => span > 0 ? (c.Score - pool[^1].Score) / span : 1.0).ToList();
 
+        // The fame cap re-orders the whole window, so its replacements come from past `limit`.
+        // One seed is a claim about two works, not a shelf to measure against.
+        var capped = tuning.FameCapRatio > 0 && seedIds.Count >= 2;
         var picked = EmbeddingMath.SelectDiverse(
             relevance,
             (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1),
-            limit,
+            capped ? pool.Count : limit,
             diversity);
-        return picked.Select(i => pool[i]).ToList();
+        var winners = picked.Select(i => pool[i]).ToList();
+        if (!capped)
+        {
+            return winners;
+        }
+
+        var limits = ShelfFame.Limits(
+            seedIds.Distinct().Select(id => (
+                index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
+                seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
+            tuning.FameCapRatio,
+            tuning.FameCapPseudoSeeds);
+        return ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, limit);
     }
 
     /// <summary>
