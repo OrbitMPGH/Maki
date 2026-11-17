@@ -6249,6 +6249,13 @@ button.site-chip:hover {
   .series-tab-stage[data-tab-switched] > .series-body {
     animation: series-stage-in var(--dur-medium) var(--ease) both;
   }
+  /* Firefox paints the frame after the switch only once the new tab's rows have rendered, about
+     60ms later; on the front-loaded curve the fade is over by then and reads as a cut. */
+  @supports (-moz-appearance: none) {
+    .series-tab-stage[data-tab-switched] > .series-body {
+      animation-timing-function: ease-out;
+    }
+  }
 }
 @keyframes series-stage-in {
   from {
