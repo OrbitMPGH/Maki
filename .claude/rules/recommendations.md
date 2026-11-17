@@ -64,6 +64,7 @@ paths:
   - "distribution/eval-panel.tsv"
   - "distribution/eval-compare.py"
   - "distribution/eval-overlap.py"
+  - "distribution/eval-next-gates.py"
   - "src/Maki.Api/Services/HiddenContent*.cs"
   - "src/Maki.Api/Controllers/DiscoverFilters*.cs"
   - "frontend/src/components/Catalogue*.tsx"
