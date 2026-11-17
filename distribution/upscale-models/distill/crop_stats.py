@@ -50,6 +50,33 @@ def is_fill(table: np.ndarray) -> np.ndarray:
     return table[:, 3] >= FILL
 
 
+def grey_flags(name: str, rows: int) -> np.ndarray:
+    """Per crop, whether Maki's page test (`UpscalePixels.IsGreyscale`) would call the input grey: at most 1 in
+    2000 pixels with a channel spread over 16, and a mean spread of at most 6. A damaged set uses its source
+    set's flags, since the damage can add chroma noise its page never had. Cached as {name}_grey.npy."""
+    source = source_of(name) if not (DATA / f"{name}_lr.npy").exists() or "_served" in name or name.startswith("served") else name
+    path = DATA / f"{source}_grey.npy"
+    if not path.exists():
+        lr, _ = open_set(source)
+        flags = []
+        for i in range(0, len(lr), 512):
+            x = np.ascontiguousarray(lr[i:i + 512]).astype(np.int16)
+            spread = x.max(axis=3) - x.min(axis=3)
+            flags.append(((spread > 16).mean(axis=(1, 2)) <= 1 / 2000) & (spread.mean(axis=(1, 2)) <= 6))
+        np.save(path, np.concatenate(flags))
+    table = np.load(path)
+    return table[np.arange(rows) % len(table)]
+
+
+def view_rows(name: str, rows: int, view: str) -> np.ndarray:
+    """The boolean row mask of a set view: fill, rest, grey or colour."""
+    if view in ("grey", "colour"):
+        grey = grey_flags(name, rows)
+        return grey if view == "grey" else ~grey
+    fill = is_fill(stats(name, rows))
+    return fill if view == "fill" else ~fill
+
+
 if __name__ == "__main__":
     for set_name in sys.argv[1:]:
         s = compute(set_name)

@@ -38,7 +38,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 from common import WORK, load_student, load_teacher, luma, margin, student
-from crop_stats import is_fill, stats
+from crop_stats import is_fill, stats, view_rows
 from gan import Discriminator, d_loss, g_loss, logit_gap
 from losses import (coherent_error, edge_band, fill_mask, gradient_variance, masked_fine, sharpness_deficit, sharpness_deficit_relative, ldl_map,
                     masked_band, masked_pooled, ms_ssim, power_loss, sharpness_deficit_line, sobel_l1, thin_line_deficit, top_share)
@@ -69,8 +69,7 @@ def load_sets(names: list[str], device, trim: int, swaps: dict[str, str] | None 
         x, y = uploaded[base]
         rows = None
         if view:
-            fill = is_fill(stats(base, len(x)))
-            rows = torch.from_numpy((fill if view == "fill" else ~fill).nonzero()[0]).to(device)
+            rows = torch.from_numpy(view_rows(base, len(x), view).nonzero()[0]).to(device)
         out.append((x, y, rows))
         print(f"{name}: {len(x) if rows is None else len(rows)} crops", flush=True)
     return out
@@ -84,8 +83,7 @@ class ValSet:
         self.lr, self.hr = open_set(base)
         self.keep = None
         if view:
-            fill = is_fill(stats(base, len(self.lr)))
-            self.keep = fill if view == "fill" else ~fill
+            self.keep = view_rows(base, len(self.lr), view)
         self.trim, self.device = trim, device
         self.weights = torch.tensor(LUMA, device=device)
         print(f"{name}: {len(self.lr) if self.keep is None else int(self.keep.sum())} crops (on disk)", flush=True)
