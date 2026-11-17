@@ -521,6 +521,12 @@ var variants = variantArgs.Count > 0
     ? variantArgs.Select(Variants.Parse).ToList()
     : [Variants.Parse("nocrowd"), Variants.Parse("default")];
 
+if ((shelfJudged || labelKind == "judged") && variants.Find(v => v.Baseline is not null) is { } control)
+{
+    Console.WriteLine($"error: `{control.Name}` is a control that never calls the recommender. The judged panels read card reasons, so it runs in the plain modes only.");
+    return 2;
+}
+
 // A variant that runs the EASE channel without naming a table reads the installed one, and with no
 // table installed the channel is off, exactly as in the app. An explicit `easepath` that is missing
 // is still an error below.
