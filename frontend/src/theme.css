@@ -6985,6 +6985,27 @@ button.site-chip:hover {
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
 }
+/* Every tag is shown, so a long name wraps inside its chip on a narrow screen instead of clipping. */
+.tag-bucket .tag-chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The two most relevant buckets get a faint fill of their own colour and brighter text. The
+   spoiler button stays untinted so it keeps reading as a control; revealed names look like the rest. */
+.tag-bucket[data-weight='core'] .tag-chip:not([data-interactive]) {
+  border-color: color-mix(in srgb, var(--bucket) 46%, var(--border-strong));
+  background: color-mix(in srgb, var(--bucket) 14%, var(--surface-2));
+  color: var(--ink-hi);
+}
+.tag-bucket[data-weight='defining'] .tag-chip:not([data-interactive]) {
+  border-color: color-mix(in srgb, var(--bucket) 30%, var(--border-strong));
+  background: color-mix(in srgb, var(--bucket) 8%, var(--surface-2));
+  color: var(--ink);
+}
+.tag-bucket[data-weight='incidental'] .tag-chip:not([data-interactive]) {
+  color: var(--ink-3);
+}
 .tag-chips {
   display: flex;
   flex-wrap: wrap;
