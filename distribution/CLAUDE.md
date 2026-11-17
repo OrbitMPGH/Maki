@@ -944,6 +944,64 @@ The owner reported a Recommended tab full of "Fans of X" cards that fit badly (F
 - **Two fixes for crowd picks with no story in common, measured and dropped.** A floor that ramps the vote, co-read and EASE terms in by the row's best raw text cosine (0 below 0.50/0.55/0.60, full 0.10 above): judged feel@10 spans zero at every setting, held-out reader nDCG@40 falls 0.277 to 0.273/0.268/0.253. Counting only a candidate's strongest 1, 3 or 5 positive EASE contributions: did not move the hub pick that prompted it on a real mixed shelf. That pick collects small weights from 16 of 195 seeds and is the table's top candidate for the shelf, so it gets a large push at any `EaseTuning.Weight` down to 1; only the channel off moves it. Readers' next reads sit lower in text cosine than the average pooled candidate (median 0.56 against 0.59), which is why a text floor costs recall.
 - **"Fans of" names now need a share of the pick (`RecommenderTuning.MinReasonShare`, 0.25).** On the 80 shelves the strongest contributor rarely carries much: at a 15% bar 6% of top-10 cards keep a name, at 25% 2%. The names that survive fit no better (judged claim 1.70 at 15%, n 50, against 1.65 for every name), so share does not predict a good name and the bar is set for honesty, not fit. On the real mixed shelf that prompted it (195 seeds) every crowd card loses its name. Small shelves keep names because one seed often carries most of a pick. Reason fields only: the picks and the shelf panel's feel@10 are byte-identical across the sweep.
 
+## v8: a shelf-relative fame cap, built and measured, OFF
+
+The owner's complaint after the damped table: the Recommended tab is still a page of famous titles. Scripts, logs and the private owner pages are in `research/recommender/2026-11-17-v8/lane-a/` in the main checkout.
+
+- **Picks are more famous than the shelf and than what readers went on to read.** 500 held-out shelves, fold 0 of 4, dev, damped fold table: top-1k share of the seeds 32.5%, of the held-out titles 32.9%, of the top 40 44.6%. The `library` table now prints this as `excess` (picks' top-1k share minus the seeds' own, +12.1 points at default) and `overlap` (mean share of the top 40 two different shelves have in common, 3.4%). 39% of pages are more than 1.5 times as famous as their shelf.
+- **Where the fame comes from differs by shelf.** On held-out shelves (`--dump-pool`, every scored candidate with its terms and its route into the pool) the tag term carries most of it, then vote and co-read injection (18% of top-40 slots at about 80% top-1k). On the real mixed shelf that prompted this (178 seeds with a vector, 49% of them top-1k) it is EASE alone: the table holds 58% of the seeds, the famous ones (median rank 611 against 2,712 for the ones it lacks), so the channel speaks for that half only. That page is 98% top-1k with a median rank of 190; without the EASE term it is 42% and 1,186.
+- **`ShelfFame` (`RecommenderTuning.FameCapRatio`, 0 = off, eval key `famecap`).** The seeds' weighted share inside popularity ranks 100, 300 and 1,000, times the ratio, is the most any prefix of the list may hold. A pick over a limit is deferred to the first later slot it fits, never dropped. `FameCapPseudoSeeds` (10) adds seed weight on the famous side so a small shelf limits little. It runs in `SelectWinners` over the `limit * 3` window, from two seeds up. Holding ranks 3,000 and 10,000 as well more than doubled the cost and removed no more famous picks.
+- **Real eval, same 500 shelves.** Paired against default on nDCG@40; R@40 is recall of the held-out titles in each popularity band.
+
+  | variant | nDCG@40 | paired vs default | pop | top1k | excess | overlap | R@40 top 1k | 1k-20k | 20k+ |
+  |---|---|---|---|---|---|---|---|---|---|
+  | default | 0.277 | - | 1,481 | 45% | +12.1 | 3.4% | 0.386 | 0.191 | 0.053 |
+  | cap 2.0 | 0.277 | -0.0006 [-0.0013, +0.0000] | 1,552 | 44% | +11.6 | 3.3% | 0.384 | 0.191 | 0.053 |
+  | cap 1.5 | 0.276 | -0.0016 [-0.0028, -0.0005] | 1,607 | 43% | +10.3 | 3.2% | 0.379 | 0.194 | 0.053 |
+  | cap 1.25 | 0.274 | -0.0032 [-0.0049, -0.0014] | 1,700 | 41% | +8.4 | 2.9% | 0.371 | 0.197 | 0.054 |
+  | cap 1.0 | 0.270 | -0.0071 [-0.0097, -0.0045] | 2,023 | 37% | +4.2 | 2.6% | 0.356 | 0.202 | 0.061 |
+  | cap 1.25, pseudo 3 | 0.272 | -0.0048 [-0.0071, -0.0026] | 2,003 | 39% | +6.0 | 2.6% | 0.362 | 0.200 | 0.058 |
+  | cap 1.0, pseudo 3 | 0.267 | -0.0104 [-0.0133, -0.0075] | 2,199 | 34% | +1.1 | 2.3% | 0.341 | 0.207 | 0.061 |
+  | obscurity 0.2 | 0.276 | -0.0008 [-0.0023, +0.0007] | 1,885 | 41% | +8.8 | 2.9% | 0.370 | 0.197 | 0.060 |
+  | obscurity 0.3 | 0.275 | -0.0021 [-0.0040, -0.0001] | 2,040 | 40% | +7.2 | 2.6% | 0.360 | 0.199 | 0.065 |
+  | obscurity 0.5 | 0.271 | -0.0066 [-0.0093, -0.0040] | 2,343 | 37% | +4.0 | 2.3% | 0.339 | 0.202 | 0.067 |
+  | tag weight 1 | 0.282 | +0.0046 [+0.0021, +0.0070] | 1,817 | 41% | +8.9 | 2.9% | 0.378 | 0.201 | 0.063 |
+  | cap 1.25, tag weight 1 | 0.279 | +0.0014 [-0.0013, +0.0042] | 2,003 | 39% | +6.4 | 2.6% | 0.369 | 0.204 | 0.064 |
+  | no vote injection | 0.277 | +0.0000 [-0.0008, +0.0009] | 1,544 | 44% | +11.2 | 3.4% | 0.380 | 0.193 | 0.053 |
+  | no co-read injection | 0.277 | -0.0003 [-0.0011, +0.0005] | 1,535 | 44% | +11.5 | 3.3% | 0.382 | 0.192 | 0.053 |
+  | neither injection | 0.276 | -0.0009 [-0.0022, +0.0003] | 1,679 | 43% | +10.0 | 3.1% | 0.372 | 0.194 | 0.055 |
+
+- **On held-out readers the cap is not the cheapest way to a less famous page.** At 41% top-1k: tag weight 1 gains nDCG, the obscurity dial at 0.2 spans zero, the cap at 1.25 loses 0.003 (cap 1.25 against obscurity 0.2: -0.0024 [-0.0045, -0.0003]). Further out the cap and the dial cost the same (cap 1.0 against obscurity 0.5: -0.0004 [-0.0034, +0.0026]). By shelf quartile (the shelf's own top-1k share, re-ranking the dumped pools, which returns the eval's numbers exactly) the cap's cost sits in the two most mainstream quartiles (-0.0109 and -0.0153 at 1.0); the two niche quartiles lose 0.0020 and 0.0001.
+- **What the cap does that the others cannot is fix the page that is out of line with its shelf.** The same real mixed shelf, top 40 through the real service:
+
+  | setting | top 1k | top 100 | median rank | picks changed |
+  |---|---|---|---|---|
+  | as shipped | 98% | 32% | 190 | - |
+  | obscurity 0.2 / 0.3 / 0.5 | 92 / 90 / 88% | 28 / 25 / 25% | 233 / 244 / 244 | 3 / 4 / 5 |
+  | tag weight 1 | 98% | 32% | 190 | 1 |
+  | cap 2.0 | 82% | 22% | 364 | 9 |
+  | cap 1.5 | 80% | 18% | 538 | 13 |
+  | cap 1.25 | 68% | 15% | 698 | 16 |
+  | cap 1.0 | 55% | 12% | 859 | 19 |
+  | cap 1.0, pseudo 3 | 52% | 10% | 864 | 20 |
+  | the shelf itself | 49% | 10% | 1,044 | |
+
+  The dial and the tag weight act on every reader by the same amount, so they barely touch a page whose fame comes from EASE seeing half the shelf. The cap acts in proportion to how far the page is from the shelf. Its price on that page: "Feels like" cards fall from 17 to 11 at 1.25 and 7 at 1.0, replaced by "Readers like you" and author cards, and the picks it brings in come from the shelf's niche half.
+- **Judged feel on whole shelves, stored judgements only** (80 shelves, `--shelf-judged --depth 10`; 94% is the ceiling, the rest are pairs the judge called insufficient):
+
+  | variant | judged | feel@10 | paired vs default | top1k |
+  |---|---|---|---|---|
+  | default | 94% | 1.722 | - | 52% |
+  | cap 1.25 | 90% | 1.766 | +0.044 [+0.016, +0.075] | 45% |
+  | cap 1.0 | 88% | 1.797 | +0.075 [+0.045, +0.111] | 41% |
+  | obscurity 0.3 | 92% | 1.748 | +0.026 [+0.005, +0.048] | 47% |
+  | tag weight 1 | 90% | 1.729 | +0.008 [-0.016, +0.032] | 48% |
+
+  **These rows are partly judged and the missing picks are the ones each variant brought in**, so the gains are an upper reading until the 86 queued pairs are judged. If the missing cap picks all scored 0, both cap gains would be gone.
+- **Pseudo-seeds stay at 10.** 3 is a tighter ratio by another name: cap 1.25 with 3 sits between cap 1.25 and cap 1.0 with 10 on both cost and fame, and on the real shelf (178 seeds) it moves the page by 0 to 3 points. The eval has no shelf under 16 seeds, which is where the two differ most, so the looser value keeps small shelves out of a limit nothing has graded.
+- **Dropped: scaling the EASE weight by the share of the shelf the table holds.** At power 2 it took the real mixed shelf to 65% top-1k, but it cost held-out readers -0.0036 [-0.0056, -0.0016] and left their top-1k at 45% (`excess` +12.6). That is the price of cap 1.25 for a fix that only reaches a shelf the table half sees, so the knob was removed. Also ruled out on the same pools before the real eval: rank fusion of the terms (-0.09), a linear penalty past a shelf quantile (-0.03 to reach 68% on the real shelf), greedy calibration to the shelf's bands (-0.025 for 80%), EASE at half weight (-0.018 for 78%), content-gated crowd terms, pool-residualised crowd terms and an EASE lift over a completers baseline (the last three left the real shelf at 85% or more).
+- **Not decided and not measured.** Whether the cap ships, at which ratio, or as a per-reader dial. The confirm split. Whether tag weight 1 holds on the single-seed panels (`single`, `small`, `mu-human`), where it was not run. The cap counts suppressed titles before `RecommendationService` removes them, so the visible page can only come out less famous than the limit. The yardstick is every seed, and thumbs-up and anime-derived seeds are more famous than library ones. A deferred pick stays on the page: the cap moves a famous title down, it does not answer "the reader has already seen this".
+
 ## v8: titles the reader already knows, and the picks every page gets, built and measured, OFF
 
 The owner's complaint has two halves: picks they had already met (they had seen the anime), and picks that "would probably show up on everyone's page". Scripts, logs and the private owner pages are in `research/recommender/2026-11-17-v8/lane-b/` in the main checkout.

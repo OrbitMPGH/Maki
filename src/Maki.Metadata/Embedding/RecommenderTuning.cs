@@ -487,14 +487,18 @@ public sealed record RecommenderTuning
     /// How many times the shelf's own share of famous titles a list may hold at any point
     /// (<see cref="ShelfFame"/>). 0 is off, which is what ships. 1.0 holds every prefix of the list
     /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
-    /// deferred, not dropped, and a one-seed request is never limited. Measured offline and on one
-    /// real shelf only, not yet through <c>eval-reco-labels.cs</c> (key <c>famecap</c>).
+    /// deferred, not dropped, and a one-seed request is never limited. On held-out readers 1.25
+    /// costs 0.003 nDCG@40 for 4 points of top-1k share and 1.0 costs 0.007 for 8; on a real mixed
+    /// shelf they take a page from 98% top-1k to 68% and 55%. Eval key <c>famecap</c>. See
+    /// distribution/CLAUDE.md, "v8: a shelf-relative fame cap".
     /// </summary>
     public double FameCapRatio { get; init; }
 
     /// <summary>
     /// Seed weight <see cref="ShelfFame.Limits"/> adds on the famous side, so a shelf of a few
-    /// series is barely limited. Only read when <see cref="FameCapRatio"/> is above 0.
+    /// series is barely limited. Only read when <see cref="FameCapRatio"/> is above 0. 3 instead of
+    /// 10 is a tighter ratio by another name: it lands on the same cost-for-fame line and barely
+    /// changes a shelf of 100 or more. Eval key <c>famecappseudo</c>.
     /// </summary>
     public double FameCapPseudoSeeds { get; init; } = 10;
 
