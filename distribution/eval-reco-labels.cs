@@ -135,6 +135,8 @@ var negatives = false;
 var feel = false;
 var shelfJudged = false;
 string? dumpFeatures = null;
+string? dumpPicks = null;
+string? commonPathOverride = null;
 var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
@@ -222,6 +224,15 @@ for (var i = 0; i < args.Length; i++)
         // coefficients over one pool, not to compare two.
         case "--dump-features":
             dumpFeatures = args[++i];
+            break;
+        // Writes every variant's ranked ids per request, for cross-reader overlap
+        // (distribution/eval-overlap.py) and for building a page-frequency table.
+        case "--dump-picks":
+            dumpPicks = args[++i];
+            break;
+        // The page-frequency table that commonweight variants read (distribution/eval-overlap.py table).
+        case "--common":
+            commonPathOverride = args[++i];
             break;
         // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
         // trained on the other slice can be graded without reading its own training data.
@@ -628,21 +639,34 @@ var feelIndex = feel ? FeelIndex.Build(dumpPath, index) : null;
 // A recommender per distinct tuning triple. Near-free to construct: the expensive state (the vector
 // index, both graphs) lives in the caches and is shared across all of them.
 var recommenders = new Dictionary<
-    (RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning, EaseTuning, string?), SemanticRecommender>();
+    (RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning, EaseTuning, string?, string?), SemanticRecommender>();
 var easeCaches = new Dictionary<string, EaseCache>(StringComparer.OrdinalIgnoreCase);
+var pageFrequencies = new Dictionary<string, PageFrequency>(StringComparer.OrdinalIgnoreCase);
 SemanticRecommender RecommenderFor(
     RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning,
-    TasteVectorTuning tasteTuning, EaseTuning? easeTuning = null, string? easePath = null)
+    TasteVectorTuning tasteTuning, EaseTuning? easeTuning = null, string? easePath = null,
+    string? commonPath = null)
 {
+    if (recoTuning.CommonWeight <= 0)
+    {
+        commonPath = null;
+    }
+
     easeTuning ??= EaseTuning.Default;
     if (easeTuning.Weight <= 0)
     {
         easePath = null;
     }
 
-    var key = (graphTuning, coReadTuning, recoTuning, tasteTuning, easeTuning, easePath);
+    var key = (graphTuning, coReadTuning, recoTuning, tasteTuning, easeTuning, easePath, commonPath);
     if (!recommenders.TryGetValue(key, out var found))
     {
+        PageFrequency? pageFrequency = null;
+        if (commonPath is not null && !pageFrequencies.TryGetValue(commonPath, out pageFrequency))
+        {
+            pageFrequency = pageFrequencies[commonPath] = PageFrequency.Load(commonPath);
+        }
+
         EaseCache? easeCache = null;
         if (easePath is not null && !easeCaches.TryGetValue(easePath, out easeCache))
         {
@@ -651,7 +675,7 @@ SemanticRecommender RecommenderFor(
 
         found = new SemanticRecommender(
             options, dumpOptions, store, cache, graphCache, graphTuning, coReadCache, coReadTuning,
-            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning, easeCache, easeTuning);
+            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning, easeCache, easeTuning, pageFrequency);
         recommenders[key] = found;
     }
 
@@ -1124,13 +1148,19 @@ async Task<ResultRow> Score(Variant variant)
     var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
     var easeTuning = forbidTaste ? variant.Ease with { Weight = 0 } : variant.Ease;
     var recommender = RecommenderFor(
-        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath);
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath,
+        variant.CommonPath ?? commonPathOverride);
+    var demote = await AiredDemotion(variant);
 
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
         ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,ease,avoidtag,pop\n")
         : null;
+
+    // Request position, ranked ids, held-out ids. Position rather than the request key, so a run
+    // over more requests keeps the first N rows identical to an N-request run.
+    var pickRows = dumpPicks is null ? null : new StringBuilder();
 
     var reciprocal = new double[requests.Count];
     var r10 = new double[requests.Count];
@@ -1163,14 +1193,16 @@ async Task<ResultRow> Score(Variant variant)
             request.Seeds,
             limit,
             RecommendationFilters.None,
-            obscurity: 0,
+            obscurity: variant.Obscurity,
             seedWeights: seedWeights,
             avoidWeights: request.Avoid,
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: coGraph,
             coRead: coRead,
-            features: features);
+            features: features,
+            demote: demote,
+            common: true);
 
         if (features is not null)
         {
@@ -1189,6 +1221,9 @@ async Task<ResultRow> Score(Variant variant)
         }
 
         var ids = picks.Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture)).ToList();
+        pickRows?.Append(i).Append(';').Append(string.Join(',', ids)).Append(';')
+            .Append(string.Join(',', request.Positives.Keys)).Append(';')
+            .Append(string.Join(',', request.Seeds)).AppendLine();
         // The thing `queryattribution` exists to move, and the one column here that is not a
         // relevance measure: what share of the picks can name a seed at all. A variant that raises
         // it while holding nDCG is buying an explanation for free; one that raises it by dropping
@@ -1297,6 +1332,12 @@ async Task<ResultRow> Score(Variant variant)
             Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-library-neg.csv"), negCsv.ToString());
     }
 
+    if (pickRows is not null)
+    {
+        Directory.CreateDirectory(dumpPicks!);
+        File.WriteAllText(Path.Combine(dumpPicks!, $"picks-{variant.Name}-{csvSuffix}.tsv"), pickRows.ToString());
+    }
+
     if (dumping is not null)
     {
         File.WriteAllText(dumpFeatures!, dumping.ToString());
@@ -1316,6 +1357,30 @@ async Task<ResultRow> Score(Variant variant)
             MeanDefined(feelRows, f => f.TagTree),
             MeanDefined(feelRows, f => f.Franchise)),
         fans);
+}
+
+/// <summary>
+/// The airedweight control: every famous manga with an aired anime is ranked lower, as
+/// KnownTitleTuning does in the app for a reader whose watch list shows they skipped it. A held-out
+/// reader has no watch list, so this applies the demotion to everybody at airedrate of full
+/// strength, which prices the worst case.
+/// </summary>
+async Task<IReadOnlyDictionary<long, double>?> AiredDemotion(Variant variant)
+{
+    if (variant.AiredWeight <= 0)
+    {
+        return null;
+    }
+
+    var tuning = new Maki.Core.Recommendations.KnownTitleTuning
+    {
+        UnwatchedWeight = variant.AiredWeight, UnwatchedMaxRank = variant.AiredMaxRank, MinWatched = 0,
+    };
+    var aired = await new MangaBakaLocalStore(dumpOptions, new Quiet<MangaBakaLocalStore>())
+        .GetAiredAnimeRanksAsync(variant.AiredMaxRank);
+    var watched = (int)Math.Round(variant.AiredRate * tuning.FullAdaptationRate * aired.Count);
+    return aired.ToDictionary(
+        kv => kv.Key, kv => variant.AiredWeight * tuning.UnwatchedStrength(kv.Value, watched, aired.Count));
 }
 
 /// <summary>
@@ -1526,7 +1591,9 @@ async Task<ShelfRow> ScoreShelf(
     var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
     var easeTuning = forbidTaste ? variant.Ease with { Weight = 0 } : variant.Ease;
     var recommender = RecommenderFor(
-        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath);
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath,
+        variant.CommonPath ?? commonPathOverride);
+    var demote = await AiredDemotion(variant);
     var n = requests.Count;
     var nearFeel = new double[n];
     var nearPoor = new double[n];
@@ -1551,13 +1618,15 @@ async Task<ShelfRow> ScoreShelf(
             request.Seeds,
             limit,
             RecommendationFilters.None,
-            obscurity: 0,
+            obscurity: variant.Obscurity,
             seedWeights: variant.ScoreWeights ? request.Scores : null,
             avoidWeights: request.Avoid,
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: coGraph,
-            coRead: coRead);
+            coRead: coRead,
+            demote: demote,
+            common: true);
 
         var seedRows = new List<(long Id, int Row)>();
         foreach (var id in request.Seeds)
@@ -2973,11 +3042,16 @@ file static class Variants
         var taste = lower == "notaste" ? TasteVectorTuning.Default with { Weight = 0 } : TasteVectorTuning.Default;
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
+        var obscurity = 0.0;
         var scoreWeights = false;
         // What RecommendationService asks for. The path is filled in from the installed table once
         // the config dir is known; `noease` and the rail shorthands start with the channel off.
         var ease = RunsEase(lower) ? EaseTuning.Default : EaseTuning.Default with { Weight = 0 };
         string? easePath = null;
+        string? commonPath = null;
+        var airedWeight = 0.0;
+        var airedMaxRank = 1000;
+        var airedRate = 1.0;
 
         // The baseline the avoid channel has to be read against, the same way `nocrowd` and
         // `notaste` are for the other channels. A bare `avoid` would be a variant NAME rather than
@@ -3022,6 +3096,11 @@ file static class Variants
             if (key == "diversity")
             {
                 diversity = double.Parse(value, CultureInfo.InvariantCulture);
+            }
+            // The request's obscurity dial, -1 mainstream to +1 hidden gems.
+            else if (key == "obscurity")
+            {
+                obscurity = double.Parse(value, CultureInfo.InvariantCulture);
             }
             else if (key == "seedweights")
             {
@@ -3266,6 +3345,32 @@ file static class Variants
             {
                 easePath = value;
             }
+            // The page-share penalty: commonweight switches it on, the table comes from
+            // commonpath or the run's --common.
+            else if (key == "commonweight")
+            {
+                recommender = recommender with { CommonWeight = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "commonpower")
+            {
+                recommender = recommender with { CommonPower = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "commonpath")
+            {
+                commonPath = value;
+            }
+            else if (key == "airedweight")
+            {
+                airedWeight = double.Parse(value, CultureInfo.InvariantCulture);
+            }
+            else if (key == "airedmaxrank")
+            {
+                airedMaxRank = int.Parse(value, CultureInfo.InvariantCulture);
+            }
+            else if (key == "airedrate")
+            {
+                airedRate = double.Parse(value, CultureInfo.InvariantCulture);
+            }
             else if (key == "easeweight")
             {
                 ease = ease with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
@@ -3306,7 +3411,7 @@ file static class Variants
 
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
-            taste, ease, easePath);
+            taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -3365,7 +3470,12 @@ file sealed record Variant(
     bool ScoreWeights,
     TasteVectorTuning Taste,
     EaseTuning Ease,
-    string? EasePath);
+    string? EasePath,
+    double Obscurity = 0,
+    string? CommonPath = null,
+    double AiredWeight = 0,
+    int AiredMaxRank = 1000,
+    double AiredRate = 1);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings
