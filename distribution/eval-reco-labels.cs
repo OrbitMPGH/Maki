@@ -237,9 +237,16 @@ for (var i = 0; i < args.Length; i++)
             break;
         // Library mode: which list status makes up a reader's shelf. COMPLETED is what every
         // recorded number uses. CURRENT builds shelves of series still being read, which is closer
-        // to what an install holds; the reader-trained artifacts never saw those entries.
+        // to what an install holds; the reader-trained artifacts never saw those entries. A comma
+        // list (CURRENT,COMPLETED) builds one shelf from both.
         case "--shelf-status":
             shelfStatus = args[++i].ToUpperInvariant();
+            if (!shelfStatus.Split(',').All(s => s.Length > 0 && s.All(char.IsAsciiLetterUpper)))
+            {
+                Console.WriteLine("error: --shelf-status takes list statuses, comma separated.");
+                return 1;
+            }
+
             break;
         // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
         // trained on the other slice can be graded without reading its own training data.
@@ -1003,6 +1010,8 @@ List<Request> BuildPanelRequests()
     return built;
 }
 
+string ShelfStatusList() => string.Join(",", shelfStatus.Split(',').Select(s => $"'{s}'"));
+
 /// <summary>
 /// One request per real reading list: seed from most of it, ask for the rest back. The only mode
 /// whose n is a population rather than one install, and the only one that measures the whole-library
@@ -1022,8 +1031,7 @@ List<Request> BuildLibraryRequests()
         using var cmd = conn.CreateCommand();
         // COMPLETED only, exactly the status the co-read matrix is built from: a PLANNING entry is
         // an intention, and asking the recommender to predict one measures something else.
-        cmd.CommandText = "SELECT user_id, media_id, score FROM user_entry WHERE status = $status";
-        cmd.Parameters.AddWithValue("$status", shelfStatus);
+        cmd.CommandText = $"SELECT user_id, media_id, score FROM user_entry WHERE status IN ({ShelfStatusList()})";
         cmd.CommandTimeout = 600;
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -1058,7 +1066,7 @@ List<Request> BuildLibraryRequests()
     var listed = byUser.Where(kv => kv.Value.Count >= minLibrary).ToList();
     var usable = listed.Where(kv => InSplit(kv.Key)).ToList();
     Console.WriteLine(
-        $"libraries: {listed.Count} of {byUser.Count} reading lists have >= {minLibrary} in-index completed titles" +
+        $"libraries: {listed.Count} of {byUser.Count} reading lists have >= {minLibrary} in-index {shelfStatus.ToLowerInvariant()} titles" +
         (split == "all" ? string.Empty : $", {usable.Count} in the {split} split"));
 
     var built = new List<Request>();
@@ -1163,8 +1171,8 @@ void AttachOtherStatuses(List<Request> built, Dictionary<long, long> crossRef)
     using var conn = new SqliteConnection($"Data Source={workPath};Mode=ReadOnly;Pooling=False");
     conn.Open();
     using var cmd = conn.CreateCommand();
-    cmd.CommandText = "SELECT media_id, status FROM user_entry WHERE user_id = $user AND status <> $status";
-    cmd.Parameters.AddWithValue("$status", shelfStatus);
+    cmd.CommandText =
+        $"SELECT media_id, status FROM user_entry WHERE user_id = $user AND status NOT IN ({ShelfStatusList()})";
     var userParameter = cmd.Parameters.Add("$user", SqliteType.Integer);
     foreach (var request in built)
     {
