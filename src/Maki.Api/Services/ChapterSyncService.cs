@@ -311,8 +311,7 @@ public class ChapterSyncService(
         // or clear a cross-source numbering verdict.
         if (mappingIds is null)
         {
-            var clash = NumberingClashDetector.Detect(numbersBySource);
-            var value = clash is null ? null : $"{clash.SubChapterSource}|{clash.WholeChapterSource}";
+            var value = NumberingClashDetector.Format(NumberingClashDetector.Detect(numbersBySource));
             var allFetched = numbersBySource.Count == liveMappings.Count && !anyPartialListing;
             if (value is not null || allFetched)
             {

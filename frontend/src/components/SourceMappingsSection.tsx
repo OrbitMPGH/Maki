@@ -95,6 +95,8 @@ import { MonoValue } from './ui/MonoValue'
 import { PanelTitle } from './ui/PanelTitle'
 import { MODAL_SIZE } from './ui/modalSizes'
 import { Callout } from './ui/Callout'
+import type { NumberingClashPair } from '../lib/numberingClash'
+import { formatList } from '../lib/listFormat'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -118,6 +120,7 @@ export function SourceMappingsSection({
   seriesTitle,
   altTitles = [],
   matching = false,
+  numberingClashes = [],
 }: {
   seriesId: number
   seriesTitle: string
@@ -129,6 +132,8 @@ export function SourceMappingsSection({
    * minute the source searches take, which is alarming and wrong.
    */
   matching?: boolean
+  /** Pairs from `Series.numberingClash`, so each row involved can say which side of a clash it is on. */
+  numberingClashes?: NumberingClashPair[]
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sourceOrder } = useSourceOrder(seriesId)
@@ -184,6 +189,7 @@ export function SourceMappingsSection({
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
   const failedNames = failedSources.map(sourceLabel).join(', ')
+  const clashTip = (names: string) => t`Numbering clashes with ${names}`
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const hintId = useId()
@@ -491,6 +497,10 @@ export function SourceMappingsSection({
               {(orderedMappings ?? []).map((m) => {
               const { sourceName: sourceKey } = m
               const sourceName = sourceLabel(sourceKey)
+              const clashing = (side: 'sub' | 'whole', other: 'sub' | 'whole') =>
+                formatList(numberingClashes.filter((c) => c[side] === sourceKey).map((c) => sourceLabel(c[other])))
+              const wholeNames = clashing('sub', 'whole')
+              const subNames = clashing('whole', 'sub')
               const open = expanded[m.id] ?? false
               const detailsId = `${hintId}-details-${m.id}`
               return (
@@ -533,6 +543,20 @@ export function SourceMappingsSection({
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                           </Badge>
                         </Tooltip>}
+                        {wholeNames && (
+                          <Tooltip label={clashTip(wholeNames)}>
+                            <Badge size="sm" color="var(--warn)" variant="light" style={{ flexShrink: 0 }}>
+                              <Trans>Sub-chapters</Trans>
+                            </Badge>
+                          </Tooltip>
+                        )}
+                        {subNames && (
+                          <Tooltip label={clashTip(subNames)}>
+                            <Badge size="sm" color="var(--warn)" variant="light" style={{ flexShrink: 0 }}>
+                              <Trans>Whole chapters</Trans>
+                            </Badge>
+                          </Tooltip>
+                        )}
                         {m.lastError && (
                           <Tooltip label={m.lastError} withArrow multiline w={280}>
                             <Text size="xs" c="var(--danger)" fw={600} style={{ flexShrink: 0 }}>

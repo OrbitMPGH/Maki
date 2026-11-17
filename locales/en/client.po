@@ -6504,6 +6504,10 @@ msgstr "Connections"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
+msgstr "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
@@ -14629,6 +14633,10 @@ msgstr "Number"
 msgid "Numbering clash"
 msgstr "Numbering clash"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Numbering clashes with {names}"
+msgstr "Numbering clashes with {names}"
+
 #: src/components/discover/RecommenderDials.tsx
 msgid "obscure"
 msgstr "obscure"
@@ -20578,6 +20586,10 @@ msgstr "Strong"
 msgid "Studio"
 msgstr "Studio"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Sub-chapters"
+msgstr "Sub-chapters"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Subtle"
 msgstr "Subtle"
@@ -23726,6 +23738,10 @@ msgstr "Whole"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Whole chapter"
 msgstr "Whole chapter"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Whole chapters"
+msgstr "Whole chapters"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Whole franchise"

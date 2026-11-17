@@ -14,6 +14,7 @@ import {
   Button,
   Divider,
   Group,
+  List,
   Loader,
   Menu,
   NumberInput,
@@ -228,6 +229,8 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
 import { Callout } from '../components/ui/Callout'
+import { useSourceLabel } from '../sourceLabels'
+import { parseNumberingClash } from '../lib/numberingClash'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { MetaList } from '../components/ui/MetaList'
@@ -526,6 +529,8 @@ function SeriesDetailBody() {
 
   // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
   const { data: sources } = useSources()
+  const sourceLabel = useSourceLabel()
+  const numberingClashes = useMemo(() => parseNumberingClash(series?.numberingClash), [series?.numberingClash])
   /**
    * ChapterFile.SourceName is a scrape source's name, the sentinel "import" for a file the user
    * brought in from disk, or "torrent:{indexer}". Only a scraped file can be re-fetched from a
@@ -2772,27 +2777,43 @@ function SeriesDetailBody() {
 
               <div className="series-split-row">
                 <Panel className="series-detail-source-panel series-machine">
-                  {series.numberingClash && (
+                  {numberingClashes.length > 0 && (
                       <Callout
                           style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={t`Sources disagree on chapter numbering`}
                       >
                         {(() => {
-                          const [sub, whole] = series.numberingClash.split('|')
-                          return (
-                              <>
-                                <Trans>
-                                  <Text span fw={600}>
+                          const sentences = numberingClashes.map((pair) => {
+                            const sub = sourceLabel(pair.sub)
+                            const whole = sourceLabel(pair.whole)
+                            return (
+                                <Trans key={`${pair.sub}|${pair.whole}`}>
+                                  <Text span inherit fw={600}>
                                     {sub}
                                   </Text>{' '}
                                   lists sub-chapters (1.1, 1.2, …) where{' '}
-                                  <Text span fw={600}>
+                                  <Text span inherit fw={600}>
                                     {whole}
                                   </Text>{' '}
                                   lists whole chapters for the same content, so both appear as separate rows below.
-                                </Trans>{' '}
+                                </Trans>
+                            )
+                          })
+                          return numberingClashes.length === 1 ? (
+                              <>
+                                {sentences[0]}{' '}
                                 <Trans>There is no safe automatic merge.</Trans>{' '}
                                 <Trans>Consider disabling one of the two source mappings; the warning clears on the next refresh.</Trans>
+                              </>
+                          ) : (
+                              <>
+                                <List size="sm" spacing={4} my={4}>
+                                  {sentences.map((sentence, i) => (
+                                      <List.Item key={i}>{sentence}</List.Item>
+                                  ))}
+                                </List>
+                                <Trans>There is no safe automatic merge.</Trans>{' '}
+                                <Trans>Consider disabling one source mapping in each pair; the warning clears on the next refresh.</Trans>
                               </>
                           )
                         })()}
@@ -2853,6 +2874,7 @@ function SeriesDetailBody() {
                                 seriesTitle={series.title}
                                 altTitles={series.altTitles}
                                 matching={series.sourceMatchPending}
+                                numberingClashes={numberingClashes}
                             />
                           </div>
                         </div>

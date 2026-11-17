@@ -7991,6 +7991,10 @@ msgstr "연결"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "두 소스 매핑 중 하나를 비활성화하는 것을 고려하세요. 다음 새로 고침에서 경고가 사라집니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -17976,6 +17980,10 @@ msgstr "번호"
 msgid "Numbering clash"
 msgstr "번호 충돌"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Numbering clashes with {names}"
+msgstr ""
+
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
@@ -25267,6 +25275,10 @@ msgstr "강함"
 msgid "Studio"
 msgstr "스튜디오"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Sub-chapters"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Subtle"
@@ -29147,6 +29159,10 @@ msgstr "전체"
 #, fuzzy
 msgid "Whole chapter"
 msgstr "챕터 전체"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Whole chapters"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy

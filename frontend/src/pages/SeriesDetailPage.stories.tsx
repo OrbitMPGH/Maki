@@ -538,6 +538,22 @@ export const NumberingClash: Story = {
   },
 }
 
+export const NumberingClashes: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json(seriesDto(6, { numberingClash: 'comick|weebcentral;comick|asurascans' })),
+      ),
+    ),
+    ...at(6),
+  },
+  play: async ({ canvas }) => {
+    await expect((await canvas.findAllByText('Sub-chapters')).length).toBeGreaterThan(0)
+    await expect(canvas.getAllByText('Whole chapters').length).toBeGreaterThan(0)
+    await expect(canvas.queryByText('comick')).not.toBeInTheDocument()
+  },
+}
+
 export const DelistedChapters: Story = {
   parameters: {
     msw: seriesMsw(

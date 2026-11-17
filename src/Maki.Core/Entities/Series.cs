@@ -141,7 +141,7 @@ public class Series
     /// <summary>
     /// Set when chapter sync detects a cross-source numbering clash (one source
     /// lists x.1/x.2 sub-chapters, another whole chapters). Format:
-    /// "subChapterSource|wholeChapterSource". Cleared when the clash goes away.
+    /// "subChapterSource|wholeChapterSource", several pairs joined by ';'. Cleared when the clash goes away.
     /// </summary>
     public string? NumberingClash { get; set; }
 

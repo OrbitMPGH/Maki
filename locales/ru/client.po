@@ -7991,6 +7991,10 @@ msgstr "Подключения"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "Рекомендуется отключить одно из двух сопоставлений источников; предупреждение исчезнет после следующего обновления."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -17976,6 +17980,10 @@ msgstr "Номер"
 msgid "Numbering clash"
 msgstr "Конфликт нумерации"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Numbering clashes with {names}"
+msgstr ""
+
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
@@ -25267,6 +25275,10 @@ msgstr "Сильное"
 msgid "Studio"
 msgstr "Студия"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Sub-chapters"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Subtle"
@@ -29147,6 +29159,10 @@ msgstr "Целиком"
 #, fuzzy
 msgid "Whole chapter"
 msgstr "Вся глава"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Whole chapters"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy

@@ -7991,6 +7991,10 @@ msgstr "连接"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "可以考虑禁用两个来源映射中的一个；警告会在下次刷新时消失。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -17976,6 +17980,10 @@ msgstr "编号"
 msgid "Numbering clash"
 msgstr "编号冲突"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Numbering clashes with {names}"
+msgstr ""
+
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
@@ -25267,6 +25275,10 @@ msgstr "强"
 msgid "Studio"
 msgstr "工作室"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Sub-chapters"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Subtle"
@@ -29147,6 +29159,10 @@ msgstr "整页"
 #, fuzzy
 msgid "Whole chapter"
 msgstr "整个章节"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Whole chapters"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
