@@ -1651,7 +1651,7 @@ function SeriesDetailBody() {
 
   if (isLoading) {
     return (
-        <SurfaceFrame width="full" pageStyle="editorial">
+        <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
           <SeriesHeroSkeleton />
           {luckyPill}
         </SurfaceFrame>
@@ -2241,9 +2241,10 @@ function SeriesDetailBody() {
     )
 
   return (
-    <SurfaceFrame width="full" pageStyle="editorial">
+    <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
       <Tabs
           className="series-detail-surface"
+          data-tab={tab}
           value={tab}
           onChange={changeTab}
           variant="unstyled"
@@ -2569,6 +2570,7 @@ function SeriesDetailBody() {
             }
         />
 
+        <div className="series-tab-stage">
         {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
@@ -3851,6 +3853,7 @@ function SeriesDetailBody() {
             <SeriesFilesSection seriesId={seriesId} />
           </div>
         </Tabs.Panel>
+        </div>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
         <ArchiveSeriesDialog
