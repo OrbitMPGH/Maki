@@ -90,19 +90,41 @@ public sealed class ChapterPageCountServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_source_that_needs_a_browser_is_not_counted()
+    public async Task A_source_that_needs_a_browser_is_counted_a_few_chapters_per_run()
     {
-        SeedSplitFloor();
-        var whole = new FakeSource
+        var seriesId = _db.SeedSeries(mappings: [Mapping("parts"), Mapping("whole")]);
+        using (var db = _db.NewContext())
         {
-            Name = "whole",
-            Capabilities = SourceCapabilities.NeedsBrowser,
-            OnGetPages = _ => throw new InvalidOperationException("must not be asked"),
-        };
+            var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToDictionary(m => m.SourceName);
+            void Link(string source, decimal number, int? pages)
+            {
+                var chapter = db.Chapters.Local.FirstOrDefault(c => c.Number == number)
+                              ?? db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = number, Language = "en" }).Entity;
+                db.ChapterSourceLinks.Add(new ChapterSourceLink
+                {
+                    Chapter = chapter, SourceMappingId = mappings[source].Id, SourceChapterId = $"{source}-{number}",
+                    NumberRaw = number.ToString(System.Globalization.CultureInfo.InvariantCulture), PageCount = pages,
+                });
+            }
 
-        var run = await Counter(new FakeSource { Name = "parts" }, whole).RunAsync(10, CancellationToken.None);
+            var last = ChapterPageCountService.BrowserRequestsPerRun + 2;
+            for (var floor = 1; floor < last; floor++)
+            {
+                Link("parts", floor + 0.1m, 13);
+                Link("parts", floor + 0.2m, 26);
+                Link("whole", floor, null);
+            }
 
-        Assert.Equal(0, run.Counted);
+            Link("parts", last, 50);
+            Link("whole", last, null);
+            db.SaveChanges();
+        }
+
+        var whole = new FakeSource { Name = "whole", Capabilities = SourceCapabilities.NeedsBrowser, OnGetPages = _ => Pages(36) };
+
+        var run = await Counter(new FakeSource { Name = "parts" }, whole).RunAsync(100, CancellationToken.None);
+
+        Assert.Equal(ChapterPageCountService.BrowserRequestsPerRun, run.Counted);
         Assert.Equal(1, run.Skipped);
     }
 

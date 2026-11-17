@@ -17,9 +17,11 @@ public sealed class PageCountFailures
 /// <summary>
 /// Fetches the page counts pending chapter folds wait on (<see cref="ChapterFoldPreviewService"/>), one
 /// page list per chapter and never an image, and stores them on the link. A run spends at most its
-/// budget of requests, floors spanning more than one source first, and a source in the download
-/// queue's cooldown is passed over; a 429 here puts it in that cooldown for downloads too.
-/// A source that needs a browser is only counted when it can count without one (<see cref="IPageCountSource"/>).
+/// budget of requests, the chapters most floors wait on first (a plain chapter that teaches two sources'
+/// page scale unblocks every floor between them), then floors spanning more than one source. A source in
+/// the download queue's cooldown is passed over; a 429 here puts it in that cooldown for downloads too.
+/// A source that needs a browser and cannot count without one (<see cref="IPageCountSource"/>) opens a
+/// page per chapter, so it gets at most <see cref="BrowserRequestsPerRun"/>.
 /// </summary>
 public class ChapterPageCountService(
     MakiDbContext db,
@@ -35,6 +37,9 @@ public class ChapterPageCountService(
     /// <summary>So one series with a hundred waiting floors does not take a whole run.</summary>
     public const int RequestsPerSeries = 30;
 
+    /// <summary>Holds the source's one browser for about a minute; its syncs and downloads queue behind it.</summary>
+    public const int BrowserRequestsPerRun = 20;
+
     private static readonly TimeSpan RetryFailedAfter = TimeSpan.FromDays(1);
 
     public async Task<PageCountRun> RunAsync(int budget, CancellationToken ct)
@@ -42,14 +47,18 @@ public class ChapterPageCountService(
         var (floors, _) = await folds.DecideAsync(null, ct);
         var waiting = floors
             .Where(f => f.Missing.Count > 0)
-            .OrderByDescending(f => f.Decision.Wholes.Concat(f.Decision.Parts.Keys).Distinct().Count() > 1)
-            .SelectMany(f => f.Missing)
-            .DistinctBy(l => (l.MappingId, l.ChapterId))
+            .SelectMany(f => f.Missing.Select(l => (Link: l,
+                Spans: f.Decision.Wholes.Concat(f.Decision.Parts.Keys).Distinct().Count() > 1)))
+            .GroupBy(w => (w.Link.MappingId, w.Link.ChapterId))
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Any(w => w.Spans))
+            .Select(g => g.First().Link)
             .ToList();
 
         var now = time.GetUtcNow();
         var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var perSeries = new Dictionary<int, int>();
+        var perBrowser = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         int counted = 0, failed = 0, skipped = 0, spent = 0;
         foreach (var link in waiting)
         {
@@ -67,12 +76,23 @@ public class ChapterPageCountService(
             }
 
             if (sourceRegistry.Find(link.SourceName) is not { } source ||
-                queue.CooldownRemaining(link.SourceName) > TimeSpan.Zero ||
-                (source is not IPageCountSource && source.Capabilities.HasFlag(SourceCapabilities.NeedsBrowser)))
+                queue.CooldownRemaining(link.SourceName) > TimeSpan.Zero)
             {
                 blocked.Add(link.SourceName);
                 skipped++;
                 continue;
+            }
+
+            if (source is not IPageCountSource && source.Capabilities.HasFlag(SourceCapabilities.NeedsBrowser))
+            {
+                if (perBrowser.GetValueOrDefault(source.Name) >= BrowserRequestsPerRun)
+                {
+                    blocked.Add(link.SourceName);
+                    skipped++;
+                    continue;
+                }
+
+                perBrowser[source.Name] = perBrowser.GetValueOrDefault(source.Name) + 1;
             }
 
             spent++;

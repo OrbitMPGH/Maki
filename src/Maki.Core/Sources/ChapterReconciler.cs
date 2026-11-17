@@ -26,8 +26,8 @@ public enum FoldState
     Pending,
 }
 
-/// <summary>A whole compared with a run of parts by page count.</summary>
-public sealed record PageRatio(string WholeMapping, string PartsMapping, double Ratio, string Verdict);
+/// <summary>A whole compared with a run of parts by page count, after dividing the whole by the pair's page scale.</summary>
+public sealed record PageRatio(string WholeMapping, string PartsMapping, double Ratio, string Verdict, double Scale);
 
 /// <summary>What reconciliation decided for one integer floor (chapter 10 and its 10.1, 10.2, ...).</summary>
 public sealed class FloorDecision(decimal floor)
@@ -54,6 +54,9 @@ public sealed class FloorDecision(decimal floor)
     public Dictionary<string, string> Aliases { get; } = [];
 
     public List<PageRatio> Ratios { get; } = [];
+
+    /// <summary>Plain chapters to count before the page scale between two of the floor's mappings is known.</summary>
+    public List<(string Mapping, decimal Number)> Calibration { get; } = [];
 }
 
 /// <summary>
@@ -90,6 +93,18 @@ public static partial class ChapterReconciler
     /// <summary>A third or later sub-chapter this small against the parts before it is an extra.</summary>
     private const double TinyTail = 0.5;
 
+    /// <summary>Plain floors two mappings must both have counted before their page scale is trusted.</summary>
+    private const int ScaleFloors = 3;
+
+    /// <summary>Most plain floors counted to calibrate one pair.</summary>
+    private const int ScaleFloorsMax = 6;
+
+    /// <summary>A plain floor whose ratio is within this factor of the median agrees with it.</summary>
+    private const double ScaleSpread = 1.35;
+
+    /// <summary>A learnt scale this close to 1 is 1: two sources of one chapter differ by a credits page or two.</summary>
+    private const double ScaleSame = 1.15;
+
     [GeneratedRegex(
         @"\b(omake|extras?|special|bonus|side[- ]?story|gaiden|twitter|afterword|illustrations?|4-?koma|interlude|preview|pilot|prototype)\b|番外|おまけ|特別|卷末",
         RegexOptions.IgnoreCase)]
@@ -118,6 +133,7 @@ public static partial class ChapterReconciler
         var lastFloor = floors.Count > 0 ? floors[^1] : 0m;
         var settled = settledBelow ?? lastFloor;
         var decisions = new Dictionary<decimal, FloorDecision>();
+        var scales = new Scales(listings, lastFloor);
         var pairVotes = new Dictionary<(string Whole, string Parts), int[]>();
         var pending = new List<(FloorDecision Decision, List<string> Wholes, Ordered<List<ReconcileEntry>> Runs)>();
 
@@ -158,6 +174,27 @@ public static partial class ChapterReconciler
                 continue;
             }
 
+            (Verdict Verdict, int K, double? Ratio, double Scale) Check(
+                string wholeMapping, ReconcileEntry whole, string partsMapping, List<ReconcileEntry> run, double high)
+            {
+                var scale = scales.Of(wholeMapping, partsMapping);
+                switch (scale.State)
+                {
+                    case ScaleState.Unstable:
+                        return (Verdict.Unscaled, run.Count, null, 1);
+                    case ScaleState.Pending:
+                        foreach (var needed in scale.Needed.Where(n => !d.Calibration.Contains(n)))
+                        {
+                            d.Calibration.Add(needed);
+                        }
+
+                        return (Verdict.Unknown, run.Count, null, 1);
+                    default:
+                        var (verdict, k, ratio) = Verify(whole, run, high, scale.Factor);
+                        return (verdict, k, ratio, scale.Factor);
+                }
+            }
+
             // "f, f.2" with no f.1: the f is part 1 when another source's whole matches the sum, or the titles say so.
             var aliasPending = new Ordered<List<ReconcileEntry>>();
             foreach (var (mapping, firstRun) in firstRuns.Items)
@@ -165,7 +202,7 @@ public static partial class ChapterReconciler
                 var titled = firstRun.Any(e => IsPartMarker(e.Title));
                 var checks = wholes.Items
                     .Where(w => w.Key != mapping)
-                    .Select(w => Verify(w.Value, firstRun, titled ? HighCertified : High).Verdict)
+                    .Select(w => Check(w.Key, w.Value, mapping, firstRun, titled ? HighCertified : High).Verdict)
                     .ToList();
                 if (checks.Contains(Verdict.Merged) || (titled && wholes.Count == 1))
                 {
@@ -222,15 +259,28 @@ public static partial class ChapterReconciler
             var merged = new List<(string Mapping, int K)>();
             var against = new List<string>();
             var repeats = new List<string>();
+            int unscaled = 0, waits = 0;
             foreach (var (wholeMapping, whole) in wholes.Items)
             {
                 var verdicts = new List<(Verdict Verdict, int K)>();
                 foreach (var (partsMapping, run) in longRuns.Items)
                 {
-                    var check = Verify(whole, run, high);
+                    var check = Check(wholeMapping, whole, partsMapping, run, high);
+                    if (check.Verdict == Verdict.Unscaled)
+                    {
+                        unscaled++;
+                        continue;
+                    }
+
+                    if (check.Verdict == Verdict.Unknown)
+                    {
+                        waits++;
+                    }
+
                     if (check.Ratio is { } ratio)
                     {
-                        d.Ratios.Add(new PageRatio(wholeMapping, partsMapping, Math.Round(ratio, 2), check.Verdict.ToString()));
+                        d.Ratios.Add(new PageRatio(
+                            wholeMapping, partsMapping, Math.Round(ratio, 2), check.Verdict.ToString(), Math.Round(check.Scale, 2)));
                     }
 
                     verdicts.Add((check.Verdict, check.K));
@@ -263,6 +313,19 @@ public static partial class ChapterReconciler
             if (against.Count > 0 || (repeats.Count > 0 && merged.Count == 0))
             {
                 Settle(d, FoldState.Keep, merged.Count == 0 ? "wholeIsNotTheParts" : "wholesDisagree");
+                continue;
+            }
+
+            if (merged.Count > 0 && repeats.Count(m => longRuns.Items.All(r => r.Key != m)) > merged.Count)
+            {
+                // More sources list the whole as part 1 alone than as the parts put together.
+                Settle(d, FoldState.Keep, "wholesDisagree");
+                continue;
+            }
+
+            if (merged.Count == 0 && unscaled > 0 && waits == 0)
+            {
+                Settle(d, FoldState.Keep, "pageScalesDisagree");
                 continue;
             }
 
@@ -315,8 +378,8 @@ public static partial class ChapterReconciler
     }
 
     /// <summary>
-    /// The chapters a pending floor waits on: each candidate whole and part that has no page count yet.
-    /// A count for every one of them is enough to settle the floor either way.
+    /// The chapters a pending floor waits on: each candidate whole and part that has no page count yet,
+    /// and the plain chapters that teach the page scale between its sources.
     /// </summary>
     public static IReadOnlyList<(string Mapping, decimal Number)> MissingCounts(
         FloorDecision decision, IReadOnlyList<ReconcileListing> listings)
@@ -328,7 +391,8 @@ public static partial class ChapterReconciler
 
         var entries = listings.ToDictionary(l => l.Mapping, l => l.Entries);
         var wanted = decision.Wholes.Select(m => (m, decision.Floor))
-            .Concat(decision.Parts.SelectMany(p => p.Value.Select(n => (p.Key, n))));
+            .Concat(decision.Parts.SelectMany(p => p.Value.Select(n => (p.Key, n))))
+            .Concat(decision.Calibration);
         return [.. wanted
             .Distinct()
             .Where(w => entries.TryGetValue(w.Item1, out var list) &&
@@ -367,18 +431,26 @@ public static partial class ChapterReconciler
         Merged,
         Alias,
         Mismatch,
+
+        /// <summary>The two sources' page counts keep no steady scale, so comparing them says nothing.</summary>
+        Unscaled,
     }
 
-    /// <summary>Compares one whole against one run by page count, the whole run or nothing.</summary>
-    private static (Verdict Verdict, int K, double? Ratio) Verify(ReconcileEntry whole, List<ReconcileEntry> run, double high)
+    /// <summary>
+    /// Compares one whole against one run by page count, the whole run or nothing. <paramref name="factor"/> is
+    /// the whole's source's pages per page of the run's source (<see cref="Scales"/>).
+    /// </summary>
+    private static (Verdict Verdict, int K, double? Ratio) Verify(
+        ReconcileEntry whole, List<ReconcileEntry> run, double high, double factor)
     {
-        if (Pages(whole) is not { } wholePages || run.Count < 2 || run.Any(e => Pages(e) is null))
+        if (Pages(whole) is not { } counted || run.Count < 2 || run.Any(e => Pages(e) is null))
         {
             return (Verdict.Unknown, run.Count, null);
         }
 
         var pages = run.Select(e => Pages(e)!.Value).ToList();
-        var ratio = (double)wholePages / pages.Sum();
+        var wholePages = counted / factor;
+        var ratio = wholePages / pages.Sum();
         if (pages.Count >= 3 && pages.Distinct().Count() == 1)
         {
             // One upload repeated under x.1, x.2, x.3.
@@ -401,6 +473,115 @@ public static partial class ChapterReconciler
     }
 
     private static int? Pages(ReconcileEntry entry) => entry.Pages is > 0 ? entry.Pages : null;
+
+    private enum ScaleState
+    {
+        Same,
+        Assumed,
+        Known,
+        Pending,
+        Unstable,
+    }
+
+    private sealed record Scale(ScaleState State, double Factor, IReadOnlyList<(string Mapping, decimal Number)> Needed);
+
+    /// <summary>
+    /// Page counts only compare within one source: some cut long pages into strips or upload a chapter
+    /// twice over (MangaKakalot and TopManhua run at about twice everyone else in some series). So a whole
+    /// from one mapping meets parts from another after dividing by the pair's scale, the median
+    /// pages-per-page on floors both list as one plain chapter. With fewer than <see cref="ScaleFloors"/>
+    /// shared plain floors there is nothing to learn from, and the scale is taken as 1.
+    /// </summary>
+    private sealed class Scales(IReadOnlyList<ReconcileListing> listings, decimal lastFloor)
+    {
+        private readonly Dictionary<string, Dictionary<decimal, ReconcileEntry>> _plain = listings.ToDictionary(
+            l => l.Mapping,
+            l => l.Entries.GroupBy(e => decimal.Floor(e.Number))
+                .Where(g => g.Count() == 1 && g.Single().Number == g.Key)
+                .ToDictionary(g => g.Key, g => g.Single()));
+
+        private readonly Dictionary<(string, string), Scale> _learnt = [];
+
+        public Scale Of(string a, string b)
+        {
+            if (a == b)
+            {
+                return new Scale(ScaleState.Same, 1, []);
+            }
+
+            if (string.CompareOrdinal(a, b) > 0)
+            {
+                var other = Of(b, a);
+                return other with { Factor = 1 / other.Factor };
+            }
+
+            if (!_learnt.TryGetValue((a, b), out var scale))
+            {
+                scale = Learn(a, b);
+                _learnt[(a, b)] = scale;
+            }
+
+            return scale;
+        }
+
+        private Scale Learn(string a, string b)
+        {
+            var pa = _plain[a];
+            var pb = _plain[b];
+            var shared = pa.Keys.Where(f => pb.ContainsKey(f) && f != lastFloor).OrderDescending().ToList();
+            if (shared.Count < ScaleFloors)
+            {
+                return new Scale(ScaleState.Assumed, 1, []);
+            }
+
+            var counted = shared.Where(f => Pages(pa[f]) is not null && Pages(pb[f]) is not null).Take(ScaleFloorsMax).ToList();
+            var ratios = counted.Select(f => (double)Pages(pa[f])!.Value / Pages(pb[f])!.Value).ToList();
+            var want = ScaleFloors;
+            if (ratios.Count >= ScaleFloors)
+            {
+                var middle = Median(ratios);
+                var agree = ratios.Where(r => r >= middle / ScaleSpread && r <= middle * ScaleSpread).ToList();
+                if (agree.Count >= ScaleFloors && 2 * agree.Count >= ratios.Count)
+                {
+                    var factor = Median(agree);
+                    return new Scale(ScaleState.Known, factor >= 1 / ScaleSame && factor <= ScaleSame ? 1 : factor, []);
+                }
+
+                if (ratios.Count >= Math.Min(ScaleFloorsMax, shared.Count))
+                {
+                    return new Scale(ScaleState.Unstable, 1, []);
+                }
+
+                want = Math.Min(ScaleFloorsMax, ratios.Count + ScaleFloors);
+            }
+
+            var needed = new List<(string, decimal)>();
+            foreach (var f in shared.Where(f => !counted.Contains(f))
+                         .OrderByDescending(f => (Pages(pa[f]) is null ? 0 : 1) + (Pages(pb[f]) is null ? 0 : 1))
+                         .ThenByDescending(f => f)
+                         .Take(want - ratios.Count))
+            {
+                if (Pages(pa[f]) is null)
+                {
+                    needed.Add((a, f));
+                }
+
+                if (Pages(pb[f]) is null)
+                {
+                    needed.Add((b, f));
+                }
+            }
+
+            return new Scale(ScaleState.Pending, 1, needed);
+        }
+
+        private static double Median(List<double> values)
+        {
+            var sorted = values.Order().ToList();
+            var half = sorted.Count / 2;
+            return sorted.Count % 2 == 1 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2;
+        }
+    }
 
     /// <summary>
     /// A number is an extra everywhere once any mapping says so: by its title, or because it is a third

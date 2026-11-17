@@ -147,6 +147,64 @@ public class ChapterReconcilerTests
         Assert.Empty(ChapterReconciler.MissingCounts(ChapterReconciler.Decide(listings)[4], listings));
     }
 
+    private static (decimal, int?, string?)[] Plain(int from, int to, int? pages) =>
+        [.. Enumerable.Range(from, to - from + 1).Select(n => C(n, pages))];
+
+    [Fact]
+    public void ASourceAtTwiceTheScaleIsComparedAfterDividingByIt()
+    {
+        // Too Many Losing Heroines: MangaKakalot has about twice the images per chapter of everyone else.
+        var decisions = ChapterReconciler.Decide([
+            Listing("parts", [.. Plain(1, 5, 20), C(6.1m, 10), C(6.2m, 11), C(7, 20)]),
+            Listing("double", [.. Plain(1, 5, 40), C(6, 40), C(7, 40)]),
+        ]);
+
+        var six = decisions[6];
+        Assert.Equal(FoldState.Merged, six.State);
+        Assert.Equal(2, Assert.Single(six.Ratios).Scale);
+    }
+
+    [Fact]
+    public void AScaleWaitsForThePlainChaptersToBeCounted()
+    {
+        var listings = new[]
+        {
+            Listing("parts", [.. Plain(1, 5, 20), C(6.1m, 10), C(6.2m, 11), C(7, 20)]),
+            Listing("double", [.. Plain(1, 5, null), C(6, 40), C(7, 40)]),
+        };
+
+        var six = ChapterReconciler.Decide(listings)[6];
+
+        Assert.Equal(FoldState.Pending, six.State);
+        Assert.Equal([("double", 5m), ("double", 4m), ("double", 3m)], ChapterReconciler.MissingCounts(six, listings));
+    }
+
+    [Fact]
+    public void SourcesWithoutASteadyScaleSayNothing()
+    {
+        var decisions = ChapterReconciler.Decide([
+            Listing("parts", C(1, 20), C(2, 20), C(3, 20), C(4, 20), C(5, 20), C(6.1m, 10), C(6.2m, 11), C(7, 20)),
+            Listing("other", C(1, 10), C(2, 45), C(3, 20), C(4, 60), C(5, 8), C(6, 21), C(7, 20)),
+        ]);
+
+        Assert.Equal(FoldState.Keep, decisions[6].State);
+        Assert.Equal("pageScalesDisagree", decisions[6].Reason);
+    }
+
+    [Fact]
+    public void AMergeMostOtherSourcesCallPartOneStays()
+    {
+        // Please Go Home, Miss Akutsu 49: TopManhua's own 49 is its 49.1 + 49.2, every other source's 49 is 49.1.
+        var decisions = ChapterReconciler.Decide([
+            Listing("topmanhua", C(49, 35), C(49.1m, 20), C(49.2m, 15), C(50, 30)),
+            Listing("a", C(49, 20), C(50, 30)),
+            Listing("b", C(49, 20), C(50, 30)),
+        ]);
+
+        Assert.Equal(FoldState.Keep, decisions[49].State);
+        Assert.Equal("wholesDisagree", decisions[49].Reason);
+    }
+
     [Fact]
     public void PublisherNumbersRoundTrip()
     {
@@ -218,6 +276,9 @@ public class ChapterReconcilerTests
                 got.Parts.ToDictionary(p => p.Key, p => p.Value.ToList()));
             Assert.Equal(want.GetProperty("wholes").EnumerateArray().Select(w => w.GetString()!), got.Wholes);
             Assert.Equal(want.GetProperty("aliases").EnumerateObject().Select(a => a.Name).Order(), got.Aliases.Keys.Order());
+            Assert.Equal(
+                want.GetProperty("calibration").EnumerateArray().Select(n => (n[0].GetString()!, n[1].GetDecimal())),
+                got.Calibration);
         }
 
         var decided = expected.EnumerateObject().Select(f => decimal.Parse(f.Name, System.Globalization.CultureInfo.InvariantCulture)).ToHashSet();
