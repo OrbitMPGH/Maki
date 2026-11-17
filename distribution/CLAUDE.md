@@ -1053,3 +1053,83 @@ The owner's complaint has two halves: picks they had already met (they had seen 
 - **Known titles leave after the cap has run, so they use its quota.** `WatchedAnime = Exclude` is an overlay in `RecommendationService`; the cap runs in `SelectWinners` and counts the watched titles as famous picks that then disappear. On the real mixed shelf with Exclude, at ratio 1.25 the top 40 is 65% top-1k as built and 68% when the watched titles are excluded before the scan (one title differs and 36 change position); at 1.0 it is 48% against 55% (three titles differ). Small on the set, large on the order. If both ship, pass the watched set into `GetSimilarAsync`'s `exclude` and put it in the pool key, so the cap measures the page the reader gets. On that shelf Exclude with the cap at 1.25 takes the top-1k share from 98% to 65% with no watched title on the page.
 - **Nothing ships on.** `KnownTitleTuning.Default` is all off, `CommonWeight` is 0 and no `PageFrequency` is registered in the app, so the penalty is off whatever the weight says. Shipping it means a published table built from the engine's own pages on ongoing or mixed shelves, and rebuilt whenever the ranking changes. With Exclude on, a title the reader is only "Watching" shows on neither Recommended nor the resume rail (the rail needs a finished season and a chapter range): 92 titles on that shelf, and an open product question.
 - **Not done:** the ongoing-shelf judged panel (queues built with the cap variants in them); the confirm split; a table from more readers; any setting or UI for known titles.
+
+## v8: a next-read grader (`library --next`), and the gates a ranking change has to pass
+
+The owner's goal for the Recommended tab is "series this reader most likely wants to read next", and the stated failure is a page of famous titles the reader has already met. No grader up to v7 measures that: `library` rewards fame by construction, the judged panels score story similarity, and none of them knows what a reader has already seen. Logs, scripts and the owner pages are in `research/recommender/2026-11-17-v8/lane-c/` in the main checkout.
+
+- **Run as:** `MAKI_CONFIG_DIR=<cfg-f0> MAKI_ARTIFACTS_DIR=<dir> dotnet run --no-cache distribution/eval-reco-labels.cs -- library --fold-users 0/4 --work .artifacts/coread-graph.db --ease .artifacts/ease-work/ease-fold0-d0.35.db --csv ndcg --next --strata default <variants>`, then `python distribution/eval-next-gates.py default <variants>`. `--page N` (20) is the page the reader meets, `--household S` (0.10) the listed share that makes a title a household name. New variant key `obscurity=<-1..1>` (the app's dial) and three controls that are never candidates: `popular` (the most popular titles the request has not seeded), `random`, `textonly` (description embedding only). The controls run in the plain modes only.
+- **What it reads.** `coread-graph.db` holds every status of each reader's list, not only what they finished: 6.7M plan-to-read rows over 46,592 readers, 5.2M reading, 1.1M dropped, 1.0M paused. 91% of graded readers have a plan list (median 36 titles). A title's **listed share** is the share of the 31,515 reference readers (everyone outside the graded fold with a usable list) who have it on a list in any status: the top title 53%, title 100 22%, title 1,000 6.6%, title 10,000 1.0%. A **household** title is listed by 10% or more (493 titles).
+- **The page is graded as the app would show it.** Titles the reader is reading, paused, or finished outside the held-out slice are on their shelf, so they are removed first and are neither hits nor misses. Counting a title the reader is already reading as a hit let a popularity list earn 61% of the engine's score in the first draft.
+- **Label columns.** `wantN` is the headline: nDCG@40 over the held-out finished titles plus the reader's plan-to-read list, with gain = how rarely the title is listed (`log(1/share)/log(N)`: 0.08 for a title 43% of readers list, 0.44 for one 1% list). `wantT` is the same labels with household titles removed and gain 1, so it cannot be earned with hits at all. `tnDCG`, `nicheR` and `mainR` split the held-out titles the same way; `plan` and `planN` grade against the plan list alone.
+- **Page columns, top 20.** `house` is the household share of the page. **`passed` is the owner's complaint as a number: the share of the page that is household and on none of the reader's lists**, famous titles they have met and left alone. `hprec` is the share of household picks the reader did choose. `above` is the share of the page more widely listed than the reader's median seed. `overlap` is the share of a page that is also on another graded reader's page. The last row of the table gives the same columns on the readers' own held-out titles.
+- **The controls, 500 held-out readers, fold 0 of 4, dev:**
+
+  | variant | nDCG@40 | want (gain 1) | plan@20 | wantN | wantT | house | passed | overlap |
+  |---|---|---|---|---|---|---|---|---|
+  | default | 0.277 | 0.324 | 0.167 | 0.176 | 0.187 | 37.6% | 21.9% | 2.0% |
+  | popular | 0.047 | 0.122 | 0.116 | 0.027 | 0.000 | 100% | 83.3% | 63.0% |
+  | random | 0.000 | 0.001 | 0.001 | 0.001 | 0.001 | 0.4% | 0.3% | 0.0% |
+  | textonly | 0.021 | 0.026 | 0.015 | 0.019 | 0.024 | 0.9% | 0.6% | 3.3% |
+  | readers' own held-out titles | | | | | | 27.4% | | 0.8% |
+
+  **Gain-1 labels are fame scores in part, so they are not gates.** A popularity list earns 17% of the engine's nDCG@40, 38% of `want` and 70% of `plan@20`: plan lists are full of megahits. On `wantN` it earns 15% and on `wantT` nothing. Random and text-only pages are the most novel ones and score near zero on every label column, so the label columns are not novelty scores either.
+- **The engine is more mainstream than its readers, and 4.4 of 20 picks are passed-over hits.** 37.6% of the default page is household against 27.4% of what these readers went on to finish, 67% of picks are more widely listed than the reader's median seed against 50%, and 21.9% of the page is a household title the reader never listed.
+- **It rejects the table the owner rejected, which plain nDCG preferred.** The EASE tables by damp, same weight, paired against the shipped 0.35:
+
+  | table | nDCG@40 | wantN | wantT | passed | overlap |
+  |---|---|---|---|---|---|
+  | damp 0 | +0.0053 [+0.0001, +0.0105] | -0.0128 [-0.0160, -0.0097] | -0.0332 [-0.0381, -0.0283] | +10.1 [+9.3, +10.9] | +1.9 |
+  | damp 0.25 | +0.0062 [+0.0034, +0.0092] | -0.0020 [-0.0035, -0.0003] | -0.0073 [-0.0097, -0.0049] | +3.3 [+2.8, +3.7] | +0.5 |
+  | damp 0.5 | -0.0245 [-0.0287, -0.0203] | -0.0030 [-0.0056, -0.0003] | +0.0020 [-0.0019, +0.0059] | -4.3 [-4.9, -3.8] | -0.5 |
+  | damp 1.0 | -0.1221 | -0.0509 [-0.0572, -0.0446] | -0.0556 | -9.5 | -0.9 |
+  | no EASE | -0.0782 [-0.0861, -0.0701] | -0.0441 [-0.0492, -0.0392] | -0.0611 [-0.0681, -0.0542] | +4.7 [+3.8, +5.6] | +1.4 |
+
+  `wantN` peaks at the shipped 0.35 and does not simply prefer more damping. Damp 0.5 looks nearly free pooled and loses -0.0091 [-0.0144, -0.0040] in the niche-shelf third, which is why the gates are stated by third.
+- **The dial, both ways.** `obscurity` -0.5: wantN -0.0051 [-0.0066, -0.0036], passed +5.5, while plain `want` and `plan@20` like it. +0.25 and +0.5: wantN +0.0022 [+0.0012, +0.0033] and +0.0027 [+0.0012, +0.0043], passed -2.4 and -5.0. +1.0: wantN +0.0006 [-0.0018, +0.0031], passed -9.3, nDCG@40 -0.0216. So `wantN` stops rising at 0.5 and is flat at 1.0, where the page (22.4% household) is less household than the readers' own titles. `wantT` keeps rising to +0.0167 at 1.0: with household titles out of the labels it cannot see a wanted hit being removed, so **a `wantT` gain is not evidence, only a `wantT` loss is.**
+- **The gates** (`distribution/eval-next-gates.py`, paired against `default` on the same requests, 95% bootstrap interval; a gate fails when the interval lies wholly on the wrong side of zero):
+  1. `wantN` and `wantT` do not fall, pooled.
+  2. `wantN` does not fall in any third of the readers by how household their own shelf is (niche 8% of seeds household, middle 23%, mainstream 51%).
+  3. `passed` does not rise, pooled or in any third. A change that claims to fix fame has to lower it pooled.
+  4. Runaway pages do not rise: the share of readers whose page is 30 points more household than their shelf (14.0% at default).
+  5. `overlap` does not rise.
+  6. The floor: the page is not less household than the shelves it was built from (mean page share minus shelf share not certainly below zero). Past that a change is removing titles these readers go on to read.
+  7. Judged `want@10` and `feel@10` on the shelf panel do not fall, on fully judged rows.
+  8. One look at the confirm split agrees.
+  9. A real mixed shelf, read on the same page columns, moves toward its own profile. The panel cannot stand in for it (below).
+
+  Noise at n = 500: a `wantN` interval is 0.001 to 0.0025 either side pooled and 0.002 to 0.005 in a third; `passed` 0.4 to 0.9 points pooled and up to 1.6 in a third; runaway pages 2 to 3.5 points. On the 80-shelf panel `want@10` is 0.01 to 0.04 either side and `feel@10` 0.02 to 0.04. A loss smaller than that passes unseen.
+- **How the existing dials score on gates 1 to 6, dev, and the same verdict on the confirm split for every row looked at there** (default, no EASE, damp 0, `obscurity` 0.5 and 1.0, EASE weight 8, crowd graphs off, `popular`, `textonly`):
+
+  | variant | verdict | wantN | passed | runaway pages | what fails |
+  |---|---|---|---|---|---|
+  | `obscurity` 0.25 | pass, lowers fame | +0.0022 | -2.4 | 8.8% | |
+  | `obscurity` 0.5 | pass, lowers fame | +0.0027 | -5.0 | 4.8% | |
+  | `obscurity` 1.0 | fail | +0.0006 | -9.3 | 1.2% | floor: the page is 4.7 points less household than the shelf |
+  | EASE weight 8 | pass, lowers fame | +0.0062 | -2.1 | 8.0% | |
+  | EASE weight 2, weight 1 | fail | -0.0107, -0.0224 | +2.5, +3.8 | 21.4%, 25.8% | everything |
+  | vote graph off, both crowd graphs off | pass, lowers fame | +0.0016, +0.0020 | -1.6, -2.4 | 11.0%, 9.4% | |
+  | co-read off | pass, lowers fame | +0.0002 | -0.5 | 13.0% | |
+  | taste weight 5 | fail | +0.0031 | +0.5 | 16.0% | passed |
+  | taste weight 1.25, taste off | fail | -0.0014, -0.0121 | -0.3, -0.1 | | wantN |
+
+  **Nothing here is a recommendation to ship.** EASE weight 8 passes every panel gate and makes the real mixed shelf below no better, and the dial at 0.5 leaves that shelf where it was. Gate 9 exists because of exactly this.
+- **Household at 20% (120 titles) orders the variants the same way.** passed 10.9% at default, no EASE +3.4, damp 0 +6.2, `obscurity` 0.5 -3.8; `wantT` -0.068, -0.016, +0.004.
+- **The judged panel with the combined verdict (`--shelf-judged --next`).** Each top-10 pick is `listed` (held-out or planned: counts), on the shelf (left out), `dropped` or `passed` (do not count), else `fits` or `weak` by stored judged feel against the nearest seed. `want@10` = (listed + fits) / counted. 80 shelves, stored judgements, unjudged picks left out:
+
+  | variant | want@10 | paired vs default | listed | fits | passed | unjudged |
+  |---|---|---|---|---|---|---|
+  | default | 61.6% | | 33.8% | 16.8% | 20.9% | 3.1% |
+  | no EASE | 54.9% | -0.067 [-0.106, -0.028] | 27.6% | 15.4% | 23.9% | 3.3% |
+  | damp 0 | 54.3% | -0.073 [-0.110, -0.038] | 35.5% | 8.3% | 31.8% | 4.3% |
+  | `obscurity` 0.5 | 65.3% | +0.037 [+0.016, +0.058] | 33.6% | 19.5% | 16.8% | 5.1% |
+  | `obscurity` 1.0 | 67.1% | +0.055 [+0.025, +0.085] | 31.4% | 20.5% | 13.1% | 11.5% |
+  | EASE weight 8 | 63.7% | +0.021 [-0.001, +0.043] | 33.4% | 16.4% | 18.2% | 7.1% |
+  | both crowd graphs off | 65.1% | +0.035 [+0.021, +0.051] | 34.9% | 18.4% | 17.4% | 3.7% |
+  | damp 0.5 | 67.0% | +0.055 [+0.030, +0.083] | 31.9% | 18.5% | 16.1% | 8.9% |
+
+  Rows with more unjudged picks than default are upper readings, as in v7. `want@10` moves with `passed` by construction and counts an unknown look-alike as much as a title the reader chose, so it leans toward obscurity: it likes damp 0.5 and the dial at 1.0, which gates 1, 2 and 6 refuse. Read it as a check that a change did not swap passed-over hits for bad fits, not as a headline.
+- **The judge agrees passed-over hits fit worse, and does not agree that chosen titles fit better.** Mean judged feel against the nearest seed, default: `passed` picks 1.59 (n 167), picks the reader chose 1.70 (n 248), unlisted picks that are not household 1.83 (n 210). The same order holds in all 15 variants. So `feel@10` is story similarity and nothing more: the titles readers went on to pick are less like their nearest series than the engine's own unlisted picks.
+- **EASE is better on every gate for the average reader, in every third.** Against no EASE: wantN +0.044 (+0.054 in the niche third), passed -4.7, runaway pages 27% to 14%, overlap 3.4% to 2.0%. In the niche third `house` and `passed` do not certainly move and `above` rises 4.8 points [+2.4, +7.3].
+- **The panel does not contain the shelf that prompted this, and that is the grader's main limit.** On one real mixed shelf (134 library series, 32% of 178 seeds household) the default top 20 is 16 household against 6 with EASE off: 50 points more household with the channel. Among the 500 held-out readers EASE makes the page at least 20 points more household for 2.2% and at least 40 points for 0.4%, and makes it at least 20 points less household for 10.6%. The same shelf with the catalogue filters off returns the same page, and with thumbs-ups and anime seeds removed it is still 14 of 20 household (4 with EASE off), so neither the filters nor the extra seeds cause it. Read on the panel's columns that page is the 98th percentile for page-minus-shelf household share. A gate that averages over readers cannot see a shelf this rare, which is why gate 9 is a page and not a number from this panel.
+- **What it cannot see.** Held-out readers have no anime lists, so "has seen the adaptation" is measurable only on a real shelf. `passed` assumes a household title absent from every list was met and left alone, which is safe for the top hundred and weaker near the 10% cut. The readers are AniList's and the reference population is the same site. The condensed list is not refilled after on-shelf titles are removed. `distribution/judge-shelf.py` (a whole-shelf "would this reader want it" rubric, request builder only) has never been sent, so it is unvalidated.
