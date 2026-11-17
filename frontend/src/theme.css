@@ -6218,6 +6218,49 @@ button.site-chip:hover {
   background: transparent;
 }
 
+/* Once the page is wide enough, the band ends on its own tab row, a hairline across the page that
+   starts at the poster's edge on every tab. Details keeps the full width below it. Chapters and
+   Files stay on that left edge and stop where the Progress panel starts, so the space to their
+   right is the panel's column carrying on rather than leftover. That edge is the band's first grid
+   column (2fr of 2.6fr, after the Group's md gap) plus the gap. 98.5rem is where that width
+   reaches the 76rem the chapter table needs to keep its Released column; below it the tables take
+   the full width and the tabs stay beside the Progress panel. Past 120rem a table stops growing. */
+.series-page {
+  container: series-page / inline-size;
+}
+@container series-page (min-width: 98.5rem) {
+  .series-page .series-hero:not([data-compact]) .series-hero-tabs {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+  .series-page .series-hero:not([data-compact]) .series-hero-tabs .page-tabs {
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 0;
+  }
+  .series-tab-stage {
+    padding-top: var(--mantine-spacing-xs);
+  }
+  .series-detail-surface:is([data-tab='chapters'], [data-tab='files']) .series-tab-stage {
+    max-width: min((100% - var(--mantine-spacing-md)) / 1.3 + var(--mantine-spacing-md), 120rem);
+  }
+  .series-page .series-hero[data-loading]:not([data-compact]) .series-hero-tabs {
+    border-bottom: 1px solid var(--hairline);
+  }
+  .series-tab-stage[data-tab-switched] > .series-body {
+    animation: series-stage-in var(--dur-medium) var(--ease) both;
+  }
+}
+@keyframes series-stage-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .series-tab-stage[data-tab-switched] > .series-body {
+    animation: none;
+  }
+}
+
 .series-hero-body {
   position: relative;
   width: 100%;

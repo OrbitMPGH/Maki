@@ -498,8 +498,12 @@ function SeriesDetailBody() {
     setSyncedUrlTab(urlTab)
     setTab(urlTab)
   }
+  // Only a switch fades the new tab in; on arrival the page transition already brings it in, and
+  // WebKit captures that transition's new page as a still, which would catch the body faded out.
+  const [tabSwitched, setTabSwitched] = useState(false)
   const changeTab = (value: string | null) => {
     if (!value || !TABS.includes(value as Tab)) return
+    setTabSwitched(true)
     setTab(value as Tab)
     const next = new URLSearchParams(searchParams)
     if (value === 'details') next.delete('tab')
@@ -1651,7 +1655,7 @@ function SeriesDetailBody() {
 
   if (isLoading) {
     return (
-        <SurfaceFrame width="full" pageStyle="editorial">
+        <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
           <SeriesHeroSkeleton />
           {luckyPill}
         </SurfaceFrame>
@@ -2241,9 +2245,10 @@ function SeriesDetailBody() {
     )
 
   return (
-    <SurfaceFrame width="full" pageStyle="editorial">
+    <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
       <Tabs
           className="series-detail-surface"
+          data-tab={tab}
           value={tab}
           onChange={changeTab}
           variant="unstyled"
@@ -2569,6 +2574,7 @@ function SeriesDetailBody() {
             }
         />
 
+        <div className="series-tab-stage" data-tab-switched={tabSwitched || undefined}>
         {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
@@ -3851,6 +3857,7 @@ function SeriesDetailBody() {
             <SeriesFilesSection seriesId={seriesId} />
           </div>
         </Tabs.Panel>
+        </div>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
         <ArchiveSeriesDialog

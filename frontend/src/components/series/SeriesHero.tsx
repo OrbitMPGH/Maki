@@ -618,6 +618,7 @@ export function SeriesHeroSkeleton() {
                 </Group>
             </div>
         </Box>
+        <div className="series-tab-stage">
         <div className="series-body">
             <div className="series-split">
                 <Paper withBorder radius="lg" p="lg">
@@ -638,6 +639,7 @@ export function SeriesHeroSkeleton() {
                     ))}
                 </Paper>
             </div>
+        </div>
         </div>
         </div>
     )
