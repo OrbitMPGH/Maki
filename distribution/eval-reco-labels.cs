@@ -1505,6 +1505,30 @@ async Task<ResultRow> Score(Variant variant)
     {
         Directory.CreateDirectory(dumpPicks!);
         File.WriteAllText(Path.Combine(dumpPicks!, $"picks-{variant.Name}-{csvSuffix}.tsv"), pickRows.ToString());
+
+        // What made these pages, for distribution/build-page-share.py: a table is publishable only
+        // when the pages came from every reader and every reader-trained artifact saw every reader.
+        string Folds(string? path) =>
+            path is null || !File.Exists(path) ? "absent"
+            : ReadTrainingFolds(path) is { Count: > 0 } folds ? string.Join(',', folds.Order()) : "all";
+        var about = new System.Text.Json.Nodes.JsonObject
+        {
+            ["variant"] = variant.Name,
+            ["readers"] = requests.Count,
+            ["limit"] = limit,
+            ["foldUsers"] = foldCount == 0 ? "all" : $"{foldIndex}/{foldCount}",
+            ["split"] = split,
+            ["shelfStatus"] = shelfStatus,
+            ["artifactFolds"] = new System.Text.Json.Nodes.JsonObject
+            {
+                ["taste"] = variant.Taste.Weight > 0 ? Folds(tastePath) : "off",
+                ["ease"] = variant.Ease.Weight > 0 ? Folds(variant.EasePath) : "off",
+                ["coread"] = Folds(coReadPath),
+            },
+        };
+        File.WriteAllText(
+            Path.Combine(dumpPicks!, $"picks-{variant.Name}-{csvSuffix}.json"),
+            about.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     }
 
     if (dumping is not null)

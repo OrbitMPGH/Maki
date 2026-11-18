@@ -57,7 +57,8 @@ public class SemanticRecommender(
     TasteVectorTuning? tasteTuning = null,
     EaseCache? easeCache = null,
     EaseTuning? easeTuning = null,
-    PageFrequency? pageFrequency = null)
+    PageFrequency? pageFrequency = null,
+    PageShare.PageShareCache? pageShareCache = null)
 {
     private static readonly EmbeddingMath.Weights Weights = new();
 
@@ -304,7 +305,8 @@ public class SemanticRecommender(
     /// </param>
     /// <param name="common">
     /// Whether the page-share penalty (<see cref="RecommenderTuning.CommonWeight"/>) may apply.
-    /// Personal recommendations only; off when no <see cref="PageFrequency"/> was passed.
+    /// Personal recommendations only. The table is the fixed <see cref="PageFrequency"/> the eval and
+    /// the tests pass, else the installed one; with neither the penalty does nothing.
     /// </param>
     /// <param name="avoidWeights">
     /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
@@ -607,7 +609,10 @@ public class SemanticRecommender(
             }
         }
 
-        var commonLive = common && pageFrequency is not null && _tuning.CommonWeight > 0;
+        var pageShare = common && _tuning.CommonWeight > 0
+            ? pageFrequency ?? (pageShareCache is null ? null : await pageShareCache.GetAsync(ct))
+            : null;
+        var commonLive = pageShare is not null;
         var scored = new List<Candidate>(poolRows.Count);
         var floored = 0;
         // Reported so a run can tell an empty contrastive profile from one that matched nothing.
@@ -770,7 +775,7 @@ public class SemanticRecommender(
             if (commonLive)
             {
                 score -= _tuning.CommonWeight
-                    * Math.Pow(pageFrequency!.ShareOf(index.IdAt(row)), _tuning.CommonPower);
+                    * Math.Pow(pageShare!.ShareOf(index.IdAt(row)), _tuning.CommonPower);
             }
 
             // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the

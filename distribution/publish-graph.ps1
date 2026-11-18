@@ -21,6 +21,11 @@
              lists (Python, numpy and scipy). Packed with the same per-user refusal, plus a refusal
              of any fold-limited evaluation build.
 
+    pageshare - page-share.db, how often each series lands on a reader's Recommended page.
+             Built by hand first (the eval harness writes the pages, build-page-share.py turns
+             them into the table; see that script's header), so this kind only packs and publishes
+             what is at <ArtifactsDir>\page-share.db. Same two refusals as ease.
+
   Three steps per graph, all inside the git-ignored .artifacts folder:
 
     1. The fetcher's `export` mode folds its resumable working database into the shippable pair
@@ -72,7 +77,7 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("reco", "coread", "taste", "cohorts", "ease", "both", "all")]
+  [ValidateSet("reco", "coread", "taste", "cohorts", "ease", "pageshare", "both", "all")]
   [string]$Graph = "both",
   [string]$ArtifactsDir = "",
   [long]$MinPairs = 0,
@@ -137,6 +142,17 @@ $profiles = @{
     DumpDb     = "mangabaka.full.db"
     MinPairs   = 1000000
     Notes      = "Item-item weights fitted (EASE) on AniList reading lists: how much finishing one series predicts finishing another, keyed by MangaBaka id, for Maki's personal recommendations. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
+  }
+  pageshare = [pscustomobject]@{
+    Name       = "pageshare"
+    Label      = "Page-share table"
+    Tag        = "page-share-latest"
+    Fetcher    = "build-page-share.py"
+    WorkingDb  = ""
+    ExportDb   = "page-share.db"
+    PackOnly   = $true
+    MinPairs   = 1000
+    Notes      = "How often each series lands on a reader's Recommended page, measured over the engine's own pages for AniList reading lists, keyed by MangaBaka id, for the page-share penalty in Maki's personal recommendations. An aggregate only: one share per series, no per-user row, and the tooling refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
   }
   cohorts = [pscustomobject]@{
     Name       = "cohorts"
@@ -214,7 +230,10 @@ foreach ($g in $selected) {
   $floor = if ($MinPairs -gt 0) { $MinPairs } else { $g.MinPairs }
 
   # 1. Fold the working graph into the shippable pair table.
-  if ($SkipExport) {
+  if ($g.PackOnly) {
+    if (-not (Test-Path $edgesDb)) { throw "No $edgesDb. Build it with $($g.Fetcher) first (see its header)." }
+    Write-Host "Packing $edgesDb as it stands." -ForegroundColor Cyan
+  } elseif ($SkipExport) {
     if (-not (Test-Path $edgesDb)) { throw "-SkipExport was given but $edgesDb does not exist." }
     Write-Host "Skipping export; packing $edgesDb as it stands." -ForegroundColor Cyan
   } else {
