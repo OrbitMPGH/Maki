@@ -144,7 +144,9 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                 numberEl.GetDecimal(),
                 numberEl.GetRawText(),
                 JsonRead.Property(row, "title"),
-                JsonRead.Property(row, "scanId") ?? string.Empty));
+                JsonRead.Property(row, "scanId") ?? string.Empty,
+                row.TryGetProperty("pageCount", out var pagesEl) && pagesEl.ValueKind == JsonValueKind.Number &&
+                pagesEl.TryGetInt32(out var pages) && pages > 0 ? pages : null));
         }
 
         // Every group's chapters arrive in one array, so most numbers appear several times.
@@ -168,7 +170,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                 // Atsumaru hosts English scans only and states no language per chapter.
                 Language: "en",
                 ReleaseDate: null,
-                Url: $"{BaseUrl}/read/{sourceSeriesId}/{c.Id}"),
+                Url: $"{BaseUrl}/read/{sourceSeriesId}/{c.Id}",
+                PageCount: c.PageCount),
             group => group
                 .OrderByDescending(c => coverage.GetValueOrDefault(c.ScanId))
                 .ThenBy(c => c.ScanId, StringComparer.Ordinal)
@@ -282,5 +285,5 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     /// <summary>A chapter row as listed, before duplicates across scanlation groups are resolved.</summary>
-    private record ListedChapter(string Id, decimal Number, string NumberRaw, string? Title, string ScanId);
+    private record ListedChapter(string Id, decimal Number, string NumberRaw, string? Title, string ScanId, int? PageCount);
 }

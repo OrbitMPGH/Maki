@@ -3,7 +3,7 @@
 namespace Maki.Api.Tests;
 
 /// <summary>A canned <see cref="ISource"/> — search hits and chapter lists are injected per test.</summary>
-internal sealed class FakeSource : ISource, INextReleaseSource, IChapterVolumeSource
+internal sealed class FakeSource : ISource, INextReleaseSource, IChapterVolumeSource, IPublisherNumberingSource
 {
     public required string Name { get; init; }
     public string DisplayName => Name;
@@ -16,6 +16,11 @@ internal sealed class FakeSource : ISource, INextReleaseSource, IChapterVolumeSo
     public DateTime? NextRelease { get; set; }
 
     public DateTime? AnnouncedNextRelease(string sourceSeriesId) => NextRelease;
+
+    /// <summary>The publisher's chapter numbers the listing shows; null shows none.</summary>
+    public IReadOnlyList<decimal>? Publisher { get; set; }
+
+    public IReadOnlyList<decimal>? PublisherNumbers(string sourceSeriesId) => Publisher;
 
     public IReadOnlyList<string> SupportedLanguages { get; init; } = ["en"];
 

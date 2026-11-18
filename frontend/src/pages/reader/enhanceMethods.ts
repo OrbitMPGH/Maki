@@ -11,8 +11,8 @@ export interface EnhanceMethodInfo {
   label: MessageDescriptor
   hint: MessageDescriptor
   /**
-   * Server models only. Speed follows the time per page on the server's CPU (Maki 2x 1x, SPAN-S 2x, Real-ESRGAN
-   * 3x); quality is the owner's ranking by eye, Real-ESRGAN above Maki 2x.
+   * Server models only. Speed follows the time per page on the server's CPU (Maki 2x 1x, Maki 2x HQ 1.75x, SPAN-S
+   * 2x, Real-ESRGAN 3x); quality is the owner's ranking by eye, Real-ESRGAN and Maki 2x HQ above Maki 2x.
    */
   speed?: ModelRating
   quality?: ModelRating
@@ -39,10 +39,17 @@ export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
   {
     id: 'server:maki-2x',
     label: msg`Maki 2x`,
-    hint: msg`Maki's own model; looks like Real-ESRGAN and runs faster`,
+    hint: msg`Maki's own model and the fastest`,
     speed: 5,
     quality: 4,
     recommended: true,
+  },
+  {
+    id: 'server:maki-2x-hq',
+    label: msg`Maki 2x HQ`,
+    hint: msg`Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x`,
+    speed: 4,
+    quality: 5,
   },
   { id: 'server:span-s', label: msg`SPAN-S`, hint: msg`IllustrationJaNai's sharp model`, speed: 3, quality: 3 },
   {

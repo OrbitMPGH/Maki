@@ -8,14 +8,24 @@ namespace Maki.Api.Configuration;
 /// </summary>
 public class AppPaths
 {
-    public AppPaths() : this(Resolve())
+    public const string SharedDumpVariable = "MAKI_SHARED_DUMP_DIR";
+
+    public AppPaths() : this(Resolve(), Environment.GetEnvironmentVariable(SharedDumpVariable))
     {
     }
 
-    /// <summary>State under <paramref name="configDir"/>, whatever MAKI_CONFIG_DIR says.</summary>
-    public AppPaths(string configDir)
+    /// <summary>
+    /// State under <paramref name="configDir"/>, whatever MAKI_CONFIG_DIR says. A
+    /// <paramref name="sharedDumpDir"/> other than the config dir reads <c>mangabaka.db</c> from
+    /// there instead and never writes it (<see cref="SharesMangaBakaDump"/>).
+    /// </summary>
+    public AppPaths(string configDir, string? sharedDumpDir = null)
     {
         ConfigDir = configDir;
+        SharesMangaBakaDump = !string.IsNullOrWhiteSpace(sharedDumpDir)
+            && !string.Equals(Path.GetFullPath(sharedDumpDir).TrimEnd('\\', '/'),
+                Path.GetFullPath(configDir).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+        MangaBakaDbPath = Path.Combine(SharesMangaBakaDump ? sharedDumpDir! : ConfigDir, "mangabaka.db");
         Directory.CreateDirectory(ConfigDir);
         Directory.CreateDirectory(DataProtectionKeysDir);
         Directory.CreateDirectory(LogDir);
@@ -40,7 +50,14 @@ public class AppPaths
     public string ConfigDir { get; }
     public string ConfigFile => Path.Combine(ConfigDir, "config.json");
     public string DatabasePath => Path.Combine(ConfigDir, "maki.db");
-    public string MangaBakaDbPath => Path.Combine(ConfigDir, "mangabaka.db");
+    public string MangaBakaDbPath { get; }
+
+    /// <summary>
+    /// A dev setting (<see cref="SharedDumpVariable"/>) so worktree instances read one copy of the
+    /// 3.7 GB dump instead of each downloading their own. Such an instance never downloads, refreshes
+    /// or backfills it: the instance that owns that folder does.
+    /// </summary>
+    public bool SharesMangaBakaDump { get; }
     public string EmbeddingsDbPath => Path.Combine(ConfigDir, "embeddings.db");
 
     /// <summary>

@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, one {# inny czytelnik jest w trakcie tej serii. Archiwizacja zatrzymuje nowe rozdziały dla wszystkich.} few {# inni czytelnicy są w trakcie tej serii. Archiwizacja zatrzymuje nowe rozdziały dla wszystkich.} many {# innych czytelników jest w trakcie tej serii. Archiwizacja zatrzymuje nowe rozdziały dla wszystkich.} other {# innego czytelnika jest w trakcie tej serii. Archiwizacja zatrzymuje nowe rozdziały dla wszystkich.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# więcej} few {+# więcej} many {+# więcej} other {+# więcej}}"
@@ -8710,6 +8709,10 @@ msgstr "strony z creditami, ukrywanie creditów, scanlator, credity, reklamy, re
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "credity, strony z creditami, strony scanlatorów, rekrutacja, strony z datkami"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14563,6 +14566,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -14708,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki sam nie znajdzie serii na tej stronie. Każdą serię powiążesz, wklejając jej adres na stronie serii."
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Własny model Maki; wygląda jak Real-ESRGAN i działa szybciej"
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24088,7 +24100,6 @@ msgstr "Pokaż rozdziały"
 msgid "Show covers from the library"
 msgstr "Pokaż okładki z biblioteki"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

@@ -35,6 +35,7 @@ public class SmartDownloadJob(
     SettingsService settings,
     SourceScoutService scout,
     VolumeFirstGate volumeFirst,
+    ChapterFoldChecks foldChecks,
     ILogger<SmartDownloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("smart-download");
@@ -79,9 +80,9 @@ public class SmartDownloadJob(
             var hold = await volumeFirst.CheckAsync(series.Id, ct);
 
             var chapters = await db.Chapters.AsNoTracking().Where(c => c.SeriesId == series.Id).ToListAsync(ct);
-            if (await WaitsForMeasurementAsync(db, scout, series.Id, chapters, scoutOnMatch, ct))
+            if (foldChecks.Running(series.Id) || await WaitsForMeasurementAsync(db, scout, series.Id, chapters, scoutOnMatch, ct))
             {
-                logger.LogDebug("Smart Download is waiting for the sources of series {SeriesId} to be measured", series.Id);
+                logger.LogDebug("Smart Download is waiting for the sources of series {SeriesId} to be measured or its split chapters checked", series.Id);
                 continue;
             }
 

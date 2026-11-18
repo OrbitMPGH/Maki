@@ -16,6 +16,7 @@ public static class JobLabels
         [nameof(ArtifactIdleUnloadJob)] = "health.job.artifactIdleUnload",
         [nameof(BrowserIdleShutdownJob)] = "health.job.browserIdleShutdown",
         [nameof(ChapterFileMeasureJob)] = "health.job.chapterFileMeasure",
+        [nameof(ChapterPageCountJob)] = "health.job.chapterPageCounts",
         [nameof(CheckForUpdatesJob)] = "health.job.checkForUpdates",
         [nameof(CoReadJob)] = "health.job.coRead",
         [nameof(CompletedDownloadJob)] = "health.job.completedDownloads",

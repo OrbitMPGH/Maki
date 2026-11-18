@@ -305,4 +305,31 @@ public class MangaDexSourceTests
             [ExternalIdService.MangaDex],
             results[2].ExternalIds!.Keys);
     }
+
+    private static string FeedChapter(string id, string number, string? externalUrl, int pages, bool official) =>
+        $"{{\"id\":\"{id}\",\"type\":\"chapter\",\"attributes\":{{" +
+        $"\"chapter\":\"{number}\",\"volume\":null,\"title\":null,\"translatedLanguage\":\"en\"," +
+        $"\"externalUrl\":{(externalUrl is null ? "null" : $"\"{externalUrl}\"")},\"isUnavailable\":false," +
+        $"\"pages\":{pages},\"publishAt\":\"2026-09-02T00:00:00+00:00\"}}," +
+        "\"relationships\":[{\"id\":\"g\",\"type\":\"scanlation_group\"," +
+        $"\"attributes\":{{\"name\":\"{(official ? "Manga UP!" : "Fan Scans")}\",\"official\":{(official ? "true" : "false")}}}}}]}}";
+
+    [Fact]
+    public async Task The_listing_carries_page_counts_and_the_publishers_numbering()
+    {
+        var data = string.Join(",",
+            FeedChapter("11111111-1111-1111-1111-111111111111", "9", null, 31, official: false),
+            FeedChapter("22222222-2222-2222-2222-222222222222", "10.1", "https://global.manga-up.com/x", 1, official: true),
+            FeedChapter("33333333-3333-3333-3333-333333333333", "10.2", "https://global.manga-up.com/y", 1, official: true),
+            FeedChapter("44444444-4444-4444-4444-444444444444", "11", "https://fan.example/z", 0, official: false));
+        var source = new MangaDexSource(new FakeHttpClientFactory(new()
+        {
+            ["feed"] = $"{{\"result\":\"ok\",\"response\":\"collection\",\"limit\":500,\"offset\":0,\"total\":4,\"data\":[{data}]}}"
+        }));
+
+        var chapters = await source.ListChaptersAsync("2bc33c69");
+
+        Assert.Equal(31, Assert.Single(chapters).PageCount);
+        Assert.Equal([10.1m, 10.2m], source.PublisherNumbers("2bc33c69"));
+    }
 }

@@ -132,6 +132,21 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void The_bundled_maki_2x_hq_is_an_uncropped_2x_model_on_the_catalogue_input()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, "maki-2x-hq.onnx");
+        using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(path);
+        var input = Assert.Single(session.InputMetadata);
+        using var tensor = Microsoft.ML.OnnxRuntime.OrtValue.CreateTensorValueFromMemory(new float[3 * 16 * 16], [1, 3, 16, 16]);
+
+        using var outputs = session.Run(new Microsoft.ML.OnnxRuntime.RunOptions(), [input.Key], [tensor], session.OutputNames);
+
+        Assert.Equal("input", input.Key);
+        Assert.False(session.ModelMetadata.CustomMetadataMap.ContainsKey(OnnxPageUpscaler.ContextCropKey));
+        Assert.Equal([1L, 3, 32, 32], outputs[0].GetTensorTypeAndShape().Shape);
+    }
+
+    [Fact]
     public void Workers_are_capped_by_the_memory_budget()
     {
         var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();
@@ -140,6 +155,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile, span));
         Assert.Equal(18, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2x)));
+        Assert.Equal(14, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2xHq)));
         Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }, span));
     }
 
@@ -225,6 +241,23 @@ public class OnnxPageUpscalerTests : IDisposable
         upscaler.TileSkipped = _ => skipped++;
 
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: true, CancellationToken.None);
+
+        Assert.Equal(skips ? 3 * 3 : 0, skipped);
+        Assert.All(page.Pixels, v => Assert.Equal(level, v));
+    }
+
+    [Theory]
+    [InlineData(255, true)]
+    [InlineData(0, true)]
+    [InlineData(230, false)]
+    public void Maki_2x_hq_skips_only_black_and_white_flat_tiles(byte level, bool skips)
+    {
+        using var upscaler = NewUpscaler("identity-2x.onnx", UpscaleModelId.Maki2xHq);
+        var source = new Raster(200, 200, new Rgba(level, level, level), bands: 3);
+        var skipped = 0;
+        upscaler.TileSkipped = _ => skipped++;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.Maki2xHq), threads: 2, luma: true, CancellationToken.None);
 
         Assert.Equal(skips ? 3 * 3 : 0, skipped);
         Assert.All(page.Pixels, v => Assert.Equal(level, v));

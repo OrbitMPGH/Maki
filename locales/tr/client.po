@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, one {Bu seriyi okumaya devam eden # başka okuyucu var. Arşivlemek herkes için yeni bölümleri durdurur.} other {Bu seriyi okumaya devam eden # başka okuyucu var. Arşivlemek herkes için yeni bölümleri durdurur.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# tane daha} other {+# tane daha}}"
@@ -8710,6 +8709,10 @@ msgstr "katkı sayfaları, katkıları gizle, scanlator, katkılar, reklamlar, e
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "katkılar, katkı sayfaları, scanlator sayfaları, ekip arama, bağış sayfaları"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14563,6 +14566,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -14708,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki bu sitedeki serileri kendi başına bulamaz. Her seriyi, seri sayfasında adresini yapıştırarak bağlarsınız."
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Maki'nin kendi modeli; Real-ESRGAN'a benzer ve daha hızlı çalışır"
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24088,7 +24100,6 @@ msgstr "Bölümleri göster"
 msgid "Show covers from the library"
 msgstr "Kitaplıktan kapakları göster"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

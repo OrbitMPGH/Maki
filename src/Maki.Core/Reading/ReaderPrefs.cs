@@ -159,7 +159,8 @@ public record ReaderPrefsSpec(
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
     private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
     private static readonly string[] EnhanceMethods =
-        ["a4k-s", EnhanceFallbackDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", EnhanceMethodDefault];
+        ["a4k-s", EnhanceFallbackDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", EnhanceMethodDefault,
+            "server:maki-2x-hq"];
     private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceFallbackDefault, "a4k-a", EnhanceOff];
     private static readonly string[] EnhanceProgressStyles = [EnhanceProgressDefault, "detailed", "off"];
     private static readonly string[] TapLayouts = [TapLayoutDefault, "l-shape", "kindle", "edges"];

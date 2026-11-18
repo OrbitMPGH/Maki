@@ -6418,6 +6418,11 @@ msgstr "Закрытие простаивающего браузера"
 msgid "health.job.chapterFileMeasure"
 msgstr "Измерение файлов глав"
 
+#. English: Count chapter pages
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr ""
+
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy

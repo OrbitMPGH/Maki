@@ -219,7 +219,8 @@ try
     builder.Services.AddSingleton<KitsuReactionClient>();
     builder.Services.AddSingleton<SeriesReviewService>();
 
-    builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(new MangaBakaDumpOptions(
+        paths.MangaBakaDbPath, paths.CacheDir, paths.SharesMangaBakaDump, paths.ConfigDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
@@ -1025,6 +1026,13 @@ try
     builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
+    builder.Services.AddScoped<ChapterFoldPreviewService>();
+    builder.Services.AddScoped<ChapterPageCountService>();
+    builder.Services.AddScoped<IChapterPageHasher, ChapterPageHasher>();
+    builder.Services.AddScoped<ChapterPageHashService>();
+    builder.Services.AddScoped<ChapterFoldService>();
+    builder.Services.AddSingleton<ChapterFoldChecks>();
+    builder.Services.AddSingleton<PageCountFailures>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
     builder.Services.AddSingleton<RivalTitleProvider>();
@@ -1393,7 +1401,7 @@ try
         // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
         // never start a 350 MB transfer. A failure while no dump is installed retries sooner than
         // the 6 h interval through MangaBakaDumpRetry.
-        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
+        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) && !paths.SharesMangaBakaDump &&
                              Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
@@ -1603,6 +1611,17 @@ try
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Fetches the page counts pending chapter folds wait on, a budget of page lists per run. First
+        // run at +30, after the first monitored sync has had its turn at the sources.
+        q.AddJob<Maki.Api.Jobs.ChapterPageCountJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .WithIdentity("chapter-page-count-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(2).RepeatForever().WithMisfireHandlingInstructionNextWithRemainingCount()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
         // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a

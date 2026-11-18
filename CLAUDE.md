@@ -49,6 +49,8 @@ If you can't tell which one a request is, ask the owner before you start.
    - screenshots of the new or changed screens, or
    - a running instance built from the worktree, with its URL. Use the alt ports (backend `8991`, frontend `5174`); the owner's own instance is on `8990`. The backend port comes from `Port` in the config dir's `config.json`.
 
+   **A worktree instance gets its own config dir but reads the main checkout's dump.** Copy the config without the dump (`robocopy .simulated .claude\worktrees\<name>\.simulated /E /XF mangabaka.db* mangabaka.catalogue`) and start the backend with `MAKI_SHARED_DUMP_DIR=<main checkout>\.simulated`, which saves 3.7 GB per worktree. Such an instance never downloads, refreshes or backfills the dump. Leave the variable unset on a branch that changes what the dump install writes (its tables, `BrowseColumns`, indexes): that branch needs its own copy.
+
    **Stop here. Do not move on to step 3 by yourself.** Finishing the requested work is not a signal to open a PR. Wait until the owner says to go ahead with a PR. The only exception is when the owner's original request clearly said to take it all the way through to a PR.
 
 3. **Run every check CI runs, then open the PR.** Only once the owner has said to. All of them must pass:
@@ -86,6 +88,7 @@ On Windows, `git worktree remove` fails with "Filename too long" on deep `node_m
 - API: `:8990`. Frontend dev server: `:5173`, proxies `/api` + `/signalr` to `:8990`.
 - EF migrations auto-apply on startup. To add one: `dotnet ef migrations add <Name> --project src/Maki.Data --startup-project src/Maki.Api`.
 - State (SQLite, logs, covers, page cache, `config.json`, data-protection keys) resolves via `MAKI_CONFIG_DIR`, falling back to `/config` in Docker or `%APPDATA%\Maki` on Windows. In dev, set `MAKI_CONFIG_DIR=$PWD/.devconfig` to avoid touching the real library/DB. `.claude/launch.json`'s `backend` preset uses the **real** APPDATA config — use `backend-dev` for anything destructive.
+- A Debug build targets the machine's own runtime (`Directory.Build.props`), so output folders carry one platform's native libraries instead of every platform's (about a quarter of the size). Release, CI and anything passing `-r` are unchanged; `-p:MakiAllRuntimes=true` restores the old layout. Switching a checkout between Debug and Release re-runs restore once each way.
 - `src/Maki.Api/wwwroot/` must exist or startup throws `DirectoryNotFoundException` before any app code runs. A Debug build of `Maki.Api` runs `vite build` into it whenever frontend sources changed (`BuildFrontend` target, skipped in Release, without `frontend/node_modules`, or with `-p:SkipFrontendBuild=true`), so `:8990` serves the current SPA.
 - Frontend type-checking is `npx tsc -b`, **not** `npx tsc --noEmit`: root `tsconfig.json` is `"files": []` plus project references, so `--noEmit` checks nothing and exits 0 on a broken tree.
 

@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, other {另有 # 位读者正在读这个系列。归档后，所有人都将停止接收新章节。}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+# 个更多}}"
@@ -8710,6 +8709,10 @@ msgstr "署名页、隐藏署名、汉化、署名、广告、招募、后台扫
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "署名、署名页、汉化页、招募、赞助页"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14563,6 +14566,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -14708,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki 不会自行在此网站上查找系列。你需要在系列页面上粘贴每个系列的地址来逐一关联。"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Maki 自研模型；外观接近 Real-ESRGAN，运行更快"
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24088,7 +24100,6 @@ msgstr "显示章节"
 msgid "Show covers from the library"
 msgstr "显示资料库中的封面"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

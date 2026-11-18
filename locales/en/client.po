@@ -2070,7 +2070,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# more} other {+# more}}"
 
@@ -7095,6 +7094,10 @@ msgstr "credit pages, hide credits, scanlator, credits, ads, recruitment, backgr
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "credits, credit pages, scanlator pages, recruitment, donation pages"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Crop borders"
@@ -11866,6 +11869,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr "Maki 2x HQ"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
 msgstr "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -11983,8 +11996,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki won't find series on this site by itself. You'll link each series by pasting its address on the series page."
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Maki's own model; looks like Real-ESRGAN and runs faster"
+msgid "Maki's own model and the fastest"
+msgstr "Maki's own model and the fastest"
 
 #: src/pages/HealthPage.tsx
 msgid "Maki's record now matches the file on disk."
@@ -19630,7 +19643,6 @@ msgstr "Show chapters"
 msgid "Show covers from the library"
 msgstr "Show covers from the library"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 msgid "Show fewer"
 msgstr "Show fewer"

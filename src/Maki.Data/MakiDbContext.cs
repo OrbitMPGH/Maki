@@ -59,6 +59,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
     public DbSet<SourceNearMiss> SourceNearMisses => Set<SourceNearMiss>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
+    public DbSet<ChapterFold> ChapterFolds => Set<ChapterFold>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
@@ -703,6 +704,18 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(l =>
                 _scope.Unrestricted ||
                 Chapters.Any(c => c.Id == l.ChapterId));
+        });
+
+        modelBuilder.Entity<ChapterFold>(e =>
+        {
+            // REAL like Chapter.Number, which it is compared against.
+            e.Property(f => f.Floor).HasConversion<double>();
+            e.Ignore(f => f.Parts);
+            e.HasQueryFilter(f => _scope.Unrestricted || Series.Any(s => s.Id == f.SeriesId));
+            e.HasIndex(f => new { f.SourceMappingId, f.Language, f.Floor }).IsUnique();
+            e.HasIndex(f => f.SeriesId);
+            e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<SourceMapping>().WithMany().HasForeignKey(f => f.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>

@@ -6418,6 +6418,11 @@ msgstr "Fechar o navegador ocioso"
 msgid "health.job.chapterFileMeasure"
 msgstr "Medir arquivos de capítulos"
 
+#. English: Count chapter pages
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr ""
+
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy

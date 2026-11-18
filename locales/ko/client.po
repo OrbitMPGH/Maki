@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, other {다른 독자 #명이 이 시리즈를 중간까지 읽고 있습니다. 보관하면 모든 사용자에게 새 챕터가 더 이상 다운로드되지 않습니다.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+#개 더}}"
@@ -8710,6 +8709,10 @@ msgstr "크레딧 페이지, 크레딧 숨기기, 스캔 그룹, 스캔레이터
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "크레딧, 크레딧 페이지, 스캔 그룹 페이지, 모집, 후원 페이지"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14563,6 +14566,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -14708,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki는 이 사이트에서 시리즈를 스스로 찾지 않습니다. 시리즈 페이지에서 주소를 붙여넣어 시리즈마다 직접 연결해야 합니다."
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Maki 자체 모델. Real-ESRGAN과 비슷하게 보이며 더 빠르게 실행됩니다."
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24088,7 +24100,6 @@ msgstr "챕터 보기"
 msgid "Show covers from the library"
 msgstr "라이브러리의 표지 보기"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"
