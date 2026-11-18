@@ -219,7 +219,8 @@ try
     builder.Services.AddSingleton<KitsuReactionClient>();
     builder.Services.AddSingleton<SeriesReviewService>();
 
-    builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(new MangaBakaDumpOptions(
+        paths.MangaBakaDbPath, paths.CacheDir, paths.SharesMangaBakaDump, paths.ConfigDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
@@ -1381,7 +1382,7 @@ try
         // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
         // never start a 350 MB transfer. A failure while no dump is installed retries sooner than
         // the 6 h interval through MangaBakaDumpRetry.
-        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
+        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) && !paths.SharesMangaBakaDump &&
                              Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
