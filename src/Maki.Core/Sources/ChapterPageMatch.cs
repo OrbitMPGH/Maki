@@ -30,8 +30,9 @@ public sealed record PageMatchResult(PageMatchVerdict Verdict, IReadOnlyList<dou
 /// cannot stand in for several. Near-blank pages carry too few gradients to tell chapters apart and
 /// are left out. Each part must be found at <see cref="MinShare"/> or more with no long unmatched run
 /// (a part that is half the chapter and half something else), and together the parts must make up
-/// <see cref="MinCover"/> of the whole. Recut webtoon strips and official-against-fan scans mostly
-/// come out <see cref="PageMatchVerdict.Differ"/>, which keeps both rows: the safe side.
+/// <see cref="MinCover"/> of the whole. Pages cut into slices, padded with crops or a webtoon cut at
+/// other points match as strips instead (<see cref="CompareStrips"/>). Two different scans of a chapter
+/// mostly come out <see cref="PageMatchVerdict.Differ"/>, which keeps both rows: the safe side.
 /// </para>
 /// </summary>
 public static class ChapterPageMatch
@@ -56,7 +57,33 @@ public static class ChapterPageMatch
 
     private const int HexDigits = 16;
 
-    public static PageMatchResult Compare(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts)
+    /// <summary>Two strip windows (<c>StripHash</c>) are the same picture within this many differing bits.</summary>
+    public const int StripMaxDistance = 12;
+
+    /// <summary>Detailed windows each side needs: about half a page.</summary>
+    public const int MinWindows = 12;
+
+    /// <summary>Four pages of windows: a page is about 1.43 times as tall as wide, a window every 2 rows of 32.</summary>
+    private const int MaxWindowGap = 92;
+
+    private sealed record Rules(int MaxDistance, int MinUnits, int MaxGap, bool Sparse);
+
+    private static readonly Rules PageRules = new(MaxDistance, MinPages, MaxGap, Sparse: false);
+
+    private static readonly Rules StripRules = new(StripMaxDistance, MinWindows, MaxWindowGap, Sparse: true);
+
+    public static PageMatchResult Compare(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts) =>
+        Compare(whole, parts, PageRules);
+
+    /// <summary>
+    /// The same comparison over strips (<c>StripHash</c>): every window of a part has to be found in the
+    /// whole's strip, in order. For a source whose pages are not the pages the whole is made of, cut into
+    /// slices, padded with crops, or a webtoon cut at other points.
+    /// </summary>
+    public static PageMatchResult CompareStrips(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts) =>
+        Compare(whole, parts, StripRules);
+
+    private static PageMatchResult Compare(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts, Rules rules)
     {
         var sequence = new List<(int Part, ulong Hash)>();
         var counts = new int[parts.Count];
@@ -70,12 +97,15 @@ public static class ChapterPageMatch
         }
 
         var wholePages = whole.Where(Detailed).ToArray();
-        if (parts.Count == 0 || counts.Min() < MinPages || wholePages.Length < MinPages)
+        if (parts.Count == 0 || counts.Min() < rules.MinUnits || wholePages.Length < rules.MinUnits)
         {
             return new PageMatchResult(PageMatchVerdict.Unsure, [], 0);
         }
 
-        var matched = Align(sequence.Select(s => s.Hash).ToArray(), wholePages);
+        var hashes = sequence.Select(s => s.Hash).ToArray();
+        var matched = rules.Sparse
+            ? AlignSparse(hashes, wholePages, rules.MaxDistance)
+            : Align(hashes, wholePages, rules.MaxDistance);
         var hits = new int[parts.Count];
         var gaps = new int[parts.Count];
         var run = new int[parts.Count];
@@ -97,12 +127,12 @@ public static class ChapterPageMatch
         var shares = hits.Select((h, i) => (double)h / counts[i]).ToList();
         var cover = (double)hits.Sum() / wholePages.Length;
         var match = cover >= MinCover && shares.All(s => s >= MinShare) &&
-                    gaps.Select((g, i) => g <= Math.Max(MaxGap, MaxGapShare * counts[i])).All(ok => ok);
+                    gaps.Select((g, i) => g <= Math.Max(rules.MaxGap, MaxGapShare * counts[i])).All(ok => ok);
         return new PageMatchResult(match ? PageMatchVerdict.Match : PageMatchVerdict.Differ, shares, cover);
     }
 
     /// <summary>The longest in-order pairing of part pages with whole pages, each used at most once.</summary>
-    private static bool[] Align(ulong[] parts, ulong[] whole)
+    private static bool[] Align(ulong[] parts, ulong[] whole, int maxDistance)
     {
         int n = parts.Length, m = whole.Length;
         var best = new int[n + 1, m + 1];
@@ -111,7 +141,7 @@ public static class ChapterPageMatch
             for (var b = m - 1; b >= 0; b--)
             {
                 var value = Math.Max(best[a + 1, b], best[a, b + 1]);
-                if (Same(parts[a], whole[b]))
+                if (Same(parts[a], whole[b], maxDistance))
                 {
                     value = Math.Max(value, best[a + 1, b + 1] + 1);
                 }
@@ -124,7 +154,7 @@ public static class ChapterPageMatch
         int i = 0, j = 0;
         while (i < n && j < m)
         {
-            if (Same(parts[i], whole[j]) && best[i, j] == best[i + 1, j + 1] + 1)
+            if (Same(parts[i], whole[j], maxDistance) && best[i, j] == best[i + 1, j + 1] + 1)
             {
                 matched[i] = true;
                 i++;
@@ -143,7 +173,112 @@ public static class ChapterPageMatch
         return matched;
     }
 
-    private static bool Same(ulong a, ulong b) => BitOperations.PopCount(a ^ b) <= MaxDistance;
+    /// <summary>
+    /// The same longest in-order pairing as <see cref="Align"/>, in memory for the matching pairs only
+    /// (Hunt-Szymanski): a webtoon chapter's strip has thousands of windows, and a full table of both
+    /// strips would not fit.
+    /// </summary>
+    private static bool[] AlignSparse(ulong[] parts, ulong[] whole, int maxDistance)
+    {
+        var ends = new List<int>();
+        var tails = new List<int>();
+        var nodes = new List<(int A, int Parent)>();
+        var matches = new List<int>();
+        for (var a = 0; a < parts.Length; a++)
+        {
+            matches.Clear();
+            for (var b = 0; b < whole.Length; b++)
+            {
+                if (Same(parts[a], whole[b], maxDistance))
+                {
+                    matches.Add(b);
+                }
+            }
+
+            for (var k = matches.Count - 1; k >= 0; k--)
+            {
+                var b = matches[k];
+                var at = ends.BinarySearch(b);
+                if (at >= 0)
+                {
+                    continue;
+                }
+
+                at = ~at;
+                nodes.Add((a, at > 0 ? tails[at - 1] : -1));
+                if (at == ends.Count)
+                {
+                    ends.Add(b);
+                    tails.Add(nodes.Count - 1);
+                }
+                else
+                {
+                    ends[at] = b;
+                    tails[at] = nodes.Count - 1;
+                }
+            }
+        }
+
+        var matched = new bool[parts.Length];
+        for (var node = tails.Count > 0 ? tails[^1] : -1; node >= 0; node = nodes[node].Parent)
+        {
+            matched[nodes[node].A] = true;
+        }
+
+        return matched;
+    }
+
+    private static bool Same(ulong a, ulong b, int maxDistance) => BitOperations.PopCount(a ^ b) <= maxDistance;
+
+    /// <summary>Stored form of a strip: its window hashes as base64, eight bytes each.</summary>
+    public static string FormatStrip(IReadOnlyCollection<ulong> windows)
+    {
+        var bytes = new byte[windows.Count * sizeof(ulong)];
+        var i = 0;
+        foreach (var window in windows)
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(i * sizeof(ulong)), window);
+            i++;
+        }
+
+        return Convert.ToBase64String(bytes);
+    }
+
+    public static IReadOnlyList<ulong>? ParseStrip(string? stored)
+    {
+        if (stored is null)
+        {
+            return null;
+        }
+
+        if (stored.Length == 0)
+        {
+            return [];
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(stored);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+
+        if (bytes.Length % sizeof(ulong) != 0)
+        {
+            return null;
+        }
+
+        var windows = new ulong[bytes.Length / sizeof(ulong)];
+        for (var i = 0; i < windows.Length; i++)
+        {
+            windows[i] = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(i * sizeof(ulong)));
+        }
+
+        return windows;
+    }
 
     private static bool Detailed(ulong hash) => BitOperations.PopCount(hash) is >= FlatBits and <= 64 - FlatBits;
 

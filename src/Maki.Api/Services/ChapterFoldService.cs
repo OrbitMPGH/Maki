@@ -186,6 +186,9 @@ public class ChapterFoldService(
                 Url = first.Url,
                 PageCount = pages.Sum(),
                 PageHashes = hashes.All(h => h is not null) ? ChapterPageMatch.Format(hashes.SelectMany(h => h!)) : null,
+                StripHashes = partLinks.Select(l => ChapterPageMatch.ParseStrip(l.StripHashes)).ToList() is var strips && strips.All(s => s is { Count: > 0 })
+                    ? ChapterPageMatch.FormatStrip([.. strips.SelectMany(s => s!)])
+                    : null,
                 Parts = fold.PartsJson,
                 FirstSeenAt = partLinks.Select(l => l.FirstSeenAt).Min(),
             });

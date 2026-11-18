@@ -60,10 +60,10 @@ public sealed class ChapterPageHashServiceTests : IDisposable
     {
         public List<string> Asked { get; } = [];
 
-        public Task<IReadOnlyList<ulong>?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct)
+        public Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct)
         {
             Asked.Add(chapter.SourceChapterId);
-            return Task.FromResult(hash(chapter));
+            return Task.FromResult(hash(chapter) is { } pages ? new PageEvidence(pages, pages) : null);
         }
     }
 
@@ -179,11 +179,13 @@ public sealed class ChapterPageHashServiceTests : IDisposable
         using (var db = _db.NewContext())
         {
             await PageHashStore.StoreAsync(db, db.SourceMappings.Single(m => m.SeriesId == seriesId && m.SourceName == "whole").Id,
-                "whole-3", Hashes(0, 39), CancellationToken.None);
+                "whole-3", new PageEvidence(Hashes(0, 39), Hashes(0, 60)), CancellationToken.None);
         }
 
         using var check = _db.NewContext();
-        Assert.Equal(39 * 16, check.ChapterSourceLinks.Single(l => l.SourceChapterId == "whole-3").PageHashes?.Length);
+        var stored = check.ChapterSourceLinks.Single(l => l.SourceChapterId == "whole-3");
+        Assert.Equal(39 * 16, stored.PageHashes?.Length);
+        Assert.Equal(Hashes(0, 60), ChapterPageMatch.ParseStrip(stored.StripHashes));
         Assert.All(check.ChapterSourceLinks.Where(l => l.SourceChapterId != "whole-3"), l => Assert.Null(l.PageHashes));
     }
 }

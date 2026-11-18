@@ -12,13 +12,13 @@ public sealed record PageHashRun(int Hashed, int Failed, int Skipped, int Waitin
 /// <summary>Hashes every page of one source chapter, or returns null when any page could not be had.</summary>
 public interface IChapterPageHasher
 {
-    Task<IReadOnlyList<ulong>?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct);
+    Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct);
 }
 
 /// <summary>Downloads the chapter's pages into a temporary folder, hashes them and deletes them again.</summary>
 public class ChapterPageHasher(PageDownloader pageDownloader, ILogger<ChapterPageHasher> logger) : IChapterPageHasher
 {
-    public async Task<IReadOnlyList<ulong>?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct)
+    public async Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct)
     {
         var pages = await source.GetPagesAsync(chapter, ct);
         if (pages.Pages.Count == 0)
@@ -47,8 +47,12 @@ public class ChapterPageHasher(PageDownloader pageDownloader, ILogger<ChapterPag
 
 public static class PageHashStore
 {
-    /// <summary>Every page's hash in order, or null when one does not decode: a partial set would score as a better match.</summary>
-    public static IReadOnlyList<ulong>? Of(IReadOnlyList<string> files, ILogger logger)
+    /// <summary>
+    /// Every page's hash in order, and the chapter's strip (<see cref="StripHash"/>); null when a page
+    /// does not decode, since a partial set would score as a better match. A strip that cannot be made
+    /// (a very long webtoon) is left out and the pages alone are kept.
+    /// </summary>
+    public static PageEvidence? Of(IReadOnlyList<string> files, ILogger logger)
     {
         var hashes = new List<ulong>(files.Count);
         foreach (var file in files)
@@ -64,15 +68,31 @@ public static class PageHashStore
             }
         }
 
-        return hashes;
+        ulong[]? strip;
+        try
+        {
+            strip = StripHash.OfFiles(files);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not make the page strip of {Files} pages", files.Count);
+            strip = null;
+        }
+
+        return hashes.Count == 0 ? null : new PageEvidence(hashes, strip);
     }
 
-    public static Task StoreAsync(MakiDbContext db, int mappingId, string sourceChapterId, IReadOnlyList<ulong> hashes, CancellationToken ct)
+    /// <summary>
+    /// Stores an upload's hashes. A strip that could not be made is stored as empty, so the check does
+    /// not fetch the chapter again for it.
+    /// </summary>
+    public static Task StoreAsync(MakiDbContext db, int mappingId, string sourceChapterId, PageEvidence evidence, CancellationToken ct)
     {
-        var stored = ChapterPageMatch.Format(hashes);
+        var pages = ChapterPageMatch.Format(evidence.Pages);
+        var strip = evidence.Strip is { } windows ? ChapterPageMatch.FormatStrip([.. windows]) : string.Empty;
         return db.ChapterSourceLinks
             .Where(l => l.SourceMappingId == mappingId && l.SourceChapterId == sourceChapterId)
-            .ExecuteUpdateAsync(s => s.SetProperty(l => l.PageHashes, stored), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(l => l.PageHashes, pages).SetProperty(l => l.StripHashes, strip), ct);
     }
 
     /// <summary>
@@ -189,7 +209,7 @@ public class ChapterPageHashService(
             perSeries[link.SeriesId] = perSeries.GetValueOrDefault(link.SeriesId) + 1;
             try
             {
-                if (await hasher.HashAsync(source, link.ToSourceChapter(), ct) is not { Count: > 0 } hashes)
+                if (await hasher.HashAsync(source, link.ToSourceChapter(), ct) is not { Pages.Count: > 0 } hashes)
                 {
                     failures.RecentHashes[(link.MappingId, link.SourceChapterId)] = now;
                     failed++;

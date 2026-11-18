@@ -1213,7 +1213,7 @@ public class ChapterDownloadProcessor(
         try
         {
             if ((folded || await PageHashStore.WantedForAsync(db, seriesId, number, ct)) &&
-                PageHashStore.Of(pageFiles, logger) is { Count: > 0 } hashes)
+                PageHashStore.Of(pageFiles, logger) is { } hashes)
             {
                 await PageHashStore.StoreAsync(db, mappingId, sourceChapterId, hashes, ct);
             }

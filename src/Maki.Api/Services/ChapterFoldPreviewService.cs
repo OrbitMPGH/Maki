@@ -53,7 +53,8 @@ public sealed record FoldLink(
     DateTime? ReleaseDate,
     string? Url,
     int? PageCount,
-    string? PageHashes)
+    string? PageHashes,
+    string? StripHashes)
 {
     public SourceChapter ToSourceChapter() =>
         new(SourceName, SourceSeriesId, SourceChapterId, NumberRaw, Number, Volume, Title, Language, ReleaseDate, Url);
@@ -114,6 +115,15 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             series);
     }
 
+    /// <summary>
+    /// A link's stored hashes for the page check. An empty strip means none could be made, which is a
+    /// strip comparison that cannot happen rather than one still to fetch: it stands as an empty strip.
+    /// </summary>
+    private static PageEvidence? Evidence(FoldLink link) =>
+        ChapterPageMatch.Parse(link.PageHashes) is { } pages
+            ? new PageEvidence(pages, link.StripHashes is null ? null : ChapterPageMatch.ParseStrip(link.StripHashes) ?? [])
+            : null;
+
     /// <summary>Every floor that is not plain, per series and language, with the links each pending one waits on.</summary>
     public async Task<(IReadOnlyList<FoldFloor> Floors, int SeriesChecked)> DecideAsync(int? seriesId, CancellationToken ct)
     {
@@ -129,7 +139,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             .Select(l => new
             {
                 l.SourceMappingId, l.ChapterId, l.SourceChapterId, l.NumberRaw, Number = l.Chapter!.Number!.Value,
-                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes,
+                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes, l.StripHashes,
             })
             .ToListAsync(ct);
         var linksByMapping = links.ToLookup(l => l.SourceMappingId);
@@ -157,7 +167,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                         .OrderBy(l => l.Number)
                         .Select(l => new FoldLink(series.Key, m.Id, names[m.Id], m.SourceName, m.SourceSeriesId, l.ChapterId,
                             l.SourceChapterId, l.NumberRaw, l.Number, l.Volume, l.Title, language, l.ReleaseDate, l.Url, l.PageCount,
-                            l.PageHashes))
+                            l.PageHashes, l.StripHashes))
                         .ToList());
                 var listings = ordered
                     .Select(m => new ReconcileListing(names[m.Id],
@@ -165,7 +175,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                     .Where(l => l.Entries.Count > 0)
                     .ToList();
                 var hashes = byMapping.SelectMany(m => m.Value)
-                    .ToDictionary(l => (l.MappingName, l.Number), l => ChapterPageMatch.Parse(l.PageHashes));
+                    .ToDictionary(l => (l.MappingName, l.Number), l => Evidence(l));
                 foreach (var d in ChapterReconciler.Decide(listings, publisher).Values.Where(d => d.State != FoldState.Plain))
                 {
                     ChapterReconciler.CheckPages(d, (mapping, number) => hashes.GetValueOrDefault((mapping, number)));

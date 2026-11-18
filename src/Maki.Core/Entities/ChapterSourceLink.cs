@@ -29,6 +29,13 @@ public class ChapterSourceLink
     public string? PageHashes { get; set; }
 
     /// <summary>
+    /// This upload as one strip (<see cref="Maki.Core.Images.StripHash"/>), base64 window hashes, for a
+    /// source whose pages are cut or padded differently. Empty when no strip could be made (a very long
+    /// webtoon), null when it was never hashed. Kept like <see cref="PageHashes"/>.
+    /// </summary>
+    public string? StripHashes { get; set; }
+
+    /// <summary>
     /// Set when this link is a folded chapter (<see cref="ChapterFold"/>): the uploads that make it up,
     /// in order, as <see cref="ChapterFoldPart"/> JSON. <see cref="SourceChapterId"/> is the first of
     /// them. A download fetches every part and joins their pages.

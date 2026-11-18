@@ -216,8 +216,8 @@ public sealed class ChapterFoldServiceTests : IDisposable
 
     private sealed class PagesOf(IReadOnlyDictionary<string, List<ulong>> pages) : IChapterPageHasher
     {
-        public Task<IReadOnlyList<ulong>?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct) =>
-            Task.FromResult<IReadOnlyList<ulong>?>(pages.GetValueOrDefault(chapter.SourceChapterId));
+        public Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct) =>
+            Task.FromResult(pages.GetValueOrDefault(chapter.SourceChapterId) is { } found ? new PageEvidence(found, found) : null);
     }
 
     [Fact]

@@ -557,6 +557,7 @@ public class ChapterSyncService(
             // A count ChapterPageCountService fetched stays while the source lists the same upload.
             link.PageCount = sourceChapter.PageCount ?? (sameUpload ? link.PageCount : null);
             link.PageHashes = sameUpload ? link.PageHashes : null;
+            link.StripHashes = sameUpload ? link.StripHashes : null;
             link.Parts = foldedParts?.GetValueOrDefault(sourceChapter.SourceChapterId);
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
@@ -711,6 +712,7 @@ public class ChapterSyncService(
                             Url = link.Url,
                             PageCount = link.PageCount,
                             PageHashes = link.PageHashes,
+                            StripHashes = link.StripHashes,
                             Parts = link.Parts,
                             FirstSeenAt = link.FirstSeenAt
                         };

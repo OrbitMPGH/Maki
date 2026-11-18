@@ -70,8 +70,12 @@ public sealed class FloorDecision(decimal floor)
     public List<(string Mapping, decimal Number)> MissingPages { get; } = [];
 }
 
-/// <summary>One whole upload compared with one mapping's parts, page by page.</summary>
-public sealed record PageCheck(string WholeMapping, string PartsMapping, string Verdict, IReadOnlyList<double> Shares, double Cover);
+/// <summary>One whole upload compared with one mapping's parts, page by page or (<paramref name="Method"/> "strip") as strips.</summary>
+public sealed record PageCheck(
+    string WholeMapping, string PartsMapping, string Verdict, IReadOnlyList<double> Shares, double Cover, string Method = "pages");
+
+/// <summary>One upload's stored hashes: one per page, and its strip (<c>StripHash</c>) when it has one.</summary>
+public sealed record PageEvidence(IReadOnlyList<ulong> Pages, IReadOnlyList<ulong>? Strip);
 
 /// <summary>
 /// Decides, per integer floor of a series, whether a source's sub-chapters (10.1, 10.2, ...) are parts
@@ -418,10 +422,12 @@ public static partial class ChapterReconciler
     /// Holds a merge to the pages: each mapping's parts fold only once a whole on the floor holds them
     /// (<see cref="ChapterPageMatch"/>), and parts no whole holds stay rows of their own. Wholes are tried
     /// in the floor's order, and only up to the first one without hashes, so a check costs one whole.
-    /// <paramref name="hashesOf"/> gives a chapter's stored page hashes, or null when none are stored.
+    /// Pages that differ get a second look as strips (<see cref="ChapterPageMatch.CompareStrips"/>),
+    /// for a source that cuts or pads its pages; hashes stored before strips existed are fetched again.
+    /// <paramref name="hashesOf"/> gives a chapter's stored hashes, or null when none are stored.
     /// Only a merged floor is touched: page counts and the pair rule nominate, the pages decide.
     /// </summary>
-    public static void CheckPages(FloorDecision d, Func<string, decimal, IReadOnlyList<ulong>?> hashesOf)
+    public static void CheckPages(FloorDecision d, Func<string, decimal, PageEvidence?> hashesOf)
     {
         if (d.State != FoldState.Merged)
         {
@@ -451,17 +457,36 @@ public static partial class ChapterReconciler
             var unhashed = false;
             foreach (var whole in d.Wholes)
             {
-                if (hashesOf(whole, d.Floor) is not { } wholePages)
+                if (hashesOf(whole, d.Floor) is not { } wholeEvidence)
                 {
                     d.MissingPages.Add((whole, d.Floor));
                     unhashed = true;
                     break;
                 }
 
-                var result = ChapterPageMatch.Compare(wholePages, parts!);
-                d.PageChecks.Add(new PageCheck(
-                    whole, mapping, result.Verdict.ToString(), [.. result.Shares.Select(s => Math.Round(s, 2))], Math.Round(result.Cover, 2)));
+                var result = ChapterPageMatch.Compare(wholeEvidence.Pages, [.. parts.Select(p => p!.Pages)]);
+                d.PageChecks.Add(Check(whole, mapping, result, "pages"));
                 if (result.Verdict == PageMatchVerdict.Match)
+                {
+                    matched = true;
+                    break;
+                }
+
+                if (wholeEvidence.Strip is null || parts.Any(p => p!.Strip is null))
+                {
+                    if (wholeEvidence.Strip is null)
+                    {
+                        d.MissingPages.Add((whole, d.Floor));
+                    }
+
+                    d.MissingPages.AddRange(numbers.Where((_, i) => parts[i]!.Strip is null).Select(n => (mapping, n)));
+                    unhashed = true;
+                    break;
+                }
+
+                var strips = ChapterPageMatch.CompareStrips(wholeEvidence.Strip, [.. parts.Select(p => p!.Strip!)]);
+                d.PageChecks.Add(Check(whole, mapping, strips, "strip"));
+                if (strips.Verdict == PageMatchVerdict.Match)
                 {
                     matched = true;
                     break;
@@ -501,6 +526,9 @@ public static partial class ChapterReconciler
             d.Fold = false;
         }
     }
+
+    private static PageCheck Check(string whole, string mapping, PageMatchResult result, string method) =>
+        new(whole, mapping, result.Verdict.ToString(), [.. result.Shares.Select(s => Math.Round(s, 2))], Math.Round(result.Cover, 2), method);
 
     private static void Settle(FloorDecision d, FoldState state, string reason)
     {

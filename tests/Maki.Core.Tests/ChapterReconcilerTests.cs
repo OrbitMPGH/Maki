@@ -344,6 +344,8 @@ public class ChapterReconcilerTests
         return hash;
     })];
 
+    private static PageEvidence? Evidence(List<ulong>? pages) => pages is null ? null : new PageEvidence(pages, pages);
+
     private static FloorDecision MergedByCounts(params ReconcileListing[] extra)
     {
         var decision = ChapterReconciler.Decide([
@@ -376,13 +378,13 @@ public class ChapterReconcilerTests
         var whole = Hashes(0, 40);
         var d = MergedByCounts();
 
-        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        ChapterReconciler.CheckPages(d, (m, n) => Evidence((m, n) switch
         {
             ("weebcentral", 1) => whole,
             ("mangadex", 1.1m) => whole[..22],
             ("mangadex", 1.2m) => whole[22..],
             _ => null,
-        });
+        }));
 
         Assert.Equal(FoldState.Merged, d.State);
         Assert.Equal("pagesMatch", d.Reason);
@@ -392,18 +394,54 @@ public class ChapterReconcilerTests
     }
 
     [Fact]
+    public void PartsCutDifferentlyFoldWhenTheirStripMatches()
+    {
+        // TopManhua cuts every page in two: no page matches a whole page, the strip does.
+        var strip = Hashes(0, 120);
+        var d = MergedByCounts();
+
+        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        {
+            ("weebcentral", 1) => new PageEvidence(Hashes(0, 40), strip),
+            ("mangadex", 1.1m) => new PageEvidence(Hashes(300, 22), strip[..60]),
+            ("mangadex", 1.2m) => new PageEvidence(Hashes(400, 18), strip[60..]),
+            _ => null,
+        });
+
+        Assert.Equal(FoldState.Merged, d.State);
+        Assert.Equal(["pages", "strip"], d.PageChecks.Select(c => c.Method));
+    }
+
+    [Fact]
+    public void PagesThatDifferWaitForTheirStrips()
+    {
+        var d = MergedByCounts();
+
+        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        {
+            ("weebcentral", 1) => new PageEvidence(Hashes(0, 40), null),
+            ("mangadex", 1.1m) => new PageEvidence(Hashes(300, 22), null),
+            ("mangadex", 1.2m) => new PageEvidence(Hashes(400, 18), Hashes(400, 30)),
+            _ => null,
+        });
+
+        Assert.Equal(FoldState.Pending, d.State);
+        Assert.Equal([("weebcentral", 1m), ("mangadex", 1.1m)], d.MissingPages);
+    }
+
+    [Fact]
     public void PartsThatAddUpButHoldOtherPagesStay()
     {
         // Dress-Up Darling 71: 71.1 was the volume's afterword; the page counts added up all the same.
         var d = MergedByCounts();
 
-        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        ChapterReconciler.CheckPages(d, (m, n) => Evidence((m, n) switch
         {
             ("weebcentral", 1) => Hashes(0, 40),
             ("mangadex", 1.1m) => Hashes(500, 22),
             ("mangadex", 1.2m) => Hashes(22, 18),
             _ => null,
-        });
+        }));
 
         Assert.Equal(FoldState.Keep, d.State);
         Assert.Equal("pagesDiffer", d.Reason);
@@ -420,14 +458,14 @@ public class ChapterReconcilerTests
         var d = MergedByCounts(Listing("mangapill", C(1.1m, 20), C(1.2m, 23), C(2, 40)));
         Assert.Equal(["mangadex", "mangapill"], d.Parts.Keys.Order());
 
-        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        ChapterReconciler.CheckPages(d, (m, n) => Evidence((m, n) switch
         {
             ("weebcentral", 1) => whole,
             ("mangadex", 1.1m) => whole[..22],
             ("mangadex", 1.2m) => whole[22..],
             ("mangapill", _) => Hashes(900 + (int)(n * 10), 20),
             _ => null,
-        });
+        }));
 
         Assert.Equal(FoldState.Merged, d.State);
         Assert.Equal(["mangadex"], d.Parts.Keys);
