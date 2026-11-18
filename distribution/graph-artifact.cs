@@ -635,6 +635,10 @@ else if (isEase)
 {
     Console.WriteLine($"built from : {manifest["trainedReaders"]} readers");
 }
+else if (isPageShare)
+{
+    Console.WriteLine($"built from : {manifest["readers"]} pages");
+}
 else
 {
     Console.WriteLine($"built from : {manifest["trainedReaders"]} readers, {manifest["dimensions"]} dims");
