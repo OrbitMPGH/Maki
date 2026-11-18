@@ -28,6 +28,13 @@ public class ChapterSourceLink
     /// </summary>
     public string? PageHashes { get; set; }
 
+    /// <summary>
+    /// Set when this link is a folded chapter (<see cref="ChapterFold"/>): the uploads that make it up,
+    /// in order, as <see cref="ChapterFoldPart"/> JSON. <see cref="SourceChapterId"/> is the first of
+    /// them. A download fetches every part and joins their pages.
+    /// </summary>
+    public string? Parts { get; set; }
+
     /// <summary>The chapter's page on the source, when the source lists one. Written into ComicInfo's Notes.</summary>
     public string? Url { get; set; }
 

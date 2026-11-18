@@ -24,8 +24,10 @@ public sealed record ChapterFoldFloorDto(
 
 public sealed record ChapterFoldSeriesDto(int SeriesId, string Title, IReadOnlyList<ChapterFoldFloorDto> Floors);
 
+/// <param name="Folded">Source runs of parts already folded into their whole chapter (<see cref="Maki.Core.Entities.ChapterFold"/>).</param>
 public sealed record ChapterFoldLibraryDto(
     int SeriesChecked,
+    int Folded,
     int SeriesWithFolds,
     IReadOnlyDictionary<string, int> FloorsByState,
     int MissingCounts,
@@ -58,8 +60,10 @@ public sealed record FoldLink(
 }
 
 /// <summary>A decided floor of one series and language, and the links a pending one waits on for a page count or page hashes.</summary>
+/// <param name="MappingIds">The series' mapping names as the decision uses them, to their ids.</param>
 public sealed record FoldFloor(
-    int SeriesId, string Title, string Language, FloorDecision Decision, IReadOnlyList<FoldLink> Missing, IReadOnlyList<FoldLink> MissingPages);
+    int SeriesId, string Title, string Language, FloorDecision Decision, IReadOnlyList<FoldLink> Missing, IReadOnlyList<FoldLink> MissingPages,
+    IReadOnlyDictionary<string, int> MappingIds);
 
 /// <summary>
 /// What <see cref="ChapterReconciler"/> would do to each series, read from what the last syncs stored
@@ -100,6 +104,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
 
         return new ChapterFoldLibraryDto(
             seriesChecked,
+            await db.ChapterFolds.CountAsync(f => seriesId == null || f.SeriesId == seriesId, ct),
             series.Count(s => s.Floors.Any(f => f.Fold)),
             floors.GroupBy(f => f.Decision.State.ToString()).ToDictionary(g => g.Key, g => g.Count()),
             missing.Count,
@@ -140,6 +145,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                 m => m.Id,
                 m => ordered.Count(o => o.SourceName == m.SourceName) > 1 ? $"{m.SourceName}#{m.Id}" : m.SourceName);
             var publisher = ordered.SelectMany(m => PublisherNumbering.Parse(m.PublisherNumbers)).Distinct().ToList();
+            var idsByName = names.ToDictionary(n => n.Value, n => n.Key);
             foreach (var language in ordered.SelectMany(m => linksByMapping[m.Id]).Select(l => l.Language).Distinct().Order())
             {
                 // Per-volume numbering can list one number twice; the first one stands for it here.
@@ -169,7 +175,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                     var missingPages = d.MissingPages
                         .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
                         .ToList();
-                    floors.Add(new FoldFloor(series.Key, series.First().Title, language, d, missing, missingPages));
+                    floors.Add(new FoldFloor(series.Key, series.First().Title, language, d, missing, missingPages, idsByName));
                 }
             }
         }

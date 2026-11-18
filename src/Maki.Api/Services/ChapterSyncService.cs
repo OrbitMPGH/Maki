@@ -106,6 +106,7 @@ public class ChapterSyncService(
             .ToListAsync(ct);
         var reads = new ReadRows(db, seriesId);
         await MergeDuplicatesAsync(existing, reads, ct);
+        var folds = await db.ChapterFolds.Where(f => f.SeriesId == seriesId).ToListAsync(ct);
         // Read once per sync, not once per discovered chapter: this is the only thing that decides
         // whether a newly listed special is wanted, and a Smart series can't say so via its mode.
         var skipSpecials = await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
@@ -158,9 +159,10 @@ public class ChapterSyncService(
                 // fires immediately afterwards from resolving against an older listing, which would
                 // report the chapter this pass just discovered as "not listed".
                 var listing = await ListAsync(source, mapping, depth, firstSnapshot || firstSinceRestore, groups, ct);
-                var sourceChapters = listing.Chapters
+                var listedChapters = listing.Chapters
                     .Select(ChapterIdentity.Labelled)
                     .ToList();
+                var sourceChapters = listedChapters;
                 if (sourceChapters.Count == 0 && mapping.ChapterLinks.Count > 0)
                 {
                     // A challenge page or a changed layout parses to nothing. Replacing the snapshot
@@ -182,9 +184,24 @@ public class ChapterSyncService(
                     mapping.PublisherNumbers = PublisherNumbering.Format(publisher.PublisherNumbers(mapping.SourceSeriesId));
                 }
 
+                // Folded parts list as the chapter they make up. The cache keeps the listing as the site
+                // has it; the resolver reads a folded chapter's parts from its link.
+                var folded = ChapterFoldListing.Rewrite(
+                    listedChapters, [.. folds.Where(f => f.SourceMappingId == mapping.Id)], listing.Complete);
+                foreach (var gone in folded.Broken)
+                {
+                    logger.LogInformation(
+                        "Unfolded chapter {Floor} of {Source} in series {SeriesId}: the source no longer lists the same parts",
+                        gone.Floor, mapping.SourceName, seriesId);
+                    db.ChapterFolds.Remove(gone);
+                    folds.Remove(gone);
+                }
+
+                sourceChapters = [.. folded.Chapters];
+
                 if (listing.Complete)
                 {
-                    chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters, groups);
+                    chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, listedChapters, groups);
                     numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
                 }
                 else
@@ -269,7 +286,7 @@ public class ChapterSyncService(
                 var fileGroups = ReplaceSnapshot(
                     mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source),
                     firstSnapshot || firstSinceRestore ? null : listedUpTo ?? decimal.MinValue,
-                    removeUnlisted: listing.Complete);
+                    removeUnlisted: listing.Complete, folded.Parts);
                 await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;
@@ -501,7 +518,8 @@ public class ChapterSyncService(
         IReadOnlyDictionary<Chapter, SourceChapter> snapshot,
         string? groupFallback,
         decimal? arrivalsAbove,
-        bool removeUnlisted = true)
+        bool removeUnlisted = true,
+        IReadOnlyDictionary<string, string>? foldedParts = null)
     {
         var arrivals = new List<ChapterSourceLink>();
         var fileGroups = new Dictionary<int, string>();
@@ -539,6 +557,7 @@ public class ChapterSyncService(
             // A count ChapterPageCountService fetched stays while the source lists the same upload.
             link.PageCount = sourceChapter.PageCount ?? (sameUpload ? link.PageCount : null);
             link.PageHashes = sameUpload ? link.PageHashes : null;
+            link.Parts = foldedParts?.GetValueOrDefault(sourceChapter.SourceChapterId);
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
@@ -692,6 +711,7 @@ public class ChapterSyncService(
                             Url = link.Url,
                             PageCount = link.PageCount,
                             PageHashes = link.PageHashes,
+                            Parts = link.Parts,
                             FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);

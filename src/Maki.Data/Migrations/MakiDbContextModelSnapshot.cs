@@ -425,6 +425,42 @@ namespace Maki.Data.Migrations
                     b.ToTable("ChapterFiles");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterFold", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Floor")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("FoldedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PartsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SourceMappingId", "Language", "Floor")
+                        .IsUnique();
+
+                    b.ToTable("ChapterFolds");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ChapterNote", b =>
                 {
                     b.Property<int>("Id")
@@ -576,6 +612,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("PageHashes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Parts")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ReleaseDate")
@@ -3947,6 +3986,21 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterFold", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.SourceMapping", null)
+                        .WithMany()
+                        .HasForeignKey("SourceMappingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

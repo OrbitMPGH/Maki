@@ -127,9 +127,15 @@ public class ChapterPageHashService(
 
     private static readonly TimeSpan RetryFailedAfter = TimeSpan.FromDays(1);
 
-    public async Task<PageHashRun> RunAsync(int budget, CancellationToken ct)
+    /// <param name="seriesId">
+    /// One series only, for the check right after it is matched (<see cref="ChapterFoldChecks"/>): the
+    /// budget is then the whole limit, browser sources included, since that series' downloads wait on it.
+    /// </param>
+    public async Task<PageHashRun> RunAsync(int budget, CancellationToken ct, int? seriesId = null)
     {
-        var (floors, _) = await folds.DecideAsync(null, ct);
+        var perSeriesLimit = seriesId is null ? ChaptersPerSeries : budget;
+        var browserLimit = seriesId is null ? BrowserChaptersPerRun : budget;
+        var (floors, _) = await folds.DecideAsync(seriesId, ct);
         var waiting = floors
             .Where(f => f.MissingPages.Count > 0)
             .OrderBy(f => f.MissingPages.Count)
@@ -151,7 +157,7 @@ public class ChapterPageHashService(
                 break;
             }
 
-            if (perSeries.GetValueOrDefault(link.SeriesId) >= ChaptersPerSeries ||
+            if (perSeries.GetValueOrDefault(link.SeriesId) >= perSeriesLimit ||
                 blocked.Contains(link.SourceName) ||
                 (failures.RecentHashes.TryGetValue((link.MappingId, link.SourceChapterId), out var failedAt) && now - failedAt < RetryFailedAfter))
             {
@@ -169,7 +175,7 @@ public class ChapterPageHashService(
 
             if (source.Capabilities.HasFlag(SourceCapabilities.NeedsBrowser))
             {
-                if (perBrowser.GetValueOrDefault(source.Name) >= BrowserChaptersPerRun)
+                if (perBrowser.GetValueOrDefault(source.Name) >= browserLimit)
                 {
                     blocked.Add(link.SourceName);
                     skipped++;

@@ -220,7 +220,10 @@ public class ChapterDownloadProcessor(
             // Nullable so it can be dropped after the download: some sources (scrambled pages,
             // TopManhua) carry every page's bytes in it, and as a local hoisted across these awaits
             // it would otherwise stay reachable through validation and packaging.
-            ChapterPages? pages = await source.GetPagesAsync(sourceChapter, ct);
+            var parts = await FoldedPartsAsync(chapter.Id, mapping.Id, sourceChapterId, ct);
+            ChapterPages? pages = parts.Count > 0
+                ? await PagesOfPartsAsync(source, mapping, chapter, parts, ct)
+                : await source.GetPagesAsync(sourceChapter, ct);
             var pageCount = pages.Pages.Count;
 
             if (pageCount == 0)
@@ -232,7 +235,8 @@ public class ChapterDownloadProcessor(
             item.PagesTotal = pageCount;
             await SetStatusAsync(item, QueueStatus.Downloading, ct);
 
-            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id, sourceChapterId, pageCount)))
+            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id,
+                    parts.Count > 0 ? string.Join("+", parts.Select(p => p.SourceChapterId)) : sourceChapterId, pageCount)))
             {
                 logger.LogInformation("Discarded cached pages of queue item {Id}: they came from another source chapter",
                     item.Id);
@@ -289,7 +293,7 @@ public class ChapterDownloadProcessor(
                 }
             }
 
-            await KeepPageHashesAsync(series.Id, chapter.Number, mapping.Id, sourceChapterId, pageFiles, ct);
+            await KeepPageHashesAsync(series.Id, chapter.Number, mapping.Id, sourceChapterId, parts.Count > 0, pageFiles, ct);
 
             // 4–5. ComicInfo + CBZ into a temp dir on the same volume as the library.
             await SetStatusAsync(item, QueueStatus.Packaging, ct);
@@ -1203,11 +1207,12 @@ public class ChapterDownloadProcessor(
     /// does not download it a second time (<see cref="ChapterPageHashService"/>). Never fails the download.
     /// </summary>
     private async Task KeepPageHashesAsync(
-        int seriesId, decimal? number, int mappingId, string sourceChapterId, IReadOnlyList<string> pageFiles, CancellationToken ct)
+        int seriesId, decimal? number, int mappingId, string sourceChapterId, bool folded, IReadOnlyList<string> pageFiles,
+        CancellationToken ct)
     {
         try
         {
-            if (await PageHashStore.WantedForAsync(db, seriesId, number, ct) &&
+            if ((folded || await PageHashStore.WantedForAsync(db, seriesId, number, ct)) &&
                 PageHashStore.Of(pageFiles, logger) is { Count: > 0 } hashes)
             {
                 await PageHashStore.StoreAsync(db, mappingId, sourceChapterId, hashes, ct);
@@ -1217,6 +1222,42 @@ public class ChapterDownloadProcessor(
         {
             logger.LogDebug(ex, "Could not keep the page hashes of {Chapter}", sourceChapterId);
         }
+    }
+
+    /// <summary>The parts of a folded chapter this mapping lists it as, when that is how it is downloaded.</summary>
+    private async Task<IReadOnlyList<ChapterFoldPart>> FoldedPartsAsync(
+        int chapterId, int mappingId, string sourceChapterId, CancellationToken ct)
+    {
+        var stored = await db.ChapterSourceLinks.AsNoTracking()
+            .Where(l => l.ChapterId == chapterId && l.SourceMappingId == mappingId && l.Parts != null)
+            .Select(l => l.Parts)
+            .FirstOrDefaultAsync(ct);
+        var parts = ChapterFoldPart.Parse(stored);
+        return parts.Count > 0 && parts[0].SourceChapterId == sourceChapterId ? parts : [];
+    }
+
+    /// <summary>
+    /// A folded chapter's pages: every part's page list, in order, as one chapter. A part that is gone
+    /// or locked fails the whole chapter, as any page of it would.
+    /// </summary>
+    private static async Task<ChapterPages> PagesOfPartsAsync(
+        ISource source, SourceMapping mapping, Chapter chapter, IReadOnlyList<ChapterFoldPart> parts, CancellationToken ct)
+    {
+        var pages = new List<PageRequest>();
+        foreach (var part in parts)
+        {
+            var piece = await source.GetPagesAsync(new SourceChapter(
+                mapping.SourceName, mapping.SourceSeriesId, part.SourceChapterId, part.NumberRaw, part.Number,
+                chapter.Volume, null, chapter.Language, chapter.ReleaseDate), ct);
+            if (piece.Pages.Count == 0)
+            {
+                return new ChapterPages([]);
+            }
+
+            pages.AddRange(piece.Pages);
+        }
+
+        return new ChapterPages(pages);
     }
 
     private sealed record EarlyAccessHold(int? MappingId, string? SourceChapterId, string SourceName, DateTime NextAttempt);
