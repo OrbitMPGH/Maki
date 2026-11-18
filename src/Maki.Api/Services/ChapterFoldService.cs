@@ -98,8 +98,9 @@ public class ChapterFoldService(
         Series series, List<Chapter> chapters, HashSet<int> active, FoldFloor floor, int mappingId,
         IReadOnlyList<decimal> numbers, CancellationToken ct)
     {
-        Chapter? Row(decimal number) => chapters.FirstOrDefault(c =>
-            c.Number == number && SourceLanguages.Same(c.Language, floor.Language));
+        // Two rows under one number (per-volume numbering) leave it unclear which is meant, so nothing folds.
+        Chapter? Row(decimal number) => chapters.Where(c =>
+            c.Number == number && SourceLanguages.Same(c.Language, floor.Language)).ToList() is [var only] ? only : null;
 
         var keeper = Row(floor.Decision.Floor);
         var parts = numbers.Select(Row).ToList();
@@ -115,8 +116,10 @@ public class ChapterFoldService(
             return null;
         }
 
+        // The decision read these uploads' hashes. A part without them was re-uploaded since (sync drops
+        // the hashes of a new upload), so its pages were never checked and it waits for the next pass.
         var partLinks = links.OfType<ChapterSourceLink>().ToList();
-        var pages = partLinks.Select(l => ChapterPageMatch.Parse(l.PageHashes)?.Count ?? l.PageCount ?? 0).ToList();
+        var pages = partLinks.Select(l => ChapterPageMatch.Parse(l.PageHashes)?.Count ?? 0).ToList();
         if (pages.Any(p => p <= 0))
         {
             return null;
@@ -129,6 +132,19 @@ public class ChapterFoldService(
             return null;
         }
 
+        // Reads on a part sit in its file's page space, which a tall-strip split or another scan can make
+        // longer or shorter than the source's pages; a part with no file is read as the source serves it.
+        var partFiles = rows.Select(r => r.ChapterFileId).OfType<int>().Distinct().ToList();
+        var filePages = await db.ChapterFiles.Where(f => partFiles.Contains(f.Id))
+            .Select(f => new { f.Id, Pages = f.SplitPageCount ?? f.PageCount })
+            .ToDictionaryAsync(f => f.Id, f => f.Pages, ct);
+        var lengths = rows.Select((r, i) =>
+                r.ChapterFileId is { } id && rows.Count(o => o.ChapterFileId == id) == 1 &&
+                filePages.TryGetValue(id, out var n) && n is > 0
+                    ? n.Value
+                    : pages[i])
+            .ToList();
+
         var files = new List<ChapterFile>();
         foreach (var fileId in leaving.Select(r => r.ChapterFileId).OfType<int>().Distinct().Where(id => id != keeper.ChapterFileId))
         {
@@ -139,6 +155,14 @@ public class ChapterFoldService(
             }
 
             files.Add(await db.ChapterFiles.FirstAsync(f => f.Id == fileId, ct));
+        }
+
+        // Enqueueing does not take the series lock, so a part may have been queued since the pass began;
+        // deleting its row would take the queue row with it.
+        var leavingIds = leaving.Select(r => (int?)r.Id).ToList();
+        if (await db.DownloadQueue.IgnoreQueryFilters().AnyAsync(q => leavingIds.Contains(q.ActiveChapterId), ct))
+        {
+            return null;
         }
 
         if (files.Count > 0)
@@ -186,9 +210,7 @@ public class ChapterFoldService(
                 Url = first.Url,
                 PageCount = pages.Sum(),
                 PageHashes = hashes.All(h => h is not null) ? ChapterPageMatch.Format(hashes.SelectMany(h => h!)) : null,
-                StripHashes = partLinks.Select(l => ChapterPageMatch.ParseStrip(l.StripHashes)).ToList() is var strips && strips.All(s => s is { Count: > 0 })
-                    ? ChapterPageMatch.FormatStrip([.. strips.SelectMany(s => s!)])
-                    : null,
+                StripHashes = JoinedStrip(partLinks),
                 Parts = fold.PartsJson,
                 FirstSeenAt = partLinks.Select(l => l.FirstSeenAt).Min(),
             });
@@ -208,10 +230,10 @@ public class ChapterFoldService(
         for (var i = 0; i < rows.Count; i++)
         {
             offsets[rows[i].Id] = offset;
-            offset += pages[i];
+            offset += lengths[i];
         }
 
-        var position = new PartPositions(offsets, pages.Sum(), wholePages);
+        var position = new PartPositions(offsets, lengths.Sum(), wholePages);
         await MoveReadsAsync(series.Id, keeper, leaving, position, ct);
         foreach (var row in leaving)
         {
@@ -227,6 +249,22 @@ public class ChapterFoldService(
             string.Join(", ", numbers.Select(n => n.ToString(CultureInfo.InvariantCulture))), mappingId,
             floor.Decision.Floor, series.Id);
         return fold;
+    }
+
+    /// <summary>
+    /// The whole's strip, joined from the parts'. A part whose strip cannot be made makes the whole's
+    /// unmakeable too (empty); a part never stripped leaves it unknown (null), so the hasher fetches every
+    /// part again (<see cref="FoldLink.ToSourceChapters"/>).
+    /// </summary>
+    private static string? JoinedStrip(IReadOnlyList<ChapterSourceLink> parts)
+    {
+        if (parts.Any(l => l.StripHashes == string.Empty))
+        {
+            return string.Empty;
+        }
+
+        var strips = parts.Select(l => ChapterPageMatch.ParseStrip(l.StripHashes)).ToList();
+        return strips.All(s => s is not null) ? ChapterPageMatch.FormatStrip([.. strips.SelectMany(s => s!)]) : null;
     }
 
     /// <summary>Where a page of a part lands in the whole: after the parts before it, scaled to the whole's file.</summary>

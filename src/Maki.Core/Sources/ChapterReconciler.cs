@@ -66,6 +66,9 @@ public sealed class FloorDecision(decimal floor)
     /// <summary>Parts whose pages no whole on the floor holds: they stay rows of their own whatever else folds.</summary>
     public Dictionary<string, IReadOnlyList<decimal>> Held { get; } = [];
 
+    /// <summary>Parts still waiting on page hashes while another mapping's parts on the floor already folded.</summary>
+    public Dictionary<string, IReadOnlyList<decimal>> Waiting { get; } = [];
+
     /// <summary>Chapters whose page hashes the page check waits on.</summary>
     public List<(string Mapping, decimal Number)> MissingPages { get; } = [];
 }
@@ -420,12 +423,15 @@ public static partial class ChapterReconciler
 
     /// <summary>
     /// Holds a merge to the pages: each mapping's parts fold only once a whole on the floor holds them
-    /// (<see cref="ChapterPageMatch"/>), and parts no whole holds stay rows of their own. Wholes are tried
-    /// in the floor's order, and only up to the first one without hashes, so a check costs one whole.
-    /// Pages that differ get a second look as strips (<see cref="ChapterPageMatch.CompareStrips"/>),
-    /// for a source that cuts or pads its pages; hashes stored before strips existed are fetched again.
-    /// <paramref name="hashesOf"/> gives a chapter's stored hashes, or null when none are stored.
-    /// Only a merged floor is touched: page counts and the pair rule nominate, the pages decide.
+    /// (<see cref="ChapterPageMatch"/>), and parts no whole holds stay rows of their own. Every whole with
+    /// evidence is tried in the floor's order; only the first whole without it is asked for, so a check
+    /// fetches one whole at a time. Pages that differ get a second look as strips
+    /// (<see cref="ChapterPageMatch.CompareStrips"/>), for a source that cuts or pads its pages; hashes
+    /// stored before strips existed are fetched again. A mapping still waiting on evidence never holds up
+    /// another mapping whose parts already matched: those fold, and the waiting ones move to
+    /// <see cref="FloorDecision.Waiting"/>. <paramref name="hashesOf"/> gives a chapter's stored hashes, or
+    /// null when none are stored. Only a merged floor is touched: page counts and the pair rule nominate,
+    /// the pages decide.
     /// </summary>
     public static void CheckPages(FloorDecision d, Func<string, decimal, PageEvidence?> hashesOf)
     {
@@ -435,7 +441,7 @@ public static partial class ChapterReconciler
         }
 
         d.Nominated = d.Reason;
-        var waiting = false;
+        var waiting = new List<string>();
         var folds = 0;
         foreach (var (mapping, numbers) in d.Parts.ToList())
         {
@@ -449,19 +455,28 @@ public static partial class ChapterReconciler
                     d.MissingPages.Add((whole, d.Floor));
                 }
 
-                waiting = true;
+                waiting.Add(mapping);
                 continue;
             }
 
             var matched = false;
             var unhashed = false;
+            void Want(string whole)
+            {
+                if (!unhashed)
+                {
+                    d.MissingPages.Add((whole, d.Floor));
+                }
+
+                unhashed = true;
+            }
+
             foreach (var whole in d.Wholes)
             {
                 if (hashesOf(whole, d.Floor) is not { } wholeEvidence)
                 {
-                    d.MissingPages.Add((whole, d.Floor));
-                    unhashed = true;
-                    break;
+                    Want(whole);
+                    continue;
                 }
 
                 var result = ChapterPageMatch.Compare(wholeEvidence.Pages, [.. parts.Select(p => p!.Pages)]);
@@ -472,16 +487,17 @@ public static partial class ChapterReconciler
                     break;
                 }
 
-                if (wholeEvidence.Strip is null || parts.Any(p => p!.Strip is null))
+                var partsStripless = parts.Any(p => p!.Strip is null);
+                if (wholeEvidence.Strip is null || partsStripless)
                 {
                     if (wholeEvidence.Strip is null)
                     {
-                        d.MissingPages.Add((whole, d.Floor));
+                        Want(whole);
                     }
 
                     d.MissingPages.AddRange(numbers.Where((_, i) => parts[i]!.Strip is null).Select(n => (mapping, n)));
                     unhashed = true;
-                    break;
+                    continue;
                 }
 
                 var strips = ChapterPageMatch.CompareStrips(wholeEvidence.Strip, [.. parts.Select(p => p!.Strip!)]);
@@ -499,7 +515,7 @@ public static partial class ChapterReconciler
             }
             else if (unhashed)
             {
-                waiting = true;
+                waiting.Add(mapping);
             }
             else
             {
@@ -511,14 +527,20 @@ public static partial class ChapterReconciler
         var missing = d.MissingPages.Distinct().ToList();
         d.MissingPages.Clear();
         d.MissingPages.AddRange(missing);
-        if (waiting)
+        if (folds > 0)
+        {
+            foreach (var mapping in waiting)
+            {
+                d.Waiting[mapping] = d.Parts[mapping];
+                d.Parts.Remove(mapping);
+            }
+
+            Settle(d, FoldState.Merged, "pagesMatch");
+        }
+        else if (waiting.Count > 0)
         {
             Settle(d, FoldState.Pending, "needsPageCheck");
             d.Fold = false;
-        }
-        else if (folds > 0)
-        {
-            Settle(d, FoldState.Merged, "pagesMatch");
         }
         else
         {

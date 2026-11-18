@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Maki.Core.Sources;
@@ -66,6 +69,20 @@ public static class ChapterPageMatch
     /// <summary>Four pages of windows: a page is about 1.43 times as tall as wide, a window every 2 rows of 32.</summary>
     private const int MaxWindowGap = 92;
 
+    /// <summary>
+    /// Matching window pairs the sparse alignment keeps at most (8 bytes each). Strips of repetitive
+    /// texture (screentone) can match almost everywhere; past this the answer is Unsure, never a match.
+    /// </summary>
+    private const int MaxSparseNodes = 4_000_000;
+
+    /// <summary>
+    /// Strip verdicts by their inputs' content. Every pass decides every floor again and two long strips
+    /// cost about a second, so a floor that settled on Differ is not compared again until a strip changes.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, PageMatchResult> StripVerdicts = new(StringComparer.Ordinal);
+
+    private const int StripVerdictsKept = 4096;
+
     private sealed record Rules(int MaxDistance, int MinUnits, int MaxGap, bool Sparse);
 
     private static readonly Rules PageRules = new(MaxDistance, MinPages, MaxGap, Sparse: false);
@@ -80,8 +97,35 @@ public static class ChapterPageMatch
     /// whole's strip, in order. For a source whose pages are not the pages the whole is made of, cut into
     /// slices, padded with crops, or a webtoon cut at other points.
     /// </summary>
-    public static PageMatchResult CompareStrips(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts) =>
-        Compare(whole, parts, StripRules);
+    public static PageMatchResult CompareStrips(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts)
+    {
+        var key = StripKey(whole, parts);
+        if (StripVerdicts.TryGetValue(key, out var known))
+        {
+            return known;
+        }
+
+        var result = Compare(whole, parts, StripRules);
+        if (StripVerdicts.Count >= StripVerdictsKept)
+        {
+            StripVerdicts.Clear();
+        }
+
+        StripVerdicts[key] = result;
+        return result;
+    }
+
+    private static string StripKey(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        foreach (var strip in parts.Prepend(whole))
+        {
+            hash.AppendData(BitConverter.GetBytes(strip.Count));
+            hash.AppendData(MemoryMarshal.AsBytes<ulong>([.. strip]));
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
 
     private static PageMatchResult Compare(IReadOnlyList<ulong> whole, IReadOnlyList<IReadOnlyList<ulong>> parts, Rules rules)
     {
@@ -106,6 +150,10 @@ public static class ChapterPageMatch
         var matched = rules.Sparse
             ? AlignSparse(hashes, wholePages, rules.MaxDistance)
             : Align(hashes, wholePages, rules.MaxDistance);
+        if (matched is null)
+        {
+            return new PageMatchResult(PageMatchVerdict.Unsure, [], 0);
+        }
         var hits = new int[parts.Count];
         var gaps = new int[parts.Count];
         var run = new int[parts.Count];
@@ -176,9 +224,9 @@ public static class ChapterPageMatch
     /// <summary>
     /// The same longest in-order pairing as <see cref="Align"/>, in memory for the matching pairs only
     /// (Hunt-Szymanski): a webtoon chapter's strip has thousands of windows, and a full table of both
-    /// strips would not fit.
+    /// strips would not fit. Null when the pairs outgrow <see cref="MaxSparseNodes"/>.
     /// </summary>
-    private static bool[] AlignSparse(ulong[] parts, ulong[] whole, int maxDistance)
+    private static bool[]? AlignSparse(ulong[] parts, ulong[] whole, int maxDistance)
     {
         var ends = new List<int>();
         var tails = new List<int>();
@@ -205,6 +253,11 @@ public static class ChapterPageMatch
                 }
 
                 at = ~at;
+                if (nodes.Count >= MaxSparseNodes)
+                {
+                    return null;
+                }
+
                 nodes.Add((a, at > 0 ? tails[at - 1] : -1));
                 if (at == ends.Count)
                 {

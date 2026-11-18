@@ -14,8 +14,9 @@ public sealed record FoldedListing(
 /// Rewrites a mapping's listing through its <see cref="ChapterFold"/>s, before sync matches it to
 /// chapter rows. A complete listing with every part of a fold lists them as chapter f; one missing a
 /// part, or listing another upload under its id, breaks the fold, and the parts are rows again. A
-/// partial (newest-first) listing never breaks one: it leaves out the parts it has, so nothing is
-/// added for them. When the mapping lists the whole f itself, the parts are only left out.
+/// partial (newest-first) listing never breaks one: it leaves out the parts it has, and any other
+/// upload under a part's number, so nothing is added for them until a whole walk decides. When the
+/// mapping lists the whole f itself, the parts are only left out.
 /// </summary>
 public static class ChapterFoldListing
 {
@@ -44,7 +45,8 @@ public static class ChapterFoldListing
                 }
                 else
                 {
-                    chapters.RemoveAll(c => listed.Contains(c));
+                    chapters.RemoveAll(c => listed.Contains(c) ||
+                        (wanted.Any(p => p.Number == c.Number) && SourceLanguages.Same(c.Language, fold.Language)));
                 }
 
                 continue;

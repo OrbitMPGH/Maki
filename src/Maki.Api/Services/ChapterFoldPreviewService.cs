@@ -20,7 +20,8 @@ public sealed record ChapterFoldFloorDto(
     string? Nominated,
     IReadOnlyList<PageCheck> PageChecks,
     IReadOnlyDictionary<string, IReadOnlyList<decimal>> Held,
-    IReadOnlyList<ChapterFoldMissingDto> MissingPages);
+    IReadOnlyList<ChapterFoldMissingDto> MissingPages,
+    IReadOnlyDictionary<string, IReadOnlyList<decimal>> Waiting);
 
 public sealed record ChapterFoldSeriesDto(int SeriesId, string Title, IReadOnlyList<ChapterFoldFloorDto> Floors);
 
@@ -54,10 +55,17 @@ public sealed record FoldLink(
     string? Url,
     int? PageCount,
     string? PageHashes,
-    string? StripHashes)
+    string? StripHashes,
+    string? Parts = null)
 {
     public SourceChapter ToSourceChapter() =>
         new(SourceName, SourceSeriesId, SourceChapterId, NumberRaw, Number, Volume, Title, Language, ReleaseDate, Url);
+
+    /// <summary>The uploads the link stands for: each part of a folded chapter in reading order, else the link itself.</summary>
+    public IReadOnlyList<SourceChapter> ToSourceChapters() =>
+        Maki.Core.Entities.ChapterFoldPart.Parse(Parts) is { Count: > 0 } parts
+            ? [.. parts.Select(p => new SourceChapter(SourceName, SourceSeriesId, p.SourceChapterId, p.NumberRaw, p.Number, Volume, Title, Language, ReleaseDate, Url))]
+            : [ToSourceChapter()];
 }
 
 /// <summary>A decided floor of one series and language, and the links a pending one waits on for a page count or page hashes.</summary>
@@ -98,7 +106,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                 f.Decision.Parts, f.Decision.Wholes, f.Decision.Aliases, f.Decision.Ratios,
                 [.. f.Missing.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))],
                 f.Decision.Nominated, f.Decision.PageChecks, f.Decision.Held,
-                [.. f.MissingPages.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))]))]))
+                [.. f.MissingPages.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))], f.Decision.Waiting))]))
             .ToList();
         var missing = floors.SelectMany(f => f.Missing).DistinctBy(m => (m.MappingId, m.ChapterId)).ToList();
         var missingPages = floors.SelectMany(f => f.MissingPages).DistinctBy(m => (m.MappingId, m.ChapterId)).ToList();
@@ -139,7 +147,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             .Select(l => new
             {
                 l.SourceMappingId, l.ChapterId, l.SourceChapterId, l.NumberRaw, Number = l.Chapter!.Number!.Value,
-                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes, l.StripHashes,
+                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes, l.StripHashes, l.Parts,
             })
             .ToListAsync(ct);
         var linksByMapping = links.ToLookup(l => l.SourceMappingId);
@@ -167,7 +175,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                         .OrderBy(l => l.Number)
                         .Select(l => new FoldLink(series.Key, m.Id, names[m.Id], m.SourceName, m.SourceSeriesId, l.ChapterId,
                             l.SourceChapterId, l.NumberRaw, l.Number, l.Volume, l.Title, language, l.ReleaseDate, l.Url, l.PageCount,
-                            l.PageHashes, l.StripHashes))
+                            l.PageHashes, l.StripHashes, l.Parts))
                         .ToList());
                 var listings = ordered
                     .Select(m => new ReconcileListing(names[m.Id],

@@ -473,6 +473,48 @@ public class ChapterReconcilerTests
     }
 
     [Fact]
+    public void PartsThatMatchFoldWhileAnotherSourcesPartsStillWait()
+    {
+        // MangaKakalot answered HTTP 500 for days; MangaDex's parts had matched all along.
+        var whole = Hashes(0, 40);
+        var d = MergedByCounts(Listing("mangapill", C(1.1m, 20), C(1.2m, 23), C(2, 40)));
+
+        ChapterReconciler.CheckPages(d, (m, n) => Evidence((m, n) switch
+        {
+            ("weebcentral", 1) => whole,
+            ("mangadex", 1.1m) => whole[..22],
+            ("mangadex", 1.2m) => whole[22..],
+            _ => null,
+        }));
+
+        Assert.Equal(FoldState.Merged, d.State);
+        Assert.True(d.Fold);
+        Assert.Equal(["mangadex"], d.Parts.Keys);
+        Assert.Equal([1.1m, 1.2m], d.Waiting["mangapill"]);
+        Assert.Equal([("mangapill", 1.1m), ("mangapill", 1.2m)], d.MissingPages);
+    }
+
+    [Fact]
+    public void AWholeWithoutHashesDoesNotStopTheNextWholeBeingTried()
+    {
+        var whole = Hashes(0, 40);
+        var d = MergedByCounts(Listing("mangafire", C(1, 41), C(2, 40)));
+        Assert.Equal(2, d.Wholes.Count);
+        var first = d.Wholes[0];
+
+        ChapterReconciler.CheckPages(d, (m, n) => Evidence((m, n) switch
+        {
+            ("mangadex", 1.1m) => whole[..22],
+            ("mangadex", 1.2m) => whole[22..],
+            (_, 1) when m != first => whole,
+            _ => null,
+        }));
+
+        Assert.Equal(FoldState.Merged, d.State);
+        Assert.Equal(nameof(PageMatchVerdict.Match), Assert.Single(d.PageChecks).Verdict);
+    }
+
+    [Fact]
     public void AFloorNoMergeNominatedIsLeftAlone()
     {
         var d = ChapterReconciler.Decide([

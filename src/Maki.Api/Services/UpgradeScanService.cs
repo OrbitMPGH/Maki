@@ -404,7 +404,9 @@ public class UpgradeScanService(
                     continue;
                 }
 
-                if (UpgradeCandidateRules.SameCopy(file, mapping.SourceName, link.SourceChapterId))
+                // A folded chapter's link names its first part, so a probe would measure part of the chapter
+                // and memoise it as having fewer pages. Folded sources are not offered as upgrades for now.
+                if (link.Parts is not null || UpgradeCandidateRules.SameCopy(file, mapping.SourceName, link.SourceChapterId))
                 {
                     continue;
                 }

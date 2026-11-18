@@ -61,6 +61,15 @@ public class ChapterFoldListingTests
     }
 
     [Fact]
+    public void APartialListingLeavesOutAPartUploadedAgain()
+    {
+        var result = ChapterFoldListing.Rewrite([C(3.1m), C(3.2m, id: "reupload"), C(4)], [Fold(3, 3.1m, 3.2m)], complete: false);
+
+        Assert.Equal([4m], result.Chapters.Select(c => c.Number!.Value));
+        Assert.Empty(result.Broken);
+    }
+
+    [Fact]
     public void PartsBesideTheSourcesOwnWholeAreOnlyLeftOut()
     {
         var result = ChapterFoldListing.Rewrite([C(3), C(3.1m), C(3.2m)], [Fold(3, 3.1m, 3.2m)], complete: true);

@@ -65,7 +65,7 @@ public class ChapterPageCountService(
             .ToList();
 
         var now = time.GetUtcNow();
-        var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var blocked = new HashSet<string>(await queue.HeldSourcesAsync(ct), StringComparer.OrdinalIgnoreCase);
         var perSeries = new Dictionary<int, int>();
         var perBrowser = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         int counted = 0, failed = 0, skipped = 0, spent = 0;
@@ -108,10 +108,22 @@ public class ChapterPageCountService(
             perSeries[link.SeriesId] = perSeries.GetValueOrDefault(link.SeriesId) + 1;
             try
             {
-                var chapter = link.ToSourceChapter();
-                var pages = source is IPageCountSource counter
-                    ? await counter.CountPagesAsync(chapter, ct)
-                    : (await source.GetPagesAsync(chapter, ct)).Pages.Count;
+                // A folded chapter's link counts as all of its parts.
+                var pages = 0;
+                foreach (var chapter in link.ToSourceChapters())
+                {
+                    var count = source is IPageCountSource counter
+                        ? await counter.CountPagesAsync(chapter, ct)
+                        : (await source.GetPagesAsync(chapter, ct)).Pages.Count;
+                    if (count <= 0)
+                    {
+                        pages = 0;
+                        break;
+                    }
+
+                    pages += count;
+                }
+
                 if (pages <= 0)
                 {
                     failures.Recent[(link.MappingId, link.SourceChapterId)] = now;

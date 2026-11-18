@@ -38,7 +38,7 @@ public class ChapterPageHasher(PageDownloader pageDownloader, ILogger<ChapterPag
             {
                 Directory.Delete(dir, recursive: true);
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
             }
         }
@@ -166,7 +166,7 @@ public class ChapterPageHashService(
             .ToList();
 
         var now = time.GetUtcNow();
-        var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var blocked = new HashSet<string>(await queue.HeldSourcesAsync(ct), StringComparer.OrdinalIgnoreCase);
         var perSeries = new Dictionary<int, int>();
         var perBrowser = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         int hashed = 0, failed = 0, skipped = 0, spent = 0;
@@ -209,7 +209,7 @@ public class ChapterPageHashService(
             perSeries[link.SeriesId] = perSeries.GetValueOrDefault(link.SeriesId) + 1;
             try
             {
-                if (await hasher.HashAsync(source, link.ToSourceChapter(), ct) is not { Pages.Count: > 0 } hashes)
+                if (await HashAllAsync(source, link, ct) is not { Pages.Count: > 0 } hashes)
                 {
                     failures.RecentHashes[(link.MappingId, link.SourceChapterId)] = now;
                     failed++;
@@ -242,5 +242,29 @@ public class ChapterPageHashService(
         }
 
         return new PageHashRun(hashed, failed, skipped, waiting.Count);
+    }
+
+    /// <summary>
+    /// A folded chapter's link stands for every part, so each part is hashed and the evidence joined in
+    /// reading order; its first part alone would overwrite the whole's hashes with part of them.
+    /// </summary>
+    private async Task<PageEvidence?> HashAllAsync(ISource source, FoldLink link, CancellationToken ct)
+    {
+        var parts = new List<PageEvidence>();
+        foreach (var chapter in link.ToSourceChapters())
+        {
+            if (await hasher.HashAsync(source, chapter, ct) is not { Pages.Count: > 0 } evidence)
+            {
+                return null;
+            }
+
+            parts.Add(evidence);
+        }
+
+        return parts.Count == 1
+            ? parts[0]
+            : new PageEvidence(
+                [.. parts.SelectMany(p => p.Pages)],
+                parts.All(p => p.Strip is { Count: > 0 }) ? [.. parts.SelectMany(p => p.Strip!)] : null);
     }
 }

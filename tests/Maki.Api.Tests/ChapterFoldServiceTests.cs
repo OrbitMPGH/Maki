@@ -214,6 +214,46 @@ public sealed class ChapterFoldServiceTests : IDisposable
         Assert.Equal([3m, 3.1m, 3.2m, 4m], Chapters(seriesId).Select(c => c.Number!.Value));
     }
 
+    [Fact]
+    public async Task Reads_on_split_part_files_land_by_the_files_own_pages()
+    {
+        // Tall-strip splitting made each part file 50 pages and the whole's 100; the sources serve 13 and 26.
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            ChapterFile File(string name, int pages) =>
+                db.Add(new ChapterFile { SeriesId = rows[3m].SeriesId, RelativePath = $"Test Series/{name}.cbz", PageCount = 10, SplitPageCount = pages }).Entity;
+            var whole = File("3", 100);
+            var first = File("3.1", 50);
+            var second = File("3.2", 50);
+            db.SaveChanges();
+            rows[3m].ChapterFileId = whole.Id;
+            rows[3.1m].ChapterFileId = first.Id;
+            rows[3.2m].ChapterFileId = second.Id;
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 40, PageCount = 50,
+                StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.Equal((50 + 40, 100), (progress.PageIndex, progress.PageCount));
+    }
+
+    [Fact]
+    public void A_folded_link_stands_for_each_of_its_parts()
+    {
+        var parts = ChapterFoldPart.Format([new("a", 3.1m, "3.1", 13), new("b", 3.2m, "3.2", 26)]);
+        var link = new FoldLink(1, 1, "parts", "parts", "series", 1, "a", "3", 3, null, null, "en", null, null, 39, null, null, parts);
+
+        Assert.Equal([("a", 3.1m), ("b", 3.2m)], link.ToSourceChapters().Select(c => (c.SourceChapterId, c.Number!.Value)));
+        Assert.Equal("a", Assert.Single((link with { Parts = null }).ToSourceChapters()).SourceChapterId);
+    }
+
     private sealed class PagesOf(IReadOnlyDictionary<string, List<ulong>> pages) : IChapterPageHasher
     {
         public Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct) =>

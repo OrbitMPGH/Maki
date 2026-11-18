@@ -1201,7 +1201,6 @@ public class ChapterDownloadProcessor(
     private static readonly TimeSpan LockedRecheckInterval = TimeSpan.FromHours(4);
     private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
 
-    /// <summary>Where a locked chapter waits and until when; see <c>ProcessAsync</c>'s <c>hold</c>.</summary>
     /// <summary>
     /// A chapter that could take part in a fold keeps its pages' hashes, so checking the fold later
     /// does not download it a second time (<see cref="ChapterPageHashService"/>). Never fails the download.
@@ -1260,6 +1259,7 @@ public class ChapterDownloadProcessor(
         return new ChapterPages(pages);
     }
 
+    /// <summary>Where a locked chapter waits and until when; see <c>ProcessAsync</c>'s <c>hold</c>.</summary>
     private sealed record EarlyAccessHold(int? MappingId, string? SourceChapterId, string SourceName, DateTime NextAttempt);
 
     /// <summary>
