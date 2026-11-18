@@ -81,6 +81,13 @@ public class RecommendationServiceEaseTests : IDisposable
             settings,
             NullLogger<RecommendationService>.Instance);
 
+    private static async Task<FakeAppSettings> EaseOn()
+    {
+        var settings = new FakeAppSettings();
+        await settings.SetAsync(SettingKeys.RecommendationsEase, "true");
+        return settings;
+    }
+
     private static MangaBakaRecommendation Pick(long id, ReasonSeed[]? alsoFinished = null) =>
         new(id.ToString(), $"Pick {id}", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null)
         {
@@ -112,12 +119,23 @@ public class RecommendationServiceEaseTests : IDisposable
     }
 
     [Fact]
-    public async Task The_channel_is_on_by_default_and_gets_the_same_seed_weights()
+    public async Task The_channel_is_off_by_default()
     {
         SeedLibrary(101, 202);
         var recommender = new CapturingRecommender([Pick(77)]);
 
         await Service(recommender, new FakeAppSettings()).GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.False(Assert.Single(recommender.SeenEase));
+    }
+
+    [Fact]
+    public async Task Switched_on_the_channel_gets_the_same_seed_weights()
+    {
+        SeedLibrary(101, 202);
+        var recommender = new CapturingRecommender([Pick(77)]);
+
+        await Service(recommender, await EaseOn()).GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
         Assert.True(Assert.Single(recommender.SeenEase));
         var weights = Assert.Single(recommender.SeenWeights);
@@ -129,7 +147,7 @@ public class RecommendationServiceEaseTests : IDisposable
     public async Task The_kill_switch_turns_the_channel_off_and_misses_the_cached_pool()
     {
         SeedLibrary(101);
-        var settings = new FakeAppSettings();
+        var settings = await EaseOn();
         var recommender = new CapturingRecommender([Pick(77)]);
         var service = Service(recommender, settings);
 
@@ -156,7 +174,7 @@ public class RecommendationServiceEaseTests : IDisposable
             Pick(3, [first, second]),
         ]);
 
-        var result = await Service(recommender, new FakeAppSettings())
+        var result = await Service(recommender, await EaseOn())
             .GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
         Assert.Equal(["Series 101", "Series 101", "Series 202"], result.Similar.Select(p => p.CoReadWithTitle));
@@ -171,7 +189,7 @@ public class RecommendationServiceEaseTests : IDisposable
         var picks = Enumerable.Range(1, 10).Select(i => Pick(i, i <= 2 ? [seed] : null)).ToList();
         var recommender = new CapturingRecommender(picks, new Dictionary<long, int> { [1] = 9, [2] = 9 });
 
-        var result = await Service(recommender, new FakeAppSettings())
+        var result = await Service(recommender, await EaseOn())
             .GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
         var order = result.Similar.Select(p => p.ProviderId).ToList();

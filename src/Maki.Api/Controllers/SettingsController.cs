@@ -2410,17 +2410,14 @@ public class SettingsController(
 
     /// <summary>
     /// Whether personal recommendations may use the EASE table (what readers who finished one series
-    /// also finished, fitted on AniList reading lists) and whether the artifact is here. On by
-    /// default, own endpoint like co-read's, and no UI, same as the other crowd switches.
+    /// also finished, fitted on AniList reading lists) and whether the artifact is here. Off unless
+    /// set to true, own endpoint like co-read's, and no UI, same as the other crowd switches.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("recommendations/ease")]
     public async Task<IActionResult> GetEase(CancellationToken ct)
     {
-        var enabled = !string.Equals(
-            await settings.GetAsync(SettingKeys.RecommendationsEase, ct),
-            "false",
-            StringComparison.OrdinalIgnoreCase);
+        var enabled = await easeInstaller.IsEnabledAsync(ct);
 
         var table = enabled ? await easeCache.GetAsync(ct) : null;
         return Ok(new EaseStatus(
@@ -2432,7 +2429,7 @@ public class SettingsController(
     }
 
     /// <summary>
-    /// Turns the EASE channel off, leaving every other channel alone. Takes effect on the next
+    /// Turns the EASE channel on or off, leaving every other channel alone. Takes effect on the next
     /// uncached pool, since the flag is part of the cache key; off also stops the download and,
     /// once the idle unload runs, frees the table.
     /// </summary>

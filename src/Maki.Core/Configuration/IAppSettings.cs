@@ -823,9 +823,9 @@ public static class SettingKeys
 
     /// <summary>
     /// Kill switch for the EASE channel (the "readers who finished X also finished Y" weight table,
-    /// <c>ease-table.db</c>), the same shape as <see cref="RecommendationsCoRead"/>: default on, no
-    /// UI, read per uncached request and folded into the pool cache key. Off means no download, no
-    /// load and no scoring.
+    /// <c>ease-table.db</c>), the same shape as <see cref="RecommendationsCoRead"/> but default off:
+    /// only an explicit <c>true</c> turns it on. No UI, read per uncached request and folded into the
+    /// pool cache key. Off means no download, no load and no scoring.
     /// </summary>
     public const string RecommendationsEase = "recommendations.ease";
 
@@ -840,7 +840,7 @@ public static class SettingKeys
 
     /// <summary>
     /// Kill switch for the page-share penalty (<c>page-share.db</c>, how often each series lands on
-    /// a reader's Recommended page), the same shape as <see cref="RecommendationsEase"/>: default on,
+    /// a reader's Recommended page), the same shape as <see cref="RecommendationsCoRead"/>: default on,
     /// no UI, read per uncached request and folded into the pool cache key. Off means no download,
     /// no load and no penalty.
     /// </summary>

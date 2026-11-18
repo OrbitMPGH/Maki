@@ -26,6 +26,7 @@ public class EaseInstallerTests : IDisposable
         _dir = Path.Combine(Path.GetTempPath(), "maki-ease-install-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_dir);
         _tablePath = Path.Combine(_dir, "ease-table.db");
+        _settings.Values[SettingKeys.RecommendationsEase] = "true";
     }
 
     [Fact]
@@ -50,6 +51,20 @@ public class EaseInstallerTests : IDisposable
     {
         Publish(Build());
         await _settings.SetAsync(SettingKeys.RecommendationsEase, "false");
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.False(result.Installed);
+        Assert.Equal("install.ease.disabled", result.Reason);
+        Assert.Equal(0, _handler.Requests);
+        Assert.False(File.Exists(_tablePath));
+    }
+
+    [Fact]
+    public async Task Unset_IsOff_AndDownloadsNothing()
+    {
+        Publish(Build());
+        _settings.Values.Remove(SettingKeys.RecommendationsEase);
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 

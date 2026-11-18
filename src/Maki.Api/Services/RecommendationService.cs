@@ -571,11 +571,11 @@ public class RecommendationService(
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>The same, for the EASE channel (<c>recommendations.ease</c>).</summary>
+    /// <summary>The EASE channel (<c>recommendations.ease</c>), which is off unless set to true.</summary>
     private async Task<bool> EaseEnabledAsync(CancellationToken ct)
     {
         var value = await settings.GetAsync(SettingKeys.RecommendationsEase, ct);
-        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>The same, for the page-share penalty (<c>recommendations.pageshare</c>).</summary>

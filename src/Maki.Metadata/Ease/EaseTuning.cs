@@ -2,8 +2,8 @@ namespace Maki.Metadata.Ease;
 
 /// <summary>
 /// The knobs behind the EASE channel, a signed item-item table fitted on AniList reading lists
-/// (<see cref="EaseScorer"/>, artifact <c>ease-table.db</c>, kill switch
-/// <c>recommendations.ease</c>). It runs on personal recommendations only: the series page's "More
+/// (<see cref="EaseScorer"/>, artifact <c>ease-table.db</c>, switch
+/// <c>recommendations.ease</c>, off by default). It runs on personal recommendations only: the series page's "More
 /// like this" passes <c>ease: false</c>. <c>distribution/CLAUDE.md</c> has the numbers.
 /// </summary>
 public sealed record EaseTuning
