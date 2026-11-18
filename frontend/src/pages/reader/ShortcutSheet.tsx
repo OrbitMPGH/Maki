@@ -1,19 +1,27 @@
-import { ActionIcon, FocusTrap } from '@mantine/core'
+import { ActionIcon, Anchor, FocusTrap } from '@mantine/core'
+import { Link } from 'react-router-dom'
 import { IconX } from '../../lib/icons'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { SHORTCUT_ACTIONS, SHORTCUT_GROUP_LABELS, SHORTCUT_GROUPS, useShortcutBindings } from '../../lib/shortcuts'
+import { useFormatCombo } from '../../lib/shortcutLabels'
 
 interface Shortcut {
+  id: string
   keys: string[]
   label: string
 }
+
+const GROUPS = SHORTCUT_GROUPS.filter((group) => group !== 'app')
 
 /**
  * Every key the reader answers to, on one sheet. Opened with `?` or the keyboard button; the page
  * handles the keys, including Escape, so this only draws and takes the backdrop click.
  */
 export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose: () => void }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
+  const bindings = useShortcutBindings()
+  const formatCombo = useFormatCombo()
   // The trap moves focus into the sheet and keeps Tab inside it; this hands focus back to whatever
   // opened it, which is otherwise lost to the body.
   useEffect(() => {
@@ -21,54 +29,24 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
     return () => opener?.focus?.()
   }, [])
 
-  // The arrows follow the reading direction, same as the handler that reads them.
-  const forward = rtl ? '←' : '→'
-  const back = rtl ? '→' : '←'
-  const groups: { title: string; items: Shortcut[] }[] = [
-    {
-      title: t`Turning pages`,
-      items: [
-        { keys: [forward, t`Space`], label: t`Next page` },
-        { keys: [back, t`Shift + Space`], label: t`Previous page` },
-        { keys: [t`Home`], label: t`First page` },
-        { keys: [t`End`], label: t`Last page` },
-      ],
-    },
-    {
-      title: t`Continuous`,
-      items: [
-        { keys: [t`Space`, t`Page Down`], label: t`Down a screen` },
-        { keys: [t`Shift + Space`, t`Page Up`], label: t`Up a screen` },
-        { keys: ['A'], label: t`Auto-scroll on or off` },
-        { keys: ['[', ']'], label: t`Auto-scroll slower and faster` },
-      ],
-    },
-    {
-      title: t`Layout`,
-      items: [
-        { keys: ['1'], label: t`Single page` },
-        { keys: ['2'], label: t`Double page` },
-        { keys: ['3'], label: t`Continuous` },
-        { keys: ['D'], label: t`Switch reading direction` },
-        { keys: ['C'], label: t`Crop borders on or off` },
-        { keys: ['E'], label: t`Enhance on Always, or back` },
-        { keys: ['+', '−'], label: t`Zoom in and out` },
-        { keys: ['0'], label: t`Reset zoom` },
-      ],
-    },
-    {
-      title: t`Everything else`,
-      items: [
-        { keys: ['F'], label: t`Full screen` },
-        { keys: ['T'], label: t`Page thumbnails` },
-        { keys: ['B'], label: t`Bookmark this page` },
-        { keys: [',', '.'], label: t`Previous and next bookmark` },
-        { keys: ['H'], label: t`Hold to compare` },
-        { keys: [t`Esc`], label: t`Back to where you came from` },
-        { keys: ['?'], label: t`Show or hide this list` },
-      ],
-    },
-  ]
+  const groups = useMemo(
+    () =>
+      GROUPS.map((group) => {
+        const items: Shortcut[] = SHORTCUT_ACTIONS.filter((action) => action.group === group).map((action) => ({
+          id: action.id,
+          label: i18n._(action.label),
+          keys: bindings[action.id].map((combo) => formatCombo(combo, { rtl })),
+        }))
+        if (group === 'other')
+          items.push({
+            id: 'escape',
+            label: t`Leave the reader`,
+            keys: [formatCombo('Escape')],
+          })
+        return { title: i18n._(SHORTCUT_GROUP_LABELS[group]), items }
+      }),
+    [bindings, formatCombo, rtl, i18n, t],
+  )
 
   return (
     <div className="reader-shortcuts" onClick={onClose}>
@@ -95,18 +73,27 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
                 <h3>{group.title}</h3>
                 <dl>
                   {group.items.map((item) => (
-                    <div key={item.label} className="reader-shortcuts-row">
+                    <div key={item.id} className="reader-shortcuts-row">
                       <dt>{item.label}</dt>
                       <dd>
-                        {item.keys.map((key) => (
-                          <kbd key={key}>{key}</kbd>
-                        ))}
+                        {item.keys.length === 0 ? (
+                          <span className="reader-shortcuts-none">
+                            <Trans>No key</Trans>
+                          </span>
+                        ) : (
+                          item.keys.map((key) => <kbd key={key}>{key}</kbd>)
+                        )}
                       </dd>
                     </div>
                   ))}
                 </dl>
               </section>
             ))}
+          </div>
+          <div className="reader-shortcuts-foot">
+            <Anchor component={Link} to="/settings?tab=reading&s=keyboard-shortcuts" size="sm">
+              <Trans>Change keys</Trans>
+            </Anchor>
           </div>
         </div>
       </FocusTrap>

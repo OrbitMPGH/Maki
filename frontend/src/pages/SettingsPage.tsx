@@ -26,6 +26,7 @@ import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { RatingPromptsSection } from '../components/settings/RatingPromptsSection'
+import { KeyboardShortcutsSection } from '../components/settings/KeyboardShortcutsSection'
 import { RatingsSection } from '../components/settings/RatingsSection'
 import { ReadingStatusSection } from '../components/settings/ReadingStatusSection'
 import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
@@ -103,6 +104,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'push-notifications': <PushNotificationsSection />,
 
       reader: <ReadingProfilesSection />,
+      'keyboard-shortcuts': <KeyboardShortcutsSection />,
       progress: <ProgressSection />,
       'rating-prompts': <RatingPromptsSection />,
       ratings: <RatingsSection />,

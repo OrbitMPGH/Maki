@@ -820,6 +820,28 @@ public class SettingsController(
         return Ok(request);
     }
 
+    /// <param name="Bindings">Action id to its keys, for the actions changed from their defaults.</param>
+    public record ShortcutSettingsRequest(Dictionary<string, List<string>?>? Bindings);
+
+    public record ShortcutSettings(IReadOnlyDictionary<string, IReadOnlyList<string>> Bindings);
+
+    /// <summary>The caller's keyboard shortcut overrides. Theirs alone; unset = every default.</summary>
+    [HttpGet("shortcuts")]
+    public async Task<IActionResult> GetShortcuts(CancellationToken ct) =>
+        Ok(new ShortcutSettings(ShortcutBindings.Parse(await userSettings.GetAsync(SettingKeys.UiShortcuts, ct))));
+
+    [HttpPut("shortcuts")]
+    public async Task<IActionResult> SetShortcuts([FromBody] ShortcutSettingsRequest request, CancellationToken ct)
+    {
+        if (ShortcutBindings.Normalize(request.Bindings) is not { } normalized)
+        {
+            return this.Fail(localizer, "error.settings.invalidShortcuts");
+        }
+
+        await userSettings.SetAsync(SettingKeys.UiShortcuts, ShortcutBindings.Serialize(normalized), ct);
+        return Ok(new ShortcutSettings(normalized));
+    }
+
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/appearance/seen")]
     public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)

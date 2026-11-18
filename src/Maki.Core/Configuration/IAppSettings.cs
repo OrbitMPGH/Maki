@@ -366,6 +366,9 @@ public static class SettingKeys
     /// </summary>
     public const string UiAppearanceAnnouncement = "ui.appearanceannouncement";
 
+    /// <summary>Per user: keyboard shortcut overrides as a JSON object (<c>ShortcutBindings</c>). Unset = defaults.</summary>
+    public const string UiShortcuts = "ui.shortcuts";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

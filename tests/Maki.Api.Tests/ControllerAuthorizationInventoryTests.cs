@@ -250,6 +250,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetRatings",
         "SettingsController.SetReader",
         "SettingsController.SetReadingStatus",
+        "SettingsController.SetShortcuts",
         "SettingsController.SetUi",
         "ShortlistController.Acknowledge",
         "ShortlistController.Remove",
@@ -344,6 +345,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.GetReadingStatus=none",
         "SettingsController.GetScrobble=UseTrackers",
         "SettingsController.GetSetup=none",
+        "SettingsController.GetShortcuts=none",
         "SettingsController.GetUi=none",
         "SettingsController.RotateOpdsToken=UseOpds",
         "SettingsController.SeenAppearanceAnnouncement=none",
@@ -355,6 +357,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetReader=none",
         "SettingsController.SetReadingStatus=none",
         "SettingsController.SetScrobble=UseTrackers",
+        "SettingsController.SetShortcuts=none",
         "SettingsController.SetUi=none",
     ];
 

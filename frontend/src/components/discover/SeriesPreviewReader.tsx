@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { buildKeyMap, comboFromEvent, useShortcutBindings } from '../../lib/shortcuts'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -109,37 +110,41 @@ export function SeriesPreviewReader({
   }, [complete])
 
   const rtl = prefs.direction === 'rtl'
+  const shortcutBindings = useShortcutBindings()
+  const keyMap = useMemo(() => buildKeyMap(shortcutBindings, rtl), [shortcutBindings, rtl])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-      const forwardKey = rtl ? 'ArrowLeft' : 'ArrowRight'
-      const backKey = rtl ? 'ArrowRight' : 'ArrowLeft'
-      switch (event.key) {
-        case forwardKey:
+      if (event.defaultPrevented) return
+      const combo = comboFromEvent(event)
+      if (combo === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        onClose()
+        return
+      }
+      const action = combo ? keyMap.get(combo) : undefined
+      switch (action) {
+        case 'reader.next':
           event.preventDefault()
           next()
           break
-        case backKey:
+        case 'reader.previous':
           event.preventDefault()
           previous()
           break
-        case ' ':
+        case 'reader.screenDown':
+        case 'reader.screenUp':
           if (mode !== 'vertical' || atEnd) {
             event.preventDefault()
-            if (event.shiftKey) previous()
+            if (action === 'reader.screenUp') previous()
             else next()
           }
-          break
-        case 'Escape':
-          event.preventDefault()
-          event.stopPropagation()
-          onClose()
           break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [rtl, mode, atEnd, next, previous, onClose])
+  }, [keyMap, mode, atEnd, next, previous, onClose])
 
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!prefs.tapZones || mode === 'vertical') return

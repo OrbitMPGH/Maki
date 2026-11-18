@@ -76,6 +76,7 @@ public static class UserSettingKeys
         SettingKeys.UiLanguage,
         SettingKeys.UiLanguageAnnouncement,
         SettingKeys.UiAppearanceAnnouncement,
+        SettingKeys.UiShortcuts,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.DiscoverHidden,

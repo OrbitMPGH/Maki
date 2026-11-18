@@ -1803,6 +1803,10 @@ msgstr "Rating precision must be whole or decimal."
 msgid "error.settings.invalidRatingCategories"
 msgstr "Rating categories are invalid. Use at most 8 enabled and 8 custom categories, each custom one with a name of up to 40 characters and a weight of 0.5, 1 or 2."
 
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidShortcuts"
+msgstr "Keyboard shortcuts are invalid. Use at most 4 keys per action."
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unsupportedAddOrigin"

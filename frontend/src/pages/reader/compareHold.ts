@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react'
+import { comboFromEvent, isKeyOf, useShortcutBindings } from '../../lib/shortcuts'
 
 let held = false
 const listeners = new Set<() => void>()
@@ -19,20 +20,21 @@ export function useCompareHeld(): boolean {
   return useSyncExternalStore(subscribe, () => held)
 }
 
-/** Holding H shows the originals. Released on key up, on losing focus, and when the view goes. */
+/** Holding the compare key (H) shows the originals. Released on key up, on losing focus, and when the view goes. */
 export function useCompareKey(active: boolean) {
+  const keys = useShortcutBindings()['reader.compare']
   useEffect(() => {
-    if (!active) return
-    const isH = (event: KeyboardEvent) => event.key.toLowerCase() === 'h'
+    if (!active || keys.length === 0) return
     const down = (event: KeyboardEvent) => {
-      if (!isH(event) || event.repeat || event.defaultPrevented) return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.repeat || event.defaultPrevented) return
+      const combo = comboFromEvent(event)
+      if (!combo || !keys.includes(combo)) return
       const target = event.target as HTMLElement | null
       if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return
       setCompareHeld(true)
     }
     const up = (event: KeyboardEvent) => {
-      if (isH(event)) setCompareHeld(false)
+      if (isKeyOf(event, keys)) setCompareHeld(false)
     }
     const release = () => setCompareHeld(false)
     window.addEventListener('keydown', down)
@@ -44,5 +46,5 @@ export function useCompareKey(active: boolean) {
       window.removeEventListener('blur', release)
       release()
     }
-  }, [active])
+  }, [active, keys])
 }

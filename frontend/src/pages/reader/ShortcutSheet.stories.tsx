@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor } from 'storybook/test'
+import { http, HttpResponse } from 'msw'
+import { api } from '../../../.storybook/mocks/api'
 import ShortcutSheet from './ShortcutSheet'
 
 const meta = {
@@ -37,10 +39,25 @@ export const LeftToRight: Story = {
 
 export const ListsTheBookmarkKeys: Story = {
   play: async ({ canvas }) => {
-    const row = (await canvas.findByText('Previous and next bookmark')).closest('div')
-    await expect(row).toHaveTextContent(',')
-    await expect(row).toHaveTextContent('.')
-    await expect(canvas.getByText('Back to where you came from')).toBeVisible()
+    const previous = (await canvas.findByText('Previous bookmark')).closest('div')
+    await expect(previous).toHaveTextContent(',')
+    await expect(canvas.getByText('Next bookmark').closest('div')).toHaveTextContent('.')
+    await expect(canvas.getByText('Leave the reader')).toBeVisible()
+  },
+}
+
+export const ShowsReboundKeys: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/settings/shortcuts'), () =>
+        HttpResponse.json({ bindings: { 'reader.next': ['j'], 'reader.bookmark': [] } }),
+      ),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByText('Next page').closest('div')).toHaveTextContent('J'))
+    await expect(canvas.getByText('Next page').closest('div')).not.toHaveTextContent('←')
+    await expect(canvas.getByText('Bookmark this page').closest('div')).toHaveTextContent('No key')
   },
 }
 
