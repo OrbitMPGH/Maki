@@ -151,6 +151,7 @@ var pageSize = 20;
 var householdShare = 0.10;
 string? dumpFeatures = null;
 string? dumpPicks = null;
+string? dumpCaptions = null;
 var buildPages = false;
 string? commonPathOverride = null;
 var shelfStatus = "COMPLETED";
@@ -261,6 +262,11 @@ for (var i = 0; i < args.Length; i++)
         // (distribution/eval-overlap.py) and for building a page-frequency table.
         case "--dump-picks":
             dumpPicks = args[++i];
+            break;
+        // --shelf-judged only: each variant's top 20 cards with their reason fields and the shelf
+        // series nearest to each pick in the text space, for distribution/eval-captions.py.
+        case "--dump-captions":
+            dumpCaptions = args[++i];
             break;
         // Pages for distribution/build-page-share.py, from the engine as an install runs it: every
         // channel on and every reader, so the leakage guard below is lifted. Nothing printed by such
@@ -414,6 +420,12 @@ if (panelPath is not null)
 if (shelfJudged && (mode != "library" || panelPath is not null))
 {
     Console.WriteLine("error: --shelf-judged is library mode only, and replaces --panel there.");
+    return 2;
+}
+
+if (dumpCaptions is not null && !shelfJudged)
+{
+    Console.WriteLine("error: --dump-captions needs --shelf-judged.");
     return 2;
 }
 
@@ -1897,6 +1909,8 @@ async Task<ShelfRow> ScoreShelf(
     var verdicts = ShelfRow.VerdictNames.ToDictionary(v => v, _ => 0);
     var feelByVerdict = ShelfRow.FeelGroups.ToDictionary(v => v, _ => new List<int>());
     var shelfKeys = RequestKeys.Of(requests);
+    var captionRows = dumpCaptions is null ? null : new StringBuilder(
+        "shelf\trank\tpick\trelation\tfeel\tfeelSeeds\tauthor\tcoRead\tfans\tfansSeeds\tcoRecommended\ttaste\tnearest\n");
 
     for (var i = 0; i < n; i++)
     {
@@ -1931,6 +1945,11 @@ async Task<ShelfRow> ScoreShelf(
         var counted = 0;
         var shown = picks.Take(depth).ToList();
         var balancedNames = BalancedFansSeeds(picks);
+        if (captionRows is not null)
+        {
+            AppendCaptions(captionRows, shelfKeys[i], picks, seedRows);
+        }
+
         foreach (var pick in shown)
         {
             var id = long.Parse(pick.ProviderId, CultureInfo.InvariantCulture);
@@ -2075,6 +2094,14 @@ async Task<ShelfRow> ScoreShelf(
     }
 
     File.WriteAllText(Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-shelf-feel.csv"), csv.ToString());
+    if (captionRows is not null)
+    {
+        Directory.CreateDirectory(dumpCaptions!);
+        File.WriteAllText(
+            Path.Combine(dumpCaptions!, $"captions-{variant.Name}-{shelfStatus.ToLowerInvariant().Replace(',', '-')}.tsv"),
+            captionRows.ToString());
+    }
+
 
     if (next is not null)
     {
@@ -2102,6 +2129,40 @@ async Task<ShelfRow> ScoreShelf(
 
     static long? ParseId(string? id) =>
         long.TryParse(id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : null;
+}
+
+/// <summary>
+/// One row per card of the top 20: its reason fields as the recommender set them, and the eight shelf
+/// series nearest to the pick by text cosine (<c>id:cosine</c>, nearest first).
+/// </summary>
+void AppendCaptions(
+    StringBuilder rows, long shelf, IReadOnlyList<MangaBakaRecommendation> picks, List<(long Id, int Row)> seedRows)
+{
+    for (var r = 0; r < Math.Min(20, picks.Count); r++)
+    {
+        var pick = picks[r];
+        var id = long.Parse(pick.ProviderId, CultureInfo.InvariantCulture);
+        var nearest = index.TryGetRow(id, out var row)
+            ? string.Join(';', seedRows
+                .Select(s => (s.Id, Cos: index.CosineBetween(s.Row, row)))
+                .OrderByDescending(s => s.Cos)
+                .Take(8)
+                .Select(s => $"{s.Id}:{s.Cos.ToString("F4", CultureInfo.InvariantCulture)}"))
+            : string.Empty;
+        static string Ids(IReadOnlyList<ReasonSeed>? seeds) =>
+            seeds is null ? string.Empty : string.Join(';', seeds.Select(s => s.Id ?? string.Empty));
+        rows.Append(shelf).Append('\t').Append(r + 1).Append('\t').Append(id).Append('\t')
+            .Append(pick.RelationKind is not null && pick.RelatedToTitle is not null ? 1 : 0).Append('\t')
+            .Append(pick.BecauseOfTitle is not null ? pick.BecauseOfId ?? "?" : string.Empty).Append('\t')
+            .Append(Ids(pick.FeelSeeds)).Append('\t')
+            .Append(pick.AuthorMatch ? 1 : 0).Append('\t')
+            .Append(pick.CoRead ? 1 : 0).Append('\t')
+            .Append(pick.CoReadWithTitle is not null ? pick.CoReadWithId ?? "?" : string.Empty).Append('\t')
+            .Append(Ids(pick.CoReadSeeds)).Append('\t')
+            .Append(pick.CoRecommended ? 1 : 0).Append('\t')
+            .Append(pick.TasteMatch ? 1 : 0).Append('\t')
+            .Append(nearest).Append('\n');
+    }
 }
 
 /// <summary>

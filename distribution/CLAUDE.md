@@ -1178,3 +1178,35 @@ Gates (lane C's next-read grader, `eval-next-gates.py`), n = 500, fold 0 of 4, d
   48 pairs are unjudged across the two panels, nearly all of them picks the ship rows brought in, so those rows are upper readings until they are judged. On COMPLETED shelves the penalty on its own is flat; with the cap it costs a little of the cap's feel gain (+0.064 to +0.047). On CURRENT shelves the two add up.
 - **The owner's page through the real service** (top 40, the shipping table installed, cases cumulative): top-1k share of the top 40 is 98% on dev, 88% with the exclusion, 55% with the exclusion and the cap, 82% with the exclusion and the penalty, 55% with all three. Household titles (listed by 10% or more of reference readers) in the top 20: 16, 16, 10, 13, 8. Watched titles in the top 40: 8 on dev, 0 with the exclusion. Of the three titles the owner named, the two with a watched anime leave the page with the exclusion, and the third goes from #6 to #3 with the exclusion alone (watched titles above it left), #8 with the cap, #12 with the penalty and #40 with all three. "Feels like" cards in the top 20 go 8 to 5. With the fold-0 eval table in place of the shipping one the page is the same at 55% and the third title leaves the 40. Pages and titles are in the research folder only.
 - **Not checked:** folds other than 0; a judged panel of the exclusion (held-out readers have no anime lists, so it is measured on the owner's page only); a shelf under 16 seeds; a running instance with a downloaded table (the installer is tested with a stub server); whether the table needs rebuilding as often as the other artifacts.
+
+## v8: card captions, measured and NOT changed
+
+The owner found the Recommended tab's captions dull: of the top 20 on their page, 13 read "Readers like you also finished this", 5 "Feels like X" and 2 name an author match. The question was whether more cards can name a series and stay true. Scripts, logs and the owner's page are in `research/recommender/2026-11-17-v8/captions/` in the main checkout.
+
+- **The instrument.** `eval-reco-labels.cs library --shelf-judged --dump-captions <dir>` writes each variant's top 20 cards with their reason fields and the eight shelf series nearest each pick by text cosine. `distribution/eval-captions.py` replays `RecommendationReasons.Balance` over them and scores caption policies on stored judgements: "claim" is the judged feel of a card against the series it names, "added" is the same for the cards whose kind the policy changed. Unjudged pairs are counted and queued, never scored. The bar, set before the numbers: the added claims at least as true as today's "Feels like" claims, which score 2.25 (82% at 2 or 3) on COMPLETED shelves and 2.11 (80%) on CURRENT ones.
+- **Results**, 80 held-out shelves, fold 0, dev split, the shipping engine, top 10. Shares are of all cards; `added` is mean, share at 2 or 3, judged n and (unjudged).
+
+  | shelves | policy | Feels like | Readers like you | author | all Feels like claims | added claims |
+  |---|---|---|---|---|---|---|
+  | COMPLETED | today | 32% | 20% | 46% | 2.25 | - |
+  | | `AttributionMargin` 0.25 | 40% | 18% | 40% | 2.19 | 1.86, 70%, 43 (17) |
+  | | margin 0 | 49% | 16% | 33% | 2.18 | 1.91, 72%, 69 (56) |
+  | | margin -0.5 | 72% | 10% | 18% | 2.12 | 1.89, 72%, 134 (172) |
+  | | margin -0.5, only on unnamed cards, named seed at cosine 0.65+ | 34% | 18% | 46% | 2.24 | 2.09, 82%, 11 (3) |
+  | | nearest series on unnamed cards, cosine 0.65+ | 40% | 12% | 46% | 2.12 | 1.56, 56%, 54 (0) |
+  | | the same at 0.70+ | 35% | 17% | 46% | 2.20 | 1.47, 59%, 17 (0) |
+  | CURRENT | today | 27% | 40% | 25% | 2.11 | - |
+  | | margin 0.25 | 35% | 36% | 21% | 2.02 | 1.70, 62%, 53 (13) |
+  | | margin 0 | 44% | 32% | 17% | 1.99 | 1.69, 60%, 83 (50) |
+  | | margin -0.5 | 68% | 18% | 10% | 1.92 | 1.66, 60%, 146 (179) |
+  | | margin -0.5, only on unnamed cards, cosine 0.65+ | 31% | 36% | 25% | 2.08 | 1.85, 70%, 20 (13) |
+  | | nearest series, cosine 0.65+ | 43% | 23% | 25% | 1.91 | 1.60, 53%, 129 (3) |
+  | | the same at 0.70+ | 32% | 34% | 25% | 2.05 | 1.77, 67%, 43 (0) |
+
+- **A crowd pick is not story-alike to any series on the shelf, and no text measure finds the ones that are.** Judged against its nearest shelf series, a "Readers like you" card scores about 1.5 at every cosine from 0.55 to 0.75 on COMPLETED shelves (1.2 to 1.8 on CURRENT), and the gap to the second-nearest series does not sort them either. "Feels like" cards climb from 1.5 to 2.9 over the same cosines. So naming the nearest series on a crowd pick adds claims at 1.5 to 1.8, whatever the floor, and the share of true claims on the page falls.
+- **A lower `AttributionMargin` names more, and most of what it names was an author card.** "Feels like" outranks the author match in `Balance` and `engineWhy`, so the margin turns "By an author you read", which is a fact, into a weaker story claim (added claims 1.66 to 1.93). Kept to unnamed cards and a named seed at cosine 0.65 or more, the added claims come close to the bar (1.85 to 2.09) and add 2 to 4 points of "Feels like" share: not more specific in any way a reader would see.
+- **`MinReasonShare` 0.15 and 0.10** name more "Fans of" cards (2% to 6% and 12% on COMPLETED, 9% to 23% and 36% on CURRENT) at claim 1.69 to 1.71 and 1.46 to 1.48, as in v7.
+- **No series takes over a page**, so `Balance`'s cap is not the lever: the most-named series appears 1.4 to 1.6 times in a top 10, and one per 20 changes nothing measurable.
+- **The owner's page agrees.** Its five "Feels like" cards name seeds at cosine 0.49 to 0.69, the band where panel "Feels like" claims score 1.5 to 2.0; a 195-seed shelf puts some shelf series near every pick, so a cosine floor that is strict on the panel fires on most of the owner's crowd cards.
+- **Unjudged pairs.** The margin rows' added claims are partly unjudged, since the named seed is often not the nearest series. With every unjudged pair scored 3 the margin 0.25 rows still miss the bar (2.18 and 1.95); the lower margins could reach it only in that best case. Queue: `.artifacts/reco-v8/ship/caption-queue.tsv`, with the owner page's named pairs in it.
+- **Not checked:** folds other than 0; whether a reader prefers a named weak claim to "Readers like you" (the judge scores story fit, not interest); taste-vector or EASE neighbours as the named series, which would make a crowd claim and need the "Fans of" wording.
