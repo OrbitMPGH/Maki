@@ -5,11 +5,21 @@ pages" setting use the third-party works below. Each keeps its own licence, and 
 
 ## Server upscaling models
 
-These are neural network weights, not code. Maki does not contain them: an admin switches on server
-upscaling and the server downloads the files on first use from the `upscale-models-v1` release at
+These are neural network weights, not code. Maki's own two models, Maki 2x and Maki 2x HQ, ship with
+the server in `UpscaleModels/`. The others are not part of Maki: an admin switches on server upscaling
+and the server downloads them on first use from the `upscale-models-v1` release at
 https://github.com/OrbitMPGH/Maki/releases/tag/upscale-models-v1. Each model stays a separate file, and
 the release carries a `LICENSES.txt` with the full licence texts. The same texts are kept in
 `distribution/upscale-models/licenses/`.
+
+### Maki 2x HQ
+
+- File: `maki-2x-hq.onnx`, shipped in `UpscaleModels/`
+- Author: Maki, GPL-3.0
+- Real-ESRGAN's network design cut down to 48 of its 64 channels with a 2x output, started from a
+  pruned copy of the realesr-animevideov3 weights below and then trained against that model's output.
+  Those starting weights are © 2021 Xintao Wang under the BSD 3-Clause licence, whose text ships beside
+  the model as `UpscaleModels/LICENSE-BSD-3-Clause-Real-ESRGAN.txt`.
 
 ### IllustrationJaNai V3 denoise, SPAN-S 2x
 

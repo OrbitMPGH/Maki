@@ -8709,6 +8709,10 @@ msgstr "páginas de créditos, ocultar créditos, scanlator, créditos, anuncios
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "créditos, páginas de créditos, páginas de scanlator, reclutamiento, páginas de donación"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14562,6 +14566,16 @@ msgstr "Maki {version}"
 msgid "Maki 2x"
 msgstr "Maki 2x"
 
+#: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
+msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -14707,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki no encontrará series en este sitio por sí solo. Vincularás cada serie pegando su dirección en la página de la serie."
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Modelo propio de Maki; se parece a Real-ESRGAN y va más rápido"
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

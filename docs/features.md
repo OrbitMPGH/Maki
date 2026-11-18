@@ -81,10 +81,12 @@ screen. It is off until a reader turns it on. Library files are never modified.
 
 - **Two tiers, one setting.** Browser methods (**Light**, **Balanced**, **Strong**) run Anime4K
   shaders on the reader's own device. They are always available and need WebGL2. Server methods
-  (**Maki 2x**, **Real-ESRGAN**, **SPAN-S**) run ONNX models on the Maki server and appear in the
+  (**Maki 2x**, **Maki 2x HQ**, **Real-ESRGAN**, **SPAN-S**) run ONNX models on the Maki server and appear in the
   Method list, under "On the server", once an admin has enabled them. Real-ESRGAN is animevideov3,
   the crispest line art (it flattens screentone); SPAN-S is IllustrationJaNai's sharp model; Maki 2x
-  is Maki's own model, trained to look like Real-ESRGAN at about a third of its cost per page. Maki 2x is the
+  is Maki's own model, trained to look like Real-ESRGAN at about a third of its cost per page; Maki 2x
+  HQ is a larger Maki model that comes closer to Real-ESRGAN, with crisper lines and solid blacks, at
+  nearly twice Maki 2x's time a page. Maki 2x is the
   default method and the recommended server model: it is ticked when an admin first turns server
   upscaling on, and a reader who never picked a method gets it whenever the server offers it
   (Balanced otherwise). The settings page marks each server model's speed and quality. A greyscale
@@ -124,10 +126,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
   without WebGL2 shows plain pages and the browser methods read "Not supported on this device".
 - **Server upscaling (admins).** Settings, Library, **Server upscaling** has the on switch, the
   list of models readers may use, **Threads**, the cache cap (1 GB by default), **Clear cache**
-  and **Test speed**, which times one built-in sample page. Maki 2x ships with Maki, so it works
-  offline and cannot be deleted. Maki downloads the others on first use from a Maki GitHub release
-  and checks their SHA-256. Shipping Maki 2x does not turn server upscaling on; that stays the
-  admin's choice. Some are licensed for
+  and **Test speed**, which times one built-in sample page. Maki 2x and Maki 2x HQ ship with Maki,
+  so they work offline and cannot be deleted. Maki downloads the others on first use from a Maki
+  GitHub release and checks their SHA-256. Shipping them does not turn server upscaling on; that
+  stays the admin's choice. Some are licensed for
   non-commercial use only; the per-model licences are in
   [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
   few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.
