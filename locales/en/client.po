@@ -38,6 +38,11 @@ msgstr "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" download
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr "({action})"
+
 #: src/components/NamingTokenModal.tsx
 msgid "(blank when unset)"
 msgstr "(blank when unset)"
@@ -4409,10 +4414,6 @@ msgstr "Anything the admin should know"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "Anything you saved is kept and shows up here once the catalogue is installed."
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr "Anywhere in Maki"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -15375,6 +15376,10 @@ msgstr "Others will see your login name, {loginName}."
 msgid "out of 10"
 msgstr "out of 10"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr "Outside the reader"
+
 #: src/components/pageconversion/RuleEditor.tsx
 msgid "Over"
 msgstr "Over"
@@ -16055,10 +16060,6 @@ msgstr "Prequel to"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel to {relatedTo}"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr "Press a key for {name}. Escape cancels."
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -20789,6 +20790,11 @@ msgstr "Suggestive"
 msgid "Suggests <0>{suggested}</0>"
 msgstr "Suggests <0>{suggested}</0>"
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr "Super"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Supernatural"
 msgstr "Supernatural"
@@ -23950,6 +23956,11 @@ msgstr "Whole-series pack, needs your call"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Wide pages"
 msgstr "Wide pages"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr "Win"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."

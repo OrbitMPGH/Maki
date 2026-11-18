@@ -21,7 +21,8 @@ async function addKey(canvas: Canvas, label: string) {
   return button
 }
 
-const recorder = (canvas: Canvas, label: string) => canvas.findByRole('button', { name: new RegExp(`^Press a key for ${label}`) })
+const recorder = (canvas: Canvas, label: string) =>
+  canvas.findByRole('button', { name: new RegExp(`^Press a key, Esc cancels.*${label}`) })
 
 const row = (canvas: Canvas, label: string) =>
   canvas.getByText(label, { selector: '.shortcut-label' }).closest('li') as HTMLElement
@@ -134,7 +135,7 @@ export const EscapeCancels: Story = {
     await userEvent.click(await addKey(canvas, 'Full screen'))
     await recorder(canvas, 'Full screen')
     await userEvent.keyboard('{Escape}')
-    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Press a key for Full screen/ })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Press a key, Esc cancels/ })).toBeNull())
     await expect(row(canvas, 'Full screen')).toHaveTextContent('F')
   },
 }

@@ -26,6 +26,8 @@ const KEY_NAMES: Record<string, MessageDescriptor> = {
 }
 
 const MODIFIER_NAMES: Record<string, MessageDescriptor> = {
+  Win: msg({ message: 'Win', comment: 'The Windows logo key on a Windows keyboard' }),
+  Super: msg({ message: 'Super', comment: 'The logo key on a Linux keyboard (the Windows key on Windows)' }),
   Ctrl: msg({
     message: 'Ctrl',
     comment: 'The Control key as printed on keyboards in this language',
@@ -79,7 +81,7 @@ export function useFormatCombo(): (combo: string, options?: { rtl?: boolean; com
         return order.map((mod) => MAC_MODIFIERS[mod] ?? mod).join('') + (compact && order.length ? ' ' : '') + keyName
       const names = order.map((mod) => {
         if (mod === 'Mod') return _(MODIFIER_NAMES.Ctrl)
-        if (mod === 'Meta') return 'Win'
+        if (mod === 'Meta') return _(/Win/i.test(navigator.platform) ? MODIFIER_NAMES.Win : MODIFIER_NAMES.Super)
         return _(MODIFIER_NAMES[mod])
       })
       return [...names, keyName].join(compact ? ' ' : ' + ')

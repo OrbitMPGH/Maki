@@ -44,6 +44,11 @@ msgstr "\"Main\" özel bölümleri (10.5 gibi ondalıklı bölümleri) atlar; \"
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "\"Senkronizasyon yok\" seriyi takip servislerinden uzak tutar. \"Full\" ise seriyi ayrıca istatistiklerden ve okuma geçmişinden çıkarır."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -5416,10 +5421,6 @@ msgstr "Yöneticinin bilmesi gereken bir şey"
 #, fuzzy
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "Kaydettiğiniz her şey korunur ve katalog kurulduğunda burada görünür."
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -18839,6 +18840,10 @@ msgstr "Başkaları giriş adınızı görecek: {loginName}."
 msgid "out of 10"
 msgstr "10 üzerinden"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19675,10 +19680,6 @@ msgstr "Öncesi:"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo} öncesini anlatan seri"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -25462,6 +25463,11 @@ msgstr "Üstü kapalı"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -29353,6 +29359,11 @@ msgstr "Tüm seri paketi, kararınız gerekiyor"
 #, fuzzy
 msgid "Wide pages"
 msgstr "Geniş sayfalar"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

@@ -44,6 +44,11 @@ msgstr "„Main” pomija specjały (rozdziały dziesiętne, np. 10.5); „Smart
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "„Bez scrobblowania” wyłącza serię z trackerów. „Pełne” wyłącza ją też ze statystyk i historii."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -5416,10 +5421,6 @@ msgstr "Coś, o czym administrator powinien wiedzieć"
 #, fuzzy
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "Zapisane pozycje zostają i pojawią się tutaj, gdy katalog zostanie zainstalowany."
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -18839,6 +18840,10 @@ msgstr "Inni zobaczą Twoją nazwę logowania: {loginName}."
 msgid "out of 10"
 msgstr "z 10"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19675,10 +19680,6 @@ msgstr "Prequel"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel do {relatedTo}"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -25462,6 +25463,11 @@ msgstr "Prowokacyjne"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -29353,6 +29359,11 @@ msgstr "Paczka całej serii, wymaga Twojej decyzji"
 #, fuzzy
 msgid "Wide pages"
 msgstr "Szerokie strony"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

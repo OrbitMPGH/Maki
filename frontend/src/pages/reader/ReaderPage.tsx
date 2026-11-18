@@ -33,7 +33,7 @@ import { useRatingFormat } from '../../api/ratings'
 import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
-import { buildKeyMap, comboFromEvent, parseCombo, useShortcutBindings } from '../../lib/shortcuts'
+import { actionFor, buildKeyMap, comboFromEvent, parseCombo, useShortcutBindings } from '../../lib/shortcuts'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
 import RecapSkip from './RecapSkip'
@@ -1005,7 +1005,7 @@ export default function ReaderPage() {
     ) {
       return
     }
-    const action = keyMap.get(combo)
+    const action = actionFor(keyMap, combo)
 
     // The sheet is read, not driven: while it is up the only keys that do anything close it.
     if (shortcutsOpen) {
@@ -1041,13 +1041,13 @@ export default function ReaderPage() {
         break
       }
       case 'reader.autoScroll':
-        if (mode === 'vertical') toggleAutoScroll()
-        break
       case 'reader.autoScrollSlower':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel - 1)
-        break
       case 'reader.autoScrollFaster':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel + 1)
+        // Outside Continuous these do nothing, so the key keeps whatever the browser does with it.
+        if (mode !== 'vertical') break
+        event.preventDefault()
+        if (action === 'reader.autoScroll') toggleAutoScroll()
+        else setAutoScrollLevel(autoScrollLevel + (action === 'reader.autoScrollFaster' ? 1 : -1))
         break
       case 'reader.first':
         event.preventDefault()
@@ -1064,12 +1064,16 @@ export default function ReaderPage() {
         toggleFullscreen()
         break
       case 'reader.direction':
+        event.preventDefault()
         update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
         break
       case 'reader.bookmark':
-        if (!bookmarkOffline) toggleBookmark.mutate(page)
+        if (bookmarkOffline) break
+        event.preventDefault()
+        toggleBookmark.mutate(page)
         break
       case 'reader.thumbnails':
+        event.preventDefault()
         setStripOpen((open) => !open)
         break
       case 'reader.previousBookmark':
@@ -1077,24 +1081,24 @@ export default function ReaderPage() {
         const toward = action === 'reader.previousBookmark' ? -1 : 1
         const target = adjacentBookmark(bookmarkedPages, page, shownTo, toward)
         if (target !== null) {
+          event.preventDefault()
           setAtEnd(false)
           seekToPage(target)
         }
         break
       }
       case 'reader.single':
-        edit({ mode: 'paged' })
-        break
       case 'reader.double':
-        edit({ mode: 'double' })
-        break
       case 'reader.continuous':
-        edit({ mode: 'vertical' })
+        event.preventDefault()
+        edit({ mode: action === 'reader.single' ? 'paged' : action === 'reader.double' ? 'double' : 'vertical' })
         break
       case 'reader.crop':
+        event.preventDefault()
         update({ cropBorders: !prefs.cropBorders })
         break
       case 'reader.enhance':
+        event.preventDefault()
         toggleAlwaysEnhance()
         break
       case 'reader.zoomIn':
@@ -1110,6 +1114,7 @@ export default function ReaderPage() {
         zoomReset()
         break
       case 'reader.shortcuts':
+        event.preventDefault()
         setShortcutsOpen(true)
         break
     }

@@ -2596,7 +2596,7 @@ msgstr ""
 msgid "error.settings.invalidRatingCategories"
 msgstr ""
 
-#. English: Keyboard shortcuts are invalid. Use at most 4 keys per action.
+#. English: Keyboard shortcuts are invalid.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.invalidShortcuts"
 msgstr ""

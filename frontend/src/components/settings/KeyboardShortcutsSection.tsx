@@ -63,11 +63,19 @@ export function KeyboardShortcutsSection() {
     listRef.current?.querySelector<HTMLElement>(`${row}[data-shortcut-add]`)?.focus()
   })
 
+  const saveFailed = () => notifications.show({ message: now`Couldn't save the shortcuts`, color: 'var(--danger)' })
+
+  // Undo for Reset all, until the next edit: after one it would throw that edit away.
+  const undoToast = useRef<string | null>(null)
+  const dropUndo = () => {
+    if (undoToast.current) notifications.hide(undoToast.current)
+    undoToast.current = null
+  }
+
   const commit = (next: ShortcutBindings, focusOn: ShortcutActionId | 'first') => {
+    dropUndo()
     refocus.current = focusOn
-    save.mutate(toOverrides(next), {
-      onError: () => notifications.show({ message: now`Couldn't save the shortcuts`, color: 'var(--danger)' }),
-    })
+    save(toOverrides(next), { onError: saveFailed })
   }
 
   const announceMoves = (moved: { id: ShortcutActionId; combo: string }[], to: ShortcutActionId) => {
@@ -121,7 +129,7 @@ export function KeyboardShortcutsSection() {
     const previous = bindings
     setStatus(t`Every shortcut is back to its default keys`)
     commit(resolveBindings(undefined), 'first')
-    const toast = notifications.show({
+    const toast = (undoToast.current = notifications.show({
       autoClose: 8000,
       message: (
         <Group gap="xs" wrap="wrap">
@@ -131,14 +139,19 @@ export function KeyboardShortcutsSection() {
             variant="subtle"
             onClick={() => {
               notifications.hide(toast)
-              save.mutate(toOverrides(previous))
+              undoToast.current = null
+              refocus.current = 'first'
+              save(toOverrides(previous), { onError: saveFailed })
             }}
           >
             {now`Undo`}
           </Button>
         </Group>
       ),
-    })
+      onClose: () => {
+        if (undoToast.current === toast) undoToast.current = null
+      },
+    }))
   }
 
   const atMost = plural(MAX_KEYS_PER_ACTION, { one: '# key at most', other: '# keys at most' })
@@ -220,11 +233,11 @@ export function KeyboardShortcutsSection() {
                       {isRecording ? (
                         <KeyRecorder
                           onKey={(combo) => record(action.id, combo)}
-                          onCancel={() => {
-                            refocus.current = action.id
+                          onCancel={(returnFocus) => {
+                            if (returnFocus) refocus.current = action.id
                             setRecording(null)
                           }}
-                          label={t`Press a key for ${name}. Escape cancels.`}
+                          action={name}
                         />
                       ) : (
                         <Tooltip label={full ? atMost : t`Add a key`} withArrow position="left">
@@ -281,35 +294,47 @@ export function KeyboardShortcutsSection() {
  * key-up would land on the add button that takes focus back and start recording again. A key held
  * with Ctrl, Alt or Cmd is reported at once, since a Mac sends no key-up while Cmd is down.
  */
-function KeyRecorder({ onKey, onCancel, label }: { onKey: (combo: string) => void; onCancel: () => void; label: string }) {
+function KeyRecorder({
+  onKey,
+  onCancel,
+  action,
+}: {
+  onKey: (combo: string) => void
+  /** `returnFocus` is false when focus has already gone somewhere the user chose. */
+  onCancel: (returnFocus: boolean) => void
+  action: string
+}) {
+  const { t } = useLingui()
   const ref = useRef<HTMLButtonElement>(null)
   const latest = useRef({ onKey, onCancel })
   latest.current = { onKey, onCancel }
 
   useEffect(() => {
     ref.current?.focus()
-    let pending: string | null = null
+    // The first key pressed is the one recorded, on its own key-up; keys pressed while it is held are ignored.
+    let pending: { combo: string; code: string } | null = null
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Tab') {
-        latest.current.onCancel()
+        latest.current.onCancel(false)
         return
       }
       event.preventDefault()
       event.stopPropagation()
       if (event.key === 'Escape') {
-        latest.current.onCancel()
+        latest.current.onCancel(true)
         return
       }
       const combo = comboFromEvent(event)
-      if (!combo || event.repeat) return
+      if (!combo || event.repeat || pending) return
       if (/^(Mod|Ctrl|Meta|Alt)\+/.test(combo)) latest.current.onKey(combo)
-      else pending = combo
+      else pending = { combo, code: event.code }
     }
     const onKeyUp = (event: KeyboardEvent) => {
       if (!pending) return
       event.preventDefault()
       event.stopPropagation()
-      const combo = pending
+      if (event.code !== pending.code) return
+      const { combo } = pending
       pending = null
       latest.current.onKey(combo)
     }
@@ -326,12 +351,12 @@ function KeyRecorder({ onKey, onCancel, label }: { onKey: (combo: string) => voi
       ref={ref}
       type="button"
       className="shortcut-recorder"
-      aria-label={label}
-      onBlur={() => latest.current.onCancel()}
-      onClick={() => latest.current.onCancel()}
+      onBlur={() => latest.current.onCancel(false)}
+      onClick={() => latest.current.onCancel(true)}
     >
       <span className="shortcut-recorder-dot" aria-hidden />
       <Trans>Press a key, Esc cancels</Trans>
+      <VisuallyHidden>{t({ message: `(${action})`, comment: 'After "Press a key, Esc cancels": the action the key is for' })}</VisuallyHidden>
     </button>
   )
 }

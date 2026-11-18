@@ -1805,7 +1805,7 @@ msgstr "Rating categories are invalid. Use at most 8 enabled and 8 custom catego
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.invalidShortcuts"
-msgstr "Keyboard shortcuts are invalid. Use at most 4 keys per action."
+msgstr "Keyboard shortcuts are invalid."
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #: src/Maki.Api/Controllers/SeriesController.cs

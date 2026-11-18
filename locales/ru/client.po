@@ -44,6 +44,11 @@ msgstr "«Main» пропускает спецглавы (десятичные �
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "«Нет Scrobble» не даёт серии попадать в трекеры. «Полный» также убирает её из статистики и истории."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -5416,10 +5421,6 @@ msgstr "Всё, что должен знать администратор"
 #, fuzzy
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "Всё сохранённое остаётся и появится здесь, когда каталог будет установлен."
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -18839,6 +18840,10 @@ msgstr "Другие будут видеть ваш логин: {loginName}."
 msgid "out of 10"
 msgstr "из 10"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19675,10 +19680,6 @@ msgstr "Приквел к"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "Предыстория {relatedTo}"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -25462,6 +25463,11 @@ msgstr "Пикантно"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -29353,6 +29359,11 @@ msgstr "Пакет всей серии, нужно ваше решение"
 #, fuzzy
 msgid "Wide pages"
 msgstr "Широкие страницы"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

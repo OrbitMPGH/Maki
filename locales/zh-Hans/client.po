@@ -44,6 +44,11 @@ msgstr "“Main”跳过特殊章节（如 10.5）；“Smart”会在你阅读�
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "“不记录”会让系列不再同步到你的追踪器。“完整”还会让它不计入统计和历史记录。"
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -5416,10 +5421,6 @@ msgstr "管理员需要了解的任何信息"
 #, fuzzy
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "你保存的内容会保留，并在目录安装后显示在这里。"
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -18839,6 +18840,10 @@ msgstr "其他人会看到你的登录名 {loginName}。"
 msgid "out of 10"
 msgstr "满分 10 分"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19675,10 +19680,6 @@ msgstr "前传："
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo} 的前传"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -25462,6 +25463,11 @@ msgstr "暗示性"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -29353,6 +29359,11 @@ msgstr "整系列合集包，需要你来决定"
 #, fuzzy
 msgid "Wide pages"
 msgstr "宽页"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

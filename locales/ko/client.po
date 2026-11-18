@@ -44,6 +44,11 @@ msgstr "\"Main\"은 10.5 같은 소수 챕터인 스페셜을 건너뜁니다. \
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "\"No scrobble\"은 트래커에 시리즈를 보내지 않습니다. \"Full\"은 통계와 기록에서도 시리즈를 뺍니다."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -5416,10 +5421,6 @@ msgstr "관리자가 알아야 할 내용"
 #, fuzzy
 msgid "Anything you saved is kept and shows up here once the catalogue is installed."
 msgstr "저장한 항목은 그대로 남고, 카탈로그를 설치하면 여기에 표시됩니다."
-
-#: src/lib/shortcuts.ts
-msgid "Anywhere in Maki"
-msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
@@ -18839,6 +18840,10 @@ msgstr "다른 사람에게는 로그인 이름 {loginName}이(가) 보입니다
 msgid "out of 10"
 msgstr "10점 만점"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19675,10 +19680,6 @@ msgstr "전편"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo}의 전일담"
-
-#: src/components/settings/KeyboardShortcutsSection.tsx
-msgid "Press a key for {name}. Escape cancels."
-msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -25462,6 +25463,11 @@ msgstr "선정적"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -29353,6 +29359,11 @@ msgstr "시리즈 전체 묶음, 직접 결정해야 합니다"
 #, fuzzy
 msgid "Wide pages"
 msgstr "넓은 페이지"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy

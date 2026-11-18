@@ -45,7 +45,7 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
           })
         return { title: i18n._(SHORTCUT_GROUP_LABELS[group]), items }
       }),
-    [bindings, formatCombo, rtl, i18n, t],
+    [bindings, formatCombo, rtl, i18n, i18n.locale, t],
   )
 
   return (

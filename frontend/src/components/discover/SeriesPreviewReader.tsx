@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { buildKeyMap, comboFromEvent, useShortcutBindings } from '../../lib/shortcuts'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { actionFor, buildKeyMap, comboFromEvent, useShortcutBindings } from '../../lib/shortcuts'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -11,6 +11,8 @@ import ContinuousView from '../../pages/reader/ContinuousView'
 import PagedView from '../../pages/reader/PagedView'
 import { DEFAULT_PREFS } from '../../pages/reader/prefs'
 import { pagesFrom, usePreload } from '../../pages/reader/usePageUrls'
+
+const NATIVE_SCROLL_KEYS = new Set(['Space', 'Shift+Space', 'PageDown', 'PageUp'])
 
 type PreviewMode = 'paged' | 'vertical'
 
@@ -110,6 +112,7 @@ export function SeriesPreviewReader({
   }, [complete])
 
   const rtl = prefs.direction === 'rtl'
+  const surfaceRef = useRef<HTMLDivElement>(null)
   const shortcutBindings = useShortcutBindings()
   const keyMap = useMemo(() => buildKeyMap(shortcutBindings, rtl), [shortcutBindings, rtl])
   useEffect(() => {
@@ -122,7 +125,7 @@ export function SeriesPreviewReader({
         onClose()
         return
       }
-      const action = combo ? keyMap.get(combo) : undefined
+      const action = combo ? actionFor(keyMap, combo) : undefined
       switch (action) {
         case 'reader.next':
           event.preventDefault()
@@ -133,13 +136,20 @@ export function SeriesPreviewReader({
           previous()
           break
         case 'reader.screenDown':
-        case 'reader.screenUp':
+        case 'reader.screenUp': {
+          const up = action === 'reader.screenUp'
           if (mode !== 'vertical' || atEnd) {
             event.preventDefault()
-            if (action === 'reader.screenUp') previous()
+            if (up) previous()
             else next()
+          } else if (combo && !NATIVE_SCROLL_KEYS.has(combo)) {
+            // The browser scrolls the strip itself for Space and Page Up/Down; any other key bound here is scrolled by hand.
+            event.preventDefault()
+            const strip = surfaceRef.current
+            if (strip) strip.scrollBy({ top: (up ? -0.9 : 0.9) * strip.clientHeight, behavior: 'smooth' })
           }
           break
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -240,6 +250,7 @@ export function SeriesPreviewReader({
   } else {
     body = (
       <div
+        ref={surfaceRef}
         className="reader-surface"
         data-scroll={mode === 'vertical' ? 'vertical' : undefined}
         onClick={onSurfaceClick}

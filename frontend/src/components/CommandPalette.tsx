@@ -18,7 +18,7 @@ import { Thumb } from './ui/Thumb'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
 import { MODAL_SIZE } from './ui/modalSizes'
-import { ariaKeyShortcut, useShortcut, useShortcutBindings } from '../lib/shortcuts'
+import { ariaKeyShortcuts, useShortcut, useShortcutBindings } from '../lib/shortcuts'
 import { useFormatCombo } from '../lib/shortcutLabels'
 
 const LIST_MAX_HEIGHT = 360
@@ -88,7 +88,8 @@ export function CommandPaletteTrigger({
   onOpen: () => void
   variant?: 'bar' | 'icon'
 }) {
-  const searchKey = useShortcutBindings()['app.search'][0]
+  const searchKeys = useShortcutBindings()['app.search']
+  const searchKey = searchKeys[0]
   const formatCombo = useFormatCombo()
   return (
     <button
@@ -99,7 +100,7 @@ export function CommandPaletteTrigger({
           : 'command-palette-trigger'
       }
       onClick={onOpen}
-      aria-keyshortcuts={searchKey ? ariaKeyShortcut(searchKey) : undefined}
+      aria-keyshortcuts={searchKeys.length > 0 ? ariaKeyShortcuts(searchKeys) : undefined}
     >
       <IconSearch size={16} />
       <span className="command-palette-trigger-label">

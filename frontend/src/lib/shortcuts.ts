@@ -1,8 +1,8 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '../api/client'
+import { api, currentSession } from '../api/client'
 
 /**
  * Every rebindable key in the app, its default keys, and how a key press becomes a stored string.
@@ -18,6 +18,9 @@ import { api } from '../api/client'
  * action may take a plain left or right arrow, since in one direction or the other it would be the
  * same key.
  */
+
+export const isMac = () =>
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
 
 export type ShortcutGroup = 'pages' | 'autoScroll' | 'layout' | 'other' | 'app'
 
@@ -54,7 +57,8 @@ export const SHORTCUT_ACTIONS = [
   { id: 'reader.nextBookmark', group: 'other', label: msg`Next bookmark`, keys: ['.', '>'] },
   { id: 'reader.compare', group: 'other', label: msg`Hold to see the original page`, keys: ['h'] },
   { id: 'reader.shortcuts', group: 'other', label: msg`Show or hide keyboard shortcuts`, keys: ['?'] },
-  { id: 'app.search', group: 'app', label: msg`Open search`, keys: ['Mod+k'] },
+  // On a Mac, Ctrl+K opened search too before shortcuts could be changed.
+  { id: 'app.search', group: 'app', label: msg`Open search`, keys: isMac() ? ['Mod+k', 'Ctrl+k'] : ['Mod+k'] },
 ] as const satisfies readonly ShortcutAction[]
 
 export type ShortcutActionId = (typeof SHORTCUT_ACTIONS)[number]['id']
@@ -66,7 +70,7 @@ export const SHORTCUT_GROUP_LABELS: Record<ShortcutGroup, MessageDescriptor> = {
   autoScroll: msg`Auto-scroll`,
   layout: msg`Layout`,
   other: msg`Everything else`,
-  app: msg`Anywhere in Maki`,
+  app: msg`Outside the reader`,
 }
 
 export function actionLabel(id: ShortcutActionId): MessageDescriptor {
@@ -89,8 +93,6 @@ export function defaultKeys(id: ShortcutActionId): string[] {
   return DEFAULTS[id]
 }
 
-export const isMac = () =>
-  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
 
 /** A stored key split into its modifiers and the key itself. `Mod++` is Ctrl and the plus key. */
 export function parseCombo(combo: string): { mods: Set<Modifier>; key: string } {
@@ -136,16 +138,10 @@ export function comboFromEvent(event: KeyboardEvent): string | null {
   return joinCombo(mods, key)
 }
 
-/** Whether a combo holds Ctrl, Cmd or Alt: a key that types nothing into a field. */
+/** Whether a combo holds Ctrl, Cmd or (off a Mac, where Option types characters) Alt: a key that types nothing. */
 export function hasCommandModifier(combo: string): boolean {
   const { mods } = parseCombo(combo)
-  return mods.has('Mod') || mods.has('Ctrl') || mods.has('Meta') || mods.has('Alt')
-}
-
-/** Whether a key-up belongs to a held binding: only the key part, since modifiers may be let go first. */
-export function isKeyOf(event: KeyboardEvent, combos: string[]): boolean {
-  const key = eventKey(event)
-  return key !== null && combos.some((combo) => parseCombo(combo).key === key)
+  return mods.has('Mod') || mods.has('Ctrl') || mods.has('Meta') || (mods.has('Alt') && !isMac())
 }
 
 const SIDE_ARROWS = new Set(['ArrowLeft', 'ArrowRight'])
@@ -228,6 +224,19 @@ export function toOverrides(bindings: ShortcutBindings): ShortcutOverrides {
   return overrides
 }
 
+/**
+ * The action a press runs. Shift on a named key (an arrow, Page Down, Home) that has no binding of
+ * its own falls back to the key without it, as the reader always treated those keys.
+ */
+export function actionFor(map: Map<string, ShortcutActionId>, combo: string): ShortcutActionId | undefined {
+  const action = map.get(combo)
+  if (action) return action
+  const { mods, key } = parseCombo(combo)
+  if (!mods.has('Shift') || key.length === 1) return undefined
+  mods.delete('Shift')
+  return map.get(joinCombo(mods, key))
+}
+
 /** A lookup from key to action for one reading direction. */
 export function buildKeyMap(bindings: ShortcutBindings, rtl: boolean): Map<string, ShortcutActionId> {
   const map = new Map<string, ShortcutActionId>()
@@ -243,17 +252,22 @@ export function buildKeyMap(bindings: ShortcutBindings, rtl: boolean): Map<strin
   return map
 }
 
-/** `aria-keyshortcuts` wants `Control+K`, not the stored form. */
-export function ariaKeyShortcut(combo: string): string {
-  const { mods, key } = parseCombo(combo)
-  const names: string[] = []
-  if (mods.has('Mod')) names.push(isMac() ? 'Meta' : 'Control')
-  if (mods.has('Ctrl')) names.push('Control')
-  if (mods.has('Meta')) names.push('Meta')
-  if (mods.has('Alt')) names.push('Alt')
-  if (mods.has('Shift')) names.push('Shift')
-  names.push(key === 'Space' ? 'Space' : key.length === 1 ? key.toUpperCase() : key)
-  return names.join('+')
+/** `aria-keyshortcuts` wants `Control+K Meta+K`, not the stored form: every binding, plus spelled out. */
+export function ariaKeyShortcuts(combos: string[]): string {
+  return combos
+    .filter((combo) => !READING_ARROWS.has(parseCombo(combo).key))
+    .map((combo) => {
+      const { mods, key } = parseCombo(combo)
+      const names: string[] = []
+      if (mods.has('Mod')) names.push(isMac() ? 'Meta' : 'Control')
+      if (mods.has('Ctrl')) names.push('Control')
+      if (mods.has('Meta')) names.push('Meta')
+      if (mods.has('Alt')) names.push('Alt')
+      if (mods.has('Shift')) names.push('Shift')
+      names.push(key === '+' ? 'Plus' : key === 'Space' ? 'Space' : key.length === 1 ? key.toUpperCase() : key)
+      return names.join('+')
+    })
+    .join(' ')
 }
 
 interface ShortcutSettings {
@@ -270,23 +284,42 @@ export function useShortcutSettings() {
   })
 }
 
+const SAVE_SCOPE = 'settings/shortcuts'
+
+/**
+ * Saves run one at a time and each shows at once. A save's answer is only applied when no later
+ * save is queued, since it would show the state before that save, and a failure refetches what the
+ * server holds once the queue is empty. A save queued in one session never runs in the next: after
+ * a sign-out it would write the old account's keys into whoever signed in.
+ */
 export function useSaveShortcutSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    scope: { id: 'settings/shortcuts' },
-    mutationFn: (bindings: ShortcutOverrides) =>
-      api<ShortcutSettings>('/settings/shortcuts', { method: 'PUT', body: JSON.stringify({ bindings }) }),
-    onMutate: async (bindings) => {
+  const othersPending = () => queryClient.isMutating({ predicate: (m) => m.options.scope?.id === SAVE_SCOPE }) > 1
+  const mutation = useMutation({
+    scope: { id: SAVE_SCOPE },
+    mutationFn: async ({ bindings, session }: { bindings: ShortcutOverrides; session: number }) => {
+      if (session !== currentSession()) throw new Error('The session that made this change has ended')
+      return api<ShortcutSettings>('/settings/shortcuts', { method: 'PUT', body: JSON.stringify({ bindings }) })
+    },
+    onMutate: async ({ bindings }) => {
       await queryClient.cancelQueries({ queryKey: SHORTCUTS_KEY })
-      const previous = queryClient.getQueryData<ShortcutSettings>(SHORTCUTS_KEY)
       queryClient.setQueryData<ShortcutSettings>(SHORTCUTS_KEY, { bindings })
-      return { previous }
     },
-    onError: (_error, _bindings, context) => {
-      if (context?.previous) queryClient.setQueryData(SHORTCUTS_KEY, context.previous)
+    onError: (_error, { session }) => {
+      if (session === currentSession() && !othersPending()) void queryClient.invalidateQueries({ queryKey: SHORTCUTS_KEY })
     },
-    onSuccess: (saved) => queryClient.setQueryData(SHORTCUTS_KEY, saved),
+    onSuccess: (saved, { session }) => {
+      if (session === currentSession() && !othersPending()) queryClient.setQueryData(SHORTCUTS_KEY, saved)
+    },
   })
+  const { mutate } = mutation
+  return useCallback(
+    (bindings: ShortcutOverrides, { onError }: { onError?: () => void } = {}) => {
+      const session = currentSession()
+      mutate({ bindings, session }, { onError: () => session === currentSession() && onError?.() })
+    },
+    [mutate],
+  )
 }
 
 /** The caller's bindings. Until the saved set arrives, and when it can't be fetched, the defaults. */
@@ -298,6 +331,15 @@ export function useShortcutBindings(): ShortcutBindings {
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable
+}
+
+const CONTROLS = 'button, a, [role="button"], [role="slider"], [role="menuitem"], [role="option"], [role="tab"], summary'
+
+/** Space or Enter on a focused control presses that control, whatever is bound to them. */
+export function pressesControl(target: EventTarget | null, combo: string): boolean {
+  const { key } = parseCombo(combo)
+  if (key !== 'Space' && key !== 'Enter') return false
+  return target instanceof HTMLElement && Boolean(target.closest(CONTROLS))
 }
 
 /**
@@ -316,6 +358,7 @@ export function useShortcut(id: ShortcutActionId, handler: () => void, { inField
       const combo = comboFromEvent(event)
       if (!combo || !keys.includes(combo)) return
       if (isTyping(event.target) && !(inFields && hasCommandModifier(combo))) return
+      if (pressesControl(event.target, combo)) return
       event.preventDefault()
       latest.current()
     }
