@@ -8710,7 +8710,7 @@ msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "署名、署名页、汉化页、招募、赞助页"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes about twice as long as Maki 2x"
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice as long as Maki 2x"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -14567,7 +14567,13 @@ msgid "Maki 2x"
 msgstr "Maki 2x"
 
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/settings/registry.ts
 msgid "Maki 2x HQ"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "maki 2x hq, high quality, upscaling model, sharper, real-esrgan"
 msgstr ""
 
 #: src/components/pageconversion/ComparePicker.tsx
@@ -14715,9 +14721,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki 不会自行在此网站上查找系列。你需要在系列页面上粘贴每个系列的地址来逐一关联。"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
-msgstr "Maki 自研模型；外观接近 Real-ESRGAN，运行更快"
+msgid "Maki's own model and the fastest"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

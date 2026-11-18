@@ -31,6 +31,9 @@ const MB = 1024 ** 2
 
 const sameModels = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id))
 
+/** Models added since the last release, by the id of their Settings registry entry. */
+const NEW_MODELS: Record<string, string> = { 'maki-2x-hq': 'upscaling-maki-2x-hq' }
+
 const PREPARE_DEFAULTS: PrepareAheadSettings = { enabled: false, days: 14, series: 8, chapters: 1, mb: 4096 }
 
 const samePrepare = (a?: PrepareAheadSettings, b?: PrepareAheadSettings) =>
@@ -64,8 +67,8 @@ export function UpscalingSection() {
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
   }
-  // Prepare ahead and JPEG XL only appear once upscaling is on, so until then the New tab shows the switch.
-  const offMark = useNewControlMark('prepare-ahead', 'upscaling-jpeg-xl')
+  // Prepare ahead, JPEG XL and the models only appear once upscaling is on, so until then the New tab shows the switch.
+  const offMark = useNewControlMark('prepare-ahead', 'upscaling-jpeg-xl', ...Object.values(NEW_MODELS))
   const jpegXlMark = useNewControlMark('upscaling-jpeg-xl')
 
   return (
@@ -252,12 +255,23 @@ function ModelRow({
   const size = model.bytes === null ? null : formatBytes(model.bytes)
   const ready = model.status === 'ready'
   const seconds = benchmark.data ? formatDecimal(benchmark.data.seconds) : null
+  const newId = NEW_MODELS[model.id]
+  const newMark = useNewControlMark(...(newId ? [newId] : []))
 
   return (
-    <Stack gap={6}>
+    <Stack gap={6} id={newId ? `setting-${newId}` : undefined} {...newMark}>
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Group gap="xs" wrap="nowrap">
-          <Checkbox label={name} checked={checked} onChange={(e) => onToggle(e.currentTarget.checked)} />
+          <Checkbox
+            label={
+              <>
+                {name}
+                {newId && <NewSettingPill id={newId} />}
+              </>
+            }
+            checked={checked}
+            onChange={(e) => onToggle(e.currentTarget.checked)}
+          />
           {info?.recommended && (
             <Badge size="sm" variant="light" color="var(--brand)">
               <Trans>Recommended</Trans>

@@ -422,11 +422,10 @@ public sealed class OnnxPageUpscaler(
     }
 
     // Maki 2x is within a level of any flat value deep in a tile but up to 6 off near its edges (it reaches
-    // further than the 12 px pad), so filling is closer to the model than running it is. Maki 2x HQ is the
-    // same case: a flat tile comes back within 6 levels inside the kept interior.
+    // further than the 12 px pad), so filling is closer to the model than running it is. Maki 2x HQ drifts
+    // like Real-ESRGAN instead, up to 6 levels across the whole tile on light greys, so only 0 and 255 stay exact.
     private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
-        info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || info.Id == UpscaleModelId.Maki2xHq
-        || value is 0 or 255;
+        info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || value is 0 or 255;
 
     /// <summary>
     /// Sets each output pixel whose source pixel and its eight neighbours are one grey value the model

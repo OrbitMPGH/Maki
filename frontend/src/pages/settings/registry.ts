@@ -482,6 +482,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'upscaling-maki-2x-hq',
+    tab: 'library',
+    since: 'next',
+    title: msg`Maki 2x HQ`,
+    admin: true,
+    within: 'upscaling',
+    keywords: msg({
+      message: `maki 2x hq, high quality, upscaling model, sharper, real-esrgan`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'credit-scan',
     tab: 'library',
     since: '0.37.0',
