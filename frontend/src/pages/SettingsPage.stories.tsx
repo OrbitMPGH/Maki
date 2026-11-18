@@ -197,7 +197,7 @@ export const NewTab: Story = {
     await expect(await canvas.findByRole('heading', { name: 'Volume releases' })).toBeVisible()
     // A new control on a drill page shows as its row, which opens that page with the control marked.
     const approve = await canvas.findByRole('button', { name: /^Approve automatically New/ })
-    await expect(approve).toBeVisible()
+    await waitFor(() => expect(approve).toBeVisible())
     // Volume releases is not new itself, so only its new controls show.
     await waitFor(() => expect(canvas.queryByRole('button', { name: /^Auto-grab size limit/ })).toBeNull())
     await userEvent.click(approve)

@@ -314,7 +314,7 @@ export const UpgradeScan: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Run the daily scan/ })
     await waitFor(() => expect(toggle).toBeChecked())
-    await expect(await canvas.findByRole('button', { name: /^Default profile.*Balanced/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Default profile.*Balanced/ })).toBeVisible())
   },
 }
 
@@ -367,7 +367,7 @@ export const VolumeReleasesMissingSearchWithVolumeSearchOff: Story = {
     const missing = await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ })
     await waitFor(() => expect(missing).toBeChecked())
     await expect(missing).toBeEnabled()
-    await expect(canvas.getByRole('button', { name: /^Minimum seeders/ })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Minimum seeders/ })).toBeEnabled())
     await waitFor(() => expect(canvas.getByRole('button', { name: /^Auto-grab size limit/ })).toBeDisabled())
   },
 }
@@ -405,7 +405,7 @@ export const VolumeReleasesSaveMinimumSeeders: Story = {
     await userEvent.clear(field)
     await userEvent.type(field, '5')
     await userEvent.click(canvas.getByRole('button', { name: /^Back/ }))
-    await expect(await canvas.findByRole('button', { name: /^Minimum seeders.*5/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Minimum seeders.*5/ })).toBeVisible())
     await userEvent.click(await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await waitFor(() =>
@@ -474,8 +474,8 @@ export const DownloadClientRemovesAfterSeeding: Story = {
   render: () => <DownloadClientCard />,
   parameters: { msw: afterSeeding() },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /^Stalled torrents.*Given up after 1 hour/ })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /^Finished torrents.*removed after seeding/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Stalled torrents.*Given up after 1 hour/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Finished torrents.*removed after seeding/ })).toBeVisible())
     await openRow(canvas, userEvent, /^Finished torrents/)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seed ratio' })).toHaveValue('2'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seeding time (minutes)' })).toHaveValue('4320'))
@@ -534,7 +534,7 @@ export const DownloadClientWithoutSeedTargets: Story = {
     ),
   },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /^Stalled torrents.*Off/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Stalled torrents.*Off/ })).toBeVisible())
     await openRow(canvas, userEvent, /^Finished torrents/)
     await expect(await canvas.findByText('With no target, torrents stay in the client after import.')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Read from qBittorrent' }))

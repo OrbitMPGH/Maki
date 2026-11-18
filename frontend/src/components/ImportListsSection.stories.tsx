@@ -103,7 +103,7 @@ export const NothingSkipped: Story = {
     msw: settingsMsw(http.get(api('/importlists'), () => HttpResponse.json({ ...importListsStatus, skipped: [] }))),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: /^AniList/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^AniList/ })).toBeVisible())
     await expect(canvas.queryByText('Not matched or ignored')).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Review' })).toBeNull()
   },

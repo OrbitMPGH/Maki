@@ -42,8 +42,8 @@ export const ReadyAndDownloading: Story = {
   play: async ({ canvas, userEvent }) => {
     await waitFor(() => expect(canvas.getByRole('switch', { name: /Enable server upscaling/ })).toBeChecked())
     await expect(await canvas.findByText(/^Maki 2x, SPAN-S,? and Real-ESRGAN$/)).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /^Processing.*2 threads, JPEG XL on/ })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /^Page cache.*312 MB of 1,024 MB, 280 pages/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Processing.*2 threads, JPEG XL on/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Page cache.*312 MB of 1,024 MB, 280 pages/ })).toBeVisible())
 
     const models = await openModels(canvas, userEvent)
     await expect(await models.findByRole('checkbox', { name: 'Maki 2x' })).toBeChecked()
@@ -71,7 +71,7 @@ export const ProcessingPage: Story = {
     await openPage(canvas, userEvent, /^Processing/)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Threads' })).toHaveValue('2'))
     await userEvent.click(canvas.getByRole('button', { name: /^Back/ }))
-    await expect(await canvas.findByRole('button', { name: /^Page cache/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Page cache/ })).toBeVisible())
   },
 }
 
@@ -90,8 +90,8 @@ export const PrepareAhead: Story = {
     msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingPrepare))),
   },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /^Prepare ahead.*On, 9 chapters held/ })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /^Page cache.*312 MB of 1,024 MB, 912 pages/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Prepare ahead.*On, 9 chapters held/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Page cache.*312 MB of 1,024 MB, 912 pages/ })).toBeVisible())
     await openPage(canvas, userEvent, /^Prepare ahead/)
     await waitFor(() => expect(canvas.getByRole('switch', { name: /Prepare chapters ahead/ })).toBeChecked())
     await expect(await canvas.findByText(/9 chapters held, 812 MB of 4,096 MB/)).toBeVisible()
@@ -183,7 +183,7 @@ export const JpegXlUnavailable: Story = {
     msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingNoJpegXl))),
   },
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /^Processing.*2 threads$/ })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Processing.*2 threads$/ })).toBeVisible())
     await openPage(canvas, userEvent, /^Processing/)
     const toggle = await canvas.findByRole('switch', { name: /JPEG XL for colour pages/ })
     await waitFor(() => {
