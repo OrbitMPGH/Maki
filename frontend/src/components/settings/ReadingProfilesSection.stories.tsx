@@ -67,7 +67,7 @@ export const EnhanceFields: Story = {
 
     await userEvent.click(method)
     const body = within(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(6))
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(7))
     await userEvent.click(await body.findByRole('option', { name: 'Balanced' }))
     await expect(await canvas.findByText('Between Light and Strong')).toBeVisible()
   },

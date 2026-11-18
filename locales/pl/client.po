@@ -8709,6 +8709,10 @@ msgstr "strony z creditami, ukrywanie creditów, scanlator, credity, reklamy, re
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "credity, strony z creditami, strony scanlatorów, rekrutacja, strony z datkami"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes about twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14561,6 +14565,10 @@ msgstr "Maki {version}"
 #, fuzzy
 msgid "Maki 2x"
 msgstr "Maki 2x"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki 2x HQ"
+msgstr ""
 
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy

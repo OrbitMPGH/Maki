@@ -8709,6 +8709,10 @@ msgstr "署名页、隐藏署名、汉化、署名、广告、招募、后台扫
 msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr "署名、署名页、汉化页、招募、赞助页"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Crisper lines and solid blacks, close to Real-ESRGAN; takes about twice as long as Maki 2x"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14561,6 +14565,10 @@ msgstr "Maki {version}"
 #, fuzzy
 msgid "Maki 2x"
 msgstr "Maki 2x"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki 2x HQ"
+msgstr ""
 
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy

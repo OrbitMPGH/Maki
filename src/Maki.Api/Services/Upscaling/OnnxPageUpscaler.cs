@@ -34,9 +34,13 @@ public sealed class OnnxPageUpscaler(
 
     /// <summary>
     /// A worker's peak per context pixel: SPAN-S measured 22 MB on 120 px contexts (fp32 activations
-    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB.
+    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB. Maki 2x HQ is
+    /// Real-ESRGAN's graph at 48 of its 64 channels, so 3/4 of its cost (estimated, not measured).
     /// </summary>
-    private static int WorkerBytesPerPixel(UpscaleModelInfo info) => info.Id == UpscaleModelId.Maki2x ? 960 : 1600;
+    private static int WorkerBytesPerPixel(UpscaleModelInfo info) =>
+        info.Id == UpscaleModelId.Maki2x ? 960
+        : info.Id == UpscaleModelId.Maki2xHq ? 1200
+        : 1600;
 
     /// <summary>
     /// Model metadata: the output is already cropped by this many source px per side of the context
@@ -418,9 +422,11 @@ public sealed class OnnxPageUpscaler(
     }
 
     // Maki 2x is within a level of any flat value deep in a tile but up to 6 off near its edges (it reaches
-    // further than the 12 px pad), so filling is closer to the model than running it is.
+    // further than the 12 px pad), so filling is closer to the model than running it is. Maki 2x HQ is the
+    // same case: a flat tile comes back within 6 levels inside the kept interior.
     private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
-        info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || value is 0 or 255;
+        info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || info.Id == UpscaleModelId.Maki2xHq
+        || value is 0 or 255;
 
     /// <summary>
     /// Sets each output pixel whose source pixel and its eight neighbours are one grey value the model

@@ -44,6 +44,13 @@ export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
     quality: 4,
     recommended: true,
   },
+  {
+    id: 'server:maki-2x-hq',
+    label: msg`Maki 2x HQ`,
+    hint: msg`Crisper lines and solid blacks, close to Real-ESRGAN; takes about twice as long as Maki 2x`,
+    speed: 4,
+    quality: 5,
+  },
   { id: 'server:span-s', label: msg`SPAN-S`, hint: msg`IllustrationJaNai's sharp model`, speed: 3, quality: 3 },
   {
     id: 'server:realesrgan-av3',

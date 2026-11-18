@@ -21,6 +21,7 @@
   <!-- Maki 2x ships with the app; UpscaleModelStore reads it from here and never downloads it. -->
   <ItemGroup>
     <None Update="UpscaleModels\maki-2x.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="UpscaleModels\maki-2x-hq.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- PP-OCRv3 text detection and recognition for telling credit pages apart (PageTextReader). -->
