@@ -246,11 +246,11 @@ export const ChapterSortedByReleaseDate: Story = {
 export const ChaptersGroupedByVolume: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
-    const header = await canvas.findByRole('button', { name: 'Collapse Vol. 1' })
+    const header = await canvas.findByRole('button', { name: 'Collapse Volume 1' })
     await expect(header).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Collapse Vol. 2' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Collapse Volume 2' })).toBeVisible()
     await userEvent.click(header)
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Expand Vol. 1' })).toHaveAttribute('aria-expanded', 'false'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Expand Volume 1' })).toHaveAttribute('aria-expanded', 'false'))
     await expect(canvas.queryByText('Chapter 2')).toBeNull()
   },
 }
@@ -258,7 +258,7 @@ export const ChaptersGroupedByVolume: Story = {
 export const ChaptersUngroupedByRelease: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Collapse Volume 1' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     const picker = body(canvasElement)
     await userEvent.click(await picker.findByRole('radio', { name: 'Release date' }))
@@ -270,7 +270,7 @@ export const ChaptersUngroupedByRelease: Story = {
 export const ChaptersGroupingOff: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Collapse Volume 1' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     await userEvent.click(await body(canvasElement).findByRole('switch', { name: 'Group by volume' }))
     await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())

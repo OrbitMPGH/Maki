@@ -362,7 +362,12 @@ const volumeStory = (
           group={{ key: group.volume === null ? 'none' : `v${group.volume}`, ...group }}
           collapsed={false}
           readProgress={progress}
+          queueStates={new Map()}
           readTracking
+          titleShown
+          progressSpan={3}
+          columnCount={7}
+          gapBefore={false}
           canEditMetadata
           canDownload
           downloadDisabled={false}
@@ -385,6 +390,17 @@ export const VolumeHeaderMixedWantedAndMissing = volumeStory({
   chapters: chapters.slice(9, 18).map((c, i) => (i % 3 === 0 ? { ...c, wanted: false, hasFile: false } : c)),
 })
 
+export const VolumeHeaderQueueAndFileMissing = volumeStory(
+  {
+    volume: 3,
+    chapters: chapters.slice(0, 6).map((c, i) =>
+      i === 1 ? { ...c, fileMissing: true } : i >= 3 ? { ...c, hasFile: false } : c),
+  },
+  { queueStates: new Map([[chapters[3].id, 'active'], [chapters[4].id, 'failed']]) },
+)
+
+export const VolumeHeaderLong = volumeStory({ volume: 4, chapters: chaptersFor(1, { limit: 36 }) }, { gapBefore: true })
+
 export const VolumeHeaderNoVolume = volumeStory({ volume: null, chapters: chapters.slice(24) })
 
 export const VolumeHeaderReadOnly = volumeStory(
@@ -395,10 +411,10 @@ export const VolumeHeaderReadOnly = volumeStory(
 export const VolumeHeaderPlay: StoryObj<typeof ChapterVolumeRow> = {
   ...volumeStory({ volume: 1, chapters: chapters.slice(0, 9) }),
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByText('Vol. 1')).toBeVisible()
+    await expect(await canvas.findByText('Volume 1')).toBeVisible()
     await waitFor(() => expect(canvas.getByText('2 read')).toBeVisible())
-    await userEvent.click(canvas.getByRole('button', { name: 'Collapse Vol. 1' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Actions for Vol. 1' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Collapse Volume 1' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions for Volume 1' }))
     await expect(await within(canvas.getByRole('table').ownerDocument.body).findByRole('menuitem', { name: 'Mark read' })).toBeVisible()
   },
 }

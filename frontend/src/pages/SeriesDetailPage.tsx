@@ -185,6 +185,8 @@ import {
   serializeHiddenColumns,
   sortChapters,
   volumeOf,
+  volumeQueueState,
+  type VolumeQueueState,
   type ChapterSort,
   type FileOrigin,
   type HidableChapterColumn,
@@ -625,6 +627,21 @@ function SeriesDetailBody() {
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
+  )
+  // Keyed on the states alone, so a download's page count ticking up doesn't re-render every volume heading.
+  const volumeQueueKey = useMemo(
+      () => [...queueByChapterId].flatMap(([id, q]) => {
+        const state = volumeQueueState(q.status)
+        return state ? [`${id}:${state}`] : []
+      }).join(','),
+      [queueByChapterId],
+  )
+  const volumeQueueStates = useMemo(
+      () => new Map(volumeQueueKey === '' ? [] : volumeQueueKey.split(',').map((entry) => {
+        const [id, state] = entry.split(':')
+        return [Number(id), state as VolumeQueueState] as const
+      })),
+      [volumeQueueKey],
   )
   const torrentDownloads = useMemo(
       () => (queue?.items ?? []).filter((q) => q.seriesId === seriesId && q.releaseTitle != null),
@@ -1163,6 +1180,15 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
+  // The volume headings stick under the toolbar, which sticks too and changes height as it wraps.
+  const [chapterHead, setChapterHead] = useState<HTMLDivElement | null>(null)
+  const [chapterHeadHeight, setChapterHeadHeight] = useState(0)
+  useEffect(() => {
+    if (!chapterHead) return
+    const observer = new ResizeObserver(() => setChapterHeadHeight(chapterHead.offsetHeight))
+    observer.observe(chapterHead)
+    return () => observer.disconnect()
+  }, [chapterHead])
   // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
   // rather than on every pixel. The width itself goes to the column specs' drag limits.
   const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
@@ -1181,6 +1207,9 @@ function SeriesDetailBody() {
   const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
   const chapterRowsAsList = chapterLayout === 'list'
   const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
+  const volumeTitleShown = !hiddenChapterColumns.has('title')
+  const volumeProgressSpan = shownChapterColumns(chapterLayout, hiddenChapterColumns).filter((key) => key !== 'chapter').length
+  const chapterColumnCount = 3 + (volumeTitleShown ? 1 : 0) + volumeProgressSpan
   useLayoutEffect(() => {
     chapterColumnRoom.current.layout = chapterLayout
     chapterColumnRoom.current.widths = chapterColumnWidths
@@ -3197,7 +3226,7 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
+            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true} ref={setChapterHead}>
               <Stack className="series-detail-chapter-toolbar" gap="sm">
                 <SectionHeader
                     icon={IconBook}
@@ -3512,14 +3541,25 @@ function SeriesDetailBody() {
                       ].join(' ')}
                       withBorder
                       radius="lg"
-                      style={{ overflow: 'hidden' }}
+                      // Clip rather than hidden: a hidden overflow makes the panel a scroll container,
+                      // and the volume headings could then never stick to the page.
+                      style={{
+                        overflow: 'clip',
+                        '--chapter-sticky-top': `calc(var(--app-shell-header-offset, 0px) + ${selectMode ? 0 : chapterHeadHeight}px)`,
+                      } as React.CSSProperties}
                   >
                     <Box
                         pos="relative"
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}>
+                      {/* The layout is picked so the table always fits the panel, so the container never has to
+                          scroll, and a scrolling one would stop the volume headings sticking. */}
+                      <Table.ScrollContainer
+                          type="native"
+                          minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}
+                          style={{ overflow: 'clip' }}
+                      >
                         <Table
                             className="chapter-table"
                             highlightOnHover
@@ -3569,7 +3609,7 @@ function SeriesDetailBody() {
                                 <ChapterRowSkeletons count={pagedRows.length > 0 ? Math.min(pagedRows.length, 12) : 8} />
                             ) : (
                                 <ChunkedRows rows={shownRows}>
-                                  {(rows) => rows.map((row) => {
+                                  {(rows) => rows.map((row, index) => {
                                   if (row.kind === 'volume') {
                                     return (
                                         <ChapterVolumeRow
@@ -3577,7 +3617,12 @@ function SeriesDetailBody() {
                                             group={row.group}
                                             collapsed={row.collapsed}
                                             readProgress={readProgress}
+                                            queueStates={volumeQueueStates}
                                             readTracking={readTracking}
+                                            titleShown={volumeTitleShown}
+                                            progressSpan={volumeProgressSpan}
+                                            columnCount={chapterColumnCount}
+                                            gapBefore={index > 0}
                                             canEditMetadata={canEditMetadata}
                                             canDownload={canDownload}
                                             downloadDisabled={archived}

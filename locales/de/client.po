@@ -1727,6 +1727,10 @@ msgstr "{exposed} anderswo gelesen oder gesehen"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# konnte nicht gelöscht werden} other {# konnten nicht gelöscht werden}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{failedCount} failed"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
@@ -1756,6 +1760,10 @@ msgstr "{fileCount, plural, one {# einzelne Datei} other {# einzelne Dateien}}"
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# heruntergeladenem Kapitel fehlt die Datei, daher lässt Downloads es weg.} other {# heruntergeladenen Kapiteln fehlen die Dateien, daher lässt Downloads sie weg.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2545,6 +2553,10 @@ msgstr "{noticeTotal, plural, one {# Hinweis} other {# Hinweise}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# weiteres, nicht gewünscht} other {# weitere, nicht gewünscht}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{notWantedCount} not wanted"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "{of} on"
 msgstr ""
@@ -2712,6 +2724,10 @@ msgstr "{queued, plural, one {In die Bibliothek wiederhergestellt, # Kapitel in 
 #, fuzzy
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Upgrade-Scan abgeschlossen: # bessere Kopie in die Warteschlange gestellt} other {Upgrade-Scan abgeschlossen: # bessere Kopien in die Warteschlange gestellt}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{queuedCount} queued"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -3604,11 +3620,6 @@ msgstr "{unread, plural, one {# ungelesen} other {# ungelesen}}"
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# ungelesen} other {# ungelesen}}"
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "{unreadCount} unread"
-msgstr "{unreadCount} ungelesen"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
@@ -3869,6 +3880,10 @@ msgstr "<0>{chapters, plural, one {# Kapitel} other {# Kapitel}}</0> an {days, p
 #, fuzzy
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "<0>{deleting}</0> wird von der Festplatte gelöscht. Das lässt sich nicht rückgängig machen."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "<0>{downloadedCount}/{total}</0> downloaded"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -9683,9 +9698,8 @@ msgid "Download {chapterLbl}"
 msgstr "{chapterLbl} herunterladen"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download {missingCount} missing"
-msgstr "{missingCount} fehlende herunterladen"
+msgid "Download {downloadCount} missing"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -28797,7 +28811,6 @@ msgstr "Bd. {fileVolume}"
 
 #: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
-#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -28848,6 +28861,10 @@ msgstr "Band {number}"
 #, fuzzy
 msgid "Volume {range}"
 msgstr "Band {range}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Volume {volume}"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts

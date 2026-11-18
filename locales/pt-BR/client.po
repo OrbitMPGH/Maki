@@ -1727,6 +1727,10 @@ msgstr "{exposed} lido ou assistido em outro lugar"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# não pôde ser excluído} many {# não puderam ser excluídos}other {# não puderam ser excluídos}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{failedCount} failed"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
@@ -1756,6 +1760,10 @@ msgstr "{fileCount, plural, one {# arquivo isolado} many {# arquivos isolados} o
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# capítulo baixado está sem o arquivo, então Downloads o deixa de fora.} many {# capítulos baixados estão sem o arquivo, então Downloads os deixa de fora.} other {# capítulos baixados estão sem o arquivo, então Downloads os deixa de fora.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2545,6 +2553,10 @@ msgstr "{noticeTotal, plural, one {# aviso} many {# avisos} other {# avisos}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# a mais listado, não desejado} many {# a mais listados, não desejados} other {# a mais listados, não desejados}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{notWantedCount} not wanted"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "{of} on"
 msgstr ""
@@ -2712,6 +2724,10 @@ msgstr "{queued, plural, one {Restaurado para a biblioteca, # capítulo na fila}
 #, fuzzy
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Verificação de upgrades concluída: # cópia melhor na fila} many {Verificação de upgrades concluída: # cópias melhores na fila} other {Verificação de upgrades concluída: # cópias melhores na fila}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{queuedCount} queued"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -3604,11 +3620,6 @@ msgstr "{unread, plural, one {# não lido} many {# não lidos}other {# não lido
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# não lido} many {# não lidos}other {# não lidos}}"
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "{unreadCount} unread"
-msgstr "{unreadCount} não lidos"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
@@ -3869,6 +3880,10 @@ msgstr "<0>{chapters, plural, one {# capítulo} many {# capítulos} other {# cap
 #, fuzzy
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "<0>{deleting}</0> será removido do disco. Esta ação não pode ser desfeita."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "<0>{downloadedCount}/{total}</0> downloaded"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -9683,9 +9698,8 @@ msgid "Download {chapterLbl}"
 msgstr "Baixar {chapterLbl}"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download {missingCount} missing"
-msgstr "Baixar {missingCount} faltantes"
+msgid "Download {downloadCount} missing"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -28797,7 +28811,6 @@ msgstr "Vol. {fileVolume}"
 
 #: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
-#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -28848,6 +28861,10 @@ msgstr "Volume {number}"
 #, fuzzy
 msgid "Volume {range}"
 msgstr "Volume {range}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Volume {volume}"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
