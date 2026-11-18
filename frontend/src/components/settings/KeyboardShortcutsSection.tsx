@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ActionIcon, Button, Group, Text, Tooltip, VisuallyHidden } from '@mantine/core'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { ActionIcon, Button, Group, Modal, Stack, Text, Tooltip, VisuallyHidden } from '@mantine/core'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { IconArrowBackUp, IconPlus, IconX } from '../../lib/icons'
+import { IconArrowBackUp, IconKeyboard, IconPlus, IconX } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   actionLabel,
@@ -25,11 +25,20 @@ import {
   type ShortcutBindings,
 } from '../../lib/shortcuts'
 import { useFormatCombo } from '../../lib/shortcutLabels'
+import { twoColumns } from '../../lib/columns'
+import { formatList } from '../../format'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 
 const sameKeys = (a: string[], b: string[]) => a.length === b.length && a.every((key, i) => key === b[i])
 
-/** Every rebindable key, grouped as the reader's shortcut sheet groups them. Saves on each change. */
+type ShortcutGroup = (typeof SHORTCUT_GROUPS)[number]
+
+/**
+ * Every rebindable key, grouped as the reader's shortcut sheet groups them. The card says which
+ * actions have keys of their own; the list opens in a modal in two columns. Saves on each change.
+ */
 export function KeyboardShortcutsSection() {
   const { t, i18n } = useLingui()
   const { data, isError, refetch, isFetching } = useShortcutSettings()
@@ -38,6 +47,7 @@ export function KeyboardShortcutsSection() {
   const bindings = resolveBindings(data?.bindings)
   const [recording, setRecording] = useState<ShortcutActionId | null>(null)
   const [status, setStatus] = useState('')
+  const [open, setOpen] = useState(false)
   // Until the saved set arrives nothing can be edited: an edit made over the defaults would save
   // them over whatever the user had.
   const loaded = Boolean(data)
@@ -54,7 +64,7 @@ export function KeyboardShortcutsSection() {
     // Wait while the control that made the edit still has focus: the save may not have landed yet.
     const active = document.activeElement
     if (active && active !== document.body) {
-      // Reset all sits in the header and goes once nothing differs, so it waits outside the list too.
+      // Reset all sits outside the list and goes once nothing differs, so it waits outside the list too.
       if (target !== 'first' && !listRef.current?.contains(active)) refocus.current = null
       return
     }
@@ -65,11 +75,20 @@ export function KeyboardShortcutsSection() {
 
   const saveFailed = () => notifications.show({ message: now`Couldn't save the shortcuts`, color: 'var(--danger)' })
 
-  // Undo for Reset all, until the next edit: after one it would throw that edit away.
+  // Undo for Reset all, until the next edit: after one it would throw that edit away. The toast
+  // offers it outside the modal; inside, the modal traps Tab, so its footer offers it too.
   const undoToast = useRef<string | null>(null)
+  const [undoFrom, setUndoFrom] = useState<ShortcutBindings | null>(null)
   const dropUndo = () => {
     if (undoToast.current) notifications.hide(undoToast.current)
     undoToast.current = null
+    setUndoFrom(null)
+  }
+  const undoReset = (previous: ShortcutBindings) => {
+    dropUndo()
+    refocus.current = 'first'
+    setStatus(t`Your shortcuts are back`)
+    save(toOverrides(previous), { onError: saveFailed })
   }
 
   const commit = (next: ShortcutBindings, focusOn: ShortcutActionId | 'first') => {
@@ -129,6 +148,7 @@ export function KeyboardShortcutsSection() {
     const previous = bindings
     setStatus(t`Every shortcut is back to its default keys`)
     commit(resolveBindings(undefined), 'first')
+    setUndoFrom(previous)
     const toast = (undoToast.current = notifications.show({
       autoClose: 8000,
       message: (
@@ -137,24 +157,128 @@ export function KeyboardShortcutsSection() {
           <Button
             size="xs"
             variant="subtle"
-            onClick={() => {
-              notifications.hide(toast)
-              undoToast.current = null
-              refocus.current = 'first'
-              save(toOverrides(previous), { onError: saveFailed })
-            }}
+            onClick={() => undoReset(previous)}
           >
             {now`Undo`}
           </Button>
         </Group>
       ),
       onClose: () => {
-        if (undoToast.current === toast) undoToast.current = null
+        if (undoToast.current !== toast) return
+        undoToast.current = null
+        setUndoFrom(null)
       },
     }))
   }
 
+  const close = () => {
+    setRecording(null)
+    setOpen(false)
+  }
+
   const atMost = plural(MAX_KEYS_PER_ACTION, { one: '# key at most', other: '# keys at most' })
+  const customised = SHORTCUT_ACTIONS.filter((action) => !sameKeys(bindings[action.id], defaultKeys(action.id)))
+  const actionsIn = (group: ShortcutGroup) => SHORTCUT_ACTIONS.filter((action) => action.group === group)
+  // A group's title is a row, and the page-turn hint another.
+  const columns = twoColumns(SHORTCUT_GROUPS, (group) => actionsIn(group).length + (group === 'pages' ? 2 : 1))
+
+  const renderGroup = (group: ShortcutGroup) => (
+    <div key={group} className="shortcut-group">
+      <h3 className="shortcut-group-title">{i18n._(SHORTCUT_GROUP_LABELS[group])}</h3>
+      {group === 'pages' && (
+        <p className="shortcut-group-hint">
+          <Trans>Forward and back arrows follow the series' reading direction.</Trans>
+        </p>
+      )}
+      <ul className="shortcut-list">
+        {actionsIn(group).map((action) => {
+          const keys = bindings[action.id]
+          const name = i18n._(action.label)
+          const isDefault = sameKeys(keys, defaultKeys(action.id))
+          const full = keys.length >= MAX_KEYS_PER_ACTION
+          const isRecording = recording === action.id
+          return (
+            <li
+              key={action.id}
+              className="shortcut-row"
+              data-shortcut-row={action.id}
+              data-recording={isRecording || undefined}
+            >
+              <span className="shortcut-label">{name}</span>
+              <span className="shortcut-keys">
+                {keys.length === 0 && !isRecording && (
+                  <span className="shortcut-none">
+                    <Trans>No key</Trans>
+                  </span>
+                )}
+                {keys.map((combo) => {
+                  const keyName = formatCombo(combo)
+                  return (
+                    <span key={combo} className="shortcut-key">
+                      <kbd>{keyName}</kbd>
+                      <button
+                        type="button"
+                        className="shortcut-key-remove"
+                        disabled={!loaded}
+                        onClick={() => remove(action.id, combo)}
+                        aria-label={t`Remove ${keyName} from ${name}`}
+                      >
+                        <IconX size={12} />
+                      </button>
+                    </span>
+                  )
+                })}
+                {isRecording ? (
+                  <KeyRecorder
+                    onKey={(combo) => record(action.id, combo)}
+                    onCancel={(returnFocus) => {
+                      if (returnFocus) refocus.current = action.id
+                      setRecording(null)
+                    }}
+                    action={name}
+                  />
+                ) : (
+                  <Tooltip label={full ? atMost : t`Add a key`} withArrow position="left">
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="md"
+                      data-shortcut-add
+                      disabled={!loaded}
+                      data-disabled={full || undefined}
+                      aria-disabled={full || undefined}
+                      onClick={() => {
+                        if (!full) setRecording(action.id)
+                      }}
+                      aria-label={full ? t`${name} already has the most keys it can take` : t`Add a key to ${name}`}
+                    >
+                      <IconPlus size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                <span className="shortcut-reset">
+                  {!isDefault && (
+                    <Tooltip label={t`Back to the default`} withArrow position="left">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="md"
+                        disabled={!loaded}
+                        onClick={() => resetRow(action.id)}
+                        aria-label={t`Reset ${name} to its default keys`}
+                      >
+                        <IconArrowBackUp size={14} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </span>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
 
   return (
     <SettingsSection
@@ -168,13 +292,14 @@ export function KeyboardShortcutsSection() {
           </Button>
         )
       }
-      panelProps={{ p: 0 }}
     >
-      <VisuallyHidden role="status" aria-live="polite">
-        {status}
-      </VisuallyHidden>
-      {isError && !data && (
-        <Group className="shortcut-load-error" gap="sm" justify="space-between">
+      {!open && (
+        <VisuallyHidden role="status" aria-live="polite">
+          {status}
+        </VisuallyHidden>
+      )}
+      {isError && !data ? (
+        <Group gap="sm" justify="space-between">
           <Text size="sm" c="var(--danger-fg)">
             <Trans>Couldn't load your shortcuts.</Trans>
           </Text>
@@ -182,106 +307,74 @@ export function KeyboardShortcutsSection() {
             <Trans>Try again</Trans>
           </Button>
         </Group>
+      ) : (
+        <Group justify="space-between" wrap="wrap" gap="md">
+          <Stack gap={2} className="settings-summary">
+            <SettingsGroupTitle>
+              {customised.length === 0 ? (
+                <Trans>Every key is the default</Trans>
+              ) : (
+                <Plural
+                  value={customised.length}
+                  one="# action has keys of your own"
+                  other="# actions have keys of your own"
+                />
+              )}
+            </SettingsGroupTitle>
+            <Text size="sm" c="var(--ink-3)">
+              {customised.length > 0 && customised.length <= 3 ? (
+                formatList(customised.map((action) => i18n._(action.label)))
+              ) : (
+                <Trans>The reader's keys and the search shortcut.</Trans>
+              )}
+            </Text>
+          </Stack>
+          <Button
+            variant="default"
+            leftSection={<IconKeyboard size={16} />}
+            disabled={!loaded}
+            onClick={() => setOpen(true)}
+            style={{ flexShrink: 0 }}
+          >
+            <Trans>Edit shortcuts</Trans>
+          </Button>
+        </Group>
       )}
-      <div ref={listRef}>
-        {SHORTCUT_GROUPS.map((group) => (
-          <div key={group} className="shortcut-group">
-            <h3 className="shortcut-group-title">{i18n._(SHORTCUT_GROUP_LABELS[group])}</h3>
-            {group === 'pages' && (
-              <p className="shortcut-group-hint">
-                <Trans>Forward and back arrows follow the series' reading direction.</Trans>
-              </p>
-            )}
-            <ul className="shortcut-list">
-              {SHORTCUT_ACTIONS.filter((action) => action.group === group).map((action) => {
-                const keys = bindings[action.id]
-                const name = i18n._(action.label)
-                const isDefault = sameKeys(keys, defaultKeys(action.id))
-                const full = keys.length >= MAX_KEYS_PER_ACTION
-                const isRecording = recording === action.id
-                return (
-                  <li
-                    key={action.id}
-                    className="shortcut-row"
-                    data-shortcut-row={action.id}
-                    data-recording={isRecording || undefined}
-                  >
-                    <span className="shortcut-label">{name}</span>
-                    <span className="shortcut-keys">
-                      {keys.length === 0 && !isRecording && (
-                        <span className="shortcut-none">
-                          <Trans>No key</Trans>
-                        </span>
-                      )}
-                      {keys.map((combo) => {
-                        const keyName = formatCombo(combo)
-                        return (
-                          <span key={combo} className="shortcut-key">
-                            <kbd>{keyName}</kbd>
-                            <button
-                              type="button"
-                              className="shortcut-key-remove"
-                              disabled={!loaded}
-                              onClick={() => remove(action.id, combo)}
-                              aria-label={t`Remove ${keyName} from ${name}`}
-                            >
-                              <IconX size={12} />
-                            </button>
-                          </span>
-                        )
-                      })}
-                      {isRecording ? (
-                        <KeyRecorder
-                          onKey={(combo) => record(action.id, combo)}
-                          onCancel={(returnFocus) => {
-                            if (returnFocus) refocus.current = action.id
-                            setRecording(null)
-                          }}
-                          action={name}
-                        />
-                      ) : (
-                        <Tooltip label={full ? atMost : t`Add a key`} withArrow position="left">
-                          <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            size="md"
-                            data-shortcut-add
-                            disabled={!loaded}
-                            data-disabled={full || undefined}
-                            aria-disabled={full || undefined}
-                            onClick={() => {
-                              if (!full) setRecording(action.id)
-                            }}
-                            aria-label={full ? t`${name} already has the most keys it can take` : t`Add a key to ${name}`}
-                          >
-                            <IconPlus size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                      <span className="shortcut-reset">
-                        {!isDefault && (
-                          <Tooltip label={t`Back to the default`} withArrow position="left">
-                            <ActionIcon
-                              variant="subtle"
-                              color="gray"
-                              size="md"
-                              disabled={!loaded}
-                              onClick={() => resetRow(action.id)}
-                              aria-label={t`Reset ${name} to its default keys`}
-                            >
-                              <IconArrowBackUp size={14} />
-                            </ActionIcon>
-                          </Tooltip>
-                        )}
-                      </span>
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
-      </div>
+
+      <Modal
+        opened={open}
+        onClose={close}
+        size={1080}
+        // While a key is being recorded, Esc cancels the recording rather than closing the list.
+        closeOnEscape={recording === null}
+        title={<ModalHeading title={t`Keyboard shortcuts`} />}
+      >
+        <VisuallyHidden role="status" aria-live="polite">
+          {status}
+        </VisuallyHidden>
+        <div ref={listRef} className="shortcut-columns">
+          {columns.map((groups) => (
+            <div key={groups[0]}>{groups.map(renderGroup)}</div>
+          ))}
+        </div>
+        <ModalFooter
+          status={
+            undoFrom ? (
+              <Button size="xs" variant="subtle" onClick={() => undoReset(undoFrom)}>
+                <Trans>Undo reset</Trans>
+              </Button>
+            ) : changed && loaded ? (
+              <Button size="xs" variant="subtle" onClick={resetAll}>
+                <Trans>Reset all</Trans>
+              </Button>
+            ) : undefined
+          }
+        >
+          <Button onClick={close}>
+            <Trans>Done</Trans>
+          </Button>
+        </ModalFooter>
+      </Modal>
     </SettingsSection>
   )
 }

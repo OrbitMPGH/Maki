@@ -11,7 +11,7 @@ import {
   Checkbox,
   Group,
   Input,
-  Radio,
+  Modal,
   SegmentedControl,
   Stack,
   Switch,
@@ -19,7 +19,11 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { IconPencil, IconRoute, IconTrash, IconUsers, IconWand } from '../../lib/icons'
+import { IconFolder, IconLanguage, IconPencil, IconRoute, IconTrash, IconUsers, IconWand } from '../../lib/icons'
+import { SettingsDrill, SettingsDrillPage } from '../../components/settings/SettingsDrill'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
+import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -64,7 +68,7 @@ import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
-import { formatBytes, formatDateTime, formatNumber } from '../../format'
+import { formatBytes, formatDateTime, formatList, formatNumber } from '../../format'
 import { useAuth } from '../../auth/AuthProvider'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
@@ -476,6 +480,9 @@ export function CreditScanSection() {
   )
 }
 
+type NamingPage = 'main' | 'folders'
+const NAMING_PARENTS: Record<NamingPage, NamingPage> = { main: 'main', folders: 'main' }
+
 export function NamingSection() {
   const { t } = useLingui()
   const { settings, patch } = useLibraryPatch()
@@ -484,6 +491,17 @@ export function NamingSection() {
   const seriesCount = allSeries.length
   const renameMany = useRenameManySeries()
   const [confirmRenameAll, setConfirmRenameAll] = useState(false)
+  const namingPages = useDrillPages<NamingPage>('main', NAMING_PARENTS)
+  const folderMode = settings?.folderNamingMode ?? 'rename'
+  const folderModes = [
+    { value: 'rename', label: t`Rename the folder`, hint: t`It takes the series folder format.` },
+    {
+      value: 'keep-new-standard',
+      label: t`Keep the name, new downloads elsewhere`,
+      hint: t`New downloads go in a folder named by the format.`,
+    },
+    { value: 'keep-original', label: t`Keep the name for everything`, hint: t`New downloads go in the original folder too.` },
+  ]
 
   // Null means "not edited yet, show what's stored". Keeping the two apart is what lets the field
   // stay editable while a save is in flight without the response yanking the caret back.
@@ -545,7 +563,7 @@ export function NamingSection() {
       <Button
         variant="default"
         size="xs"
-        mb="lg"
+        mb="sm"
         disabled={!allSeries.length}
         onClick={() => setConfirmRenameAll(true)}
       >
@@ -590,28 +608,33 @@ export function NamingSection() {
             }
       />
 
-      <SettingsGroupTitle mb={4}>
-        <Trans>Folder naming on import</Trans>
-      </SettingsGroupTitle>
-      <Radio.Group
-        aria-label={t`Folder naming on import`}
-        value={settings?.folderNamingMode ?? 'rename'}
-        onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
-      >
-        <Stack gap="xs" mt="xs">
-          <Radio value="rename" label={t`Rename the folder to the series folder format`} />
-          <Radio
-            value="keep-new-standard"
-            label={t`Keep the folder name, but put new downloads in a folder named by the format`}
+      <SettingsDrill page={namingPages.page} depth={namingPages.depth}>
+        {namingPages.page === 'main' && (
+          <DrillRow
+            ref={namingPages.rowRef('folders')}
+            icon={IconFolder}
+            label={<Trans>Folders on import</Trans>}
+            value={folderModes.find((m) => m.value === folderMode)?.label}
+            onClick={() => namingPages.open('folders')}
           />
-          <Radio value="keep-original" label={t`Keep the folder name, and put new downloads there too`} />
-        </Stack>
-      </Radio.Group>
+        )}
+        {namingPages.page === 'folders' && (
+          <SettingsDrillPage>
+            <DrillBack ref={namingPages.backRef} title={<Trans>Folders on import</Trans>} onBack={namingPages.back} />
+            <div className="settings-drill-choices">
+              <DrillChoices
+                label={t`Folders on import`}
+                value={folderMode}
+                options={folderModes}
+                onPick={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
+              />
+            </div>
+          </SettingsDrillPage>
+        )}
+      </SettingsDrill>
 
-      <SettingsGroupTitle mt="lg" mb={4}>
-        <Trans>File naming on import</Trans>
-      </SettingsGroupTitle>
       <Switch
+        mt="sm"
         label={t`Rename imported files to the chapter file format`}
         checked={settings?.renameImportedFiles ?? true}
         onChange={(e) => patch({ renameImportedFiles: e.currentTarget.checked })}
@@ -625,6 +648,9 @@ export function NameParsingSection() {
   const { t } = useLingui()
   const { data: settings } = useNameParsingSettings()
   const save = useSaveNameParsingSettings()
+  const [choosing, setChoosing] = useState(false)
+  const nameOf = (code: string) => SUPPORTED_LOCALES.find((l) => l.code === code)?.label ?? code
+  const enabled = (settings?.available ?? []).filter((l) => settings?.languages.includes(l.code))
 
   const apply = (languages: string[]) =>
     save.mutate(languages, {
@@ -637,33 +663,84 @@ export function NameParsingSection() {
       title={<Trans>File name parsing</Trans>}
       description={<Trans>English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too.</Trans>}
     >
-      <Checkbox.Group
-        aria-label={t`Languages to read markers in`}
-        value={settings?.languages ?? []}
-        onChange={apply}
+      <Group justify="space-between" wrap="wrap" gap="md">
+        <Stack gap={2} className="settings-summary">
+          <SettingsGroupTitle>
+            <Trans>Also read</Trans>
+          </SettingsGroupTitle>
+          <Text size="sm" c="var(--ink-3)">
+            {enabled.length > 0 ? formatList(enabled.map((l) => nameOf(l.code))) : <Trans>No other languages</Trans>}
+          </Text>
+        </Stack>
+        <Button
+          variant="default"
+          leftSection={<IconLanguage size={16} />}
+          onClick={() => setChoosing(true)}
+          style={{ flexShrink: 0 }}
+        >
+          <Trans>Choose languages</Trans>
+        </Button>
+      </Group>
+      <Modal
+        opened={choosing}
+        onClose={() => setChoosing(false)}
+        size={MODAL_SIZE.wide}
+        title={<ModalHeading title={t`File name parsing`} />}
       >
-        <Stack gap="sm">
+        <div className="marker-table" role="group" aria-label={t`Languages to read markers in`}>
+          <div className="marker-table-head" aria-hidden>
+            <span>
+              <Trans>Language</Trans>
+            </span>
+            <span>
+              <Trans>Volume markers</Trans>
+            </span>
+            <span>
+              <Trans>Chapter markers</Trans>
+            </span>
+          </div>
           {settings?.available.map((language) => {
-            const name = SUPPORTED_LOCALES.find((l) => l.code === language.code)?.label ?? language.code
+            const on = (settings.languages ?? []).includes(language.code)
             const volumes = language.volumeWords.join(', ')
             const chapters = language.chapterWords.join(', ')
             return (
-              <Checkbox
-                key={language.code}
-                value={language.code}
-                label={name}
-                disabled={save.isPending}
-                description={
-                  <>
-                    {volumes && <span style={{ display: 'block' }}>{t`Volumes: ${volumes}`}</span>}
-                    {chapters && <span style={{ display: 'block' }}>{t`Chapters: ${chapters}`}</span>}
-                  </>
-                }
-              />
+              <div key={language.code} className="marker-table-row">
+                <span>
+                  <Checkbox
+                    label={nameOf(language.code)}
+                    checked={on}
+                    disabled={save.isPending}
+                    onChange={(e) =>
+                      apply(
+                        e.currentTarget.checked
+                          ? [...settings.languages, language.code]
+                          : settings.languages.filter((c) => c !== language.code),
+                      )
+                    }
+                  />
+                </span>
+                <Text size="sm" c={volumes ? 'var(--ink-2)' : 'var(--ink-3)'} className="marker-table-cell">
+                  <span className="marker-table-label">
+                    <Trans>Volumes</Trans>
+                  </span>
+                  {volumes || <Trans>None</Trans>}
+                </Text>
+                <Text size="sm" c={chapters ? 'var(--ink-2)' : 'var(--ink-3)'} className="marker-table-cell">
+                  <span className="marker-table-label">
+                    <Trans>Chapters</Trans>
+                  </span>
+                  {chapters || <Trans>None</Trans>}
+                </Text>
+              </div>
             )
           })}
-        </Stack>
-      </Checkbox.Group>
+        </div>
+        <ModalFooter>
+          <Button onClick={() => setChoosing(false)}>
+            <Trans>Done</Trans>
+          </Button>
+        </ModalFooter>
+      </Modal>
     </SettingsSection>
   )
 }

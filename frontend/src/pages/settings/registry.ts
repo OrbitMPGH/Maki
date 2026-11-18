@@ -201,6 +201,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     since: '0.37.0',
     title: msg`New sequels and spin-offs`,
     within: 'notification-prefs',
+    nested: true,
     keywords: msg({
       message: `sequel, prequel, spin-off, side story, related works, catalogue`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -498,6 +499,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Maki 2x HQ`,
     admin: true,
     within: 'upscaling',
+    nested: true,
     keywords: msg({
       message: `maki 2x hq, high quality, upscaling model, sharper, real-esrgan`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,

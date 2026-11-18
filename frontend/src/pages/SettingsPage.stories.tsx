@@ -97,7 +97,9 @@ export const SystemTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=system'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Backup & restore' })).toBeVisible()
-    await waitFor(() => expect((canvas.getAllByRole('button', { name: 'Restore' })).length).toBe(3))
+    // The card shows the latest backup and opens the rest in a modal.
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Restore' })).toHaveLength(1))
+    await expect(await canvas.findByRole('button', { name: 'All backups (3)' })).toBeVisible()
     await waitFor(() =>
       expect(canvas.getByRole('switch', { name: 'Analyze new files and run daily reconciliation' })).toBeChecked(),
     )
@@ -193,9 +195,14 @@ export const NewTab: Story = {
     await expect(await canvas.findByRole('heading', { name: 'Drop folder New' })).toBeVisible()
     await expect(canvas.queryByRole('heading', { name: /^Sign-in/ })).toBeNull()
     await expect(await canvas.findByRole('heading', { name: 'Volume releases' })).toBeVisible()
-    await expect(await canvas.findByRole('switch', { name: /Approve volume releases automatically/ })).toHaveAccessibleName(/^Approve volume releases automatically New /)
+    // A new control on a drill page shows as its row, which opens that page with the control marked.
+    const approve = await canvas.findByRole('button', { name: /^Approve automatically New/ })
+    await waitFor(() => expect(approve).toBeVisible())
     // Volume releases is not new itself, so only its new controls show.
-    await waitFor(() => expect(canvas.getByText('Auto-grab size limit')).not.toBeVisible())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Auto-grab size limit/ })).toBeNull())
+    await userEvent.click(approve)
+    await expect(await canvas.findByRole('switch', { name: /Approve volume releases automatically/ })).toHaveAccessibleName(/^Approve volume releases automatically New /)
+    await userEvent.click(canvas.getByRole('button', { name: /^Back/ }))
     await expect(await canvas.findByText(/^New in here: Skip the recap of the previous chapter, Hide credit pages/)).toBeVisible()
     const inReading = await canvas.findAllByRole('link', { name: 'In Reading' })
     await userEvent.click(inReading.find((a) => a.getAttribute('href')?.endsWith('s=reading-status'))!)
