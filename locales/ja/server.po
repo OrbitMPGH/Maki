@@ -6418,6 +6418,11 @@ msgstr "使われていないブラウザーを閉じる"
 msgid "health.job.chapterFileMeasure"
 msgstr "章のファイルを計測"
 
+#. English: Count chapter pages
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr ""
+
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy

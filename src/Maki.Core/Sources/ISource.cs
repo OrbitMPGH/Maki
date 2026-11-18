@@ -260,6 +260,10 @@ public record SourceSeriesDetail(
 /// The listing says the chapter is still behind early access or a paywall. Only sources declaring
 /// <see cref="SourceCapabilities.ListsLockedChapters"/> set it.
 /// </param>
+/// <param name="PageCount">
+/// Pages the listing itself reports for the chapter (MangaDex, Atsumaru), so nothing is fetched to
+/// learn it. Null for a source whose listing does not say.
+/// </param>
 public record SourceChapter(
     string SourceName,
     string SourceSeriesId,
@@ -272,7 +276,8 @@ public record SourceChapter(
     DateTime? ReleaseDate,
     string? Url = null,
     string? Group = null,
-    bool Locked = false);
+    bool Locked = false,
+    int? PageCount = null);
 
 /// <summary>Resolved page list for a chapter.</summary>
 public record ChapterPages(IReadOnlyList<PageRequest> Pages);

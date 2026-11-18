@@ -184,4 +184,12 @@ public class AtsumaruSourceTests
 
         Assert.Contains("alpha1", ex.Message);
     }
+
+    [Fact]
+    public async Task Chapters_carry_the_page_count_the_listing_reports()
+    {
+        var chapters = await WithSeries().ListChaptersAsync("94bKW");
+
+        Assert.Equal(61, chapters.Single(c => c.SourceChapterId == "alpha1").PageCount);
+    }
 }

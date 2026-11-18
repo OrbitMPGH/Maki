@@ -7,7 +7,7 @@ using Maki.Sources.Common;
 
 namespace Maki.Sources.TopManhua;
 
-public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImageBrowser imageBrowser) : ISource
+public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImageBrowser imageBrowser) : ISource, IPageCountSource
 {
     public const string HttpClientName = "source-topmanhua";
     private static readonly HtmlParser Parser = new();
@@ -145,10 +145,31 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
         return SourceChapterList.Normalize(chapters);
     }
 
-    public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
+    public async Task<int> CountPagesAsync(SourceChapter chapter, CancellationToken ct = default) =>
+        (await PageUrlsAsync(chapter, ct)).Count;
+
+    private async Task<List<string>> PageUrlsAsync(SourceChapter chapter, CancellationToken ct)
     {
         var html = await Client.GetStringAsync($"manhua/{chapter.SourceSeriesId}/{chapter.SourceChapterId}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
+        var urls = doc.QuerySelectorAll(".reading-content > div > img")
+            .Select(img => img.GetAttribute("data-src")?.Trim())
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Select(url => url!)
+            .ToList();
+
+        if (urls.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No page images found for TopManhua chapter {chapter.SourceChapterId}");
+        }
+
+        return urls;
+    }
+
+    public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
+    {
+        var urls = await PageUrlsAsync(chapter, ct);
         var headers = new Dictionary<string, string>
         {
             ["Referer"] = "https://www.topmanhua.fan/",
@@ -161,17 +182,6 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             ["Sec-GPC"] = "1",
             ["Priority"] = "u=5, i"
         };
-        var urls = doc.QuerySelectorAll(".reading-content > div > img")
-            .Select(img => img.GetAttribute("data-src")?.Trim())
-            .Where(url => !string.IsNullOrEmpty(url))
-            .Select(url => url!)
-            .ToList();
-
-        if (urls.Count == 0)
-        {
-            throw new InvalidOperationException(
-                $"No page images found for TopManhua chapter {chapter.SourceChapterId}");
-        }
 
         // Plain requests to the image CDN (img-r2.2xstorage.com) get a Cloudflare bot-management
         // block even with matching headers — it tracks the client's TLS/HTTP2 fingerprint, which a

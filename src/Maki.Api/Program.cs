@@ -1014,6 +1014,13 @@ try
     builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
+    builder.Services.AddScoped<ChapterFoldPreviewService>();
+    builder.Services.AddScoped<ChapterPageCountService>();
+    builder.Services.AddScoped<IChapterPageHasher, ChapterPageHasher>();
+    builder.Services.AddScoped<ChapterPageHashService>();
+    builder.Services.AddScoped<ChapterFoldService>();
+    builder.Services.AddSingleton<ChapterFoldChecks>();
+    builder.Services.AddSingleton<PageCountFailures>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
     builder.Services.AddSingleton<RivalTitleProvider>();
@@ -1583,6 +1590,17 @@ try
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Fetches the page counts pending chapter folds wait on, a budget of page lists per run. First
+        // run at +30, after the first monitored sync has had its turn at the sources.
+        q.AddJob<Maki.Api.Jobs.ChapterPageCountJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .WithIdentity("chapter-page-count-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(2).RepeatForever().WithMisfireHandlingInstructionNextWithRemainingCount()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
         // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a

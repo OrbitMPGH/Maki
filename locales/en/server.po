@@ -4526,6 +4526,10 @@ msgid "health.job.chapterFileMeasure"
 msgstr "Measure chapter files"
 
 #: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr "Count chapter pages"
+
+#: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.checkForUpdates"
 msgstr "Check for updates"
 

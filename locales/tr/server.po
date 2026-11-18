@@ -6416,6 +6416,11 @@ msgstr "Boşta kalan tarayıcıyı kapat"
 msgid "health.job.chapterFileMeasure"
 msgstr "Bölüm dosyalarını ölç"
 
+#. English: Count chapter pages
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterPageCounts"
+msgstr ""
+
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy

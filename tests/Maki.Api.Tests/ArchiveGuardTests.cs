@@ -124,6 +124,49 @@ public sealed class ArchiveGuardTests : IDisposable
     // ---- list selectors ----
 
     [Fact]
+    public async Task ChapterPageCounts_skip_archived_series()
+    {
+        var (active, archived) = Pair();
+        using (var db = _db.NewContext())
+        {
+            foreach (var seriesId in new[] { active, archived })
+            {
+                var mappingId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+                foreach (var (number, pages) in new (decimal, int?)[] { (3, null), (3.1m, 13), (3.2m, 26), (4, 50) })
+                {
+                    db.ChapterSourceLinks.Add(new ChapterSourceLink
+                    {
+                        Chapter = new Chapter { SeriesId = seriesId, Number = number, Language = "en" },
+                        SourceMappingId = mappingId, SourceChapterId = $"{seriesId}-{number}", PageCount = pages,
+                    });
+                }
+            }
+
+            db.SaveChanges();
+        }
+
+        var asked = new List<string>();
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnGetPages = c =>
+            {
+                asked.Add(c.SourceChapterId);
+                return new ChapterPages([.. Enumerable.Range(0, 38).Select(i => new PageRequest($"https://fake.test/{i}"))]);
+            },
+        };
+        using var context = _db.NewContext();
+        var counter = new ChapterPageCountService(
+            context, new ChapterFoldPreviewService(context, Sources.AllEnabled), new SourceRegistry([source]),
+            new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+            new PageCountFailures(), TimeProvider.System, NullLogger<ChapterPageCountService>.Instance);
+
+        await counter.RunAsync(10, CancellationToken.None);
+
+        Assert.Equal([$"{active}-3"], asked);
+    }
+
+    [Fact]
     public async Task Refreshable_skips_archived_series()
     {
         var (active, _) = Pair();

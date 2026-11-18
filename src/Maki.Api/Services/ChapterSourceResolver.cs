@@ -224,7 +224,40 @@ public class ChapterSourceResolver(
             }
         }
 
-        return Match(await ListingAsync(db, source, mapping, chapter.SeriesId, ct), chapter, requireExactMatch);
+        var listing = await ListingAsync(db, source, mapping, chapter.SeriesId, ct);
+        return Match(listing, chapter, requireExactMatch) ?? await FoldedAsync(db, listing, mapping, chapter, ct);
+    }
+
+    /// <summary>
+    /// A folded chapter (<see cref="ChapterFold"/>): the source lists it only as its parts, so it is
+    /// found through its link, and only while every part is still listed. The first part's id stands
+    /// for it; the download reads the rest from the link.
+    /// </summary>
+    private static async Task<SourceChapter?> FoldedAsync(
+        MakiDbContext db, IReadOnlyList<SourceChapter> listing, SourceMapping mapping, Chapter chapter, CancellationToken ct)
+    {
+        var stored = await db.ChapterSourceLinks.AsNoTracking()
+            .Where(l => l.SourceMappingId == mapping.Id && l.ChapterId == chapter.Id && l.Parts != null)
+            .Select(l => l.Parts)
+            .FirstOrDefaultAsync(ct);
+        var parts = ChapterFoldPart.Parse(stored);
+        if (parts.Count == 0)
+        {
+            return null;
+        }
+
+        var listed = parts.Select(p => listing.FirstOrDefault(c => c.SourceChapterId == p.SourceChapterId)).ToList();
+        if (listed.Any(l => l is null))
+        {
+            return null;
+        }
+
+        return listed[0]! with
+        {
+            Number = chapter.Number,
+            NumberRaw = chapter.NumberRaw,
+            Locked = listed.Any(l => l!.Locked),
+        };
     }
 
     /// <summary>The mapping's listing through the cache, under the series' scanlation group preference.</summary>

@@ -56,6 +56,13 @@ public class SourceMapping
     /// </summary>
     public DateTime? AnnouncedNextReleaseAt { get; set; }
 
+    /// <summary>
+    /// The official publisher's chapter numbers the source showed at the last sync
+    /// (<c>IPublisherNumberingSource</c>), as <see cref="Sources.PublisherNumbering"/> writes them.
+    /// Null when it showed none.
+    /// </summary>
+    public string? PublisherNumbers { get; set; }
+
     [JsonIgnore]
     public List<ChapterSourceLink> ChapterLinks { get; set; } = [];
 
