@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, other {另有 # 位读者正在读这个系列。归档后，所有人都将停止接收新章节。}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+# 个更多}}"
@@ -24088,7 +24087,6 @@ msgstr "显示章节"
 msgid "Show covers from the library"
 msgstr "显示资料库中的封面"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

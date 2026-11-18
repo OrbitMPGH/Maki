@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, other {このシリーズを途中まで読んでいる他のユーザーが#人います。アーカイブすると、全員に対して新しい章の取得が止まります。}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {さらに+#件}}"
@@ -24088,7 +24087,6 @@ msgstr "章を表示"
 msgid "Show covers from the library"
 msgstr "ライブラリの表紙を表示"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

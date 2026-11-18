@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, one {# outro leitor está no meio desta série. Arquivar interrompe os novos capítulos para todos.} many {# outros leitores estão no meio desta série. Arquivar interrompe os novos capítulos para todos.} other {# outros leitores estão no meio desta série. Arquivar interrompe os novos capítulos para todos.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# a mais} many {+# a mais}other {+# a mais}}"
@@ -24088,7 +24087,6 @@ msgstr "Mostrar capítulos"
 msgid "Show covers from the library"
 msgstr "Mostrar capas da biblioteca"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"

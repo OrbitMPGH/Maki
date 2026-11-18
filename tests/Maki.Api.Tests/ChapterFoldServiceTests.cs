@@ -219,8 +219,12 @@ public sealed class ChapterFoldServiceTests : IDisposable
     {
         // Tall-strip splitting made each part file 50 pages and the whole's 100; the sources serve 13 and 26.
         var reader = _db.SeedUser();
+        var root = Directory.CreateTempSubdirectory("maki-fold-").FullName;
         var seriesId = Seed((db, rows) =>
         {
+            // The part files go to the recycle bin, which needs a root folder that can hold one.
+            var series = db.Find<Series>(rows[3m].SeriesId)!;
+            db.Find<RootFolder>(series.RootFolderId)!.Path = root;
             ChapterFile File(string name, int pages) =>
                 db.Add(new ChapterFile { SeriesId = rows[3m].SeriesId, RelativePath = $"Test Series/{name}.cbz", PageCount = 10, SplitPageCount = pages }).Entity;
             var whole = File("3", 100);
@@ -242,6 +246,7 @@ public sealed class ChapterFoldServiceTests : IDisposable
         using var check = _db.NewContext();
         var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
         Assert.Equal((50 + 40, 100), (progress.PageIndex, progress.PageCount));
+        Directory.Delete(root, recursive: true);
     }
 
     [Fact]

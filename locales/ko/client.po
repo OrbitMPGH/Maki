@@ -2537,7 +2537,6 @@ msgid "{otherReaders, plural, one {# other reader is partway through this series
 msgstr "{otherReaders, plural, other {다른 독자 #명이 이 시리즈를 중간까지 읽고 있습니다. 보관하면 모든 사용자에게 새 챕터가 더 이상 다운로드되지 않습니다.}}"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+#개 더}}"
@@ -24088,7 +24087,6 @@ msgstr "챕터 보기"
 msgid "Show covers from the library"
 msgstr "라이브러리의 표지 보기"
 
-#: src/components/TagBuckets.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"
