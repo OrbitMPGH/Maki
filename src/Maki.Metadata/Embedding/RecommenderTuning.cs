@@ -471,11 +471,12 @@ public sealed record RecommenderTuning
 
     /// <summary>
     /// Score subtracted from a pick that lands on every reader's page: this times its
-    /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0, the shipped value,
-    /// is off. Only applies when a table is registered and the caller asks for it (personal
-    /// recommendations), never on the series-page rail.
+    /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0 is off; 4 ships. Only
+    /// applies when a table is installed (<c>page-share.db</c>) and the caller asks for it (personal
+    /// recommendations, behind <c>recommendations.pageshare</c>), never on the series-page rail. Eval
+    /// key <c>commonweight</c>. See distribution/CLAUDE.md, "v8: what shipped".
     /// </summary>
-    public double CommonWeight { get; init; }
+    public double CommonWeight { get; init; } = 4.0;
 
     /// <summary>
     /// Shape of the page-share penalty. 1 is linear in the share; below 1 reaches further down the
@@ -485,14 +486,14 @@ public sealed record RecommenderTuning
 
     /// <summary>
     /// How many times the shelf's own share of famous titles a list may hold at any point
-    /// (<see cref="ShelfFame"/>). 0 is off, which is what ships. 1.0 holds every prefix of the list
+    /// (<see cref="ShelfFame"/>). 0 is off; 1.0 ships. 1.0 holds every prefix of the list
     /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
     /// deferred, not dropped, and a one-seed request is never limited. On held-out readers 1.25
     /// costs 0.003 nDCG@40 for 4 points of top-1k share and 1.0 costs 0.007 for 8; on a real mixed
     /// shelf they take a page from 98% top-1k to 68% and 55%. Eval key <c>famecap</c>. See
-    /// distribution/CLAUDE.md, "v8: a shelf-relative fame cap".
+    /// distribution/CLAUDE.md, "v8: a shelf-relative fame cap" and "v8: what shipped".
     /// </summary>
-    public double FameCapRatio { get; init; }
+    public double FameCapRatio { get; init; } = 1.0;
 
     /// <summary>
     /// Seed weight <see cref="ShelfFame.Limits"/> adds on the famous side, so a shelf of a few

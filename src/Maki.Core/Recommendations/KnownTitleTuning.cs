@@ -12,7 +12,8 @@ public enum KnownTitleMode
 }
 
 /// <summary>
-/// What Recommended does with titles the reader most likely already knows. Everything ships off.
+/// What Recommended does with titles the reader most likely already knows. Watched anime ships as
+/// <see cref="KnownTitleMode.Exclude"/>; the demotions ship off.
 /// <para>
 /// Two cases, and they are different evidence. A manga whose anime is on the reader's own watch
 /// list is known for certain, whatever score it has: an unscored or neutral row never seeds and
@@ -27,9 +28,9 @@ public sealed record KnownTitleTuning
     public static readonly KnownTitleTuning Default = new();
 
     /// <summary>
-    /// Manga whose anime the reader has started (<see cref="AnimeSignalGrouping.WatchedManga"/>).
+    /// Manga whose anime the reader knows (<see cref="AnimeSignalGrouping.WatchedManga"/>).
     /// </summary>
-    public KnownTitleMode WatchedAnime { get; init; } = KnownTitleMode.Off;
+    public KnownTitleMode WatchedAnime { get; init; } = KnownTitleMode.Exclude;
 
     /// <summary>Score subtracted from a watched title under <see cref="KnownTitleMode.Demote"/>.</summary>
     public double WatchedDemotion { get; init; } = 1.0;

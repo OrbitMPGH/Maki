@@ -13,7 +13,8 @@ namespace Maki.Api.Tests;
 
 /// <summary>
 /// What Recommended does with a manga whose anime is on the reader's watch list, and with a famous
-/// adaptation they skipped (<see cref="KnownTitleTuning"/>). Off at the shipped tuning.
+/// adaptation they skipped (<see cref="KnownTitleTuning"/>). Watched anime is excluded at the
+/// shipped tuning, inside the scan; the demotions are off.
 /// </summary>
 public class RecommendationServiceKnownTitleTests : IDisposable
 {
@@ -37,6 +38,10 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     {
         public readonly List<IReadOnlyDictionary<long, double>?> SeenDemote = [];
 
+        public readonly List<IReadOnlyCollection<long>> SeenExclude = [];
+
+        public readonly List<bool> SeenCommon = [];
+
         public override bool IsReady() => true;
 
         public override Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
@@ -54,19 +59,27 @@ public class RecommendationServiceKnownTitleTests : IDisposable
             CancellationToken ct = default)
         {
             SeenDemote.Add(demote);
-            return Task.FromResult(picks);
+            SeenExclude.Add(excludeIds.ToList());
+            SeenCommon.Add(common);
+            return Task.FromResult<IReadOnlyList<MangaBakaRecommendation>>(
+                picks.Where(p => !excludeIds.Contains(long.Parse(p.ProviderId))).ToList());
         }
     }
 
     private sealed class FakeStore(IReadOnlyDictionary<long, long>? aired = null) : MangaBakaLocalStore(
         new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
+        public readonly List<IReadOnlyCollection<long>> SeenRelatedExclude = [];
+
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
 
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
-            IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<MangaBakaRecommendation>>([]);
+            IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
+        {
+            SeenRelatedExclude.Add(excludeIds.ToList());
+            return Task.FromResult<IReadOnlyList<MangaBakaRecommendation>>([]);
+        }
 
         public override Task<IReadOnlyDictionary<long, long>> GetAiredAnimeRanksAsync(
             int maxRank, CancellationToken ct = default) =>
@@ -74,12 +87,13 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     }
 
     private RecommendationService Service(
-        CapturingRecommender recommender, KnownTitleTuning? known, IReadOnlyDictionary<long, long>? aired = null)
+        CapturingRecommender recommender, KnownTitleTuning? known, IReadOnlyDictionary<long, long>? aired = null,
+        FakeAppSettings? settings = null, FakeStore? store = null)
     {
-        var settings = new FakeAppSettings();
+        settings ??= new FakeAppSettings();
         return new(
             _db.ScopeFactory(),
-            new FakeStore(aired),
+            store ?? new FakeStore(aired),
             recommender,
             new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
             settings,
@@ -119,16 +133,61 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     }
 
     [Fact]
-    public async Task At_the_shipped_tuning_a_watched_title_is_still_recommended()
+    public async Task At_the_shipped_tuning_completed_and_watching_titles_leave_the_scan_scored_or_not()
+    {
+        SeedLibrary(101, 202);
+        Watch(77, AnimeWatchStatus.Completed, progress: 12);
+        Watch(78, AnimeWatchStatus.Watching, progress: 0);
+        Watch(79, AnimeWatchStatus.Watching, score: 6);
+        Watch(80, AnimeWatchStatus.Planning, progress: 0);
+        var store = new FakeStore();
+        var recommender = new CapturingRecommender([Pick(77), Pick(78), Pick(79), Pick(80), Pick(81)]);
+
+        var result = await Service(recommender, null, store: store)
+            .GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal(["80", "81"], result.Similar.Select(p => p.ProviderId));
+        // Handed to the scan as exclusions, so the fame cap never counts them; relations keep them.
+        var excluded = Assert.Single(recommender.SeenExclude);
+        Assert.Contains(77L, excluded);
+        Assert.Contains(78L, excluded);
+        Assert.Contains(79L, excluded);
+        Assert.DoesNotContain(80L, excluded);
+        Assert.DoesNotContain(77L, Assert.Single(store.SeenRelatedExclude));
+        Assert.Null(Assert.Single(recommender.SeenDemote));
+    }
+
+    [Fact]
+    public async Task A_changed_watch_list_builds_a_new_pool()
     {
         SeedLibrary(101, 202);
         Watch(77);
-        var recommender = new CapturingRecommender([Pick(77), Pick(78)]);
+        var recommender = new CapturingRecommender([Pick(77), Pick(78), Pick(79)]);
+        var service = Service(recommender, null);
 
-        var result = await Service(recommender, null).GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        var first = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        Watch(78);
+        var second = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
-        Assert.Equal(["77", "78"], result.Similar.Select(p => p.ProviderId));
-        Assert.Null(Assert.Single(recommender.SeenDemote));
+        Assert.Equal(["78", "79"], first.Similar.Select(p => p.ProviderId));
+        Assert.Equal(["79"], second.Similar.Select(p => p.ProviderId));
+        Assert.Equal(2, recommender.SeenExclude.Count);
+        Assert.NotEqual(first.PoolVersion, second.PoolVersion);
+    }
+
+    [Fact]
+    public async Task The_page_share_switch_reaches_the_scan_and_the_pool_key()
+    {
+        SeedLibrary(101, 202);
+        var settings = new FakeAppSettings();
+        var recommender = new CapturingRecommender([Pick(77)]);
+        var service = Service(recommender, KnownTitleTuning.Default with { WatchedAnime = KnownTitleMode.Off }, settings: settings);
+
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        await settings.SetAsync(SettingKeys.RecommendationsPageShare, "false");
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal([true, false], recommender.SeenCommon);
     }
 
     [Fact]
@@ -215,7 +274,7 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     }
 
     [Fact]
-    public void Watched_manga_ignores_plans_and_untouched_entries_but_not_unscored_ones()
+    public void Watched_manga_holds_every_completed_and_watching_entry_and_started_paused_or_dropped_ones()
     {
         AnimeSignalRow Row(long manga, AnimeWatchStatus status, int? score = null, int? progress = null) =>
             new("anilist", 9000 + manga, null, "t", score, status, manga, Progress: progress);
@@ -227,8 +286,9 @@ public class RecommendationServiceKnownTitleTests : IDisposable
             Row(3, AnimeWatchStatus.Planning, score: 8),
             Row(4, AnimeWatchStatus.Watching, progress: 0),
             Row(5, AnimeWatchStatus.Dropped, progress: 2),
+            Row(6, AnimeWatchStatus.OnHold, progress: 0),
         ]);
 
-        Assert.Equal([1L, 2L, 5L], watched.Order());
+        Assert.Equal([1L, 2L, 4L, 5L], watched.Order());
     }
 }

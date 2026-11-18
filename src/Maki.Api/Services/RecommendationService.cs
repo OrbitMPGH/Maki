@@ -239,6 +239,7 @@ public class RecommendationService(
         // SEEDS and is a different feature entirely.
         var tasteVectors = await TasteEnabledAsync(ct);
         var ease = await EaseEnabledAsync(ct);
+        var pageShare = await PageShareEnabledAsync(ct);
         // Keyed on the inputs, not on who asked. The seed list already carries everything personal
         // that reaches the pool — root-folder visibility, the content ceiling and ignored sources
         // all narrow it before it gets here — so two readers with the same seeds want the same 200
@@ -250,18 +251,22 @@ public class RecommendationService(
         var avoidKey = string.Join(",", snapshot.Avoided
             .OrderBy(x => x.Key)
             .Select(x => $"{x.Key}:{x.Value:F1}"));
-        // Titles the reader most likely knows. A demotion changes the pool's order, so it is in the
-        // key like the avoided set; an exclusion is a per-reader overlay like suppression.
+        // Titles the reader most likely knows. Both go into the pool and so into the key. An
+        // exclusion leaves the scan itself rather than the finished pool, because the fame cap runs
+        // inside the scan and a watched title removed afterwards would have used its quota.
         var (knownExcluded, demote) = await KnownAsync(snapshot, ct);
         var demoteKey = demote.Count == 0
             ? string.Empty
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", demote
                 .OrderBy(x => x.Key)
                 .Select(x => $"{x.Key}:{x.Value:F2}")))))[..16];
+        var knownKey = knownExcluded.Count == 0
+            ? string.Empty
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..16];
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|e:{(ease ? 1 : 0)}|a:{avoidKey}|k:{demoteKey}";
+                  $"|e:{(ease ? 1 : 0)}|p:{(pageShare ? 1 : 0)}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
@@ -281,7 +286,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors, ease, demote));
+                        coGraph, coRead, tasteVectors, ease, pageShare, demote, knownExcluded));
                     _building[key] = created;
                     build = created;
                 }
@@ -314,23 +319,14 @@ public class RecommendationService(
 
 
         var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
-        if (knownExcluded.Count > 0)
-        {
-            // The watch list changes on a tracker sync, with no feedback revision to show for it.
-            version += $":{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..8]}";
-        }
 
         // The caller is paging a pool that no longer exists, so their page number means nothing
         // against this one and honouring it would skip or repeat titles. Serve the new pool from
         // the top and say so, rather than an empty page: the client drops what it had and keeps
         // this, so paging restarts instead of dead-ending mid-scroll.
         var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
-        // Known titles leave the similar picks only: a sequel of something on the shelf is expected
-        // to be familiar, so relations keep theirs.
         var similarVisible = RecommendationReasons.Balance(
-            Spread(pool.Similar
-                .Where(p => !suppressed.Contains(CatalogueId(p)) && !knownExcluded.Contains(CatalogueId(p)))
-                .ToList()));
+            Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList()));
         var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
         var page = restart ? 0 : Math.Max(0, request.Page);
         return pool with
@@ -348,7 +344,8 @@ public class RecommendationService(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
-        bool coGraph, bool coRead, bool tasteVectors, bool ease, IReadOnlyDictionary<long, double> demote)
+        bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare,
+        IReadOnlyDictionary<long, double> demote, IReadOnlySet<long> known)
     {
         var entered = false;
         try
@@ -369,6 +366,10 @@ public class RecommendationService(
                 exclude.Add(long.Parse(r.ProviderId));
             }
 
+            // After the relations, which keep known titles: a sequel of something on the shelf is
+            // expected to be familiar.
+            exclude.UnionWith(known);
+
             // Prefer semantic ("feel") matches once the embedding index is built; fall back to
             // the genre/tag/author scan while it's still populating (or empty).
             var similar = semantic.IsReady()
@@ -376,7 +377,7 @@ public class RecommendationService(
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
                     coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
-                    demote: demote.Count > 0 ? demote : null, common: true, ct: CancellationToken.None)
+                    demote: demote.Count > 0 ? demote : null, common: pageShare, ct: CancellationToken.None)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)
@@ -574,6 +575,13 @@ public class RecommendationService(
     private async Task<bool> EaseEnabledAsync(CancellationToken ct)
     {
         var value = await settings.GetAsync(SettingKeys.RecommendationsEase, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The same, for the page-share penalty (<c>recommendations.pageshare</c>).</summary>
+    private async Task<bool> PageShareEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsPageShare, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 

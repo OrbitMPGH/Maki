@@ -102,14 +102,18 @@ public static class AnimeSignalGrouping
             .ToList();
 
     /// <summary>
-    /// Manga whose anime the reader has started: any matched entry that is not plan-to-watch, scored
-    /// or not. This is exposure, not taste, so like <see cref="Watched"/> it must never feed seeding.
-    /// An entry still at episode 0 is left out, since nothing was watched yet.
+    /// Manga whose anime the reader knows: every matched Completed or Watching entry, scored or not,
+    /// and a paused or dropped one they got past episode 0 of. This is exposure, not taste, so like
+    /// <see cref="Watched"/> it must never feed seeding.
     /// </summary>
     public static IReadOnlySet<long> WatchedManga(IEnumerable<AnimeSignalRow> rows) =>
         Watched(rows)
-            .Where(s => s.MangaBakaId is not null && s.Status != AnimeWatchStatus.Planning
-                && (s.Status == AnimeWatchStatus.Completed || s.Progress is not 0))
+            .Where(s => s.MangaBakaId is not null && s.Status switch
+            {
+                AnimeWatchStatus.Completed or AnimeWatchStatus.Watching => true,
+                AnimeWatchStatus.Planning => false,
+                _ => s.Progress is not 0,
+            })
             .Select(s => s.MangaBakaId!.Value)
             .ToHashSet();
 
