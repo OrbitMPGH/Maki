@@ -244,6 +244,8 @@ export function BackupSection() {
       <Modal
         opened={listing}
         onClose={() => setListing(false)}
+        // A restore or delete confirm opened from the list sits on top of it and takes Esc alone.
+        closeOnEscape={target === null && deleting === null}
         size={MODAL_SIZE.wide}
         title={<ModalHeading title={t`Backups`} />}
       >

@@ -155,7 +155,7 @@ export const Languages: Story = {
   render: () => <SourceLanguageSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Remove English' })).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'French' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Add French' })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Remove French' })).toBeNull()
   },
 }
@@ -163,9 +163,38 @@ export const Languages: Story = {
 export const LanguagesToggleMarksUnsaved: Story = {
   render: () => <SourceLanguageSection />,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'French' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Remove French' })).toBeVisible()
+  },
+}
+
+/** A saved set with every language off says so until one is added back. */
+export const LanguagesNoneEnabledBlocksSave: Story = {
+  render: () => <SourceLanguageSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/settings/sources/languages'), () =>
+        HttpResponse.json({ ...sourceLanguages, order: ['en', 'fr'], disabled: ['en', 'fr'] }),
+      ),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('At least one language must stay enabled.')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
+    await waitFor(() => expect(canvas.queryByText('At least one language must stay enabled.')).toBeNull())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
+/** Adding or removing a language keeps focus on that language's other button. */
+export const LanguagesKeepFocus: Story = {
+  render: () => <SourceLanguageSection />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Remove French' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove French' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Add French' })).toHaveFocus())
   },
 }
 
@@ -340,6 +369,18 @@ export const VolumeReleasesMissingSearchWithVolumeSearchOff: Story = {
     await expect(missing).toBeEnabled()
     await expect(canvas.getByRole('button', { name: /^Minimum seeders/ })).toBeEnabled()
     await waitFor(() => expect(canvas.getByRole('button', { name: /^Auto-grab size limit/ })).toBeDisabled())
+  },
+}
+
+/** Turning volume search off with one of its pages open locks that page's fields too. */
+export const VolumeReleasesSearchOffLocksOpenPage: Story = {
+  render: () => <VolumeReleasesSection />,
+  play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Search limits/)
+    const perRun = await canvas.findByRole('textbox', { name: 'Volume searches per run' })
+    await waitFor(() => expect(perRun).toBeEnabled())
+    await userEvent.click(canvas.getByRole('switch', { name: /^Search torrents for volume releases/ }))
+    await waitFor(() => expect(perRun).toBeDisabled())
   },
 }
 

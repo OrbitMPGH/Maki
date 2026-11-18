@@ -256,6 +256,12 @@ export const Naming: Story = {
     await userEvent.click(row)
     await waitFor(() => expect(canvas.getByRole('radio', { name: /^Rename the folder/ })).toBeChecked())
     await expect(canvas.getByRole('radio', { name: /^Keep the name for everything/ })).not.toBeChecked()
+    // One tab stop for the choices, and the arrow keys move the pick as in a radio group.
+    await waitFor(() => expect(canvas.getByRole('radio', { name: /^Rename the folder/ })).toHaveAttribute('tabindex', '0'))
+    await expect(canvas.getByRole('radio', { name: /^Keep the name for everything/ })).toHaveAttribute('tabindex', '-1')
+    canvas.getByRole('radio', { name: /^Rename the folder/ }).focus()
+    await userEvent.keyboard('{ArrowDown}')
+    await waitFor(() => expect(canvas.getByRole('radio', { name: /^Keep the name, new downloads elsewhere/ })).toHaveFocus())
   },
 }
 

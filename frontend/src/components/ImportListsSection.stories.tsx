@@ -69,6 +69,35 @@ export const ReaderFilesRequests: Story = {
   },
 }
 
+let lastEntryRetried = false
+
+export const ResolvingTheLastEntryClosesTheReview: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/importlists'), () =>
+        HttpResponse.json({
+          ...importListsStatus,
+          skipped: lastEntryRetried ? [] : importListsStatus.skipped.filter((s) => s.reason === 'Unmatched').slice(0, 1),
+        }),
+      ),
+      http.delete(api('/importlists/skipped/:id'), () => {
+        lastEntryRetried = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ),
+  },
+  beforeEach: () => {
+    lastEntryRetried = false
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Review' }))
+    const modal = within(await within(document.body).findByRole('dialog', { name: 'Not matched or ignored' }))
+    await userEvent.click(await modal.findByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(within(document.body).queryByRole('dialog', { name: 'Not matched or ignored' })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Review' })).toBeNull())
+  },
+}
+
 export const NothingSkipped: Story = {
   parameters: {
     msw: settingsMsw(http.get(api('/importlists'), () => HttpResponse.json({ ...importListsStatus, skipped: [] }))),

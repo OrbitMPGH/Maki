@@ -98,6 +98,20 @@ export const RestoreRefused: Story = {
   },
 }
 
+/** Esc closes the confirm on top of the backup list and leaves the list open. */
+export const EscapeClosesOnlyTheConfirm: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^All backups/ }))
+    const list = within(await within(document.body).findByRole('dialog', { name: 'Backups' }))
+    const [first] = await list.findAllByRole('button', { name: 'Delete backup' })
+    await userEvent.click(first)
+    await within(document.body).findByRole('dialog', { name: 'Delete backup' })
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(within(document.body).queryByRole('dialog', { name: 'Delete backup' })).toBeNull())
+    await expect(within(document.body).getByRole('dialog', { name: 'Backups' })).toBeVisible()
+  },
+}
+
 export const DeleteBackupConfirm: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /^All backups/ }))

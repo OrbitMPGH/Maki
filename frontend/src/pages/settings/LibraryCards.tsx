@@ -685,22 +685,17 @@ export function NameParsingSection() {
         opened={choosing}
         onClose={() => setChoosing(false)}
         size={MODAL_SIZE.wide}
-        title={
-          <ModalHeading
-            title={t`File name parsing`}
-            description={t`English markers like v01 and Ch. 12 are always read.`}
-          />
-        }
+        title={<ModalHeading title={t`File name parsing`} />}
       >
-        <div className="marker-table" role="table" aria-label={t`Languages to read markers in`}>
-          <div className="marker-table-head" role="row">
-            <span role="columnheader">
+        <div className="marker-table" role="group" aria-label={t`Languages to read markers in`}>
+          <div className="marker-table-head" aria-hidden>
+            <span>
               <Trans>Language</Trans>
             </span>
-            <span role="columnheader">
+            <span>
               <Trans>Volume markers</Trans>
             </span>
-            <span role="columnheader">
+            <span>
               <Trans>Chapter markers</Trans>
             </span>
           </div>
@@ -709,8 +704,8 @@ export function NameParsingSection() {
             const volumes = language.volumeWords.join(', ')
             const chapters = language.chapterWords.join(', ')
             return (
-              <div key={language.code} className="marker-table-row" role="row">
-                <span role="cell">
+              <div key={language.code} className="marker-table-row">
+                <span>
                   <Checkbox
                     label={nameOf(language.code)}
                     checked={on}
@@ -724,13 +719,13 @@ export function NameParsingSection() {
                     }
                   />
                 </span>
-                <Text size="sm" c={volumes ? 'var(--ink-2)' : 'var(--ink-3)'} role="cell">
+                <Text size="sm" c={volumes ? 'var(--ink-2)' : 'var(--ink-3)'} className="marker-table-cell">
                   <span className="marker-table-label">
                     <Trans>Volumes</Trans>
                   </span>
                   {volumes || <Trans>None</Trans>}
                 </Text>
-                <Text size="sm" c={chapters ? 'var(--ink-2)' : 'var(--ink-3)'} role="cell">
+                <Text size="sm" c={chapters ? 'var(--ink-2)' : 'var(--ink-3)'} className="marker-table-cell">
                   <span className="marker-table-label">
                     <Trans>Chapters</Trans>
                   </span>

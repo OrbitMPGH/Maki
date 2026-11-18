@@ -341,6 +341,9 @@ export function ImportListsSection() {
   const [reviewing, setReviewing] = useState(false)
   const review = data?.skipped.filter((s) => s.reason === 'Unmatched' || s.reason === 'Ignored') ?? []
 
+  // Once the last entry is resolved the modal closes, and stays closed when a later sync adds one.
+  if (reviewing && data && review.length === 0) setReviewing(false)
+
   if (!data) return null
 
   const connected = data.trackers.filter((tr) => tr.connected)
@@ -401,7 +404,7 @@ export function ImportListsSection() {
         </SettingsRowsBlock>
       )}
       <Modal
-        opened={reviewing && review.length > 0}
+        opened={reviewing}
         onClose={() => setReviewing(false)}
         size={MODAL_SIZE.wide}
         title={<ModalHeading title={t`Not matched or ignored`} />}

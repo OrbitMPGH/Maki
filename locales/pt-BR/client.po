@@ -69,7 +69,7 @@ msgstr "{0, plural, one {{1} de # arquivo} many {{2} de # arquivos} other {{2} d
 
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
-msgid "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
 msgstr ""
 
 #. placeholder {0}: Number(maxPerDay)
@@ -4623,6 +4623,10 @@ msgstr "Adicionar"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "Adicione {chapterLanguageToken} ao formato do capítulo para diferenciá-los."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Add a key"
@@ -10479,10 +10483,6 @@ msgstr "Inglês"
 #, fuzzy
 msgid "English (MangaBaka default)"
 msgstr "Inglês (padrão do MangaBaka)"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "English markers like v01 and Ch. 12 are always read."
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -28085,6 +28085,10 @@ msgstr "Desfazer importação"
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "Desfazer remove a série que a importação adicionou e os arquivos que ela registrou, exclui os CBZs que o Maki criou a partir de outros formatos e devolve cada pasta ao nome antigo. Todos os arquivos que você tinha antes da importação continuam onde estavam."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "Undo the import of {name}?"
@@ -30100,6 +30104,10 @@ msgstr "Sua solicitação foi recusada"
 #, fuzzy
 msgid "Your requests"
 msgstr "Suas solicitações"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

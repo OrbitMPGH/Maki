@@ -60,8 +60,8 @@ msgstr "{0, plural, one {{1} of # file} other {{2} of # files}}"
 
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
-msgid "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
-msgstr "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
+msgstr "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
 
 #. placeholder {0}: Number(maxPerDay)
 #: src/pages/settings/DownloadCards.tsx
@@ -3774,6 +3774,10 @@ msgstr "Add"
 #: src/components/RenameSeriesModal.tsx
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "Add {chapterLanguageToken} to the chapter format to tell them apart."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr "Add {name}"
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Add a key"
@@ -8586,10 +8590,6 @@ msgstr "English"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "English (MangaBaka default)"
 msgstr "English (MangaBaka default)"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "English markers like v01 and Ch. 12 are always read."
-msgstr "English markers like v01 and Ch. 12 are always read."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too."
@@ -22979,6 +22979,10 @@ msgstr "Undo import"
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr "Undo reset"
+
 #: src/components/import/RecentImports.tsx
 msgid "Undo the import of {name}?"
 msgstr "Undo the import of {name}?"
@@ -24622,6 +24626,10 @@ msgstr "Your request was declined"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Your requests"
 msgstr "Your requests"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr "Your shortcuts are back"
 
 #: src/components/ImportListsSection.tsx
 msgid "Your shortlist is full."

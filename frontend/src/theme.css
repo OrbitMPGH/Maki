@@ -11432,6 +11432,35 @@ body.reader-open {
 .settings-drill-choices {
   margin-inline: -10px;
 }
+/* A card's summary beside the button that opens its modal; the button drops under it when narrow. */
+.settings-summary {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+/* The Notifications card's summary of what each channel delivers, and its event table in two columns. */
+.notify-summary-icon {
+  flex-shrink: 0;
+  min-width: 16px;
+  color: var(--brand);
+}
+.notify-summary-name {
+  flex-shrink: 0;
+  min-width: 3rem;
+}
+.notify-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 36px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .notify-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .notify-columns > * + * thead {
+    display: none;
+  }
+}
 /* File name parsing's languages with their markers in columns. */
 .marker-table-head,
 .marker-table-row {
@@ -11451,7 +11480,12 @@ body.reader-open {
   border-top: 1px solid var(--border);
 }
 .marker-table-label {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 @media (max-width: 600px) {
   .marker-table-head {
@@ -11461,11 +11495,15 @@ body.reader-open {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }
-  .marker-table-row > [role='cell']:not(:first-child) {
+  .marker-table-row > .marker-table-cell {
     padding-inline-start: 30px;
   }
   .marker-table-label {
-    display: inline;
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
     margin-inline-end: 6px;
     color: var(--ink-3);
   }
@@ -14192,10 +14230,6 @@ button.import-plan-folder-head:hover {
   .shortcut-columns > * + * .shortcut-group:first-child .shortcut-group-title {
     padding-top: var(--mantine-spacing-md);
   }
-}
-.shortcut-load-error {
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
-  border-bottom: 1px solid var(--hairline);
 }
 .shortcut-group + .shortcut-group {
   border-top: 1px solid var(--hairline);

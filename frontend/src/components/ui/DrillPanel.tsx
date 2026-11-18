@@ -1,4 +1,13 @@
-import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode, type Ref } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+} from 'react'
 import { UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { IconArrowLeft, IconCheck, IconChevronRight } from '../../lib/icons'
@@ -102,12 +111,27 @@ export function DrillChoices({
   onPick: (value: string) => void
 }) {
   const headingId = useId()
+  const enabled = options.filter((o) => !o.disabled)
+  // One tab stop for the group, on the current choice (or the first one when none is current).
+  const tabStop = enabled.some((o) => o.value === value) ? value : enabled[0]?.value
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key]
+    const edge = event.key === 'Home' ? 0 : event.key === 'End' ? enabled.length - 1 : undefined
+    if (step === undefined && edge === undefined) return
+    event.preventDefault()
+    const at = enabled.findIndex((o) => o.value === (event.target as HTMLElement).dataset.value)
+    const next = enabled[edge ?? (at + step! + enabled.length) % enabled.length]
+    if (!next) return
+    event.currentTarget.querySelector<HTMLElement>(`[data-value="${CSS.escape(next.value)}"]`)?.focus()
+    onPick(next.value)
+  }
   return (
     <div
       role="radiogroup"
       aria-label={heading ? undefined : label}
       aria-labelledby={heading ? headingId : undefined}
       className="drill-choices"
+      onKeyDown={onKeyDown}
     >
       {heading && (
         <div id={headingId} className="drill-choices-heading">
@@ -122,6 +146,8 @@ export function DrillChoices({
             role="radio"
             aria-checked={checked}
             data-checked={checked || undefined}
+            data-value={o.value}
+            tabIndex={o.value === tabStop ? 0 : -1}
             disabled={o.disabled}
             className="drill-choice"
             onClick={() => onPick(o.value)}

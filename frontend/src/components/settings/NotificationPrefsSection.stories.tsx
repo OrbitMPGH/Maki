@@ -34,6 +34,10 @@ export const Admin: Story = {
   play: async ({ canvas, userEvent }) => {
     const events = await openEvents(canvas, userEvent)
     await expect(await events.findByRole('checkbox', { name: 'Health issue in the bell' })).toBeInTheDocument()
+    // Two columns of whole categories, side by side at this width.
+    const columns = document.querySelector('.notify-columns')!
+    await expect(columns.children).toHaveLength(2)
+    await expect(getComputedStyle(columns).gridTemplateColumns.split(' ')).toHaveLength(2)
     await waitFor(() => expect(events.getByRole('checkbox', { name: 'New chapters available in the bell' })).toBeChecked())
     await waitFor(() =>
       expect(events.getByRole('checkbox', { name: 'Chapters downloaded automatically in the bell' })).not.toBeChecked(),

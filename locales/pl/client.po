@@ -69,7 +69,7 @@ msgstr "{0, plural, one {{1} z # pliku} few {{2} z # plików} many {{2} z # plik
 
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
-msgid "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
 msgstr ""
 
 #. placeholder {0}: Number(maxPerDay)
@@ -4623,6 +4623,10 @@ msgstr "Dodaj"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "Dodaj {chapterLanguageToken} do formatu rozdziału, żeby je odróżnić."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Add a key"
@@ -10479,10 +10483,6 @@ msgstr "Angielski"
 #, fuzzy
 msgid "English (MangaBaka default)"
 msgstr "Angielski (domyślny w MangaBaka)"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "English markers like v01 and Ch. 12 are always read."
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -28085,6 +28085,10 @@ msgstr "Cofnij import"
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "Cofnięcie usuwa serie dodane przez import i zarejestrowane pliki, usuwa CBZ-y, które Maki zbudował z innych formatów, i przywraca każdemu folderowi dawną nazwę. Każdy plik, który miałeś przed importem, zostaje tam, gdzie był."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "Undo the import of {name}?"
@@ -30100,6 +30104,10 @@ msgstr "Twoja prośba została odrzucona"
 #, fuzzy
 msgid "Your requests"
 msgstr "Twoje prośby"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

@@ -147,7 +147,12 @@ export function UpscalingSection() {
                 </Button>
               </Group>
 
-              <SettingsDrill page={pages.page} depth={pages.depth}>
+              <SettingsDrill
+                page={pages.page}
+                depth={pages.depth}
+                targets={['upscaling-jpeg-xl', 'prepare-ahead']}
+                onTarget={pages.reset}
+              >
                 {pages.page === 'main' && (
                   <>
                     <DrillRow
@@ -265,6 +270,18 @@ export function UpscalingSection() {
               </SettingsDrill>
             </>
           )}
+
+          {!current.enabled && (
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>
+                The models are third-party files under their own licences. The non-commercial ones bind anyone who
+                receives them.
+              </Trans>{' '}
+              <Anchor href={NOTICES_URL} target="_blank" rel="noreferrer" size="sm">
+                <Trans>Third-party notices</Trans>
+              </Anchor>
+            </Text>
+          )}
         </Stack>
       )}
 
@@ -282,24 +299,24 @@ export function UpscalingSection() {
           }
         >
           <Stack gap="md">
-            <div className="upscale-models" role="table" aria-label={t`Upscaling models`}>
-              <div className="upscale-models-head" role="row">
-                <span role="columnheader">
+            <div className="upscale-models">
+              <div className="upscale-models-head" aria-hidden>
+                <span>
                   <Trans>Model</Trans>
                 </span>
-                <span role="columnheader">
+                <span>
                   <Trans>Speed</Trans>
                 </span>
-                <span role="columnheader">
+                <span>
                   <Trans>Quality</Trans>
                 </span>
-                <span role="columnheader">
+                <span>
                   <Trans>Sample page</Trans>
                 </span>
-                <span role="columnheader">
+                <span>
                   <Trans>Status</Trans>
                 </span>
-                <span role="columnheader" />
+                <span />
               </div>
               {state.catalog.map((model) => (
                 <ModelRow
@@ -397,8 +414,8 @@ function ModelRow({
   const downloadLabel = model.status === 'failed' ? t`Try downloading ${name} again` : t`Download ${name}`
 
   return (
-    <div className="upscale-model" role="row">
-      <Group gap="xs" wrap="nowrap" role="cell" className="upscale-model-name">
+    <div className="upscale-model">
+      <Group gap="xs" wrap="nowrap" className="upscale-model-name">
         <Checkbox
           label={
             <>
@@ -415,8 +432,15 @@ function ModelRow({
           </Badge>
         )}
       </Group>
-      {info?.speed && info.quality ? <Ratings speed={info.speed} quality={info.quality} /> : <><span role="cell" /><span role="cell" /></>}
-      <span role="cell">
+      {info?.speed && info.quality ? (
+        <Ratings speed={info.speed} quality={info.quality} />
+      ) : (
+        <>
+          <span />
+          <span />
+        </>
+      )}
+      <span>
         <Button
           variant={seconds ? 'subtle' : 'default'}
           size="xs"
@@ -429,10 +453,10 @@ function ModelRow({
           {seconds ? <Trans>{seconds} s</Trans> : <Trans>Test</Trans>}
         </Button>
       </span>
-      <span role="cell">
+      <span>
         <StatusBadge status={model.status} bundled={model.bundled} />
       </span>
-      <span role="cell" className="upscale-model-action">
+      <span className="upscale-model-action">
         {model.bundled ? null : ready ? (
           <Tooltip label={deleteLabel}>
             <ActionIcon
@@ -496,7 +520,7 @@ function Ratings({ speed, quality }: { speed: ModelRating; quality: ModelRating 
 
 function Rating({ label, value, word }: { label: string; value: ModelRating; word: string }) {
   return (
-    <Group gap={6} wrap="nowrap" aria-label={`${label}: ${word}`} role="cell">
+    <Group gap={6} wrap="nowrap" aria-label={`${label}: ${word}`} role="img">
       <Text size="xs" c="var(--ink-3)" aria-hidden className="upscale-model-rating-label">
         {label}
       </Text>

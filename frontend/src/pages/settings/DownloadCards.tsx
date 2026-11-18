@@ -1,5 +1,5 @@
 import { errorText } from '../../api/errorText'
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -67,6 +67,16 @@ export function SourceLanguageSection() {
   const save = useSaveSourceLanguages()
   const [order, setOrder] = useState<string[] | null>(null)
   const [disabled, setDisabled] = useState<string[] | null>(null)
+  // Adding or removing a language unmounts the button that did it, so focus moves to the
+  // language's other button: its remove button once added, its add button once removed.
+  const listRef = useRef<HTMLDivElement>(null)
+  const refocus = useRef<string | null>(null)
+  useEffect(() => {
+    const target = refocus.current
+    if (!target) return
+    refocus.current = null
+    listRef.current?.querySelector<HTMLElement>(target)?.focus()
+  })
 
   useEffect(() => {
     if (languages) {
@@ -106,7 +116,7 @@ export function SourceLanguageSection() {
       }
     >
       {order && disabled && (
-        <Stack gap="sm">
+        <Stack gap="sm" ref={listRef}>
           <PriorityList
             dense
             items={order.filter((code) => !disabled.includes(code))}
@@ -125,7 +135,11 @@ export function SourceLanguageSection() {
                   color="var(--neutral)"
                   aria-label={removeLabel}
                   disabled={order.filter((c) => !disabled.includes(c)).length <= 1}
-                  onClick={() => setDisabled([...disabled, code])}
+                  data-language-remove={code}
+                  onClick={() => {
+                    refocus.current = `[data-language-add="${code}"]`
+                    setDisabled([...disabled, code])
+                  }}
                   draggable={false}
                 >
                   <IconX size={16} />
@@ -141,23 +155,29 @@ export function SourceLanguageSection() {
               <Group gap="xs">
                 {order
                   .filter((code) => disabled.includes(code))
-                  .map((code) => (
-                    <Button
-                      key={code}
-                      variant="default"
-                      size="xs"
-                      leftSection={<IconPlus size={14} />}
-                      onClick={() => {
-                        // An added language goes last among the ones that are on, where the eye expects it.
-                        const enabled = order.filter((c) => !disabled.includes(c))
-                        const rest = order.filter((c) => disabled.includes(c) && c !== code)
-                        setOrder([...enabled, code, ...rest])
-                        setDisabled(disabled.filter((c) => c !== code))
-                      }}
-                    >
-                      {languageName(code) ?? code}
-                    </Button>
-                  ))}
+                  .map((code) => {
+                    const name = languageName(code) ?? code
+                    return (
+                      <Button
+                        key={code}
+                        variant="default"
+                        size="xs"
+                        leftSection={<IconPlus size={14} />}
+                        data-language-add={code}
+                        aria-label={t`Add ${name}`}
+                        onClick={() => {
+                          refocus.current = `[data-language-remove="${code}"]`
+                          // An added language goes last among the ones that are on, where the eye expects it.
+                          const enabled = order.filter((c) => !disabled.includes(c))
+                          const rest = order.filter((c) => disabled.includes(c) && c !== code)
+                          setOrder([...enabled, code, ...rest])
+                          setDisabled(disabled.filter((c) => c !== code))
+                        }}
+                      >
+                        {name}
+                      </Button>
+                    )
+                  })}
               </Group>
             </Stack>
           )}
@@ -686,7 +706,7 @@ export function UpgradeScanSection() {
                 ref={pages.rowRef('profile')}
                 icon={IconTrophy}
                 label={<Trans>Default profile</Trans>}
-                value={defaultProfile?.name ?? t`None`}
+                value={defaultProfileId == null ? t`None` : defaultProfile?.name}
                 onClick={() => pages.open('profile')}
               />
               <DrillRow
@@ -933,7 +953,12 @@ export function VolumeReleasesSection() {
           mb="sm"
         />
       </div>
-      <SettingsDrill page={pages.page} depth={pages.depth}>
+      <SettingsDrill
+        page={pages.page}
+        depth={pages.depth}
+        targets={['minimum-seeders', 'auto-approve-volumes']}
+        onTarget={pages.reset}
+      >
         {pages.page === 'main' && (
           <>
             <DrillRow
@@ -979,8 +1004,8 @@ export function VolumeReleasesSection() {
               icon={IconGauge}
               label={<Trans>Search limits</Trans>}
               value={plural(Number(proposalExpiryDays), {
-                one: `${missingText} missing, ${perRunText} a run, # day`,
-                other: `${missingText} missing, ${perRunText} a run, # days`,
+                one: `${missingText} missing, ${perRunText} a run, proposals kept # day`,
+                other: `${missingText} missing, ${perRunText} a run, proposals kept # days`,
               })}
               disabled={!volumeSearch}
               onClick={() => pages.open('limits')}
@@ -1018,6 +1043,7 @@ export function VolumeReleasesSection() {
               decimalScale={0}
               value={autoGrabMb}
               onChange={setAutoGrabMb}
+              disabled={!volumeSearch}
             />
           </SettingsDrillPage>
         )}
@@ -1034,6 +1060,7 @@ export function VolumeReleasesSection() {
               description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now.`}
               checked={autoApprove}
               onChange={(e) => setAutoApprove(e.currentTarget.checked)}
+              disabled={!volumeSearch}
             />
             <SettingsNumberInput
               label={t`Automatic approval size ceiling (MB)`}
@@ -1043,7 +1070,7 @@ export function VolumeReleasesSection() {
               decimalScale={0}
               value={autoApproveMb}
               onChange={setAutoApproveMb}
-              disabled={!autoApprove}
+              disabled={!volumeSearch || !autoApprove}
               maw="22rem"
             />
           </SettingsDrillPage>
@@ -1058,6 +1085,7 @@ export function VolumeReleasesSection() {
                 max={50}
                 value={volumeMissingTolerance}
                 onChange={setVolumeMissingTolerance}
+                disabled={!volumeSearch}
               />
               <SettingsNumberInput
                 label={t`Volume searches per run`}
@@ -1065,6 +1093,7 @@ export function VolumeReleasesSection() {
                 max={200}
                 value={volumeSearchesPerRun}
                 onChange={setVolumeSearchesPerRun}
+                disabled={!volumeSearch}
               />
               <SettingsNumberInput
                 label={t`Proposal expiry`}
@@ -1073,6 +1102,7 @@ export function VolumeReleasesSection() {
                 max={365}
                 value={proposalExpiryDays}
                 onChange={setProposalExpiryDays}
+                disabled={!volumeSearch}
               />
             </div>
           </SettingsDrillPage>

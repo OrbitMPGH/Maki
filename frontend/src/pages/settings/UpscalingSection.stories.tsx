@@ -5,6 +5,7 @@ import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api } from '../../../.storybook/mocks/api'
 import { upscalingFailed, upscalingNoJpegXl, upscalingOff, upscalingPrepare } from '../../../.storybook/mocks/settings/data'
 import { UpscalingSection } from './UpscalingSection'
+import { SETTINGS_TARGET_EVENT } from '../../components/settings/SettingsDrill'
 
 const meta = {
   component: UpscalingSection,
@@ -50,8 +51,8 @@ export const ReadyAndDownloading: Story = {
     await expect(models.getByRole('checkbox', { name: 'Real-ESRGAN' })).toBeChecked()
     await expect(models.getByRole('checkbox', { name: 'Maki 2x HQ' })).not.toBeChecked()
     await expect(models.getByText('Recommended')).toBeVisible()
-    await expect(models.getByRole('cell', { name: 'Speed: Very fast' })).toBeVisible()
-    await waitFor(() => expect(models.getAllByRole('cell', { name: 'Quality: Best' })).toHaveLength(2))
+    await expect(models.getByRole('img', { name: 'Speed: Very fast' })).toBeVisible()
+    await waitFor(() => expect(models.getAllByRole('img', { name: 'Quality: Best' })).toHaveLength(2))
     await waitFor(() => expect(models.getAllByText('Ready')).toHaveLength(1))
     await waitFor(() => expect(models.getAllByText('Included')).toHaveLength(2))
     await expect(models.getAllByRole('button', { name: /^Delete / })).toHaveLength(1)
@@ -71,6 +72,16 @@ export const ProcessingPage: Story = {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Threads' })).toHaveValue('2'))
     await userEvent.click(canvas.getByRole('button', { name: /^Back/ }))
     await expect(await canvas.findByRole('button', { name: /^Page cache/ })).toBeVisible()
+  },
+}
+
+/** A deep link to a control on the first page brings the drill back there from another page. */
+export const DeepLinkLeavesAnOpenPage: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await openPage(canvas, userEvent, /^Page cache/)
+    document.dispatchEvent(new CustomEvent(SETTINGS_TARGET_EVENT, { detail: 'upscaling-jpeg-xl' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Processing/ })).toBeVisible())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Back/ })).toBeNull())
   },
 }
 

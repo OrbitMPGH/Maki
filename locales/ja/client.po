@@ -69,7 +69,7 @@ msgstr "{0, plural, other {{1} / #ファイル{2, select, other {}}}}"
 
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
-msgid "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
 msgstr ""
 
 #. placeholder {0}: Number(maxPerDay)
@@ -4623,6 +4623,10 @@ msgstr "追加"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "区別するため、章の形式に{chapterLanguageToken}を追加してください。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Add a key"
@@ -10479,10 +10483,6 @@ msgstr "英語"
 #, fuzzy
 msgid "English (MangaBaka default)"
 msgstr "英語（MangaBakaの既定）"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "English markers like v01 and Ch. 12 are always read."
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -28085,6 +28085,10 @@ msgstr "インポートを取り消す"
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "取り消すと、インポートで追加されたシリーズと、そこに登録されたファイルが削除されます。他の形式からMakiが作成したCBZも削除され、各フォルダーは元の名前に戻ります。インポート前に持っていたファイルは、すべてそのまま残ります。"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "Undo the import of {name}?"
@@ -30100,6 +30104,10 @@ msgstr "リクエストが拒否されました"
 #, fuzzy
 msgid "Your requests"
 msgstr "自分のリクエスト"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

@@ -75,11 +75,20 @@ export function KeyboardShortcutsSection() {
 
   const saveFailed = () => notifications.show({ message: now`Couldn't save the shortcuts`, color: 'var(--danger)' })
 
-  // Undo for Reset all, until the next edit: after one it would throw that edit away.
+  // Undo for Reset all, until the next edit: after one it would throw that edit away. The toast
+  // offers it outside the modal; inside, the modal traps Tab, so its footer offers it too.
   const undoToast = useRef<string | null>(null)
+  const [undoFrom, setUndoFrom] = useState<ShortcutBindings | null>(null)
   const dropUndo = () => {
     if (undoToast.current) notifications.hide(undoToast.current)
     undoToast.current = null
+    setUndoFrom(null)
+  }
+  const undoReset = (previous: ShortcutBindings) => {
+    dropUndo()
+    refocus.current = 'first'
+    setStatus(t`Your shortcuts are back`)
+    save(toOverrides(previous), { onError: saveFailed })
   }
 
   const commit = (next: ShortcutBindings, focusOn: ShortcutActionId | 'first') => {
@@ -139,6 +148,7 @@ export function KeyboardShortcutsSection() {
     const previous = bindings
     setStatus(t`Every shortcut is back to its default keys`)
     commit(resolveBindings(undefined), 'first')
+    setUndoFrom(previous)
     const toast = (undoToast.current = notifications.show({
       autoClose: 8000,
       message: (
@@ -147,19 +157,16 @@ export function KeyboardShortcutsSection() {
           <Button
             size="xs"
             variant="subtle"
-            onClick={() => {
-              notifications.hide(toast)
-              undoToast.current = null
-              refocus.current = 'first'
-              save(toOverrides(previous), { onError: saveFailed })
-            }}
+            onClick={() => undoReset(previous)}
           >
             {now`Undo`}
           </Button>
         </Group>
       ),
       onClose: () => {
-        if (undoToast.current === toast) undoToast.current = null
+        if (undoToast.current !== toast) return
+        undoToast.current = null
+        setUndoFrom(null)
       },
     }))
   }
@@ -286,6 +293,11 @@ export function KeyboardShortcutsSection() {
         )
       }
     >
+      {!open && (
+        <VisuallyHidden role="status" aria-live="polite">
+          {status}
+        </VisuallyHidden>
+      )}
       {isError && !data ? (
         <Group gap="sm" justify="space-between">
           <Text size="sm" c="var(--danger-fg)">
@@ -347,7 +359,11 @@ export function KeyboardShortcutsSection() {
         </div>
         <ModalFooter
           status={
-            changed && loaded ? (
+            undoFrom ? (
+              <Button size="xs" variant="subtle" onClick={() => undoReset(undoFrom)}>
+                <Trans>Undo reset</Trans>
+              </Button>
+            ) : changed && loaded ? (
               <Button size="xs" variant="subtle" onClick={resetAll}>
                 <Trans>Reset all</Trans>
               </Button>

@@ -69,7 +69,7 @@ msgstr "{0, plural, one {{1} von # Datei} other {{2} von # Dateien}}"
 
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
-msgid "{0, plural, one {{missingText} missing, {perRunText} a run, # day} other {{missingText} missing, {perRunText} a run, # days}}"
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
 msgstr ""
 
 #. placeholder {0}: Number(maxPerDay)
@@ -4623,6 +4623,10 @@ msgstr "Hinzufügen"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "Füge {chapterLanguageToken} zum Kapitelformat hinzu, um sie zu unterscheiden."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Add a key"
@@ -10479,10 +10483,6 @@ msgstr "Englisch"
 #, fuzzy
 msgid "English (MangaBaka default)"
 msgstr "Englisch (MangaBaka-Standard)"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "English markers like v01 and Ch. 12 are always read."
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -28085,6 +28085,10 @@ msgstr "Import rückgängig machen"
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "Rückgängig machen entfernt die Serie, die der Import hinzugefügt hat, und die Dateien, die er registriert hat. Es löscht die CBZs, die Maki aus anderen Formaten erstellt hat, und setzt jeden Ordner auf seinen alten Namen zurück. Jede Datei, die du vor dem Import hattest, bleibt dort, wo sie war."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "Undo the import of {name}?"
@@ -30100,6 +30104,10 @@ msgstr "Deine Anfrage wurde abgelehnt"
 #, fuzzy
 msgid "Your requests"
 msgstr "Deine Anfragen"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

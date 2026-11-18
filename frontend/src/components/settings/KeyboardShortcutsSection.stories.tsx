@@ -45,6 +45,9 @@ export const Defaults: Story = {
     await list.findByText('Next page', { selector: '.shortcut-label' })
     await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('Forward arrow'))
     await expect(row(list, 'Open search')).toHaveTextContent('Ctrl + K')
+    const columns = document.querySelector('.shortcut-columns')!
+    await expect(columns.children).toHaveLength(2)
+    await expect(getComputedStyle(columns).gridTemplateColumns.split(' ')).toHaveLength(2)
     await expect(list.getByText("Forward and back arrows follow the series' reading direction.")).toBeVisible()
     await expect(list.queryByRole('button', { name: 'Reset all' })).toBeNull()
   },
@@ -144,10 +147,27 @@ export const ResetAllOffersUndo: Story = {
     await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('J'))
     await userEvent.click(await list.findByRole('button', { name: 'Reset all' }))
     await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('Forward arrow'))
-    await waitFor(() => expect(list.getByRole('button', { name: 'Add a key to Next page' })).toHaveFocus())
+    // The footer's Reset all turns into Undo reset, and focus stays on it.
+    await waitFor(() => expect(list.getByRole('button', { name: 'Undo reset' })).toHaveFocus())
     const body = within(document.body)
     await userEvent.click(await body.findByRole('button', { name: 'Undo' }))
     await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('J'))
+  },
+}
+
+/** Inside the modal, Undo for Reset all sits in its footer, where Tab can reach it. */
+export const UndoResetInTheModal: Story = {
+  parameters: {
+    msw: [http.get(api('/settings/shortcuts'), () => HttpResponse.json({ bindings: { 'reader.next': ['j'] } }))],
+  },
+  play: async ({ canvas, userEvent }) => {
+    const list = await openList(canvas, userEvent)
+    await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('J'))
+    await userEvent.click(await list.findByRole('button', { name: 'Reset all' }))
+    await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('Forward arrow'))
+    await userEvent.click(await list.findByRole('button', { name: 'Undo reset' }))
+    await waitFor(() => expect(row(list, 'Next page')).toHaveTextContent('J'))
+    await waitFor(() => expect(list.queryByRole('button', { name: 'Undo reset' })).toBeNull())
   },
 }
 

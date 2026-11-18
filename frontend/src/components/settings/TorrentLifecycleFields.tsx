@@ -161,7 +161,12 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
     <>
       <Divider mt="md" />
       <Box mt="xs">
-        <SettingsDrill page={pages.page} depth={pages.depth}>
+        <SettingsDrill
+          page={pages.page}
+          depth={pages.depth}
+          targets={['remove-after-seeding', 'stalled-torrents']}
+          onTarget={pages.reset}
+        >
           {pages.page === 'main' && (
             <>
               <DrillRow
@@ -198,7 +203,12 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
                 }
                 onClick={() => pages.open('stalled')}
               />
-              <DrillRow icon={IconBan} label={<Trans>Declined releases</Trans>} onClick={() => setDeclinedOpen(true)} />
+              <DrillRow
+                icon={IconBan}
+                label={<Trans>Declined releases</Trans>}
+                chevron={false}
+                onClick={() => setDeclinedOpen(true)}
+              />
             </>
           )}
           {pages.page === 'finished' && (
