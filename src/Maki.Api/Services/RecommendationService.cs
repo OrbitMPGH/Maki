@@ -387,6 +387,14 @@ public class RecommendationService(
                 similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, CancellationToken.None);
             }
 
+            var editions = await store.GetOwnedEditionIdsAsync(
+                libraryIds.Concat(seeds).Concat(known).ToHashSet(), similar.Select(CatalogueId).Where(id => id > 0).ToList(),
+                CancellationToken.None);
+            if (editions.Count > 0)
+            {
+                similar = similar.Where(p => !editions.Contains(CatalogueId(p))).ToList();
+            }
+
             logger.LogInformation(
                 "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
                 seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);

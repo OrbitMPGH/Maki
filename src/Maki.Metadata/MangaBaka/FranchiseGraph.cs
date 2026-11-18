@@ -190,6 +190,10 @@ public static class FranchiseGraph
     public static IEnumerable<long> SameWorkTargets(string? typed, IEnumerable<string?> flat) =>
         Targets(typed, flat, SameWork.Contains);
 
+    /// <summary>The ids one row's typed blob names as an <c>alternative</c> version of it.</summary>
+    public static IEnumerable<long> AlternativeTargets(string? typed) =>
+        typed is null ? [] : TypedTargets(typed, kind => string.Equals(kind, "alternative", StringComparison.OrdinalIgnoreCase));
+
     /// <summary>
     /// Every id one row points at, whatever the relation type. A parody, an adaptation or an
     /// alternative edition is not the same work, but a release title can still name it, which is

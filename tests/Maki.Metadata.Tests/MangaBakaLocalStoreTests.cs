@@ -1226,4 +1226,24 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync([]));
         Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync(["", "  "]));
     }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_drops_a_pilot_of_an_owned_series_and_keeps_other_versions()
+    {
+        const string native = "となりの席の先輩";
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "The serial", nativeTitle: native, totalChapters: "92", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its promotional one-shot", nativeTitle: native, totalChapters: "1");
+        _db.AddSeries(10, "Owned pilot", nativeTitle: "パイロット", totalChapters: "1", relationshipsV2: Alt(11));
+        _db.AddSeries(11, "Full serial of the owned pilot", nativeTitle: "パイロット", totalChapters: "80");
+        _db.AddSeries(20, "Owned manga", nativeTitle: "同じ題", totalChapters: "40");
+        _db.AddSeries(21, "Another serialization", nativeTitle: "違う題", totalChapters: "5", relationshipsV2: Alt(20));
+        _db.AddSeries(22, "The novel", nativeTitle: "同じ題", type: "novel", totalChapters: "3", relationshipsV2: Alt(20));
+        _db.AddSeries(23, "Same title, no relation", nativeTitle: "同じ題", totalChapters: "2");
+        _db.AddSeries(24, "Edition pointing back", nativeTitle: "同じ 題", totalChapters: "40", relationshipsV2: Alt(20));
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10, 20], [2, 11, 21, 22, 23, 24]);
+
+        Assert.Equal([2L, 24L], found.Order());
+    }
 }

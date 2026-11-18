@@ -704,6 +704,66 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// The <paramref name="candidates"/> that are another edition of a series in
+    /// <paramref name="owned"/>: an <c>alternative</c> relation either way, the same type, the same
+    /// native title, and no more chapters than the owned one (a promotional one-shot or a pilot).
+    /// <see cref="FranchiseGraph"/> leaves <c>alternative</c> out on purpose, because a different
+    /// serialization is often worth offering; one under the very same native title is the same
+    /// story, and the full serial of an owned pilot is kept.
+    /// </summary>
+    public virtual async Task<IReadOnlySet<long>> GetOwnedEditionIdsAsync(
+        IReadOnlyCollection<long> owned, IReadOnlyCollection<long> candidates, CancellationToken ct = default)
+    {
+        var found = new HashSet<long>();
+        if (owned.Count == 0 || candidates.Count == 0 || !File.Exists(options.DatabasePath))
+        {
+            return found;
+        }
+
+        var rows = new Dictionary<long, (string? Type, string Native, int? Chapters, List<long> Alternatives)>();
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT id, type, native_title, total_chapters, relationships_v2 FROM series " +
+            $"WHERE id IN ({string.Join(",", owned.Concat(candidates).Distinct())})";
+        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var native = new string((GetString(reader, 2) ?? string.Empty).Where(c => !char.IsWhiteSpace(c)).ToArray());
+                var chapters = int.TryParse(GetString(reader, 3), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
+                    ? n : (int?)null;
+                rows[reader.GetInt64(0)] = (GetString(reader, 1), native,
+                    chapters, FranchiseGraph.AlternativeTargets(GetString(reader, 4)).ToList());
+            }
+        }
+
+        var ownedSet = owned.ToHashSet();
+        foreach (var id in candidates)
+        {
+            if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not int length)
+            {
+                continue;
+            }
+
+            foreach (var other in ownedSet)
+            {
+                if (rows.TryGetValue(other, out var mine)
+                    && (pick.Alternatives.Contains(other) || mine.Alternatives.Contains(id))
+                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
+                    && (mine.Chapters is null || length <= mine.Chapters))
+                {
+                    found.Add(id);
+                    break;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// Ids in the same work as <paramref name="id"/>, breadth-first over the dump's own same-work
     /// relations (<see cref="FranchiseGraph.SameWorkTargets"/>), excluding <paramref name="id"/>.
     ///
