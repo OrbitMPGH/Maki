@@ -73,6 +73,29 @@ public class CatalogueSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task A_shared_dump_keeps_its_snapshot_in_the_instance_folder()
+    {
+        Seed();
+        var own = Directory.CreateTempSubdirectory("maki-own-").FullName;
+        try
+        {
+            var cache = new CatalogueIndexCache(
+                new MangaBakaDumpOptions(_db.Path, own, Shared: true, SnapshotDirectory: own),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<CatalogueIndexCache>.Instance);
+            await cache.GetAsync();
+            await cache.SnapshotSavedForTest;
+
+            Assert.Equal(own, Path.GetDirectoryName(cache.SnapshotPath));
+            Assert.True(File.Exists(cache.SnapshotPath));
+            Assert.False(File.Exists(Path.ChangeExtension(_db.Path, ".catalogue")));
+        }
+        finally
+        {
+            try { Directory.Delete(own, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+    }
+
+    [Fact]
     public async Task A_built_entry_is_swapped_for_the_mapped_snapshot()
     {
         Seed();

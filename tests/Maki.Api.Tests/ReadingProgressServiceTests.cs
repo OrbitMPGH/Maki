@@ -387,4 +387,118 @@ public sealed class ReadingProgressServiceTests : IDisposable
         Assert.Single(Events(), e => e.Type == StatsEventType.SeriesFinished);
         Assert.True(States().Single().Finished);
     }
+
+    // ---- removed chapters ----
+
+    private Dictionary<decimal, int> SeedFinished(int seriesId, int userId, params decimal[] numbers)
+    {
+        using var db = _db.NewContext();
+        var chapters = numbers.Select(n => new Chapter { SeriesId = seriesId, Number = n, Language = "en" }).ToList();
+        db.Chapters.AddRange(chapters);
+        db.SaveChanges();
+        db.ChapterProgress.AddRange(chapters.Select(c => new ChapterProgress
+        {
+            UserId = userId,
+            SeriesId = seriesId,
+            ChapterId = c.Id,
+            PageIndex = 9,
+            PageCount = 10,
+            Completed = true,
+            StartedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }));
+        db.SaveChanges();
+        return chapters.ToDictionary(c => c.Number!.Value, c => c.Id);
+    }
+
+    private async Task RemoveChaptersAsync(int seriesId, params int[] chapterIds)
+    {
+        var service = NewService();
+        var finished = await service.FinishedAmongAsync(chapterIds, default);
+        await using (var db = _db.NewContext())
+        {
+            await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ExecuteDeleteAsync();
+        }
+
+        await service.WithdrawMarksAsync(seriesId, finished, default);
+    }
+
+    [Fact]
+    public async Task RemovingAFinishedChapterAheadOfTheRestMovesTheMarkBack()
+    {
+        // A one-page "next chapter soon" notice listed as chapter 123, opened and then removed. Left at
+        // 123, the mark made Smart Download skip every real release up to 123.
+        var seriesId = _db.SeedSeries();
+        var ids = SeedFinished(seriesId, TestUser, 118, 119, 123);
+        SeedState(null, seriesId, maxChapter: 123);
+
+        await RemoveChaptersAsync(seriesId, ids[123]);
+
+        Assert.Equal(119, States().Single().MaxChapter);
+    }
+
+    [Fact]
+    public async Task AMarkAboveTheRemovedChaptersStays()
+    {
+        // 130 came from somewhere other than the removed chapter (Kavita, a tracker, an anime tick).
+        var seriesId = _db.SeedSeries();
+        var ids = SeedFinished(seriesId, TestUser, 118, 119, 123);
+        SeedState(null, seriesId, maxChapter: 130);
+
+        await RemoveChaptersAsync(seriesId, ids[123]);
+
+        Assert.Equal(130, States().Single().MaxChapter);
+    }
+
+    [Fact]
+    public async Task RemovingAChapterBelowTheMarkChangesNothing()
+    {
+        var seriesId = _db.SeedSeries();
+        var ids = SeedFinished(seriesId, TestUser, 118, 119, 120);
+        SeedState(null, seriesId, maxChapter: 120);
+
+        await RemoveChaptersAsync(seriesId, ids[118]);
+
+        Assert.Equal(120, States().Single().MaxChapter);
+    }
+
+    [Fact]
+    public async Task RemovingTheOnlyFinishedChapterResetsTheMark()
+    {
+        var seriesId = _db.SeedSeries();
+        var ids = SeedFinished(seriesId, TestUser, 5);
+        SeedState(null, seriesId, maxChapter: 5);
+
+        await RemoveChaptersAsync(seriesId, ids[5]);
+
+        Assert.Equal(0, States().Single().MaxChapter);
+    }
+
+    [Fact]
+    public async Task OnlyReadersOfTheRemovedChapterLoseTheirMark()
+    {
+        var seriesId = _db.SeedSeries();
+        var other = _db.SeedUser("other");
+        var ids = SeedFinished(seriesId, TestUser, 119, 123);
+        SeedState(null, seriesId, maxChapter: 123);
+        using (var db = _db.NewContext())
+        {
+            db.ReadingStates.Add(new ReadingState
+            {
+                UserId = other,
+                SeriesId = seriesId,
+                Title = "Seeded",
+                MaxChapter = 123,
+                LastProgressAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        await RemoveChaptersAsync(seriesId, ids[123]);
+
+        var marks = _db.NewContext().ReadingStates.IgnoreQueryFilters().ToDictionary(r => r.UserId, r => r.MaxChapter);
+        Assert.Equal(119, marks[TestUser]);
+        Assert.Equal(123, marks[other]);
+    }
 }

@@ -6249,6 +6249,13 @@ button.site-chip:hover {
   .series-tab-stage[data-tab-switched] > .series-body {
     animation: series-stage-in var(--dur-medium) var(--ease) both;
   }
+  /* Firefox paints the frame after the switch only once the new tab's rows have rendered, about
+     60ms later; on the front-loaded curve the fade is over by then and reads as a cut. */
+  @supports (-moz-appearance: none) {
+    .series-tab-stage[data-tab-switched] > .series-body {
+      animation-timing-function: ease-out;
+    }
+  }
 }
 @keyframes series-stage-in {
   from {
@@ -6977,6 +6984,27 @@ button.site-chip:hover {
   color: var(--ink-4);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
+}
+/* Every tag is shown, so a long name wraps inside its chip on a narrow screen instead of clipping. */
+.tag-bucket .tag-chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The two most relevant buckets get a faint fill of their own colour and brighter text. The
+   spoiler button stays untinted so it keeps reading as a control; revealed names look like the rest. */
+.tag-bucket[data-weight='core'] .tag-chip:not([data-interactive]) {
+  border-color: color-mix(in srgb, var(--bucket) 46%, var(--border-strong));
+  background: color-mix(in srgb, var(--bucket) 14%, var(--surface-2));
+  color: var(--ink-hi);
+}
+.tag-bucket[data-weight='defining'] .tag-chip:not([data-interactive]) {
+  border-color: color-mix(in srgb, var(--bucket) 30%, var(--border-strong));
+  background: color-mix(in srgb, var(--bucket) 8%, var(--surface-2));
+  color: var(--ink);
+}
+.tag-bucket[data-weight='incidental'] .tag-chip:not([data-interactive]) {
+  color: var(--ink-3);
 }
 .tag-chips {
   display: flex;
@@ -10352,6 +10380,16 @@ body.reader-open {
 }
 .reader-fit-original {
   max-width: none;
+}
+/* In paged mode fit height and fit screen fill the viewport, enlarging a page smaller than it the way
+   fit width does; max-height alone only ever shrank one. The width comes from the page's own ratio
+   (--reader-page-ratio, set by PagedView on the page or its RegionPage box), so the page never distorts. */
+.reader-paged .reader-fit-height,
+.reader-paged .reader-fit-screen,
+.reader-region:is([data-fit='height'], [data-fit='screen']) {
+  width: min(100%, 100dvh * var(--reader-page-ratio, 1000));
+  height: auto;
+  max-height: none;
 }
 
 /* A trimmed, split or turned page (PagedView's RegionPage). The canvas inside takes the fit

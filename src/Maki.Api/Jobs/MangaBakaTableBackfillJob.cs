@@ -23,6 +23,11 @@ public class MangaBakaTableBackfillJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+        if (dumpOptions.Shared)
+        {
+            return;
+        }
+
         try
         {
             using var build = await gate.EnterAsync(nameof(MangaBakaTableBackfillJob), ct);
