@@ -245,6 +245,48 @@ public sealed class ChapterFoldServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Finishing_only_the_part_that_leaves_does_not_finish_the_whole()
+    {
+        // A third source still lists 3.1, so that row stays; the reader finished 3.2 alone.
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            var other = db.Add(new SourceMapping
+            {
+                SeriesId = rows[3.1m].SeriesId, SourceName = "other", SourceSeriesId = "series", Url = "https://other.test/series",
+                Priority = 9, Enabled = true,
+            }).Entity;
+            db.SaveChanges();
+            db.Add(new ChapterSourceLink { ChapterId = rows[3.1m].Id, SourceMappingId = other.Id, SourceChapterId = "other-3.1" });
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 25, PageCount = 26,
+                Completed = true, CompletedAt = DateTime.UtcNow, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        var three = check.Chapters.Single(c => c.SeriesId == seriesId && c.Number == 3m).Id;
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.Equal(three, progress.ChapterId);
+        Assert.False(progress.Completed);
+        Assert.Contains(check.Chapters, c => c.SeriesId == seriesId && c.Number == 3.1m);
+    }
+
+    [Fact]
+    public void A_series_expected_for_a_check_holds_Smart_until_it_starts_or_is_let_go()
+    {
+        var checks = new ChapterFoldChecks(null!, NullLogger<ChapterFoldChecks>.Instance);
+
+        checks.Expect(7);
+        Assert.True(checks.Running(7));
+        checks.Forget(7);
+        Assert.False(checks.Running(7));
+    }
+
+    [Fact]
     public void A_folded_link_stands_for_each_of_its_parts()
     {
         var parts = ChapterFoldPart.Format([new("a", 3.1m, "3.1", 13), new("b", 3.2m, "3.2", 26)]);

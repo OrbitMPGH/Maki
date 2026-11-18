@@ -153,9 +153,15 @@ public class ChapterDownloadProcessor(
             ISource source;
             string sourceChapterId;
 
+            // An id that now belongs to another chapter row was a fold's first part when this row was
+            // queued, and the fold has broken since: used as it is, it would download one part as the whole.
+            var takenByAnotherChapter = item.SourceMappingId is { } queuedMappingId && item.SourceChapterId is { } queuedChapterId &&
+                await db.ChapterSourceLinks.AnyAsync(l =>
+                    l.SourceMappingId == queuedMappingId && l.SourceChapterId == queuedChapterId && l.ChapterId != chapter.Id, ct);
             if (item.SourceMapping is { Enabled: true } existingMapping &&
                 !disabledSources.Contains(existingMapping.SourceName) &&
                 item.SourceChapterId is { } existingChapterId &&
+                !takenByAnotherChapter &&
                 sourceRegistry.Find(existingMapping.SourceName) is { } existingSource)
             {
                 mapping = existingMapping;

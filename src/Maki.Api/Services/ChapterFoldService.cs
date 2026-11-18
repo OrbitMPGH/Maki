@@ -157,25 +157,12 @@ public class ChapterFoldService(
             files.Add(await db.ChapterFiles.FirstAsync(f => f.Id == fileId, ct));
         }
 
-        // Enqueueing does not take the series lock, so a part may have been queued since the pass began;
-        // deleting its row would take the queue row with it.
-        var leavingIds = leaving.Select(r => (int?)r.Id).ToList();
-        if (await db.DownloadQueue.IgnoreQueryFilters().AnyAsync(q => leavingIds.Contains(q.ActiveChapterId), ct))
-        {
-            return null;
-        }
-
+        string? root = null;
         if (files.Count > 0)
         {
-            var root = series.RootFolder?.Path;
+            root = series.RootFolder?.Path;
             var absolute = files.Select(f => root is null ? null : Maki.Core.Paths.LibraryPaths.ResolveForDelete(root, f.RelativePath)).ToList();
             if (root is null || absolute.Any(a => a is null) || deletion.Bin.Refusal(root, absolute.OfType<string>()) is not null)
-            {
-                return null;
-            }
-
-            var binned = await deletion.DeleteAsync(series, files, ct, RecycleReason.RemoveChapter);
-            if (binned.Failed > 0)
             {
                 return null;
             }
@@ -192,7 +179,21 @@ public class ChapterFoldService(
             PartsJson = ChapterFoldPart.Format(foldParts),
             FoldedAt = time.GetUtcNow().UtcDateTime,
         };
+
+        // Writing the fold first takes SQLite's write lock for the transaction, so nothing can queue a
+        // part or save a progress, bookmark or note on it between the reads below and the delete: the
+        // chapter's cascade would take a row saved in that gap with it.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         db.ChapterFolds.Add(fold);
+        await db.SaveChangesAsync(ct);
+
+        var leavingIds = leaving.Select(r => (int?)r.Id).ToList();
+        if (await db.DownloadQueue.IgnoreQueryFilters().AnyAsync(q => leavingIds.Contains(q.ActiveChapterId), ct))
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.Entry(fold).State = EntityState.Detached;
+            return null;
+        }
 
         if (keeper.SourceLinks.All(l => l.SourceMappingId != mappingId))
         {
@@ -222,7 +223,9 @@ public class ChapterFoldService(
             row.SourceLinks.Remove(partLinks[rows.IndexOf(row)]);
         }
 
-        var wholePages = keeper.ChapterFileId is { } keeperFile
+        // A whole served as a slice of a shared volume file is read in its own pages, not the archive's.
+        var wholePages = keeper.ChapterFileId is { } keeperFile &&
+                         !chapters.Any(c => c.ChapterFileId == keeperFile && c.Id != keeper.Id && !leaving.Contains(c))
             ? await db.ChapterFiles.Where(f => f.Id == keeperFile).Select(f => f.SplitPageCount ?? f.PageCount).FirstOrDefaultAsync(ct)
             : null;
         var offsets = new Dictionary<int, int>();
@@ -234,7 +237,7 @@ public class ChapterFoldService(
         }
 
         var position = new PartPositions(offsets, lengths.Sum(), wholePages);
-        await MoveReadsAsync(series.Id, keeper, leaving, position, ct);
+        await MoveReadsAsync(series.Id, keeper, [.. rows.Select(r => r.Id)], leaving, position, ct);
         foreach (var row in leaving)
         {
             keeper.Wanted |= row.Wanted;
@@ -244,10 +247,25 @@ public class ChapterFoldService(
         }
 
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         logger.LogInformation(
             "Folded {Parts} of mapping {MappingId} into chapter {Floor} of series {SeriesId}",
             string.Join(", ", numbers.Select(n => n.ToString(CultureInfo.InvariantCulture))), mappingId,
             floor.Decision.Floor, series.Id);
+
+        // The fold and the reads are saved before any file moves, so a bin move that fails, or a stop in
+        // between, leaves a part file on disk with no chapter, never reads that point at nothing.
+        if (files.Count > 0)
+        {
+            var binned = await deletion.DeleteAsync(series, files, CancellationToken.None, RecycleReason.RemoveChapter);
+            if (binned.Failed > 0)
+            {
+                logger.LogWarning(
+                    "Folded chapter {Floor} of series {SeriesId}, but {Failed} part file(s) could not go to the recycle bin and stay on disk",
+                    floor.Decision.Floor, series.Id, binned.Failed);
+            }
+        }
+
         return fold;
     }
 
@@ -290,7 +308,8 @@ public class ChapterFoldService(
     /// that page. The whole's own progress wins when it is further. Seconds read add up, and so do the
     /// seconds already reported, so nothing is reported twice.
     /// </summary>
-    private async Task MoveReadsAsync(int seriesId, Chapter keeper, List<Chapter> leaving, PartPositions position, CancellationToken ct)
+    private async Task MoveReadsAsync(
+        int seriesId, Chapter keeper, IReadOnlyList<int> parts, List<Chapter> leaving, PartPositions position, CancellationToken ct)
     {
         if (leaving.Count == 0)
         {
@@ -300,12 +319,14 @@ public class ChapterFoldService(
         var ids = leaving.Select(r => r.Id).ToHashSet();
         var order = leaving.OrderBy(r => position.Offsets[r.Id]).Select(r => r.Id).ToList();
         var progress = await db.ChapterProgress.IgnoreQueryFilters()
-            .Where(p => p.SeriesId == seriesId && (ids.Contains(p.ChapterId) || p.ChapterId == keeper.Id))
+            .Where(p => p.SeriesId == seriesId && (parts.Contains(p.ChapterId) || p.ChapterId == keeper.Id))
             .ToListAsync(ct);
         foreach (var reader in progress.Where(p => ids.Contains(p.ChapterId)).GroupBy(p => p.UserId))
         {
             var rows = reader.OrderBy(p => order.IndexOf(p.ChapterId)).ToList();
-            var all = order.All(id => rows.Any(p => p.ChapterId == id && p.Completed && p.UnreadAt is null));
+            // The whole is finished only once every part is, the ones another source keeps as rows too.
+            var all = parts.All(id => progress.Any(p =>
+                p.UserId == reader.Key && p.ChapterId == id && p.Completed && p.UnreadAt is null));
             var current = rows.FirstOrDefault(p => !p.Completed || p.UnreadAt is not null) ?? rows[^1];
             var whole = progress.FirstOrDefault(p => p.ChapterId == keeper.Id && p.UserId == reader.Key);
             var carrier = whole ?? current;

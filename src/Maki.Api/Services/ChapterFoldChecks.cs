@@ -25,7 +25,17 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
 
     private readonly ConcurrentDictionary<int, byte> _running = new();
 
-    public bool Running(int seriesId) => _running.ContainsKey(seriesId);
+    private readonly ConcurrentDictionary<int, byte> _expected = new();
+
+    public bool Running(int seriesId) => _running.ContainsKey(seriesId) || _expected.ContainsKey(seriesId);
+
+    /// <summary>
+    /// Holds Smart for a series whose check starts once its match sync is saved, so a Smart tick between
+    /// that save and <see cref="Start"/> cannot queue the parts. <see cref="Forget"/> lets go without one.
+    /// </summary>
+    public void Expect(int seriesId) => _expected.TryAdd(seriesId, 0);
+
+    public void Forget(int seriesId) => _expected.TryRemove(seriesId, out _);
 
     public void Start(int seriesId)
     {
@@ -33,6 +43,8 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
         {
             _ = Task.Run(() => RunAsync(seriesId));
         }
+
+        _expected.TryRemove(seriesId, out _);
     }
 
     private async Task RunAsync(int seriesId)
