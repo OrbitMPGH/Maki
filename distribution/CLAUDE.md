@@ -857,7 +857,7 @@ Research round in `research/recommender/2026-11-15-v7/exp-behaviour/` (main chec
 - **A fold-limited co-read graph is refused like the other evaluation builds.** `fetch-coread-graph.cs build --fold-out` (added so `library` mode can keep co-read on) writes `buildFold` into the working database, and `export` carries it out as `trainingFold`. `graph-artifact.cs coread` and `CoReadInstaller` both refuse anything but `all`; an export from before the option has no key and saw every reader, so a missing key passes there. `EaseInstaller` is stricter and refuses a table with no `trainingFold`, because its builder always writes one. Run `--fold-out` on a copy of the working database: it overwrites the stored matrix.
 - **A data release is created with `--latest=false`** (`publish-graph.ps1`, `publish-embeddings.ps1`). `gh release create` marks a new release Latest by default, and `UpdateCheckService` reads `releases/latest` for the app version, so a new artifact tag would hide the real latest version from every install until the next app release.
 - **`--dump-features` carries the EASE term** (column `ease`, between `avoid` and `avoidtag`), and `fit-weights.cs` fits it as `easeweight` and refuses a dump with the old header. A `single` dump has it constant at 0, because one seed is under `MinSeeds`.
-- **The harness follows the app.** `default` runs EASE at weight 4 from `<config>/ease-table.db`, and runs without it when the file is absent, as the app does. `noease` is the baseline; the three `rail*` shorthands never run it. In `library --fold-users` mode the table has to be a fold-limited build, passed with `--ease <path>` (the fold guard refuses the all-readers one). Reproduced after shipping, `default` against `noease` (scripts and logs in `step4-ease/ship/`), identical to the rows above because the card-reason attribution changes no rank. That was before `MinSeeds`; with it the single row is zero by construction (the panel prints 1.633 for both) and the other two are unchanged:
+- **The harness follows the app, except for the EASE switch since v8.** `default` runs EASE at weight 4 from `<config>/ease-table.db`, and runs without it when the file is absent. The app has shipped the channel off since "v8: EASE off by default", and the harness does not read `recommendations.ease`, so the shipped engine is `easeweight=0` on top of the default tuning. `noease` is the baseline; the three `rail*` shorthands never run it. In `library --fold-users` mode the table has to be a fold-limited build, passed with `--ease <path>` (the fold guard refuses the all-readers one). Reproduced after shipping, `default` against `noease` (scripts and logs in `step4-ease/ship/`), identical to the rows above because the card-reason attribution changes no rank. That was before `MinSeeds`; with it the single row is zero by construction (the panel prints 1.633 for both) and the other two are unchanged:
 
   | run | default | noease | paired | pop |
   |---|---|---|---|---|
@@ -1210,3 +1210,41 @@ The owner found the Recommended tab's captions dull: of the top 20 on their page
 - **The owner's page agrees.** Its five "Feels like" cards name seeds at cosine 0.49 to 0.69, the band where panel "Feels like" claims score 1.5 to 2.0; a 195-seed shelf puts some shelf series near every pick, so a cosine floor that is strict on the panel fires on most of the owner's crowd cards.
 - **Unjudged pairs.** The margin rows' added claims are partly unjudged, since the named seed is often not the nearest series. With every unjudged pair scored 3 the margin 0.25 rows still miss the bar (2.18 and 1.95); the lower margins could reach it only in that best case. Queue: `.artifacts/reco-v8/ship/caption-queue.tsv`, with the owner page's named pairs in it.
 - **Not checked:** folds other than 0; whether a reader prefers a named weak claim to "Readers like you" (the judge scores story fit, not interest); taste-vector or EASE neighbours as the named series, which would make a crowd claim and need the "Fans of" wording.
+
+## v8: EASE off by default
+
+The owner's page through the shipping engine filled about a third of its top 40 with long Korean action webtoons and cross-genre hits that EASE brought in; with `recommendations.ease` set to false the same instance kept v0.37.0's page (31 of 40 shared) and still dropped the watched anime. The owner chose off. `recommendations.ease` now reads unset as off (`RecommendationService.EaseEnabledAsync`, `EaseInstaller.IsEnabledAsync`, `GET settings/recommendations/ease`), so nothing downloads either; an explicit `true` turns it back on. Scripts, logs and the owner's pages are in `research/recommender/2026-11-17-v8/noease/` in the main checkout.
+
+Variants: `dev` is the engine before v8 (`famecap=0,commonweight=0`, EASE on), `devne` the same without EASE, `ship` the v8 tuning with EASE, `shipne` without EASE on the page-share table built from pages with EASE, `shipnet` without EASE on a twin table built from pages without it (`page-frequency-current-cap10-noease.tsv`). Fold 0 of 4, n = 500, dev split, paired against `dev`, 95% bootstrap.
+
+| shelves | variant | gates 1 to 6 | wantN | wantN mainstream | passed (points) | floor | nDCG@40 (not a gate) | top1k@40 |
+|---|---|---|---|---|---|---|---|---|
+| COMPLETED | devne | FAIL | -0.0441 [-0.0492, -0.0392] | -0.0338 | +4.7 | +15.4 | -0.0782 | 48% |
+| | ship | PASS, lowers fame | +0.0015 [+0.0000, +0.0031] | +0.0018 | -4.9 | +2.1 | -0.0057 | 36% |
+| | shipne | FAIL | -0.0423 [-0.0476, -0.0372] | -0.0331 | -3.7 | +2.0 | -0.0860 | 37% |
+| | shipnet | FAIL | -0.0407 [-0.0459, -0.0356] | -0.0304 | -4.0 | +1.8 | -0.0838 | 36% |
+| CURRENT | devne | FAIL (mainstream) | -0.0044 [-0.0094, +0.0003] | -0.0153 | -19.3 | +9.7 | -0.0264 | 60% |
+| | ship | PASS, lowers fame | +0.0035 [+0.0009, +0.0062] | -0.0009 | -21.1 | +7.0 | -0.0149 | 49% |
+| | shipne | FAIL (wantN, mainstream, floor) | -0.0092 [-0.0149, -0.0037] | -0.0236 | -30.3 | -6.8 | -0.0508 | 46% |
+| | shipnet | FAIL (mainstream, floor) | -0.0042 [-0.0096, +0.0011] | -0.0143 | -28.8 | -3.8 | -0.0379 | 46% |
+
+- **Confirm split, one look:** the same verdicts. COMPLETED: ship PASS, shipne and shipnet FAIL (wantN -0.0465 and -0.0442). CURRENT: ship PASS, shipne FAIL (wantN -0.0070, mainstream, floor -8.0), shipnet FAIL on the floor only (-4.5).
+- **Judged shelf panel** (80 shelves, depth 10, stored judgements; the no-EASE rows are 80 to 82% judged, so they are partial readings until `shelf-queue-noease.tsv` is judged):
+
+  | shelves | variant | judged | feel@10 | feel@10 vs dev | want@10 vs dev | top1k@10 |
+  |---|---|---|---|---|---|---|
+  | COMPLETED | dev | 94% | 1.722 | | | 52% |
+  | | devne | 93% | 1.602 | -0.120 [-0.226, -0.034] | -0.067 [-0.106, -0.028] | 61% |
+  | | ship | 93% | 1.770 | +0.048 [+0.021, +0.077] | +0.032 [+0.009, +0.057] | 41% |
+  | | shipne | 81% | 1.694 | -0.028 [-0.138, +0.062] | -0.009 [-0.052, +0.036] | 43% |
+  | | shipnet | 82% | 1.702 | -0.020 [-0.130, +0.068] | -0.006 [-0.048, +0.038] | 43% |
+  | CURRENT | dev | 99% | 1.483 | | | 84% |
+  | | devne | 100% | 1.651 | +0.168 [+0.092, +0.245] | +0.112 [+0.059, +0.165] | 68% |
+  | | ship | 98% | 1.664 | +0.182 [+0.126, +0.239] | +0.120 [+0.080, +0.162] | 49% |
+  | | shipne | 80% | 1.752 | +0.270 [+0.177, +0.364] | +0.177 [+0.123, +0.233] | 47% |
+  | | shipnet | 81% | 1.755 | +0.273 [+0.187, +0.360] | +0.169 [+0.115, +0.225] | 46% |
+
+- **What it says.** The held-out graders and the judge disagree about EASE exactly as lane B found: on reading lists EASE is worth about 0.04 of wantN on finished shelves and the mainstream third of ongoing ones, and the judge prefers the page without it on ongoing shelves (+0.09 over ship, partial). The owner's shelf behaves like the CURRENT panel. Without EASE the cap at 1.0 pushes ongoing pages below their own shelf's fame (gate 6). A follow-up on CURRENT shelves only (n = 500, `logs/extra-current-*`): the penalty alone without EASE fails only the mainstream third (-0.0116) with floor +3.1, cap 1.25 with the penalty the same (-0.0123) with floor -0.1, cap 1.0 adds the floor failure (-3.8). The mainstream-third loss belongs to EASE off itself (`devne` -0.0153). Cap 1.25 with EASE off was not judged or run on COMPLETED shelves.
+- **The page-share table has to be rebuilt without EASE** before it is published, since it describes the engine installs run. `page-share-noease.db` (7,540 series from 3,000 CURRENT shelves, highest share 0.318) is the local build, not uploaded; the eval twin moves gates and the owner's page little against the EASE-built table (`shipnet` against `shipne`).
+- **Owner's page** (top 40, real service, exclusion on): top-1k 98% (dev) to 55% (ship) to 32% (ship without EASE, EASE-built table) and 28% (rebuilt table); household titles in the top 20 16, 8, 2, 2; Korean webtoons in the top 40 19, 9, 2, 1. The shelf itself scales to 4.3 household and 7.5 top-1k of 20, so without EASE the page is now a little less famous than the shelf, as gate 6 says for CURRENT shelves.
+- **Why the owner's captions turned to "Readers like you".** `MinReasonShare` 0.25 (`ReasonShare.Keep`, "a 'Fans of' card names a seed only when it carries the pick") is the whole cause, not EASE or the ranking: on the owner's page without EASE and without the v8 tuning, share 0.25 gives 2 Feels like / 0 Fans of / 16 Readers like you in the top 20 and share 0 (v0.37.0's rule) 2 / 16 / 0 with the same picks; on the shipped engine 0, 0.10 and 0.25 give 15, 10 and 0 "Fans of". A 195-seed shelf spreads each co-read pick over many seeds, so few clear a quarter. On the panels without EASE (`captions-ne.sh`, top 10) the claims a lower share adds are no weaker than the ones it keeps: "Fans of" claims at share 0.25 / 0.10 / 0 are 1.75 (n 12) / 1.71 (68) / 1.68 (117) on COMPLETED shelves and 1.41 (39) / 1.56 (87) / 1.55 (95) on CURRENT, with 32 to 182 named pairs unjudged per row (`.artifacts/reco-v8/ship/caption-queue-noease.tsv`). Feels like claims are 2.31 and 2.20 at every share. Nothing changed here: the owner decides the share.
