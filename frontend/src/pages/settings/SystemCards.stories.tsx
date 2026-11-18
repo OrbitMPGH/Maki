@@ -36,12 +36,16 @@ async function dialogOf(canvasElement: HTMLElement) {
 }
 
 export const Backups: Story = {
-  play: async ({ canvas }) => {
-    await waitFor(() => expect((canvas.getAllByRole('button', { name: 'Restore' })).length).toBe(3))
-    await waitFor(() => expect(canvas.getAllByText('Scheduled')).toHaveLength(2))
-    await expect(await canvas.findByText('Manual')).toBeVisible()
+  play: async ({ canvas, userEvent }) => {
+    // The card shows the latest backup; the whole list opens in a modal.
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Restore' })).toHaveLength(1))
     // The schedule switch reads a different request than the backup list, which can land first.
     await waitFor(() => expect(canvas.getByRole('switch', { name: /^Back up on a schedule/ })).toBeChecked())
+    await userEvent.click(await canvas.findByRole('button', { name: 'All backups (3)' }))
+    const list = within(await within(document.body).findByRole('dialog', { name: 'Backups' }))
+    await waitFor(() => expect(list.getAllByRole('button', { name: 'Restore' })).toHaveLength(3))
+    await waitFor(() => expect(list.getAllByText('Scheduled')).toHaveLength(2))
+    await expect(await list.findByText('Manual')).toBeVisible()
   },
 }
 
@@ -95,11 +99,13 @@ export const RestoreRefused: Story = {
 }
 
 export const DeleteBackupConfirm: Story = {
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const [first] = await canvas.findAllByRole('button', { name: 'Delete backup' })
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^All backups/ }))
+    const list = within(await within(document.body).findByRole('dialog', { name: 'Backups' }))
+    const [first] = await list.findAllByRole('button', { name: 'Delete backup' })
     await userEvent.click(first)
-    const dialog = await dialogOf(canvasElement)
-    await expect(await dialog.findByRole('button', { name: 'Delete backup' })).toBeVisible()
+    const confirm = within(await within(document.body).findByRole('dialog', { name: 'Delete backup' }))
+    await expect(await confirm.findByRole('button', { name: 'Delete backup' })).toBeVisible()
   },
 }
 

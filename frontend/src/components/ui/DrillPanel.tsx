@@ -19,8 +19,10 @@ export function DrillRow({
   value,
   active,
   chevron = true,
+  disabled,
   onClick,
   ref,
+  ...attrs
 }: {
   icon: IconComponent
   label: ReactNode
@@ -29,11 +31,15 @@ export function DrillRow({
   active?: boolean
   /** Off for a row that runs an action rather than opening a page. */
   chevron?: boolean
+  disabled?: boolean
   onClick: () => void
   ref?: Ref<HTMLButtonElement>
+  /** A Settings anchor, so a deep link to a control on the row's page lands on the row. */
+  id?: string
+  'data-new-control'?: string
 }) {
   return (
-    <UnstyledButton ref={ref} className="drill-row" onClick={onClick}>
+    <UnstyledButton ref={ref} className="drill-row" onClick={onClick} disabled={disabled} {...attrs}>
       <Icon size={16} className="drill-row-icon" aria-hidden />
       <span className="drill-row-label">{label}</span>
       {value != null && (

@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { SettingsGroupTitle } from './SettingsGroupTitle'
-import { Box, Button, Group, NumberInput, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Divider, Group, NumberInput, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
+import { IconBan, IconClock, IconLink } from '../../lib/icons'
+import { SettingsDrill, SettingsDrillPage } from './SettingsDrill'
+import { DrillBack, DrillRow, useDrillPages } from '../ui/DrillPanel'
 import { notifications } from '../../lib/toast'
 import { savedToast } from '../../pages/settings/sharedRecord'
 import { SettingsHelp } from './SettingsHelp'
@@ -116,9 +119,13 @@ function SeedTargetFields({ form, clientName, clientKind }: { form: TorrentLifec
   )
 }
 
+type LifecyclePage = 'main' | 'finished' | 'stalled'
+const LIFECYCLE_PARENTS: Record<LifecyclePage, LifecyclePage> = { main: 'main', finished: 'main', stalled: 'main' }
+
 /**
- * The finished and stalled torrent settings inside the download client card. The switches save on change
- * with the download settings record; the seed targets and the stall limit save with the card.
+ * The finished and stalled torrent settings inside the download client card, as drill rows. The
+ * switches save on change with the download settings record; the seed targets and the stall limit
+ * save with the card.
  */
 export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm }) {
   const { t } = useLingui()
@@ -129,6 +136,7 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
   const removalMark = useNewControlMark('remove-after-seeding')
   const stalledMark = useNewControlMark('stalled-torrents')
   const [lastMode, setLastMode] = useState<TorrentRemovalMode>('afterimport')
+  const pages = useDrillPages<LifecyclePage>('main', LIFECYCLE_PARENTS)
   const pending = save.isPending ? save.variables : undefined
   const useHardlinks = pending?.useHardlinks ?? settings?.useHardlinks ?? true
   const mode: TorrentRemovalMode = pending?.removeCompleted ?? settings?.removeCompleted ?? 'never'
@@ -140,89 +148,131 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
     save.mutate({ removeCompleted: next }, { onSuccess: savedToast })
   }
 
+  const linkText = useHardlinks ? t`Hardlinked` : t`Copied`
+  const removalText =
+    mode === 'afterseeding'
+      ? t`removed after seeding`
+      : mode === 'afterimport'
+        ? t`removed after import`
+        : t`kept in the client`
+  const stallHours = Number(form.stallHours)
+
   return (
     <>
-      <Stack gap={0} mt="lg">
-        <SettingsGroupTitle mb={4}>
-          <Trans>Finished torrents</Trans>
-        </SettingsGroupTitle>
-        <SettingsHelp mb="xs">
-          <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
-        </SettingsHelp>
-        <Switch
-          label={t`Hardlink imported torrents when possible`}
-          checked={useHardlinks}
-          disabled={!settings}
-          onChange={(e) => {
-            save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
-          }}
-        />
-        <div id="setting-remove-after-seeding" {...removalMark}>
-          <Switch
-            mt="md"
-            label={t`Remove torrents from the download client after import`}
-            checked={removing}
-            disabled={!settings}
-            onChange={(e) => setMode(e.currentTarget.checked ? lastMode : 'never')}
-          />
-          <Group gap={8} wrap="nowrap" align="flex-start" mt={10}>
-            <Elbow />
-            <SegmentedControl
-              size="xs"
-              aria-label={t`When to remove`}
-              disabled={!settings || !removing}
-              value={removing ? mode : lastMode}
-              onChange={(value) => setMode(value as TorrentRemovalMode)}
-              data={[
-                { value: 'afterimport', label: t`Right after import` },
-                { value: 'afterseeding', label: t`After seeding` },
-              ]}
-            />
-            <NewSettingPill id="remove-after-seeding" />
-          </Group>
-          {removing && mode === 'afterseeding' && (
-            <SeedTargetFields form={form} clientName={client.name} clientKind={client.kind} />
+      <Divider mt="md" />
+      <Box mt="xs">
+        <SettingsDrill page={pages.page} depth={pages.depth}>
+          {pages.page === 'main' && (
+            <>
+              <DrillRow
+                ref={pages.rowRef('finished')}
+                id="setting-remove-after-seeding"
+                {...removalMark}
+                icon={IconLink}
+                label={
+                  <>
+                    <Trans>Finished torrents</Trans>
+                    <NewSettingPill id="remove-after-seeding" />
+                  </>
+                }
+                value={settings ? t`${linkText}, ${removalText}` : undefined}
+                onClick={() => pages.open('finished')}
+              />
+              <DrillRow
+                ref={pages.rowRef('stalled')}
+                id="setting-stalled-torrents"
+                {...stalledMark}
+                icon={IconClock}
+                label={
+                  <>
+                    <Trans>Stalled torrents</Trans>
+                    <NewSettingPill id="stalled-torrents" />
+                  </>
+                }
+                value={
+                  !form.loaded
+                    ? undefined
+                    : stallHours === 0
+                      ? t`Off`
+                      : plural(stallHours, { one: 'Given up after # hour', other: 'Given up after # hours' })
+                }
+                onClick={() => pages.open('stalled')}
+              />
+              <DrillRow icon={IconBan} label={<Trans>Declined releases</Trans>} onClick={() => setDeclinedOpen(true)} />
+            </>
           )}
-          <Group gap={8} wrap="nowrap" align="flex-start">
-            <Elbow />
-            <Switch
-              mt={10}
-              label={t`Also delete the downloaded files`}
-              checked={removeData}
-              disabled={!settings || !removing}
-              onChange={(e) => {
-                save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
-              }}
-            />
-          </Group>
-        </div>
-      </Stack>
-
-      <Stack id="setting-stalled-torrents" {...stalledMark} gap={0} mt="lg">
-        <SettingsGroupTitle mb={4}>
-          <Trans>Stalled torrents</Trans>
-          <NewSettingPill id="stalled-torrents" />
-        </SettingsGroupTitle>
-        <SettingsHelp mb="xs">
-          <Trans>
-            A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of
-            the client and declined, and the automatic search looks for another release. 0 turns this off.
-          </Trans>
-        </SettingsHelp>
-        <Group align="flex-end" wrap="wrap" gap="sm">
-          <SettingsNumberInput
-            label={t`Give up after (hours)`}
-            min={0}
-            max={MAX_STALL_HOURS}
-            value={form.stallHours}
-            onChange={form.setStallHours}
-            disabled={!form.loaded}
-          />
-          <Button variant="default" onClick={() => setDeclinedOpen(true)}>
-            <Trans>Declined releases</Trans>
-          </Button>
-        </Group>
-      </Stack>
+          {pages.page === 'finished' && (
+            <SettingsDrillPage {...removalMark}>
+              <DrillBack ref={pages.backRef} title={<Trans>Finished torrents</Trans>} onBack={pages.back} />
+              <Stack gap={0}>
+                <SettingsHelp mb="xs">
+                  <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
+                </SettingsHelp>
+                <Switch
+                  label={t`Hardlink imported torrents when possible`}
+                  checked={useHardlinks}
+                  disabled={!settings}
+                  onChange={(e) => {
+                    save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
+                  }}
+                />
+                <Switch
+                  mt="md"
+                  label={t`Remove torrents from the download client after import`}
+                  checked={removing}
+                  disabled={!settings}
+                  onChange={(e) => setMode(e.currentTarget.checked ? lastMode : 'never')}
+                />
+                <Group gap={8} wrap="nowrap" align="flex-start" mt={10}>
+                  <Elbow />
+                  <SegmentedControl
+                    size="xs"
+                    aria-label={t`When to remove`}
+                    disabled={!settings || !removing}
+                    value={removing ? mode : lastMode}
+                    onChange={(value) => setMode(value as TorrentRemovalMode)}
+                    data={[
+                      { value: 'afterimport', label: t`Right after import` },
+                      { value: 'afterseeding', label: t`After seeding` },
+                    ]}
+                  />
+                  <NewSettingPill id="remove-after-seeding" />
+                </Group>
+                {removing && mode === 'afterseeding' && (
+                  <SeedTargetFields form={form} clientName={client.name} clientKind={client.kind} />
+                )}
+                <Group gap={8} wrap="nowrap" align="flex-start">
+                  <Elbow />
+                  <Switch
+                    mt={10}
+                    label={t`Also delete the downloaded files`}
+                    checked={removeData}
+                    disabled={!settings || !removing}
+                    onChange={(e) => {
+                      save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
+                    }}
+                  />
+                </Group>
+              </Stack>
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'stalled' && (
+            <SettingsDrillPage {...stalledMark}>
+              <DrillBack ref={pages.backRef} title={<Trans>Stalled torrents</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Give up after (hours)`}
+                description={t`A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of the client and declined, and the automatic search looks for another release. 0 turns this off.`}
+                min={0}
+                max={MAX_STALL_HOURS}
+                value={form.stallHours}
+                onChange={form.setStallHours}
+                disabled={!form.loaded}
+                maw="34rem"
+              />
+            </SettingsDrillPage>
+          )}
+        </SettingsDrill>
+      </Box>
       <DeclinedReleasesModal opened={declinedOpen} onClose={() => setDeclinedOpen(false)} />
     </>
   )

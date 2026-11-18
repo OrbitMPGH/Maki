@@ -74,6 +74,11 @@ export function formatNumber(value: number): string {
   return integer().format(value)
 }
 
+/** "A, B and C" in the active language. */
+export function formatList(parts: string[]): string {
+  return typeof Intl.ListFormat === 'function' ? new Intl.ListFormat(locale()).format(parts) : parts.join(', ')
+}
+
 /** Up to one decimal in the active language: "2.5" or "2,5", and "3" rather than "3.0". */
 export function formatDecimal(value: number): string {
   return decimal().format(value)

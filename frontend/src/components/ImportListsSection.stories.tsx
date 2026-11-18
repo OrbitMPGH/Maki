@@ -23,9 +23,14 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Cloudless Archipelago')).toBeVisible()
-    await expect(await canvas.findByText('Connect MyAnimeList on the Scrobble page to import from it.')).toBeVisible()
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText(/^Not connected: .*MyAnimeList/)).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Connect one on the Scrobble page' })).toHaveAttribute('href', '/scrobble')
+    // Unmatched entries open in a modal from their count.
+    await expect(canvas.queryByText('Cloudless Archipelago')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Review' }))
+    const modal = within(await within(document.body).findByRole('dialog', { name: 'Not matched or ignored' }))
+    await expect(await modal.findByText('Cloudless Archipelago')).toBeVisible()
   },
 }
 
@@ -69,7 +74,9 @@ export const NothingSkipped: Story = {
     msw: settingsMsw(http.get(api('/importlists'), () => HttpResponse.json({ ...importListsStatus, skipped: [] }))),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing unmatched.')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^AniList/ })).toBeVisible()
+    await expect(canvas.queryByText('Not matched or ignored')).toBeNull()
+    await expect(canvas.queryByRole('button', { name: 'Review' })).toBeNull()
   },
 }
 

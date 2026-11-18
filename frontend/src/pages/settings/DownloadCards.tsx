@@ -2,9 +2,25 @@ import { errorText } from '../../api/errorText'
 import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
-import { Box, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Select, Stack, Switch, Text } from '@mantine/core'
-import { IconAdjustments } from '../../lib/icons'
+import { plural, t as now } from '@lingui/core/macro'
+import { ActionIcon, Box, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import {
+  IconAdjustments,
+  IconCircleCheck,
+  IconClock,
+  IconDownload,
+  IconEyeOff,
+  IconGauge,
+  IconPlus,
+  IconSearch,
+  IconTrash,
+  IconTrophy,
+  IconUsers,
+  IconX,
+} from '../../lib/icons'
+import { SettingsDrill, SettingsDrillPage } from '../../components/settings/SettingsDrill'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
+import { formatHour, formatNumber } from '../../format'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { PriorityList } from '../../components/PriorityList'
@@ -90,19 +106,62 @@ export function SourceLanguageSection() {
       }
     >
       {order && disabled && (
-        <PriorityList
-          items={order}
-          disabled={disabled}
-          onChange={(nextOrder, nextDisabled) => {
-            setOrder(nextOrder)
-            setDisabled(nextDisabled)
-          }}
-          renderLabel={(code) => languageName(code) ?? code}
-          toggleLabel={(code) => {
-            const name = languageName(code) ?? code
-            return t`Enable ${name}`
-          }}
-        />
+        <Stack gap="sm">
+          <PriorityList
+            dense
+            items={order.filter((code) => !disabled.includes(code))}
+            disabled={[]}
+            onChange={(enabled) => setOrder([...enabled, ...order.filter((code) => disabled.includes(code))])}
+            renderLabel={(code) => languageName(code) ?? code}
+            toggleLabel={(code) => {
+              const name = languageName(code) ?? code
+              return t`Enable ${name}`
+            }}
+            renderAction={(code, name) => {
+              const removeLabel = t`Remove ${name}`
+              return (
+                <ActionIcon
+                  variant="subtle"
+                  color="var(--neutral)"
+                  aria-label={removeLabel}
+                  disabled={order.filter((c) => !disabled.includes(c)).length <= 1}
+                  onClick={() => setDisabled([...disabled, code])}
+                  draggable={false}
+                >
+                  <IconX size={16} />
+                </ActionIcon>
+              )
+            }}
+          />
+          {disabled.length > 0 && (
+            <Stack gap="xs">
+              <Text size="sm" c="var(--ink-3)">
+                <Trans>Add a language</Trans>
+              </Text>
+              <Group gap="xs">
+                {order
+                  .filter((code) => disabled.includes(code))
+                  .map((code) => (
+                    <Button
+                      key={code}
+                      variant="default"
+                      size="xs"
+                      leftSection={<IconPlus size={14} />}
+                      onClick={() => {
+                        // An added language goes last among the ones that are on, where the eye expects it.
+                        const enabled = order.filter((c) => !disabled.includes(c))
+                        const rest = order.filter((c) => disabled.includes(c) && c !== code)
+                        setOrder([...enabled, code, ...rest])
+                        setDisabled(disabled.filter((c) => c !== code))
+                      }}
+                    >
+                      {languageName(code) ?? code}
+                    </Button>
+                  ))}
+              </Group>
+            </Stack>
+          )}
+        </Stack>
       )}
       {noneEnabled && (
         <Text size="sm" c="var(--danger)" mt="md">
@@ -509,6 +568,15 @@ export function DownloadClientCard() {
 
 const BYTES_PER_MB = 1024 * 1024
 
+type UpgradePage = 'main' | 'profile' | 'schedule' | 'trash' | 'incognito'
+const UPGRADE_PARENTS: Record<UpgradePage, UpgradePage> = {
+  main: 'main',
+  profile: 'main',
+  schedule: 'main',
+  trash: 'main',
+  incognito: 'main',
+}
+
 export function UpgradeScanSection() {
   const { t } = useLingui()
   const { data: settings } = useUpgradeSettings()
@@ -524,6 +592,7 @@ export function UpgradeScanSection() {
   const [trashRetentionDays, setTrashRetentionDays] = useState<number>(14)
   const [scanIncognito, setScanIncognito] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const pages = useDrillPages<UpgradePage>('main', UPGRADE_PARENTS)
 
   useSliceSync(
     settings && {
@@ -560,11 +629,35 @@ export function UpgradeScanSection() {
       Number(trashRetentionDays) !== settings.trashRetentionDays ||
       scanIncognito !== settings.scanIncognito)
 
+  const defaultProfile = (profiles ?? []).find((p) => p.id === defaultProfileId)
+  const scanTime = formatHour(Number(scanHour))
+  const runScan = () =>
+    scan.mutate(undefined, {
+      onSuccess: () => {
+        notifications.show({
+          message: now`Scan started`,
+          color: 'var(--ok)',
+        })
+      },
+      onError: (error) => {
+        notifications.show({
+          message:
+            error instanceof ApiError && error.status === 409 ? now`A scan is already running` : now`Couldn't start the scan`,
+          color: 'var(--danger)',
+        })
+      },
+    })
+
   return (
     <SettingsSection
       id="upgrades"
       title={<Trans>Upgrade scan</Trans>}
       description={<Trans>Replaces downloaded files with better releases for each series' quality profile.</Trans>}
+      actions={
+        <Button size="xs" variant="default" leftSection={<IconSearch size={16} />} loading={scan.isPending} onClick={runScan}>
+          <Trans>Scan now</Trans>
+        </Button>
+      }
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
@@ -584,103 +677,148 @@ export function UpgradeScanSection() {
         )
       }
     >
-      <Switch
-        label={t`Run the daily scan`}
-        checked={enabled}
-        onChange={(e) => setEnabled(e.currentTarget.checked)}
-        mb="md"
-      />
-      <Select
-        label={t`Default profile`}
-        value={defaultProfileId == null ? '' : String(defaultProfileId)}
-        onChange={(value) => setDefaultProfileId(value ? Number(value) : null)}
-        data={[
-          { value: '', label: t`None` },
-          ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-        ]}
-        w={260}
-        mb="md"
-      />
-      <Group grow mb="md">
-        <SettingsNumberInput
-          label={t`Daily scan hour`}
-          description={t`Server local time, 0 to 23.`}
-          min={0}
-          max={23}
-          value={scanHour}
-          onChange={setScanHour}
-        />
-        <SettingsNumberInput
-          label={t`Max upgrades per day`}
-          description={t`0 means no cap.`}
-          min={0}
-          max={1000}
-          value={maxPerDay}
-          onChange={setMaxPerDay}
-        />
-      </Group>
-      <Group grow mb="md">
-        <SettingsNumberInput
-          label={t`Release checks per scan`}
-          min={1}
-          max={500}
-          value={maxProbesPerRun}
-          onChange={setMaxProbesPerRun}
-        />
-        <SettingsNumberInput
-          label={t`Quiet period`}
-          description={t`Days to skip a chapter after it was added or last upgraded.`}
-          min={0}
-          max={365}
-          value={quietPeriodDays}
-          onChange={setQuietPeriodDays}
-        />
-      </Group>
-      <SettingsNumberInput
-        label={t`Trash retention`}
-        description={t`Days to keep replaced files. 0 deletes them at the next cleanup.`}
-        min={0}
-        max={365}
-        value={trashRetentionDays}
-        onChange={setTrashRetentionDays}
-        mb="md"
-      />
-      <Switch
-        label={t`Scan incognito series`}
-        description={t`Off skips series set to No scrobble or Full incognito.`}
-        checked={scanIncognito}
-        onChange={(e) => setScanIncognito(e.currentTarget.checked)}
-        mb="md"
-      />
-      <Group mt="md">
-        <Button
-          variant="default"
-          loading={scan.isPending}
-          onClick={() =>
-            scan.mutate(undefined, {
-              onSuccess: () => {
-                notifications.show({
-                  message: now`Scan started`,
-                  color: 'var(--ok)',
-                })
-              },
-              onError: (error) => {
-                notifications.show({
-                  message:
-                    error instanceof ApiError && error.status === 409
-                      ? now`A scan is already running`
-                      : now`Couldn't start the scan`,
-                  color: 'var(--danger)',
-                })
-              },
-            })
-          }
-        >
-          <Trans>Scan now</Trans>
-        </Button>
-      </Group>
+      <Stack gap="sm">
+        <Switch label={t`Run the daily scan`} checked={enabled} onChange={(e) => setEnabled(e.currentTarget.checked)} />
+        <SettingsDrill page={pages.page} depth={pages.depth}>
+          {pages.page === 'main' && (
+            <>
+              <DrillRow
+                ref={pages.rowRef('profile')}
+                icon={IconTrophy}
+                label={<Trans>Default profile</Trans>}
+                value={defaultProfile?.name ?? t`None`}
+                onClick={() => pages.open('profile')}
+              />
+              <DrillRow
+                ref={pages.rowRef('schedule')}
+                icon={IconClock}
+                label={<Trans>Schedule and limits</Trans>}
+                value={
+                  Number(maxPerDay) === 0
+                    ? t`${scanTime}, no daily cap`
+                    : plural(Number(maxPerDay), {
+                        one: `${scanTime}, # upgrade a day`,
+                        other: `${scanTime}, # upgrades a day`,
+                      })
+                }
+                onClick={() => pages.open('schedule')}
+              />
+              <DrillRow
+                ref={pages.rowRef('trash')}
+                icon={IconTrash}
+                label={<Trans>Replaced files</Trans>}
+                value={
+                  Number(trashRetentionDays) === 0
+                    ? t`Deleted at the next cleanup`
+                    : plural(Number(trashRetentionDays), { one: 'Kept # day', other: 'Kept # days' })
+                }
+                onClick={() => pages.open('trash')}
+              />
+              <DrillRow
+                ref={pages.rowRef('incognito')}
+                icon={IconEyeOff}
+                label={<Trans>Incognito series</Trans>}
+                value={scanIncognito ? t`Scanned` : t`Skipped`}
+                onClick={() => pages.open('incognito')}
+              />
+            </>
+          )}
+          {pages.page === 'profile' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Default profile</Trans>} onBack={pages.back} />
+              <div className="settings-drill-choices">
+                <DrillChoices
+                  label={t`Default profile`}
+                  value={defaultProfileId == null ? '' : String(defaultProfileId)}
+                  options={[
+                    { value: '', label: t`None` },
+                    ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name, hint: p.description ?? undefined })),
+                  ]}
+                  onPick={(value) => setDefaultProfileId(value ? Number(value) : null)}
+                />
+              </div>
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'schedule' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Schedule and limits</Trans>} onBack={pages.back} />
+              <div className="settings-field-grid" data-pairs>
+                <SettingsNumberInput
+                  label={t`Daily scan hour`}
+                  description={t`Server local time, 0 to 23.`}
+                  min={0}
+                  max={23}
+                  value={scanHour}
+                  onChange={setScanHour}
+                />
+                <SettingsNumberInput
+                  label={t`Max upgrades per day`}
+                  description={t`0 means no cap.`}
+                  min={0}
+                  max={1000}
+                  value={maxPerDay}
+                  onChange={setMaxPerDay}
+                />
+                <SettingsNumberInput
+                  label={t`Release checks per scan`}
+                  min={1}
+                  max={500}
+                  value={maxProbesPerRun}
+                  onChange={setMaxProbesPerRun}
+                />
+                <SettingsNumberInput
+                  label={t`Quiet period`}
+                  description={t`Days to skip a chapter after it was added or last upgraded.`}
+                  min={0}
+                  max={365}
+                  value={quietPeriodDays}
+                  onChange={setQuietPeriodDays}
+                />
+              </div>
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'trash' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Replaced files</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Trash retention`}
+                description={t`Days to keep replaced files. 0 deletes them at the next cleanup.`}
+                min={0}
+                max={365}
+                value={trashRetentionDays}
+                onChange={setTrashRetentionDays}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'incognito' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Incognito series</Trans>} onBack={pages.back} />
+              <div className="settings-drill-choices">
+                <DrillChoices
+                  label={t`Incognito series`}
+                  value={scanIncognito ? 'scan' : 'skip'}
+                  options={[
+                    { value: 'scan', label: t`Scanned` },
+                    { value: 'skip', label: t`Skipped`, hint: t`Series set to No scrobble or Full incognito are left out.` },
+                  ]}
+                  onPick={(value) => setScanIncognito(value === 'scan')}
+                />
+              </div>
+            </SettingsDrillPage>
+          )}
+        </SettingsDrill>
+      </Stack>
     </SettingsSection>
   )
+}
+
+type VolumePage = 'main' | 'seeders' | 'autoGrab' | 'approve' | 'limits'
+const VOLUME_PARENTS: Record<VolumePage, VolumePage> = {
+  main: 'main',
+  seeders: 'main',
+  autoGrab: 'main',
+  approve: 'main',
+  limits: 'main',
 }
 
 export function VolumeReleasesSection() {
@@ -729,6 +867,11 @@ export function VolumeReleasesSection() {
 
   const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
   const autoApproveBytes = Math.round(Number(autoApproveMb) * BYTES_PER_MB)
+  const pages = useDrillPages<VolumePage>('main', VOLUME_PARENTS)
+  const autoGrabText = formatNumber(Number(autoGrabMb))
+  const autoApproveText = formatNumber(Number(autoApproveMb))
+  const missingText = formatNumber(Number(volumeMissingTolerance))
+  const perRunText = formatNumber(Number(volumeSearchesPerRun))
 
   const dirty =
     settings !== undefined &&
@@ -784,95 +927,157 @@ export function VolumeReleasesSection() {
               <NewSettingPill id="missing-chapter-search" />
             </>
           }
-          description={t`For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off.`}
+          description={t`Each series is searched at most once a week, even with the daily scan off.`}
           checked={missingSearch}
           onChange={(e) => setMissingSearch(e.currentTarget.checked)}
-          mb="md"
-        />
-      </div>
-      <div id="setting-minimum-seeders" {...seedersMark}>
-        <SettingsNumberInput
-          label={
-            <>
-              {t`Minimum seeders`}
-              <NewSettingPill id="minimum-seeders" />
-            </>
-          }
-          description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
-          min={1}
-          max={10000}
-          decimalScale={0}
-          value={minSeeders}
-          onChange={setMinSeeders}
-          mb="md"
-        />
-      </div>
-      <Group grow mb="md" align="flex-start">
-        <SettingsNumberInput
-          label={t`Auto-grab size limit`}
-          suffix={t` MB`}
-          description={t`Larger releases become proposals you approve by hand.`}
-          min={0}
-          max={102400}
-          decimalScale={0}
-          value={autoGrabMb}
-          onChange={setAutoGrabMb}
-          disabled={!volumeSearch}
-        />
-        <SettingsNumberInput
-          label={t`Missing chapters allowed per volume`}
-          min={0}
-          max={50}
-          value={volumeMissingTolerance}
-          onChange={setVolumeMissingTolerance}
-          disabled={!volumeSearch}
-        />
-      </Group>
-      <Group grow align="flex-start">
-        <SettingsNumberInput
-          label={t`Volume searches per run`}
-          min={1}
-          max={200}
-          value={volumeSearchesPerRun}
-          onChange={setVolumeSearchesPerRun}
-          disabled={!volumeSearch}
-        />
-        <SettingsNumberInput
-          label={t`Proposal expiry`}
-          description={t`Days before a proposal you haven't approved expires.`}
-          min={1}
-          max={365}
-          value={proposalExpiryDays}
-          onChange={setProposalExpiryDays}
-          disabled={!volumeSearch}
-        />
-      </Group>
-      <div id="setting-auto-approve-volumes" {...autoApproveMark}>
-        <Switch
-          label={
-            <>
-              {t`Approve volume releases automatically`}
-              <NewSettingPill id="auto-approve-volumes" />
-            </>
-          }
-          description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now.`}
-          checked={autoApprove}
-          onChange={(e) => setAutoApprove(e.currentTarget.checked)}
-          disabled={!volumeSearch}
-          mt="md"
           mb="sm"
         />
-        <SettingsNumberInput
-          label={t`Automatic approval size ceiling (MB)`}
-          description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
-          min={100}
-          max={204800}
-          decimalScale={0}
-          value={autoApproveMb}
-          onChange={setAutoApproveMb}
-          disabled={!volumeSearch || !autoApprove}
-        />
       </div>
+      <SettingsDrill page={pages.page} depth={pages.depth}>
+        {pages.page === 'main' && (
+          <>
+            <DrillRow
+              ref={pages.rowRef('seeders')}
+              id="setting-minimum-seeders"
+              {...seedersMark}
+              icon={IconUsers}
+              label={
+                <>
+                  <Trans>Minimum seeders</Trans>
+                  <NewSettingPill id="minimum-seeders" />
+                </>
+              }
+              value={formatNumber(Number(minSeeders))}
+              onClick={() => pages.open('seeders')}
+            />
+            <DrillRow
+              ref={pages.rowRef('autoGrab')}
+              icon={IconDownload}
+              label={<Trans>Auto-grab size limit</Trans>}
+              value={t`${autoGrabText} MB`}
+              disabled={!volumeSearch}
+              onClick={() => pages.open('autoGrab')}
+            />
+            <DrillRow
+              ref={pages.rowRef('approve')}
+              id="setting-auto-approve-volumes"
+              {...autoApproveMark}
+              icon={IconCircleCheck}
+              label={
+                <>
+                  <Trans>Approve automatically</Trans>
+                  <NewSettingPill id="auto-approve-volumes" />
+                </>
+              }
+              active={autoApprove}
+              value={autoApprove ? t`Up to ${autoApproveText} MB` : t`Off`}
+              disabled={!volumeSearch}
+              onClick={() => pages.open('approve')}
+            />
+            <DrillRow
+              ref={pages.rowRef('limits')}
+              icon={IconGauge}
+              label={<Trans>Search limits</Trans>}
+              value={plural(Number(proposalExpiryDays), {
+                one: `${missingText} missing, ${perRunText} a run, # day`,
+                other: `${missingText} missing, ${perRunText} a run, # days`,
+              })}
+              disabled={!volumeSearch}
+              onClick={() => pages.open('limits')}
+            />
+          </>
+        )}
+        {pages.page === 'seeders' && (
+          <SettingsDrillPage {...seedersMark}>
+            <DrillBack ref={pages.backRef} title={<Trans>Minimum seeders</Trans>} onBack={pages.back} />
+            <SettingsNumberInput
+              label={
+                <>
+                  {t`Minimum seeders`}
+                  <NewSettingPill id="minimum-seeders" />
+                </>
+              }
+              description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
+              min={1}
+              max={10000}
+              decimalScale={0}
+              value={minSeeders}
+              onChange={setMinSeeders}
+            />
+          </SettingsDrillPage>
+        )}
+        {pages.page === 'autoGrab' && (
+          <SettingsDrillPage>
+            <DrillBack ref={pages.backRef} title={<Trans>Auto-grab size limit</Trans>} onBack={pages.back} />
+            <SettingsNumberInput
+              label={t`Auto-grab size limit`}
+              suffix={t` MB`}
+              description={t`Larger releases become proposals you approve by hand.`}
+              min={0}
+              max={102400}
+              decimalScale={0}
+              value={autoGrabMb}
+              onChange={setAutoGrabMb}
+            />
+          </SettingsDrillPage>
+        )}
+        {pages.page === 'approve' && (
+          <SettingsDrillPage {...autoApproveMark}>
+            <DrillBack ref={pages.backRef} title={<Trans>Approve automatically</Trans>} onBack={pages.back} />
+            <Switch
+              label={
+                <>
+                  {t`Approve volume releases automatically`}
+                  <NewSettingPill id="auto-approve-volumes" />
+                </>
+              }
+              description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now.`}
+              checked={autoApprove}
+              onChange={(e) => setAutoApprove(e.currentTarget.checked)}
+            />
+            <SettingsNumberInput
+              label={t`Automatic approval size ceiling (MB)`}
+              description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
+              min={100}
+              max={204800}
+              decimalScale={0}
+              value={autoApproveMb}
+              onChange={setAutoApproveMb}
+              disabled={!autoApprove}
+              maw="22rem"
+            />
+          </SettingsDrillPage>
+        )}
+        {pages.page === 'limits' && (
+          <SettingsDrillPage>
+            <DrillBack ref={pages.backRef} title={<Trans>Search limits</Trans>} onBack={pages.back} />
+            <div className="settings-field-grid">
+              <SettingsNumberInput
+                label={t`Missing chapters allowed per volume`}
+                min={0}
+                max={50}
+                value={volumeMissingTolerance}
+                onChange={setVolumeMissingTolerance}
+              />
+              <SettingsNumberInput
+                label={t`Volume searches per run`}
+                min={1}
+                max={200}
+                value={volumeSearchesPerRun}
+                onChange={setVolumeSearchesPerRun}
+              />
+              <SettingsNumberInput
+                label={t`Proposal expiry`}
+                description={t`Days before a proposal you haven't approved expires.`}
+                min={1}
+                max={365}
+                value={proposalExpiryDays}
+                onChange={setProposalExpiryDays}
+              />
+            </div>
+          </SettingsDrillPage>
+        )}
+      </SettingsDrill>
     </SettingsSection>
   )
 }

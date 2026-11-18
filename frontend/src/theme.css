@@ -11408,6 +11408,124 @@ body.reader-open {
   flex-shrink: 0;
   color: var(--ink-3);
 }
+.drill-row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.drill-row:disabled:hover {
+  background: transparent;
+}
+/* Drill rows inside a Settings card: icons line up with the card's other controls, and a value
+   gets the room a card has rather than a popover's. */
+.settings-drill {
+  margin-inline: -10px;
+}
+.settings-drill .drill-row-value {
+  max-width: min(60%, 24rem);
+}
+.settings-drill-page {
+  padding: 0 10px 4px;
+}
+.settings-drill .drill-panel-back {
+  margin-bottom: 0;
+}
+.settings-drill-choices {
+  margin-inline: -10px;
+}
+/* File name parsing's languages with their markers in columns. */
+.marker-table-head,
+.marker-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm);
+  align-items: center;
+}
+.marker-table-head {
+  padding-bottom: 8px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.marker-table-row {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.marker-table-label {
+  display: none;
+}
+@media (max-width: 600px) {
+  .marker-table-head {
+    display: none;
+  }
+  .marker-table-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .marker-table-row > [role='cell']:not(:first-child) {
+    padding-inline-start: 30px;
+  }
+  .marker-table-label {
+    display: inline;
+    margin-inline-end: 6px;
+    color: var(--ink-3);
+  }
+}
+/* The upscaling models as a table: one model is a row with its details on a second line. */
+.upscale-models {
+  --upscale-model-columns: minmax(0, 1fr) 8.5rem 7.5rem 6rem 5.5rem 2rem;
+}
+.upscale-models-head,
+.upscale-model {
+  display: grid;
+  grid-template-columns: var(--upscale-model-columns);
+  column-gap: var(--mantine-spacing-sm);
+  align-items: center;
+}
+.upscale-models-head {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.upscale-model {
+  row-gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.upscale-model-meta {
+  grid-column: 1 / -1;
+  padding-inline-start: 30px;
+}
+.upscale-model-action {
+  justify-self: end;
+}
+.upscale-model-rating-label {
+  display: none;
+}
+@media (max-width: 720px) {
+  .upscale-models-head {
+    display: none;
+  }
+  .upscale-model {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--mantine-spacing-md);
+    row-gap: 8px;
+  }
+  .upscale-model-name,
+  .upscale-model-meta {
+    flex-basis: 100%;
+  }
+  .upscale-model-action {
+    margin-inline-start: auto;
+  }
+  .upscale-model .upscale-model-rating-label {
+    display: inline;
+  }
+}
+
 .drill-panel-back {
   width: 100%;
   min-height: 36px;
@@ -14043,6 +14161,38 @@ button.import-plan-folder-head:hover {
 }
 
 /* --- Keyboard shortcuts ------------------------------------------------------ */
+/* The list sits in a modal in two columns; the modal body is already inset. */
+.shortcut-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 36px;
+  align-items: start;
+}
+.shortcut-columns .shortcut-row,
+.shortcut-columns .shortcut-group-title,
+.shortcut-columns .shortcut-group-hint {
+  padding-inline: 0;
+}
+.shortcut-columns .shortcut-group:first-child .shortcut-group-title {
+  padding-top: 0;
+}
+@media (min-width: 901px) {
+  .shortcut-columns .shortcut-row {
+    min-height: 40px;
+    padding-block: 3px;
+  }
+}
+@media (max-width: 900px) {
+  .shortcut-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shortcut-columns > * + * {
+    border-top: 1px solid var(--hairline);
+  }
+  .shortcut-columns > * + * .shortcut-group:first-child .shortcut-group-title {
+    padding-top: var(--mantine-spacing-md);
+  }
+}
 .shortcut-load-error {
   padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
   border-bottom: 1px solid var(--hairline);
