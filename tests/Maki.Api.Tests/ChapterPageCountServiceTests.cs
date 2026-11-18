@@ -85,8 +85,9 @@ public sealed class ChapterPageCountServiceTests : IDisposable
         using var db = _db.NewContext();
         var preview = await new ChapterFoldPreviewService(db, Sources.AllEnabled).ForSeriesAsync(seriesId, CancellationToken.None);
         var three = preview!.Floors.Single(f => f.Floor == 3);
-        Assert.Equal("Merged", three.State);
+        Assert.Equal("pageCounts", three.Nominated);
         Assert.Empty(three.MissingCounts);
+        Assert.Equal(["parts 3.1", "parts 3.2", "whole 3"], three.MissingPages.Select(m => FormattableString.Invariant($"{m.Mapping} {m.Number}")));
     }
 
     [Fact]

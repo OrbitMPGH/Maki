@@ -8,10 +8,13 @@ namespace Maki.Api.Services;
 
 public sealed record PageCountRun(int Counted, int Failed, int Skipped, int Waiting);
 
-/// <summary>Chapters whose count failed recently, kept across runs (singleton) so a broken one waits a day.</summary>
+/// <summary>Chapters whose count or hash failed recently, kept across runs (singleton) so a broken one waits a day.</summary>
 public sealed class PageCountFailures
 {
     internal ConcurrentDictionary<(int MappingId, string SourceChapterId), DateTimeOffset> Recent { get; } = new();
+
+    /// <summary>The same for page hashes (<see cref="ChapterPageHashService"/>).</summary>
+    internal ConcurrentDictionary<(int MappingId, string SourceChapterId), DateTimeOffset> RecentHashes { get; } = new();
 }
 
 /// <summary>

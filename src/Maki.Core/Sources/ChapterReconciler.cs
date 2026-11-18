@@ -57,14 +57,29 @@ public sealed class FloorDecision(decimal floor)
 
     /// <summary>Plain chapters to count before the page scale between two of the floor's mappings is known.</summary>
     public List<(string Mapping, decimal Number)> Calibration { get; } = [];
+
+    /// <summary>What page counts alone decided, before <see cref="ChapterReconciler.CheckPages"/> looked at the pages.</summary>
+    public string? Nominated { get; internal set; }
+
+    public List<PageCheck> PageChecks { get; } = [];
+
+    /// <summary>Parts whose pages no whole on the floor holds: they stay rows of their own whatever else folds.</summary>
+    public Dictionary<string, IReadOnlyList<decimal>> Held { get; } = [];
+
+    /// <summary>Chapters whose page hashes the page check waits on.</summary>
+    public List<(string Mapping, decimal Number)> MissingPages { get; } = [];
 }
+
+/// <summary>One whole upload compared with one mapping's parts, page by page.</summary>
+public sealed record PageCheck(string WholeMapping, string PartsMapping, string Verdict, IReadOnlyList<double> Shares, double Cover);
 
 /// <summary>
 /// Decides, per integer floor of a series, whether a source's sub-chapters (10.1, 10.2, ...) are parts
 /// of one chapter that another source, or the same one, lists whole. Pure: it reads listings and page
-/// counts and fetches nothing. Folding only happens when page counts back it, because decimals also
-/// mean extras, repeats of one upload, epilogues, prologue numbering and wrong source matches; a
-/// wrong merge hides content, a leftover duplicate row only looks untidy.
+/// counts and fetches nothing. Page counts only nominate a merge, because decimals also mean extras,
+/// repeats of one upload, epilogues, prologue numbering and wrong source matches, and those add up by
+/// chance; <see cref="CheckPages"/> then holds it to the pages. A wrong merge hides content, a leftover
+/// duplicate row only looks untidy.
 /// <para>
 /// A port of <c>reconcile.py</c> from the 2026-11-17 reconciliation research. The tests hold it to that
 /// prototype's answer on every floor of the labelled corpus, so change both or neither.
@@ -384,7 +399,7 @@ public static partial class ChapterReconciler
     public static IReadOnlyList<(string Mapping, decimal Number)> MissingCounts(
         FloorDecision decision, IReadOnlyList<ReconcileListing> listings)
     {
-        if (decision.State != FoldState.Pending)
+        if (decision.State != FoldState.Pending || decision.Nominated is not null)
         {
             return [];
         }
@@ -397,6 +412,94 @@ public static partial class ChapterReconciler
             .Distinct()
             .Where(w => entries.TryGetValue(w.Item1, out var list) &&
                         list.FirstOrDefault(e => e.Number == w.Item2) is { } entry && Pages(entry) is null)];
+    }
+
+    /// <summary>
+    /// Holds a merge to the pages: each mapping's parts fold only once a whole on the floor holds them
+    /// (<see cref="ChapterPageMatch"/>), and parts no whole holds stay rows of their own. Wholes are tried
+    /// in the floor's order, and only up to the first one without hashes, so a check costs one whole.
+    /// <paramref name="hashesOf"/> gives a chapter's stored page hashes, or null when none are stored.
+    /// Only a merged floor is touched: page counts and the pair rule nominate, the pages decide.
+    /// </summary>
+    public static void CheckPages(FloorDecision d, Func<string, decimal, IReadOnlyList<ulong>?> hashesOf)
+    {
+        if (d.State != FoldState.Merged)
+        {
+            return;
+        }
+
+        d.Nominated = d.Reason;
+        var waiting = false;
+        var folds = 0;
+        foreach (var (mapping, numbers) in d.Parts.ToList())
+        {
+            var parts = numbers.Select(n => hashesOf(mapping, n)).ToList();
+            if (parts.Any(p => p is null))
+            {
+                d.MissingPages.AddRange(numbers.Where((_, i) => parts[i] is null).Select(n => (mapping, n)));
+                if (d.Wholes.FirstOrDefault(w => hashesOf(w, d.Floor) is null) is { } whole &&
+                    d.Wholes.All(w => hashesOf(w, d.Floor) is null))
+                {
+                    d.MissingPages.Add((whole, d.Floor));
+                }
+
+                waiting = true;
+                continue;
+            }
+
+            var matched = false;
+            var unhashed = false;
+            foreach (var whole in d.Wholes)
+            {
+                if (hashesOf(whole, d.Floor) is not { } wholePages)
+                {
+                    d.MissingPages.Add((whole, d.Floor));
+                    unhashed = true;
+                    break;
+                }
+
+                var result = ChapterPageMatch.Compare(wholePages, parts!);
+                d.PageChecks.Add(new PageCheck(
+                    whole, mapping, result.Verdict.ToString(), [.. result.Shares.Select(s => Math.Round(s, 2))], Math.Round(result.Cover, 2)));
+                if (result.Verdict == PageMatchVerdict.Match)
+                {
+                    matched = true;
+                    break;
+                }
+            }
+
+            if (matched)
+            {
+                folds++;
+            }
+            else if (unhashed)
+            {
+                waiting = true;
+            }
+            else
+            {
+                d.Held[mapping] = numbers;
+                d.Parts.Remove(mapping);
+            }
+        }
+
+        var missing = d.MissingPages.Distinct().ToList();
+        d.MissingPages.Clear();
+        d.MissingPages.AddRange(missing);
+        if (waiting)
+        {
+            Settle(d, FoldState.Pending, "needsPageCheck");
+            d.Fold = false;
+        }
+        else if (folds > 0)
+        {
+            Settle(d, FoldState.Merged, "pagesMatch");
+        }
+        else
+        {
+            Settle(d, FoldState.Keep, d.PageChecks.All(c => c.Verdict == nameof(PageMatchVerdict.Unsure)) ? "pagesUnsure" : "pagesDiffer");
+            d.Fold = false;
+        }
     }
 
     private static void Settle(FloorDecision d, FoldState state, string reason)

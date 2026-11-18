@@ -289,6 +289,8 @@ public class ChapterDownloadProcessor(
                 }
             }
 
+            await KeepPageHashesAsync(series.Id, chapter.Number, mapping.Id, sourceChapterId, pageFiles, ct);
+
             // 4–5. ComicInfo + CBZ into a temp dir on the same volume as the library.
             await SetStatusAsync(item, QueueStatus.Packaging, ct);
             if (!await RootFolderAvailableAsync(rootFolder, ct))
@@ -1196,6 +1198,27 @@ public class ChapterDownloadProcessor(
     private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
 
     /// <summary>Where a locked chapter waits and until when; see <c>ProcessAsync</c>'s <c>hold</c>.</summary>
+    /// <summary>
+    /// A chapter that could take part in a fold keeps its pages' hashes, so checking the fold later
+    /// does not download it a second time (<see cref="ChapterPageHashService"/>). Never fails the download.
+    /// </summary>
+    private async Task KeepPageHashesAsync(
+        int seriesId, decimal? number, int mappingId, string sourceChapterId, IReadOnlyList<string> pageFiles, CancellationToken ct)
+    {
+        try
+        {
+            if (await PageHashStore.WantedForAsync(db, seriesId, number, ct) &&
+                PageHashStore.Of(pageFiles, logger) is { Count: > 0 } hashes)
+            {
+                await PageHashStore.StoreAsync(db, mappingId, sourceChapterId, hashes, ct);
+            }
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            logger.LogDebug(ex, "Could not keep the page hashes of {Chapter}", sourceChapterId);
+        }
+    }
+
     private sealed record EarlyAccessHold(int? MappingId, string? SourceChapterId, string SourceName, DateTime NextAttempt);
 
     /// <summary>

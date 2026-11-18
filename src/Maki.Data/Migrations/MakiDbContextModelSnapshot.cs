@@ -575,6 +575,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("PageCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PageHashes")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("TEXT");
 

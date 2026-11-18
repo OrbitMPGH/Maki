@@ -330,4 +330,122 @@ public class ChapterReconcilerTests
         Assert.Equal(40, folded);
         Assert.Equal(5, waiting);
     }
+
+    private static List<ulong> Hashes(int from, int count) => [.. Enumerable.Range(from, count).Select(seed =>
+    {
+        var random = new Random(seed);
+        ulong hash;
+        do
+        {
+            hash = (ulong)random.NextInt64();
+        }
+        while (System.Numerics.BitOperations.PopCount(hash) is < 24 or > 40);
+
+        return hash;
+    })];
+
+    private static FloorDecision MergedByCounts(params ReconcileListing[] extra)
+    {
+        var decision = ChapterReconciler.Decide([
+            Listing("mangadex", C(1.1m, 27), C(1.2m, 23), C(2, 40)),
+            Listing("weebcentral", C(1, 43), C(2, 40)),
+            .. extra,
+        ])[1];
+        Assert.Equal(FoldState.Merged, decision.State);
+        return decision;
+    }
+
+    [Fact]
+    public void AMergeWaitsForThePagesOfItsPartsAndOneWhole()
+    {
+        var d = MergedByCounts();
+
+        ChapterReconciler.CheckPages(d, (_, _) => null);
+
+        Assert.Equal(FoldState.Pending, d.State);
+        Assert.Equal("needsPageCheck", d.Reason);
+        Assert.Equal("pageCounts", d.Nominated);
+        Assert.False(d.Fold);
+        Assert.Equal([("mangadex", 1.1m), ("mangadex", 1.2m), ("weebcentral", 1m)], d.MissingPages);
+        Assert.Empty(ChapterReconciler.MissingCounts(d, []));
+    }
+
+    [Fact]
+    public void AMergeTheWholesPagesHoldFolds()
+    {
+        var whole = Hashes(0, 40);
+        var d = MergedByCounts();
+
+        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        {
+            ("weebcentral", 1) => whole,
+            ("mangadex", 1.1m) => whole[..22],
+            ("mangadex", 1.2m) => whole[22..],
+            _ => null,
+        });
+
+        Assert.Equal(FoldState.Merged, d.State);
+        Assert.Equal("pagesMatch", d.Reason);
+        Assert.True(d.Fold);
+        Assert.Equal([1.1m, 1.2m], d.Parts["mangadex"]);
+        Assert.Equal(nameof(PageMatchVerdict.Match), Assert.Single(d.PageChecks).Verdict);
+    }
+
+    [Fact]
+    public void PartsThatAddUpButHoldOtherPagesStay()
+    {
+        // Dress-Up Darling 71: 71.1 was the volume's afterword; the page counts added up all the same.
+        var d = MergedByCounts();
+
+        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        {
+            ("weebcentral", 1) => Hashes(0, 40),
+            ("mangadex", 1.1m) => Hashes(500, 22),
+            ("mangadex", 1.2m) => Hashes(22, 18),
+            _ => null,
+        });
+
+        Assert.Equal(FoldState.Keep, d.State);
+        Assert.Equal("pagesDiffer", d.Reason);
+        Assert.False(d.Fold);
+        Assert.Empty(d.Parts);
+        Assert.Equal([1.1m, 1.2m], d.Held["mangadex"]);
+    }
+
+    [Fact]
+    public void OnlyThePartsAWholeHoldsFold()
+    {
+        // Miss Akutsu 88: another source's 88.1 and 88.2 were different content on the same floor.
+        var whole = Hashes(0, 40);
+        var d = MergedByCounts(Listing("mangapill", C(1.1m, 20), C(1.2m, 23), C(2, 40)));
+        Assert.Equal(["mangadex", "mangapill"], d.Parts.Keys.Order());
+
+        ChapterReconciler.CheckPages(d, (m, n) => (m, n) switch
+        {
+            ("weebcentral", 1) => whole,
+            ("mangadex", 1.1m) => whole[..22],
+            ("mangadex", 1.2m) => whole[22..],
+            ("mangapill", _) => Hashes(900 + (int)(n * 10), 20),
+            _ => null,
+        });
+
+        Assert.Equal(FoldState.Merged, d.State);
+        Assert.Equal(["mangadex"], d.Parts.Keys);
+        Assert.Equal([1.1m, 1.2m], d.Held["mangapill"]);
+    }
+
+    [Fact]
+    public void AFloorNoMergeNominatedIsLeftAlone()
+    {
+        var d = ChapterReconciler.Decide([
+            Listing("a", C(4.1m, 20), C(4.2m, 20)),
+            Listing("b", C(4, 18), C(5, 20)),
+        ])[4];
+
+        ChapterReconciler.CheckPages(d, (_, _) => null);
+
+        Assert.Equal(FoldState.Keep, d.State);
+        Assert.Null(d.Nominated);
+        Assert.Empty(d.MissingPages);
+    }
 }

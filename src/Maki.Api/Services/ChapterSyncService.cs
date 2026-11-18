@@ -538,6 +538,7 @@ public class ChapterSyncService(
             link.Url = sourceChapter.Url;
             // A count ChapterPageCountService fetched stays while the source lists the same upload.
             link.PageCount = sourceChapter.PageCount ?? (sameUpload ? link.PageCount : null);
+            link.PageHashes = sameUpload ? link.PageHashes : null;
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
@@ -690,6 +691,7 @@ public class ChapterSyncService(
                             Group = link.Group,
                             Url = link.Url,
                             PageCount = link.PageCount,
+                            PageHashes = link.PageHashes,
                             FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);

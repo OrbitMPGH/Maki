@@ -16,7 +16,11 @@ public sealed record ChapterFoldFloorDto(
     IReadOnlyList<string> Wholes,
     IReadOnlyDictionary<string, string> Aliases,
     IReadOnlyList<PageRatio> Ratios,
-    IReadOnlyList<ChapterFoldMissingDto> MissingCounts);
+    IReadOnlyList<ChapterFoldMissingDto> MissingCounts,
+    string? Nominated,
+    IReadOnlyList<PageCheck> PageChecks,
+    IReadOnlyDictionary<string, IReadOnlyList<decimal>> Held,
+    IReadOnlyList<ChapterFoldMissingDto> MissingPages);
 
 public sealed record ChapterFoldSeriesDto(int SeriesId, string Title, IReadOnlyList<ChapterFoldFloorDto> Floors);
 
@@ -26,6 +30,8 @@ public sealed record ChapterFoldLibraryDto(
     IReadOnlyDictionary<string, int> FloorsByState,
     int MissingCounts,
     IReadOnlyDictionary<string, int> MissingCountsBySource,
+    int MissingPages,
+    IReadOnlyDictionary<string, int> MissingPagesBySource,
     IReadOnlyList<ChapterFoldSeriesDto> Series);
 
 /// <summary>One mapping's stored view of one chapter, with what a page count request needs.</summary>
@@ -44,18 +50,20 @@ public sealed record FoldLink(
     string Language,
     DateTime? ReleaseDate,
     string? Url,
-    int? PageCount)
+    int? PageCount,
+    string? PageHashes)
 {
     public SourceChapter ToSourceChapter() =>
         new(SourceName, SourceSeriesId, SourceChapterId, NumberRaw, Number, Volume, Title, Language, ReleaseDate, Url);
 }
 
-/// <summary>A decided floor of one series and language, and the links a pending one waits on for a page count.</summary>
-public sealed record FoldFloor(int SeriesId, string Title, string Language, FloorDecision Decision, IReadOnlyList<FoldLink> Missing);
+/// <summary>A decided floor of one series and language, and the links a pending one waits on for a page count or page hashes.</summary>
+public sealed record FoldFloor(
+    int SeriesId, string Title, string Language, FloorDecision Decision, IReadOnlyList<FoldLink> Missing, IReadOnlyList<FoldLink> MissingPages);
 
 /// <summary>
 /// What <see cref="ChapterReconciler"/> would do to each series, read from what the last syncs stored
-/// (each link's page count, each mapping's publisher numbers). Nothing is changed: this is the
+/// (each link's page count and page hashes, each mapping's publisher numbers). Nothing is changed: this is the
 /// look before any fold is acted on. Only enabled mappings of switched-on sources on series still in
 /// the library count, as in sync.
 /// </summary>
@@ -83,9 +91,12 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             .Select(g => new ChapterFoldSeriesDto(g.Key.SeriesId, g.Key.Title, [.. g.Select(f => new ChapterFoldFloorDto(
                 f.Decision.Floor, f.Language, f.Decision.State.ToString(), f.Decision.Fold, f.Decision.Reason,
                 f.Decision.Parts, f.Decision.Wholes, f.Decision.Aliases, f.Decision.Ratios,
-                [.. f.Missing.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))]))]))
+                [.. f.Missing.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))],
+                f.Decision.Nominated, f.Decision.PageChecks, f.Decision.Held,
+                [.. f.MissingPages.Select(m => new ChapterFoldMissingDto(m.MappingName, m.Number))]))]))
             .ToList();
         var missing = floors.SelectMany(f => f.Missing).DistinctBy(m => (m.MappingId, m.ChapterId)).ToList();
+        var missingPages = floors.SelectMany(f => f.MissingPages).DistinctBy(m => (m.MappingId, m.ChapterId)).ToList();
 
         return new ChapterFoldLibraryDto(
             seriesChecked,
@@ -93,6 +104,8 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             floors.GroupBy(f => f.Decision.State.ToString()).ToDictionary(g => g.Key, g => g.Count()),
             missing.Count,
             missing.GroupBy(m => m.SourceName).OrderByDescending(g => g.Count()).ToDictionary(g => g.Key, g => g.Count()),
+            missingPages.Count,
+            missingPages.GroupBy(m => m.SourceName).OrderByDescending(g => g.Count()).ToDictionary(g => g.Key, g => g.Count()),
             series);
     }
 
@@ -111,7 +124,7 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             .Select(l => new
             {
                 l.SourceMappingId, l.ChapterId, l.SourceChapterId, l.NumberRaw, Number = l.Chapter!.Number!.Value,
-                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount,
+                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes,
             })
             .ToListAsync(ct);
         var linksByMapping = links.ToLookup(l => l.SourceMappingId);
@@ -137,19 +150,26 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                         .DistinctBy(l => l.Number)
                         .OrderBy(l => l.Number)
                         .Select(l => new FoldLink(series.Key, m.Id, names[m.Id], m.SourceName, m.SourceSeriesId, l.ChapterId,
-                            l.SourceChapterId, l.NumberRaw, l.Number, l.Volume, l.Title, language, l.ReleaseDate, l.Url, l.PageCount))
+                            l.SourceChapterId, l.NumberRaw, l.Number, l.Volume, l.Title, language, l.ReleaseDate, l.Url, l.PageCount,
+                            l.PageHashes))
                         .ToList());
                 var listings = ordered
                     .Select(m => new ReconcileListing(names[m.Id],
                         [.. byMapping[names[m.Id]].Select(l => new ReconcileEntry(l.Number, l.Title, l.PageCount))]))
                     .Where(l => l.Entries.Count > 0)
                     .ToList();
+                var hashes = byMapping.SelectMany(m => m.Value)
+                    .ToDictionary(l => (l.MappingName, l.Number), l => ChapterPageMatch.Parse(l.PageHashes));
                 foreach (var d in ChapterReconciler.Decide(listings, publisher).Values.Where(d => d.State != FoldState.Plain))
                 {
+                    ChapterReconciler.CheckPages(d, (mapping, number) => hashes.GetValueOrDefault((mapping, number)));
                     var missing = ChapterReconciler.MissingCounts(d, listings)
                         .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
                         .ToList();
-                    floors.Add(new FoldFloor(series.Key, series.First().Title, language, d, missing));
+                    var missingPages = d.MissingPages
+                        .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
+                        .ToList();
+                    floors.Add(new FoldFloor(series.Key, series.First().Title, language, d, missing, missingPages));
                 }
             }
         }

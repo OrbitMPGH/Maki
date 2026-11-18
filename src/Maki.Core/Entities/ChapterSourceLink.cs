@@ -22,6 +22,12 @@ public class ChapterSourceLink
     /// <summary>Pages the source's listing reports for this chapter, when its listing says.</summary>
     public int? PageCount { get; set; }
 
+    /// <summary>
+    /// This upload's page hashes, sixteen hex digits per page (<see cref="Maki.Core.Sources.ChapterPageMatch"/>), for
+    /// checking a chapter fold against the pages. Only kept while the source lists the same upload.
+    /// </summary>
+    public string? PageHashes { get; set; }
+
     /// <summary>The chapter's page on the source, when the source lists one. Written into ComicInfo's Notes.</summary>
     public string? Url { get; set; }
 

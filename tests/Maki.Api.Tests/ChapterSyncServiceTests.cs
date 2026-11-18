@@ -1046,10 +1046,13 @@ public class ChapterSyncServiceTests : IDisposable
 
         var preview = await new ChapterFoldPreviewService(db, Sources.AllEnabled).ForSeriesAsync(seriesId, CancellationToken.None);
         var one = preview!.Floors.Single(f => f.Floor == 1);
-        Assert.Equal("Merged", one.State);
+        // The counts nominate the merge; it waits for the pages before anything folds.
+        Assert.Equal("Pending", one.State);
+        Assert.Equal("needsPageCheck", one.Reason);
+        Assert.Equal("pageCounts", one.Nominated);
         Assert.Equal(["whole"], one.Wholes);
         Assert.Equal([1.1m, 1.2m], one.Parts["parts"]);
-        Assert.Equal("pageCounts+publisherNumbering", preview.Floors.Single(f => f.Floor == 2).Reason);
+        Assert.Equal("pageCounts+publisherNumbering", preview.Floors.Single(f => f.Floor == 2).Nominated);
     }
 
     [Fact]
