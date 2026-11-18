@@ -74,7 +74,7 @@ public class SourceMappingController(
             .Where(n => !mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase))
             .Select(n => new NearMissDto(
                 n.Id, n.SourceName, n.SourceSeriesId, n.Title, n.Url,
-                n.CoverUrl, n.Author, n.Language, n.Description, n.Score)));
+                SearchController.ProxiedCoverUrl(n.SourceName, n.CoverUrl), n.Author, n.Language, n.Description, n.Score)));
     }
 
     /// <summary>Turns a suggestion down for good. A later re-match can still offer a different result.</summary>

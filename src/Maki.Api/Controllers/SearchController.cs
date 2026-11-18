@@ -437,7 +437,7 @@ public class SearchController(
     // Suwayomi's thumbnail relay is already a same-origin path and passes as is, but only from a
     // Suwayomi source and only in its exact shape: a scraper handing back some other relative URL,
     // dot segments included, must not point readers at arbitrary Maki paths.
-    private static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
+    internal static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
         coverUrl is null ? null
         : sourceName.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase) &&
           SuwayomiSource.IsThumbnailPath(coverUrl) ? coverUrl
