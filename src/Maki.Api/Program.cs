@@ -1019,7 +1019,6 @@ try
     builder.Services.AddScoped<ChapterPageHashService>();
     builder.Services.AddScoped<ChapterFoldService>();
     builder.Services.AddSingleton<ChapterFoldChecks>();
-    builder.Services.AddScoped<ChapterFoldAuditService>();
     builder.Services.AddSingleton<PageCountFailures>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
