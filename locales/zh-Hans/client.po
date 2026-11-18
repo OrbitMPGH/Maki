@@ -44,6 +44,11 @@ msgstr "“Main”跳过特殊章节（如 10.5）；“Smart”会在你阅读�
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "“不记录”会让系列不再同步到你的追踪器。“完整”还会让它不计入统计和历史记录。"
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -2004,6 +2009,26 @@ msgstr "{kb} KB"
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, other {剩余 # 个未关联文件}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} added to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} is already on {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved from {from} to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} removed from {target}"
+msgstr ""
+
 #: src/pages/stats/CreatorList.tsx
 #, fuzzy
 msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
@@ -2024,6 +2049,11 @@ msgstr "{known, plural, other {# 章}}"
 #, fuzzy
 msgid "{label} - page {pageNumber}"
 msgstr "{label} - 第 {pageNumber} 页"
+
+#. A button tooltip followed by the keyboard key that does the same
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{label} ({key})"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2262,6 +2292,10 @@ msgstr "{matchingCount, plural, other {# 个失败的下载将重新排队，忽
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, other {# 个失败的下载将从队列中移除。}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{MAX_KEYS_PER_ACTION, plural, one {# key at most} other {# keys at most}}"
+msgstr ""
+
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
@@ -2422,6 +2456,10 @@ msgstr "{name}（在 {backendName} 中已禁用）"
 #, fuzzy
 msgid "{name} {year}"
 msgstr "{name} {year}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{name} already has the most keys it can take"
+msgstr ""
 
 #: src/components/settings/useIndexerForm.ts
 #, fuzzy
@@ -3286,6 +3324,10 @@ msgstr "{target, plural, other {# 分钟}}"
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, other {已完成 # 个系列}}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{target} is back to its default keys"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -4515,6 +4557,14 @@ msgstr "添加"
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "在章节格式中加入 {chapterLanguageToken} 以区分它们。"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key to {name}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Add a note"
@@ -5107,6 +5157,11 @@ msgstr "同时将此系列设为「从不」"
 msgid "Also sync \"so far\" ratings"
 msgstr "同时同步「截至目前」的评分"
 
+#. The Alt key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Alt"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -5132,6 +5187,10 @@ msgstr "其他标题"
 #, fuzzy
 msgid "Always"
 msgstr "始终"
+
+#: src/lib/shortcuts.ts
+msgid "Always enhance on or off"
+msgstr ""
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -5769,25 +5828,24 @@ msgstr "自动排队上限"
 msgid "Auto-removed"
 msgstr "已自动移除"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Auto-scroll"
 msgstr "自动滚动"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Auto-scroll (A)"
-msgstr "自动滚动（A）"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll faster"
+msgstr ""
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Auto-scroll on or off"
 msgstr "自动滚动开关"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Auto-scroll slower and faster"
-msgstr "自动滚动速度调节"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll slower"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -5885,6 +5943,11 @@ msgstr "已避开"
 msgid "Back"
 msgstr "返回"
 
+#. The arrow key that points against the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Back arrow"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Back in recommendations since {until}"
@@ -5928,6 +5991,10 @@ msgstr "返回系列"
 msgid "Back to settings"
 msgstr "返回设置"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Back to the default"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Back to the library"
@@ -5937,11 +6004,6 @@ msgstr "返回资料库"
 #, fuzzy
 msgid "Back to the series"
 msgstr "返回系列"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Back to where you came from"
-msgstr "返回来处"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -5970,6 +6032,10 @@ msgstr "背景色和强调色现在分开选择。默认为着色黑，若想保
 #, fuzzy
 msgid "Backlog"
 msgstr "待读积压"
+
+#: src/lib/shortcutLabels.ts
+msgid "Backspace"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -6225,8 +6291,8 @@ msgstr "阻止登录。保留账户及其历史记录。"
 msgid "Blush"
 msgstr "浅粉色"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Bookmark this page"
 msgstr "为此页添加书签"
@@ -6802,6 +6868,10 @@ msgstr "更改 {sourceName} 的章节语言"
 #, fuzzy
 msgid "Change group"
 msgstr "更改组"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Change keys"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -8083,8 +8153,8 @@ msgid "Continue without saving"
 msgstr "不保存并继续"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
 msgstr "连续"
@@ -8487,6 +8557,10 @@ msgstr "无法加载你的通知"
 msgid "Couldn't load your reading progress"
 msgstr "无法加载你的阅读进度"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't load your shortcuts."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #: src/components/series/SeriesQueuePause.tsx
 #: src/pages/ActivityPage.tsx
@@ -8536,6 +8610,10 @@ msgstr "无法保存要保留的可用空间"
 #, fuzzy
 msgid "Couldn't save the rule"
 msgstr "无法保存规则"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't save the shortcuts"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8719,7 +8797,7 @@ msgstr ""
 msgid "Crop borders"
 msgstr "裁切边框"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Crop borders on or off"
 msgstr "裁切边框开关"
@@ -8733,6 +8811,11 @@ msgstr "跨源 ID"
 #, fuzzy
 msgid "Crowd"
 msgstr "大众"
+
+#. The Control key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Ctrl"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -9003,6 +9086,7 @@ msgstr "定义"
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/lib/shortcutLabels.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9571,7 +9655,7 @@ msgstr "完成"
 msgid "Double"
 msgstr "双页"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Double page"
 msgstr "双页"
@@ -9586,11 +9670,6 @@ msgstr "同人志"
 #, fuzzy
 msgid "Down"
 msgstr "下移"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Down a screen"
-msgstr "向下一屏"
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -10248,7 +10327,7 @@ msgstr "已为此系列启用"
 msgid "Encoding the page"
 msgstr "正在编码页面"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "End"
 msgstr "End"
@@ -10298,11 +10377,6 @@ msgstr "增强 {level}，{methodLabel}"
 msgid "Enhance is set, but stays off for this chapter because of its quality."
 msgstr "已设置增强，但由于该章节的画质，本章保持关闭。"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Enhance on Always, or back"
-msgstr "增强设为“始终”，或返回"
-
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Enhance: Always"
@@ -10331,6 +10405,10 @@ msgstr ""
 #, fuzzy
 msgid "Enlarge the image"
 msgstr "放大图片"
+
+#: src/lib/shortcutLabels.ts
+msgid "Enter"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10370,7 +10448,7 @@ msgstr "情色"
 msgid "Error"
 msgstr "错误"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Esc"
 msgstr "Esc"
@@ -10523,6 +10601,14 @@ msgstr "每个系列"
 msgid "Every series folder ends up named the same way."
 msgstr "所有作品文件夹最终都会采用相同的命名方式。"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Every source failed for this chapter"
@@ -10576,7 +10662,7 @@ msgstr "全部"
 
 #: src/components/pageconversion/PlanTable.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Everything else"
 msgstr "其他所有内容"
@@ -10849,9 +10935,8 @@ msgid "Fast"
 msgstr "快"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Faster (])"
-msgstr "更快（]）"
+msgid "Faster"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -11327,7 +11412,7 @@ msgstr "第一章已就绪"
 msgid "First download in progress"
 msgstr "首次下载进行中"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "First page"
@@ -11574,6 +11659,15 @@ msgstr "格式"
 msgid "Forward"
 msgstr "前进"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Forward and back arrows follow the series' reading direction."
+msgstr ""
+
+#. The arrow key that points along the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Forward arrow"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11700,8 +11794,8 @@ msgstr "完整"
 msgid "Full review"
 msgstr "完整评论"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Full screen"
 msgstr "全屏"
@@ -12382,20 +12476,22 @@ msgid "Hold for original"
 msgstr "按住查看原图"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Hold to compare"
 msgstr "按住以比较"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Hold to compare with the original (H)"
-msgstr "按住与原图比较（H）"
+msgid "Hold to compare with the original"
+msgstr ""
+
+#: src/lib/shortcuts.ts
+msgid "Hold to see the original page"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
+#: src/lib/shortcutLabels.ts
 #: src/nav.ts
 #: src/pages/HomePage.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Home"
@@ -13105,6 +13201,10 @@ msgstr "靛蓝色"
 msgid "Indonesian"
 msgstr "印度尼西亚语"
 
+#: src/lib/shortcutLabels.ts
+msgid "Insert"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Inserts"
@@ -13479,16 +13579,18 @@ msgstr "不计入你的追踪器、回顾、统计和阅读历史。"
 msgid "kept where it is"
 msgstr "保持原位"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Keyboard shortcuts"
 msgstr "键盘快捷键"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Keyboard shortcuts (?)"
-msgstr "键盘快捷键 (?)"
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -13705,7 +13807,7 @@ msgstr "上次资料库扫描：{lastScanText}"
 msgid "Last measured {measured}."
 msgstr "上次测量于 {measured}。"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Last page"
@@ -13828,8 +13930,8 @@ msgid "Latest year"
 msgstr "最晚年份"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "布局"
@@ -13918,6 +14020,10 @@ msgstr "排除资料库中的作品"
 #, fuzzy
 msgid "Leave scraped chapters alone"
 msgstr "不改动抓取的章节"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Leave the reader"
+msgstr ""
 
 #: src/pages/MetadataGatePage.tsx
 #, fuzzy
@@ -16170,6 +16276,10 @@ msgstr "新启用的来源会排在列表末尾。"
 msgid "Next {nextSync}"
 msgstr "下次 {nextSync}"
 
+#: src/lib/shortcuts.ts
+msgid "Next bookmark"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -16192,7 +16302,7 @@ msgstr "下次检查：{next}。"
 msgid "Next check at {nextAttemptTime}"
 msgstr "下次检查于 {nextAttemptTime}"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Next page"
@@ -16541,6 +16651,11 @@ msgstr "尚未设置索引器"
 #, fuzzy
 msgid "No indexers configured in {backendName}."
 msgstr "{backendName} 中未配置索引器。"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "No key"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -18530,6 +18645,10 @@ msgstr "在 MangaBaka 上打开"
 msgid "Open recycle bin"
 msgstr "打开回收站"
 
+#: src/lib/shortcuts.ts
+msgid "Open search"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
@@ -18734,6 +18853,10 @@ msgstr "其他人会看到你的登录名 {loginName}。"
 msgid "out of 10"
 msgstr "满分 10 分"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -18847,7 +18970,7 @@ msgstr "页面转换正在重写此文件夹中的一个文件。"
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 msgstr "页面转换, webp, avif, 转换页面, 压缩, 磁盘空间, 文件大小, 重新编码, 图片格式, 质量, 停止点, 无损, 比较, 预览, 前后对比, 向导"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Page Down"
 msgstr "向下翻页"
@@ -18888,8 +19011,8 @@ msgstr "未找到页面"
 msgid "Page preview, scrollable"
 msgstr "页面预览，可滚动"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Page thumbnails"
 msgstr "页面缩略图"
@@ -18904,7 +19027,7 @@ msgstr "页数容差 %"
 msgid "Page transitions"
 msgstr "页面过渡"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Page Up"
 msgstr "向上翻页"
@@ -19571,6 +19694,10 @@ msgstr "前传："
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo} 的前传"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Press a key, Esc cancels"
+msgstr ""
+
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
 msgid "Press Enter to create a new tag"
@@ -19602,10 +19729,9 @@ msgstr "预览导入"
 msgid "Preview the import of {folderName}"
 msgstr "预览 {folderName} 的导入"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Previous and next bookmark"
-msgstr "上一个与下一个书签"
+#: src/lib/shortcuts.ts
+msgid "Previous bookmark"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -19617,7 +19743,7 @@ msgstr "上一章"
 msgid "Previous default"
 msgstr "之前的默认"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Previous page"
@@ -21095,6 +21221,10 @@ msgstr "移除"
 msgid "Remove {0}?"
 msgstr "移除 {0}？"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Remove {keyName} from {name}"
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Remove {label}"
@@ -21758,6 +21888,14 @@ msgstr "正在重新扫描系列文件"
 msgid "Reset"
 msgstr "重置"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset {name} to its default keys"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset all"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
@@ -21788,8 +21926,8 @@ msgstr "重置双重身份验证"
 msgid "Reset two-factor for {editName}?"
 msgstr "要重置 {editName} 的双重验证吗？"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Reset zoom"
 msgstr "重置缩放"
@@ -23051,6 +23189,10 @@ msgstr "滚动"
 msgid "Scroll back"
 msgstr "向后滚动"
 
+#: src/lib/shortcuts.ts
+msgid "Scroll down or next page"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Scroll faster"
@@ -23075,6 +23217,10 @@ msgstr "滚动更慢"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "滚动以结束预览"
+
+#: src/lib/shortcuts.ts
+msgid "Scroll up or previous page"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -24025,10 +24171,10 @@ msgstr "锐化模糊的页面。「自动」仅在页面显示尺寸大于原图
 msgid "Sharpens soft pages in the reader with models that run on this server."
 msgstr "使用在此服务器上运行的模型，在阅读器中锐化模糊的页面。"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Shift + Space"
-msgstr "Shift + 空格"
+#. The Shift key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Shift"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -24158,10 +24304,9 @@ msgstr "显示于"
 msgid "Show only: {label}"
 msgstr "仅显示：{label}"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Show or hide this list"
-msgstr "显示或隐藏此列表"
+#: src/lib/shortcuts.ts
+msgid "Show or hide keyboard shortcuts"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -24386,7 +24531,7 @@ msgid "Single"
 msgstr "单页"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Single page"
 msgstr "单页"
@@ -24603,9 +24748,8 @@ msgid "Slow"
 msgstr "慢"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Slower ([)"
-msgstr "更慢（[）"
+msgid "Slower"
+msgstr ""
 
 #: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
@@ -24852,7 +24996,7 @@ msgid "Sources that number the same chapters differently"
 msgstr "对相同章节编号方式不同的来源"
 
 #: src/components/pageconversion/CompareView.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Space"
 msgstr "空格"
@@ -25217,11 +25361,6 @@ msgstr "停止"
 msgid "Stop auto-scroll"
 msgstr "停止自动滚动"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Stop auto-scroll (A)"
-msgstr "停止自动滚动（A）"
-
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
 msgid "Stop ignoring"
@@ -25337,6 +25476,11 @@ msgstr "暗示性"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -25363,7 +25507,7 @@ msgstr "交换前进与后退"
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 msgstr "为你想要的章节开启。它们会计入系列总数，并且可以下载。你已有的章节无论如何都会计入。"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Switch reading direction"
 msgstr "切换阅读方向"
@@ -26058,6 +26202,10 @@ msgstr "上次健康扫描在磁盘上找不到此文件。如果它被移动或
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "无法加载布局。"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "The left and right arrows turn pages. Remove them from Next page and Previous page first."
+msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -27453,6 +27601,7 @@ msgstr "尝试更短或不同的查询。"
 #: src/components/MetadataDumpProgress.tsx
 #: src/components/notes/NotesPanel.tsx
 #: src/components/pageconversion/PlanEstimate.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -27535,7 +27684,7 @@ msgstr "在每个系列的监控选项中单独开启。"
 msgid "Turning embeddings off…"
 msgstr "正在关闭嵌入……"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Turning pages"
 msgstr "翻页"
@@ -27676,6 +27825,7 @@ msgstr "下划线（_）"
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -27969,11 +28119,6 @@ msgstr "结束：{end}"
 #, fuzzy
 msgid "Up"
 msgstr "上移"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Up a screen"
-msgstr "向上一屏"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -29228,6 +29373,11 @@ msgstr "整系列合集包，需要你来决定"
 msgid "Wide pages"
 msgstr "宽页"
 
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
@@ -29777,16 +29927,13 @@ msgstr "区域大小（{width}%）"
 msgid "Zoom"
 msgstr "缩放"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Zoom in"
 msgstr "放大"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Zoom in and out"
-msgstr "放大和缩小"
-
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Zoom out"

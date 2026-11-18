@@ -44,6 +44,11 @@ msgstr "\"Main\"은 10.5 같은 소수 챕터인 스페셜을 건너뜁니다. \
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "\"No scrobble\"은 트래커에 시리즈를 보내지 않습니다. \"Full\"은 통계와 기록에서도 시리즈를 뺍니다."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "(blank when unset)"
@@ -2004,6 +2009,26 @@ msgstr "{kb} KB"
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, other {연결되지 않은 파일 #개 남음}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} added to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} is already on {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved from {from} to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved to {target}"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} removed from {target}"
+msgstr ""
+
 #: src/pages/stats/CreatorList.tsx
 #, fuzzy
 msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
@@ -2024,6 +2049,11 @@ msgstr "{known, plural, other {챕터 #개}}"
 #, fuzzy
 msgid "{label} - page {pageNumber}"
 msgstr "{label} - 페이지 {pageNumber}"
+
+#. A button tooltip followed by the keyboard key that does the same
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{label} ({key})"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2262,6 +2292,10 @@ msgstr "{matchingCount, plural, other {실패한 다운로드 #개를 자동 재
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, other {실패한 다운로드 #개를 대기열에서 제거합니다.}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{MAX_KEYS_PER_ACTION, plural, one {# key at most} other {# keys at most}}"
+msgstr ""
+
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
@@ -2422,6 +2456,10 @@ msgstr "{name} ({backendName}에서 꺼짐)"
 #, fuzzy
 msgid "{name} {year}"
 msgstr "{name} {year}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{name} already has the most keys it can take"
+msgstr ""
 
 #: src/components/settings/useIndexerForm.ts
 #, fuzzy
@@ -3286,6 +3324,10 @@ msgstr "{target, plural, other {#분}}"
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, other {완료한 시리즈 #개}}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{target} is back to its default keys"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -4515,6 +4557,14 @@ msgstr "추가"
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "구분하려면 챕터 형식에 {chapterLanguageToken}을(를) 추가하세요."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key to {name}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Add a note"
@@ -5107,6 +5157,11 @@ msgstr "이 시리즈도 '절대 안 함'으로 설정"
 msgid "Also sync \"so far\" ratings"
 msgstr "'지금까지' 평점도 동기화"
 
+#. The Alt key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Alt"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -5132,6 +5187,10 @@ msgstr "대체 제목 목록"
 #, fuzzy
 msgid "Always"
 msgstr "항상"
+
+#: src/lib/shortcuts.ts
+msgid "Always enhance on or off"
+msgstr ""
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -5769,25 +5828,24 @@ msgstr "자동 대기열 한도"
 msgid "Auto-removed"
 msgstr "자동 삭제됨"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Auto-scroll"
 msgstr "자동 스크롤"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Auto-scroll (A)"
-msgstr "자동 스크롤 (A)"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll faster"
+msgstr ""
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Auto-scroll on or off"
 msgstr "자동 스크롤 켜기/끄기"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Auto-scroll slower and faster"
-msgstr "자동 스크롤 속도 낮추기/높이기"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll slower"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -5885,6 +5943,11 @@ msgstr "회피됨"
 msgid "Back"
 msgstr "뒤로"
 
+#. The arrow key that points against the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Back arrow"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Back in recommendations since {until}"
@@ -5928,6 +5991,10 @@ msgstr "시리즈로 돌아가기"
 msgid "Back to settings"
 msgstr "설정으로 돌아가기"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Back to the default"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Back to the library"
@@ -5937,11 +6004,6 @@ msgstr "라이브러리로 돌아가기"
 #, fuzzy
 msgid "Back to the series"
 msgstr "시리즈로 돌아가기"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Back to where you came from"
-msgstr "왔던 곳으로 돌아가기"
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -5970,6 +6032,10 @@ msgstr "배경색과 강조색을 이제 따로 고릅니다. 기본값은 색�
 #, fuzzy
 msgid "Backlog"
 msgstr "읽을 거리"
+
+#: src/lib/shortcutLabels.ts
+msgid "Backspace"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -6225,8 +6291,8 @@ msgstr "로그인을 막습니다. 계정과 기록은 유지됩니다."
 msgid "Blush"
 msgstr "블러시"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Bookmark this page"
 msgstr "이 페이지 북마크"
@@ -6802,6 +6868,10 @@ msgstr "{sourceName}의 챕터 언어 변경"
 #, fuzzy
 msgid "Change group"
 msgstr "그룹 변경"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Change keys"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -8083,8 +8153,8 @@ msgid "Continue without saving"
 msgstr "저장하지 않고 계속"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
 msgstr "연속"
@@ -8487,6 +8557,10 @@ msgstr "알림을 불러오지 못했습니다"
 msgid "Couldn't load your reading progress"
 msgstr "읽기 진행 상황을 불러오지 못했습니다"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't load your shortcuts."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #: src/components/series/SeriesQueuePause.tsx
 #: src/pages/ActivityPage.tsx
@@ -8536,6 +8610,10 @@ msgstr "남겨 둘 여유 공간을 저장하지 못했습니다"
 #, fuzzy
 msgid "Couldn't save the rule"
 msgstr "규칙을 저장하지 못했습니다"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't save the shortcuts"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8719,7 +8797,7 @@ msgstr ""
 msgid "Crop borders"
 msgstr "여백 자르기"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Crop borders on or off"
 msgstr "여백 자르기 켜기 또는 끄기"
@@ -8733,6 +8811,11 @@ msgstr "교차 ID"
 #, fuzzy
 msgid "Crowd"
 msgstr "다른 사용자"
+
+#. The Control key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Ctrl"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -9003,6 +9086,7 @@ msgstr "정의"
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/lib/shortcutLabels.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9571,7 +9655,7 @@ msgstr "완료"
 msgid "Double"
 msgstr "양면"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Double page"
 msgstr "두 페이지"
@@ -9586,11 +9670,6 @@ msgstr "동인지"
 #, fuzzy
 msgid "Down"
 msgstr "아래로"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Down a screen"
-msgstr "한 화면 아래로"
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -10248,7 +10327,7 @@ msgstr "이 시리즈에서 활성화됨"
 msgid "Encoding the page"
 msgstr "페이지 인코딩 중"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "End"
 msgstr "끝"
@@ -10298,11 +10377,6 @@ msgstr "향상 {level}, {methodLabel}"
 msgid "Enhance is set, but stays off for this chapter because of its quality."
 msgstr "향상 기능이 설정되어 있지만, 이 챕터는 품질 때문에 꺼진 상태로 둡니다."
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Enhance on Always, or back"
-msgstr "향상 기능을 항상 켜거나 되돌리기"
-
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Enhance: Always"
@@ -10331,6 +10405,10 @@ msgstr ""
 #, fuzzy
 msgid "Enlarge the image"
 msgstr "이미지 확대"
+
+#: src/lib/shortcutLabels.ts
+msgid "Enter"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -10370,7 +10448,7 @@ msgstr "에로티카"
 msgid "Error"
 msgstr "오류"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Esc"
 msgstr "Esc"
@@ -10523,6 +10601,14 @@ msgstr "모든 시리즈"
 msgid "Every series folder ends up named the same way."
 msgstr "모든 시리즈 폴더의 이름이 같은 규칙으로 지정됩니다."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Every source failed for this chapter"
@@ -10576,7 +10662,7 @@ msgstr "모두"
 
 #: src/components/pageconversion/PlanTable.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Everything else"
 msgstr "그 외 모든 항목"
@@ -10849,9 +10935,8 @@ msgid "Fast"
 msgstr "빠름"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Faster (])"
-msgstr "빠르게 (])"
+msgid "Faster"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -11327,7 +11412,7 @@ msgstr "첫 챕터를 읽을 수 있습니다"
 msgid "First download in progress"
 msgstr "첫 다운로드 진행 중"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "First page"
@@ -11574,6 +11659,15 @@ msgstr "형식"
 msgid "Forward"
 msgstr "앞으로"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Forward and back arrows follow the series' reading direction."
+msgstr ""
+
+#. The arrow key that points along the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Forward arrow"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11700,8 +11794,8 @@ msgstr "전체"
 msgid "Full review"
 msgstr "전체 검토"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Full screen"
 msgstr "전체 화면"
@@ -12382,20 +12476,22 @@ msgid "Hold for original"
 msgstr "길게 눌러 원본 보기"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Hold to compare"
 msgstr "길게 눌러 비교"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Hold to compare with the original (H)"
-msgstr "길게 눌러 원본과 비교 (H)"
+msgid "Hold to compare with the original"
+msgstr ""
+
+#: src/lib/shortcuts.ts
+msgid "Hold to see the original page"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
+#: src/lib/shortcutLabels.ts
 #: src/nav.ts
 #: src/pages/HomePage.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Home"
@@ -13105,6 +13201,10 @@ msgstr "인디고"
 msgid "Indonesian"
 msgstr "인도네시아어"
 
+#: src/lib/shortcutLabels.ts
+msgid "Insert"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Inserts"
@@ -13479,16 +13579,18 @@ msgstr "트래커, Rewind, 통계, 읽기 기록에서 제외됩니다."
 msgid "kept where it is"
 msgstr "그대로 유지됨"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Keyboard shortcuts"
 msgstr "키보드 단축키"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Keyboard shortcuts (?)"
-msgstr "키보드 단축키 (?)"
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -13705,7 +13807,7 @@ msgstr "마지막 라이브러리 스캔: {lastScanText}"
 msgid "Last measured {measured}."
 msgstr "마지막 측정: {measured}."
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Last page"
@@ -13828,8 +13930,8 @@ msgid "Latest year"
 msgstr "가장 최근 연도"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "레이아웃"
@@ -13918,6 +14020,10 @@ msgstr "라이브러리에 있는 시리즈 제외"
 #, fuzzy
 msgid "Leave scraped chapters alone"
 msgstr "스크레이핑한 챕터는 건드리지 않음"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Leave the reader"
+msgstr ""
 
 #: src/pages/MetadataGatePage.tsx
 #, fuzzy
@@ -16170,6 +16276,10 @@ msgstr "새로 활성화된 소스는 맨 아래에 추가됩니다."
 msgid "Next {nextSync}"
 msgstr "다음 {nextSync}"
 
+#: src/lib/shortcuts.ts
+msgid "Next bookmark"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -16192,7 +16302,7 @@ msgstr "다음 확인 {next}."
 msgid "Next check at {nextAttemptTime}"
 msgstr "다음 검사: {nextAttemptTime}"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Next page"
@@ -16541,6 +16651,11 @@ msgstr "설정된 인덱서가 없습니다"
 #, fuzzy
 msgid "No indexers configured in {backendName}."
 msgstr "{backendName}에 설정된 인덱서가 없습니다."
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "No key"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -18530,6 +18645,10 @@ msgstr "MangaBaka에서 열기"
 msgid "Open recycle bin"
 msgstr "휴지통 열기"
 
+#: src/lib/shortcuts.ts
+msgid "Open search"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
@@ -18734,6 +18853,10 @@ msgstr "다른 사람에게는 로그인 이름 {loginName}이(가) 보입니다
 msgid "out of 10"
 msgstr "10점 만점"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -18847,7 +18970,7 @@ msgstr "페이지 변환이 이 폴더의 파일을 다시 쓰고 있습니다."
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 msgstr "페이지 변환, webp, avif, 압축, 디스크 공간, 파일 크기, 재인코딩, 이미지 형식, 품질, 무손실, 비교, 미리보기, 전후, 마법사"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Page Down"
 msgstr "Page Down"
@@ -18888,8 +19011,8 @@ msgstr "페이지를 찾을 수 없습니다."
 msgid "Page preview, scrollable"
 msgstr "페이지 미리보기, 스크롤 가능"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Page thumbnails"
 msgstr "페이지 썸네일"
@@ -18904,7 +19027,7 @@ msgstr "페이지 허용 오차 %"
 msgid "Page transitions"
 msgstr "페이지 전환"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Page Up"
 msgstr "Page Up"
@@ -19571,6 +19694,10 @@ msgstr "전편"
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo}의 전일담"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Press a key, Esc cancels"
+msgstr ""
+
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
 msgid "Press Enter to create a new tag"
@@ -19602,10 +19729,9 @@ msgstr "가져오기 미리 보기"
 msgid "Preview the import of {folderName}"
 msgstr "{folderName}의 가져오기 미리 보기"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Previous and next bookmark"
-msgstr "이전 및 다음 책갈피"
+#: src/lib/shortcuts.ts
+msgid "Previous bookmark"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -19617,7 +19743,7 @@ msgstr "이전 챕터"
 msgid "Previous default"
 msgstr "이전 기본값"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Previous page"
@@ -21095,6 +21221,10 @@ msgstr "제거"
 msgid "Remove {0}?"
 msgstr "{0}을(를) 삭제할까요?"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Remove {keyName} from {name}"
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Remove {label}"
@@ -21758,6 +21888,14 @@ msgstr "시리즈 파일 다시 검사 중"
 msgid "Reset"
 msgstr "초기화"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset {name} to its default keys"
+msgstr ""
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset all"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
@@ -21788,8 +21926,8 @@ msgstr "2단계 인증 초기화"
 msgid "Reset two-factor for {editName}?"
 msgstr "{editName}의 2단계 인증을 초기화할까요?"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Reset zoom"
 msgstr "확대/축소 초기화"
@@ -23051,6 +23189,10 @@ msgstr "스크롤"
 msgid "Scroll back"
 msgstr "뒤로 스크롤"
 
+#: src/lib/shortcuts.ts
+msgid "Scroll down or next page"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Scroll faster"
@@ -23075,6 +23217,10 @@ msgstr "더 느리게 스크롤"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "미리보기를 끝내려면 스크롤하세요"
+
+#: src/lib/shortcuts.ts
+msgid "Scroll up or previous page"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -24025,10 +24171,10 @@ msgstr "흐린 페이지를 선명하게 합니다. 자동은 페이지가 원�
 msgid "Sharpens soft pages in the reader with models that run on this server."
 msgstr "이 서버에서 실행하는 모델로 리더의 흐린 페이지를 선명하게 합니다."
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Shift + Space"
-msgstr "Shift + Space"
+#. The Shift key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Shift"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
@@ -24158,10 +24304,9 @@ msgstr "표시 위치"
 msgid "Show only: {label}"
 msgstr "{label}만 보기"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Show or hide this list"
-msgstr "이 목록 표시 또는 숨기기"
+#: src/lib/shortcuts.ts
+msgid "Show or hide keyboard shortcuts"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -24386,7 +24531,7 @@ msgid "Single"
 msgstr "하나"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Single page"
 msgstr "단일 페이지"
@@ -24603,9 +24748,8 @@ msgid "Slow"
 msgstr "느림"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Slower ([)"
-msgstr "더 느리게 ([)"
+msgid "Slower"
+msgstr ""
 
 #: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
@@ -24852,7 +24996,7 @@ msgid "Sources that number the same chapters differently"
 msgstr "같은 챕터에 다른 번호를 매기는 소스"
 
 #: src/components/pageconversion/CompareView.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 #, fuzzy
 msgid "Space"
 msgstr "스페이스"
@@ -25217,11 +25361,6 @@ msgstr "중지"
 msgid "Stop auto-scroll"
 msgstr "자동 스크롤 멈추기"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "Stop auto-scroll (A)"
-msgstr "자동 스크롤 멈추기 (A)"
-
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
 msgid "Stop ignoring"
@@ -25337,6 +25476,11 @@ msgstr "선정적"
 msgid "Suggests <0>{suggested}</0>"
 msgstr ""
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Supernatural"
@@ -25363,7 +25507,7 @@ msgstr "앞뒤 바꾸기"
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 msgstr "원하는 챕터는 켜세요. 시리즈 총계에 포함되며 다운로드할 수 있습니다. 이미 가진 챕터는 어느 쪽이든 포함됩니다."
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Switch reading direction"
 msgstr "읽기 방향 전환"
@@ -26058,6 +26202,10 @@ msgstr "마지막 상태 검사에서 이 파일을 디스크에서 찾지 못�
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "레이아웃을 불러오지 못했습니다."
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "The left and right arrows turn pages. Remove them from Next page and Previous page first."
+msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -27453,6 +27601,7 @@ msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 #: src/components/MetadataDumpProgress.tsx
 #: src/components/notes/NotesPanel.tsx
 #: src/components/pageconversion/PlanEstimate.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -27535,7 +27684,7 @@ msgstr "시리즈의 모니터링 옵션에서 시리즈별로 켭니다."
 msgid "Turning embeddings off…"
 msgstr "임베딩 끄는 중…"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #, fuzzy
 msgid "Turning pages"
 msgstr "페이지 넘기기"
@@ -27676,6 +27825,7 @@ msgstr "밑줄 (_)"
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -27969,11 +28119,6 @@ msgstr "종료: {end}"
 #, fuzzy
 msgid "Up"
 msgstr "위로"
-
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Up a screen"
-msgstr "한 화면 위로"
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -29228,6 +29373,11 @@ msgstr "시리즈 전체 묶음, 직접 결정해야 합니다"
 msgid "Wide pages"
 msgstr "넓은 페이지"
 
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
@@ -29777,16 +29927,13 @@ msgstr "영역 크기 ({width}%)"
 msgid "Zoom"
 msgstr "확대"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Zoom in"
 msgstr "확대"
 
-#: src/pages/reader/ShortcutSheet.tsx
-#, fuzzy
-msgid "Zoom in and out"
-msgstr "확대 및 축소"
-
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Zoom out"

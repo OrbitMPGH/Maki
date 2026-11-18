@@ -10164,7 +10164,7 @@ body.reader-open {
 }
 /* App inks and Mantine's gray and light variants flip with the app theme; on the dark stage they
    are pinned to the reader's own. Notes keep the app surface on purpose, so they are left out. */
-:is(.reader-bar, .reader-end, .reader-message) {
+:is(.reader-bar, .reader-end, .reader-message, .reader-shortcuts) {
   --ink-2: var(--reader-ink-2);
   --ink-3: var(--reader-ink-3);
   --mantine-color-dimmed: var(--reader-ink-3);
@@ -11998,6 +11998,14 @@ body.reader-open {
   justify-content: space-between;
   margin-bottom: 14px;
 }
+.reader-shortcuts-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.reader-shortcuts-foot .mantine-Anchor-root {
+  color: var(--brand-fg-on-art);
+}
 .reader-shortcuts-head h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -12006,9 +12014,12 @@ body.reader-open {
   letter-spacing: -0.01em;
 }
 .reader-shortcuts-groups {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px 28px;
+  columns: 2 300px;
+  column-gap: 32px;
+}
+.reader-shortcuts-groups section {
+  break-inside: avoid;
+  margin-bottom: 20px;
 }
 .reader-shortcuts-groups h3 {
   margin: 0 0 8px;
@@ -12032,9 +12043,14 @@ body.reader-open {
 }
 .reader-shortcuts-row dd {
   display: flex;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 4px;
   margin: 0;
+}
+.reader-shortcuts-none {
+  font-size: var(--type-micro);
+  color: var(--reader-ink-3);
 }
 .reader-shortcuts-row kbd {
   min-width: 24px;
@@ -14023,6 +14039,156 @@ button.import-plan-folder-head:hover {
   }
   .taste-theme-share {
     width: auto;
+  }
+}
+
+/* --- Keyboard shortcuts ------------------------------------------------------ */
+.shortcut-load-error {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.shortcut-group + .shortcut-group {
+  border-top: 1px solid var(--hairline);
+}
+.shortcut-group-title {
+  margin: 0;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) 4px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.shortcut-group-hint {
+  margin: 0;
+  padding: 0 var(--mantine-spacing-lg) 4px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.shortcut-list {
+  margin: 0;
+  padding: 0 0 var(--mantine-spacing-xs);
+  list-style: none;
+}
+.shortcut-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  min-height: 48px;
+  padding: 6px var(--mantine-spacing-lg);
+}
+.shortcut-label {
+  color: var(--ink);
+  font-size: var(--type-body);
+}
+.shortcut-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  transition: opacity var(--dur-base) var(--ease);
+}
+.shortcut-row[data-recording] .shortcut-key {
+  opacity: 0.45;
+}
+.shortcut-key kbd {
+  padding: 1px 2px 1px 8px;
+  font-family: inherit;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.6;
+  color: var(--ink-hi);
+}
+.shortcut-key-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.shortcut-key-remove:hover {
+  color: var(--danger);
+}
+.shortcut-key-remove:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-control);
+}
+.shortcut-none {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.shortcut-recorder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--ink-hi);
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.6;
+  cursor: pointer;
+}
+.shortcut-recorder:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.shortcut-recorder-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: shortcut-recording 1s var(--ease) infinite alternate;
+}
+@keyframes shortcut-recording {
+  to {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-recorder-dot {
+    animation: none;
+  }
+}
+.shortcut-reset {
+  display: inline-flex;
+  width: 28px;
+}
+/* On a phone every row stacks the same way, so a long label never leaves its keys on a ragged line. */
+@media (max-width: 30em) {
+  .shortcut-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding-block: 10px;
+  }
+  .shortcut-keys {
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
+  .shortcut-key-remove {
+    min-width: 32px;
+    min-height: 32px;
   }
 }
 

@@ -33,6 +33,7 @@ import { useRatingFormat } from '../../api/ratings'
 import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
+import { actionFor, buildKeyMap, comboFromEvent, parseCombo, useShortcutBindings } from '../../lib/shortcuts'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
 import RecapSkip from './RecapSkip'
@@ -983,130 +984,138 @@ export default function ReaderPage() {
 
   // The listener is registered once and reads the latest handler, so it is not torn down and
   // re-added on every render (a page change in continuous mode re-renders on each scroll step).
+  const shortcutBindings = useShortcutBindings()
+  const keyMap = useMemo(() => buildKeyMap(shortcutBindings, prefs.direction === 'rtl'), [shortcutBindings, prefs.direction])
+
   const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
   onKey.current = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+    if (event.defaultPrevented) return
     const target = event.target instanceof HTMLElement ? event.target : null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
     // Keys inside the notes belong to them, not to the page behind.
     if (target?.closest('.notes-surface')) return
-    // Space on a control reached by keyboard presses that control, it does not turn the page.
+    const combo = comboFromEvent(event)
+    if (!combo) return
+    // Space or Enter on a control reached by keyboard presses that control, it does not turn the page.
+    const { key } = parseCombo(combo)
     if (
-      event.key === ' ' &&
+      (key === 'Space' || key === 'Enter') &&
       target?.matches(':focus-visible') &&
       target.closest('button, a, [role="button"], [role="slider"], [contenteditable="true"]')
     ) {
       return
     }
+    const action = actionFor(keyMap, combo)
 
     // The sheet is read, not driven: while it is up the only keys that do anything close it.
     if (shortcutsOpen) {
-      if (event.key === 'Escape' || event.key === '?') {
+      if (combo === 'Escape' || action === 'reader.shortcuts') {
         event.preventDefault()
         setShortcutsOpen(false)
       }
       return
     }
 
-    // In right-to-left reading the left arrow advances; in left-to-right it goes back.
-    const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
-    const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+    if (combo === 'Escape') {
+      if (!document.fullscreenElement && manifest) back.go()
+      return
+    }
+    if (!action) return
 
-    // Caps Lock and Shift upper-case letters; the named keys (ArrowLeft, Home) are longer than 1.
-    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
-
-    switch (key) {
-      case forwardKey:
+    switch (action) {
+      case 'reader.next':
         event.preventDefault()
         next()
         break
-      case backKey:
+      case 'reader.previous':
         event.preventDefault()
         previous()
         break
-      case ' ':
-      case 'PageDown':
-      case 'PageUp': {
+      case 'reader.screenDown':
+      case 'reader.screenUp': {
         event.preventDefault()
-        const back = key === 'PageUp' || (key === ' ' && event.shiftKey)
-        if (mode === 'vertical' && !atEnd) stepStrip(back ? -1 : 1)
-        else if (back) previous()
+        const up = action === 'reader.screenUp'
+        if (mode === 'vertical' && !atEnd) stepStrip(up ? -1 : 1)
+        else if (up) previous()
         else next()
         break
       }
-      case 'a':
-        if (mode === 'vertical') toggleAutoScroll()
+      case 'reader.autoScroll':
+      case 'reader.autoScrollSlower':
+      case 'reader.autoScrollFaster':
+        // Outside Continuous these do nothing, so the key keeps whatever the browser does with it.
+        if (mode !== 'vertical') break
+        event.preventDefault()
+        if (action === 'reader.autoScroll') toggleAutoScroll()
+        else setAutoScrollLevel(autoScrollLevel + (action === 'reader.autoScrollFaster' ? 1 : -1))
         break
-      case '[':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel - 1)
-        break
-      case ']':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel + 1)
-        break
-      case 'Home':
+      case 'reader.first':
         event.preventDefault()
         setAtEnd(false)
         seekToPage(0)
         break
-      case 'End':
+      case 'reader.last':
         event.preventDefault()
         setAtEnd(false)
         seekToPage(Math.max(0, pageCount - 1))
         break
-      case 'f':
+      case 'reader.fullscreen':
+        event.preventDefault()
         toggleFullscreen()
         break
-      case 'd':
+      case 'reader.direction':
+        event.preventDefault()
         update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
         break
-      case 'b':
-        if (!bookmarkOffline) toggleBookmark.mutate(page)
+      case 'reader.bookmark':
+        if (bookmarkOffline) break
+        event.preventDefault()
+        toggleBookmark.mutate(page)
         break
-      case 't':
+      case 'reader.thumbnails':
+        event.preventDefault()
         setStripOpen((open) => !open)
         break
-      case ',':
-      case '<':
-      case '.':
-      case '>': {
-        const toward = key === ',' || key === '<' ? -1 : 1
+      case 'reader.previousBookmark':
+      case 'reader.nextBookmark': {
+        const toward = action === 'reader.previousBookmark' ? -1 : 1
         const target = adjacentBookmark(bookmarkedPages, page, shownTo, toward)
         if (target !== null) {
+          event.preventDefault()
           setAtEnd(false)
           seekToPage(target)
         }
         break
       }
-      case '1':
-        edit({ mode: 'paged' })
+      case 'reader.single':
+      case 'reader.double':
+      case 'reader.continuous':
+        event.preventDefault()
+        edit({ mode: action === 'reader.single' ? 'paged' : action === 'reader.double' ? 'double' : 'vertical' })
         break
-      case '2':
-        edit({ mode: 'double' })
-        break
-      case '3':
-        edit({ mode: 'vertical' })
-        break
-      case 'c':
+      case 'reader.crop':
+        event.preventDefault()
         update({ cropBorders: !prefs.cropBorders })
         break
-      case 'e':
+      case 'reader.enhance':
+        event.preventDefault()
         toggleAlwaysEnhance()
         break
-      case '+':
-      case '=':
+      case 'reader.zoomIn':
+        event.preventDefault()
         zoomIn()
         break
-      case '-':
+      case 'reader.zoomOut':
+        event.preventDefault()
         zoomOut()
         break
-      case '0':
+      case 'reader.zoomReset':
+        event.preventDefault()
         zoomReset()
         break
-      case '?':
+      case 'reader.shortcuts':
+        event.preventDefault()
         setShortcutsOpen(true)
-        break
-      case 'Escape':
-        if (!document.fullscreenElement && manifest) back.go()
         break
     }
   }

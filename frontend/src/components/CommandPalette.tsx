@@ -1,5 +1,5 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
-import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
+import { useDisclosure } from '@mantine/hooks'
 import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
@@ -18,6 +18,8 @@ import { Thumb } from './ui/Thumb'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
 import { MODAL_SIZE } from './ui/modalSizes'
+import { ariaKeyShortcuts, useShortcut, useShortcutBindings } from '../lib/shortcuts'
+import { useFormatCombo } from '../lib/shortcutLabels'
 
 const LIST_MAX_HEIGHT = 360
 
@@ -86,7 +88,9 @@ export function CommandPaletteTrigger({
   onOpen: () => void
   variant?: 'bar' | 'icon'
 }) {
-  const isMac = useOs() === 'macos'
+  const searchKeys = useShortcutBindings()['app.search']
+  const searchKey = searchKeys[0]
+  const formatCombo = useFormatCombo()
   return (
     <button
       type="button"
@@ -96,14 +100,13 @@ export function CommandPaletteTrigger({
           : 'command-palette-trigger'
       }
       onClick={onOpen}
-      aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
+      aria-keyshortcuts={searchKeys.length > 0 ? ariaKeyShortcuts(searchKeys) : undefined}
     >
       <IconSearch size={16} />
       <span className="command-palette-trigger-label">
         <Trans>Search</Trans>
       </span>
-      {/* The key names themselves, not words: the same two keys whatever the reader speaks. */}
-      <span className="command-palette-trigger-kbd">{isMac ? '⌘ K' : 'Ctrl K'}</span>
+      {searchKey && <span className="command-palette-trigger-kbd">{formatCombo(searchKey, { compact: true })}</span>}
     </button>
   )
 }
@@ -136,8 +139,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
   const optionId = (i: number) => `${listId}-option-${i}`
   const visibleSettings = useVisibleSettingsEntries()
 
-  // No ignored tags: mod+K has no editing meaning, and people reach for it while typing in a field.
-  useHotkeys([['mod+K', open]], [])
+  useShortcut('app.search', open, { inFields: true })
 
   useEffect(() => {
     if (!opened) {
