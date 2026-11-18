@@ -1,3 +1,5 @@
+using Maki.Metadata.Embedding;
+
 namespace Maki.Metadata.Ease;
 
 /// <summary>
@@ -82,7 +84,8 @@ public static class EaseScorer
         EaseTable table,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
-        IReadOnlySet<long> candidates)
+        IReadOnlySet<long> candidates,
+        double minShare = 0)
     {
         var found = new Dictionary<long, List<(long Seed, double Contribution)>>();
         if (candidates.Count == 0)
@@ -120,8 +123,6 @@ public static class EaseScorer
             }
         }
 
-        return found.ToDictionary(
-            kv => kv.Key,
-            kv => kv.Value.OrderByDescending(s => s.Contribution).ThenBy(s => s.Seed).Select(s => s.Seed).ToList());
+        return found.ToDictionary(kv => kv.Key, kv => ReasonShare.Keep(kv.Value, minShare));
     }
 }

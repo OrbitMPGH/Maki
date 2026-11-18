@@ -435,6 +435,12 @@ public static class EmbeddingMath
     /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
     /// likes is really just fame, which is the failure every table in this codebase is read against.
     /// </param>
+    /// <param name="Route">
+    /// How the row entered the pool: 0 a text query pooled it, 1 the vote graph injected it, 2 co-read,
+    /// 3 the taste vectors, 4 the EASE table.
+    /// </param>
+    /// <param name="PopularityRank">The stored global popularity rank, 0 when unknown.</param>
+    /// <param name="Score">What <see cref="HybridScore"/> returned for the row.</param>
     public readonly record struct CandidateFeatures(
         long Id,
         double Semantic,
@@ -449,7 +455,10 @@ public static class EmbeddingMath
         double Percentile,
         double Avoid,
         double AvoidTag = 0,
-        double Ease = 0);
+        double Ease = 0,
+        int Route = 0,
+        long PopularityRank = 0,
+        double Score = 0);
 
     /// <summary>
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality

@@ -462,6 +462,47 @@ public sealed record RecommenderTuning
     public double AttributionMargin { get; init; } = 0.5;
 
     /// <summary>
+    /// The share of a crowd pick's positive co-read or EASE total a seed must carry before a "Fans of"
+    /// card may name it (<see cref="ReasonShare"/>). Below it the card says "Readers like you also
+    /// finished this". 0 names the largest contributor however small. Reason fields only, never the
+    /// order or the score.
+    /// </summary>
+    public double MinReasonShare { get; init; } = 0.25;
+
+    /// <summary>
+    /// Score subtracted from a pick that lands on every reader's page: this times its
+    /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0, the shipped value,
+    /// is off. Only applies when a table is registered and the caller asks for it (personal
+    /// recommendations), never on the series-page rail.
+    /// </summary>
+    public double CommonWeight { get; init; }
+
+    /// <summary>
+    /// Shape of the page-share penalty. 1 is linear in the share; below 1 reaches further down the
+    /// list of common titles, above 1 only touches the ones nearly everybody gets.
+    /// </summary>
+    public double CommonPower { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many times the shelf's own share of famous titles a list may hold at any point
+    /// (<see cref="ShelfFame"/>). 0 is off, which is what ships. 1.0 holds every prefix of the list
+    /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
+    /// deferred, not dropped, and a one-seed request is never limited. On held-out readers 1.25
+    /// costs 0.003 nDCG@40 for 4 points of top-1k share and 1.0 costs 0.007 for 8; on a real mixed
+    /// shelf they take a page from 98% top-1k to 68% and 55%. Eval key <c>famecap</c>. See
+    /// distribution/CLAUDE.md, "v8: a shelf-relative fame cap".
+    /// </summary>
+    public double FameCapRatio { get; init; }
+
+    /// <summary>
+    /// Seed weight <see cref="ShelfFame.Limits"/> adds on the famous side, so a shelf of a few
+    /// series is barely limited. Only read when <see cref="FameCapRatio"/> is above 0. 3 instead of
+    /// 10 is a tighter ratio by another name: it lands on the same cost-for-fame line and barely
+    /// changes a shelf of 100 or more. Eval key <c>famecappseudo</c>.
+    /// </summary>
+    public double FameCapPseudoSeeds { get; init; } = 10;
+
+    /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own
     /// spread. See <see cref="Embedding.AttributionScale"/>; defaults to
     /// <see cref="AttributionScale.PoolRelative"/>, which is what makes one margin work across

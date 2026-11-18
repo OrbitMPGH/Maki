@@ -52,6 +52,7 @@ public class RecommendationServiceEaseTests : IDisposable
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
+            IReadOnlyDictionary<long, double>? demote = null, bool common = false,
             CancellationToken ct = default)
         {
             SeenEase.Add(ease);

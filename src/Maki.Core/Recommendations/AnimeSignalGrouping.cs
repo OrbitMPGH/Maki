@@ -102,6 +102,18 @@ public static class AnimeSignalGrouping
             .ToList();
 
     /// <summary>
+    /// Manga whose anime the reader has started: any matched entry that is not plan-to-watch, scored
+    /// or not. This is exposure, not taste, so like <see cref="Watched"/> it must never feed seeding.
+    /// An entry still at episode 0 is left out, since nothing was watched yet.
+    /// </summary>
+    public static IReadOnlySet<long> WatchedManga(IEnumerable<AnimeSignalRow> rows) =>
+        Watched(rows)
+            .Where(s => s.MangaBakaId is not null && s.Status != AnimeWatchStatus.Planning
+                && (s.Status == AnimeWatchStatus.Completed || s.Progress is not 0))
+            .Select(s => s.MangaBakaId!.Value)
+            .ToHashSet();
+
+    /// <summary>
     /// What makes two rows the same anime. The MyAnimeList id when both sides know it, which is the
     /// only exact answer available; otherwise the row stands alone under its own tracker's id.
     /// Titles are deliberately not a fallback: AniList serves English titles and MyAnimeList romaji,
