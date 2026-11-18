@@ -36,7 +36,7 @@ public class ChapterStripMatchTests(ITestOutputHelper output)
     {
         // A webtoon cut at other points, MangaKakalot's page plus crop, and TopManhua's pages cut in two.
         string[] cut = ["The Dark Mage's Return to Enlistment 48", "Too Many Losing Heroines! 10", "Too Many Losing Heroines! 22",
-            "My Dress-Up Darling 3 (TopManhua slices)"];
+            "My Dress-Up Darling 3 (TopManhua slices)", "My Dress-Up Darling 62 (TopManhua slices, spreads)"];
         foreach (var name in cut)
         {
             Assert.True(Audit.Value.Single(c => c.Name.StartsWith(name, StringComparison.Ordinal)).Matches, name);
@@ -44,9 +44,8 @@ public class ChapterStripMatchTests(ITestOutputHelper output)
 
         var missed = Audit.Value.Where(c => c.Right && !c.Matches).Select(c => c.Name).ToList();
         output.WriteLine($"{Audit.Value.Count(c => c.Right) - missed.Count} of {Audit.Value.Count(c => c.Right)} right floors match: missed {string.Join("; ", missed)}");
-        // Left: three different scans (Hidden Dungeon 17, Komi 196, Now That We Draw 19), and Dress-Up
-        // Darling 1, which its pages already match.
-        Assert.Equal(4, missed.Count);
+        // Left: three different scans of one chapter (Hidden Dungeon 17, Komi 196, Now That We Draw 19).
+        Assert.Equal(3, missed.Count);
     }
 
     [Fact]

@@ -16,6 +16,11 @@ public static class StripHash
 
     public const int Step = 2;
 
+    /// <summary>An image this many times as wide as tall, and up to <see cref="SpreadMax"/>, is a two-page spread.</summary>
+    private const double SpreadMin = 1.2;
+
+    private const double SpreadMax = 1.8;
+
     /// <summary>A strip longer than this (a very long webtoon chapter) is not stored; its pages still are.</summary>
     public const int MaxWindows = 20_000;
 
@@ -32,18 +37,41 @@ public static class StripHash
                 return null;
             }
 
-            var height = Math.Max(1, (int)Math.Round((double)header.Height * Width / header.Width));
-            using var thumb = ImageCodec.ThumbnailFile(file, Width, height);
+            // A two-page spread is the two pages another source lists one by one: right page first, as
+            // manga reads. Wider than that is a strip of one page (TopManhua's bottom slices), left whole.
+            var spread = header.Width > header.Height * SpreadMin && header.Width < header.Height * SpreadMax;
+            var across = spread ? 2 * Width : Width;
+            var height = Math.Max(1, (int)Math.Round((double)header.Height * across / header.Width));
+            using var thumb = ImageCodec.ThumbnailFile(file, across, height);
             using var srgb = thumb.Colourspace(Enums.Interpretation.Srgb);
             using var grey = srgb.Colourspace(Enums.Interpretation.Bw);
             using var flat = grey.HasAlpha() ? grey.Flatten(background: [255]) : grey.Copy();
-            if (flat.Width != Width || flat.Bands != 1)
+            if (flat.Width != across || flat.Bands != 1)
             {
                 return null;
             }
 
-            pages.Add(flat.WriteToMemory<byte>());
-            rows += flat.Height;
+            var pixels = flat.WriteToMemory<byte>();
+            if (spread)
+            {
+                // Read once and halved here: libvips reads the page sequentially, two crops would not.
+                var right = new byte[Width * flat.Height];
+                var left = new byte[Width * flat.Height];
+                for (var y = 0; y < flat.Height; y++)
+                {
+                    pixels.AsSpan(y * across, Width).CopyTo(left.AsSpan(y * Width));
+                    pixels.AsSpan(y * across + Width, Width).CopyTo(right.AsSpan(y * Width));
+                }
+
+                pages.Add(right);
+                pages.Add(left);
+            }
+            else
+            {
+                pages.Add(pixels);
+            }
+
+            rows += (spread ? 2 : 1) * flat.Height;
             if ((rows - Width) / Step > MaxWindows)
             {
                 return null;
