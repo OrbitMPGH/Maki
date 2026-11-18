@@ -1,0 +1,52 @@
+diff --git a/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs b/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
+index 0e6ac31..5d41eed 100644
+--- a/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
++++ b/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
+@@ -57,8 +57,19 @@ function useTransition({ duration, exitDuration, timingFunction, mounted, onEnte
+ 	(0, _mantine_hooks.useDidUpdate)(() => {
+ 		handleTransitionWithDelay(mounted);
+ 	}, [mounted]);
+-	(0, react.useEffect)(() => () => {
+-		clearAllTimeouts();
++	const settleRef = (0, react.useRef)(null);
++	settleRef.current = { mounted, status: transitionStatus, onEntered, onExited };
++	(0, react.useEffect)(() => {
++		const { mounted: shouldMount, status, onEntered: entered, onExited: exited } = settleRef.current;
++		const settled = shouldMount ? "entered" : "exited";
++		if (status !== settled) {
++			const handler = shouldMount ? entered : exited;
++			typeof handler === "function" && handler();
++			setStatus(settled);
++		}
++		return () => {
++			clearAllTimeouts();
++		};
+ 	}, []);
+ 	return {
+ 		transitionDuration,
+diff --git a/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs b/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
+index ea5fd53..ba4d07e 100644
+--- a/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
++++ b/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
+@@ -55,8 +55,19 @@ function useTransition({ duration, exitDuration, timingFunction, mounted, onEnte
+ 	useDidUpdate(() => {
+ 		handleTransitionWithDelay(mounted);
+ 	}, [mounted]);
+-	useEffect(() => () => {
+-		clearAllTimeouts();
++	const settleRef = useRef(null);
++	settleRef.current = { mounted, status: transitionStatus, onEntered, onExited };
++	useEffect(() => {
++		const { mounted: shouldMount, status, onEntered: entered, onExited: exited } = settleRef.current;
++		const settled = shouldMount ? "entered" : "exited";
++		if (status !== settled) {
++			const handler = shouldMount ? entered : exited;
++			typeof handler === "function" && handler();
++			setStatus(settled);
++		}
++		return () => {
++			clearAllTimeouts();
++		};
+ 	}, []);
+ 	return {
+ 		transitionDuration,
