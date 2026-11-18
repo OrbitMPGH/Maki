@@ -8,8 +8,9 @@ using Quartz;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// The fold check for one series, right after it is matched: hashes the pages its nominated folds
-/// wait on and folds what they confirm, instead of leaving that to the two-hourly job. Smart Download
+/// The fold check for one series, right after it is matched: counts the pages its split floors wait
+/// on, hashes the pages the merges those counts nominate wait on, and folds what the pages confirm,
+/// instead of leaving that to the two-hourly job. Smart Download
 /// waits for it like it waits for the source scout (<see cref="SmartDownloadJob.WaitsForMeasurementAsync"/>),
 /// so the first batch already knows which part rows are part of a whole and which source is best for it.
 /// A check never holds a series past <see cref="Deadline"/>: whatever is still open then (a failing
@@ -19,7 +20,7 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
 {
     public static readonly TimeSpan Deadline = TimeSpan.FromMinutes(15);
 
-    /// <summary>Chapters hashed per round; rounds repeat while they make progress.</summary>
+    /// <summary>Chapters counted, and chapters hashed, per round; rounds repeat while they make progress.</summary>
     public const int ChaptersPerRound = 40;
 
     private readonly ConcurrentDictionary<int, byte> _running = new();
@@ -62,9 +63,11 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
         while (true)
         {
             using var scope = scopes.CreateScope();
-            var run = await scope.ServiceProvider.GetRequiredService<ChapterPageHashService>()
+            var counts = await scope.ServiceProvider.GetRequiredService<ChapterPageCountService>()
                 .RunAsync(ChaptersPerRound, ct, seriesId);
-            if (run.Hashed == 0 || run.Hashed >= run.Waiting)
+            var hashes = await scope.ServiceProvider.GetRequiredService<ChapterPageHashService>()
+                .RunAsync(ChaptersPerRound, ct, seriesId);
+            if (counts.Counted + hashes.Hashed == 0)
             {
                 break;
             }

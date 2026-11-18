@@ -2,6 +2,8 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -210,6 +212,65 @@ public sealed class ChapterFoldServiceTests : IDisposable
         Assert.Equal(0, await Folds().ApplyAsync(seriesId, CancellationToken.None));
 
         Assert.Equal([3m, 3.1m, 3.2m, 4m], Chapters(seriesId).Select(c => c.Number!.Value));
+    }
+
+    private sealed class PagesOf(IReadOnlyDictionary<string, List<ulong>> pages) : IChapterPageHasher
+    {
+        public Task<IReadOnlyList<ulong>?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<ulong>?>(pages.GetValueOrDefault(chapter.SourceChapterId));
+    }
+
+    [Fact]
+    public async Task The_check_after_a_match_counts_hashes_and_folds_the_series()
+    {
+        // As a freshly matched series has it: nothing counted or hashed yet.
+        var seriesId = Seed();
+        using (var db = _db.NewContext())
+        {
+            foreach (var link in db.ChapterSourceLinks.Include(l => l.SourceMapping).Where(l => l.Chapter!.SeriesId == seriesId))
+            {
+                link.PageHashes = null;
+                if (link.SourceMapping!.SourceName == "whole")
+                {
+                    link.PageCount = null;
+                }
+            }
+
+            db.SaveChanges();
+        }
+
+        var whole = new FakeSource
+        {
+            Name = "whole",
+            OnGetPages = c => new ChapterPages([.. Enumerable.Range(0, c.Number == 3 ? 39 : 40).Select(i => new PageRequest($"https://whole.test/{i}"))]),
+        };
+        var services = new ServiceCollection();
+        services.AddScoped(_ => _db.NewContext());
+        services.AddSingleton(new SourceRegistry([_parts, whole]));
+        services.AddSingleton(Sources.AllEnabled);
+        services.AddSingleton(new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance));
+        services.AddSingleton(new PageCountFailures());
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddSingleton<IChapterPageHasher>(new PagesOf(new Dictionary<string, List<ulong>>
+        {
+            [_whole.Chapter(3).SourceChapterId] = Whole,
+            [_parts.Chapter(3.1m).SourceChapterId] = Whole[..13],
+            [_parts.Chapter(3.2m).SourceChapterId] = Whole[13..],
+        }));
+        services.AddScoped<ChapterFoldPreviewService>();
+        services.AddScoped<ChapterPageCountService>();
+        services.AddScoped<ChapterPageHashService>();
+        services.AddScoped(sp => new ChapterFileDeletion(sp.GetRequiredService<Maki.Data.MakiDbContext>(),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
+            TestRecycleBin.For(sp.GetRequiredService<Maki.Data.MakiDbContext>()), NullLogger<ChapterFileDeletion>.Instance));
+        services.AddScoped<ChapterFoldService>();
+        using var provider = services.BuildServiceProvider();
+
+        await new ChapterFoldChecks(provider.GetRequiredService<IServiceScopeFactory>(), NullLogger<ChapterFoldChecks>.Instance)
+            .CheckAsync(seriesId, CancellationToken.None);
+
+        Assert.Equal([3m, 4m], Chapters(seriesId).Select(c => c.Number!.Value));
     }
 
     [Fact]
