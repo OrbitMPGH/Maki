@@ -8,8 +8,10 @@ in two steps: the eval harness writes pages for many readers, and this turns the
      PUBLISHED artifacts (taste vectors, co-read graph; EASE at the path you pass) and the dump:
        dotnet run distribution/eval-reco-labels.cs -- library --work .artifacts/coread-graph.db \\
          --ease <published ease-table.db> --shelf-status CURRENT --split all --requests 3000 \\
-         --dump-picks .artifacts/page-share-pages "pages:commonweight=0"
-     No --fold-users: a published table comes from every reader. commonweight=0, because the table
+         --build-pages --dump-picks .artifacts/page-share-pages "pages:commonweight=0"
+     No --fold-users: a published table comes from every reader, and --build-pages keeps co-read,
+     the taste vectors and EASE on, which library mode otherwise forces off without a fold (the
+     numbers that run prints are not results). commonweight=0, because the table
      measures what everybody gets before the penalty acts; built from penalised pages it would hold
      the hub titles lower and the next build would penalise them less. The cap stays at its default.
      CURRENT shelves, because a table from finished shelves holds the titles everybody gets at 1 to
@@ -49,6 +51,8 @@ def training_fold(about):
     folds = about.get("artifactFolds", {})
     if about.get("foldUsers") != "all":
         return f"readers {about.get('foldUsers')}"
+    if not about.get("buildPages"):
+        return "channels off (no --build-pages)"
     limited = {k: v for k, v in folds.items() if v not in ("all", "off")}
     if limited:
         return "; ".join(f"{k} {v}" for k, v in sorted(limited.items()))

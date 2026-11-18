@@ -151,6 +151,7 @@ var pageSize = 20;
 var householdShare = 0.10;
 string? dumpFeatures = null;
 string? dumpPicks = null;
+var buildPages = false;
 string? commonPathOverride = null;
 var shelfStatus = "COMPLETED";
 string? dumpPool = null;
@@ -260,6 +261,12 @@ for (var i = 0; i < args.Length; i++)
         // (distribution/eval-overlap.py) and for building a page-frequency table.
         case "--dump-picks":
             dumpPicks = args[++i];
+            break;
+        // Pages for distribution/build-page-share.py, from the engine as an install runs it: every
+        // channel on and every reader, so the leakage guard below is lifted. Nothing printed by such
+        // a run is a result.
+        case "--build-pages":
+            buildPages = true;
             break;
         // The page-frequency table that commonweight variants read (distribution/eval-overlap.py table).
         case "--common":
@@ -761,7 +768,7 @@ var forbidGraph = mode == "library" ? false : labelKind == "reco";
 // mode: the fold guard above has already refused one that saw the graded fold.
 var coReadFoldLimited = mode == "library" && foldCount > 0
     && ReadTrainingFolds(coReadPath) is { Count: > 0 } coReadFolds && HoldsOut(coReadFolds, foldIndex, foldCount);
-var forbidCoRead = (mode == "library" && !coReadFoldLimited) || labelKind == "coread";
+var forbidCoRead = !buildPages && ((mode == "library" && !coReadFoldLimited) || labelKind == "coread");
 if (coReadFoldLimited)
 {
     Console.WriteLine("note     : the co-read graph was built without the graded fold, so it stays on.");
@@ -776,7 +783,17 @@ if (coReadFoldLimited)
 //
 // `library` mode is the exception, and only because it has a real mechanism: --fold-users plus an
 // artifact built with --fold-out is a genuine reader-level split, which no flag can substitute for.
-var forbidTaste = labelKind == "coread" || (mode == "library" && foldCount == 0);
+var forbidTaste = !buildPages && (labelKind == "coread" || (mode == "library" && foldCount == 0));
+if (buildPages)
+{
+    if (mode != "library" || dumpPicks is null || foldCount > 0)
+    {
+        Console.WriteLine("error: --build-pages is for `library --dump-picks` over every reader (no --fold-users).");
+        return 2;
+    }
+
+    Console.WriteLine("note     : --build-pages lifts the leakage guard; every column below reads its own training data and is NOT a result.");
+}
 foreach (var v in variants)
 {
     if ((forbidGraph && v.CoGraph) || (forbidCoRead && v.CoRead))
@@ -1519,6 +1536,7 @@ async Task<ResultRow> Score(Variant variant)
             ["foldUsers"] = foldCount == 0 ? "all" : $"{foldIndex}/{foldCount}",
             ["split"] = split,
             ["shelfStatus"] = shelfStatus,
+            ["buildPages"] = buildPages,
             ["artifactFolds"] = new System.Text.Json.Nodes.JsonObject
             {
                 ["taste"] = variant.Taste.Weight > 0 ? Folds(tastePath) : "off",
