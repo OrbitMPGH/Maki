@@ -45,6 +45,16 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
         catch (OperationCanceledException) when (deadline.IsCancellationRequested)
         {
             logger.LogInformation("The fold check of series {SeriesId} ran out of time; the rest waits for the page hash job", seriesId);
+            try
+            {
+                // What the rounds so far settled still folds now, not at the job's next run.
+                using var last = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                await FoldAsync(seriesId, last.Token);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not fold the checked chapters of series {SeriesId}", seriesId);
+            }
         }
         catch (Exception ex)
         {
@@ -60,26 +70,35 @@ public sealed class ChapterFoldChecks(IServiceScopeFactory scopes, ILogger<Chapt
     /// <summary>The check itself, awaited; also what tests call.</summary>
     internal async Task CheckAsync(int seriesId, CancellationToken ct)
     {
+        // Each round folds what it settled, so a slow source (one browser page per chapter) holds back
+        // only the floors it has not reached yet.
         while (true)
         {
-            using var scope = scopes.CreateScope();
-            var counts = await scope.ServiceProvider.GetRequiredService<ChapterPageCountService>()
-                .RunAsync(ChaptersPerRound, ct, seriesId);
-            var hashes = await scope.ServiceProvider.GetRequiredService<ChapterPageHashService>()
-                .RunAsync(ChaptersPerRound, ct, seriesId);
-            if (counts.Counted + hashes.Hashed == 0)
+            int progress;
+            using (var scope = scopes.CreateScope())
+            {
+                var counts = await scope.ServiceProvider.GetRequiredService<ChapterPageCountService>()
+                    .RunAsync(ChaptersPerRound, ct, seriesId);
+                var hashes = await scope.ServiceProvider.GetRequiredService<ChapterPageHashService>()
+                    .RunAsync(ChaptersPerRound, ct, seriesId);
+                progress = counts.Counted + hashes.Hashed;
+            }
+
+            await FoldAsync(seriesId, ct);
+            if (progress == 0)
             {
                 break;
             }
         }
+    }
 
-        using (var scope = scopes.CreateScope())
+    private async Task FoldAsync(int seriesId, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var folded = await scope.ServiceProvider.GetRequiredService<ChapterFoldService>().ApplyAsync(seriesId, ct);
+        if (folded > 0)
         {
-            var folded = await scope.ServiceProvider.GetRequiredService<ChapterFoldService>().ApplyAsync(seriesId, ct);
-            if (folded > 0)
-            {
-                logger.LogInformation("Folded {Count} split chapter(s) of series {SeriesId} after matching", folded, seriesId);
-            }
+            logger.LogInformation("Folded {Count} split chapter(s) of series {SeriesId} after matching", folded, seriesId);
         }
     }
 
