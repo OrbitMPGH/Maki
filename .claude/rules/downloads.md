@@ -80,6 +80,7 @@ paths:
   - "src/Maki.Core/Entities/PageConversion*.cs"
   - "src/Maki.Core/Images/TallPageSplitter.cs"
   - "src/Maki.Core/Images/PageSplitMap.cs"
+  - "src/Maki.Core/Images/ImageWorkGate.cs"
   - "src/Maki.Api/Services/PageSplitRemap.cs"
   - "src/Maki.Api/Services/VolumeFirst*.cs"
   - "src/Maki.Core/Quality/ProposalAutoApproval.cs"

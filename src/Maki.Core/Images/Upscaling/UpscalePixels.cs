@@ -44,8 +44,8 @@ public static class UpscalePixels
         return spreadSum <= (long)samples * MaxMeanSpread;
     }
 
-    private const int SmoothReach = 2;     // taps each side: a 5 x 5 grid
-    private const int SmoothStep = 2;      // source px between taps, so the grid spans an 8 px JPEG block
+    internal const int SmoothReach = 2;    // taps each side: a 5 x 5 grid
+    internal const int SmoothStep = 2;     // source px between taps, so the grid spans an 8 px JPEG block
     private const double SmoothSpace = 4;  // source px
     private const double SmoothLuma = 4;   // luma levels
     private const double SmoothChroma = 3; // Cb/Cr levels
@@ -82,20 +82,7 @@ public static class UpscalePixels
     /// </para>
     /// </summary>
     public static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads) =>
-        TakeColourFrom(output, width, height, source, sourceWidth, sourceHeight, threads,
-            banded: (long)sourceWidth * sourceHeight > BandedFromPixels);
-
-    /// <summary>
-    /// From this many source pixels the colour pass works band by band. The whole-page pass holds 13 bytes a
-    /// source pixel (136 MB on a 720 x 16000 webtoon slice, the peak of a tall page) and the banded one a few MB,
-    /// for the same bytes out. On a typical 1.7 MP page the banded pass was 7 to 18% slower, on 2.6 MP and up
-    /// within noise of the whole-page one.
-    /// </summary>
-    internal const long BandedFromPixels = 4_000_000;
-
-    internal static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads, bool banded)
+        int threads)
     {
         var scale = sourceWidth > 0 ? width / sourceWidth : 0;
         if (scale < 1 || width != sourceWidth * scale || height != sourceHeight * scale
@@ -106,7 +93,6 @@ public static class UpscalePixels
 
         var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads) };
         var guide = new byte[sourceWidth * sourceHeight];
-        var chroma = banded ? [] : new short[sourceWidth * sourceHeight * 2];
         Parallel.For(0, sourceHeight, options, y =>
         {
             for (var x = 0; x < sourceWidth; x++)
@@ -123,27 +109,13 @@ public static class UpscalePixels
 
                 guide[y * sourceWidth + x] = (byte)((sum + scale * scale / 2) / (scale * scale));
             }
-
-            if (!banded)
-            {
-                ChromaRow(source, chroma, sourceWidth, y, 0);
-            }
         });
-
-        if (!banded)
-        {
-            var smooth = new float[sourceWidth * sourceHeight * 2];
-            var bands = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
-            Parallel.For(0, bands, options, band => SmoothRows(chroma, 0, guide, smooth, 0, sourceWidth, sourceHeight,
-                band * SmoothBandRows, Math.Min(sourceHeight, (band + 1) * SmoothBandRows)));
-            Parallel.For(0, height, options, y => ColourRow(output, width, smooth, 0, sourceWidth, sourceHeight, scale, y));
-            return;
-        }
 
         // Each band of source rows works out its own chroma (with the rows its taps reach) and smoothed colour
         // (with the next row, for the bilinear), then colours the output rows it covers. Nothing waits between
-        // bands; the guide is the only whole-page buffer, taken before any output row changes. Every pixel gets
-        // the same arithmetic as in the whole-page pass.
+        // bands; the guide is the only whole-page buffer, taken before any output row changes. Holding the whole
+        // page's chroma and colour instead costs 12 more bytes a source pixel (22 MB on a 1.7 MP page) to save
+        // about 5 ms.
         var reach = SmoothReach * SmoothStep;
         var count = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
         var starts = new int[count + 1];
@@ -173,7 +145,7 @@ public static class UpscalePixels
                 SmoothRows(buffers.Chroma, chromaTop, guide, buffers.Smooth, top, sourceWidth, sourceHeight, top, last + 1);
                 for (var y = starts[band]; y < starts[band + 1]; y++)
                 {
-                    ColourRow(output, width, buffers.Smooth, top, sourceWidth, sourceHeight, scale, y);
+                    ColourRow(output.AsSpan(y * width * 3, width * 3), width, buffers.Smooth, top, sourceWidth, sourceHeight, scale, y);
                 }
 
                 return buffers;
@@ -181,7 +153,7 @@ public static class UpscalePixels
             _ => { });
     }
 
-    private static void ChromaRow(byte[] source, short[] chroma, int width, int y, int chromaTop)
+    internal static void ChromaRow(byte[] source, short[] chroma, int width, int y, int chromaTop)
     {
         for (var x = 0; x < width; x++)
         {
@@ -198,7 +170,7 @@ public static class UpscalePixels
     /// Smooths source rows <paramref name="from"/> up to <paramref name="end"/>. Chroma rows are held from
     /// <paramref name="chromaTop"/>, smoothed rows from <paramref name="smoothTop"/>; the guide is the whole page.
     /// </summary>
-    private static void SmoothRows(short[] chroma, int chromaTop, byte[] guide, float[] smooth, int smoothTop, int width,
+    internal static void SmoothRows(short[] chroma, int chromaTop, byte[] guide, float[] smooth, int smoothTop, int width,
         int height, int from, int end)
     {
         var tapW = SmoothTapWeights;
@@ -253,13 +225,13 @@ public static class UpscalePixels
     }
 
     /// <summary>Where output row <paramref name="y"/> samples the source, in source rows.</summary>
-    private static float SourceY(int y, int scale, int sourceHeight) => Math.Clamp((y + 0.5f) / scale - 0.5f, 0, sourceHeight - 1);
+    internal static float SourceY(int y, int scale, int sourceHeight) => Math.Clamp((y + 0.5f) / scale - 0.5f, 0, sourceHeight - 1);
 
     /// <summary>
-    /// One output row: its own luma plus the smoothed colour (blue and red minus luma) sampled up bilinearly.
-    /// <paramref name="smooth"/> holds source rows from <paramref name="smoothTop"/>.
+    /// Output row <paramref name="y"/> (<paramref name="row"/>): its own luma plus the smoothed colour (blue and red
+    /// minus luma) sampled up bilinearly. <paramref name="smooth"/> holds source rows from <paramref name="smoothTop"/>.
     /// </summary>
-    private static void ColourRow(byte[] output, int width, float[] smooth, int smoothTop, int sourceWidth, int sourceHeight,
+    internal static void ColourRow(Span<byte> row, int width, float[] smooth, int smoothTop, int sourceWidth, int sourceHeight,
         int scale, int y)
     {
         var sy = SourceY(y, scale, sourceHeight);
@@ -277,11 +249,11 @@ public static class UpscalePixels
             var db = Bilinear(smooth, top + x0 * 2, top + x1 * 2, bottom + x0 * 2, bottom + x1 * 2, fx, fy);
             var dr = Bilinear(smooth, top + x0 * 2 + 1, top + x1 * 2 + 1, bottom + x0 * 2 + 1, bottom + x1 * 2 + 1, fx, fy);
             var dg = -(0.299f * dr + 0.114f * db) / 0.587f;
-            var o = (y * width + x) * 3;
-            var l = Luma(output[o], output[o + 1], output[o + 2]);
-            output[o] = (byte)Math.Clamp((int)MathF.Round(l + dr), 0, 255);
-            output[o + 1] = (byte)Math.Clamp((int)MathF.Round(l + dg), 0, 255);
-            output[o + 2] = (byte)Math.Clamp((int)MathF.Round(l + db), 0, 255);
+            var o = x * 3;
+            var l = Luma(row[o], row[o + 1], row[o + 2]);
+            row[o] = (byte)Math.Clamp((int)MathF.Round(l + dr), 0, 255);
+            row[o + 1] = (byte)Math.Clamp((int)MathF.Round(l + dg), 0, 255);
+            row[o + 2] = (byte)Math.Clamp((int)MathF.Round(l + db), 0, 255);
         }
     }
 

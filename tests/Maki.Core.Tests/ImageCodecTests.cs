@@ -132,4 +132,64 @@ public class ImageCodecTests : IDisposable
         Assert.True(PerceptualHash.Distance(a, b) <= 4, $"same page differs by {PerceptualHash.Distance(a, b)} bits");
         Assert.True(PerceptualHash.Distance(a, c) > 20, $"different pages differ by only {PerceptualHash.Distance(a, c)} bits");
     }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void Row_deviation_matches_a_plain_count_of_the_luma(int bands)
+    {
+        const int width = 37, height = 53;
+        var random = new Random(bands);
+        var pixels = new byte[width * height * bands];
+        random.NextBytes(pixels);
+        using var raw = NetVips.Image.NewFromMemory(pixels, width, height, bands, NetVips.Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: bands == 1 ? NetVips.Enums.Interpretation.Bw : NetVips.Enums.Interpretation.Srgb);
+
+        var expected = PlainRowDeviation(image);
+
+        Assert.Equal(expected, ImageCodec.RowDeviation(image));
+    }
+
+    [Fact]
+    public void Row_deviation_stays_exact_on_rows_whose_squares_pass_a_uint()
+    {
+        // Half 255 and half 128: 140,000 px of squares sum to about 8.1e9.
+        const int width = 140_000;
+        var pixels = new byte[width * 2];
+        for (var x = 0; x < pixels.Length; x++)
+        {
+            pixels[x] = (byte)(x % width < width / 2 ? 255 : 128);
+        }
+
+        using var raw = NetVips.Image.NewFromMemory(pixels, width, 2, 1, NetVips.Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: NetVips.Enums.Interpretation.Bw);
+
+        Assert.Equal(PlainRowDeviation(image), ImageCodec.RowDeviation(image));
+        Assert.Equal(63.5, ImageCodec.RowDeviation(image)[0]);
+    }
+
+    private static double[] PlainRowDeviation(NetVips.Image image)
+    {
+        using var flat = image.HasAlpha()
+            ? image.Flatten(background: Enumerable.Repeat(255.0, image.Bands - 1).ToArray())
+            : image.Copy();
+        using var grey = flat.Bands >= 3 ? flat.Colourspace(NetVips.Enums.Interpretation.Bw) : flat.ExtractBand(0);
+        var pixels = grey.WriteToMemory<byte>();
+        var rows = new double[grey.Height];
+        for (var y = 0; y < rows.Length; y++)
+        {
+            long sum = 0, squares = 0;
+            foreach (var value in pixels.AsSpan(y * grey.Width, grey.Width))
+            {
+                sum += value;
+                squares += value * value;
+            }
+
+            var mean = (double)sum / grey.Width;
+            rows[y] = Math.Sqrt(Math.Max(0, (double)squares / grey.Width - mean * mean));
+        }
+
+        return rows;
+    }
 }
