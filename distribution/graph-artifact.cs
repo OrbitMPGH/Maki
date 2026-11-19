@@ -4,7 +4,7 @@
 
 // Validates an exported artifact and packs it into a publishable one.
 // Driven by publish-graph.ps1; run directly with:
-//   dotnet run distribution/graph-artifact.cs -- <reco|coread|taste|cohorts|ease> <db> <outDir> <minRows>
+//   dotnet run distribution/graph-artifact.cs -- <reco|coread|taste|cohorts|ease|pageshare> <db> <outDir> <minRows>
 //
 // One tool for all three because the packing is identical - integrity check, zstd, manifest,
 // checksum - and only the table-level validation differs. Copies would be copies to keep in step,
@@ -14,7 +14,8 @@
 // is here rather than in a tool of its own for the same reason the second graph was: everything
 // except which tables it looks at is the same, including the check that matters most. `ease` is
 // the EASE weight table from build-ease-table.py, here for the same reason and with the same two
-// refusals as `taste`: per-user tables, and a fold-limited evaluation build.
+// refusals as `taste`: per-user tables, and a fold-limited evaluation build. `pageshare` is the
+// page-share table from build-page-share.py, with the same two refusals.
 //
 // The shape is deliberately the same as embeddings-artifact.cs, including the reason for it: under
 // Windows PowerShell a native command's stderr line becomes an ErrorRecord, so everything is
@@ -40,20 +41,21 @@ using ZstdSharp;
 
 if (args.Length < 4)
 {
-    Console.WriteLine("usage: graph-artifact.cs <reco|coread|taste|cohorts|ease> <db> <outDir> <minRows>");
+    Console.WriteLine("usage: graph-artifact.cs <reco|coread|taste|cohorts|ease|pageshare> <db> <outDir> <minRows>");
     return 2;
 }
 
 var kind = args[0].Trim().ToLowerInvariant();
-if (kind is not ("reco" or "coread" or "taste" or "cohorts" or "ease"))
+if (kind is not ("reco" or "coread" or "taste" or "cohorts" or "ease" or "pageshare"))
 {
-    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread, taste, cohorts or ease)");
+    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread, taste, cohorts, ease or pageshare)");
     return 2;
 }
 
 var isTaste = kind == "taste";
 var isCohorts = kind == "cohorts";
 var isEase = kind == "ease";
+var isPageShare = kind == "pageshare";
 
 var dbPath = args[1];
 var outDir = args[2];
@@ -115,9 +117,16 @@ if (!string.Equals(integrity, "ok", StringComparison.OrdinalIgnoreCase))
 // The working database and the artifact are both SQLite files with similar names sitting in the
 // same folder, and packing the wrong one would publish fetch bookkeeping instead of edges. The
 // table list is what tells them apart.
-var payloadTable = isTaste ? "item_vectors" : isCohorts ? "cohort_item" : isEase ? "weight" : "pair";
+var payloadTable = isTaste ? "item_vectors" : isCohorts ? "cohort_item" : isEase ? "weight" : isPageShare ? "share" : "pair";
 if (!HasTable(payloadTable))
 {
+    if (isPageShare)
+    {
+        Console.WriteLine("error: no 'share' table. This is not a page-share export.");
+        Console.WriteLine("       Run `build-page-share.py` and publish what it writes.");
+        return 1;
+    }
+
     if (isEase)
     {
         Console.WriteLine("error: no 'weight' table. This is not an EASE table export.");
@@ -162,13 +171,17 @@ var pairs = isTaste
         ? Count("SELECT COUNT(*) FROM cohort_item")
         : isEase
             ? Count("SELECT COUNT(*) FROM weight")
-            : Count("SELECT COUNT(*) FROM pair");
+            : isPageShare
+                ? Count("SELECT COUNT(*) FROM share")
+                : Count("SELECT COUNT(*) FROM pair");
 var series = isTaste
     ? pairs
     : isCohorts
         ? Count("SELECT COUNT(*) FROM item_global")
         : isEase
             ? Count("SELECT COUNT(*) FROM (SELECT DISTINCT seed_id FROM weight)")
+            : isPageShare
+                ? pairs
             : Count("SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair)");
 
 if (pairs < minRows)
@@ -178,7 +191,7 @@ if (pairs < minRows)
 
 // Both directions are materialized at load time from this one table, so a row naming the same
 // series twice becomes a self-loop that scores a seed against itself.
-if (!isTaste && !isCohorts && !isEase && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
+if (!isTaste && !isCohorts && !isEase && !isPageShare && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
 {
     problems.Add("some rows pair a series with itself; the export folded two remote ids onto one MangaBaka row");
 }
@@ -210,6 +223,8 @@ var manifest = isTaste
     ? new JsonObject { ["itemCount"] = pairs }
     : isEase
         ? new JsonObject { ["weightCount"] = pairs, ["itemCount"] = series }
+    : isPageShare
+        ? new JsonObject { ["rowCount"] = pairs }
     : isCohorts
         ? new JsonObject { ["cohortItemCount"] = pairs, ["itemCount"] = series }
         : new JsonObject { ["pairCount"] = pairs, ["seriesCount"] = series };
@@ -379,6 +394,43 @@ else if (isEase)
     manifest["trainingFold"] = trainingFold;
     manifest["trainedReaders"] = trainedReaders;
 }
+else if (isPageShare)
+{
+    // `share IS NULL OR NOT (share BETWEEN 0 AND 1)`: SQLite stores a NaN as NULL, and a plain range
+    // test against NULL lets exactly that row through.
+    if (Count("SELECT COUNT(*) FROM share WHERE share IS NULL OR NOT (share BETWEEN 0 AND 1)") > 0)
+    {
+        problems.Add("some shares are missing or outside [0, 1]");
+    }
+
+    // AN EVALUATION BUILD MUST NEVER BE PUBLISHED: pages from one reader fold, or from fold-limited
+    // taste or EASE artifacts, describe an engine no install runs.
+    var trainingFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'trainingFold'") : "";
+    if (string.IsNullOrWhiteSpace(trainingFold))
+    {
+        problems.Add("meta has no trainingFold, so nothing records which readers the pages came from");
+    }
+    else if (!trainingFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.trainingFold is '{trainingFold}', so this is an EVALUATION build made from "
+            + "fold-limited readers or artifacts");
+    }
+
+    var readers = metaPresent && long.TryParse(
+        Scalar("SELECT value FROM meta WHERE key = 'readers'"), NumberStyles.Integer,
+        CultureInfo.InvariantCulture, out var pageReaders)
+        ? pageReaders
+        : 0;
+
+    if (readers < 1000)
+    {
+        problems.Add($"meta.readers is {readers}; a table from fewer than 1,000 pages is noise");
+    }
+
+    manifest["trainingFold"] = trainingFold;
+    manifest["readers"] = readers;
+}
 else if (isTaste)
 {
     var dimensions = metaPresent && int.TryParse(
@@ -527,6 +579,7 @@ var baseName = kind switch
     "coread" => "coread-edges",
     "cohorts" => "reader-cohorts",
     "ease" => "ease-table",
+    "pageshare" => "page-share",
     _ => "taste-vectors",
 };
 var archiveName = $"{baseName}-{stamp}.db.zst";
@@ -561,6 +614,8 @@ Console.WriteLine(isTaste
     ? $"vectors    : {pairs}"
     : isEase
         ? $"weights    : {pairs} over {series} seeds"
+    : isPageShare
+        ? $"series     : {pairs}"
     : isCohorts
         ? $"cohort rows: {pairs} over {series} series"
         : $"pairs      : {pairs} over {series} series");
@@ -579,6 +634,10 @@ else if (isCohorts)
 else if (isEase)
 {
     Console.WriteLine($"built from : {manifest["trainedReaders"]} readers");
+}
+else if (isPageShare)
+{
+    Console.WriteLine($"built from : {manifest["readers"]} pages");
 }
 else
 {

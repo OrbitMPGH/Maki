@@ -12,10 +12,12 @@ public sealed record EaseTuning
 
     /// <summary>
     /// The channel's coefficient in <c>EmbeddingMath.HybridScore</c>, against a score whose best
-    /// candidate is 1. 0 switches the channel off entirely. Ships at 4: +0.083 nDCG@40 on held-out
-    /// readers, neutral at three seeds on human pairs, and a measured lean toward better-known titles.
+    /// candidate is 1. 0 switches the channel off entirely. Ships at 1 under the v8 tuning: 4 gains the
+    /// most on held-out Completed lists but fills a romance-heavy page with long webtoons, and 1 keeps
+    /// about half of that gain while matching 4 on install-like shelves (<c>distribution/CLAUDE.md</c>,
+    /// "v8: EASE at weight 1").
     /// </summary>
-    public double Weight { get; init; } = 4;
+    public double Weight { get; init; } = 1;
 
     /// <summary>
     /// Seeds a request needs before the channel runs. From one seed it gains nothing on

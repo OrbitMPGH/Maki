@@ -89,6 +89,12 @@ public class AppPaths
     public string EaseDbPath => Path.Combine(ConfigDir, "ease-table.db");
 
     /// <summary>
+    /// How often each series lands on a reader's Recommended page, for the page-share penalty. Absent
+    /// is the normal state until one is published: the penalty then does nothing.
+    /// </summary>
+    public string PageShareDbPath => Path.Combine(ConfigDir, "page-share.db");
+
+    /// <summary>
     /// The reader-cohort aggregates. Never <c>coread-graph.db</c>, which is the fetcher's working
     /// state and holds per-user reading data; this file has no user axis at all. Absent is the
     /// normal state: the hint does not render, the rail returns nothing and the taste page falls

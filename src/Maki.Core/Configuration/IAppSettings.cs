@@ -841,6 +841,20 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsEaseGeneratedAt = "recommendations.easegeneratedat";
 
+    /// <summary>
+    /// Kill switch for the page-share penalty (<c>page-share.db</c>, how often each series lands on
+    /// a reader's Recommended page), the same shape as <see cref="RecommendationsEase"/>: default on,
+    /// no UI, read per uncached request and folded into the pool cache key. Off means no download,
+    /// no load and no penalty.
+    /// </summary>
+    public const string RecommendationsPageShare = "recommendations.pageshare";
+
+    /// <summary>Manifest the page-share table is downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsPageShareUrl = "recommendations.pageshareurl";
+
+    /// <summary>The installer's record of what it put on disk, as for the EASE table.</summary>
+    public const string RecommendationsPageShareGeneratedAt = "recommendations.pagesharegeneratedat";
+
     /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
     /// <see cref="RecommendationsCoGraphUrl"/>.</summary>
     public const string RecommendationsCoReadUrl = "recommendations.coreadurl";

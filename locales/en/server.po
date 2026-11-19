@@ -4562,6 +4562,10 @@ msgid "health.job.ease"
 msgstr "Install the also-finished table"
 
 #: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.pageShare"
+msgstr "Install the page-share table"
+
+#: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.dropFolder"
 msgstr "Check the drop folder"
 
@@ -5208,6 +5212,39 @@ msgstr "The published also-finished table uses a newer schema than this build re
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
 msgid "install.ease.truncated"
 msgstr "The published also-finished table looks truncated; ignoring it."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.current"
+msgstr "The local page-share table is already current."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.disabled"
+msgstr "The page-share penalty is turned off."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.evaluationBuild"
+msgstr "The published page-share table is an evaluation build."
+
+#. {rows} is the raw install count.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.installed"
+msgstr "Installed {rows, plural, one {# page-share row} other {# page-share rows}}"
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.manifestMalformed"
+msgstr "The page-share table manifest is malformed."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.manifestUnavailable"
+msgstr "Could not read the page-share table manifest."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.schemaNewer"
+msgstr "The published page-share table uses a newer schema than this build reads."
+
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.truncated"
+msgstr "The published page-share table looks truncated; ignoring it."
 
 #: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
 msgid "install.prebuiltIndex.current"

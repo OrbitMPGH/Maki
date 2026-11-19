@@ -1,3 +1,4 @@
+using Maki.Metadata.Embedding;
 using Maki.Metadata.RecoGraph;
 
 namespace Maki.Metadata.CoRead;
@@ -161,7 +162,8 @@ public static class CoReadScorer
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
         CoReadTuning tuning,
-        IReadOnlySet<long> candidates)
+        IReadOnlySet<long> candidates,
+        double minShare = 0)
     {
         var found = new Dictionary<long, List<(long Seed, double Contribution)>>();
         if (candidates.Count == 0)
@@ -207,8 +209,6 @@ public static class CoReadScorer
             }
         }
 
-        return found.ToDictionary(
-            kv => kv.Key,
-            kv => kv.Value.OrderByDescending(x => x.Contribution).ThenBy(x => x.Seed).Select(x => x.Seed).ToList());
+        return found.ToDictionary(kv => kv.Key, kv => ReasonShare.Keep(kv.Value, minShare));
     }
 }

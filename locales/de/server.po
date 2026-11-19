@@ -6469,6 +6469,11 @@ msgstr "Entdecken vorbereiten"
 msgid "health.job.ease"
 msgstr ""
 
+#. English: Install the page-share table
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.pageShare"
+msgstr ""
+
 #. English: Check the drop folder
 #: src/Maki.Api/Services/JobLabels.cs
 #, fuzzy
@@ -7403,6 +7408,47 @@ msgstr ""
 #. English: The published also-finished table looks truncated; ignoring it.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
 msgid "install.ease.truncated"
+msgstr ""
+
+#. English: The local page-share table is already current.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.current"
+msgstr ""
+
+#. English: The page-share penalty is turned off.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.disabled"
+msgstr ""
+
+#. English: The published page-share table is an evaluation build.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.evaluationBuild"
+msgstr ""
+
+#. {rows} is the raw install count.
+#. English: Installed {rows, plural, one {# page-share row} other {# page-share rows}}
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.installed"
+msgstr ""
+
+#. English: The page-share table manifest is malformed.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.manifestMalformed"
+msgstr ""
+
+#. English: Could not read the page-share table manifest.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.manifestUnavailable"
+msgstr ""
+
+#. English: The published page-share table uses a newer schema than this build reads.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.schemaNewer"
+msgstr ""
+
+#. English: The published page-share table looks truncated; ignoring it.
+#: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+msgid "install.pageShare.truncated"
 msgstr ""
 
 #. English: The local index is already current.

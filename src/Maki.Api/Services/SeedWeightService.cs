@@ -66,6 +66,14 @@ public record SeedSnapshot(
     IReadOnlyDictionary<long, double> Avoided)
 {
     /// <summary>
+    /// Manga whose anime the reader has started, scored or not
+    /// (<see cref="AnimeSignalGrouping.WatchedManga"/>). Exposure rather than taste: it never seeds
+    /// or avoids, and <see cref="RecommendationService"/> reads it only when
+    /// <see cref="KnownTitleTuning"/> asks. Empty unless anime signals are on for the reader.
+    /// </summary>
+    public IReadOnlySet<long> WatchedAnime { get; init; } = new HashSet<long>();
+
+    /// <summary>
     /// A digest of every input behind this snapshot, for callers that key a cache on it.
     /// <para>
     /// Hashed rather than spelled out because the inputs are the whole library, its weights and its
@@ -270,6 +278,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         // Anime signals last, so every stronger kind of evidence is already in hand: a title on the
         // shelf, a thumbs up or down, and an ignored source all win over "the adaptation was good".
         var animeSeeds = new Dictionary<long, double>();
+        IReadOnlySet<long> watchedAnime = new HashSet<long>();
         if (await AnimeSignalsEnabledAsync(db, scope.UserId, ct))
         {
             var strength = await AnimeSignalStrengthAsync(db, scope.UserId, ct);
@@ -291,6 +300,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // opinion as several and let the best-liked season speak for a work the reader was
             // lukewarm on overall. One group is one manga, with the seasons' scores averaged.
             var groups = AnimeSignalGrouping.Group(animeRows).ToList();
+            watchedAnime = AnimeSignalGrouping.WatchedManga(animeRows);
             // The ceiling applies to a matched manga exactly as it applies to a shelf row, and the
             // only place a matched row's rating lives is the dump: nothing here is on the shelf, so
             // there is no ContentRating column to read it off. One batched read for every matched
@@ -343,7 +353,10 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // profile chart that dropped everything they disliked would describe a different shelf.
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
             signals,
-            avoided);
+            avoided)
+        {
+            WatchedAnime = watchedAnime,
+        };
     }
 
     private Dictionary<long, double> Weigh(

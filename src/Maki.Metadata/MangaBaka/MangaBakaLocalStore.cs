@@ -704,6 +704,71 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// The <paramref name="candidates"/> that are another edition of a series in
+    /// <paramref name="owned"/>: an <c>alternative</c> relation either way, the same type, the same
+    /// native title, and no more chapters than the owned one (a promotional one-shot or a pilot).
+    /// When the owned row's chapter count is unknown, only a candidate of at most
+    /// <see cref="UnknownOwnedPilotChapters"/> chapters counts, so an owned pilot with no count never
+    /// hides its full serial.
+    /// <see cref="FranchiseGraph"/> leaves <c>alternative</c> out on purpose, because a different
+    /// serialization is often worth offering; one under the very same native title is the same
+    /// story, and the full serial of an owned pilot is kept.
+    /// </summary>
+    public const int UnknownOwnedPilotChapters = 3;
+
+    public virtual async Task<IReadOnlySet<long>> GetOwnedEditionIdsAsync(
+        IReadOnlyCollection<long> owned, IReadOnlyCollection<long> candidates, CancellationToken ct = default)
+    {
+        var found = new HashSet<long>();
+        if (owned.Count == 0 || candidates.Count == 0 || !File.Exists(options.DatabasePath))
+        {
+            return found;
+        }
+
+        var rows = new Dictionary<long, (string? Type, string Native, double? Chapters, List<long> Alternatives)>();
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT id, type, native_title, total_chapters, relationships_v2 FROM series " +
+            $"WHERE id IN ({string.Join(",", owned.Concat(candidates).Distinct())})";
+        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var native = new string((GetString(reader, 2) ?? string.Empty).Where(c => !char.IsWhiteSpace(c)).ToArray());
+                var chapters = double.TryParse(GetString(reader, 3), NumberStyles.Float, CultureInfo.InvariantCulture, out var n)
+                    && double.IsFinite(n) ? n : (double?)null;
+                rows[reader.GetInt64(0)] = (GetString(reader, 1), native,
+                    chapters, FranchiseGraph.AlternativeTargets(GetString(reader, 4)).ToList());
+            }
+        }
+
+        var ownedSet = owned.ToHashSet();
+        foreach (var id in candidates)
+        {
+            if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not double length)
+            {
+                continue;
+            }
+
+            foreach (var other in ownedSet)
+            {
+                if (rows.TryGetValue(other, out var mine)
+                    && (pick.Alternatives.Contains(other) || mine.Alternatives.Contains(id))
+                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
+                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
+                {
+                    found.Add(id);
+                    break;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// Ids in the same work as <paramref name="id"/>, breadth-first over the dump's own same-work
     /// relations (<see cref="FranchiseGraph.SameWorkTargets"/>), excluding <paramref name="id"/>.
     ///
@@ -1499,6 +1564,41 @@ public class MangaBakaLocalStore(
         }
 
         return byId;
+    }
+
+    /// <summary>
+    /// Popularity rank of each series inside <paramref name="maxRank"/> whose anime has aired, read
+    /// off <c>anime_start</c>: <c>has_anime</c> alone also marks announced shows nobody could have
+    /// watched. The ranks come from the browse table's popularity index and the anime range from
+    /// <c>series</c> by id, so this is a few hundred point reads rather than a scan.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, long>> GetAiredAnimeRanksAsync(
+        int maxRank, CancellationToken ct = default)
+    {
+        var ranks = new Dictionary<long, long>();
+        if (maxRank < 1)
+        {
+            return ranks;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT s.id, b.popularity_global_current
+            FROM {MangaBakaDumpService.BrowseSource(conn)} b JOIN series s ON s.id = b.id
+            WHERE b.state = 'active' AND b.type != 'novel' AND b.rating IS NOT NULL
+              AND b.cover_raw_url IS NOT NULL AND b.popularity_global_current IS NOT NULL
+              AND b.popularity_global_current BETWEEN 1 AND $max
+              AND s.anime_start IS NOT NULL
+            """;
+        cmd.Parameters.AddWithValue("$max", maxRank);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            ranks[reader.GetInt64(0)] = reader.GetInt64(1);
+        }
+
+        return ranks;
     }
 
     /// <summary>

@@ -105,6 +105,19 @@ public class EaseTests : IDisposable
     }
 
     [Fact]
+    public void SeedsFor_NamesNoSeed_WhenNoneCarriesTheMinimumShareOfThePick()
+    {
+        // Pick 10 is pushed by four seeds equally (25% each) and pick 11 mostly by seed 1 (80%).
+        var table = EaseTable.Build(
+            [(1, 10, 0.1f), (2, 10, 0.1f), (3, 10, 0.1f), (4, 10, 0.1f), (1, 11, 0.4f), (2, 11, 0.1f)]);
+
+        var seeds = EaseScorer.SeedsFor(table, [1, 2, 3, 4], null, new HashSet<long> { 10, 11 }, minShare: 0.3);
+
+        Assert.Empty(seeds[10]);
+        Assert.Equal([1L], seeds[11]);
+    }
+
+    [Fact]
     public async Task TheCache_ReloadsFromItsSnapshot_AndUnloadsWhenIdle()
     {
         var path = Path.Combine(_dir, "ease-table.db");
@@ -149,9 +162,9 @@ public class EaseTests : IDisposable
     }
 
     [Fact]
-    public void TheShippedWeight_IsFour()
+    public void TheShippedWeight_IsOne()
     {
-        Assert.Equal(4, EaseTuning.Default.Weight);
+        Assert.Equal(1, EaseTuning.Default.Weight);
     }
 
     [Fact]

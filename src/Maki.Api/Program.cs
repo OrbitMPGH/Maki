@@ -299,12 +299,24 @@ try
     builder.Services.AddSingleton(new EaseOptions(paths.EaseDbPath, paths.CacheDir));
     builder.Services.AddSingleton<EaseCache>();
     builder.Services.AddSingleton(EaseTuning.Default);
+    builder.Services.AddSingleton(KnownTitleTuning.Default);
     builder.Services.AddHttpClient(EaseInstaller.HttpClientName, client =>
     {
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<EaseInstaller>();
+
+    // Page-share table, for the penalty on titles every reader's page gets. Personal recommendations
+    // only; RecommendationService passes `common` from recommendations.pageshare.
+    builder.Services.AddSingleton(new Maki.Metadata.PageShare.PageShareOptions(paths.PageShareDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<Maki.Metadata.PageShare.PageShareCache>();
+    builder.Services.AddHttpClient(Maki.Metadata.PageShare.PageShareInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddSingleton<Maki.Metadata.PageShare.PageShareInstaller>();
 
     // Reader cohorts. Its own cache rather than a layer inside VectorIndexCache, because nothing
     // here is scanned per catalogue row: placement is one lookup per series the reader finished.
@@ -1460,6 +1472,15 @@ try
             .ForJob(Maki.Api.Jobs.EaseJob.Key)
             .WithIdentity("ease-table-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Page-share table, a small swapped file like the EASE table and right behind it.
+        q.AddJob<Maki.Api.Jobs.PageShareJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.PageShareJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.PageShareJob.Key)
+            .WithIdentity("page-share-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7.5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a

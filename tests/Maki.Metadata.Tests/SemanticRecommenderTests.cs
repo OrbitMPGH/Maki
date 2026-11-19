@@ -861,8 +861,33 @@ public class SemanticRecommenderTests : IDisposable
         Assert.True(pick.CoRead);
         Assert.Equal("Other seed", pick.CoReadWithTitle);
         Assert.Equal("2", pick.CoReadWithId);
-        Assert.Equal(["2", "1"], pick.CoReadSeeds!.Select(s => s.Id));
+        // Seed 1 carries 20% of the pick, under RecommenderTuning.MinReasonShare, so the reason cap
+        // has no weaker seed to fall back on.
+        Assert.Equal(["2"], pick.CoReadSeeds!.Select(s => s.Id));
         Assert.False(on.Single(p => p.ProviderId == "12").CoRead);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_NamesNoSeed_WhenNoSeedCarriesEnoughOfThePick()
+    {
+        Add(1, "Seed");
+        Add(2, "Other seed");
+        Add(11, "Weighted by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+        ]);
+        var table = WriteEase((1, 11, 0.05f), (2, 11, 0.05f));
+
+        var picks = await Recommender(easePath: table, tuning: RecommenderTuning.Default with { MinReasonShare = 0.6 })
+            .GetSimilarAsync([1, 2], [], limit: 5);
+
+        var pick = picks.Single(p => p.ProviderId == "11");
+        Assert.True(pick.CoRead);
+        Assert.Null(pick.CoReadWithTitle);
+        Assert.Null(pick.CoReadWithId);
     }
 
     [Fact]
@@ -1473,6 +1498,125 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
     }
 
+    [Fact]
+    public async Task ADemotedTitle_RanksLowerAndStaysOnThePage()
+    {
+        Add(1, "Seed");
+        Add(10, "Closest to the seed");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+
+        var plain = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(["10", "11"], plain.Select(p => p.ProviderId));
+
+        var demoted = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, demote: new Dictionary<long, double> { [10] = 1.0 });
+        Assert.Equal(["11", "10"], demoted.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task ThePageSharePenalty_NeedsATableAWeightAndACallerThatAsks()
+    {
+        Add(1, "Seed");
+        Add(10, "On every page");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+        var table = PageFrequency.From(new Dictionary<long, double> { [10] = 0.5 });
+        var weighted = RecommenderTuning.Default with { CommonWeight = 2 };
+        var unweighted = RecommenderTuning.Default with { CommonWeight = 0 };
+
+        var asked = await Recommender(tuning: weighted, pageFrequency: table)
+            .GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.Equal(["11", "10"], asked.Select(p => p.ProviderId));
+
+        // The series-page rail never asks, a weight of 0 is off, and no table means nothing to apply.
+        var rail = await Recommender(tuning: weighted, pageFrequency: table).GetSimilarAsync([1], [], limit: 10);
+        var off = await Recommender(tuning: unweighted, pageFrequency: table).GetSimilarAsync([1], [], limit: 10, common: true);
+        var noTable = await Recommender(tuning: weighted).GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.All(
+            new[] { rail, off, noTable },
+            picks => Assert.Equal(["10", "11"], picks.Select(p => p.ProviderId)));
+    }
+
+    [Fact]
+    public async Task ThePageSharePenalty_ReadsTheInstalledTable_AtTheShippedWeight()
+    {
+        Add(1, "Seed");
+        Add(10, "On every page");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+        var path = Path.Combine(_dir, "page-share.db");
+        using (var conn = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE share (series_id INTEGER PRIMARY KEY, share REAL NOT NULL);
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO share VALUES (10, 0.5);
+                INSERT INTO meta VALUES ('trainingFold', 'all');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        SqliteConnection.ClearAllPools();
+        var installed = new PageShare.PageShareCache(
+            new PageShare.PageShareOptions(path), NullLogger<PageShare.PageShareCache>.Instance);
+
+        var personal = await Recommender(pageShareCache: installed).GetSimilarAsync([1], [], limit: 10, common: true);
+        var rail = await Recommender(pageShareCache: installed).GetSimilarAsync([1], [], limit: 10);
+
+        Assert.Equal(4.0, RecommenderTuning.Default.CommonWeight);
+        Assert.Equal(["11", "10"], personal.Select(p => p.ProviderId));
+        Assert.Equal(["10", "11"], rail.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task TheFameCap_CountsOnlyWhatTheCallerLetsThrough()
+    {
+        // Ids are popularity ranks in this fixture. One famous seed and one niche one allow half of
+        // any prefix inside the top 100. The two famous candidates outscore the niche ones.
+        Add(50, "Famous seed");
+        Add(5000, "Niche seed");
+        Add(20, "Watched");
+        Add(30, "Famous");
+        Add(6001, "Niche one");
+        Add(6002, "Niche two");
+        WriteDump();
+        Store().UpsertBatch([
+            (50L, "h", Axis(0)),
+            (5000L, "h", Nudge(Axis(0), 1, 0.05f)),
+            (20L, "h", Nudge(Axis(0), 2, 0.10f)),
+            (30L, "h", Nudge(Axis(0), 3, 0.15f)),
+            (6001L, "h", Nudge(Axis(0), 4, 0.20f)),
+            (6002L, "h", Nudge(Axis(0), 5, 0.25f)),
+        ]);
+        var tuning = RecommenderTuning.Default with { FameCapRatio = 1.0, FameCapPseudoSeeds = 0, CommonWeight = 0 };
+
+        var thenFiltered = (await Recommender(tuning: tuning).GetSimilarAsync([50, 5000], [], limit: 10))
+            .Where(p => p.ProviderId != "20");
+        var excluded = await Recommender(tuning: tuning).GetSimilarAsync([50, 5000], [20], limit: 10);
+
+        // Removed after the cap ran, the watched title spent the one famous slot and pushed Famous down.
+        Assert.Equal(["6001", "30", "6002"], thenFiltered.Select(p => p.ProviderId));
+        Assert.Equal(["30", "6001", "6002"], excluded.Select(p => p.ProviderId));
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,
@@ -1480,7 +1624,9 @@ public class SemanticRecommenderTests : IDisposable
         CoReadTuning? coReadTuning = null,
         RecommenderTuning? tuning = null,
         string? easePath = null,
-        EaseTuning? easeTuning = null)
+        EaseTuning? easeTuning = null,
+        PageFrequency? pageFrequency = null,
+        PageShare.PageShareCache? pageShareCache = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
@@ -1497,7 +1643,9 @@ public class SemanticRecommenderTests : IDisposable
             NullLogger<SemanticRecommender>.Instance,
             tuning,
             easeCache: easePath is null ? null : new EaseCache(new EaseOptions(easePath), NullLogger<EaseCache>.Instance),
-            easeTuning: easeTuning);
+            easeTuning: easeTuning,
+            pageFrequency: pageFrequency,
+            pageShareCache: pageShareCache);
     }
 
     /// <summary>Writes an EASE table in the shape <c>distribution/build-ease-table.py</c> exports.</summary>
