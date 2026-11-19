@@ -48,7 +48,7 @@ public class BrowserInstallerDownloadTests : IDisposable
         Assert.True(File.Exists(Path.Combine(Target, "INSTALLATION_COMPLETE")));
         Assert.True(File.Exists(installer.Executable));
         Assert.Equal(["broken", "stalled", "truncated", "tampered", "good"], _mirrors.Requests);
-        Assert.Empty(Directory.EnumerateFileSystemEntries(_root).Where(p => p.EndsWith(".zip") || p.EndsWith(".tmp")));
+        Assert.DoesNotContain(Directory.EnumerateFileSystemEntries(_root), p => p.EndsWith(".zip") || p.EndsWith(".tmp"));
     }
 
     [Fact]
