@@ -135,11 +135,16 @@ export type StretchedReport = (wanted: ReadonlySet<number>, plain: ReadonlySet<n
  * is how a page not yet on screen can be enhanced ahead at the size it will be shown, and which
  * pages `auto` wants (stretched or soft), which is all it asks the server for. The pages it measured
  * and does not want are reported too, so the server can drop them.
+ *
+ * A stretched page makes every page of the same natural size wanted. Border crop trims each page
+ * by a different amount, so pages of one release shown near the threshold would otherwise flip
+ * between enhanced and plain from one page to the next.
  */
 export class EnhanceScope {
   private readonly keys = new Map<string, Set<string>>()
   private readonly sizes = new Map<string, EnhanceTarget>()
-  private readonly stretched = new Map<number, boolean>()
+  private readonly pages = new Map<number, { wanted: boolean; stretched: boolean; size: string }>()
+  private readonly listeners = new Set<() => void>()
   private engine: EnhanceEngine | null = null
   private readonly onSize: () => void
   private readonly onStretched: StretchedReport
@@ -171,24 +176,56 @@ export class EnhanceScope {
     return this.sizes.get(`${Math.round(regionWidth)}x${Math.round(regionHeight)}`)
   }
 
-  notePage(page: number, stretched: boolean) {
-    if (this.stretched.get(page) === stretched) return
-    this.stretched.set(page, stretched)
-    this.reportPages()
+  /**
+   * Records what `auto` measured for a page: `wanted` is its own answer (stretched or soft),
+   * `stretched` whether its own size alone crossed the threshold, and `size` its natural size.
+   */
+  notePage(page: number, wanted: boolean, stretched: boolean, size: string) {
+    const known = this.pages.get(page)
+    if (known && known.wanted === wanted && known.stretched === stretched && known.size === size) return
+    const before = this.stretchedSizes()
+    this.pages.set(page, { wanted, stretched, size })
+    this.changed(before)
+  }
+
+  /** Whether a page of this natural size was measured as stretched. */
+  sizeStretched(size: string): boolean {
+    for (const entry of this.pages.values()) if (entry.stretched && entry.size === size) return true
+    return false
+  }
+
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
   }
 
   /** Drops every page's stretched state, for a new chapter or a view going away. */
   forgetPages() {
-    if (this.stretched.size === 0) return
-    this.stretched.clear()
-    this.reportPages()
+    if (this.pages.size === 0) return
+    const before = this.stretchedSizes()
+    this.pages.clear()
+    this.changed(before)
   }
 
-  private reportPages() {
+  private stretchedSet(): Set<string> {
+    const sizes = new Set<string>()
+    for (const entry of this.pages.values()) if (entry.stretched) sizes.add(entry.size)
+    return sizes
+  }
+
+  private stretchedSizes(): string {
+    return [...this.stretchedSet()].sort().join(',')
+  }
+
+  private changed(before: string) {
+    const stretched = this.stretchedSet()
     const wanted = new Set<number>()
     const plain = new Set<number>()
-    for (const [page, stretched] of this.stretched) (stretched ? wanted : plain).add(page)
+    for (const [page, entry] of this.pages) (entry.wanted || stretched.has(entry.size) ? wanted : plain).add(page)
     this.onStretched(wanted, plain)
+    if ([...stretched].sort().join(',') !== before) for (const listener of this.listeners) listener()
   }
 
   /** Evicts every page whose URL is not in `srcs`. */
@@ -198,6 +235,11 @@ export class EnhanceScope {
       for (const key of keys) this.engine?.evict(key)
       this.keys.delete(src)
     }
+  }
+
+  /** The key `notePage` and `sizeStretched` group pages by. */
+  static sizeKey(image: HTMLImageElement): string {
+    return `${image.naturalWidth}x${image.naturalHeight}`
   }
 
   release() {

@@ -478,11 +478,13 @@ export default function PagedView({
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
             if (!target) return
-            const wanted =
+            const size = EnhanceScope.sizeKey(image)
+            const own =
               target.stretched ||
               (mode === 'auto' &&
                 isSoftPage(image, src, shownScale(target, image.naturalWidth * region.w, image.naturalHeight * region.h)))
-            owner.notePage(page, wanted)
+            owner.notePage(page, own, target.stretched, size)
+            const wanted = own || owner.sizeStretched(size)
             if (!live || !preset || !wanted || serverRef.current?.states.get(page) === 'ready') return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { trackedFetch } from '../../api/client'
 import { serverEnhancedUrl, serverEnhancedUrlNow } from '../../api/reader'
 import { isSoftPage, knownSoft } from '../../lib/enhance/softness'
 import { useCompareHeld } from './compareHold'
 import {
+  EnhanceScope,
   enhanceKey,
   isEnhanceError,
   markEnhanceBroken,
@@ -111,7 +112,9 @@ export default function EnhancedPage({
     scope.noteSize(width, height, next)
     // Until the page is measured at its new size, its last answer stands.
     const softNow = mode === 'auto' ? knownSoft(src, shownScale(next, width, height)) : false
-    if (next.stretched || softNow !== undefined) scope.notePage(page, next.stretched || softNow === true)
+    if (next.stretched || softNow !== undefined) {
+      scope.notePage(page, next.stretched || softNow === true, next.stretched, EnhanceScope.sizeKey(image))
+    }
     setTarget((previous) => (sameTarget(previous, next) ? previous : next))
   }
 
@@ -179,7 +182,9 @@ export default function EnhancedPage({
     return () => observer.disconnect()
   }, [overlay, box, serverImage])
 
-  const active = target !== null && (mode === 'always' || target.stretched || soft)
+  const sizeKey = EnhanceScope.sizeKey(image)
+  const sizeStretched = useSyncExternalStore(scope.subscribe, () => scope.sizeStretched(sizeKey))
+  const active = target !== null && (mode === 'always' || target.stretched || soft || sizeStretched)
   const serverReady = server?.states.get(page) === 'ready'
   const serverChapter = server?.chapterId
   const serverModel = server?.model
@@ -203,7 +208,9 @@ export default function EnhancedPage({
   const serverUrl = urlNow ?? (resolved && resolved.key === serverKey ? resolved.url : null)
   const [decoded, setDecoded] = useState<string | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
-  const serverWanted = active && serverUrl !== null && failed !== serverUrl
+  // On `auto` an upscale the server already made shows even on a page measured as plain: it costs
+  // nothing more, and a chapter does not flip between enhanced and plain pages near the threshold.
+  const serverWanted = (active || (target !== null && serverReady)) && serverUrl !== null && failed !== serverUrl
   // A page asked for again after its upscale was evicted comes back on the same URL.
   useEffect(() => {
     if (!serverReady) setFailed(null)
