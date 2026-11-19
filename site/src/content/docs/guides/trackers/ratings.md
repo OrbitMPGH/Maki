@@ -9,7 +9,11 @@ A series can carry one rating from 1 to 10, set with stars in half steps. Partwa
 
 On the series page, press the stars. A series you have not started, or have finished, takes a final rating. A series you are partway through takes a "so far" score, shown with the chapter it was set at, for example "so far, at ch. 34".
 
+![The rating panel on a series page set to Excellent, with score buttons from Bad to Masterpiece, a Fine-tune stepper, Break it down and Clear rating](../../../../assets/ui/series/rating.webp)
+
 Once you finish a series, the series page asks "You've finished this. How was it?" The stars there set the final rating. The reader's end screen asks the same on the last chapter of a series you have finished, with a one-tap **Keep** if you gave it a score so far. Maki refuses a "so far" score on a finished series.
+
+![The "You've finished this. How was it?" line on the series page with a Break it down button, an X and score buttons from Bad to Masterpiece](../../../../assets/ui/series/rate-hint.webp)
 
 To turn a "so far" score into your final rating, press **Make this my rating** beside it, or **Keep** on the finished-series line. A final rating replaces the "so far" score. **Clear rating** removes either one.
 
@@ -27,7 +31,7 @@ Maki asks "How is it going so far?" at a few natural points, on the series page 
 - **Caught up.** "You're caught up. How is it so far?" when you have read every chapter you have or want from a series that is still running.
 - **End of a volume.** "That's the end of a volume. How is it so far?" Only if you turn it on.
 
-<!-- screenshot: the "How is it going so far?" line on the series page, with its stars, the "Still a 7" button and the X -->
+![The "How is it going so far?" line on the series page with a Still button, an X and a row of score buttons from Bad to Masterpiece, Good outlined](../../../../assets/ui/series/rating-checkpoint.webp)
 
 Press a star to set the score. With a "so far" score already set, a **Still a 7** button (with your current score) keeps it in one tap. The X dismisses the prompt. Ignoring the line leaves it open.
 
@@ -40,11 +44,13 @@ The limits:
 
 Both switches are in **Settings → Reading → Rating prompts**. **Ask how a series is going while I read it** is on by default. **Also ask at the end of each volume** is off by default and needs the first switch on.
 
+![The Rating prompts card with Ask how a series is going while I read it switched on and Also ask at the end of each volume switched off](../../../../assets/ui/settings/rating-prompts.webp)
+
 ## Rating history
 
 Once a series has two ratings, a history icon sits beside its stars. **Your rating over time** lists every change with its score, whether it was a "so far" or final rating, the chapter it was set at, and the date.
 
-<!-- screenshot: the "Your rating over time" popover, with one "so far" line and one final rating line -->
+![The Your rating over time popover listing the rating at each chapter checkpoint with its date](../../../../assets/ui/series/rating-history.webp)
 
 ## Archiving a part-read series
 

@@ -20,6 +20,8 @@ in Docker, also set the path mapping:
 - **Path as Maki sees it**: the library folder as Maki sees it.
 - **Path as Kavita sees it**: the same folder as Kavita sees it, for example `/manga`.
 
+![Kavita card with URL, API key, Path as Maki sees it and Path as Kavita sees it fields, a Connected status, Attribute Kavita's reading to set to Lowest-numbered admin, and the Manga library picked for scrobbling](../../../../assets/ui/settings/kavita-connected.webp)
+
 ## What Maki does on its own
 
 Once Kavita is connected, none of this needs a switch:
@@ -49,6 +51,8 @@ Under **Settings → Reading → Kavita read sync**:
 - **Import read status** copies read state from Kavita once. It is safe to run again, and it never
   marks anything unread. Kavita does not say when those chapters were read, so the import does not
   add them to Rewind.
+
+![Kavita read sync card with the Mark chapters read in Kavita too and Mark chapters read here as soon as they're read in Kavita switches, and an Import read status button](../../../../assets/ui/settings/kavita-sync.webp)
 
 ## One Kavita account
 

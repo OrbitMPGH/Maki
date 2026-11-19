@@ -12,6 +12,8 @@ flow with PKCE. The redirect URI is `https://<your-host>/api/v1/auth/oidc/callba
 **Settings → Users & security → Single sign-on** and **restart Maki**; the provider configuration
 is read once at startup.
 
+![Single sign-on card noting that changes take effect after Maki restarts, with the OpenID Connect provider row marked Not set up and Off](../../../assets/ui/settings/oidc.webp)
+
 | Field | Notes |
 |---|---|
 | Issuer URL | For example `https://auth.example.com`. Maki appends `/.well-known/openid-configuration`. |

@@ -21,6 +21,8 @@ The card shows the two values an app needs:
   only right after you enable the catalogue or regenerate the token. If you miss it, regenerate for a
   new one.
 
+![OPDS catalogue card with Enable the OPDS catalogue and Komga-compatible API both on, the server address ending in /komga with a copy button, and a line explaining where the API key comes from](../../../../assets/ui/settings/opds-on.webp)
+
 ## Connect the app
 
 Enter the server address and the API key. If the app asks for a username and password instead, use

@@ -70,6 +70,8 @@ connect the two, fill in the Kavita card under **Settings → Integrations → K
   fields empty.
 - **Attribute Kavita's reading to** picks the Kavita user that reading progress is attributed to.
 
+![Kavita card with URL, API key, Path as Maki sees it and Path as Kavita sees it fields, a Test button, a Connected status, Attribute Kavita's reading to set to Lowest-numbered admin, and a Scrobble reading from these libraries picker](../../../assets/ui/settings/kavita-connected.webp)
+
 If you read in Kavita or another app, see [Reading over OPDS and Komga](/Maki/guides/reading/opds-apps/).
 
 ## FlareSolverr
@@ -79,6 +81,8 @@ FlareSolverr solves Cloudflare challenges for sources that sit behind them.
 1. Open **Settings → Downloads → FlareSolverr**.
 2. Set the URL to `http://flaresolverr:8191`.
 3. Click **Test**.
+
+![FlareSolverr card with a URL field, a Test button and a Not tested status](../../../assets/ui/settings/flaresolverr.webp)
 
 The [built-in sources list](/Maki/guides/sources/built-in-sources/) marks the sources that require it.
 The rest work without it.
@@ -92,5 +96,7 @@ extensions in Suwayomi's own interface, not in Maki.
 2. Set the URL to `http://suwayomi:4567`.
 3. Click **Test**.
 4. Click **Manage sources** and turn on the ones you want Maki to use.
+
+![Suwayomi card with a URL field, a Sign-in choice of None, Basic auth or UI login, a Test button and a Manage sources button](../../../assets/ui/settings/suwayomi.webp)
 
 The `suwayomi-data` folder in the compose file keeps Suwayomi's data between restarts.

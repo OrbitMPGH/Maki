@@ -5,6 +5,8 @@ description: How Maki names series folders and chapter files, where root folders
 
 Naming is set in **Settings, Library, Folder & file naming**.
 
+![Folder & file naming card with the series folder format, the chapter file format, a Rename every series to current format button and Folders on import set to Rename the folder](../../../../assets/ui/settings/naming.webp)
+
 ## Root folders
 
 A root folder is a directory on the server that Maki owns for its library. Every series lives in one
@@ -18,6 +20,8 @@ root folder. Imports and health scans skip folders starting with a dot.
 Each root folder keeps 5 GB free by default (**Free space to keep**, 0 turns it off). When its drive
 drops below that, downloads and torrent grabs for series in that folder wait, other folders keep
 going, and everything carries on once there is room again. Activity says which folder is held.
+
+![Root folders card listing /manga with its free space, a minimum free space field and an edit button, above a Path box with Browse and Add buttons](../../../../assets/ui/settings/root-folders.webp)
 
 If a share is re-mounted or the library moves to new storage, use the root folder's edit button
 rather than adding a new one. It checks the new path and counts the series folders there before

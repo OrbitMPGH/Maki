@@ -26,6 +26,8 @@ conversion on WebP or AVIF. See [Page conversion](/Maki/guides/library/page-conv
    the token.
 3. Paste it into your app as a new catalogue.
 
+![OPDS catalogue card with Enable the OPDS catalogue on, the feed URL shortened with a Regenerate button, Track reading progress from OPDS on, and the Komga-compatible API on with its server address](../../../../assets/ui/settings/opds-on.webp)
+
 From outside your network, swap the host for the address you use there. See
 [Reverse proxy and HTTPS](/Maki/installation/reverse-proxy-https/).
 

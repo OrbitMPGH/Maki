@@ -17,6 +17,8 @@ Every connection has a name, an **Enabled** switch and its own list of events. *
 message and ignores tag scoping. A failed send shows the HTTP status, a timeout, or a network
 failure.
 
+![The Add connection dialog for a Discord connection with Name, Type, Webhook URL, the Enabled switch, Only for tagged series and event switches grouped under Downloads, Library and Requests](../../../../assets/ui/settings/notification-editor.webp)
+
 ### Events
 
 - **Downloads:** Chapter downloaded, Download failed, New chapter available, Import completed.
@@ -60,6 +62,8 @@ Each account picks its own events under **Settings → Preferences → Notificat
   chapter**, **While reading** (series you are partway through) or **Muted**. Muted sends nothing
   from that series, except that admins still get download failures.
 
+![The Notifications preferences card with Show a popup when a notification arrives switched on, Which series notify me set to Every series, and Bell and Push summaries beside a Choose events button](../../../../assets/ui/settings/notification-prefs.webp)
+
 The **Discover** group has **New sequels and spin-offs**, which tells you when the catalogue lists a
 new sequel, prequel, spin-off or side story of a series you read, and opens it in Discover. Series
 already in your library before v0.37.0 don't announce the related works they already had.
@@ -79,6 +83,8 @@ else changes on plain HTTP.
 1. Open **Settings → Preferences → Push notifications** on the device.
 2. Turn on **Notify this device** and allow the browser's prompt.
 3. Click **Send test** to check it arrives.
+
+![The Push notifications card with the Notify this device switch off](../../../../assets/ui/settings/push-notifications.webp)
 
 Good to know:
 

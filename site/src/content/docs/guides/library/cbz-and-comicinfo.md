@@ -23,6 +23,8 @@ Off by default. With **Save a cover.jpg into each series' library folder** on, u
 Library, ComicInfo & covers**, the series folder also gets a `cover.jpg` beside the CBZ files, not
 inside them.
 
+![ComicInfo & covers card with Write ComicInfo.xml into imported files switched on and Save a cover.jpg into each series' library folder switched off](../../../../assets/ui/settings/library-files.webp)
+
 ## ComicInfo.xml fields
 
 | Field | Source |

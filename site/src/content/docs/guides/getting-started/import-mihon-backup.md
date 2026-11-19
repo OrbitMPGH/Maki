@@ -30,6 +30,8 @@ Filter the review table by **All**, **Matched**, **Needs review**, **Not found**
 Each row shows the Mihon title, the match and what it matched by. **Find match** or **Change** picks
 a different result.
 
+![Mihon backup tab with root folder, monitor, category tag and read mark settings above filters for All, Matched, Needs review, Not found and In library, and a table of Mihon titles with their MangaBaka matches and Change or Find match buttons](../../../../assets/ui/import/mihon-review.webp)
+
 Settings above the table apply to the whole import:
 
 - **Root folder** is where the new series are stored. With more than one root folder it starts on

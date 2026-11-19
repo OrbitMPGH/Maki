@@ -11,12 +11,16 @@ Accounts are connected on the **Scrobble** page (`/scrobble`). Each tracker has 
 - The others have no Connect button. You save their credentials in Settings instead.
 - **Sync now** on the Scrobble page stays disabled until one tracker is connected.
 
+![The Scrobble page with a status chip per tracker, Set up trackers and Sync now buttons, an empty Needs review section, Recent syncs and the Activity log](../../../../assets/ui/pages/scrobble.webp)
+
 ## AniList
 
 1. An admin creates an API client at `anilist.co/settings/developer`. The redirect URL is your Maki
    address followed by `/api/v1/scrobble/oauth/anilist`.
 2. The admin enters the client ID and client secret in **Settings → Integrations → Trackers**.
 3. Press **Connect** on the Scrobble page and approve the login on AniList.
+
+![The Trackers card in Settings with AniList, MyAnimeList, MangaBaka and Kitsu connected, MangaUpdates not set up, a sync interval and the Add unread series as plan-to-read switch](../../../../assets/ui/settings/scrobbling.webp)
 
 AniList tokens last about a year and cannot be refreshed. When the token expires, connect again.
 

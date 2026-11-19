@@ -16,6 +16,8 @@ Nothing runs until both steps are done.
    button, and Maki checks their SHA-256 before using them. Some models are non-commercial only,
    and the licences are listed in `THIRD_PARTY_NOTICES.md` in the Maki repository.
 
+![Server upscaling card with Enable server upscaling on, Real-ESRGAN under Models readers can pick with a Manage models button, and rows for Processing, Page cache and Prepare ahead](../../../../assets/ui/settings/upscaling.webp)
+
 Readers then turn **Enhance** on under **Enhance** in the reader's settings panel, where the **Method** list shows
 **Maki 2x**, **Maki 2x HQ**, **Real-ESRGAN** and **SPAN-S** under "On the server". They still choose Off, Auto or Always for
 themselves, so enabling the feature changes nobody's reading.

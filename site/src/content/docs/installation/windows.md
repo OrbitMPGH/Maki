@@ -71,6 +71,8 @@ Maki keeps its database, settings, covers, backups and logs in `%LOCALAPPDATA%\M
 
 Maki checks for a new version two minutes after it starts, then every six hours. Updates download in the background. When one is ready, the tray menu shows **Restart to update to <version>**, and **Settings → System → Updates** shows the same. Choose it when it suits you. If you do not, Maki installs the update the next time it starts.
 
+![Updates card with Check for updates on, the available version, a note that the update is downloaded, and Check now and Restart to update buttons](../../../assets/ui/settings/updates-desktop.webp)
+
 Maki is offline for about a minute while it installs. Only stable releases install automatically. Release candidates are for people who want to test them, and you install those by hand from [Releases](https://github.com/OrbitMPGH/Maki/releases).
 
 Before an update changes the database, Maki takes a backup. If an update goes wrong, install the previous version from Releases and restore that backup under **Settings → System → Backup & restore**. See [Upgrading](/Maki/installation/upgrading/) for more.

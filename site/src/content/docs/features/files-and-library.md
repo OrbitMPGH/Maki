@@ -12,10 +12,9 @@ atomically, so a reader never sees a half-written CBZ. Maki can also write a `co
 series folder for readers that look for one, if you turn on **Save a cover.jpg into each series'
 library folder** under Settings, Library.
 
-## Page conversion
+![Folder and file naming card with the series folder format, the chapter file format, a Rename every series to current format button, Folders on import set to Rename the folder, and Rename imported files to the chapter file format switched on](../../../assets/ui/settings/naming.webp)
 
-![Page conversion setup, Format step: WebP, AVIF and Off options and a Keep PNG pages lossless checkbox](../../../assets/conversion.png)
-<hr>
+## Page conversion
 
 Off by default (Settings, Library, Page conversion). Pick WebP, AVIF or JPEG XL and a quality, with
 separate targets for black-and-white and colour pages, so colour inserts can go to JPEG XL while
@@ -28,6 +27,8 @@ default. Setup is one page: per-file rules and the default sit in one table, eac
 on your own pages of that kind, and each row shows how big its files would end up. A series' own
 setting can change which rule applies. Each series can be undone on its own. See
 [Page conversion](/Maki/guides/library/page-conversion/).
+
+![Page conversion setup page with Convert pages on, three Where do you read presets, a rules table whose Everything else row targets AVIF Compact for black-and-white and AVIF High for colour, Keep PNG pages lossless and Split very tall pages checkboxes, and an estimate of the size now and after conversion](../../../assets/ui/pages/page-conversion-setup.webp)
 
 Conversion can also split very tall webtoon pages into shorter ones in the blank gaps between
 panels, which e-readers and KOReader handle far better.
@@ -62,7 +63,7 @@ look like a worse release.
 
 ## Library view
 
-![Library grid of series covers with read and new-chapter badges, above the summary counts and filter bar](../../../assets/library.png)
+![Library page with series, monitored, on disk and missing counts, the filter bar with saved filters, and a grid of covers with read progress and new-chapter badges](../../../assets/ui/library/top.webp)
 <hr>
 
 Grid, list or table view, with density options. Shows download state, read progress and monitor
@@ -75,6 +76,9 @@ title filter tolerates typos, and shows the closest titles when nothing matches 
   chapters, unread, added, last read, latest release, size on disk, sources, quality profile, next
   check, year, author, community score, your rating and tags. Click a header to sort, drag its edge
   to resize, double-click the edge to reset.
+
+  ![Library table view grouped by status, with the Ongoing group open and columns for status, chapters, unread, last read, latest release, size on disk and sources](../../../assets/ui/library/table.webp)
+
 - **Group by** status, tag, type or root folder (root folder only with more than one). Each group
   has a header with its count and folds away on click. A series with several tags is listed under
   each of them.
@@ -93,6 +97,8 @@ title filter tolerates typos, and shows the closest titles when nothing matches 
   clean up read files and page conversion. They run on the server as one job, keep going if you
   close the tab, and can be stopped.
 
+![Library in select mode with a bar showing the selected count, Select all, and Search missing, Monitoring, Tags, Refresh, More, Archive, Remove and Done actions above the cover grid](../../../assets/ui/library/select.webp)
+
 Per-series incognito mode keeps a title out of stats and progress without hiding it.
 
 Every series also has your own **reading status**: Plan to read, Reading, Completed, On hold or
@@ -102,6 +108,8 @@ chapter its progress counts. On hold and Dropped series leave Continue reading u
 again. Connected trackers get the status too. **Settings, Reading status** can put a series on hold,
 or drop it, after a number of days without reading, counting only days when something was waiting
 to be read.
+
+![Reading status card with switches to put a series on hold or drop it when you stop reading it, both off](../../../assets/ui/settings/reading-status.webp)
 
 **Auto-tag rules** (Settings, Library) tag a series as it is added when it matches every condition
 you set: genre, type, content rating, root folder, who added it, and how it came in. **Apply to
@@ -113,7 +121,7 @@ bulk. See [Archiving a series](/Maki/guides/library/archiving/).
 
 ## Library health
 
-![Health overview showing zero system issues and zero open file findings, with the image cache panel below](../../../assets/health.png)
+![Health overview with server issue, open file problem and scanned file counts, a Running now panel, two system check warnings for FlareSolverr and the MangaBaka database, a Scheduled jobs table with Run now buttons, and the image cache panel](../../../assets/ui/pages/health.webp)
 <hr>
 
 Admins can index and verify archives, and find missing, unreadable, duplicate or suspicious files.
@@ -125,6 +133,8 @@ with **Acknowledge all**. Replacement and deletion
 operations are reviewed before they run, and unlinked CBZs can be imported. The History tab
 keeps a timeline of status changes, and failed repairs can be retried or dismissed. See
 [Health checks](/Maki/guides/running/health-checks/).
+
+![Health Files tab listing missing Frieren and ONE PIECE chapter files, each with Missing findings and a Review button](../../../assets/ui/health/files-findings.webp)
 
 ## Mihon backup import
 

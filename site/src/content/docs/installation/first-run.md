@@ -13,6 +13,8 @@ Open Maki in your browser, for example `http://localhost:8990`. A new install ha
 first screen is **Create your account**. The password needs at least 10 characters, with no symbol
 rules.
 
+![Create your account form with username, password and confirm password fields, and a Before exposing Maki to the internet checklist below it](../../../assets/ui/first-run/create-account.webp)
+
 This account is the administrator. Add more people later from the users section of **Settings**.
 
 The screen also has a short checklist for public installs: HTTPS, the trusted proxy setting and
@@ -24,6 +26,9 @@ you expose Maki outside your network.
 The setup guide opens after the account is created. It has six steps:
 
 1. **Welcome.** Pick the interface language. Appearance is saved on this device only.
+
+   ![Setup guide Welcome step with the six steps listed down the left, a Language picker set to match the browser, and background and accent choices](../../../assets/ui/first-run/setup-guide.webp)
+
 2. **Library.** Add your library folders, then choose what Maki does with folders it finds: rename
    them to Maki's standard, or keep their names and download into them or into a new folder. Two
    more switches write **ComicInfo.xml** into imported files and save a `cover.jpg` into each series
@@ -32,8 +37,14 @@ The setup guide opens after the account is created. It has six steps:
    search by description** and the most explicit content rating Discover may show outside your own
    library.
 4. **Downloads.** Pick the languages Maki looks for and which chapters it skips.
+
+   ![Setup guide Downloads step with a ranked Languages to download list where only English is switched on](../../../assets/ui/first-run/setup-downloads.webp)
+
 5. **Connections.** Optional. Add tools you already run, such as FlareSolverr, Kavita, an indexer or a
    download client. Maki downloads from its built-in sources without any of them.
+
+   ![Setup guide Connections step listing FlareSolverr, Indexer, Download client and Kavita, each marked Not set](../../../assets/ui/first-run/setup-connections.webp)
+
 6. **Finish.** A summary, and links to add a series, import what you have, connect trackers or invite
    people.
 
@@ -46,6 +57,8 @@ In the **Library** step, enter the path as Maki sees it in **Folder path**. In D
 `/library`, the container path from the compose file. On the Windows app it is a Windows path, such
 as `C:\Manga`. To pick a folder instead of typing one, choose **Browse** to open a folder browser for
 the server.
+
+![Setup guide Library step with /manga added as a reachable folder and its free space, a path field with Browse and Add folder, three choices for existing folders on import, and switches for ComicInfo.xml and cover.jpg](../../../assets/ui/first-run/setup-library.webp)
 
 Maki shows the free space on each folder. If a row says **Maki can't reach this folder**, check the
 mount and the permissions. See [Volumes, PUID and PGID](/Maki/installation/volumes-and-permissions/).

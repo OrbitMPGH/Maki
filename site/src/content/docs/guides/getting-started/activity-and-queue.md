@@ -15,16 +15,20 @@ The **Activity** page (`/activity`) has three tabs.
 - **Upcoming** shows each series' likely next chapter on a five-week grid, as a span with a
   confidence, not a date. A release time that a source announces appears on its day.
 
+![Upcoming tab with a week grid where each series has a pink bar for its likely release span, a confidence value beside the title, and blue diamonds on days a source announced](../../../../assets/ui/activity/upcoming.webp)
+
 The **Activity** button in the top bar shows how many downloads are in progress, or how many are
 waiting for an import decision, which takes priority. Select it to open a dropdown of up to eight
 downloads with an **Open Activity** button below them. Rows waiting for an import decision come
 first. With nothing in flight, the button opens this page directly.
 
-<!-- screenshot: the Activity dropdown -->
+![Activity dropdown showing the in-progress count with a Kaguya-sama torrent, a Frieren chapter from MangaDex downloading and another chapter queued, with an Open Activity button](../../../../assets/ui/activity/dropdown.webp)
 
 The queue updates live. Each row can be moved to the top, moved up or down, retried or
 removed. Rows in **Needs review** also get a **Review** button. **Clear queue** removes everything
 still pending and cancels downloads in progress.
+
+![Queue tab with counters for In progress, Queued, Needs review and Failed above a table of two downloading rows and one queued row with move to top, up, down, pause and remove buttons](../../../../assets/ui/activity/queue-torrent.webp)
 
 New chapters do not wait behind a big backlog. Chapters found by the monitored refresh, Smart
 top-ups and a single chapter you click download first, then everything else, and **Download all**,
@@ -51,6 +55,8 @@ chip that opens it in the reader; a dashed chip came from a different source. Fi
 **Completed**, **Cancelled** or **Upgrades**, search it by series, or turn off **Group chapters** for
 one row per chapter.
 
+![History with All, Completed, Cancelled and Upgrades filters and the Group chapters switch on, where one series is open to show its chapter chips, one of them dashed](../../../../assets/ui/activity/history-run.webp)
+
 A long queue shows only the first items. A line under the table gives the total, and the rest
 still download.
 
@@ -59,6 +65,8 @@ still download.
 **Pause downloads** stops new items from starting. Pick all sources or one source, and a duration:
 **Until I resume**, **For 1 hour**, **Until tomorrow morning** or **Until a time I choose**. Queue
 rows are untouched and downloads already in progress finish.
+
+![Pause downloads panel with What to pause set to All sources, Resume set to Until I resume, and a Pause button](../../../../assets/ui/activity/pause-panel.webp)
 
 To pause one series without pausing anything else, use the pause button on its rows in Activity, or
 **Pause downloads for this series** in the download menu on its series page. Its chapters stay in
@@ -90,6 +98,8 @@ more missing, Maki asks you to confirm first.
 The menu next to it has **Download the next**: the next 10 or 25 chapters, or a count you type
 under **Next...**. They are queued in chapter order from the lowest missing number, and the rest
 stay wanted.
+
+![Frieren series page with the Download wanted button's menu open, listing Next 10 chapters, Next 25 chapters, Next... and Pause downloads for this series](../../../../assets/ui/chapters/download-wanted.webp)
 
 With **Look for volume releases first** on, a new series waits for its volume release search before
 downloading chapter by chapter. The series page says what is waiting and has **Download from sources

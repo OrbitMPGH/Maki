@@ -14,10 +14,14 @@ Before you start:
   **Browse**, then click **Add**.
 - Install the local MangaBaka database, which the matching uses.
 
+![Root folders card listing /manga with its free space and a minimum free space field, above a Path box with Browse and Add buttons](../../../../assets/ui/settings/root-folders.webp)
+
 ## Scan a root folder
 
 1. Open **Import** and pick the root folder.
 2. Click **Scan**. Maki lists each folder that holds comics. Folders with no comics are skipped.
+
+![Import page Folders tab after scanning /manga: folders with their file counts and matches, some marked No metadata match found with a Find match button, and Preview selected and Import selected buttons above the list](../../../../assets/ui/import/scan.webp)
 
 Maki also looks inside grouping folders such as `A-Z/` or a publisher folder, up to two levels deep,
 and lists the series folders it finds there. Importing one moves it up to the root folder. Comics
@@ -57,8 +61,7 @@ The preview lists each folder on one line, and a folder opens onto its files whe
 With 8 or more folders it opens on a summary, and a list you can filter with **Worth a look**,
 **Renamed** or **All**, or search with **Find a folder**.
 
-<!-- screenshot: the import preview's summary and folder filter -->
-
+![Import preview saying nothing has been changed yet, with one line per folder and the apothecary diaries folder open on its files, a file that stays unlinked and two files left out, and a ready and can't import summary at the bottom](../../../../assets/ui/import/preview.webp)
 
 The dialog says folders are renamed to the English title, but the real behaviour comes from
 **Settings → Library → Folder & file naming → Folder naming on import**:
@@ -81,6 +84,8 @@ Every import is listed under **Recent imports** with **Undo this import**, avail
 Undo removes a series only when the import created it and nothing has been downloaded or read
 since. It never deletes your original files.
 
+![Recent imports with an import offering Undo all and an Undo per folder, and an older ONE PIECE import marked as undone](../../../../assets/ui/import/recent.webp)
+
 ## Manual import
 
 The **Manual import** tab on the Import page is for single files or folders that are not laid out as
@@ -101,6 +106,8 @@ into that series once its size has stopped changing, copied or moved as you choo
 in the library is replaced. Anything that matches no series, or more than one, stays where it is and
 is listed on the **Manual import** tab for you to place by hand. In Docker, a drop folder outside
 `/library` needs its own mount. See [Volumes and permissions](/Maki/installation/volumes-and-permissions/#a-drop-folder).
+
+![Drop folder card with the Import from a drop folder switch, Folder not set, a Check every interval, and a Copy or Move choice for files](../../../../assets/ui/settings/drop-folder.webp)
 
 :::tip
 If Kavita shares this folder, see [Kavita alongside Maki](/Maki/guides/reading/kavita/) for how

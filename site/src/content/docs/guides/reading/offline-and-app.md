@@ -15,6 +15,9 @@ Home Screen" still works over plain HTTP, without the offline parts.
   storage use and everything saved. Saved chapters are stored per device and per account, and
   signing out keeps them. A saved copy is removed when its file is gone from the server or you lose
   access to it.
+
+  ![Offline reading settings with storage used on this device, Keep upcoming chapters set to Off, an empty Saved chapters list and a Remove everything from this device button](../../../../assets/ui/settings/offline-reading.webp)
+
 - **Browsing offline.** The app, covers, Home, Library and the series pages you have visited open
   without a connection. Library's **Saved on this device** chip lists what you can read, and a slim
   banner says when you're offline. An unreachable server never signs you out.
@@ -26,4 +29,6 @@ Home Screen" still works over plain HTTP, without the offline parts.
   test** checks it). The Notifications table has a Push column next to Bell for picking events. A push
   needs Bell on for that event, and push turned on for the device. New chapters and finished downloads
   push by default. Up to 20 devices per account.
+
+  ![Push notifications card with the Notify this device switch off](../../../../assets/ui/settings/push-notifications.webp)
 

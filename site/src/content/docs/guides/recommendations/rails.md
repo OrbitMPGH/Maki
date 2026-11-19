@@ -17,11 +17,15 @@ Elsewhere a card names its reason, and no title is named as the reason more than
 The large picks at the top, taken from the rail built from your recent reading. With fewer than three
 titles there, it fills from **Trending now**.
 
+![The Spotlight at the top of Discover with a large pick, its ratings and Add to library and More like this buttons, beside an Also for you list](../../../../assets/ui/discover/hero.webp)
+
 ## Based on your recent activity
 
 Under **Because you read**, it shows covers of up to six series you read most recently, each
 linking to its series page. Series in full incognito are skipped, and titles you thumbed down,
 rated low or ignored as a seed are left out.
+
+![The Based on your recent activity rail with Because you read chips for recent series above cards that name each pick's link, such as Spin-off of or Sequel to](../../../../assets/ui/discover/rail.webp)
 
 ## New from creators you follow
 
@@ -38,15 +42,21 @@ theme name.
 - At most two rows show, and a row needs at least three matching picks.
 - With no vector index, or fewer than six series on your shelf, the section is left out.
 
+![An Another side of your library: Iyashikei row drawn from library series, with cards marked Fans of or Feels like](../../../../assets/ui/discover/side-interests.webp)
+
 ## Readers like you
 
 Titled **Readers like you also finished**, with the subtitle **From readers whose finished series
 look like yours.** It is built from series you have finished, not ones still on your shelf, and
 matched against groups of readers. If no group matches, the rail is left out.
 
+![The Readers like you also finished rail with its subtitle and a row of title cards](../../../../assets/ui/discover/readers-like-you.webp)
+
 ## Trending now
 
 Titles climbing fastest in popularity, from the catalogue.
+
+![The Trending now rail with numbered cards](../../../../assets/ui/discover/trending.webp)
 
 ## Browse the catalogue
 
@@ -58,6 +68,8 @@ downloaded.
 
 One tile per genre. Each opens that genre's most popular titles, titled **Popular in** followed by
 the genre name.
+
+![The Every genre wall with one tile per genre, each showing a few covers and a popular title, from Action to Girls Love](../../../../assets/ui/discover/genre-wall.webp)
 
 ## Next steps
 

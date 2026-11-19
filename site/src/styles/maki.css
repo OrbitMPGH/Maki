@@ -27,3 +27,10 @@
 
 .header > .sl-flex:nth-child(2) { justify-content: flex-end; }
 .header site-search { width: min(100%, 22rem); }
+
+/* Screenshots are captured at 2x (scripts/doc-shots), so half zoom shows each at its real size. Zoom
+   halves the image's own size but not the column limit, so a wide shot still fills the column. */
+.sl-markdown-content :is(p, li) > img {
+  zoom: 0.5;
+  max-width: 100%;
+}

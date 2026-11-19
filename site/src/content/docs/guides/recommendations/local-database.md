@@ -21,6 +21,8 @@ a newer snapshot if one exists. A failed download is retried after 15 minutes, t
 installed. Otherwise it waits for the next six-hourly run. A series
 MangaBaka added after the latest snapshot appears with the next one.
 
+![The Metadata database card showing the snapshot size on disk, its last refresh and a Refresh now button](../../../../assets/ui/settings/metadata.webp)
+
 The snapshot powers:
 
 - Metadata lookups. A search identifies a series and brings its MyAnimeList, AniList, MangaUpdates
@@ -42,6 +44,8 @@ and the rails that need the index are empty until it is in place. While loaded, 
 uses about 40 MB of its own memory. Its weights are read from a memory-mapped copy of the model,
 about 110 MB on disk in the config folder, which Maki writes after the first search by meaning, so
 they count as page cache the system can reclaim. It unloads after 1 idle minute by default.
+
+![The Semantic search & recommendations card switched on, with a progress bar, the embedded series count and a Check for prebuilt now button](../../../../assets/ui/settings/recommendations.webp)
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.

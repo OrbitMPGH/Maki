@@ -27,6 +27,8 @@ You can have up to 30 custom rails.
 Filters use the same panel as the catalogue. For genres and tags, pick **Has all of**, **Has any of**
 or **Has none of**.
 
+![The New rail dialog for a rail named Teen romcoms shown on Home with titles from Your library, a Saved Library filter picker, genre chips and tag fields](../../../../assets/ui/home/new-rail.webp)
+
 ## Sources
 
 | Source | Shows | Notes |
@@ -52,6 +54,8 @@ Sort options:
 
 Use **Edit layout** on Home or Discover to move a rail or switch it off, and **Done** to save the
 layout. Rail edits themselves save straight away.
+
+![Discover in Editing layout mode, listing Spotlight, Based on your recent activity, Side interests, a custom Sports picks rail, Trending now and the other rails with drag handles, Add a rail, Cancel and Done](../../../../assets/ui/discover/edit-layout.webp)
 
 Catalogue rails have a **Show more** button that opens the rail with its filters so you can narrow it
 further.

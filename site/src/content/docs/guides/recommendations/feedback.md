@@ -33,6 +33,8 @@ is covered in [Ratings and "so far" scores](/Maki/guides/trackers/ratings/).
   - **Clear read or seen** undoes that.
 - **Restore hidden or dismissed title** brings a title back.
 
+![The more feedback menu on a recommendation's detail panel, grouped into Change this title only, Whole franchise and Already read or seen](../../../../assets/ui/discover/feedback-menu.webp)
+
 After you mark a title seen, the message that follows offers **Liked it** and **Disliked it**, as
 long as the title has no thumbs yet.
 
@@ -44,9 +46,13 @@ The taste card on **Discover → Taste**, **What shapes your recommendations**, 
 ratings, thumbs and hidden titles. **How signals work** explains each signal, and **Manage signals**
 lists every title with one.
 
+![The What shapes your recommendations card with top tags, counts for shelf titles, ratings, thumbs and hidden titles, a Recent feedback list with Undo buttons and the Anime you've watched section](../../../../assets/ui/discover/taste-signals.webp)
+
 The list has **Titles** and **Anime** tabs. Filter by **All**, **Rated**, **Thumbs**, **Hidden**,
 **Seen elsewhere**, **Excluded from taste** or **Added by you**, search by title, and sort by
 **Recently changed** or **Title**. You can change a title's signal or restore a hidden one from here.
+
+![The Manage signals window on the Titles tab, filtered to All and sorted by Recently changed, listing titles marked seen, dismissed, hidden, disliked or liked](../../../../assets/ui/discover/manage-signals.webp)
 
 **Excluded from taste** keeps a shelf title out of the ranking without changing your reading history.
 
@@ -59,6 +65,8 @@ recommendations after you switch on **Anime you've watched** in Discover's **You
 The **Hidden everywhere** button on Discover, the catalogue and creator pages opens a list of genres
 and tags. A series with any of them never shows up on Discover, including rails, search,
 recommendations and creator pages. Only you see the list.
+
+![The Hidden everywhere dialog over the catalogue, holding Horror, Ecchi and Gore, with Cancel and Save](../../../../assets/ui/discover/hidden-everywhere.webp)
 
 Use it for whole genres or tags, and thumbs for individual titles.
 

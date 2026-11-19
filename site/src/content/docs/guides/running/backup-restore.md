@@ -9,6 +9,8 @@ covers and cache are excluded so backups stay small. Backups live in `{ConfigDir
 default Maki keeps the newest 5 of each kind (automatic, manual and scheduled), and the **Backups to
 keep** setting changes that.
 
+![The Backup & restore card with the latest automatic backup, Restore and All backups, Back up now, Restore from file, the Back up on a schedule switch and Backups to keep](../../../../assets/ui/settings/backup.webp)
+
 Maki also backs up automatically **before any upgrade applies a database migration**. Migrations are
 forward-only, so this is your recovery path if an upgrade goes wrong.
 

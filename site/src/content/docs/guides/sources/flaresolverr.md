@@ -28,6 +28,8 @@ These built-in sources are tagged **FlareSolverr** in Manage sources:
 
 Cứu Truyện uses FlareSolverr only when its site serves a challenge. The other built-in sources don't need it.
 
+![Manage sources searched for Flame, showing the Flame Comics row with a FlareSolverr tag beside its type, genre and language tags](../../../../assets/ui/settings/manage-sources-flaresolverr.webp)
+
 Custom sources whose definition turns on **Needs FlareSolverr** in the wizard are tagged
 **FlareSolverr** in Manage sources. See [Custom sources](/Maki/guides/sources/custom-sources/).
 
@@ -50,6 +52,8 @@ compose file, use the service name, for example `http://flaresolverr:8191`.
 3. Select **Test** to check that Maki can reach it, then save. The card keeps the last result:
    **Connected** or **Failed** with the reason and when it ran, or **Not tested**. Changing the
    address puts it back to Not tested.
+
+![The FlareSolverr card with a URL field, a Test button and the status Not tested](../../../../assets/ui/settings/flaresolverr.webp)
 
 :::caution
 Each solve opens a browser tab in FlareSolverr for up to 60 seconds. Maki runs at most two solves at

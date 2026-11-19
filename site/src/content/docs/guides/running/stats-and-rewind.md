@@ -10,6 +10,8 @@ For what each section measures, see [Stats](/Maki/features/stats/).
 Six presets: **30 days**, **This month**, **90 days**, **12 months**, **Year** and **All time**.
 **Year** adds a picker for **Whole year** or a single month.
 
+![The Stats range control with the This month, 30 days, 90 days, 12 months, Year and All time options](../../../../assets/ui/stats/range.webp)
+
 Each figure compares against the window before it. The current year compares against the same days
 of last year, the current month against the same days of last month, and a past month against the
 whole month before it.
@@ -36,6 +38,8 @@ series you finished and the ones you dropped, and a recap.
    or removed.
 3. Use the pause control to stop on a slide, and **Close Rewind** to leave.
 
+![The opening Rewind slide reading Maki Rewind and the year, over blurred covers, with slide progress bars along the top and a close button](../../../../assets/ui/stats/rewind.webp)
+
 Rewind always covers a calendar year: the current one, or the one picked when the range is **Year**.
 Other ranges do not change it. It plays only for your own reading, so the button is missing while you
 view another reader. `/rewind` redirects to the Stats page.
@@ -47,6 +51,8 @@ Choose **Automation → Incognito** from the series' actions menu:
 - **Off** records everything.
 - **No scrobble** skips tracker pushes only. The series still counts in your stats.
 - **Full** also leaves the series out of Stats, and so out of Rewind.
+
+![The Automation menu on a series with Monitor, Notify and Incognito controls, Incognito set to Off with No scrobble and Full beside it](../../../../assets/ui/series/automation.webp)
 
 The reader's settings panel has a separate **Incognito** toggle for the current session.
 
