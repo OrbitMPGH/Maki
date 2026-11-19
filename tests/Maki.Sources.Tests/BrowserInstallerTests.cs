@@ -51,7 +51,20 @@ public class BrowserInstallerTests
 
         Assert.Equal(BrowserInstaller.Version, Regex.Match(dockerfile, @"ARG BROWSER_VERSION=(\S+)").Groups[1].Value);
         Assert.Equal(BrowserInstaller.Revision, Regex.Match(dockerfile, @"ARG BROWSER_REVISION=(\S+)").Groups[1].Value);
+        Assert.Equal(BrowserInstaller.Build(OSPlatform.Linux, Architecture.X64)!.Sha256,
+            Regex.Match(dockerfile, @"ARG BROWSER_SHA256_AMD64=(\S+)").Groups[1].Value);
+        Assert.Equal(BrowserInstaller.Build(OSPlatform.Linux, Architecture.Arm64)!.Sha256,
+            Regex.Match(dockerfile, @"ARG BROWSER_SHA256_ARM64=(\S+)").Groups[1].Value);
     }
+
+    [Theory]
+    [InlineData("windows", Architecture.X64)]
+    [InlineData("linux", Architecture.X64)]
+    [InlineData("linux", Architecture.Arm64)]
+    [InlineData("osx", Architecture.X64)]
+    [InlineData("osx", Architecture.Arm64)]
+    public void Every_build_carries_a_checksum(string os, Architecture arch) =>
+        Assert.Matches("^[0-9a-f]{64}$", BrowserInstaller.Build(OSPlatform.Create(os.ToUpperInvariant()), arch)!.Sha256);
 
     [Fact]
     public void An_install_lands_in_the_folder_playwright_used()

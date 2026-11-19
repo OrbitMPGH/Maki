@@ -108,7 +108,7 @@ RUN if [ "$TARGETARCH" = "$BUILDARCH" ]; then \
 # additive, so bytes deleted in a later layer still ship in the earlier COPY layer's blob. Instead
 # this throwaway stage does the COPY-then-delete, and the runtime stage COPYs its *resulting*
 # filesystem, which only carries the surviving files, not the deleted ones' history.
-FROM alpine:3 AS trimmed-publish
+FROM alpine:3.24 AS trimmed-publish
 ARG TARGETARCH
 COPY --from=backend /app/publish /app
 # Docnet.Core (pdfium, for reading PDFs in place) ships its x64 native library under
@@ -130,24 +130,28 @@ RUN case "$TARGETARCH" in \
 # arm64 build, so arm64 gets Playwright's build of the same Chromium. It lands where
 # BrowserInstaller looks (PLAYWRIGHT_BROWSERS_PATH below, the folder named by revision, the
 # INSTALLATION_COMPLETE marker), so the app finds it and never downloads one. Nothing here depends on
-# the app's source, so the stage stays cached until these two pins move; keep them in step with
-# BrowserInstaller.Version and BrowserInstaller.Revision (BrowserInstallerTests checks). Only the
-# en-US locale pack is kept, since LANG is unset and Chromium never loads another.
-FROM --platform=$BUILDPLATFORM alpine:3 AS browser
+# the app's source, so the stage stays cached until these pins move; keep them in step with
+# BrowserInstaller.Version, BrowserInstaller.Revision and the checksums in BrowserInstaller.Build
+# (BrowserInstallerTests checks). Only the en-US locale pack is kept, since LANG is unset and
+# Chromium never loads another.
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS browser
 ARG TARGETARCH
 ARG BROWSER_VERSION=149.0.7827.55
 ARG BROWSER_REVISION=1228
+ARG BROWSER_SHA256_AMD64=410c9407d5de3fea80d9398666be06f2aa09154a3fa7b327dc254e336bb4c4b7
+ARG BROWSER_SHA256_ARM64=1652929a70f4afb17aca36fce073fb7ed22262d16825be761b0801972f43ac4f
 RUN apk add --no-cache curl unzip \
     && case "$TARGETARCH" in \
          amd64) url="https://cdn.playwright.dev/builds/cft/$BROWSER_VERSION/linux64/chrome-headless-shell-linux64.zip" \
-                exe=chrome-headless-shell-linux64/chrome-headless-shell ;; \
+                exe=chrome-headless-shell-linux64/chrome-headless-shell sha="$BROWSER_SHA256_AMD64" ;; \
          arm64) url="https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/$BROWSER_REVISION/chromium-headless-shell-linux-arm64.zip" \
-                exe=chrome-linux/headless_shell ;; \
+                exe=chrome-linux/headless_shell sha="$BROWSER_SHA256_ARM64" ;; \
          *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
        esac \
     && dir=/ms-playwright/chromium_headless_shell-$BROWSER_REVISION \
     && mkdir -p "$dir" \
     && curl -fsSL --retry 3 -o /tmp/shell.zip "$url" \
+    && echo "$sha  /tmp/shell.zip" | sha256sum -c - \
     && unzip -q /tmp/shell.zip -d "$dir" \
     && rm /tmp/shell.zip \
     && find "$dir" -path '*/locales/*.pak' ! -name 'en-US.pak' -delete \
@@ -158,8 +162,12 @@ RUN apk add --no-cache curl unzip \
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
+# tini runs as PID 1, reaps orphans and forwards signals to the entrypoint. A browser Maki starts
+# itself left no zombies with dotnet as PID 1, but one started by a `docker exec` command (a
+# --selftest, a troubleshooting tool) left two per launch (measured 2026-11-19): its helpers
+# outlive their parent and fall to PID 1, which did not reap them.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gosu curl \
+    && apt-get install -y --no-install-recommends gosu curl tini \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -173,6 +181,9 @@ RUN sh /tmp/install-browser-deps.sh \
     && rm -rf /var/lib/apt/lists/* /tmp/install-browser-deps.sh
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=browser /ms-playwright /ms-playwright
+# Every shared library the shell links has to resolve, or the image builds and the browser never starts.
+RUN exe=$(find /ms-playwright -type f \( -name chrome-headless-shell -o -name headless_shell \)) \
+    && if ldd "$exe" | grep "not found"; then exit 1; fi
 
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -235,4 +246,7 @@ LABEL org.opencontainers.image.title="Maki" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
-ENTRYPOINT ["/entrypoint.sh"]
+# With `init: true` in a compose file docker-init is PID 1 instead; TINI_SUBREAPER keeps tini
+# reaping as its child and stops it warning that it is not PID 1.
+ENV TINI_SUBREAPER=1
+ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]
