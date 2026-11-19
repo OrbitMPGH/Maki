@@ -1225,9 +1225,16 @@ function SeriesDetailBody() {
     chapterColumnRoom.current.widths = chapterColumnWidths
     chapterColumnRoom.current.hidden = hiddenChapterColumns
   }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
-  const [spanLines, setSpanLines] = useState<
-      { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
-  >([])
+  const [spanLines, setSpanLines] = useState<{
+    key: string
+    spanKey: string
+    label: string
+    top: number
+    height: number
+    left: number
+    openStart: boolean
+    openEnded: boolean
+  }[]>([])
   /**
    * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
    * Without it only the rows that actually carry a badge leave room at the right of the column,
@@ -1239,9 +1246,9 @@ function SeriesDetailBody() {
   const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
   const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
   const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
-  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
-  // being in play means the table stays flat.
-  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  // Volumes follow chapter order, so sorting by release date keeps the table flat. Anime seasons
+  // stay as badges and lines inside the volumes; only their folding waits for the flat view.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : null
   const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
   const setChapterGrouping = (on: boolean) => {
     const next = on ? 'on' : 'off'
@@ -1496,49 +1503,65 @@ function SeriesDetailBody() {
       setMarkerSlot((current) => (current === slot ? current : slot))
 
       const next: typeof spanLines = []
-      const chapterCells = Array.from(wrap.querySelectorAll<HTMLElement>('.chapter-cell[data-chapter-number]'))
+      // Grouped by volume, a season's line stops at each volume heading and picks up again under it,
+      // so the rows are split into runs at the headings and every run gets its own piece of line.
+      const runs: HTMLElement[][] = [[]]
+      for (const row of wrap.querySelectorAll<HTMLElement>('tbody tr')) {
+        if (row.classList.contains('chapter-volume-row')) {
+          if (runs[runs.length - 1].length > 0) runs.push([])
+          continue
+        }
+        const cell = row.querySelector<HTMLElement>('.chapter-cell[data-chapter-number]')
+        if (cell) runs[runs.length - 1].push(cell)
+      }
       for (const span of animeSpans) {
         // An off-page end continues the line; an inferred end is not an actual boundary.
-        if (span.openEnded || foldedSpans.has(span.key)) continue
-        const cells = chapterCells.filter((cell) => {
-          const number = Number(cell.dataset.chapterNumber)
-          return number >= span.from && number <= span.to
-        })
-        if (cells.length === 0) continue
-        const startEl = markerRefs.current.get(`${span.key}:start`)
-        const endEl = markerRefs.current.get(`${span.key}:end`)
-        // Sorted descending, the end badge is the one on top.
-        const topEl = chapterSortDescending ? endEl : startEl
-        const bottomEl = chapterSortDescending ? startEl : endEl
-        // Clip to the visible run, below the table header. Either badge can be on another
-        // page (or hidden by a filter), including both on a middle page of a long season.
-        const top = topEl
-            ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
-            : cells[0].getBoundingClientRect().top - wrapRect.top
-        const bottom = bottomEl
-            ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
-            : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
-        if (bottom - top < 4) continue
+        if (span.openEnded || (!groupingActive && foldedSpans.has(span.key))) continue
+        const startBadge = markerRefs.current.get(`${span.key}:start`)
+        const endBadge = markerRefs.current.get(`${span.key}:end`)
+        for (const [run, runCells] of runs.entries()) {
+          const cells = runCells.filter((cell) => {
+            const number = Number(cell.dataset.chapterNumber)
+            return number >= span.from && number <= span.to
+          })
+          if (cells.length === 0) continue
+          const inRun = (el: HTMLElement | undefined) => (el && cells.some((cell) => cell.contains(el)) ? el : undefined)
+          const startEl = inRun(startBadge)
+          const endEl = inRun(endBadge)
+          // Sorted descending, the end badge is the one on top.
+          const topEl = chapterSortDescending ? endEl : startEl
+          const bottomEl = chapterSortDescending ? startEl : endEl
+          // Clip to the visible run, below the table header. Either badge can be on another
+          // page (or hidden by a filter), including both on a middle page of a long season.
+          const top = topEl
+              ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
+              : cells[0].getBoundingClientRect().top - wrapRect.top
+          const bottom = bottomEl
+              ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
+              : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
+          if (bottom - top < 4) continue
 
-        // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
-        // the series' widest label and centres its badge, so this is one shared x for every season
-        // — a badge's own centre would drift with its label's width. Taking it off the slot rather
-        // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
-        // that carries two markers (one season ending where the next begins).
-        const anchor = startEl ?? endEl
-        const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
-        if (!holder) continue
-        const holderRect = holder.getBoundingClientRect()
+          // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
+          // the series' widest label and centres its badge, so this is one shared x for every season
+          // — a badge's own centre would drift with its label's width. Taking it off the slot rather
+          // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
+          // that carries two markers (one season ending where the next begins).
+          const anchor = startEl ?? endEl
+          const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
+          if (!holder) continue
+          const holderRect = holder.getBoundingClientRect()
 
-        next.push({
-          key: span.key,
-          label: span.label,
-          top,
-          height: bottom - top,
-          left: holderRect.left - wrapRect.left + holderRect.width / 2,
-          openStart: !topEl,
-          openEnded: !bottomEl,
-        })
+          next.push({
+            key: `${span.key}:${run}`,
+            spanKey: span.key,
+            label: span.label,
+            top,
+            height: bottom - top,
+            left: holderRect.left - wrapRect.left + holderRect.width / 2,
+            openStart: !topEl,
+            openEnded: !bottomEl,
+          })
+        }
       }
 
       // Same-value bail-out: this runs from a ResizeObserver, and setting state that re-renders
@@ -1575,7 +1598,7 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
+  }, [chapterTable, animeSpans, foldedSpans, groupingActive, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
@@ -3681,6 +3704,7 @@ function SeriesDetailBody() {
                                             collapsed={row.collapsed}
                                             readProgress={readProgress}
                                             queueStates={volumeQueueStates}
+                                            seasons={animeSpans}
                                             readTracking={readTracking}
                                             titleShown={volumeTitleShown}
                                             progressSpan={volumeProgressSpan}
@@ -3725,6 +3749,7 @@ function SeriesDetailBody() {
                                           markers={markers}
                                           foldedSpans={markers ? foldedSpans : undefined}
                                           spanForMarker={spanForMarker}
+                                          spanFoldable={!groupingActive}
                                           canEditMetadata={canEditMetadata}
                                           canDownload={canDownload}
                                           canDelete={canDelete}
@@ -3754,6 +3779,19 @@ function SeriesDetailBody() {
                       <div className="chapter-span-overlay" aria-hidden={spanLines.length === 0}>
                         {spanLines.map((line) => {
                           const { label: lineLabel } = line
+                          // Grouped by volume, seasons don't fold, so the line is only a marker.
+                          if (groupingActive) {
+                            return (
+                                <span
+                                    key={line.key}
+                                    className="chapter-span-line"
+                                    data-static=""
+                                    style={{ top: line.top, height: line.height, left: line.left }}
+                                    data-open-start={line.openStart ? '' : undefined}
+                                    data-open-ended={line.openEnded ? '' : undefined}
+                                />
+                            )
+                          }
                           return (
                             <button
                                 key={line.key}
@@ -3764,7 +3802,7 @@ function SeriesDetailBody() {
                                 data-open-ended={line.openEnded ? '' : undefined}
                                 title={t`${lineLabel}. Click to collapse.`}
                                 aria-label={t`Collapse ${lineLabel}`}
-                                onClick={() => toggleSpanFold(line.key)}
+                                onClick={() => toggleSpanFold(line.spanKey)}
                             />
                           )
                         })}

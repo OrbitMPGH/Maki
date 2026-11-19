@@ -12137,11 +12137,6 @@ msgstr "组：{groupName}，来自章节"
 msgid "Group: {groupName}, set by you"
 msgstr "组：{groupName}，由你设置"
 
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "表格中标记了动画季度时，分组已关闭。"
-
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Groups credited: {groupList}"

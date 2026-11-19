@@ -8499,6 +8499,9 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   background: color-mix(in srgb, var(--anime) 60%, transparent);
   transition: background var(--dur-fast) var(--ease), width var(--dur-fast) var(--ease);
 }
+.chapter-span-line[data-static] {
+  pointer-events: none;
+}
 .chapter-span-line:hover::before {
   width: 3px;
   background: var(--anime);
@@ -8685,6 +8688,17 @@ body.column-resizing * {
   padding: 0;
   border-bottom: 0;
 }
+.chapter-volume-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+/* A season the volume's chapters belong to, in the anime's colour like the badges on its rows. */
+.chapter-volume-season {
+  flex: none;
+}
 .chapter-volume-toggle {
   display: flex;
   align-items: center;
@@ -8761,6 +8775,10 @@ body.column-resizing * {
 .volume-strip > i[data-kind='read'] {
   height: 10px;
   background: var(--brand);
+}
+.volume-strip > i[data-kind='watched'] {
+  height: 10px;
+  background: var(--anime);
 }
 .volume-strip > i[data-kind='downloaded'] {
   background: var(--ok);

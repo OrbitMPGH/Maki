@@ -9920,10 +9920,6 @@ msgstr "Group: {groupName}, from chapters"
 msgid "Group: {groupName}, set by you"
 msgstr "Group: {groupName}, set by you"
 
-#: src/components/series/ChapterViewMenu.tsx
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Grouping is off while anime seasons are marked in the table."
-
 #: src/pages/settings/CustomSourceReport.tsx
 msgid "Groups credited: {groupList}"
 msgstr "Groups credited: {groupList}"

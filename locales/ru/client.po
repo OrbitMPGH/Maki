@@ -12137,11 +12137,6 @@ msgstr "Группа: {groupName}, из глав"
 msgid "Group: {groupName}, set by you"
 msgstr "Группа: {groupName}, назначена вами"
 
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Группировка выключена, пока в таблице отмечены сезоны аниме."
-
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Groups credited: {groupList}"

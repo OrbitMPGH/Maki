@@ -12137,11 +12137,6 @@ msgstr "Groupe : {groupName}, depuis les chapitres"
 msgid "Group: {groupName}, set by you"
 msgstr "Groupe : {groupName}, défini par vous"
 
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Le regroupement est désactivé pendant que les saisons d'anime sont marquées dans le tableau."
-
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Groups credited: {groupList}"

@@ -12137,11 +12137,6 @@ msgstr "Grupa: {groupName}, z rozdziałów"
 msgid "Group: {groupName}, set by you"
 msgstr "Grupa: {groupName}, ustawiona przez ciebie"
 
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Grupowanie jest wyłączone, gdy sezony anime są zaznaczone w tabeli."
-
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Groups credited: {groupList}"

@@ -363,6 +363,7 @@ const volumeStory = (
           collapsed={false}
           readProgress={progress}
           queueStates={new Map()}
+          seasons={[]}
           readTracking
           titleShown
           progressSpan={3}
@@ -411,6 +412,23 @@ export const VolumeHeaderDownloadCountPlay: StoryObj<typeof ChapterVolumeRow> = 
     await expect(await canvas.findByRole('button', { name: 'Download 1 missing chapter in Volume 3' })).toBeVisible()
     await waitFor(() => expect(canvas.getByText('1 queued')).toBeVisible())
     await waitFor(() => expect(canvas.getByText('1 removed')).toBeVisible())
+  },
+}
+
+export const VolumeHeaderWithSeasons: StoryObj<typeof ChapterVolumeRow> = {
+  ...volumeStory(
+    { volume: 1, chapters: chapters.slice(0, 9) },
+    {
+      seasons: [season, { key: 'mv', label: 'Movie', from: 5, to: 7, openEnded: false, lane: 1 }, { ...season, key: 's2', label: 'S2', from: 20, to: 30 }],
+      readProgress: new Map([...progress].map(([id, p], i) => [id, i === 0 ? { ...p, completed: true, watched: true } : p])),
+    },
+  ),
+  play: async ({ canvas }) => {
+    // S1 and the movie cover chapters in this volume; S2 starts later and stays off the heading.
+    await expect(await canvas.findByText('S1')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('Movie')).toBeVisible())
+    await waitFor(() => expect(canvas.queryByText('S2')).toBeNull())
+    await waitFor(() => expect(canvas.getByText('1 watched')).toBeVisible())
   },
 }
 

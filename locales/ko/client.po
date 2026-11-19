@@ -12137,11 +12137,6 @@ msgstr "그룹: {groupName}, 챕터에서"
 msgid "Group: {groupName}, set by you"
 msgstr "그룹: {groupName}, 직접 설정함"
 
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "표에 애니메이션 시즌이 표시되어 있는 동안에는 묶기가 꺼집니다."
-
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Groups credited: {groupList}"
