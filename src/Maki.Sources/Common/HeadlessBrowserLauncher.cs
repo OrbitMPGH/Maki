@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Core.Io;
 using PuppeteerSharp;
 
@@ -13,60 +14,100 @@ namespace Maki.Sources.Common;
 /// one exits.
 /// </para>
 /// </summary>
-public sealed class HeadlessBrowserLauncher(BrowserInstaller? installer = null)
+public sealed class HeadlessBrowserLauncher
 {
     private const int LaunchTimeoutMs = 60_000;
 
+    /// <summary>PuppeteerSharp gives a graceful close five seconds before it kills the process, and
+    /// the DevTools call itself waits on its protocol timeout; this bounds the whole of it.</summary>
+    private static readonly TimeSpan DefaultCloseTimeout = TimeSpan.FromSeconds(15);
+
+    private readonly BrowserInstaller? _installer;
+    private readonly Func<LaunchOptions, Task<IBrowser>> _launch;
+    private readonly Action _dropBinaryCache;
+    private readonly TimeSpan _closeTimeout;
+    private readonly ConcurrentDictionary<IBrowser, byte> _open = new(ReferenceEqualityComparer.Instance);
     private int _running;
 
-    /// <summary>How many browsers this launcher has up right now.</summary>
+    public HeadlessBrowserLauncher(BrowserInstaller? installer = null)
+        : this(installer, options => Puppeteer.LaunchAsync(options), DropBinaryCache, DefaultCloseTimeout)
+    {
+    }
+
+    internal HeadlessBrowserLauncher(
+        BrowserInstaller? installer, Func<LaunchOptions, Task<IBrowser>> launch, Action dropBinaryCache, TimeSpan closeTimeout)
+    {
+        _installer = installer;
+        _launch = launch;
+        _dropBinaryCache = dropBinaryCache;
+        _closeTimeout = closeTimeout;
+    }
+
+    /// <summary>How many browsers this launcher has up or starting right now.</summary>
     public int Running => Volatile.Read(ref _running);
 
     /// <summary>Installs the browser first if this build shipped without it; see <see cref="BrowserInstaller"/>.</summary>
     public async Task<IBrowser> LaunchAsync(IEnumerable<string>? extraArgs = null, CancellationToken ct = default)
     {
-        if (installer is not null)
+        if (_installer is not null)
         {
-            await installer.EnsureInstalledAsync(ct);
+            await _installer.EnsureInstalledAsync(ct);
         }
 
-        var executable = BrowserInstaller.ExecutablePath();
+        var executable = _installer?.Executable ?? BrowserInstaller.ExecutablePath();
         if (executable is null || !File.Exists(executable))
         {
             throw new BrowserUnavailableException("The headless browser is not installed.");
         }
 
         ct.ThrowIfCancellationRequested();
-        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            ExecutablePath = executable,
-            Headless = true,
-            IgnoreDefaultArgs = true,
-            Args = [.. BrowserSupport.ChromiumArgs, .. extraArgs ?? []],
-            DefaultViewport = null,
-            // The shell starts with no window (--no-startup-window), so there is no first page to wait for.
-            WaitForInitialPage = false,
-            // A pipe rather than a localhost port: no other local process can reach the browser, and
-            // Chromium exits when Maki does, even when Maki is killed. Over a port it outlived a hard
-            // kill (checked on Windows, 2026-11-19), which Playwright's driver never let happen.
-            Pipe = true,
-            Timeout = LaunchTimeoutMs,
-        });
+
+        // Counted before the launch, so another browser closing meanwhile cannot take the count to
+        // zero and drop the files this one is reading in.
         Interlocked.Increment(ref _running);
+        IBrowser browser;
+        try
+        {
+            browser = await _launch(new LaunchOptions
+            {
+                ExecutablePath = executable,
+                Headless = true,
+                IgnoreDefaultArgs = true,
+                Args = [.. BrowserSupport.ChromiumArgs, .. extraArgs ?? []],
+                DefaultViewport = null,
+                // The shell starts with no window (--no-startup-window), so there is no first page to wait for.
+                WaitForInitialPage = false,
+                // A pipe rather than a localhost port: no other local process can reach the browser, and
+                // Chromium exits when Maki does, even when Maki is killed. Over a port it outlived a hard
+                // kill (checked on Windows, 2026-11-19), which Playwright's driver never let happen.
+                Pipe = true,
+                Timeout = LaunchTimeoutMs,
+            });
+        }
+        catch
+        {
+            Release();
+            throw;
+        }
+
+        _open[browser] = 0;
         return browser;
     }
 
-    /// <summary>Closes a browser this launcher started. One that already died is still counted out.</summary>
+    /// <summary>
+    /// Closes a browser this launcher started. One that already died, or whose close throws or hangs,
+    /// is still killed and counted out; a second close of the same browser does nothing.
+    /// </summary>
     public async Task CloseAsync(IBrowser? browser)
     {
-        if (browser is null)
+        if (browser is null || !_open.TryRemove(browser, out _))
         {
             return;
         }
 
         try
         {
-            await browser.CloseAsync();
+            await browser.CloseAsync().WaitAsync(_closeTimeout);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -84,11 +125,23 @@ public sealed class HeadlessBrowserLauncher(BrowserInstaller? installer = null)
             {
             }
 
-            browser.Dispose();
-            if (Interlocked.Decrement(ref _running) == 0)
+            try
             {
-                DropBinaryCache();
+                browser.Dispose();
             }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+            }
+
+            Release();
+        }
+    }
+
+    private void Release()
+    {
+        if (Interlocked.Decrement(ref _running) == 0)
+        {
+            _dropBinaryCache();
         }
     }
 
