@@ -279,7 +279,7 @@ internal static class LibraryListRows
             .Select(r => (r.SeriesId, r.Slot!.Value))
             .ToHashSet();
 
-        var chapterIdsByFile = batchChapters.ToLookup(c => c.FileId, c => c.Id);
+        var chaptersByFile = batchChapters.ToLookup(c => c.FileId, c => new NewChapterBatch.Chapter(c.Id, c.Number, c.Volume));
         var unreadBySeries = batchChapters
             .Where(c => !completed.Contains(c.Id) &&
                         !(ContinueReadingService.SlotOf(c.Number, c.Volume) is { } slot && readSlots.Contains((c.SeriesId, slot))))
@@ -289,7 +289,7 @@ internal static class LibraryListRows
         var counts = new Dictionary<int, int>();
         foreach (var (seriesId, unread) in unreadBySeries)
         {
-            var count = NewChapterBatch.UnreadFiles(batches[seriesId], id => chapterIdsByFile[id], unread).Count;
+            var count = NewChapterBatch.UnreadChapters(batches[seriesId], id => chaptersByFile[id], unread).Count;
             if (count > 0)
             {
                 counts[seriesId] = count;

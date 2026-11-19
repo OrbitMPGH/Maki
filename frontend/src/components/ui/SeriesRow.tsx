@@ -60,7 +60,7 @@ export const SeriesRow = memo(function SeriesRow({
   const readTip = t`${readChapterCount} of ${have} downloaded read`
   const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
   const mutedTip = t`Notifications muted`
-  const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
+  const newTip = plural(newChapterCount, { one: '# new chapter to read', other: '# new chapters to read' })
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
 

@@ -87,7 +87,7 @@ export const CoverCard = memo(function CoverCard({
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
         : t`No chapters`
-  const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
+  const newTip = plural(newChapterCount, { one: '# new chapter to read', other: '# new chapters to read' })
   const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {

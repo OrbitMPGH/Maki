@@ -9,7 +9,7 @@ import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /**
- * Horizontal rail of series that recently gained chapter files. Cards go to the series page;
+ * Horizontal rail of series that recently gained chapters to read. Cards go to the series page;
  * the small Read button jumps straight into the next unread chapter.
  */
 export const RecentlyAddedRail = memo(function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
@@ -75,8 +75,8 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
             <span
               className="cover-new"
               data-tip={plural(newChapterCount, {
-                one: '# recent chapter file',
-                other: '# recent chapter files',
+                one: '# new chapter to read',
+                other: '# new chapters to read',
               })}
             >
               {plural(newChapterCount, { one: '# new', other: '# new' })}
