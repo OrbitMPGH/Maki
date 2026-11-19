@@ -68,6 +68,22 @@ export const LongTitle: Story = {
 }
 
 /** A long title with every site rated, the band at its tallest. */
+/** A finished single chapter reads as a one-shot, not as a big "1". */
+export const OneShot: Story = {
+  args: { item: { ...catalogueItem(0), status: 'Completed', totalChapters: 1 } },
+  parameters: {
+    msw: discoverPage(
+      http.get(api('/recommendations/detail/:id'), ({ params }) =>
+        HttpResponse.json({ ...detailFor(String(params.id)), status: 'Completed', totalChapters: 1, finalVolume: null }),
+      ),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('One-shot')).toBeVisible()
+  },
+}
+
 export const AllSites: Story = {
   args: { item: { ...catalogueItem(0), title: LONG_TITLE } },
   parameters: {

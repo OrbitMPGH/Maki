@@ -2,18 +2,20 @@ import type { ReactNode } from 'react'
 import { Tooltip } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
-import { IconBooks, IconDeviceTv } from '../../lib/icons'
+import { IconBooks, IconCalendar, IconDeviceTv } from '../../lib/icons'
 import { ContentRatingChip } from '../ContentRatingChip'
 import { seriesStatusVisual, statusToken } from '../ui/status'
 
 /**
- * Status, content rating and type as the band's pills, shared by the series page and the Discover
- * modal so a result and the series it becomes read the same. The type is the quiet one.
+ * Status, content rating and type (with the release year) as the band's pills, shared by the series
+ * page and the Discover modal so a result and the series it becomes read the same. The type is the
+ * quiet one.
  */
 export function HeroChips({
   status,
   contentRating,
   typeLabel,
+  year,
   animeName,
   hasAnime,
   tooltipZIndex,
@@ -22,6 +24,8 @@ export function HeroChips({
   status: string
   contentRating: string | null | undefined
   typeLabel: string | null
+  /** Release year, inside the type pill behind a hairline. */
+  year?: number | null
   hasAnime?: boolean
   animeName?: string | null
   tooltipZIndex?: number
@@ -40,10 +44,11 @@ export function HeroChips({
         {label(state.label)}
       </span>
       <ContentRatingChip rating={contentRating} tooltipZIndex={tooltipZIndex} />
-      {typeLabel && (
+      {(typeLabel || year != null) && (
         <span className="series-hero-status" data-quiet>
-          <IconBooks size={14} />
+          {typeLabel ? <IconBooks size={14} /> : <IconCalendar size={14} />}
           {typeLabel}
+          {year != null && <span className="hero-type-year" data-alone={typeLabel ? undefined : true}>{year}</span>}
           {hasAnime && (
             <Tooltip label={animeLabel} withArrow zIndex={tooltipZIndex}>
               <span className="hero-anime-mark" role="img" aria-label={animeLabel} tabIndex={0}>

@@ -20,7 +20,7 @@ import {
   IconTrendingDown,
   IconTrendingUp,
 } from '../../lib/icons'
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {
   useReadingBehaviour,
@@ -33,6 +33,7 @@ import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { HeroChips } from '../series/HeroChips'
+import { HeroLength } from './HeroLength'
 import { engineReason } from '../ui/DiscoverRail'
 import { ScoredSiteChips } from '../ScoredSiteChips'
 import {
@@ -391,62 +392,16 @@ export function DiscoverDetailModal({
                       {title || (isError ? t`Couldn't load this title` : '')}
                     </Title>
 
-                    {/* One line, truncated. Every other alternative title is under At a glance. */}
-                    {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text component="div" className="discover-alt-line hero-meta">
-                        <MetaList inline items={[detail?.romanizedTitle, detail?.nativeTitle]} />
-                      </Text>
-                    )}
-
-                    {(year != null || chapters != null || volumes != null) && (
-                      <Text component="div" className="hero-meta">
-                        <MetaList
-                          inline
-                          items={[
-                            year,
-                            chapters != null ? (
-                              volumes != null ? (
-                                <Trans key="count">
-                                  <Plural value={chapters} one="# chapter" other="# chapters" /> in{' '}
-                                  <Plural value={volumes} one="# volume" other="# volumes" />
-                                </Trans>
-                              ) : (
-                                plural(chapters, { one: '# chapter', other: '# chapters' })
-                              )
-                            ) : volumes != null ? (
-                              plural(volumes, { one: '# volume', other: '# volumes' })
-                            ) : null,
-                          ]}
-                        />
-                      </Text>
-                    )}
-
                     {/* Same chips as the series page's band, from the same maps: a result and the
                         series it becomes read as one object, not two vocabularies. */}
                     <HeroChips
                       status={detail?.status ?? item?.status ?? ''}
                       contentRating={detail?.contentRating}
                       typeLabel={typeLabel}
+                      year={year}
                       hasAnime={detail?.hasAnime}
                       tooltipZIndex={1001}
                     >
-                      {catchUpMinutes != null && (
-                        <Tooltip
-                          withArrow
-                          multiline
-                          w={260}
-                          zIndex={1001}
-                          label={plural(chapters ?? 0, {
-                            one: `# chapter at your usual ${paceMinutes} min a chapter.`,
-                            other: `# chapters at your usual ${paceMinutes} min a chapter.`,
-                          })}
-                        >
-                          <span className="series-hero-status" data-you tabIndex={0}>
-                            <IconClock size={14} />
-                            {catchUpMinutes < 90 ? t`~${catchUpMinutes} min to catch up` : t`~${catchUpHours} h to catch up`}
-                          </span>
-                        </Tooltip>
-                      )}
                       {/* Only ever rendered when the server decided there is something to say, which
                           is about one series in nine: the cohorts have to disagree with the wider
                           reader crowd by at least half a star. Deliberately a direction rather than a
@@ -488,6 +443,31 @@ export function DiscoverDetailModal({
                         </Tooltip>
                       )}
                     </HeroChips>
+
+                    <HeroLength
+                      chapters={chapters}
+                      volumes={volumes}
+                      completed={(detail?.status ?? item?.status) === 'Completed'}
+                      extra={
+                        catchUpMinutes != null && (
+                          <Tooltip
+                            withArrow
+                            multiline
+                            w={260}
+                            zIndex={1001}
+                            label={plural(chapters ?? 0, {
+                              one: `# chapter at your usual ${paceMinutes} min a chapter.`,
+                              other: `# chapters at your usual ${paceMinutes} min a chapter.`,
+                            })}
+                          >
+                            <span className="hero-length-time" tabIndex={0}>
+                              <IconClock size={16} />
+                              {catchUpMinutes < 90 ? t`~${catchUpMinutes} min to read` : t`~${catchUpHours} h to read`}
+                            </span>
+                          </Tooltip>
+                        )
+                      }
+                    />
 
                     {/* The score where it stands, and the sites with their own scores on them. */}
                     {(score != null || links.length > 0 || sourceRatings.length > 0) && (

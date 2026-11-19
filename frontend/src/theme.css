@@ -3603,10 +3603,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: clamp(1.35rem, 2.1vw, 1.7rem);
   line-height: 1.1;
 }
-.discover-alt-line {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* The release year rides in the type pill past a hairline, a step quieter than the type. */
+.hero-type-year {
+  margin-inline-start: 3px;
+  padding-inline-start: 8px;
+  border-inline-start: 1px solid var(--border-strong);
+  color: var(--ink-3);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+.hero-type-year[data-alone] {
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+  border-inline-start: 0;
 }
 /* An anime adaptation is a mark on the type pill in the anime hue, past a hairline. */
 .hero-anime-mark {
@@ -6385,15 +6394,6 @@ button.site-chip:hover {
 .series-hero:not([data-compact]) .series-hero-title[data-length='long'] {
   line-height: 0.98;
 }
-/* Alt titles on two lines at most, then an ellipsis; the full list is the title attribute and the
-   Metadata card. One line cut the second title to a letter. */
-.series-hero-alt {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
 .series-hero-status {
   display: inline-flex;
   align-items: center;
@@ -6532,23 +6532,62 @@ button.site-chip:hover {
   gap: 8px;
   margin-top: 16px;
 }
-/* Accent is "you": the catch-up time is the reader's own pace. An estimate, not a property of the
-   series, so it is a plain line with an accent mark and never a filled pill beside the status. */
-.series-hero-status[data-you] {
-  padding-inline: 4px;
+/* The Discover modal's length as figures under the pills: bold numbers a step under the score, so
+   the gold score is still the first number the eye finds. Volumes in their own hue. */
+.hero-length {
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: var(--type-body);
+  font-weight: var(--fw-strong);
+  line-height: 1.3;
+}
+.hero-length .meta-list {
+  row-gap: 6px;
+}
+.hero-length-figure {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hero-length-figure > svg {
+  flex: none;
+  color: var(--ink-2);
+}
+.hero-length-figure b {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+.hero-length-figure b[data-volume] {
+  color: var(--volume);
+}
+.hero-length-join {
+  color: var(--ink-3);
+  font-weight: var(--fw-regular);
+}
+/* Accent is "you": the reading time is the reader's own pace. An estimate, not a property of the
+   series, so it is plain text with an accent mark behind the length it is about. */
+.hero-length-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--ink-2);
   font-weight: var(--fw-medium);
 }
-.series-hero-status[data-you] svg {
+.hero-length-time svg {
+  flex: none;
   color: var(--brand-fg-on-art);
+}
+.hero-length + .hero-scoreline {
+  margin-top: 14px;
 }
 /* Your own things about the series, rating and status, as one bordered object on a line of its
    own under the facts: the stars, a hairline, then the status menu as its second half. */
-.hero-chips-break {
-  flex-basis: 100%;
-  height: 0;
-}
 .hero-yours {
+  align-self: flex-start;
+  margin-top: 16px;
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
@@ -8309,7 +8348,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   }
   /* A meta list is a flex box, which steps clear of the float and so loses the negative start
      margin that hides its leading hairline. Its wrapper steps clear instead, and the list keeps it. */
-  .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list):not(.series-hero-alt) {
+  .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list) {
     display: flow-root;
   }
   .series-hero:not([data-compact]) .series-hero-poster {
