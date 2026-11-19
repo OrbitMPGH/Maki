@@ -106,7 +106,7 @@ public partial class SourceMatchService(
     /// How many sources are searched at once. Each has its own host and its own rate limiter, so
     /// this is not a politeness budget — searching them one at a time was costing the sum of every
     /// site's latency for no budget reason. It is a ceiling on how many scrapes, FlareSolverr solves
-    /// and Playwright pages are in flight for one series at once, which is what keeps a match from
+    /// and browser pages are in flight for one series at once, which is what keeps a match from
     /// starving the download workers that share those same singletons.
     /// </summary>
     private const int MaxParallelSources = 6;

@@ -43,10 +43,11 @@ time either needs it. The browser needs some system libraries. If Health reports
 start, install them once:
 
 ```bash
-sudo /opt/maki/.playwright/node/linux-x64/node /opt/maki/.playwright/package/cli.js install-deps chromium-headless-shell
+sudo /opt/maki/install-browser-deps.sh
 ```
 
-Use `linux-arm64` in that path on an ARM machine. Both sources also need
+The script uses `apt-get`, so it covers Debian and Ubuntu; on another distribution, install the
+packages it lists with your package manager. Both sources also need
 [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr).
 
 ## Update

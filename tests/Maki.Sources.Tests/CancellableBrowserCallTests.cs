@@ -1,5 +1,5 @@
 using Maki.Sources.Common;
-using Microsoft.Playwright;
+using PuppeteerSharp;
 
 namespace Maki.Sources.Tests;
 
@@ -16,7 +16,7 @@ public class CancellableBrowserCallTests
             () =>
             {
                 closed++;
-                stuck.SetException(new PlaywrightException("Target page, context or browser has been closed"));
+                stuck.SetException(new PuppeteerException("Target page, context or browser has been closed"));
                 return Task.CompletedTask;
             },
             () => stuck.Task,
@@ -30,11 +30,11 @@ public class CancellableBrowserCallTests
     }
 
     [Fact]
-    public async Task A_playwright_failure_without_cancellation_is_left_alone()
+    public async Task A_browser_failure_without_cancellation_is_left_alone()
     {
-        await Assert.ThrowsAsync<PlaywrightException>(() => CancellableBrowserCall.RunAsync<int>(
+        await Assert.ThrowsAsync<PuppeteerException>(() => CancellableBrowserCall.RunAsync<int>(
             () => Task.CompletedTask,
-            () => throw new PlaywrightException("boom"),
+            () => throw new PuppeteerException("boom"),
             CancellationToken.None));
     }
 

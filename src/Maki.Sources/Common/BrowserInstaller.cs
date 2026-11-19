@@ -1,7 +1,5 @@
-using System.Diagnostics;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using Maki.Core.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -24,14 +22,23 @@ public sealed class BrowserUnavailableException(string message, Exception? inner
 /// build time, so there this only ever confirms it is present. A native build ships without it: it is
 /// about 100 MB, and only the sources that declare <c>NeedsBrowser</c> use it.
 /// <para>
-/// Installs into Playwright's own default location (<c>%LOCALAPPDATA%\ms-playwright</c>,
-/// <c>~/.cache/ms-playwright</c>) rather than the config directory, so a development checkout and
-/// an installed build share one copy, and Playwright finds it with no path to pass around.
+/// The build and the folder layout are the ones Playwright used (Chrome Headless Shell from Chrome for
+/// Testing, Playwright's own build on Linux arm64, which Chrome for Testing does not publish), in
+/// Playwright's default location (<c>%LOCALAPPDATA%\ms-playwright</c>, <c>~/.cache/ms-playwright</c>),
+/// so an install made before Maki dropped Playwright is found and reused, and a development checkout
+/// and an installed build share one copy.
 /// </para>
 /// </summary>
-public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) : IDisposable
+public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILogger<BrowserInstaller> logger) : IDisposable
 {
-    public const string BrowserName = "chromium-headless-shell";
+    public const string HttpClientName = "headless-browser";
+
+    /// <summary>Chrome Headless Shell's version. <c>distribution/docker/Dockerfile</c> carries the same
+    /// two values, and a test holds them together.</summary>
+    public const string Version = "149.0.7827.55";
+
+    /// <summary>Playwright's number for the same build, which names its folder and its arm64 download.</summary>
+    public const string Revision = "1228";
 
     /// <summary>The download plus the unpacked browser, with room to spare.</summary>
     public const long RequiredFreeBytes = 600L * 1024 * 1024;
@@ -56,7 +63,7 @@ public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) :
         if (_confirmed)
             return true;
 
-        if (InstallMarker() is not { } marker || !File.Exists(marker))
+        if (InstallMarker() is not { } marker || !File.Exists(marker) || ExecutablePath() is not { } exe || !File.Exists(exe))
             return false;
 
         _confirmed = true;
@@ -101,19 +108,43 @@ public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) :
         Error = null;
         try
         {
-            if (BrowsersPath() is { } target && DiskSpace.AvailableFor(ExistingAncestor(target)) is { } free
-                && free < RequiredFreeBytes)
+            if (Build() is not { } build || BrowserDirectory() is not { } target)
+                throw new BrowserUnavailableException($"No headless browser build exists for {RuntimeInformation.RuntimeIdentifier}.");
+
+            var root = Path.GetDirectoryName(target)!;
+            if (DiskSpace.AvailableFor(ExistingAncestor(root)) is { } free && free < RequiredFreeBytes)
             {
                 throw new BrowserUnavailableException(
-                    $"Not enough free space to install it: {free / 1048576} MB free at {target}, " +
+                    $"Not enough free space to install it: {free / 1048576} MB free at {root}, " +
                     $"{RequiredFreeBytes / 1048576} MB needed.");
             }
 
-            if (Driver() is not var (node, cli))
-                throw new BrowserUnavailableException("The Playwright driver is missing from the Maki install.");
+            if (httpClientFactory is null)
+                throw new BrowserUnavailableException("The headless browser is missing and this build cannot download it.");
 
             logger.LogInformation("Installing the headless browser, about 100 MB");
-            await RunDriverAsync(node, cli, ct);
+            Directory.CreateDirectory(root);
+            var archive = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.zip");
+            var staging = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.tmp");
+            try
+            {
+                await DownloadAsync(build.Urls, archive, ct);
+                Percent = 100;
+                Unpack(archive, staging, build.Executable);
+                if (Directory.Exists(target))
+                    Directory.Delete(target, recursive: true);
+                Directory.Move(staging, target);
+                await File.WriteAllTextAsync(InstallMarker()!, string.Empty, CancellationToken.None);
+            }
+            finally
+            {
+                TryDelete(archive);
+                if (Directory.Exists(staging))
+                {
+                    try { Directory.Delete(staging, recursive: true); }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                }
+            }
 
             if (!IsInstalled())
                 throw new BrowserUnavailableException("The browser install finished but the browser is still missing.");
@@ -138,71 +169,134 @@ public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) :
         }
     }
 
-    private async Task RunDriverAsync(string node, string cli, CancellationToken ct)
+    /// <summary>Tries each mirror in turn; the first one to deliver the whole file wins.</summary>
+    private async Task DownloadAsync(IReadOnlyList<string> urls, string path, CancellationToken ct)
     {
-        var start = new ProcessStartInfo(node)
+        var client = httpClientFactory!.CreateClient(HttpClientName);
+        Exception? last = null;
+        foreach (var url in urls)
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        start.ArgumentList.Add(cli);
-        start.ArgumentList.Add("install");
-        start.ArgumentList.Add(BrowserName);
-        if (start.Environment.TryGetValue(DriverHeapCap.Variable, out var nodeOptions) && DriverHeapCap.IsOurs(nodeOptions))
-        {
-            start.Environment.Remove(DriverHeapCap.Variable);
+            try
+            {
+                using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+                response.EnsureSuccessStatusCode();
+                var total = response.Content.Headers.ContentLength;
+                await using var source = await response.Content.ReadAsStreamAsync(ct);
+                await using var file = File.Create(path);
+                var buffer = new byte[81920];
+                long read = 0;
+                int n;
+                while ((n = await source.ReadAsync(buffer, ct)) > 0)
+                {
+                    await file.WriteAsync(buffer.AsMemory(0, n), ct);
+                    read += n;
+                    if (total is > 0)
+                        Percent = (int)Math.Min(99, read * 100 / total.Value);
+                }
+
+                if (total is { } expected && read != expected)
+                    throw new IOException($"{url} ended after {read} of {expected} bytes");
+                return;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException
+                                           || (ex is TaskCanceledException && !ct.IsCancellationRequested))
+            {
+                logger.LogInformation("Headless browser download from {Url} failed: {Error}", url, ex.Message);
+                last = ex;
+            }
         }
 
-        using var process = Process.Start(start)
-            ?? throw new BrowserUnavailableException("The Playwright driver did not start.");
-        var errors = new List<string>();
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is { } line && ProgressPattern().Match(line) is { Success: true } match)
-                Percent = int.Parse(match.Groups[1].Value);
-        };
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (!string.IsNullOrWhiteSpace(e.Data))
-                lock (errors) errors.Add(e.Data);
-        };
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        throw new BrowserUnavailableException($"The browser download failed: {last?.Message}", last);
+    }
 
-        try
+    /// <summary>
+    /// Unzips the archive. .NET applies the zip's Unix permission bits on Linux and macOS; the
+    /// executable is made executable again anyway, since a zip made without them would otherwise
+    /// install a browser that cannot start.
+    /// </summary>
+    internal static void Unpack(string archive, string staging, string executable)
+    {
+        if (Directory.Exists(staging))
+            Directory.Delete(staging, recursive: true);
+        ZipFile.ExtractToDirectory(archive, staging);
+
+        foreach (var locale in Directory.EnumerateFiles(staging, "*.pak", SearchOption.AllDirectories))
         {
-            await process.WaitForExitAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-            throw;
+            if (Path.GetFileName(Path.GetDirectoryName(locale)) == "locales" && Path.GetFileName(locale) != "en-US.pak")
+                File.Delete(locale);
         }
 
-        if (process.ExitCode != 0)
+        var exe = Path.Combine(staging, executable);
+        if (!File.Exists(exe))
+            throw new BrowserUnavailableException($"The browser download did not contain {executable}.");
+        if (!OperatingSystem.IsWindows())
         {
-            string detail;
-            lock (errors) detail = string.Join(' ', errors.TakeLast(3));
-            throw new BrowserUnavailableException(
-                $"The browser install exited with code {process.ExitCode}. {detail}".Trim());
+            File.SetUnixFileMode(exe, File.GetUnixFileMode(exe)
+                | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute
+                | UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
         }
     }
 
-    [GeneratedRegex(@"(\d{1,3})%\s+of")]
-    private static partial Regex ProgressPattern();
+    internal sealed record BrowserBuild(IReadOnlyList<string> Urls, string Executable);
 
-    /// <summary>The marker Playwright writes once a browser is fully unpacked, for the revision this
-    /// build's driver asks for. A browser left behind by another Playwright version does not count.</summary>
-    internal static string? InstallMarker()
+    /// <summary>Where this platform's build comes from and the executable inside the archive, or
+    /// null on a platform no build exists for.</summary>
+    internal static BrowserBuild? Build() => Build(
+        OperatingSystem.IsWindows() ? OSPlatform.Windows : OperatingSystem.IsMacOS() ? OSPlatform.OSX : OSPlatform.Linux,
+        RuntimeInformation.ProcessArchitecture);
+
+    internal static BrowserBuild? Build(OSPlatform os, Architecture arch)
     {
-        if (BrowsersPath() is not { } root || Revision() is not { } revision)
-            return null;
+        static BrowserBuild Cft(string platform, string executable)
+        {
+            var file = $"{platform}/chrome-headless-shell-{platform}.zip";
+            return new(
+                [
+                    $"https://cdn.playwright.dev/builds/cft/{Version}/{file}",
+                    $"https://storage.googleapis.com/chrome-for-testing-public/{Version}/{file}",
+                ],
+                Path.Combine($"chrome-headless-shell-{platform}", executable));
+        }
 
-        return Path.Combine(root, $"{BrowserName.Replace('-', '_')}-{revision}", "INSTALLATION_COMPLETE");
+        if (os == OSPlatform.Windows && arch == Architecture.X64)
+            return Cft("win64", "chrome-headless-shell.exe");
+        if (os == OSPlatform.OSX && arch == Architecture.X64)
+            return Cft("mac-x64", "chrome-headless-shell");
+        if (os == OSPlatform.OSX && arch == Architecture.Arm64)
+            return Cft("mac-arm64", "chrome-headless-shell");
+        if (os == OSPlatform.Linux && arch == Architecture.X64)
+            return Cft("linux64", "chrome-headless-shell");
+        if (os == OSPlatform.Linux && arch == Architecture.Arm64)
+        {
+            var path = $"builds/chromium/{Revision}/chromium-headless-shell-linux-arm64.zip";
+            return new(
+                [
+                    $"https://cdn.playwright.dev/dbazure/download/playwright/{path}",
+                    $"https://playwright.download.prss.microsoft.com/dbazure/download/playwright/{path}",
+                    $"https://cdn.playwright.dev/{path}",
+                ],
+                Path.Combine("chrome-linux", "headless_shell"));
+        }
+
+        return null;
     }
 
+    /// <summary>The first address this platform's build downloads from, or null where there is none.</summary>
+    public static string? DownloadUrl() => Build()?.Urls[0];
+
+    /// <summary>The browser's executable for this platform, whether or not it is installed yet.</summary>
+    public static string? ExecutablePath() =>
+        BrowserDirectory() is { } dir && Build() is { } build ? Path.Combine(dir, build.Executable) : null;
+
+    /// <summary>The marker written once the browser is fully unpacked. An unfinished install has none.</summary>
+    internal static string? InstallMarker() =>
+        BrowserDirectory() is { } dir ? Path.Combine(dir, "INSTALLATION_COMPLETE") : null;
+
+    internal static string? BrowserDirectory() =>
+        BrowsersPath() is { } root ? Path.Combine(root, $"chromium_headless_shell-{Revision}") : null;
+
+    /// <summary>The Docker image sets <c>PLAYWRIGHT_BROWSERS_PATH</c>; the name is kept so an
+    /// admin's override from before still applies.</summary>
     internal static string? BrowsersPath()
     {
         var configured = Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH");
@@ -220,37 +314,10 @@ public sealed partial class BrowserInstaller(ILogger<BrowserInstaller> logger) :
         return Path.Combine(string.IsNullOrWhiteSpace(cache) ? Path.Combine(home, ".cache") : cache, "ms-playwright");
     }
 
-    private static string? Revision()
+    private static void TryDelete(string path)
     {
-        try
-        {
-            var file = Path.Combine(AppContext.BaseDirectory, ".playwright", "package", "browsers.json");
-            using var document = JsonDocument.Parse(File.ReadAllText(file));
-            return document.RootElement.GetProperty("browsers").EnumerateArray()
-                .Where(b => b.GetProperty("name").GetString() == BrowserName)
-                .Select(b => b.GetProperty("revision").GetString())
-                .FirstOrDefault();
-        }
-        catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>The Node binary and CLI script the Microsoft.Playwright package copies next to the app.</summary>
-    private static (string Node, string Cli)? Driver()
-    {
-        var root = Path.Combine(AppContext.BaseDirectory, ".playwright");
-        var cli = Path.Combine(root, "package", "cli.js");
-        var nodeRoot = Path.Combine(root, "node");
-        if (!File.Exists(cli) || !Directory.Exists(nodeRoot))
-            return null;
-
-        var platform = (OperatingSystem.IsWindows() ? "win32_" : OperatingSystem.IsMacOS() ? "darwin-" : "linux-")
-            + (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64");
-        var executable = OperatingSystem.IsWindows() ? "node.exe" : "node";
-        var node = Path.Combine(nodeRoot, platform, executable);
-        return File.Exists(node) ? (node, cli) : null;
+        try { File.Delete(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
     private static string ExistingAncestor(string path)

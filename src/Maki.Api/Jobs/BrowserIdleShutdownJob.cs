@@ -10,15 +10,15 @@ namespace Maki.Api.Jobs;
 /// <para>
 /// Two sources need a real browser (MangaFire's request signature, TopManhua's image CDN), and both
 /// launched lazily and then held the browser for the life of the process. Measured inside the
-/// container on a NAS: the Playwright Node driver sat on 96 MB of anonymous memory and the headless
-/// shell's four processes on another 65 MB. None of that is on the managed heap, so none of it
-/// showed up in any of the heap work, and a user who once downloaded one MangaFire chapter paid for
-/// it until the next restart.
+/// container on a NAS: the headless shell's four processes sat on 65 MB, and the Playwright Node
+/// driver that drove them then (gone since) on another 96 MB. None of that is on the managed heap,
+/// so none of it showed up in any of the heap work, and a user who once downloaded one MangaFire
+/// chapter paid for it until the next restart.
 /// </para>
 ///
 /// <para>
-/// The price of being wrong is a relaunch on the next scrape: a couple of seconds for the driver
-/// and the shell. The Cloudflare clearance is not lost with it: <c>ChallengeAwareFetcher</c> caches
+/// The price of being wrong is a relaunch on the next scrape: well under a second for the shell,
+/// likely one or two from a hard disk. The Cloudflare clearance is not lost with it: <c>ChallengeAwareFetcher</c> caches
 /// it per host until a challenge or a 403/503 proves it stale, so a relaunch reuses it. The window
 /// is per-browser idleness rather than a fixed timer - a download that walks a hundred chapters
 /// keeps stamping its browser and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them

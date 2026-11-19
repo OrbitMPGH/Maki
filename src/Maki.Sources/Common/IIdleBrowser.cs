@@ -6,15 +6,15 @@ namespace Maki.Sources.Common;
 /// <para>
 /// Both implementations launch lazily and then hold the browser for the life of the process, which
 /// is right while a sync is running and wrong for the rest of the day. It is not a small amount:
-/// measured inside the container on a NAS, the Playwright Node driver held 96 MB of anonymous
-/// memory and the headless shell's four processes another 65 MB, none of it visible to the managed
-/// heap and none of it needed by an instance nobody is scraping with.
+/// measured inside the container on a NAS, the headless shell's four processes held 65 MB (and
+/// the Playwright Node driver that drove them, gone since, another 96 MB), none of it visible to
+/// the managed heap and none of it needed by an instance nobody is scraping with.
 /// </para>
 ///
 /// <para>
-/// Relaunching costs a couple of seconds (the Cloudflare clearance is cached by the fetcher and
-/// survives it), so this is for an instance that has been quiet for minutes, not something to do
-/// between two chapters.
+/// Relaunching costs well under a second, likely one or two from a hard disk (the Cloudflare
+/// clearance is cached by the fetcher and survives it), so this is for an instance that has been
+/// quiet for minutes, not something to do between two chapters.
 /// </para>
 /// </summary>
 public interface IIdleBrowser

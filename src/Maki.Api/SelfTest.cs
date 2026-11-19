@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using Maki.Core.Images;
 using Maki.Core.Reading;
@@ -73,25 +72,14 @@ public static class SelfTest
             return string.Join(", ", providers);
         });
 
-        Check("playwright driver", () =>
+        // The browser itself is downloaded on first use, so all a package has to carry is the
+        // DevTools client and a build to fetch for this platform.
+        Check("headless browser", () =>
         {
-            var nodeRoot = Path.Combine(AppContext.BaseDirectory, ".playwright", "node");
-            var node = Directory.Exists(nodeRoot)
-                ? Directory.GetFiles(nodeRoot, OperatingSystem.IsWindows() ? "node.exe" : "node", SearchOption.AllDirectories).FirstOrDefault()
-                : null;
-            if (node is null)
-                throw new FileNotFoundException("no Node driver under .playwright/node");
-
-            using var process = Process.Start(new ProcessStartInfo(node, "--version")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            })!;
-            var version = process.StandardOutput.ReadToEnd().Trim();
-            if (!process.WaitForExit(30_000) || process.ExitCode != 0)
-                throw new InvalidOperationException($"node exited with {process.ExitCode}");
-            return $"node {version}";
+            var client = typeof(PuppeteerSharp.Puppeteer).Assembly.GetName().Version;
+            return Maki.Sources.Common.BrowserInstaller.DownloadUrl() is { } url
+                ? $"PuppeteerSharp {client}, installs from {url}"
+                : throw new PlatformNotSupportedException("no headless browser build for this platform");
         });
 
         Check("web ui", () => File.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot", "index.html"))
