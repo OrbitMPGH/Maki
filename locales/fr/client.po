@@ -1143,14 +1143,15 @@ msgstr "{chapters, plural, one {# chapitre dans la série {series}} many {# chap
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapitre} many {# chapitres} other {# chapitres}}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{chapters, plural, one {# chapitre} many {# chapitres} other {# chapitres}} sur {volumes, plural, one {# volume} many {# volumes} other {# volumes}}"
@@ -1239,16 +1240,6 @@ msgstr "{chaptersRead} sur {seriesChapterCount} chapitres téléchargés lus, {s
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
-msgstr "{chapterTotal, plural, one {# chapitre} many {# chapitres} other {# chapitres}}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
-msgstr "{chapterTotal, plural, one {# chapitre} many {# chapitres} other {# chapitres}} sur {volumeTotal, plural, one {# volume} many {# volumes} other {# volumes}}"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -2641,11 +2632,6 @@ msgstr "{other, plural, one {# terminé} many {# terminés} other {# terminés}}
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 msgstr "{otherReaders, plural, one {# autre lecteur est à mi-parcours de cette série. Archiver arrête l'arrivée de nouveaux chapitres pour tout le monde.} many {# autres lecteurs sont à mi-parcours de cette série. Archiver arrête l'arrivée de nouveaux chapitres pour tout le monde.} other {# autres lecteurs sont à mi-parcours de cette série. Archiver arrête l'arrivée de nouveaux chapitres pour tout le monde.}}"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{overflow, plural, one {+# more} other {+# more}}"
-msgstr "{overflow, plural, one {+# de plus} many {+# de plus} other {+# de plus}}"
-
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
@@ -3784,8 +3770,8 @@ msgstr "{vectorCount, plural, one {# série intégrée.} many {# séries intégr
 msgid "{visibleCount} of {totalCount}"
 msgstr "{visibleCount} sur {totalCount}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{volumes, plural, one {# volume} many {# volumes} other {# volumes}}"
@@ -4015,14 +4001,12 @@ msgid "<1m"
 msgstr "<1 min"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpHours} h to catch up"
-msgstr "~{catchUpHours} h pour rattraper"
+msgid "~{catchUpHours} h to read"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpMinutes} min to catch up"
-msgstr "~{catchUpMinutes} min pour rattraper"
+msgid "~{catchUpMinutes} min to read"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -18575,6 +18559,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "Une vignette par genre, chacune ouvrant les titres les plus populaires."
 
 #: src/api/queue.ts
+#: src/components/discover/HeroLength.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
@@ -18989,6 +18974,7 @@ msgstr "Écriture originale"
 msgid "Original size (1:1)"
 msgstr "Taille d'origine (1:1)"
 
+#: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Original title"
@@ -22654,6 +22640,10 @@ msgstr "Romance"
 #, fuzzy
 msgid "Romanized"
 msgstr "Romanisé"
+
+#: src/components/discover/DiscoverGlance.tsx
+msgid "Romanized title"
+msgstr ""
 
 #: src/api/autoTagRules.ts
 #: src/components/import/MihonReview.tsx

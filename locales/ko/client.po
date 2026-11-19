@@ -1143,14 +1143,15 @@ msgstr "{chapters, plural, other {{series} 시리즈의 챕터 #개}}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, other {챕터 #개}}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{chapters, plural, other {챕터 #개}} / {volumes, plural, other {권 #개}}"
@@ -1239,16 +1240,6 @@ msgstr "다운로드된 챕터 {seriesChapterCount}개 중 {chaptersRead}개를 
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
-msgstr "{chapterTotal, plural, other {챕터 #개}}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
-msgstr "{chapterTotal, plural, other {챕터 #개}} ({volumeTotal, plural, other {권 #개}})"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -2641,11 +2632,6 @@ msgstr "{other, plural, other {#개 완료}}"
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 msgstr "{otherReaders, plural, other {다른 독자 #명이 이 시리즈를 중간까지 읽고 있습니다. 보관하면 모든 사용자에게 새 챕터가 더 이상 다운로드되지 않습니다.}}"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{overflow, plural, one {+# more} other {+# more}}"
-msgstr "{overflow, plural, other {+#개 더}}"
-
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
@@ -3784,8 +3770,8 @@ msgstr "{vectorCount, plural, other {시리즈 #개 임베딩됨.}}"
 msgid "{visibleCount} of {totalCount}"
 msgstr "{totalCount}개 중 {visibleCount}개"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{volumes, plural, other {권 #개}}"
@@ -4015,14 +4001,12 @@ msgid "<1m"
 msgstr "<1분"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpHours} h to catch up"
-msgstr "따라잡는 데 약 {catchUpHours}시간"
+msgid "~{catchUpHours} h to read"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpMinutes} min to catch up"
-msgstr "따라잡는 데 약 {catchUpMinutes}분"
+msgid "~{catchUpMinutes} min to read"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -18575,6 +18559,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "장르별 타일을 표시하고, 타일을 선택하면 해당 장르의 인기 작품을 엽니다."
 
 #: src/api/queue.ts
+#: src/components/discover/HeroLength.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
@@ -18989,6 +18974,7 @@ msgstr "원본 스크립트"
 msgid "Original size (1:1)"
 msgstr "원본 크기 (1:1)"
 
+#: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Original title"
@@ -22654,6 +22640,10 @@ msgstr "로맨스"
 #, fuzzy
 msgid "Romanized"
 msgstr "로마자 표기"
+
+#: src/components/discover/DiscoverGlance.tsx
+msgid "Romanized title"
+msgstr ""
 
 #: src/api/autoTagRules.ts
 #: src/components/import/MihonReview.tsx

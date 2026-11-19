@@ -1143,14 +1143,15 @@ msgstr "{chapters, plural, other {{series}シリーズの#章}}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, other {#章}}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{chapters, plural, other {#章}}（{volumes, plural, other {#巻}}）"
@@ -1239,16 +1240,6 @@ msgstr "{seriesChapterCount}章中{chaptersRead}章を読了、シリーズに�
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
-msgstr "{chapterTotal, plural, other {#章}}"
-
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
-msgstr "{chapterTotal, plural, other {#章}}（{volumeTotal, plural, other {#巻}}）"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -2641,11 +2632,6 @@ msgstr "{other, plural, other {#件完了}}"
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 msgstr "{otherReaders, plural, other {このシリーズを途中まで読んでいる他のユーザーが#人います。アーカイブすると、全員に対して新しい章の取得が止まります。}}"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{overflow, plural, one {+# more} other {+# more}}"
-msgstr "{overflow, plural, other {さらに+#件}}"
-
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
@@ -3784,8 +3770,8 @@ msgstr "{vectorCount, plural, other {#シリーズを埋め込みました。}}"
 msgid "{visibleCount} of {totalCount}"
 msgstr "{totalCount}件中{visibleCount}件"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #, fuzzy
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{volumes, plural, other {#巻}}"
@@ -4015,14 +4001,12 @@ msgid "<1m"
 msgstr "1分未満"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpHours} h to catch up"
-msgstr "追いつくまで約{catchUpHours}時間"
+msgid "~{catchUpHours} h to read"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-msgid "~{catchUpMinutes} min to catch up"
-msgstr "追いつくまで約{catchUpMinutes}分"
+msgid "~{catchUpMinutes} min to read"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -18575,6 +18559,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "ジャンルごとにタイルを表示し、それぞれから最も人気のある作品を開けます。"
 
 #: src/api/queue.ts
+#: src/components/discover/HeroLength.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
@@ -18989,6 +18974,7 @@ msgstr "原文の表記"
 msgid "Original size (1:1)"
 msgstr "元のサイズ（1:1）"
 
+#: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Original title"
@@ -22654,6 +22640,10 @@ msgstr "ロマンス"
 #, fuzzy
 msgid "Romanized"
 msgstr "ローマ字表記"
+
+#: src/components/discover/DiscoverGlance.tsx
+msgid "Romanized title"
+msgstr ""
 
 #: src/api/autoTagRules.ts
 #: src/components/import/MihonReview.tsx

@@ -960,13 +960,14 @@ msgstr "{chapters, plural, one {# chapter in {series} series} other {# chapters 
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 
@@ -1037,14 +1038,6 @@ msgstr "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {series
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
-
-#: src/components/series/SeriesHero.tsx
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
-msgstr "{chapterTotal, plural, one {# chapter} other {# chapters}}"
-
-#: src/components/series/SeriesHero.tsx
-msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
-msgstr "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "{clientName} has no seed limits set, so there are no targets"
@@ -2175,10 +2168,6 @@ msgstr "{other, plural, one {# completed} other {# completed}}"
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 msgstr "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 
-#: src/components/series/SeriesHero.tsx
-msgid "{overflow, plural, one {+# more} other {+# more}}"
-msgstr "{overflow, plural, one {+# more} other {+# more}}"
-
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
@@ -3100,8 +3089,8 @@ msgstr "{vectorCount, plural, one {# series embedded.} other {# series embedded.
 msgid "{visibleCount} of {totalCount}"
 msgstr "{visibleCount} of {totalCount}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/HeroLength.tsx
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{volumes, plural, one {# volume} other {# volumes}}"
 
@@ -3288,12 +3277,12 @@ msgid "<1m"
 msgstr "<1m"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpHours} h to catch up"
-msgstr "~{catchUpHours} h to catch up"
+msgid "~{catchUpHours} h to read"
+msgstr "~{catchUpHours} h to read"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpMinutes} min to catch up"
-msgstr "~{catchUpMinutes} min to catch up"
+msgid "~{catchUpMinutes} min to read"
+msgstr "~{catchUpMinutes} min to read"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "−{abs} pt"
@@ -15216,6 +15205,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "One tile per genre, each opening its most popular titles."
 
 #: src/api/queue.ts
+#: src/components/discover/HeroLength.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
@@ -15552,6 +15542,7 @@ msgstr "Original script"
 msgid "Original size (1:1)"
 msgstr "Original size (1:1)"
 
+#: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Original title"
 msgstr "Original title"
@@ -18555,6 +18546,10 @@ msgstr "Romance"
 #: src/api/titles.ts
 msgid "Romanized"
 msgstr "Romanized"
+
+#: src/components/discover/DiscoverGlance.tsx
+msgid "Romanized title"
+msgstr "Romanized title"
 
 #: src/api/autoTagRules.ts
 #: src/components/import/MihonReview.tsx
