@@ -142,15 +142,6 @@ public sealed class MangaFireBrowser(
             ct);
 
     /// <summary>
-    /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
-    /// the chapter pager. The title page loads whichever language the site defaults to for that
-    /// series (not always English: a Japanese-only title defaults to <c>ja</c>), so when the request
-    /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
-    /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
-    /// code for the caller to filter on). A title with no chapters in the requested language simply
-    /// yields nothing.
-    /// </summary>
-    /// <summary>
     /// Pass as <c>language</c> to drive the dropdown to "All", the mixed view where every item
     /// carries its own <c>language</c> field. It is not a MangaFire language code, which is why it
     /// is absent from <see cref="LanguageLabels"/>: the lookup missing is exactly what routes it to
@@ -159,11 +150,20 @@ public sealed class MangaFireBrowser(
     public const string AllLanguages = "all";
 
     /// <summary>
-    /// Chapter list items, plus whether the returned list is confirmed to be in <paramref
+    /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
+    /// the chapter pager. The title page loads whichever language the site defaults to for that
+    /// series (not always English: a Japanese-only title defaults to <c>ja</c>), so when the request
+    /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
+    /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
+    /// code for the caller to filter on). A title with no chapters in the requested language simply
+    /// yields nothing.
+    /// <para>
+    /// Returns the chapter list items, plus whether the returned list is confirmed to be in <paramref
     /// name="language"/>: either it was already loaded in that language, or a switch to it
     /// succeeded. When false (a switch was attempted and failed), the caller is looking at
     /// whatever language was loaded before the attempt, not the one it asked for, so an unlabelled
     /// item here must not be assumed to match the request.
+    /// </para>
     /// <para>
     /// <paramref name="stopAt"/> is shown each page's items as it arrives (newest first) and ends the
     /// walk when it returns true. <c>Complete</c> is false only when that left pages unread.
@@ -194,7 +194,7 @@ public sealed class MangaFireBrowser(
                         throw new ChallengeException();
                     }
 
-                    using var doc = JsonDocument.Parse(await response.TextAsync());
+                    using var doc = JsonDocument.Parse(await BrowserSupport.ReadTextAsync(response, ct));
                     var root = doc.RootElement;
                     if (root.TryGetProperty("items", out var arr))
                     {
@@ -350,7 +350,7 @@ public sealed class MangaFireBrowser(
             {
                 var wait = page.WaitForResponseAsync(r => matches(r.Url), Wait(ResponseTimeoutMs, ct));
                 var response = await NavigateAndCaptureAsync(page, wait, navUrl, ct);
-                return await response.TextAsync();
+                return await BrowserSupport.ReadTextAsync(response, ct);
             }, ct);
         }
         finally
@@ -366,18 +366,26 @@ public sealed class MangaFireBrowser(
         for (var attempt = 0; ; attempt++)
         {
             var (context, profile) = await EnsureContextAsync(ct);
-            IPage page;
+            IPage? opened = null;
             try
             {
-                page = await context.NewPageAsync();
-                await BrowserSupport.PreparePageAsync(page, profile);
+                opened = await context.NewPageAsync();
+                await BrowserSupport.PreparePageAsync(opened, profile);
             }
-            catch (PuppeteerException) when (attempt == 0)
+            catch (Exception ex)
             {
+                await BrowserSupport.CloseQuietlyAsync(opened);
+                if (attempt > 0 || ex is not PuppeteerException)
+                {
+                    throw;
+                }
+
                 logger.LogWarning("MangaFire browser could not open a page; relaunching it");
                 await ShutdownAsync();
                 continue;
             }
+
+            var page = opened;
 
             try
             {
@@ -501,16 +509,7 @@ public sealed class MangaFireBrowser(
     {
         try
         {
-            if (!await page.EvaluateFunctionAsync<bool>(
-                    """
-                    () => {
-                      const menu = [...document.querySelectorAll('button.select')]
-                        .find(b => (b.textContent || '').toLowerCase().includes('lang'));
-                      if (!menu) return false;
-                      menu.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
-                      return true;
-                    }
-                    """))
+            if (!await page.EvaluateFunctionAsync<bool>(OpenLanguageMenuScript))
             {
                 return null;
             }
@@ -545,44 +544,87 @@ public sealed class MangaFireBrowser(
 
     /// <summary>Clicks the open dropdown's item whose label (flag emoji stripped) equals <paramref name="label"/>.</summary>
     private static async Task<bool> ClickMenuItemAsync(IPage page, string label) =>
-        await page.EvaluateFunctionAsync<bool>(
-            """
-            (label) => {
-              const norm = s => (s || '').replace(/[^A-Za-z()\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-              const items = [...document.querySelectorAll('.dropdown__menu button, .dropdown__menu [role=menuitem]')];
-              const target = items.find(e => norm(e.textContent) === norm(label));
-              if (!target) return false;
-              target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-              return true;
-            }
-            """, label);
+        await page.EvaluateFunctionAsync<bool>(ClickMenuItemScript, label);
+
+    internal const string ClickMenuItemScript =
+        """
+        (label) => {
+          const norm = s => (s || '').replace(/[^A-Za-z()\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+          const items = [...document.querySelectorAll('.dropdown__menu button, .dropdown__menu [role=menuitem]')];
+          const target = items.find(e => norm(e.textContent) === norm(label));
+          if (!target) return false;
+          target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          return true;
+        }
+        """;
+
+    /// <summary>Opens the "Lang" dropdown: the first <c>button.select</c> whose text contains "lang",
+    /// as <c>Locator(HasText)</c> matched it.</summary>
+    internal const string OpenLanguageMenuScript =
+        """
+        () => {
+          const menu = [...document.querySelectorAll('button.select')]
+            .find(b => (b.textContent || '').toLowerCase().includes('lang'));
+          if (!menu) return false;
+          menu.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+          return true;
+        }
+        """;
 
     /// <summary>
-    /// Clicks the first visible, enabled pager button: the "Next page" arrow by class, then by its
-    /// accessible name (aria-label, title or text, case-insensitive, as a substring), then the
-    /// numbered button reading exactly <c>pageNo</c>. The same order and matching rules as the
-    /// Playwright locators this replaced.
+    /// Clicks the first usable pager button, the way the Playwright locators this replaced did. In
+    /// order: the "Next page" arrow by class, then any button whose accessible name contains "next
+    /// page" (case-insensitive), then the numbered pager button reading exactly <c>pageNo</c>.
+    /// <para>
+    /// The two CSS candidates take their first match and give up on it when it is hidden or disabled,
+    /// as <c>Locator.First</c> did. The role candidate skips matches hidden from the accessibility tree
+    /// first, as <c>GetByRole</c> did, and names each button the way the accessible name is computed:
+    /// <c>aria-labelledby</c>, then <c>aria-label</c>, then the text, then <c>title</c>. Disabled means
+    /// what Playwright's <c>IsEnabled</c> meant: the control itself, a disabled fieldset outside its
+    /// legend, or <c>aria-disabled</c> on it or any ancestor.
+    /// </para>
     /// </summary>
-    private const string ClickPagerScript =
+    internal const string ClickPagerScript =
         """
         (pageNo) => {
-          const usable = el => {
-            if (!el || !el.isConnected) return false;
+          const text = el => (el.innerText ?? el.textContent ?? '').replace(/\s+/g, ' ').trim();
+          const visible = el => {
             const box = el.getBoundingClientRect();
-            if (box.width <= 0 || box.height <= 0) return false;
-            if (getComputedStyle(el).visibility === 'hidden') return false;
-            return !el.disabled && el.getAttribute('aria-disabled') !== 'true';
+            return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility === 'visible';
           };
-          const text = el => (el.textContent || '').replace(/\s+/g, ' ').trim();
-          const name = el => (el.getAttribute('aria-label') || el.getAttribute('title') || text(el)).toLowerCase();
-          const buttons = [...document.querySelectorAll('button, [role=button]')];
+          const disabled = el => {
+            if (el.disabled) return true;
+            const fieldset = el.closest('fieldset[disabled]');
+            if (fieldset) {
+              const legend = [...fieldset.children].find(c => c.tagName === 'LEGEND');
+              if (!legend || !legend.contains(el)) return true;
+            }
+            for (let e = el; e; e = e.parentElement) {
+              if (e.getAttribute('aria-disabled') === 'true') return true;
+            }
+            return false;
+          };
+          const usable = el => !!el && el.isConnected && visible(el) && !disabled(el);
+          const hiddenFromAria = el =>
+            !el.checkVisibility({ visibilityProperty: true }) || !!el.closest('[aria-hidden="true"], [inert]');
+          const accessibleName = el => {
+            const ids = (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean);
+            const labelled = ids.map(id => document.getElementById(id)).filter(Boolean).map(text).join(' ').trim();
+            if (labelled) return labelled;
+            const label = (el.getAttribute('aria-label') || '').trim();
+            if (label) return label;
+            const content = text(el);
+            if (content) return content;
+            return (el.getAttribute('title') || '').trim();
+          };
+          const roleButtons = [...document.querySelectorAll(
+            'button:not([role]), [role=button], input[type=button]:not([role]), input[type=submit]:not([role]), input[type=reset]:not([role])')];
           const candidates = [
-            [...document.querySelectorAll("[class*=pager] button[aria-label='Next page']")],
-            buttons.filter(b => name(b).includes('next page')),
-            [...document.querySelectorAll('[class*=pager] button')].filter(b => text(b) === String(pageNo)),
+            document.querySelector("[class*=pager] button[aria-label='Next page']"),
+            roleButtons.find(b => !hiddenFromAria(b) && accessibleName(b).replace(/\s+/g, ' ').toLowerCase().includes('next page')),
+            [...document.querySelectorAll('[class*=pager] button')].find(b => text(b) === String(pageNo)),
           ];
-          for (const found of candidates) {
-            const target = found[0];
+          for (const target of candidates) {
             if (!usable(target)) continue;
             target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
             return true;
@@ -633,10 +675,12 @@ public sealed class MangaFireBrowser(
     {
         try
         {
-            await page.WaitForSelectorAsync(selector, new WaitForSelectorOptions { Visible = true, Timeout = timeoutMs });
-            await page.EvaluateFunctionAsync(
-                "(selector) => document.querySelector(selector)?.scrollIntoView({ block: 'center', inline: 'center' })",
-                selector);
+            await using var element = await page.WaitForSelectorAsync(
+                selector, new WaitForSelectorOptions { Visible = true, Timeout = timeoutMs });
+            if (element is not null)
+            {
+                await element.EvaluateFunctionAsync("e => e.scrollIntoView({ block: 'center', inline: 'center' })");
+            }
         }
         catch (Exception ex) when ((ex is PuppeteerException or TimeoutException) && !ct.IsCancellationRequested)
         {

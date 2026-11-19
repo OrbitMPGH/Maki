@@ -116,18 +116,26 @@ public sealed class TopManhuaImageBrowser(
             for (var attempt = 0; ; attempt++)
             {
                 var (context, profile) = await EnsureContextAsync(ct);
-                IPage page;
+                IPage? opened = null;
                 try
                 {
-                    page = await context.NewPageAsync();
-                    await BrowserSupport.PreparePageAsync(page, profile);
+                    opened = await context.NewPageAsync();
+                    await BrowserSupport.PreparePageAsync(opened, profile);
                 }
-                catch (PuppeteerException) when (attempt == 0)
+                catch (Exception ex)
                 {
+                    await BrowserSupport.CloseQuietlyAsync(opened);
+                    if (attempt > 0 || ex is not PuppeteerException)
+                    {
+                        throw;
+                    }
+
                     logger.LogWarning("TopManhua browser could not open a page; relaunching it");
                     await ShutdownAsync();
                     continue;
                 }
+
+                var page = opened;
 
                 try
                 {
@@ -177,7 +185,7 @@ public sealed class TopManhuaImageBrowser(
                 await inFlight.WaitAsync(ct);
                 try
                 {
-                    captured[response.Url] = await response.BufferAsync();
+                    captured[response.Url] = await BrowserSupport.ReadBytesAsync(response, ct);
                 }
                 finally
                 {

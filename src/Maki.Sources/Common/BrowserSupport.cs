@@ -266,6 +266,22 @@ internal static class BrowserSupport
         }
     }
 
+    /// <summary>
+    /// How long a response body may take once its headers are in. PuppeteerSharp's body read waits
+    /// for the DevTools loading-finished event with no timeout of its own, and a Chromium that exits
+    /// mid-response never sends it, which would hold the source's gate until a restart.
+    /// </summary>
+    public static readonly TimeSpan BodyTimeout = TimeSpan.FromSeconds(30);
+
+    public static Task<string> ReadTextAsync(IResponse response, CancellationToken ct) =>
+        ReadTextAsync(response, BodyTimeout, ct);
+
+    internal static Task<string> ReadTextAsync(IResponse response, TimeSpan timeout, CancellationToken ct) =>
+        response.TextAsync().WaitAsync(timeout, ct);
+
+    public static Task<byte[]> ReadBytesAsync(IResponse response, CancellationToken ct) =>
+        response.BufferAsync().AsTask().WaitAsync(BodyTimeout, ct);
+
     /// <summary>The cookies a FlareSolverr session earned, for a whole browser context.</summary>
     public static CookieData[] SessionCookies(IReadOnlyDictionary<string, string> cookies, string host) =>
         cookies.Select(c => new CookieData
