@@ -2,11 +2,14 @@
 
     python distribution/eval-next-gates.py default obs50 cap125 ...
 
-The first name is the baseline. Every variant has to have been scored in one run of
-`eval-reco-labels.cs library --next --csv ndcg` with it, so they share requests. Reads
-`<artifacts>/eval/rr-<variant>-next-<column>.csv` and `next-readers.tsv` (MAKI_ARTIFACTS_DIR,
-default `.artifacts`). Paired differences against the baseline, 20,000 bootstrap resamples, 95%
-percentile interval, the same method as eval-compare.py.
+The first name is the baseline. Every variant has to have been scored on the same ordered request
+set as the baseline and as `next-readers.tsv` (`eval-reco-labels.cs library --next --csv ndcg`, one
+run or several with the same readers, shelf kind, split, fold and holdout). Reads
+`<artifacts>/eval/rr-<variant>-next-<column>.csv`, `next-readers.tsv` and the request digest the
+harness writes beside each (`rr-<variant>-next.requests.json`, `next-readers.requests.json`;
+MAKI_ARTIFACTS_DIR, default `.artifacts`). It refuses to compare files whose digests differ or whose
+rows do not cover the same requests. Paired differences against the baseline, 20,000 bootstrap
+resamples, 95% percentile interval, the same method as eval-compare.py.
 
 A change passes when none of these is a certain move the wrong way (the interval wholly on the
 wrong side of zero):
@@ -26,6 +29,7 @@ popular titles earns 17%, 38% and 70% of the engine's score on them. The judged 
 split and a real mixed shelf are the gates this file cannot check (distribution/CLAUDE.md, "v8").
 """
 import csv
+import json
 import os
 import sys
 from pathlib import Path
@@ -37,6 +41,10 @@ BOOTSTRAP = 20000
 SEED = 20260803
 RUNAWAY = 0.30
 THIRDS = ("niche", "middle", "mainstream")
+GATED = ("wantn", "wantt", "passed", "house", "overlap")
+# Defined for every request; wantT is undefined where a reader's labels are all household, which
+# depends on the request and not on the variant.
+EVERY_REQUEST = ("wantn", "passed", "house", "overlap")
 
 
 def column(variant: str, name: str) -> dict[int, float]:
@@ -45,6 +53,45 @@ def column(variant: str, name: str) -> dict[int, float]:
         sys.exit(f"{path} is missing. Score `{variant}` with --next --csv ndcg first.")
     with path.open() as fh:
         return {int(key): float(value) for key, value in csv.reader(fh)}
+
+
+def digest(name: str) -> dict:
+    path = EVAL / f"{name}.requests.json"
+    if not path.exists():
+        sys.exit(f"{path} is missing, so nothing says which requests these rows belong to. "
+                 "Score again with the current eval-reco-labels.cs, which writes it.")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def describe(about: dict) -> str:
+    return (f"{about.get('requests')} requests, {about.get('shelfStatus')} shelves, split {about.get('split')}, "
+            f"fold {about.get('fold')}, holdout {about.get('holdout')}, digest {str(about.get('digest'))[:12]}")
+
+
+def check_requests(base: str, variants: list[str], shelf: dict[int, float]) -> None:
+    """Refuses files from different request sets, or rows that do not cover the same requests."""
+    readers = digest("next-readers")
+    problems = []
+    if len(shelf) != readers.get("requests"):
+        problems.append(f"next-readers.tsv has {len(shelf)} rows and its digest says {readers.get('requests')}")
+    mismatched = []
+    for name in [base, *variants]:
+        about = digest(f"rr-{name}-next")
+        if about.get("digest") != readers.get("digest"):
+            mismatched.append(name)
+            problems.append(f"{name} was scored on {describe(about)}")
+    if mismatched:
+        problems.append(f"next-readers.tsv is {describe(readers)}")
+    for name in [n for n in [base, *variants] if n not in mismatched]:
+        for metric in GATED:
+            keys = set(column(name, metric))
+            if metric in EVERY_REQUEST and keys != set(shelf):
+                problems.append(f"{name} {metric}: rows for {len(keys & set(shelf))} of {len(shelf)} requests"
+                                + (f", {len(keys - set(shelf))} not in next-readers.tsv" if keys - set(shelf) else ""))
+            elif name != base and base not in mismatched and keys != (theirs := set(column(base, metric))):
+                problems.append(f"{name} {metric}: {len(keys & theirs)} rows shared with {base}'s {len(theirs)}")
+    if problems:
+        sys.exit("refusing to compare runs on different requests:\n  " + "\n  ".join(problems))
 
 
 def interval(values: np.ndarray) -> tuple[float, float, float]:
@@ -66,6 +113,7 @@ def main() -> None:
         for line in fh:
             cells = line.split("\t")
             shelf[int(cells[0])] = float(cells[4])
+    check_requests(base, variants, shelf)
     ordered = sorted(shelf, key=shelf.get)
     third = len(ordered) // 3
     groups = {

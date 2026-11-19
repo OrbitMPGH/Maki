@@ -154,6 +154,7 @@ string? dumpPicks = null;
 string? dumpCaptions = null;
 var buildPages = false;
 string? commonPathOverride = null;
+var commonUnchecked = false;
 var shelfStatus = "COMPLETED";
 string? dumpPool = null;
 var foldIndex = -1;
@@ -277,6 +278,12 @@ for (var i = 0; i < args.Length; i++)
         // The page-frequency table that commonweight variants read (distribution/eval-overlap.py table).
         case "--common":
             commonPathOverride = args[++i];
+            break;
+        // Grades against a page-share table without checking that its pages came from readers
+        // outside the graded set. For deliberate research runs only; the run's numbers may have
+        // seen the readers they grade.
+        case "--common-unchecked":
+            commonUnchecked = true;
             break;
         // Library mode: which list status makes up a reader's shelf. COMPLETED is what every
         // recorded number uses. CURRENT builds shelves of series still being read, which is closer
@@ -805,6 +812,7 @@ if (buildPages)
     }
 
     Console.WriteLine("note     : --build-pages lifts the leakage guard; every column below reads its own training data and is NOT a result.");
+    Console.WriteLine("note     : --build-pages holds nothing out: each reader's whole shelf seeds and is excluded from their page.");
 }
 foreach (var v in variants)
 {
@@ -887,6 +895,40 @@ if (requests.Count == 0)
 }
 
 Console.WriteLine($"requests : {requests.Count}");
+
+// The page-share table is read off reader pages, so like the taste vectors and EASE it carries the
+// shelves it was built from. A table holding a graded reader's page is refused, not graded.
+if (mode == "library" && panelPath is null)
+{
+    var graded = requests.Select(r => r.User).ToHashSet();
+    foreach (var path in variants
+                 .Where(v => v.Recommender.CommonWeight > 0)
+                 .Select(v => v.CommonPath ?? commonPathOverride)
+                 .OfType<string>()
+                 .Distinct(StringComparer.OrdinalIgnoreCase))
+    {
+        if (CommonTableLeak(path, graded) is not { } problem)
+        {
+            continue;
+        }
+
+        if (commonUnchecked)
+        {
+            Console.WriteLine($"note     : --common-unchecked: {problem}");
+            continue;
+        }
+
+        Console.WriteLine($"error: {problem}");
+        Console.WriteLine("       Build it from readers outside the graded set (eval-overlap.py table --skip on a dump that");
+        Console.WriteLine("       records its readers, or pages from another fold), or pass --common-unchecked for a");
+        Console.WriteLine("       deliberate research run.");
+        return 2;
+    }
+}
+
+var requestDigest = RequestDigest.Of(
+    requests, mode, labelKind, shelfStatus, split, foldCount == 0 ? "all" : $"{foldIndex}/{foldCount}",
+    buildPages ? 0 : holdout, panelPath);
 var next = nextRead ? LoadNextData() : null;
 Console.WriteLine();
 
@@ -1175,7 +1217,9 @@ List<Request> BuildLibraryRequests()
             .OrderBy(_ => rng.Next())
             .ToList();
 
-        var heldOut = Math.Max(1, (int)Math.Round(shuffled.Count * holdout));
+        // A page for the page-share table is the page an install shows, so it holds nothing out and
+        // excludes the whole shelf; a held-out title would otherwise land on its own reader's page.
+        var heldOut = buildPages ? 0 : Math.Max(1, (int)Math.Round(shuffled.Count * holdout));
         if (shuffled.Count - heldOut < 2)
         {
             continue;
@@ -1226,7 +1270,10 @@ List<Request> BuildLibraryRequests()
             positives,
             avoid.Count > 0 ? avoid : null,
             heldOutNegatives,
-            readerId));
+            readerId)
+        {
+            Shelf = shuffled.Select(e => e.Id).ToList(),
+        });
     }
 
     if (dumpPicks is not null)
@@ -1345,7 +1392,7 @@ async Task<ResultRow> Score(Variant variant)
             ? []
             : await recommender.GetSimilarAsync(
                 request.Seeds,
-                request.Seeds,
+                buildPages ? request.Shelf ?? request.Seeds : request.Seeds,
                 limit,
                 RecommendationFilters.None,
                 obscurity: variant.Obscurity,
@@ -1383,7 +1430,8 @@ async Task<ResultRow> Score(Variant variant)
         pickRows?.Append(i).Append(';').Append(string.Join(',', ids)).Append(';')
             .Append(string.Join(',', request.Positives.Keys)).Append(';')
             .Append(string.Join(',', request.Seeds)).Append(';')
-            .Append(string.Join(',', (request.Listed ?? []).Select(kv => $"{kv.Key}{kv.Value}"))).AppendLine();
+            .Append(string.Join(',', (request.Listed ?? []).Select(kv => $"{kv.Key}{kv.Value}"))).Append(';')
+            .Append(string.Join(',', request.Shelf ?? request.Seeds)).AppendLine();
         // The thing `queryattribution` exists to move, and the one column here that is not a
         // relevance measure: what share of the picks can name a seed at all. A variant that raises
         // it while holding nDCG is buying an explanation for free; one that raises it by dropping
@@ -1501,6 +1549,11 @@ async Task<ResultRow> Score(Variant variant)
                 Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-next-{metric}.csv"), text.ToString());
         }
 
+        // Which ordered request set those rows belong to, so eval-next-gates.py can refuse to pair
+        // files from different runs.
+        File.WriteAllText(
+            Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-next.requests.json"), requestDigest.Json());
+
         // How many of the graded readers' pages each title is on, for reading one real page
         // against the panel: "this pick is on 31% of 500 readers' pages".
         var frequency = new StringBuilder("id\tpages\treaders\n");
@@ -1549,6 +1602,12 @@ async Task<ResultRow> Score(Variant variant)
             ["split"] = split,
             ["shelfStatus"] = shelfStatus,
             ["buildPages"] = buildPages,
+            ["holdout"] = buildPages ? 0 : holdout,
+            ["shelfExcluded"] = buildPages,
+            ["requestDigest"] = requestDigest.Digest,
+            ["readerIds"] = mode == "library" && panelPath is null
+                ? new System.Text.Json.Nodes.JsonArray(requests.Select(r => (System.Text.Json.Nodes.JsonNode?)r.User).ToArray())
+                : null,
             ["artifactFolds"] = new System.Text.Json.Nodes.JsonObject
             {
                 ["taste"] = variant.Taste.Weight > 0 ? Folds(tastePath) : "off",
@@ -2898,6 +2957,7 @@ void ReportNext()
     }
 
     File.WriteAllText(Path.Combine(artifactsDir, "eval", "next-readers.tsv"), readers.ToString());
+    File.WriteAllText(Path.Combine(artifactsDir, "eval", "next-readers.requests.json"), requestDigest.Json());
 
     if (strata)
     {
@@ -3040,6 +3100,81 @@ static HashSet<int>? ReadTrainingFolds(string path)
         // No meta table at all is an older artifact, not a fold claim.
         return null;
     }
+}
+
+/// <summary>
+/// Why a page-share table cannot be graded on these readers, or null when it can. A .db names its
+/// readers in <c>meta.trainingFold</c> (<c>all</c>, or <c>readers k/n</c> for pages from one fold);
+/// either format can carry <c>&lt;table&gt;.provenance.json</c>, written by
+/// <c>eval-overlap.py table</c> and <c>build-page-share.py</c>, with the AniList ids whose pages made
+/// it (<c>readerIds</c>) or the fold they came from (<c>foldUsers</c>).
+/// </summary>
+static string? CommonTableLeak(string path, HashSet<int> graded)
+{
+    if (!File.Exists(path))
+    {
+        return $"no page-share table at {path}.";
+    }
+
+    string? trainingFold = null;
+    var header = new byte[16];
+    using (var stream = File.OpenRead(path))
+    {
+        stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
+    }
+
+    if (Encoding.ASCII.GetString(header).StartsWith("SQLite format 3", StringComparison.Ordinal))
+    {
+        try
+        {
+            using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT value FROM meta WHERE key = 'trainingFold'";
+            trainingFold = cmd.ExecuteScalar()?.ToString();
+        }
+        catch (SqliteException)
+        {
+            trainingFold = null;
+        }
+
+        if (string.Equals(trainingFold, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"the page-share table at {path} has meta.trainingFold 'all': its pages came from every reader, the graded ones included.";
+        }
+    }
+
+    var foldUsers = trainingFold is not null && trainingFold.StartsWith("readers ", StringComparison.Ordinal)
+        ? trainingFold["readers ".Length..]
+        : null;
+    var sidecar = path + ".provenance.json";
+    if (File.Exists(sidecar))
+    {
+        var about = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(sidecar));
+        if (about?["readerIds"] is System.Text.Json.Nodes.JsonArray ids)
+        {
+            var shared = ids.Count(id => id is not null && graded.Contains(id.GetValue<int>()));
+            return shared == 0
+                ? null
+                : $"{shared} of the {graded.Count} graded readers made pages for the page-share table at {path} ({Path.GetFileName(sidecar)}).";
+        }
+
+        foldUsers = about?["foldUsers"]?.GetValue<string>() ?? foldUsers;
+    }
+
+    if (foldUsers?.Split('/') is [var k, var n]
+        && int.TryParse(k, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fold)
+        && int.TryParse(n, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count)
+        && count >= 2)
+    {
+        var shared = graded.Count(user => UserFold.Of(user, count) == fold);
+        return shared == 0
+            ? null
+            : $"the page-share table at {path} came from readers of fold {fold}/{count}, which holds {shared} of the {graded.Count} graded readers.";
+    }
+
+    return $"nothing says which readers made the page-share table at {path}: it needs {Path.GetFileName(sidecar)} "
+        + "listing them (eval-overlap.py table and build-page-share.py write it) or a .db from one fold of readers.";
 }
 
 /// <summary>AniList id to MangaBaka id, the same query and the same collision rule the fetchers use.</summary>
@@ -3548,6 +3683,45 @@ file sealed class FeelIndex
 /// Titles from this reader's HELD-OUT slice that they scored the same way: what a working avoid
 /// channel should push out of the top 40. Empty unless --negatives.
 /// </param>
+/// <summary>
+/// A fingerprint of the ordered request set a result was scored on: each request's reader and key,
+/// in order, plus the label set, shelf kind, split, fold and holdout. eval-next-gates.py pairs two
+/// result files only when these match.
+/// </summary>
+file sealed record RequestDigest(string Digest, int Count, string Mode, string Labels, string Shelf, string Split, string Fold, double Holdout)
+{
+    public static RequestDigest Of(
+        IReadOnlyList<Request> requests, string mode, string labels, string shelf, string split, string fold,
+        double holdout, string? panel)
+    {
+        var context = panel is not null ? $"panel={Path.GetFileName(panel)}" : $"mode={mode};labels={labels}";
+        var text = new StringBuilder(context)
+            .Append(";shelf=").Append(shelf).Append(";split=").Append(split).Append(";fold=").Append(fold)
+            .Append(";holdout=").Append(holdout.ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        var keys = RequestKeys.Of(requests);
+        for (var i = 0; i < requests.Count; i++)
+        {
+            text.Append(requests[i].User).Append(':').Append(keys[i]).Append('\n');
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString()));
+        return new RequestDigest(
+            Convert.ToHexString(hash).ToLowerInvariant(), requests.Count, mode, labels, shelf, split, fold, holdout);
+    }
+
+    public string Json() => new System.Text.Json.Nodes.JsonObject
+    {
+        ["digest"] = Digest,
+        ["requests"] = Count,
+        ["mode"] = Mode,
+        ["labels"] = Labels,
+        ["shelfStatus"] = Shelf,
+        ["split"] = Split,
+        ["fold"] = Fold,
+        ["holdout"] = Holdout,
+    }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+}
+
 file static class RequestKeys
 {
     /// <summary>
@@ -3676,6 +3850,9 @@ file record Request(
 {
     /// <summary>Titles on the reader's list in another status: C reading, F finished, P planned, D dropped, H paused.</summary>
     public Dictionary<long, char>? Listed { get; set; }
+
+    /// <summary>Every in-index title of the reader's shelf: seeds, held-out titles and any past --max-library.</summary>
+    public IReadOnlyList<long>? Shelf { get; set; }
 }
 
 /// <summary>

@@ -11,7 +11,11 @@ in two steps: the eval harness writes pages for many readers, and this turns the
          --build-pages --dump-picks .artifacts/page-share-pages "pages:commonweight=0"
      No --fold-users: a published table comes from every reader, and --build-pages keeps co-read,
      the taste vectors and EASE on, which library mode otherwise forces off without a fold (the
-     numbers that run prints are not results). commonweight=0, because the table
+     numbers that run prints are not results). --build-pages also holds nothing out: each reader's
+     whole shelf seeds and is excluded from their page, as an install excludes its library, and the
+     same shelf is the denominator below. EASE runs at the shipped EaseTuning.Weight (1), the
+     `pages` variant's default; pass `easeweight=` only to build a table for another engine.
+     commonweight=0, because the table
      measures what everybody gets before the penalty acts; built from penalised pages it would hold
      the hub titles lower and the next build would penalise them less. The cap stays at its default.
      CURRENT shelves, because a table from finished shelves holds the titles everybody gets at 1 to
@@ -21,11 +25,14 @@ in two steps: the eval harness writes pages for many readers, and this turns the
          --out .artifacts/page-share.db
   3. Pack and publish with `graph-artifact.cs pageshare` (publish-graph.ps1 -Kind pageshare).
 
-The share is conditional, as in `eval-overlap.py table`: pages holding the title over readers who had
-not already read it, kept only where at least --min-open readers had not. meta.trainingFold is `all`
-only when the pages came from every reader and every reader-trained artifact behind them saw every
-reader (the `.json` the harness writes beside the dump says which); anything else is an evaluation
-build that the installer and graph-artifact.cs refuse. Rebuild the table whenever the ranking changes.
+The share is conditional, as in `eval-overlap.py table`: of the readers who had not already read the
+title, the share whose page held it, kept only where at least --min-open readers had not. A dump from
+a grading run (part of each shelf held out, so a held-out title can sit on its own reader's page) is
+refused. meta.trainingFold is `all` only when the pages came from every reader and every
+reader-trained artifact behind them saw every reader (the `.json` the harness writes beside the dump
+says which); anything else is an evaluation build that the installer and graph-artifact.cs refuse,
+and gets `<out>.provenance.json` naming its readers so the eval harness can refuse it on them.
+Rebuild the table whenever the ranking changes.
 
 The pages are derived from AniList reading lists. The artifact holds only per-series shares.
 """
@@ -73,16 +80,25 @@ def main():
     if not sidecar.exists():
         sys.exit(f"error: {sidecar} is missing, so nothing says which readers and artifacts made these pages")
     about = json.loads(sidecar.read_text(encoding="utf-8"))
+    if not about.get("shelfExcluded"):
+        sys.exit(f"error: {sidecar} does not say the pages excluded each reader's whole shelf. A grading run holds "
+                 "part of each shelf out, and a held-out title then counts as a pick for its own reader. "
+                 "Dump the pages again with --build-pages.")
 
     overlap = overlap_module()
     pages = overlap.load(args.picks, skip=args.skip, top=args.top)
+    if any(held for _, held, _ in pages):
+        sys.exit(f"error: {args.picks} holds held-out titles, so it came from a grading run. Dump it with --build-pages.")
     if len(pages) < args.min_readers:
         sys.exit(f"error: {len(pages)} pages, fewer than --min-readers {args.min_readers}")
-    share = overlap.conditional(pages, overlap.frequency(pages), min_open=args.min_open)
+    share = overlap.conditional(pages, min_open=args.min_open)
 
     out = Path(args.out)
     if out.exists():
         out.unlink()
+    stale = Path(str(out) + ".provenance.json")
+    if stale.exists():
+        stale.unlink()
     conn = sqlite3.connect(out)
     conn.execute("CREATE TABLE share (series_id INTEGER PRIMARY KEY, share REAL NOT NULL)")
     conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
@@ -103,6 +119,8 @@ def main():
     conn.commit()
     conn.execute("VACUUM")
     conn.close()
+    if fold != "all":
+        overlap.write_provenance(out, overlap.provenance(args.picks, args.skip))
 
     top = sorted(share.items(), key=lambda kv: -kv[1])[:5]
     print(f"{len(share)} series from {len(pages)} pages written to {out}")

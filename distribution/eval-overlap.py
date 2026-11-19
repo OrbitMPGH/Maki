@@ -1,9 +1,10 @@
 """Cross-reader overlap of recommendation pages, and the page-frequency table built from it.
 
 Reads the files `eval-reco-labels.cs library --dump-picks <dir>` writes: one line per reader,
-`position;ranked ids;held-out ids;seed ids;other list entries`. A page that is the same for
-everybody shows up here as a high pairwise Jaccard and a few titles on a large share of all pages,
-which no relevance column sees.
+`position;ranked ids;held-out ids;seed ids;other list entries;whole shelf`. A page that is the same
+for everybody shows up here as a high pairwise Jaccard and a few titles on a large share of all
+pages, which no relevance column sees. A dump from before the last field reads its shelf as the
+seeds plus the held-out titles.
 
   python distribution/eval-overlap.py stats <picks.tsv> [--first N] [--top K] [--titles DUMP]
   python distribution/eval-overlap.py table <picks.tsv> --skip N --out <file> [--top K]
@@ -12,17 +13,22 @@ which no relevance column sees.
 `stats`   mean pairwise Jaccard, how concentrated the slots are, and the most common titles.
 `table`   id<TAB>share for every title on a page of the readers AFTER the first N, so the readers
           a penalty is graded on are not the ones it was measured from. The input for
-          `commonpath` / PageFrequency. The share is conditional: pages holding the title over
-          readers who had not already read it, because a title most readers own can only reach
-          the few pages left and would look rare.
+          `commonpath` / PageFrequency. The share is conditional: pages of readers who had not
+          already read the title that hold it, over those readers, because a title most readers
+          own can only reach the few pages left and would look rare. A held-out title on its own
+          reader's page is not counted. Writes `<out>.provenance.json` with the readers whose pages
+          made the table (from the dump's `.json`), which eval-reco-labels.cs checks against the
+          readers it grades.
 `compare` paired difference in each reader's mean Jaccard against every other reader, with a
           bootstrap interval over readers.
 """
 import argparse
+import json
 import random
 import sqlite3
 import sys
 from collections import Counter
+from pathlib import Path
 
 
 def load(path, first=None, skip=0, top=40):
@@ -35,9 +41,44 @@ def load(path, first=None, skip=0, top=40):
             ids = [int(x) for x in cells[1].split(",") if x][:top]
             held = {int(x) for x in cells[2].split(",") if x} if len(cells) > 2 else set()
             seeds = {int(x) for x in cells[3].split(",") if x} if len(cells) > 3 else set()
-            pages.append((ids, held, seeds))
+            shelf = {int(x) for x in cells[5].split(",") if x} if len(cells) > 5 else seeds | held
+            pages.append((ids, held, shelf))
     pages = pages[skip:]
     return pages[:first] if first else pages
+
+
+def positions(path, skip=0):
+    """The request position of each dumped page after --skip, in file order."""
+    with open(path, encoding="utf-8") as handle:
+        rows = [int(line.split(";", 1)[0]) for line in handle if ";" in line]
+    return rows[skip:]
+
+
+def provenance(picks, skip=0):
+    """Which readers made the pages after --skip, from the `.json` the harness writes beside the dump."""
+    sidecar = Path(picks).with_suffix(".json")
+    about = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
+    out = {
+        "picks": Path(picks).name,
+        "skip": skip,
+        "foldUsers": about.get("foldUsers"),
+        "split": about.get("split"),
+        "shelfStatus": about.get("shelfStatus"),
+        "requestDigest": about.get("requestDigest"),
+    }
+    readers = about.get("readerIds")
+    if readers is not None:
+        out["readerIds"] = [readers[i] for i in positions(picks, skip)]
+    return out
+
+
+def write_provenance(table_path, about):
+    path = Path(str(table_path) + ".provenance.json")
+    path.write_text(json.dumps(about, indent=1) + "\n", encoding="utf-8")
+    if "readerIds" not in about:
+        print(f"warning: {Path(about['picks']).name} names no readers (a dump from an older harness), so {path.name} "
+              "only records the fold, and the harness refuses this table on readers of that fold")
+    return path
 
 
 def frequency(pages):
@@ -47,13 +88,15 @@ def frequency(pages):
     return counts
 
 
-def conditional(pages, counts, min_open=30):
-    """Share of the readers who had not read a title whose page held it."""
+def conditional(pages, min_open=30):
+    """Of the readers who had not read a title, the share whose page held it."""
     owned = Counter()
-    for _, _, seeds in pages:
-        owned.update(seeds)
+    shown = Counter()
+    for ids, _, shelf in pages:
+        owned.update(shelf)
+        shown.update(i for i in set(ids) if i not in shelf)
     n = len(pages)
-    return {i: c / (n - owned[i]) for i, c in counts.items() if n - owned[i] >= min_open}
+    return {i: c / (n - owned[i]) for i, c in shown.items() if n - owned[i] >= min_open}
 
 
 def reader_jaccard(pages):
@@ -97,7 +140,7 @@ def stats(args):
     # The share of other readers who got the same title, averaged over slots: what a reader sees.
     shared = sum(counts[i] - 1 for ids, _, _ in pages for i in ids) / slots / max(1, n - 1)
     print(f"mean share of other pages holding a slot's title   {shared:.3f}")
-    open_share = conditional(pages, counts)
+    open_share = conditional(pages)
     if open_share:
         for bar in (0.5, 0.25):
             common = {i for i, v in open_share.items() if v >= bar}
@@ -131,12 +174,13 @@ def table(args):
         sys.exit("no readers left after --skip")
     counts = frequency(pages)
     n = len(pages)
-    with_seeds = any(seeds for _, _, seeds in pages)
-    share = conditional(pages, counts) if with_seeds else {i: c / n for i, c in counts.items()}
+    with_shelves = any(shelf for _, _, shelf in pages)
+    share = conditional(pages) if with_shelves else {i: c / n for i, c in counts.items()}
     with open(args.out, "w", encoding="utf-8", newline="\n") as out:
         for i, value in sorted(share.items(), key=lambda kv: -kv[1]):
             out.write(f"{i}\t{value:.6f}\n")
-    print(f"{len(share)} titles from {n} readers written to {args.out}")
+    sidecar = write_provenance(args.out, provenance(args.picks, args.skip))
+    print(f"{len(share)} titles from {n} readers written to {args.out} (readers in {sidecar.name})")
 
 
 def compare(args):
