@@ -82,12 +82,38 @@ public static class SelfTest
                 : throw new PlatformNotSupportedException("no headless browser build for this platform");
         });
 
+        // Where the browser is already on disk (the Docker image installs it at build time) it has to
+        // start, not just exist: a missing system library only shows once Chromium loads.
+        if (Maki.Sources.Common.BrowserInstaller.ExecutablePath() is { } shell && File.Exists(shell))
+        {
+            Check("headless browser launch", () => LaunchBrowserAsync().WaitAsync(TimeSpan.FromMinutes(2)).GetAwaiter().GetResult());
+        }
+
         Check("web ui", () => File.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot", "index.html"))
             ? "wwwroot/index.html present"
             : throw new FileNotFoundException("wwwroot/index.html is missing"));
 
         output.WriteLine(failures == 0 ? "selftest passed" : $"selftest failed: {failures} check(s)");
         return failures == 0 ? 0 : 1;
+    }
+
+    private static async Task<string> LaunchBrowserAsync()
+    {
+        var launcher = new Maki.Sources.Common.HeadlessBrowserLauncher();
+        var browser = await launcher.LaunchAsync();
+        try
+        {
+            var context = await browser.CreateBrowserContextAsync();
+            var page = await context.NewPageAsync();
+            await page.GoToAsync("about:blank");
+            if (await page.EvaluateExpressionAsync<int>("6 * 7") != 42)
+                throw new InvalidOperationException("the page did not run script");
+            return $"{await browser.GetVersionAsync()} ran a page";
+        }
+        finally
+        {
+            await launcher.CloseAsync(browser);
+        }
     }
 
     /// <summary>The smallest PDF pdfium accepts without repairing it: one blank page, with a real
