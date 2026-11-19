@@ -1,0 +1,11 @@
+{
+  "name": "maki-doc-shots",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "shots": "node --disable-warning=ExperimentalWarning shots.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "25.16.0"
+  }
+}
