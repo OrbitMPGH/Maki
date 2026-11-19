@@ -57,12 +57,8 @@ RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
 # these as late as possible in each stage.
 ARG VERSION
 ARG SOURCE_COMMIT
-# PlaywrightPlatform=all is not a recognized platform keyword in Microsoft.Playwright.targets, so
-# it hits that target's fallback branch and copies every node/<platform> driver folder instead of
-# just the host's. Needed because this publish runs once on $BUILDPLATFORM (native) but its output
-# is copied into both the linux/amd64 and linux/arm64 runtime stages below.
 RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
-    dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false /p:PlaywrightPlatform=all \
+    dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 # Same check for the other half of the catalogs: the EmbeddedResource item names each one
@@ -112,7 +108,7 @@ RUN if [ "$TARGETARCH" = "$BUILDARCH" ]; then \
 # additive, so bytes deleted in a later layer still ship in the earlier COPY layer's blob. Instead
 # this throwaway stage does the COPY-then-delete, and the runtime stage COPYs its *resulting*
 # filesystem, which only carries the surviving files, not the deleted ones' history.
-FROM alpine:3 AS trimmed-publish
+FROM alpine:3.24 AS trimmed-publish
 ARG TARGETARCH
 COPY --from=backend /app/publish /app
 # Docnet.Core (pdfium, for reading PDFs in place) ships its x64 native library under
@@ -126,50 +122,68 @@ RUN case "$TARGETARCH" in \
       *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
     esac \
     && find /app/runtimes -mindepth 1 -maxdepth 1 -type d $(for k in $keep; do echo "! -name $k"; done) -exec rm -rf {} +
-# PlaywrightPlatform=all above also copied a Node driver for every OS (~440 MB), of which this arch
-# runs one. types/ and lib/vite/ only serve codegen, the trace viewer and the HTML report. The chmod
-# belongs here too: done in the runtime stage, it would copy the whole node binary into a new layer.
-# The driver then moves out of /app so the runtime stage can copy it, and install the browser, before
-# the rest of the app; see the comment there.
-RUN case "$TARGETARCH" in \
-      amd64) node=linux-x64 ;; \
-      arm64) node=linux-arm64 ;; \
-    esac \
-    && find /app/.playwright/node -mindepth 1 -maxdepth 1 -type d ! -name "$node" -exec rm -rf {} + \
-    && chmod a+rx /app/.playwright/node/"$node"/node \
-    && rm -rf /app/.playwright/package/types /app/.playwright/package/lib/vite \
-    && mkdir /driver && mv /app/.playwright /driver/
+
+# ---- Headless browser ----
+# MangaFire's vrf request signature and TopManhua's image CDN only answer a real browser. Maki drives
+# Chrome Headless Shell over the DevTools protocol from its own process, so all the image needs is the
+# browser and its libraries. amd64 gets the Chrome for Testing build; Chrome for Testing has no Linux
+# arm64 build, so arm64 gets Playwright's build of the same Chromium. It lands where
+# BrowserInstaller looks (PLAYWRIGHT_BROWSERS_PATH below, the folder named by revision, the
+# INSTALLATION_COMPLETE marker), so the app finds it and never downloads one. Nothing here depends on
+# the app's source, so the stage stays cached until these pins move; keep them in step with
+# BrowserInstaller.Version, BrowserInstaller.Revision and the checksums in BrowserInstaller.Build
+# (BrowserInstallerTests checks). Only the en-US locale pack is kept, since LANG is unset and
+# Chromium never loads another.
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS browser
+ARG TARGETARCH
+ARG BROWSER_VERSION=149.0.7827.55
+ARG BROWSER_REVISION=1228
+ARG BROWSER_SHA256_AMD64=410c9407d5de3fea80d9398666be06f2aa09154a3fa7b327dc254e336bb4c4b7
+ARG BROWSER_SHA256_ARM64=1652929a70f4afb17aca36fce073fb7ed22262d16825be761b0801972f43ac4f
+RUN apk add --no-cache curl unzip \
+    && case "$TARGETARCH" in \
+         amd64) url="https://cdn.playwright.dev/builds/cft/$BROWSER_VERSION/linux64/chrome-headless-shell-linux64.zip" \
+                exe=chrome-headless-shell-linux64/chrome-headless-shell sha="$BROWSER_SHA256_AMD64" ;; \
+         arm64) url="https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/$BROWSER_REVISION/chromium-headless-shell-linux-arm64.zip" \
+                exe=chrome-linux/headless_shell sha="$BROWSER_SHA256_ARM64" ;; \
+         *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+       esac \
+    && dir=/ms-playwright/chromium_headless_shell-$BROWSER_REVISION \
+    && mkdir -p "$dir" \
+    && curl -fsSL --retry 3 -o /tmp/shell.zip "$url" \
+    && echo "$sha  /tmp/shell.zip" | sha256sum -c - \
+    && unzip -q /tmp/shell.zip -d "$dir" \
+    && rm /tmp/shell.zip \
+    && find "$dir" -path '*/locales/*.pak' ! -name 'en-US.pak' -delete \
+    && chmod -R a+rX /ms-playwright \
+    && chmod a+rx "$dir/$exe" \
+    && touch "$dir/INSTALLATION_COMPLETE"
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
+# tini runs as PID 1, reaps orphans and forwards signals to the entrypoint. A browser Maki starts
+# itself left no zombies with dotnet as PID 1, but one started by a `docker exec` command (a
+# --selftest, a troubleshooting tool) left two per launch (measured 2026-11-19): its helpers
+# outlive their parent and fall to PID 1, which did not reap them.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gosu curl \
+    && apt-get install -y --no-install-recommends gosu curl tini \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-# Only the Playwright driver comes in before the browser install. BuildKit keys a COPY on file
-# content, and the driver is the same bytes until the Microsoft.Playwright package is bumped, so the
-# install below stays cached across code changes. Copying the whole app first made every build
-# download the browser again.
-COPY --from=trimmed-publish /driver/ ./
-
-# MangaFire's vrf request signature and TopManhua's image CDN only answer a real browser, so install
-# one for Playwright. We only ever launch headless, so install the ~100 MB chromium-headless-shell rather
-# than full Chromium (which also drags in the ~170 MB headed binary) — MangaFireBrowser launches with
-# Channel = "chromium-headless-shell" to match. Done in the per-arch runtime stage (browser binaries
-# are architecture-specific) via the Node driver shipped in the publish output — the aspnet image has
-# no SDK for `dotnet tool` and no pwsh for playwright.ps1. --with-deps apt-installs the shared
-# libraries it needs. PLAYWRIGHT_BROWSERS_PATH is a shared, world-readable path so the app (run via
-# gosu as PUID) finds it. ffmpeg is only for video recording, and LANG is unset so Chromium only
-# ever loads its en-US locale pack; both go in this same RUN so the bytes never reach a layer.
+# The headless browser's shared libraries and fonts, the set Playwright's `install --with-deps`
+# used to apt-install (less xvfb, which only a headed browser uses). Before any app file, so a code
+# change never reruns it. PLAYWRIGHT_BROWSERS_PATH is a shared, world-readable path so the app (run
+# via gosu as PUID) finds the browser; the name is Playwright's, kept so the folder layout an older
+# image wrote still reads the same.
+COPY distribution/native/install-browser-deps.sh /tmp/install-browser-deps.sh
+RUN sh /tmp/install-browser-deps.sh \
+    && rm -rf /var/lib/apt/lists/* /tmp/install-browser-deps.sh
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux-x64)" \
-    && /app/.playwright/node/"$NODE_ARCH"/node /app/.playwright/package/cli.js install --with-deps chromium-headless-shell \
-    && rm -rf /ms-playwright/ffmpeg-* \
-    && find /ms-playwright -path '*/locales/*.pak' ! -name 'en-US.pak' -delete \
-    && chmod -R a+rX /ms-playwright \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=browser /ms-playwright /ms-playwright
+# Every shared library the shell links has to resolve, or the image builds and the browser never starts.
+RUN exe=$(find /ms-playwright -type f \( -name chrome-headless-shell -o -name headless_shell \)) \
+    && if ldd "$exe" | grep "not found"; then exit 1; fi
 
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -232,4 +246,7 @@ LABEL org.opencontainers.image.title="Maki" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
-ENTRYPOINT ["/entrypoint.sh"]
+# With `init: true` in a compose file docker-init is PID 1 instead; TINI_SUBREAPER keeps tini
+# reaping as its child and stops it warning that it is not PID 1.
+ENV TINI_SUBREAPER=1
+ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]

@@ -822,8 +822,14 @@ try
     // stay testable without FlareSolverr and settings in the way.
     builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
+    // The headless shell is a ~110 MB zip; give it room to arrive on a slow line.
+    builder.Services.AddHttpClient(BrowserInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
     builder.Services.AddSingleton<BrowserInstaller>();
-    builder.Services.AddSingleton<SharedPlaywright>();
+    builder.Services.AddSingleton<HeadlessBrowserLauncher>();
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
     // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
@@ -1567,10 +1573,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
-        // And the headless browsers, which are ~160 MB of native memory between the Playwright
-        // driver and the shell's processes. Nothing launches one at startup, so this can start
-        // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
+        // And the headless browsers, whose processes are native memory the heap work never sees.
+        // Nothing launches one at startup, so this can start early; it does nothing until a scrape
+        // has actually happened. Every minute, since the idle window is one: a browser goes one to
+        // two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t

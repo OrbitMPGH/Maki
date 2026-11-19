@@ -114,9 +114,9 @@ public sealed class MemoryDiagnostics(
                 Artifact("search-vectors", vectors.IsLoaded, vectors.IdleFor),
                 Artifact("text-embedder", embedder.IsReady, idle: null)
             },
-            // Native, and the largest single thing on the list when one is up: the Playwright
-            // driver and the headless shell together. Nothing here can see their size from inside
-            // the process, so this reports only whether they are running.
+            // Native, and the largest single thing on the list when one is up: the headless
+            // shell's process tree. Nothing here can see its size from inside the process, so this
+            // reports only whether they are running.
             browsers = browsers
                 .Select(b => new { name = b.BrowserName, running = b.IsRunning })
                 .ToArray()

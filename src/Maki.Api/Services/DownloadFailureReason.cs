@@ -43,6 +43,12 @@ public static class DownloadFailureReason
                 return (Network, Trim(Innermost(ex).Message));
             case TimeoutException or TaskCanceledException:
                 return (Network, Trim(ex.Message));
+            // The headless browser's navigation wraps its own timeout and Chromium's net::ERR_ codes,
+            // and its selector waits time out as a PuppeteerException, none of them a TimeoutException.
+            case PuppeteerSharp.NavigationException nav
+                when nav.InnerException is TimeoutException || nav.Message.StartsWith("net::", StringComparison.Ordinal):
+            case PuppeteerSharp.WaitTaskTimeoutException:
+                return (Network, Trim(ex.Message));
             case IOException or UnauthorizedAccessException:
                 return (Disk, Trim(ex.Message));
             default:

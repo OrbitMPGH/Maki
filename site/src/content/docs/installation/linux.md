@@ -50,10 +50,10 @@ The unit restarts Maki whenever it stops. Maki stops itself on purpose after a r
 MangaFire and TopManhua drive a headless browser. Maki downloads it the first time one of those sources needs it. The browser also needs some system libraries. If **Health** reports that it will not start, install them once:
 
 ```bash
-sudo /opt/maki/.playwright/node/linux-x64/node /opt/maki/.playwright/package/cli.js install-deps chromium-headless-shell
+sudo /opt/maki/install-browser-deps.sh
 ```
 
-On an arm64 machine, use `linux-arm64` in the path. If you run Maki from the unpacked folder instead of `/opt/maki`, use that folder's path. Both sources also need [FlareSolverr](/Maki/guides/sources/flaresolverr/).
+The script uses `apt-get`, so it covers Debian and Ubuntu. On another distribution, install the packages it lists with your package manager. If you run Maki from the unpacked folder instead of `/opt/maki`, use that folder's path. Both sources also need [FlareSolverr](/Maki/guides/sources/flaresolverr/).
 
 ## Where your data lives
 

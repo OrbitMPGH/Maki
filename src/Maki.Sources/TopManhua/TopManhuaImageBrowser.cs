@@ -3,27 +3,27 @@ using Maki.Core;
 using Maki.Core.Http;
 using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
-using Microsoft.Playwright;
+using PuppeteerSharp;
 
 namespace Maki.Sources.TopManhua;
 
 /// <summary>
 /// Fetches a chapter's page images through a real browser instead of a plain HTTP request. The
 /// image CDN (img-r2.2xstorage.com) sits behind Cloudflare bot management and blocks a bare
-/// re-request for an image URL with a "Sorry, you have been blocked" page — even from a real
-/// browser typed into the address bar — while the exact same image loads fine as an embedded
+/// re-request for an image URL with a "Sorry, you have been blocked" page, even from a real
+/// browser typed into the address bar, while the exact same image loads fine as an embedded
 /// &lt;img&gt; on the chapter page. Headers alone don't close that gap, and neither does a bare
-/// Playwright Chromium on its own: headless automation carries its own tells (WebGL renderer,
+/// headless Chromium on its own: headless automation carries its own tells (WebGL renderer,
 /// CDP artifacts, missing plugins) that Cloudflare's client-side bot-detection script picks up
 /// regardless of what headers are sent. So this reuses <see cref="ChallengeAwareFetcher"/>'s
-/// FlareSolverr-solved session the same way <c>MangaFireBrowser</c> does — FlareSolverr's browser
-/// is specifically hardened against headless detection — then drives our own Chromium with that
+/// FlareSolverr-solved session the same way <c>MangaFireBrowser</c> does (FlareSolverr's browser
+/// is specifically hardened against headless detection), then drives our own Chromium with that
 /// session's cookies/UA to load the chapter page and let its native image pipeline fetch pages,
 /// capturing the bytes off the network as they come in.
 /// </summary>
 public sealed class TopManhuaImageBrowser(
     ChallengeAwareFetcher fetcher,
-    SharedPlaywright shared,
+    HeadlessBrowserLauncher launcher,
     ILogger<TopManhuaImageBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://www.topmanhua.fan";
@@ -33,22 +33,22 @@ public sealed class TopManhuaImageBrowser(
     private const int MaxBodiesInFlight = 2;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private IPlaywright? _playwright;
     private IBrowser? _browser;
     private IBrowserContext? _context;
+    private BrowserProfile? _profile;
     private readonly IdleStamp _idle = new();
 
     public string BrowserName => "TopManhua";
 
-    public bool IsRunning => _playwright is not null;
+    public bool IsRunning => _browser is not null;
 
     /// <summary>
-    /// Closes the browser and the driver process behind it once nothing has scraped for
+    /// Closes the browser once nothing has scraped for
     /// <paramref name="idleFor"/>. See <see cref="IIdleBrowser"/> for what that is worth.
     /// </summary>
     public async Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
     {
-        if (_playwright is null || _idle.Idle < idleFor)
+        if (_browser is null || _idle.Idle < idleFor)
         {
             return false;
         }
@@ -63,7 +63,7 @@ public sealed class TopManhuaImageBrowser(
 
         try
         {
-            if (_playwright is null || _idle.Idle < idleFor)
+            if (_browser is null || _idle.Idle < idleFor)
             {
                 return false;
             }
@@ -81,37 +81,29 @@ public sealed class TopManhuaImageBrowser(
         }
     }
 
-    /// <summary>
-    /// Tears the whole stack down, in order. Disposing the driver is the part that matters most:
-    /// it is what ends the Node process, which is the larger half of what a parked browser costs.
-    /// </summary>
+    /// <summary>Closes the context, then the browser process tree.</summary>
     private async Task ShutdownAsync()
     {
         var context = _context;
         var browser = _browser;
-        var playwright = _playwright;
         _context = null;
         _browser = null;
-        _playwright = null;
+        _profile = null;
 
         try
         {
             await BrowserSupport.CloseQuietlyAsync(context);
-            await BrowserSupport.CloseQuietlyAsync(browser);
         }
         finally
         {
-            if (playwright is not null)
-            {
-                await shared.ReleaseAsync(playwright);
-            }
+            await launcher.CloseAsync(browser);
         }
     }
 
     /// <summary>
     /// Navigates to <paramref name="chapterUrl"/>, forces every lazy-loaded reading-content image
     /// to load, and returns whatever page bytes were captured off the network keyed by URL. A URL
-    /// missing from the result simply never loaded in time — the caller falls back to a plain
+    /// missing from the result simply never loaded in time; the caller falls back to a plain
     /// fetch for those rather than failing the whole chapter.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, byte[]>> FetchImagesAsync(
@@ -123,23 +115,32 @@ public sealed class TopManhuaImageBrowser(
         {
             for (var attempt = 0; ; attempt++)
             {
-                var context = await EnsureContextAsync(ct);
-                IPage page;
+                var (context, profile) = await EnsureContextAsync(ct);
+                IPage? opened = null;
                 try
                 {
-                    page = await context.NewPageAsync();
+                    opened = await context.NewPageAsync();
+                    await BrowserSupport.PreparePageAsync(opened, profile);
                 }
-                catch (PlaywrightException) when (attempt == 0)
+                catch (Exception ex)
                 {
+                    await BrowserSupport.CloseQuietlyAsync(opened);
+                    if (attempt > 0 || ex is not PuppeteerException)
+                    {
+                        throw;
+                    }
+
                     logger.LogWarning("TopManhua browser could not open a page; relaunching it");
                     await ShutdownAsync();
                     continue;
                 }
 
+                var page = opened;
+
                 try
                 {
                     return await CancellableBrowserCall.RunAsync(
-                        () => page.CloseAsync(), () => CaptureAsync(page, chapterUrl, imageUrls, ct), ct);
+                        () => BrowserSupport.CloseQuietlyAsync(page), () => CaptureAsync(page, chapterUrl, imageUrls, ct), ct);
                 }
                 catch (ChallengeException) when (attempt == 0)
                 {
@@ -149,7 +150,7 @@ public sealed class TopManhuaImageBrowser(
                 }
                 finally
                 {
-                    await page.CloseAsync();
+                    await BrowserSupport.CloseQuietlyAsync(page);
                     _idle.Touch();
                 }
             }
@@ -166,9 +167,9 @@ public sealed class TopManhuaImageBrowser(
         var wanted = new HashSet<string>(imageUrls, StringComparer.Ordinal);
         var captured = new ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
 
-        // Each body travels Chromium to Node to .NET as base64 JSON, so a 1 MB page is roughly 8 to
-        // 10 MB of transient garbage, and starting every capture of a 50-page chapter at once put
-        // all of it in flight together. Not disposed: a late response can still be waiting on it
+        // Each body travels from Chromium as base64 JSON, so a 1 MB page is several MB of transient
+        // garbage, and starting every capture of a 50-page chapter at once put all of it in flight
+        // together. Not disposed: a late response can still be waiting on it
         // after the capture has returned.
         var inFlight = new SemaphoreSlim(MaxBodiesInFlight);
 
@@ -184,7 +185,7 @@ public sealed class TopManhuaImageBrowser(
                 await inFlight.WaitAsync(ct);
                 try
                 {
-                    captured[response.Url] = await response.BodyAsync();
+                    captured[response.Url] = await BrowserSupport.ReadBytesAsync(response, ct);
                 }
                 finally
                 {
@@ -197,7 +198,7 @@ public sealed class TopManhuaImageBrowser(
             }
         }
 
-        void OnResponse(object? sender, IResponse response) => _ = CaptureBodyAsync(response);
+        void OnResponse(object? sender, ResponseCreatedEventArgs e) => _ = CaptureBodyAsync(e.Response);
 
         page.Response += OnResponse;
         try
@@ -214,7 +215,12 @@ public sealed class TopManhuaImageBrowser(
         IPage page, string chapterUrl, HashSet<string> wanted, ConcurrentDictionary<string, byte[]> captured,
         CancellationToken ct)
     {
-        await page.GotoAsync(chapterUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+        await page.GoToAsync(chapterUrl, new NavigationOptions
+        {
+            WaitUntil = [WaitUntilNavigation.DOMContentLoaded],
+            Timeout = NavTimeoutMs,
+            CancellationToken = ct,
+        });
 
         if (await ClassifyAsync(page) == PageVerdict.Challenge)
         {
@@ -225,14 +231,14 @@ public sealed class TopManhuaImageBrowser(
         // them all to load at once as native <img> fetches instead of scrolling through the page,
         // which is what makes this a genuine browser-issued image request (Referer, Sec-Fetch-*,
         // fingerprint) rather than a JS fetch() call.
-        await page.EvaluateAsync(
+        await page.EvaluateExpressionAsync(
             "document.querySelectorAll('.reading-content img[data-src]').forEach(img => { img.src = img.dataset.src; });");
 
         var deadline = DateTime.UtcNow.AddMilliseconds(CaptureTimeoutMs);
         while (captured.Count < wanted.Count && DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
-            await page.WaitForTimeoutAsync(250);
+            await Task.Delay(250, ct);
         }
 
         if (captured.Count < wanted.Count)
@@ -245,7 +251,7 @@ public sealed class TopManhuaImageBrowser(
         return captured.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
     }
 
-    private async Task<IBrowserContext> EnsureContextAsync(CancellationToken ct)
+    private async Task<(IBrowserContext Context, BrowserProfile Profile)> EnsureContextAsync(CancellationToken ct)
     {
         if (_browser is { IsConnected: false })
         {
@@ -253,85 +259,42 @@ public sealed class TopManhuaImageBrowser(
             await ShutdownAsync();
         }
 
-        if (_context != null)
+        if (_context != null && _profile != null)
         {
-            return _context;
+            return (_context, _profile);
         }
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/", ct);
 
-        _playwright ??= await shared.AcquireAsync(ct);
-        try
-        {
-            _browser ??= await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-                // ~100 MB headless shell — we never render headed, and it keeps the image far smaller.
-                Channel = "chromium-headless-shell",
-                Args = BrowserSupport.LaunchArgs,
-            });
-        }
-        catch (PlaywrightException)
-        {
-            // Shared driver; see MangaFireBrowser.EnsureContextAsync.
-            var driver = _playwright;
-            _playwright = null;
-            await shared.DiscardAsync(driver);
-            throw;
-        }
+        _browser ??= await launcher.LaunchAsync(ct: ct);
 
-        var context = await _browser.NewContextAsync(new()
-        {
-            UserAgent = session.UserAgent,
-            ViewportSize = new() { Width = 1280, Height = 2400 },
+        var context = await _browser.CreateBrowserContextAsync();
+        await context.SetCookieAsync(BrowserSupport.SessionCookies(session.Cookies, Host));
+
+        _profile = new BrowserProfile(
+            session.UserAgent,
+            1280,
+            2400,
             // The headless shell advertises itself in the client hints ("HeadlessChrome") even
-            // though the UA header is overridden above — restate them so they agree with the UA
+            // though the UA header is overridden; restate them so they agree with the UA
             // FlareSolverr earned the clearance cookie with (see MangaFireBrowser for the same fix).
-            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent, brandSecond: true),
-        });
-
-        await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
-
-        // Images are the point here, so they pass; fonts, media, frames and the tag manager are
-        // renderer work for nothing. Verified live: every page image still arrives.
-        await context.RouteAsync("**/*", async route =>
-        {
-            try
-            {
-                var request = route.Request;
-                if (request.ResourceType is "font" or "media" ||
-                    (request.IsNavigationRequest && request.Frame.ParentFrame is not null) ||
-                    BrowserSupport.IsUnneeded(request.Url))
-                {
-                    await route.AbortAsync();
-                }
-                else
-                {
-                    await route.ContinueAsync();
-                }
-            }
-            catch (PlaywrightException)
-            {
-                // the page closed under the request; nothing left to route
-            }
-        });
-
-        await context.AddCookiesAsync(session.Cookies.Select(c => new Cookie
-        {
-            Name = c.Key,
-            Value = c.Value,
-            Domain = $".{Host}",
-            Path = "/",
-        }).ToArray());
+            BrowserSupport.ClientHintsFor(session.UserAgent, brandSecond: true),
+            [BrowserSupport.HideWebDriver],
+            // Images are the point here, so they pass; fonts, media, frames and the tag manager are
+            // renderer work for nothing. Verified live: every page image still arrives.
+            request => request.ResourceType is ResourceType.Font or ResourceType.Media ||
+                       (request.IsNavigationRequest && request.Frame?.ParentFrame is not null) ||
+                       BrowserSupport.IsUnneeded(request.Url));
 
         _context = context;
-        return _context;
+        return (_context, _profile);
     }
 
     private async Task ResetContextAsync()
     {
         var context = _context;
         _context = null;
+        _profile = null;
         await BrowserSupport.CloseQuietlyAsync(context);
     }
 

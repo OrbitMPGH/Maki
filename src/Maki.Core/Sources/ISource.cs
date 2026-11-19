@@ -197,7 +197,7 @@ public enum SourceCapabilities
     /// </summary>
     SupportsLanguageFilter = 2,
 
-    /// <summary>Launches a headless browser through Playwright. Native builds install it on first use;
+    /// <summary>Launches a headless browser. Native builds install it on first use;
     /// <c>HealthMonitor</c> reports the install while such a source is enabled.</summary>
     NeedsBrowser = 4,
 

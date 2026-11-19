@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using Maki.Core.Images;
 using Maki.Core.Reading;
@@ -73,26 +72,22 @@ public static class SelfTest
             return string.Join(", ", providers);
         });
 
-        Check("playwright driver", () =>
+        // The browser itself is downloaded on first use, so all a package has to carry is the
+        // DevTools client and a build to fetch for this platform.
+        Check("headless browser", () =>
         {
-            var nodeRoot = Path.Combine(AppContext.BaseDirectory, ".playwright", "node");
-            var node = Directory.Exists(nodeRoot)
-                ? Directory.GetFiles(nodeRoot, OperatingSystem.IsWindows() ? "node.exe" : "node", SearchOption.AllDirectories).FirstOrDefault()
-                : null;
-            if (node is null)
-                throw new FileNotFoundException("no Node driver under .playwright/node");
-
-            using var process = Process.Start(new ProcessStartInfo(node, "--version")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            })!;
-            var version = process.StandardOutput.ReadToEnd().Trim();
-            if (!process.WaitForExit(30_000) || process.ExitCode != 0)
-                throw new InvalidOperationException($"node exited with {process.ExitCode}");
-            return $"node {version}";
+            var client = typeof(PuppeteerSharp.Puppeteer).Assembly.GetName().Version;
+            return Maki.Sources.Common.BrowserInstaller.DownloadUrl() is { } url
+                ? $"PuppeteerSharp {client}, installs from {url}"
+                : throw new PlatformNotSupportedException("no headless browser build for this platform");
         });
+
+        // Where the browser is already on disk (the Docker image installs it at build time) it has to
+        // start, not just exist: a missing system library only shows once Chromium loads.
+        if (Maki.Sources.Common.BrowserInstaller.ExecutablePath() is { } shell && File.Exists(shell))
+        {
+            Check("headless browser launch", () => LaunchBrowserAsync().WaitAsync(TimeSpan.FromMinutes(2)).GetAwaiter().GetResult());
+        }
 
         Check("web ui", () => File.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot", "index.html"))
             ? "wwwroot/index.html present"
@@ -100,6 +95,25 @@ public static class SelfTest
 
         output.WriteLine(failures == 0 ? "selftest passed" : $"selftest failed: {failures} check(s)");
         return failures == 0 ? 0 : 1;
+    }
+
+    private static async Task<string> LaunchBrowserAsync()
+    {
+        var launcher = new Maki.Sources.Common.HeadlessBrowserLauncher();
+        var browser = await launcher.LaunchAsync();
+        try
+        {
+            var context = await browser.CreateBrowserContextAsync();
+            var page = await context.NewPageAsync();
+            await page.GoToAsync("about:blank");
+            if (await page.EvaluateExpressionAsync<int>("6 * 7") != 42)
+                throw new InvalidOperationException("the page did not run script");
+            return $"{await browser.GetVersionAsync()} ran a page";
+        }
+        finally
+        {
+            await launcher.CloseAsync(browser);
+        }
     }
 
     /// <summary>The smallest PDF pdfium accepts without repairing it: one blank page, with a real

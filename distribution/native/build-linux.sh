@@ -52,9 +52,8 @@ cp -r "$dist" "$app/wwwroot"
 cp LICENSE THIRD_PARTY_NOTICES.md "$app/"
 cp distribution/native/maki.service "$app/"
 cp distribution/native/README-linux.txt "$app/README.txt"
-chmod +x "$app/Maki.Api"
-# The browser installer runs this as whichever user the service uses, not the one who unpacked it.
-chmod a+rx "$app"/.playwright/node/*/node
+cp distribution/native/install-browser-deps.sh "$app/"
+chmod +x "$app/Maki.Api" "$app/install-browser-deps.sh"
 
 echo "== Self-test =="
 "$app/Maki.Api" --selftest
