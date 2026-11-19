@@ -97,6 +97,8 @@ paths:
   - "src/Maki.Api/Jobs/EaseJob.cs"
   - "tests/Maki.Api.Tests/RecommendationServiceEase*.cs"
   - "tests/Maki.Api.Tests/RecommendationServiceKnownTitle*.cs"
+  - "tests/Maki.Api.Tests/RecommendationServiceProfileProbe.cs"
+  - "distribution/reco-profile-probe.py"
   - "distribution/graph-artifact.cs"
   - "distribution/publish-graph.ps1"
   - "src/Maki.Metadata/RecoGraph/PairGraphIndex.cs"
