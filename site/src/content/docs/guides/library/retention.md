@@ -64,8 +64,9 @@ chapter stays in the list marked **Auto-removed**.
 Until the deletion, the chapter shows **Removed in N days** and gets no upgrades. Cleanup unticks
 **Wanted** on the chapter, so Maki does not download it again. Tick **Wanted** again to queue it.
 
-Cleanup keeps each reader's most recent finished chapter, and skips a series while a download is
-running for it.
+**Keep each reader's last read chapter**, on by default, holds back the chapter each reader finished
+most recently, so they can look back at where they stopped. Turn it off to let those go too.
+Cleanup skips a series while a download is running for it.
 
 ## Disk space
 

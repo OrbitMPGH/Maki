@@ -40,7 +40,7 @@ Update the container from the Docker tab. Unraid keeps the settings from your te
 
 The Windows app checks for a new version two minutes after it starts, then every six hours, and
 downloads it in the background. When one is ready, choose **Restart to update to <version>** from
-the tray icon, or use **Settings → System → Updates**. If you do not, Maki installs it the next time it starts. Release candidates are never
+the tray icon, or **Restart to update** under **Settings → System → Updates**. If you do not, Maki installs it the next time it starts. Release candidates are never
 installed on their own.
 
 ![Updates card in the Windows app with Check for updates on, the available version, a note that the update is downloaded, and Check now and Restart to update buttons](../../../assets/ui/settings/updates-desktop.webp)

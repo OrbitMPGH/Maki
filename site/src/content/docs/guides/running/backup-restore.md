@@ -15,8 +15,10 @@ Maki also backs up automatically **before any upgrade applies a database migrati
 forward-only, so this is your recovery path if an upgrade goes wrong.
 
 :::caution
-Backups contain service API keys and notification tokens in plain text. Account passwords and Maki
-API keys are stored only as hashes. Treat a downloaded backup like a password.
+Backups hold API keys and passwords in plain text: the keys, tokens and passwords Maki uses to reach
+other services, such as indexers, the download client, Kitsu and MangaUpdates, and notification
+connections. Only the passwords you sign in to Maki with and Maki's own API keys are stored as
+hashes. Treat a downloaded backup like a password.
 :::
 
 **Restoring** replaces the database and settings, then restarts Maki.

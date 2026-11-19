@@ -69,9 +69,10 @@ Each linked source also has a priority number. In manual order, a lower number i
 quality order, the priority number only breaks ties between sources of equal quality.
 
 Quality comes from sampling. **Measure** on the series page takes a few pages from three chapters on
-every enabled source and records a quality tier for each, and **Compare** shows two sources side by
-side. To measure new series automatically, turn on **Measure sources when a series is added** in the
-Sources section of Downloads settings.
+every enabled source and records a quality tier for each, and **Compare** shows the same chapter from
+each source in its own column. Drag the columns into the order you like and save to set the series'
+download order. To measure new series automatically, turn on **Measure sources when a series is
+added** in the Sources section of Downloads settings.
 
 Smart Download waits until a new series' sources have been measured, so its first batch doesn't go
 to a source ranked on a guess. If no measurement ever ran, it starts one, and it starts downloading

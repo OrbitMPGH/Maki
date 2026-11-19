@@ -49,7 +49,7 @@ lists every title with one.
 ![The What shapes your recommendations card with top tags, counts for shelf titles, ratings, thumbs and hidden titles, a Recent feedback list with Undo buttons and the Anime you've watched section](../../../../assets/ui/discover/taste-signals.webp)
 
 The list has **Titles** and **Anime** tabs. Filter by **All**, **Rated**, **Thumbs**, **Hidden**,
-**Seen elsewhere**, **Excluded from taste** or **Added by you**, search by title, and sort by
+**Seen elsewhere**, **Excluded** or **Added by you**, search by title, and sort by
 **Recently changed** or **Title**. You can change a title's signal or restore a hidden one from here.
 
 ![The Manage signals window on the Titles tab, filtered to All and sorted by Recently changed, listing titles marked seen, dismissed, hidden, disliked or liked](../../../../assets/ui/discover/manage-signals.webp)

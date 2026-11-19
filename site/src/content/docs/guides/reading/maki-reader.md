@@ -150,6 +150,9 @@ series only, the profile in use, or your reader defaults.
 Press `?` in the reader for the list. Keys are ignored while focus is in a text field, and
 combinations with Ctrl, Cmd or Alt are left to the browser.
 
+The table below lists the default keys. To change them, use **Change keys** at the bottom of the
+list, which opens **Settings → Reading → Keyboard shortcuts**.
+
 ![Keyboard shortcuts sheet in the reader, grouped into Turning pages, Auto-scroll, Layout and Everything else, with a Change keys link](../../../../assets/ui/reader/shortcuts.webp)
 
 | Key | Action |
@@ -171,7 +174,7 @@ combinations with Ctrl, Cmd or Alt are left to the browser.
 | `F` | Full screen |
 | `T` | Page thumbnails |
 | `B` | Bookmark this page |
-| `,` / `.` | Previous / next bookmark |
+| `,` or `<` / `.` or `>` | Previous / next bookmark |
 | `H` (hold) | Show the original page while the key is held, if enhancement is on |
 | `Esc` | Back to the page you opened the chapter from, such as Home or the Library, or the series page after a reload or a link. Outside full screen only, since `Esc` leaves full screen first. |
 | `?` | Show or hide the shortcut list |

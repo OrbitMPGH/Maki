@@ -8,9 +8,11 @@ not available while reading offline.
 
 ## Write a note
 
-Open the notes from the toolbar's notes button, or use **Note on page** on the page you are reading.
-A note is pinned to the page you write it on. Wrap a spoiler in `||double bars||` and it shows as a
-Spoiler chip that readers click to reveal.
+Open the notes from the toolbar's notes button, or use **Note** beside the page in the margin. In
+Continuous mode the button sits at the foot of the margin and reads **Note on page N** for the page
+in view. **Pin to page N** is ticked to begin with; untick it to write a note on the whole chapter
+instead. Wrap a spoiler in `||double bars||` and it shows as a Spoiler chip that readers click to
+reveal.
 
 Each note is either:
 

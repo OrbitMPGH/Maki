@@ -56,11 +56,14 @@ After five failed deliveries in a row, the connection shows as a warning on the 
 Each account picks its own events under **Settings → Preferences → Notifications**.
 
 - **Show a popup when a notification arrives** shows a toast while Maki is open.
-- The event table has a **Bell** column and a **Push** column. Push sends to your devices and needs
-  Bell on for the same event.
-- **Which series notify me** sets a rule per series, from its own page: **Default**, **Every
-  chapter**, **While reading** (series you are partway through) or **Muted**. Muted sends nothing
-  from that series, except that admins still get download failures.
+- **Choose events** opens the event table, with a **Bell** column and a **Push** column. Push sends
+  to your devices and needs Bell on for the same event.
+- **Which series notify me** sets your default: **Every series** or **Only series I'm reading**.
+- Any series can be set differently under **Notify** in its actions menu (inside **Automation** if
+  you can edit the series): **Default** follows the setting above, **All** tells you about every new
+  chapter, **Reading** only while you are partway through, and **Muted** sends nothing from that
+  series, except that admins still get download failures. The library's bulk action offers the same
+  choices as **Every chapter** and **While reading**.
 
 ![The Notifications preferences card with Show a popup when a notification arrives switched on, Which series notify me set to Every series, and Bell and Push summaries beside a Choose events button](../../../../assets/ui/settings/notification-prefs.webp)
 
@@ -90,7 +93,7 @@ Good to know:
 
 - On iPhone and iPad, push only works for Maki added to the home screen and opened from there.
 - If the browser blocks notifications for the site, change that in the browser's site settings.
-- New chapters and finished downloads push by default. Use the Push column for other events.
+- New chapters and finished downloads push by default. Use **Choose events** for other events.
 - Each account can have up to 20 devices. Adding one past that removes the oldest.
 - **Sign out everywhere else** also removes the push subscriptions of your other devices. The device
   you are on re-subscribes on its own.

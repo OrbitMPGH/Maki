@@ -101,16 +101,18 @@ Saving a new format moves nothing. Existing files keep their names until you use
 series to current format** on the same card. Maki refuses to rename a series while a download for it
 is running, or when two chapters would end up with the same name.
 
-## Folder naming on import
+## Folders on import
 
-When Maki imports a series folder that already exists, **Folder naming on import** decides what
+When Maki imports a series folder that already exists, **Folders on import** decides what
 happens:
 
-- **Rename the folder to the series folder format.** The default.
-- **Keep the folder name, but put new downloads in a folder named by the format.** Old files stay
-  put and new chapters go into a second folder, so one series can span two folders under the same
-  root.
-- **Keep the folder name, and put new downloads there too.**
+- **Rename the folder**: it takes the series folder format. The default.
+- **Keep the name, new downloads elsewhere**: old files stay put and new chapters go into a folder
+  named by the format, so one series can span two folders under the same root.
+- **Keep the name for everything**: new downloads go in the original folder too.
+
+**Rename imported files to the chapter file format**, on the same card and on by default, renames
+the files a torrent or manual import adds. Turn it off to keep the release's own file names.
 
 :::tip
 Pick a format before you import a large library. Renaming later works, but it touches every file.

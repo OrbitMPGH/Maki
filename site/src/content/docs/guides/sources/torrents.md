@@ -75,9 +75,9 @@ The Volume releases card has more controls:
 - **Minimum seeders** (1 by default). Releases with fewer seeders are never grabbed or approved on
   their own, and no-seeder releases are skipped. The release search marks them, and you can still
   grab them by hand.
-- **Approve volume releases automatically**, off by default, grabs a proposed digital release under
-  the **Automatic approval size ceiling (MB)** (12 GB by default) when the only reasons it waited
-  were a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is
+- **Approve automatically** opens **Approve volume releases automatically**. Off by default, it grabs
+  a proposed digital release under the **Automatic approval size ceiling (MB)** on the same page
+  (12 GB by default) when the only reasons it waited were a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is
   unsure about, including a release whose language is in doubt, still waits for you. An approved
   release only replaces files it is at least as good as, and those go to the trash.
 

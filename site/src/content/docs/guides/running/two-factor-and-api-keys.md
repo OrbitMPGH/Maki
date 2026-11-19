@@ -44,8 +44,8 @@ second factor. A code you set up still protects password sign-in. See
 
 ## API keys
 
-Open **Settings → Account → API keys**, type a name such as "Phone reader", enter your password, and
-click **Create**. An account that cannot sign in with a password, because it uses single sign-on only
+Open **Settings → Account → API keys** and click **New key** at the top of the card. In the form
+that opens, type a name such as "Phone reader", enter your password, and click **Create**. An account that cannot sign in with a password, because it uses single sign-on only
 or **Require single sign-on** switched password sign-in off, is not asked for one. It needs a sign-in
 from the last ten minutes instead, and the form says so up front with a **Sign in again** button that
 brings you back.

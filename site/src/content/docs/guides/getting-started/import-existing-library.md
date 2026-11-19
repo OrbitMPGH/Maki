@@ -64,11 +64,11 @@ With 8 or more folders it opens on a summary, and a list you can filter with **W
 ![Import preview saying nothing has been changed yet, with one line per folder and the apothecary diaries folder open on its files, a file that stays unlinked and two files left out, and a ready and can't import summary at the bottom](../../../../assets/ui/import/preview.webp)
 
 The dialog says folders are renamed to the English title, but the real behaviour comes from
-**Settings → Library → Folder & file naming → Folder naming on import**:
+**Settings → Library → Folder & file naming → Folders on import**:
 
-- **Rename the folder to the series folder format.** This is the default.
-- **Keep the folder name, but put new downloads in a folder named by the format.**
-- **Keep the folder name, and put new downloads there too.**
+- **Rename the folder**: it takes the series folder format. This is the default.
+- **Keep the name, new downloads elsewhere**: new downloads go in a folder named by the format.
+- **Keep the name for everything**: new downloads go in the original folder too.
 
 Comics that are not CBZ, such as RAR or zip archives or a folder of loose images, are converted to
 CBZ. Your originals stay where they are. PDFs are kept as they are and read in place.
@@ -80,7 +80,9 @@ links your files to their chapters. Until that finishes, a folder reads **added 
 once sources are found**. A file whose chapter number Maki cannot read is reported as unrecognized,
 and a file that matches no chapter becomes a chapter of its own.
 
-Every import is listed under **Recent imports** with **Undo this import**, available for 30 days.
+Every import is listed under **Recent imports** for 30 days, with **Undo** on each folder and
+**Undo all** on an import that still has more than one folder to undo. Right after an import, the
+results also offer **Undo this import**.
 Undo removes a series only when the import created it and nothing has been downloaded or read
 since. It never deletes your original files.
 
