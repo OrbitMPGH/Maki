@@ -125,7 +125,7 @@ public sealed class RecommendationServiceProfileProbe
         CookieSession.EnsureWebRoot();
         foreach (var (name, options) in cases)
         {
-            await RunCaseAsync(root, run, dumpDir, name, options, profiles);
+            await RunCaseAsync(root, run, dumpDir, name, options, profiles, fold, foldIndex, foldCount);
         }
     }
 
@@ -196,28 +196,43 @@ public sealed class RecommendationServiceProfileProbe
     {
         foreach (var f in new[] { "maki.db", "maki.db-wal", "maki.db-shm" })
         {
-            for (var attempt = 0; ; attempt++)
+            await RetryAsync(() => File.Delete(Path.Combine(dir, f)));
+        }
+    }
+
+    private static async Task RetryAsync(Action action)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
             {
-                try
-                {
-                    File.Delete(Path.Combine(dir, f));
-                    break;
-                }
-                catch (IOException) when (attempt < 40)
-                {
-                    SqliteConnection.ClearAllPools();
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    await Task.Delay(500);
-                }
+                action();
+                return;
+            }
+            catch (Exception e) when ((e is IOException or UnauthorizedAccessException) && attempt < 40)
+            {
+                SqliteConnection.ClearAllPools();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                await Task.Delay(500);
             }
         }
     }
 
     private static async Task RunCaseAsync(string root, string run, string dumpDir, string name,
-        Dictionary<string, string> options, List<Profile> profiles)
+        Dictionary<string, string> options, List<Profile> profiles, string fold, int foldIndex, int foldCount)
     {
         await DeleteDatabaseAsync(run);
+        var table = options.TryGetValue("easetable", out var tableName)
+            ? Path.Combine(root, "cfg", "ease", $"{tableName}.db")
+            : Path.Combine(root, "cfg", "ease-table.db");
+        await RetryAsync(() =>
+        {
+            File.Delete(Path.Combine(run, "ease-table.weights"));
+            File.Copy(table, Path.Combine(run, "ease-table.db"), overwrite: true);
+        });
+        GuardArtifacts(run, fold, foldIndex, foldCount);
+
         var outDir = Path.Combine(root, "pages", name);
         Directory.CreateDirectory(outDir);
         var saved = new[] { "MAKI_CONFIG_DIR", "MAKI_SHARED_DUMP_DIR", "MAKI_DUMP_BOOT_DOWNLOAD", "MAKI_ARTIFACT_IDLE_MINUTES" }

@@ -14,10 +14,11 @@ filter), through the gated test `tests/Maki.Api.Tests/RecommendationServiceProfi
 `select`  readers of the held-out fold only (the harness's FNV-1a fold hash), minus every reader a
           pick dump came from (the page-share table's builders), mapped to MangaBaka the way the
           harness maps them. Writes one library per reader with a seeded share of their in-index
-          COMPLETED titles hidden. Two groups: `look` (a romance and comedy shelf with school or
-          slice-of-life and few Korean webtoons) and `ctrl` (random).
+          COMPLETED titles hidden. Two groups: `look` by default (a romance and comedy shelf with school
+          or slice-of-life and few Korean webtoons; `--group` renames it, `--coverage-table` with
+          `--max-coverage` also keeps only shelves an EASE table covers less) and `ctrl` (random).
 `prepare` copies fold-limited artifacts into `<out>/cfg` and writes the provenance the probe
-          checks before it boots.
+          checks before it boots. `--ease-extra name=path` adds tables a case picks with `easetable=name`.
 `report`  held-out recovery with paired bootstrap intervals, page composition and caption mix.
 
 Everything written under --out is third-party data (AniList ids and lists). Keep it git-ignored.
@@ -161,7 +162,11 @@ def select(args):
     if weak:
         sys.exit("error: some pick-dump rows match no reader of this fold; refusing to guess who built the table.")
 
+    covered = None
+    if args.coverage_table:
+        covered = {r[0] for r in ro(args.coverage_table).execute("SELECT DISTINCT seed_id FROM weight")}
     eligible = {}
+    coverage = {}
     for user, entries in users.items():
         if user in excluded:
             continue
@@ -172,6 +177,9 @@ def select(args):
         n, shares, manhwa, action_manhwa = profile(entries, browse, indexed)
         if n < args.min_read:
             continue
+        if covered is not None:
+            read = [m for m in library if entries[m][0] in READ]
+            coverage[user] = sum(1 for m in read if m in covered) / len(read)
         eligible[user] = (len(library), len(completed), n, shares, manhwa, action_manhwa)
 
     def lookalike(p):
@@ -181,7 +189,7 @@ def select(args):
                 and args.min_manhwa <= manhwa <= args.max_manhwa
                 and action_manhwa >= args.min_action_manhwa)
 
-    pool_look = sorted(u for u, p in eligible.items() if lookalike(p))
+    pool_look = sorted(u for u, p in eligible.items() if lookalike(p) and coverage.get(u, 0) < args.max_coverage)
     rng = random.Random(args.seed)
     look = sorted(rng.sample(pool_look, min(args.size, len(pool_look))))
     rest = sorted(set(eligible) - set(pool_look))
@@ -195,7 +203,7 @@ def select(args):
         shutil.rmtree(users_dir)
     users_dir.mkdir(parents=True)
     manifest = ["key\tuser_id\tgroup\tlibrary\tcompleted\tread\thidden\tromance\tcomedy\tschool\tslice\taction\tmanhwa"]
-    for group, members in (("look", look), ("ctrl", ctrl)):
+    for group, members in ((args.group, look), ("ctrl", ctrl)):
         for i, user in enumerate(members):
             key = f"{group}{i + 1:03d}"
             entries = users[user]
@@ -225,7 +233,11 @@ def select(args):
         "fold": args.fold, "seed": args.seed, "hide": args.hide, "skipped_statuses": sorted(skip),
         "readers_in_fold": len(users),
         "excluded_builders": len(excluded), "eligible": len(eligible), "lookalike_pool": len(pool_look),
-        "chosen": {"look": len(look), "ctrl": len(ctrl)},
+        "chosen": {args.group: len(look), "ctrl": len(ctrl)},
+        "coverage_table": args.coverage_table, "max_coverage": args.max_coverage,
+        "coverage_means": {name: sum(coverage[u] for u in members) / len(members)
+                           for name, members in ((args.group, look), ("ctrl", ctrl), ("eligible", list(eligible)))
+                           if covered is not None and members},
         "cuts": {k: getattr(args, k) for k in (
             "min_entries", "max_entries", "min_completed", "min_read", "romance", "comedy", "school", "min_manhwa", "max_manhwa", "min_action_manhwa")},
         "eligible_means": {
@@ -270,6 +282,13 @@ def prepare(args):
             if got is None or ",".join(sorted(got.split(","))) != want:
                 sys.exit(f"error: {path} was trained on folds '{got}', not exactly {want}.")
         shutil.copyfile(path, cfg / name)
+    for extra in args.ease_extra or []:
+        name, path = extra.split("=", 1)
+        got = training_folds(path)
+        if got is None or ",".join(sorted(got.split(","))) != want:
+            sys.exit(f"error: {path} was trained on folds '{got}', not exactly {want}.")
+        (cfg / "ease").mkdir(exist_ok=True)
+        shutil.copyfile(path, cfg / "ease" / f"{name}.db")
     shutil.copyfile(args.page_table, cfg / "page-share-fold.tsv")
     provenance = {
         "foldUsers": selection["fold"], "source": str(Path(args.page_table).resolve()),
@@ -391,7 +410,9 @@ def report(args):
 
     lines = []
     base = args.baseline if args.baseline in variants else variants[0]
-    for group, label in (("look", "Lookalike shelves"), ("ctrl", "Control shelves")):
+    labels = {"look": "Lookalike shelves", "ctrl": "Control shelves"}
+    for group in dict.fromkeys(cells[2] for cells in users):
+        label = labels.get(group, f"Group {group}")
         keys = [k for k, s in shelf.items() if s["group"] == group and all(v in rows[k] for v in variants)]
         lines.append(f"## {label} (n = {len(keys)})\n")
         lines.append("Shelf, over read titles: " + ", ".join(
@@ -457,6 +478,10 @@ def main():
     s.add_argument("--max-manhwa", type=float, default=0.08)
     s.add_argument("--min-action-manhwa", type=float, default=0.0,
                    help="share of read titles that are manhwa carrying the Action genre")
+    s.add_argument("--group", default="look", help="name of the group the cuts above select")
+    s.add_argument("--coverage-table", help="an EASE table; with --max-coverage, keep readers whose read shelf it covers less")
+    s.add_argument("--max-coverage", type=float, default=1.01,
+                   help="largest share of read titles that may be seeds in --coverage-table")
     s.add_argument("--skip-status", action="append", help="leave this AniList status off the library, e.g. PLANNING")
     p = sub.add_parser("prepare")
     p.add_argument("--out", required=True)
@@ -464,6 +489,8 @@ def main():
     p.add_argument("--ease", required=True)
     p.add_argument("--cohorts", required=True)
     p.add_argument("--page-table", required=True)
+    p.add_argument("--ease-extra", action="append",
+                   help="name=path: another fold-limited EASE table, picked per case with easetable=name")
     r = sub.add_parser("report")
     r.add_argument("--out", required=True)
     r.add_argument("--dump", required=True)
