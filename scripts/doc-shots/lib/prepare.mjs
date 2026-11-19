@@ -154,7 +154,7 @@ function stageStates(db, states) {
     ).run(hf.Id, hf.Version, stamp)
   }
 
-  // Read and then cleaned up: the file is gone and the chapter remembers when.
+  // Read and then cleaned up: the file is gone, the chapter remembers when and is no longer wanted.
   const removedAt = new Date(Date.now() - 2 * DAY).toISOString().replace('T', ' ').replace('Z', '0000')
   for (const { series, numbers } of states.removed ?? []) {
     for (const c of chapterIds(series, numbers)) {
@@ -163,7 +163,8 @@ function stageStates(db, states) {
         db.prepare('update Chapters set ChapterFileId = null where Id = ?').run(c.Id)
         db.prepare('delete from ChapterFiles where Id = ? and not exists (select 1 from Chapters where ChapterFileId = ?)').run(c.ChapterFileId, c.ChapterFileId)
       }
-      db.prepare('update Chapters set FileRemovedAt = coalesce(FileRemovedAt, ?), FileAutoRemoved = 1 where Id = ?').run(removedAt, c.Id)
+      // Read file cleanup also turns Wanted off (ChapterFileDeletion), so the staged rows do too.
+      db.prepare('update Chapters set FileRemovedAt = coalesce(FileRemovedAt, ?), FileAutoRemoved = 1, Wanted = 0 where Id = ?').run(removedAt, c.Id)
     }
   }
 
