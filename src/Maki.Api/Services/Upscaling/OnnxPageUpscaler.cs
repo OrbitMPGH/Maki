@@ -65,6 +65,12 @@ public sealed class OnnxPageUpscaler(
     /// <summary>Called as each tile worker of a run starts. Tests only.</summary>
     internal Action<int>? WorkerStarted { get; set; }
 
+    /// <summary>Called with each streamed JPEG XL page before its encode starts. Tests only.</summary>
+    internal Action<StreamedJpegXlPage>? StreamStarted { get; set; }
+
+    /// <summary>How a streamed page takes its <see cref="ImageWorkGate"/> share. Tests replace it to count or hold it.</summary>
+    internal Func<int, CancellationToken, Task<IDisposable>> HoldGate { get; set; } = ImageWorkGate.HoldAsync;
+
     public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
         UpscaleModelId.TryParse(modelId, out var id)
             ? UpscaleAsync(page, id, ct)
@@ -113,6 +119,14 @@ public sealed class OnnxPageUpscaler(
             return await StartStreamedAsync(source, info, threads, model, run, ct);
         }
 
+        return await StartWholeAsync(source, info, grey, luma, threads, options.JpegXl, model, run, ct);
+    }
+
+    /// <summary>The tiles into one buffer for the whole page; <see cref="FinishAsync"/> colours and encodes it.</summary>
+    private async Task<PendingUpscale> StartWholeAsync(
+        Raster source, UpscaleModelInfo info, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
+        UpscaleRun run, CancellationToken ct)
+    {
         StitchedPage stitched;
         try
         {
@@ -133,18 +147,20 @@ public sealed class OnnxPageUpscaler(
             return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.InferenceFailed));
         }
 
-        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, options.JpegXl, model, run, finish));
+        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, jpegXl, model, run, finish));
     }
 
     /// <summary>
     /// A colour page that will be JPEG XL, encoded strip by strip while its tiles run, so the whole upscaled page
-    /// never sits in one buffer. The finish waits for the strips the tiles completed last.
+    /// never sits in one buffer. The finish waits for the strips the tiles completed last. A failed encode has no
+    /// pixels left to fall back on, so the page is run again whole, which can still fall back to WebP.
     /// </summary>
     private async Task<PendingUpscale> StartStreamedAsync(
         Raster source, UpscaleModelInfo info, int threads, UpscaleModelId model, UpscaleRun run, CancellationToken ct)
     {
         var page = new StreamedJpegXlPage(source, info.OutputScale, _encoderSlot,
-            () => run.NarrowNow ? UpscaleRun.NarrowWorkers(threads) : threads);
+            () => run.NarrowNow ? UpscaleRun.NarrowWorkers(threads) : threads, HoldGate);
+        StreamStarted?.Invoke(page);
         page.StartEncode();
         try
         {
@@ -160,6 +176,11 @@ public sealed class OnnxPageUpscaler(
                 throw;
             }
 
+            if (EncodeFailure(page) is { } failed)
+            {
+                return await RetryWholeAsync(source, info, threads, model, run, failed, ct);
+            }
+
             if (ex is ModelLoadException)
             {
                 logger.LogInformation(ex.InnerException, "Upscale model {Model} could not be loaded", model);
@@ -171,36 +192,52 @@ public sealed class OnnxPageUpscaler(
         }
 
         _ = page.Encoded.ContinueWith(_ => page.Dispose(), TaskScheduler.Default);
-        return new PendingUpscale(finish => FinishStreamedAsync(page, model, run, finish));
+        if (EncodeFailure(page) is { } early)
+        {
+            return await RetryWholeAsync(source, info, threads, model, run, early, ct);
+        }
+
+        return new PendingUpscale(finish => FinishStreamedAsync(page, source, info, threads, model, run, finish));
     }
 
-    private async Task<UpscaleResult> FinishStreamedAsync(
-        StreamedJpegXlPage page, UpscaleModelId model, UpscaleRun run, CancellationToken ct)
-    {
-        await using var shutdown = ct.Register(() => page.Fail(new OperationCanceledException(ct)));
-        try
-        {
-            var encoded = await page.Encoded;
-            ct.ThrowIfCancellationRequested();
-            if (run.JpegXl?.Invoke() ?? true)
-            {
-                return UpscaleResult.Ready(encoded);
-            }
+    /// <summary>The encode's own failure, or null when it has not failed or only stopped because the page did.</summary>
+    private static Exception? EncodeFailure(StreamedJpegXlPage page) =>
+        page.Encoded.IsFaulted && page.Encoded.Exception?.InnerException is { } ex and not OperationCanceledException ? ex : null;
 
-            // Nobody waiting now can show JPEG XL (they said so while the tiles ran), so it is converted once here.
-            var weight = Math.Min(ImageWorkGate.BudgetMegapixels, 2 * ImageWorkGate.Weigh(page.Width, page.Height));
-            return UpscaleResult.Ready(await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.TranscodeUpscaledJpegXl(encoded.Bytes)), weight, ct));
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    private Task<PendingUpscale> RetryWholeAsync(
+        Raster source, UpscaleModelInfo info, int threads, UpscaleModelId model, UpscaleRun run, Exception failure,
+        CancellationToken ct)
+    {
+        logger.LogInformation(failure, "Streaming a {Width}x{Height} page from {Model} into JPEG XL failed; upscaling it again whole",
+            source.Width, source.Height, model);
+        return StartWholeAsync(source, info, grey: false, luma: false, threads, jpegXl: true, model, run, ct);
+    }
+
+    /// <remarks>
+    /// Readers who said no to JPEG XL only after the tiles started get the page converted on each GET, as any JPEG XL
+    /// page is: converting it here would store a second lossy generation under the name of a direct encode.
+    /// </remarks>
+    private async Task<UpscaleResult> FinishStreamedAsync(
+        StreamedJpegXlPage page, Raster source, UpscaleModelInfo info, int threads, UpscaleModelId model, UpscaleRun run,
+        CancellationToken ct)
+    {
+        UpscaledImage encoded;
+        await using (ct.Register(() => page.Fail(new OperationCanceledException(ct))))
         {
-            throw;
+            try
+            {
+                encoded = await page.Encoded;
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                // The tiles run again in the finish, beside the next page's: rare enough not to matter.
+                var pending = await RetryWholeAsync(source, info, threads, model, run, ex, ct);
+                return await pending.FinishAsync(ct);
+            }
         }
-        catch (Exception ex)
-        {
-            logger.LogInformation(ex, "Encoding an upscaled page from {Model} failed", model);
-            return UpscaleResult.Failed(UpscaleReasons.EncodeFailed);
-        }
+
+        ct.ThrowIfCancellationRequested();
+        return UpscaleResult.Ready(encoded);
     }
 
     private async Task<UpscaleResult> FinishAsync(
@@ -212,6 +249,10 @@ public sealed class OnnxPageUpscaler(
             threads = UpscaleRun.NarrowWorkers(threads);
         }
 
+        // The slot a streamed page holds from its first strip to its last, taken before the colour pass so the next
+        // page's first strip never gets in first: its encode then starts after this one, as when every encode ran
+        // in its page's finish, and its tiles carry on meanwhile.
+        await _encoderSlot.WaitAsync(ct);
         try
         {
             var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
@@ -234,6 +275,10 @@ public sealed class OnnxPageUpscaler(
         {
             logger.LogInformation(ex, "Encoding an upscaled page from {Model} failed", model);
             return UpscaleResult.Failed(UpscaleReasons.EncodeFailed);
+        }
+        finally
+        {
+            _encoderSlot.Release();
         }
     }
 
@@ -341,31 +386,52 @@ public sealed class OnnxPageUpscaler(
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
         var scale = info.OutputScale;
         output.Planned(tiles);
-        var pending = new List<int>(tiles.Count);
+        var flats = new byte?[tiles.Count];
+        var inferred = 0;
         for (var i = 0; i < tiles.Count; i++)
         {
             if (FlatValue(source, tiles[i]) is { } flat && KeepsFlat(info, flat))
             {
-                FillTile(tiles[i], scale, output, bands, flat);
-                output.Stitched(tiles[i]);
-                Report(TileSkipped, i);
-                Report(TileCompleted, i);
+                flats[i] = flat;
             }
             else
             {
-                pending.Add(i);
+                inferred++;
             }
         }
 
-        var full = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), pending.Count);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        // A streamed page holds tiles back until its encoder catches up, and must let them go when they stop.
+        using var stopped = stop.Token.Register(output.Stopped);
+
+        // Flat tiles are filled in tile order with the rest, not all first, so the page is stitched from the top.
+        bool Fill(int i)
+        {
+            if (flats[i] is not { } flat)
+            {
+                return false;
+            }
+
+            FillTile(tiles[i], scale, output, bands, flat);
+            output.Stitched(tiles[i]);
+            Report(TileSkipped, i);
+            Report(TileCompleted, i);
+            return true;
+        }
+
+        var full = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), inferred);
         if (full == 0)
         {
+            for (var i = 0; i < tiles.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                Fill(i);
+            }
+
             return;
         }
 
         var workers = run.NarrowNow ? Math.Min(full, UpscaleRun.NarrowWorkers(threads)) : full;
-
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var next = -1;
         Exception? failure = null;
 
@@ -380,14 +446,19 @@ public sealed class OnnxPageUpscaler(
                 while (!stop.IsCancellationRequested)
                 {
                     var n = Interlocked.Increment(ref next);
-                    if (n >= pending.Count)
+                    if (n >= tiles.Count)
                     {
                         return;
                     }
 
-                    RunTile(loaded, buffers, runOptions, source, info, tiles[pending[n]], output, bands, stop.Token);
-                    output.Stitched(tiles[pending[n]]);
-                    Report(TileCompleted, pending[n]);
+                    if (Fill(n))
+                    {
+                        continue;
+                    }
+
+                    RunTile(loaded, buffers, runOptions, source, info, tiles[n], output, bands, stop.Token);
+                    output.Stitched(tiles[n]);
+                    Report(TileCompleted, n);
                 }
             }
             catch (Exception ex)
@@ -871,6 +942,9 @@ public sealed class OnnxPageUpscaler(
 
         /// <summary>Every row of the tile's interior is written. Called from the tile workers.</summary>
         void Stitched(UpscaleTile tile);
+
+        /// <summary>The tiles stopped early: cancelled, or one failed. No more will be stitched.</summary>
+        void Stopped();
     }
 
     /// <param name="Bands">3 for interleaved RGB, 1 for luma.</param>
@@ -883,6 +957,10 @@ public sealed class OnnxPageUpscaler(
         public Span<byte> Row(int y) => Pixels.AsSpan(y * Width * Bands, Width * Bands);
 
         public void Stitched(UpscaleTile tile)
+        {
+        }
+
+        public void Stopped()
         {
         }
     }

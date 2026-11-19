@@ -151,6 +151,24 @@ public class ImageCodecTests : IDisposable
         Assert.Equal(expected, ImageCodec.RowDeviation(image));
     }
 
+    [Fact]
+    public void Row_deviation_stays_exact_on_rows_whose_squares_pass_a_uint()
+    {
+        // Half 255 and half 128: 140,000 px of squares sum to about 8.1e9.
+        const int width = 140_000;
+        var pixels = new byte[width * 2];
+        for (var x = 0; x < pixels.Length; x++)
+        {
+            pixels[x] = (byte)(x % width < width / 2 ? 255 : 128);
+        }
+
+        using var raw = NetVips.Image.NewFromMemory(pixels, width, 2, 1, NetVips.Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: NetVips.Enums.Interpretation.Bw);
+
+        Assert.Equal(PlainRowDeviation(image), ImageCodec.RowDeviation(image));
+        Assert.Equal(63.5, ImageCodec.RowDeviation(image)[0]);
+    }
+
     private static double[] PlainRowDeviation(NetVips.Image image)
     {
         using var flat = image.HasAlpha()

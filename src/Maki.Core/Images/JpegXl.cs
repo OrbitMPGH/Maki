@@ -88,10 +88,12 @@ public static class JpegXl
         EnsureAvailable();
 
         var encoder = CreateEncoder(width, height, bands, distance, effort, out var settings);
-        var stream = new RowStream(rows, bands, Math.Max(64 * 1024, width * height / 4));
-        var handle = GCHandle.Alloc(stream);
+        RowStream? stream = null;
+        var handle = default(GCHandle);
         try
         {
+            stream = new RowStream(rows, width, bands, Math.Max(64 * 1024, width * height / 4));
+            handle = GCHandle.Alloc(stream);
             var opaque = GCHandle.ToIntPtr(handle);
             // libjxl only streams the input when it can also stream the output.
             Check(JxlEncoderSetOutputProcessor(encoder, new OutputProcessor(opaque)), "JxlEncoderSetOutputProcessor");
@@ -106,8 +108,8 @@ public static class JpegXl
         finally
         {
             JxlEncoderDestroy(encoder);
-            handle.Free();
-            stream.Dispose();
+            if (handle.IsAllocated) handle.Free();
+            stream?.Dispose();
         }
     }
 
@@ -146,52 +148,65 @@ public static class JpegXl
 
     /// <summary>
     /// One <see cref="EncodeRows"/>: the caller's rows, the buffers lent to libjxl, the codestream it writes
-    /// (a seekable, growing native buffer) and the first failure. No callback may throw into libjxl, so each
-    /// failure is kept here and thrown once libjxl returns.
+    /// (a seekable, growing native buffer) and the first failure. An exception that crossed back into libjxl
+    /// would end the process, so every callback catches, keeps the failure here, and it is thrown once libjxl
+    /// returns.
     /// </summary>
-    private sealed class RowStream(IJpegXlRows rows, int bands, int initialOutput) : IDisposable
+    private sealed class RowStream : IDisposable
     {
-        private readonly List<(IntPtr At, IntPtr Rows, GCHandle Blank)> _lent = [];
+        private readonly IJpegXlRows _rows;
+        private readonly int _bands;
+        private readonly List<(IntPtr At, IntPtr Rows)> _lent = new(8);
+        private readonly byte[] _blank;
         private Exception? _failure;
-        private IntPtr _output = Marshal.AllocHGlobal(initialOutput);
-        private long _capacity = initialOutput;
+        private IntPtr _output;
+        private long _capacity;
         private long _position;
         private long _length;
 
-        public int Bands => bands;
+        public RowStream(IJpegXlRows rows, int width, int bands, int initialOutput)
+        {
+            _rows = rows;
+            _bands = bands;
+            _blank = GC.AllocateArray<byte>(width * bands, pinned: true);
+            _output = Marshal.AllocHGlobal(initialOutput);
+            _capacity = initialOutput;
+        }
 
-        public IntPtr Lend(int x, int y, int columns, int count, out nuint rowBytes)
+        public int Bands => _bands;
+
+        public IntPtr Lend(int x, int y, int count, out nuint rowBytes)
         {
             if (_failure is null)
             {
+                var start = IntPtr.Zero;
                 try
                 {
-                    var start = rows.Acquire(y, count, out var stride);
-                    var at = start + x * bands;
+                    start = _rows.Acquire(y, count, out var stride);
+                    var at = start + x * _bands;
+                    _lent.Add((at, start));
                     rowBytes = (nuint)stride;
-                    _lent.Add((at, start, default));
                     return at;
                 }
                 catch (Exception ex)
                 {
                     _failure = ex;
+                    if (start != IntPtr.Zero) ReleaseRows(start);
                 }
             }
 
-            return LendBlank(columns, count, out rowBytes);
+            return Blank(out rowBytes);
         }
 
         /// <summary>
-        /// Zeroed rows. libjxl cannot be stopped from an input callback, so after a failure it reads blank rows
-        /// until its next output, which is refused.
+        /// One zeroed row lent with a stride of 0, so every row of the request reads it and nothing is allocated
+        /// on the way. libjxl cannot be stopped from an input callback, so after a failure it reads these until
+        /// it next asks for output, which is refused.
         /// </summary>
-        public IntPtr LendBlank(int columns, int count, out nuint rowBytes)
+        public IntPtr Blank(out nuint rowBytes)
         {
-            rowBytes = (nuint)(columns * bands);
-            var blank = GCHandle.Alloc(new byte[columns * count * bands], GCHandleType.Pinned);
-            var at = blank.AddrOfPinnedObject();
-            _lent.Add((at, IntPtr.Zero, blank));
-            return at;
+            rowBytes = 0;
+            return Marshal.UnsafeAddrOfPinnedArrayElement(_blank, 0);
         }
 
         public void Return(IntPtr buffer)
@@ -202,17 +217,16 @@ public static class JpegXl
                 return;
             }
 
-            var (_, start, blank) = _lent[i];
+            var start = _lent[i].Rows;
             _lent.RemoveAt(i);
-            if (blank.IsAllocated)
-            {
-                blank.Free();
-                return;
-            }
+            ReleaseRows(start);
+        }
 
+        private void ReleaseRows(IntPtr start)
+        {
             try
             {
-                rows.Release(start);
+                _rows.Release(start);
             }
             catch (Exception ex)
             {
@@ -278,6 +292,21 @@ public static class JpegXl
 
     private static RowStream StreamOf(IntPtr opaque) => (RowStream)GCHandle.FromIntPtr(opaque).Target!;
 
+    /// <summary>Lent only if the stream itself cannot be reached, which never happens while an encode runs.</summary>
+    private static readonly byte[] NoStreamBlank = GC.AllocateArray<byte>(64 * 1024, pinned: true);
+
+    private static void Fail(IntPtr opaque, Exception ex)
+    {
+        try
+        {
+            StreamOf(opaque).Fail(ex);
+        }
+        catch (Exception)
+        {
+            // Nothing to record it in; the encode still ends on the refused output.
+        }
+    }
+
     private delegate void FormatCallback(IntPtr opaque, ref PixelFormat format);
 
     private delegate void ExtraFormatCallback(IntPtr opaque, nuint index, ref PixelFormat format);
@@ -295,13 +324,31 @@ public static class JpegXl
 
     private delegate void SeekCallback(IntPtr opaque, ulong position);
 
-    // Static, so the delegates outlive every encode holding their function pointers.
+    // Static, so the delegates outlive every encode holding their function pointers. None of them may throw.
     private static readonly FormatCallback ColourFormat = (IntPtr opaque, ref PixelFormat format) =>
-        format = new PixelFormat((uint)StreamOf(opaque).Bands, TypeUint8, 0, 0);
+    {
+        try
+        {
+            format = new PixelFormat((uint)StreamOf(opaque).Bands, TypeUint8, 0, 0);
+        }
+        catch (Exception ex)
+        {
+            Fail(opaque, ex);
+        }
+    };
 
     private static readonly DataCallback ColourData =
         (IntPtr opaque, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes) =>
-            StreamOf(opaque).Lend((int)x, (int)y, (int)columns, (int)count, out rowBytes);
+        {
+            try
+            {
+                return StreamOf(opaque).Lend((int)x, (int)y, (int)count, out rowBytes);
+            }
+            catch (Exception ex)
+            {
+                return BlankAfter(opaque, ex, out rowBytes);
+            }
+        };
 
     // There are no extra channels, so libjxl never calls these two; they only complete the struct.
     private static readonly ExtraFormatCallback ExtraFormat = (IntPtr opaque, nuint _, ref PixelFormat format) =>
@@ -309,29 +356,74 @@ public static class JpegXl
 
     private static readonly ExtraDataCallback ExtraData =
         (IntPtr opaque, nuint _, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes) =>
-            StreamOf(opaque).LendBlank((int)columns, (int)count, out rowBytes);
+        {
+            try
+            {
+                return StreamOf(opaque).Blank(out rowBytes);
+            }
+            catch (Exception ex)
+            {
+                return BlankAfter(opaque, ex, out rowBytes);
+            }
+        };
 
-    private static readonly ReleaseBufferCallback ReleaseBuffer = (opaque, buffer) => StreamOf(opaque).Return(buffer);
+    private static IntPtr BlankAfter(IntPtr opaque, Exception ex, out nuint rowBytes)
+    {
+        Fail(opaque, ex);
+        rowBytes = 0;
+        return Marshal.UnsafeAddrOfPinnedArrayElement(NoStreamBlank, 0);
+    }
+
+    private static readonly ReleaseBufferCallback ReleaseBuffer = (opaque, buffer) =>
+    {
+        try
+        {
+            StreamOf(opaque).Return(buffer);
+        }
+        catch (Exception ex)
+        {
+            Fail(opaque, ex);
+        }
+    };
 
     // A null buffer of size 0 tells libjxl to stop; the encode then fails.
     private static readonly GetBufferCallback GetBuffer = (IntPtr opaque, ref nuint size) =>
     {
-        var stream = StreamOf(opaque);
         try
         {
-            return stream.OutputBuffer(ref size);
+            return StreamOf(opaque).OutputBuffer(ref size);
         }
         catch (Exception ex)
         {
-            stream.Fail(ex);
+            Fail(opaque, ex);
             size = 0;
             return IntPtr.Zero;
         }
     };
 
-    private static readonly WrittenCallback Written = (opaque, bytes) => StreamOf(opaque).Written(bytes);
+    private static readonly WrittenCallback Written = (opaque, bytes) =>
+    {
+        try
+        {
+            StreamOf(opaque).Written(bytes);
+        }
+        catch (Exception ex)
+        {
+            Fail(opaque, ex);
+        }
+    };
 
-    private static readonly SeekCallback Seek = (opaque, position) => StreamOf(opaque).Seek(position);
+    private static readonly SeekCallback Seek = (opaque, position) =>
+    {
+        try
+        {
+            StreamOf(opaque).Seek(position);
+        }
+        catch (Exception ex)
+        {
+            Fail(opaque, ex);
+        }
+    };
 
     private static readonly SeekCallback Finalized = (_, _) => { };
 

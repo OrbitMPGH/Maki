@@ -225,7 +225,7 @@ public class OnnxPageUpscalerTests : IDisposable
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
 
         // Ten columns, rows of 93 px with 12 px of context: row 6 reads y 546 to 663, row 7 639 to 756.
-        Assert.Equal(Enumerable.Range(0, 7 * 10), skipped);
+        Assert.Equal(Enumerable.Range(0, 7 * 10), skipped.Order());
         AssertNearest2x(source, page);
     }
 
@@ -401,19 +401,151 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [JpegXlFact]
-    public async Task A_streamed_page_whose_readers_all_said_no_by_the_encode_is_converted_to_webp_once()
+    public async Task A_streamed_page_whose_readers_said_no_only_after_its_tiles_started_is_stored_as_the_jpeg_xl_it_streamed()
     {
         using var upscaler = NewUpscaler();
         var png = Pattern(400, 500).EncodePng();
         var asked = 0;
+        var direct = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
 
         var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
             new UpscaleRun { JpegXl = () => ++asked == 1 }, CancellationToken.None);
         var result = await pending.FinishAsync(CancellationToken.None);
 
-        Assert.Equal(2, asked);
-        Assert.Equal((UpscaleOutcome.Ready, "webp", 800, 1000), (result.Outcome, result.Extension, result.Width, result.Height));
-        Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+        // Converting it in the finish would store a second lossy generation under a direct encode's cache name.
+        Assert.Equal(1, asked);
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (result.Outcome, result.Extension));
+        Assert.Equal(direct.Bytes, result.Bytes);
+    }
+
+    private static UpscaledImage WholePageJpegXl(OnnxPageUpscaler upscaler, UpscaleModelInfo info, byte[] png)
+    {
+        var source = ImageCodec.DecodeForUpscale(png).Raster!;
+        var whole = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
+        UpscalePixels.TakeColourFrom(whole.Pixels, whole.Width, whole.Height, source.Pixels, source.Width, source.Height, 2);
+        return ImageCodec.EncodeUpscaled(whole.Pixels, whole.Width, whole.Height, grey: false, jpegXl: true);
+    }
+
+    /// <summary>Wraps <see cref="ImageWorkGate.HoldAsync"/> and counts what a streamed page still holds.</summary>
+    private sealed class CountingGate
+    {
+        private int _held;
+
+        public int Held => Volatile.Read(ref _held);
+
+        public int Taken { get; private set; }
+
+        public async Task<IDisposable> HoldAsync(int megapixels, CancellationToken ct)
+        {
+            var inner = await ImageWorkGate.HoldAsync(megapixels, ct);
+            Interlocked.Increment(ref _held);
+            Taken++;
+            return new Releaser(this, inner);
+        }
+
+        private sealed class Releaser(CountingGate gate, IDisposable inner) : IDisposable
+        {
+            private int _released;
+
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _released, 1) == 0)
+                {
+                    inner.Dispose();
+                    Interlocked.Decrement(ref gate._held);
+                }
+            }
+        }
+    }
+
+    [JpegXlFact]
+    public async Task Flat_rows_below_the_art_do_not_run_ahead_of_the_encoder()
+    {
+        using var upscaler = NewUpscaler();
+        // Art in the top 100 rows, white below: 24000 output rows, twelve strips, all but the first flat.
+        var source = new Raster(100, 12000, new Rgba(255, 255, 255), bands: 3);
+        var art = Pattern(100, 100);
+        for (var y = 0; y < 100; y++)
+        for (var x = 0; x < 100; x++)
+        {
+            source[x, y] = art[x, y];
+        }
+
+        var png = source.EncodePng();
+        StreamedJpegXlPage? page = null;
+        upscaler.StreamStarted = started => page = started;
+
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (result.Outcome, result.Extension));
+        Assert.Equal(WholePageJpegXl(upscaler, _catalog.Get(UpscaleModelId.SpanS), png).Bytes, result.Bytes);
+        // The strip being encoded, the one above it until it is freed, and Ahead below it.
+        Assert.InRange(page!.MostChunksHeld, 1, StreamedJpegXlPage.Ahead + 2);
+    }
+
+    [JpegXlFact]
+    public async Task A_streamed_encode_that_fails_after_the_tiles_is_made_again_whole_and_releases_the_gate()
+    {
+        using var upscaler = NewUpscaler();
+        var gate = new CountingGate();
+        upscaler.HoldGate = gate.HoldAsync;
+        var png = Pattern(300, 2500).EncodePng();
+        var expected = WholePageJpegXl(upscaler, _catalog.Get(UpscaleModelId.SpanS), png);
+        using var started = new ManualResetEventSlim();
+        upscaler.StreamStarted = page => page.StripReady = strip =>
+        {
+            // The last strip waits for every tile, so this fails the encode inside the finish.
+            if (strip == 2)
+            {
+                started.Wait(TimeSpan.FromSeconds(30));
+                throw new JpegXlException("libjxl ran out of memory");
+            }
+        };
+
+        var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS, CancellationToken.None);
+        upscaler.StreamStarted = null;
+        started.Set();
+        var result = await pending.FinishAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+        var next = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (result.Outcome, result.Extension));
+        Assert.Equal(expected.Bytes, result.Bytes);
+        Assert.Equal(expected.Bytes, next.Bytes);
+        Assert.True(gate.Taken > 0);
+        Assert.Equal(0, gate.Held);
+    }
+
+    [JpegXlFact]
+    public async Task A_streamed_encode_that_fails_during_the_tiles_stops_them_and_is_made_again_whole()
+    {
+        using var upscaler = NewUpscaler();
+        var gate = new CountingGate();
+        upscaler.HoldGate = gate.HoldAsync;
+        var png = Pattern(300, 2500).EncodePng();
+        var expected = WholePageJpegXl(upscaler, _catalog.Get(UpscaleModelId.SpanS), png);
+        upscaler.StreamStarted = page => page.StripReady = _ => throw new JpegXlException("libjxl failed");
+
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (result.Outcome, result.Extension));
+        Assert.Equal(expected.Bytes, result.Bytes);
+        Assert.Equal(0, gate.Held);
+    }
+
+    [JpegXlFact]
+    public async Task A_streamed_page_with_a_4x_model_halved_per_tile_has_the_bytes_of_the_whole_page_encode()
+    {
+        using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
+        var gate = new CountingGate();
+        upscaler.HoldGate = gate.HoldAsync;
+        var png = Pattern(300, 2500).EncodePng();
+        var expected = WholePageJpegXl(upscaler, _catalog.Get(UpscaleModelId.RealEsrganAv3), png);
+
+        var result = await upscaler.UpscaleAsync(png, "realesrgan-av3", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(120));
+
+        Assert.Equal((UpscaleOutcome.Ready, "jxl", 600, 5000), (result.Outcome, result.Extension, result.Width, result.Height));
+        Assert.Equal(expected.Bytes, result.Bytes);
+        Assert.Equal(0, gate.Held);
     }
 
     [JpegXlTheory]
@@ -437,27 +569,62 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [JpegXlFact]
-    public async Task A_page_cancelled_during_its_tiles_releases_the_encoder_for_the_next_page()
+    public async Task A_page_cancelled_during_its_tiles_releases_the_encoder_and_the_gate_for_the_next_page()
     {
         using var upscaler = NewUpscaler();
+        var gate = new CountingGate();
+        upscaler.HoldGate = gate.HoldAsync;
         var png = Pattern(300, 2500).EncodePng();
         using var cts = new CancellationTokenSource();
-        upscaler.TileCompleted = _ => cts.Cancel();
+        // At the second strip, so the encoder holds the slot and has had the gate.
+        upscaler.StreamStarted = page => page.StripReady = strip =>
+        {
+            if (strip == 1)
+            {
+                cts.Cancel();
+            }
+        };
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => upscaler.UpscaleAsync(png, "span-s", cts.Token));
-        upscaler.TileCompleted = null;
+        upscaler.StreamStarted = null;
+        var taken = gate.Taken;
+        var held = gate.Held;
         var next = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
 
+        Assert.True(taken > 0);
+        Assert.Equal(0, held);
         Assert.Equal((UpscaleOutcome.Ready, "jxl"), (next.Outcome, next.Extension));
+        Assert.Equal(0, gate.Held);
     }
 
     [JpegXlFact]
-    public async Task A_shutdown_during_a_streamed_finish_cancels_it()
+    public async Task A_shutdown_cancels_a_streamed_finish_waiting_for_the_gate_and_the_one_queued_behind_it_for_the_encoder()
     {
         using var upscaler = NewUpscaler();
-        var pending = await upscaler.StartAsync(Pattern(300, 2500).EncodePng(), UpscaleModelId.SpanS, CancellationToken.None);
+        // Every gate permit is taken elsewhere: the first page's encoder waits on it holding the encoder slot.
+        upscaler.HoldGate = async (_, ct) =>
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new InvalidOperationException("never granted");
+        };
+        var first = await upscaler.StartAsync(Pattern(300, 2500).EncodePng(), UpscaleModelId.SpanS, CancellationToken.None);
+        var second = await upscaler.StartAsync(Pattern(310, 2400).EncodePng(), UpscaleModelId.SpanS, CancellationToken.None);
+        using var shutdown = new CancellationTokenSource();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.FinishAsync(new CancellationToken(canceled: true)));
+        var finishes = new[] { first.FinishAsync(shutdown.Token), second.FinishAsync(shutdown.Token) };
+        await Task.WhenAny(finishes.Append(Task.Delay(300)));
+        Assert.DoesNotContain(finishes, finish => finish.IsCompleted);
+        shutdown.Cancel();
+
+        foreach (var finish in finishes)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => finish.WaitAsync(TimeSpan.FromSeconds(30)));
+        }
+
+        upscaler.HoldGate = ImageWorkGate.HoldAsync;
+        var next = await upscaler.UpscaleAsync(Pattern(300, 2500).EncodePng(), "span-s", CancellationToken.None)
+            .WaitAsync(TimeSpan.FromSeconds(60));
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (next.Outcome, next.Extension));
     }
 
     [Fact]

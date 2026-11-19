@@ -636,15 +636,15 @@ public static class ImageCodec
             : image.Copy();
         using var grey = flat.Bands >= 3 ? flat.Colourspace(Enums.Interpretation.Bw) : flat.ExtractBand(0);
         using var luma = grey.Bands > 1 ? grey.ExtractBand(0) : grey.Copy();
-        using var wide = luma.Cast(Enums.BandFormat.Uint);
+        // Doubles hold every sum exactly (under 2^53), where a uint's squares wrap past about 66,000 px a row.
+        using var wide = luma.Cast(Enums.BandFormat.Double);
         using var squares = wide.Multiply(wide);
         using var both = wide.Bandjoin(squares);
         // Row sums of luma and luma squared in one libvips pass, so the page never exists as managed pixels.
         var projections = both.Project();
         using var columns = (VipsImage)projections[0];
         using var sums = (VipsImage)projections[1];
-        using var exact = sums.Cast(Enums.BandFormat.Double);
-        var totals = exact.WriteToMemory<double>();
+        var totals = sums.WriteToMemory<double>();
         var width = grey.Width;
         var rows = new double[grey.Height];
         for (var y = 0; y < rows.Length; y++)

@@ -22,9 +22,11 @@ public class JpegXlRowsTests
     }
 
     /// <summary>Rows from one pinned buffer, recording what libjxl asks for.</summary>
-    private sealed class Rows(byte[] pixels, int width, int failAt = -1) : IJpegXlRows, IDisposable
+    private sealed class Rows(byte[] pixels, int width, int failAt = -1, Func<Exception>? failure = null, int failReleaseAt = -1)
+        : IJpegXlRows, IDisposable
     {
         private GCHandle _pinned = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+        private int _released;
 
         public List<(int Top, int Count)> Asked { get; } = [];
 
@@ -36,7 +38,7 @@ public class JpegXlRowsTests
         {
             if (Asked.Count == failAt)
             {
-                throw new TimeoutException("rows never came");
+                throw failure?.Invoke() ?? new TimeoutException("rows never came");
             }
 
             Asked.Add((top, count));
@@ -45,7 +47,14 @@ public class JpegXlRowsTests
             return _pinned.AddrOfPinnedObject() + top * width * 3;
         }
 
-        public void Release(IntPtr rows) => Outstanding--;
+        public void Release(IntPtr rows)
+        {
+            Outstanding--;
+            if (_released++ == failReleaseAt)
+            {
+                throw new InvalidOperationException("release failed");
+            }
+        }
 
         public void Dispose() => _pinned.Free();
     }
@@ -92,6 +101,28 @@ public class JpegXlRowsTests
 
         Assert.Throws<TimeoutException>(() => JpegXl.EncodeRows(rows, width, height, 3, 1.5f, 3));
         Assert.Equal(0, rows.Outstanding);
+    }
+
+    [JpegXlFact]
+    public void An_out_of_memory_in_a_callback_comes_back_to_the_caller_instead_of_crossing_into_libjxl()
+    {
+        var (width, height) = (300, 7000);
+        using var rows = new Rows(Pattern(width, height), width, failAt: 2, failure: () => new OutOfMemoryException("strip"));
+
+        Assert.Throws<OutOfMemoryException>(() => JpegXl.EncodeRows(rows, width, height, 3, 1.5f, 3));
+        Assert.Equal(0, rows.Outstanding);
+        Assert.Equal(2, rows.Asked.Count);
+    }
+
+    [JpegXlFact]
+    public void A_release_that_throws_fails_the_encode_with_its_reason()
+    {
+        var (width, height) = (300, 7000);
+        using var rows = new Rows(Pattern(width, height), width, failReleaseAt: 0);
+
+        Assert.Throws<InvalidOperationException>(() => JpegXl.EncodeRows(rows, width, height, 3, 1.5f, 3));
+        Assert.Equal(0, rows.Outstanding);
+        Assert.Single(rows.Asked);
     }
 }
 
