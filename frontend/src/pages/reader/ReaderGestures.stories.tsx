@@ -176,6 +176,7 @@ function touches(target: HTMLElement, type: string, points: Point[]) {
   )
 }
 
+/** Returns where the surface was scrolled just before the fingers lifted. */
 function stripPinch(surface: HTMLElement, centre: Point, from: number, to: number) {
   const at = (spread: number) => [
     { x: centre.x - spread, y: centre.y },
@@ -183,12 +184,15 @@ function stripPinch(surface: HTMLElement, centre: Point, from: number, to: numbe
   ]
   touches(surface, 'touchstart', at(from))
   for (let step = 1; step <= 8; step++) touches(surface, 'touchmove', at(from + ((to - from) * step) / 8))
+  const during = { left: surface.scrollLeft, top: surface.scrollTop }
   touches(surface, 'touchend', at(to))
+  return during
 }
 
 /**
  * Continuous: two fingers zoom the strip around their midpoint, which then scrolls both ways. The
- * toolbar's reset and a pinch back to fit both return it to one axis.
+ * scroll only moves once the fingers lift (Safari eases back from a scroll written mid-gesture).
+ * The toolbar's reset and a pinch back to fit both return it to one axis.
  */
 export const PinchZoomsTheStrip: Story = {
   parameters: {
@@ -203,7 +207,9 @@ export const PinchZoomsTheStrip: Story = {
     const box = surface.getBoundingClientRect()
     const centre = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
 
-    stripPinch(surface, centre, 40, 80)
+    const before = { left: surface.scrollLeft, top: surface.scrollTop }
+    const during = stripPinch(surface, centre, 40, 80)
+    await expect(during).toEqual(before)
     await waitFor(() => expect(strip.style.transform).toBe('scale(2)'))
     await waitFor(() => expect(surface).toHaveAttribute('data-zoomed', 'true'))
     await expect(surface).not.toHaveAttribute('data-scroll')
