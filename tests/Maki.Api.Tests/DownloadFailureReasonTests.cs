@@ -41,6 +41,28 @@ public class DownloadFailureReasonTests
             DownloadFailureReason.Classify(new TaskCanceledException("HttpClient.Timeout of 60 seconds elapsing")).Key);
     }
 
+    /// <summary>A Playwright navigation timeout was a TimeoutException; PuppeteerSharp wraps the timeout
+    /// and Chromium's network errors in a NavigationException, and a selector wait throws its own.</summary>
+    [Fact]
+    public void A_browser_navigation_timeout_or_network_error_is_a_network_failure()
+    {
+        var timeout = new PuppeteerSharp.NavigationException(
+            "Navigation timeout of 45000 ms exceeded", new TimeoutException("Navigation timeout of 45000 ms exceeded"));
+
+        Assert.Equal((DownloadFailureReason.Network, "Navigation timeout of 45000 ms exceeded"),
+            DownloadFailureReason.Classify(timeout));
+        Assert.Equal(DownloadFailureReason.Network,
+            DownloadFailureReason.Classify(new PuppeteerSharp.NavigationException("net::ERR_CONNECTION_RESET", "https://mangafire.to/")).Key);
+        Assert.Equal(DownloadFailureReason.Network,
+            DownloadFailureReason.Classify(new PuppeteerSharp.WaitTaskTimeoutException("Waiting for selector `.x` failed: timeout 8000ms exceeded")).Key);
+    }
+
+    [Fact]
+    public void A_browser_navigation_that_failed_for_another_reason_stays_unexpected() =>
+        Assert.Equal(DownloadFailureReason.Unexpected,
+            DownloadFailureReason.Classify(new PuppeteerSharp.NavigationException(
+                "Protocol error", new PuppeteerSharp.TargetClosedException("Target closed", "gone"))).Key);
+
     [Fact]
     public void A_write_failure_is_a_disk_failure() =>
         Assert.Equal(DownloadFailureReason.Disk,
