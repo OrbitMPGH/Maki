@@ -1573,9 +1573,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
-        // And the headless browsers, whose processes are native memory the heap work never sees. Nothing launches one at startup, so this can start
-        // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
+        // And the headless browsers, whose processes are native memory the heap work never sees.
+        // Nothing launches one at startup, so this can start early; it does nothing until a scrape
+        // has actually happened. Every minute, since the idle window is one: a browser goes one to
+        // two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t

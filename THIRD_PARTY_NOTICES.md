@@ -1,7 +1,7 @@
 # Third-party notices
 
-Maki's own code is GPL-3.0 (see [LICENSE](LICENSE)). Page Enhance and the reader's "Hide credit
-pages" setting use the third-party works below. Each keeps its own licence, and none of them is relicensed by being used here.
+Maki's own code is GPL-3.0 (see [LICENSE](LICENSE)). Page Enhance, the reader's "Hide credit
+pages" setting and the headless browser behind MangaFire and TopManhua use the third-party works below. Each keeps its own licence, and none of them is relicensed by being used here.
 
 ## Server upscaling models
 
@@ -200,6 +200,110 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --------------------------------------------------------------------------------
 ```
+
+## Headless browser for MangaFire and TopManhua
+
+Maki drives Chrome Headless Shell over the DevTools protocol with PuppeteerSharp, which ships with the
+server as .NET assemblies along with two libraries it depends on.
+
+### PuppeteerSharp 25.15.0
+
+- Authors: Darío Kondratiuk
+- Licence: MIT
+- Source: https://github.com/hardkoded/puppeteer-sharp
+
+```
+MIT License
+
+Copyright (c) 2017 Darío Kondratiuk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### ReactiveExtensionsSharp 0.3.0
+
+- Authors: Darío Kondratiuk
+- Licence: MIT
+- Source: https://github.com/hardkoded/ReactiveExtensions-Sharp
+
+```
+MIT License
+
+Copyright (c) 2026 Darío Kondratiuk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### WebDriverBiDi 0.0.61
+
+- Authors: WebDriverBiDi.NET Committers
+- Licence: MIT
+- Source: https://github.com/webdriverbidi-net/webdriverbidi-net
+
+```
+MIT License
+
+Copyright (c) 2022-2026 WebDriverBiDi.NET Committers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### Chrome Headless Shell 149.0.7827.55
+
+- Authors: The Chromium Authors and the authors of the projects Chromium includes
+- Licence: BSD 3-Clause for Chromium, with its bundled projects under their own licences
+- Source: https://chromium.googlesource.com/chromium/src (Chrome for Testing build; on Linux arm64,
+  Playwright's build of the same revision)
+- The Docker image includes it, and other builds download it the first time a source needs it. The
+  Chrome for Testing build carries every licence in `LICENSE.headless_shell` beside the executable.
 
 ## Browser shaders
 

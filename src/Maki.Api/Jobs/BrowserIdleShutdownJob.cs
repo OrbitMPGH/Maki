@@ -18,10 +18,10 @@ namespace Maki.Api.Jobs;
 ///
 /// <para>
 /// The price of being wrong is a relaunch on the next scrape: well under a second for the shell,
-/// likely one or two from a hard disk. The Cloudflare clearance is not lost with it: <c>ChallengeAwareFetcher</c> caches
-/// it per host until a challenge or a 403/503 proves it stale, so a relaunch reuses it. The window
-/// is per-browser idleness rather than a fixed timer - a download that walks a hundred chapters
-/// keeps stamping its browser and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them
+/// likely one or two from a hard disk. The Cloudflare clearance is not lost with it:
+/// <c>ChallengeAwareFetcher</c> caches it per host until a challenge or a 403/503 proves it stale,
+/// so a relaunch reuses it. The window is per-browser idleness rather than a fixed timer - a
+/// download that walks a hundred chapters keeps stamping its browser and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them
 /// alive forever.
 /// </para>
 ///
