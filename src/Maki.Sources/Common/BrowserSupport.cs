@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PuppeteerSharp;
@@ -98,7 +99,46 @@ internal static class BrowserSupport
         .. LaunchArgs,
     ];
 
-    public const string HideWebDriver = "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});";
+    /// <summary>
+    /// Quotes one launch argument for the command line PuppeteerSharp builds. It joins the arguments
+    /// with spaces into a single string, run through <c>sh -c</c> on Linux and macOS (to move the pipe
+    /// to file descriptors 3 and 4) and parsed by Chromium itself on Windows, where Playwright passed
+    /// an argv array. Unquoted, <c>--host-resolver-rules=MAP host 127.0.0.1</c> became three
+    /// arguments and Chromium exited at launch, and a shell character in a setting reached the shell.
+    /// </summary>
+    public static string QuoteArgument(string argument) => QuoteArgument(argument, OperatingSystem.IsWindows());
+
+    internal static string QuoteArgument(string argument, bool windows)
+    {
+        if (argument.Length > 0 && argument.All(c => char.IsAsciiLetterOrDigit(c) || "-_=.,:/@%+".Contains(c)))
+        {
+            return argument;
+        }
+
+        if (!windows)
+        {
+            return "'" + argument.Replace("'", "'\\''") + "'";
+        }
+
+        // CommandLineToArgvW: backslashes are literal except before a quote, where each one doubles.
+        var quoted = new StringBuilder("\"");
+        var backslashes = 0;
+        foreach (var c in argument)
+        {
+            if (c == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            quoted.Append('\\', c == '"' ? backslashes * 2 + 1 : backslashes).Append(c);
+            backslashes = 0;
+        }
+
+        return quoted.Append('\\', backslashes * 2).Append('"').ToString();
+    }
+
+    public const string HideWebDriver ="Object.defineProperty(navigator,'webdriver',{get:()=>undefined});";
 
     /// <summary>
     /// Analytics, share-button and web-font hosts the scrapers' pages load and nothing they read

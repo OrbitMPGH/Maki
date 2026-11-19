@@ -24,7 +24,9 @@ public sealed class HeadlessShellFixture : IAsyncLifetime
             return;
         }
 
-        _browser = await _launcher.LaunchAsync();
+        // A rule with spaces, as MangaFire's resolver setting passes one: it has to reach Chromium
+        // as one argument or the shell exits at launch.
+        _browser = await _launcher.LaunchAsync(["--host-resolver-rules=MAP fixture.invalid 127.0.0.1"]);
         _context = await _browser.CreateBrowserContextAsync();
     }
 

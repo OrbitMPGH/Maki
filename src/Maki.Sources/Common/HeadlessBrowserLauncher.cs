@@ -73,7 +73,7 @@ public sealed class HeadlessBrowserLauncher
                 ExecutablePath = executable,
                 Headless = true,
                 IgnoreDefaultArgs = true,
-                Args = [.. BrowserSupport.ChromiumArgs, .. extraArgs ?? []],
+                Args = [.. BrowserSupport.ChromiumArgs, .. (extraArgs ?? []).Select(BrowserSupport.QuoteArgument)],
                 DefaultViewport = null,
                 // The shell starts with no window (--no-startup-window), so there is no first page to wait for.
                 WaitForInitialPage = false,

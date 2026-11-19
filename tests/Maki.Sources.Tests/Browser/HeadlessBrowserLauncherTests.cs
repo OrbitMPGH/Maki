@@ -50,9 +50,21 @@ public class HeadlessBrowserLauncherTests : IDisposable
         Assert.True(seen.IgnoreDefaultArgs);
         Assert.False(seen.WaitForInitialPage);
         Assert.Contains("--no-startup-window", seen.Args);
-        Assert.Contains("--host-resolver-rules=MAP x y", seen.Args);
+        Assert.Contains(BrowserSupport.QuoteArgument("--host-resolver-rules=MAP x y"), seen.Args);
         Assert.DoesNotContain("--enable-automation", seen.Args);
     }
+
+    [Theory]
+    [InlineData("--no-sandbox", false, "--no-sandbox")]
+    [InlineData("--disable-features=A,B", false, "--disable-features=A,B")]
+    [InlineData("--host-resolver-rules=MAP x 127.0.0.1", false, "'--host-resolver-rules=MAP x 127.0.0.1'")]
+    [InlineData("--rules=a;rm -rf /", false, "'--rules=a;rm -rf /'")]
+    [InlineData("--rules=it's", false, "'--rules=it'\\''s'")]
+    [InlineData("--host-resolver-rules=MAP x 127.0.0.1", true, "\"--host-resolver-rules=MAP x 127.0.0.1\"")]
+    [InlineData("--path=C:\\a b\\", true, "\"--path=C:\\a b\\\\\"")]
+    [InlineData("--say=\"hi\"", true, "\"--say=\\\"hi\\\"\"")]
+    public void A_launch_argument_with_spaces_or_shell_characters_stays_one_argument(string argument, bool windows, string quoted) =>
+        Assert.Equal(quoted, BrowserSupport.QuoteArgument(argument, windows));
 
     [Fact]
     public async Task The_page_cache_drops_only_when_the_last_browser_closes()
