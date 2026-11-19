@@ -55,7 +55,8 @@ public class RecommendationService(
     SeedWeightService seedWeights,
     IAppSettings settings,
     ILogger<RecommendationService> logger,
-    KnownTitleTuning? knownTitles = null)
+    KnownTitleTuning? knownTitles = null,
+    Maki.Metadata.PageShare.PageShareCache? pageShareCache = null)
 {
     private readonly KnownTitleTuning _known = knownTitles ?? KnownTitleTuning.Default;
 
@@ -240,6 +241,10 @@ public class RecommendationService(
         var tasteVectors = await TasteEnabledAsync(ct);
         var ease = await EaseEnabledAsync(ct);
         var pageShare = await PageShareEnabledAsync(ct);
+        // The table's generation, not just the switch: a pool built before the first download (or
+        // against a replaced table) must not be served for twelve hours, and the pool version
+        // derived from this key tells a reader paging the old pool to start over.
+        var pageShareKey = pageShare ? $"1.{pageShareCache?.Generation ?? 0}" : "0";
         // Keyed on the inputs, not on who asked. The seed list already carries everything personal
         // that reaches the pool — root-folder visibility, the content ceiling and ignored sources
         // all narrow it before it gets here — so two readers with the same seeds want the same 200
@@ -266,7 +271,7 @@ public class RecommendationService(
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|e:{(ease ? 1 : 0)}|p:{(pageShare ? 1 : 0)}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}";
+                  $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the

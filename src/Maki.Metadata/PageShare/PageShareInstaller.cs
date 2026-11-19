@@ -144,6 +144,13 @@ public class PageShareInstaller(
 
         try
         {
+            // Again under the gate: another install may have finished a newer table between the
+            // check above and taking the gate, and this one must not put an older table back.
+            if (!force && !await IsNewerThanLocalAsync(manifest, ct))
+            {
+                return new PageShareResult(false, "install.pageShare.current");
+            }
+
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
             var rows = ValidateStaged(staging, manifest.RowCount);
 
@@ -263,7 +270,8 @@ public class PageShareInstaller(
         stats.CommandText = """
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN share IS NULL OR NOT (share BETWEEN 0 AND 1) THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN typeof(series_id) <> 'integer' THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN typeof(series_id) <> 'integer' OR series_id <= 0 THEN 1 ELSE 0 END), 0),
+                   COUNT(DISTINCT series_id)
             FROM share
             """;
         using var reader = stats.ExecuteReader();
@@ -271,6 +279,7 @@ public class PageShareInstaller(
         var rows = reader.GetInt64(0);
         var bad = reader.GetInt64(1);
         var badIds = reader.GetInt64(2);
+        var distinctIds = reader.GetInt64(3);
 
         if (rows < MinRows)
         {
@@ -285,6 +294,11 @@ public class PageShareInstaller(
         if (badIds > 0)
         {
             throw new InvalidOperationException($"downloaded table has {badIds} rows without an integer series id");
+        }
+
+        if (distinctIds != rows)
+        {
+            throw new InvalidOperationException($"downloaded table repeats series ids ({rows - distinctIds} duplicates)");
         }
 
         if (advertisedRows > 0 && rows < advertisedRows * 0.95)

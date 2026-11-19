@@ -21,14 +21,22 @@ public sealed class PageShareCache(PageShareOptions options, ILogger<PageShareCa
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly LoadFailureMemo _failed = new();
     private volatile PageFrequency? _table;
+    private int _generation;
 
     public string DatabasePath => options.DatabasePath;
+
+    /// <summary>
+    /// Moves on every swap and invalidation, so a recommendation pool built against the previous
+    /// table is keyed apart from one built against this one.
+    /// </summary>
+    public int Generation => Volatile.Read(ref _generation);
 
     /// <summary>Drops the loaded table so the next request reloads it.</summary>
     public void Invalidate()
     {
         _table = null;
         _failed.Clear();
+        Interlocked.Increment(ref _generation);
     }
 
     /// <summary>
@@ -52,6 +60,7 @@ public sealed class PageShareCache(PageShareOptions options, ILogger<PageShareCa
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
             _failed.Clear();
+            Interlocked.Increment(ref _generation);
             logger.LogInformation("Swapped in a new page-share table at {Path}", options.DatabasePath);
         }
         finally

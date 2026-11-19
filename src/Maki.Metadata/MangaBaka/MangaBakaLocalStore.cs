@@ -725,7 +725,7 @@ public class MangaBakaLocalStore(
             return found;
         }
 
-        var rows = new Dictionary<long, (string? Type, string Native, int? Chapters, List<long> Alternatives)>();
+        var rows = new Dictionary<long, (string? Type, string Native, double? Chapters, List<long> Alternatives)>();
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
@@ -736,8 +736,8 @@ public class MangaBakaLocalStore(
             while (await reader.ReadAsync(ct))
             {
                 var native = new string((GetString(reader, 2) ?? string.Empty).Where(c => !char.IsWhiteSpace(c)).ToArray());
-                var chapters = int.TryParse(GetString(reader, 3), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
-                    ? n : (int?)null;
+                var chapters = double.TryParse(GetString(reader, 3), NumberStyles.Float, CultureInfo.InvariantCulture, out var n)
+                    && double.IsFinite(n) ? n : (double?)null;
                 rows[reader.GetInt64(0)] = (GetString(reader, 1), native,
                     chapters, FranchiseGraph.AlternativeTargets(GetString(reader, 4)).ToList());
             }
@@ -746,7 +746,7 @@ public class MangaBakaLocalStore(
         var ownedSet = owned.ToHashSet();
         foreach (var id in candidates)
         {
-            if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not int length)
+            if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not double length)
             {
                 continue;
             }

@@ -257,9 +257,11 @@ public static class FranchiseGraph
             {
                 if (edge.ValueKind == JsonValueKind.Object
                     && edge.TryGetProperty("relation_type", out var type)
+                    && type.ValueKind == JsonValueKind.String
                     && type.GetString() is { } kind
                     && relation(kind)
                     && edge.TryGetProperty("to_series_id", out var to)
+                    && to.ValueKind == JsonValueKind.Number
                     && to.TryGetInt64(out var target))
                 {
                     targets.Add(target);

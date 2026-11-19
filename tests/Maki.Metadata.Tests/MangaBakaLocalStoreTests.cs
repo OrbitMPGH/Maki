@@ -1260,4 +1260,21 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal([11L], found.Order());
     }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_reads_fractional_counts_and_skips_malformed_edges()
+    {
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "Owned pilot", nativeTitle: "分数", totalChapters: "1.5", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its full serial", nativeTitle: "分数", totalChapters: "80");
+        _db.AddSeries(10, "Owned serial", nativeTitle: "連載", totalChapters: "40",
+            relationshipsV2: """[{"to_series_id": "11", "relation_type": "alternative"}, {"to_series_id": 12, "relation_type": 5}, {"to_series_id": 13, "relation_type": "alternative"}]""");
+        _db.AddSeries(11, "String edge", nativeTitle: "連載", totalChapters: "1");
+        _db.AddSeries(12, "Numeric type edge", nativeTitle: "連載", totalChapters: "1");
+        _db.AddSeries(13, "Its half-chapter extra", nativeTitle: "連載", totalChapters: "0.5");
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10], [2, 11, 12, 13]);
+
+        Assert.Equal([13L], found.Order());
+    }
 }

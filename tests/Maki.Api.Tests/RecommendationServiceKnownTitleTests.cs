@@ -88,7 +88,8 @@ public class RecommendationServiceKnownTitleTests : IDisposable
 
     private RecommendationService Service(
         CapturingRecommender recommender, KnownTitleTuning? known, IReadOnlyDictionary<long, long>? aired = null,
-        FakeAppSettings? settings = null, FakeStore? store = null)
+        FakeAppSettings? settings = null, FakeStore? store = null,
+        Maki.Metadata.PageShare.PageShareCache? pageShare = null)
     {
         settings ??= new FakeAppSettings();
         return new(
@@ -98,7 +99,8 @@ public class RecommendationServiceKnownTitleTests : IDisposable
             new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
             settings,
             NullLogger<RecommendationService>.Instance,
-            known);
+            known,
+            pageShare);
     }
 
     private static MangaBakaRecommendation Pick(long id) =>
@@ -191,6 +193,25 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     }
 
     [Fact]
+    public async Task A_new_page_share_table_builds_a_new_pool()
+    {
+        SeedLibrary(101, 202);
+        var dir = Path.Combine(Path.GetTempPath(), "maki-pageshare-" + Guid.NewGuid().ToString("N"));
+        var cache = new Maki.Metadata.PageShare.PageShareCache(
+            new Maki.Metadata.PageShare.PageShareOptions(Path.Combine(dir, "page-share.db"), dir),
+            NullLogger<Maki.Metadata.PageShare.PageShareCache>.Instance);
+        var recommender = new CapturingRecommender([Pick(77)]);
+        var service = Service(recommender, KnownTitleTuning.Default with { WatchedAnime = KnownTitleMode.Off }, pageShare: cache);
+
+        var first = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        cache.Invalidate();
+        var second = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal(2, recommender.SeenCommon.Count);
+        Assert.NotEqual(first.PoolVersion, second.PoolVersion);
+    }
+
+    [Fact]
     public async Task Exclude_drops_an_unscored_watched_title_and_keeps_the_rest()
     {
         SeedLibrary(101, 202);
@@ -274,7 +295,7 @@ public class RecommendationServiceKnownTitleTests : IDisposable
     }
 
     [Fact]
-    public void Watched_manga_holds_every_completed_and_watching_entry_and_started_paused_or_dropped_ones()
+    public void Watched_manga_holds_every_completed_and_watching_entry_and_no_paused_or_dropped_one()
     {
         AnimeSignalRow Row(long manga, AnimeWatchStatus status, int? score = null, int? progress = null) =>
             new("anilist", 9000 + manga, null, "t", score, status, manga, Progress: progress);
@@ -285,10 +306,10 @@ public class RecommendationServiceKnownTitleTests : IDisposable
             Row(2, AnimeWatchStatus.Completed),
             Row(3, AnimeWatchStatus.Planning, score: 8),
             Row(4, AnimeWatchStatus.Watching, progress: 0),
-            Row(5, AnimeWatchStatus.Dropped, progress: 2),
-            Row(6, AnimeWatchStatus.OnHold, progress: 0),
+            Row(5, AnimeWatchStatus.Dropped, score: 6, progress: 2),
+            Row(6, AnimeWatchStatus.OnHold, score: 7, progress: null),
         ]);
 
-        Assert.Equal([1L, 2L, 4L, 5L], watched.Order());
+        Assert.Equal([1L, 2L, 4L], watched.Order());
     }
 }
