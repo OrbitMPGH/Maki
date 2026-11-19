@@ -162,6 +162,68 @@ export const PinchZoomsAndPans: Story = {
   },
 }
 
+function touches(target: HTMLElement, type: string, points: Point[]) {
+  const list = points.map((point, index) => new Touch({ identifier: index + 1, target, clientX: point.x, clientY: point.y }))
+  target.dispatchEvent(
+    new TouchEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      touches: type === 'touchend' ? [] : list,
+      targetTouches: type === 'touchend' ? [] : list,
+      changedTouches: list,
+    }),
+  )
+}
+
+function stripPinch(surface: HTMLElement, centre: Point, from: number, to: number) {
+  const at = (spread: number) => [
+    { x: centre.x - spread, y: centre.y },
+    { x: centre.x + spread, y: centre.y },
+  ]
+  touches(surface, 'touchstart', at(from))
+  for (let step = 1; step <= 8; step++) touches(surface, 'touchmove', at(from + ((to - from) * step) / 8))
+  touches(surface, 'touchend', at(to))
+}
+
+/**
+ * Continuous: two fingers zoom the strip around their midpoint, which then scrolls both ways. The
+ * toolbar's reset and a pinch back to fit both return it to one axis.
+ */
+export const PinchZoomsTheStrip: Story = {
+  parameters: {
+    router: { path: '/read/:chapterId', initialEntries: ['/read/3040'] },
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const strip = canvasElement.querySelector<HTMLElement>('.reader-continuous')!
+    await waitFor(() => expect(surface).toHaveAttribute('data-pinch', 'true'))
+    await expect(surface).toHaveAttribute('data-scroll', 'vertical')
+    const box = surface.getBoundingClientRect()
+    const centre = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+
+    stripPinch(surface, centre, 40, 80)
+    await waitFor(() => expect(strip.style.transform).toBe('scale(2)'))
+    await waitFor(() => expect(surface).toHaveAttribute('data-zoomed', 'true'))
+    await expect(surface).not.toHaveAttribute('data-scroll')
+    await waitFor(() => expect(surface.scrollWidth).toBeGreaterThan(surface.clientWidth * 1.5))
+    await waitFor(() => expect(surface.scrollLeft).toBeGreaterThan(0))
+
+    stripPinch(surface, centre, 80, 41)
+    await waitFor(() => expect(strip.style.transform).toBe(''))
+    await waitFor(() => expect(surface).toHaveAttribute('data-scroll', 'vertical'))
+    await expect(surface.scrollLeft).toBe(0)
+
+    stripPinch(surface, centre, 40, 60)
+    await waitFor(() => expect(strip.style.transform).toBe('scale(1.5)'))
+    const reset = await canvas.findByRole('button', { name: 'Reset zoom', hidden: true })
+    reset.click()
+    await waitFor(() => expect(strip.style.transform).toBe(''))
+    await waitFor(() => expect(surface).not.toHaveAttribute('data-zoomed'))
+  },
+}
+
 /** Kindle, left to right: most of the page goes forward, a strip on the left goes back, the top opens the bars. */
 export const KindleTapZones: Story = {
   parameters: {

@@ -66,6 +66,7 @@ import {
   type StripResume,
 } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
+import { useStripZoom } from './useStripZoom'
 import { CREDITS_MIN_PAGES, clampToCut, clampToWindow, creditWindow, tailCut, type PageWindow } from './creditWindow'
 import { stripTapActionAt, tapActionAt } from './tapZones'
 import TapZoneOverlay from './TapZoneOverlay'
@@ -973,6 +974,9 @@ export default function ReaderPage() {
     if (mode !== 'vertical') setAutoScroll(false)
   }, [mode])
 
+  // Switching layout starts unzoomed.
+  useEffect(() => setZoom(1), [mode])
+
   // Paused whenever something sits over the page; the chrome hides itself after a few seconds, so a
   // tap in the middle is a pause that lets go on its own.
   useAutoScroll(
@@ -1133,6 +1137,12 @@ export default function ReaderPage() {
     rtl: prefs.direction === 'rtl',
     onZoom: setZoom,
     onTurn: (forward) => (forward ? next() : previous()),
+  })
+  useStripZoom(surface, {
+    enabled: mode === 'vertical',
+    zoom,
+    zoomMax: ZOOM_MAX,
+    onZoom: setZoom,
   })
   const tapAction = (clientX: number, clientY: number, bounds: DOMRect) =>
     tapActionAt(
@@ -1413,10 +1423,10 @@ export default function ReaderPage() {
         <div
           ref={setSurface}
           className="reader-surface"
-          // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
-          // which is the one case where panning across a page is what was asked for.
+          // Continuous mode scrolls one way only, unless the reader has zoomed in or set 1:1 past
+          // 100%, the cases where panning across a page is what was asked for.
           data-scroll={
-            mode === 'vertical' && !(fit === 'original' && prefs.scale > 100)
+            mode === 'vertical' && zoom === 1 && !(fit === 'original' && prefs.scale > 100)
               ? 'vertical'
               : undefined
           }
@@ -1450,6 +1460,7 @@ export default function ReaderPage() {
               onEnhanceRange={onEnhanceRange}
               tracker={stripTracker}
               lastCut={lastCut}
+              zoom={zoom}
             />
           ) : (
             <PagedView

@@ -582,15 +582,16 @@ export default function ReaderToolbar({
             </Group>
           )}
 
+          {/* Continuous has no zoom buttons, only a way back from a pinch. */}
+          {zoom !== 1 && (
+            <Tooltip label={withKey(t`Reset zoom`, 'reader.zoomReset')} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
+                <IconZoomReset size={20} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {prefs.mode !== 'vertical' && (
             <>
-              {zoom !== 1 && (
-                <Tooltip label={withKey(t`Reset zoom`, 'reader.zoomReset')} withArrow zIndex={OVERLAY_Z}>
-                  <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
-                    <IconZoomReset size={20} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
               <Tooltip label={withKey(t`Zoom out`, 'reader.zoomOut')} withArrow zIndex={OVERLAY_Z}>
                 <ActionIcon
                   variant="subtle"

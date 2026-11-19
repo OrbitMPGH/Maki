@@ -169,10 +169,12 @@ export default function EnhancedPage({
       for (const element of elements) {
         const parent = element.offsetParent instanceof HTMLElement ? element.offsetParent : host
         const origin = parent.getBoundingClientRect()
-        element.style.left = `${at.left - origin.left - parent.clientLeft}px`
-        element.style.top = `${at.top - origin.top - parent.clientTop}px`
-        element.style.width = `${at.width}px`
-        element.style.height = `${at.height}px`
+        // A pinch-zoomed strip is scaled, and the overlay is placed in its unscaled pixels.
+        const scale = parent.offsetWidth > 0 ? origin.width / parent.offsetWidth : 1
+        element.style.left = `${(at.left - origin.left) / scale - parent.clientLeft}px`
+        element.style.top = `${(at.top - origin.top) / scale - parent.clientTop}px`
+        element.style.width = `${at.width / scale}px`
+        element.style.height = `${at.height / scale}px`
       }
     }
     place()

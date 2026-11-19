@@ -10494,6 +10494,10 @@ body.reader-open {
 .reader-surface[data-gestures] {
   touch-action: none;
 }
+/* A zoomed strip pans both ways natively; pinching stays with the reader (useStripZoom). */
+.reader-surface[data-pinch]:not([data-scroll='vertical']) {
+  touch-action: pan-x pan-y;
+}
 .reader-surface[data-gestures][data-zoomed] {
   cursor: grab;
 }
