@@ -80,9 +80,9 @@ public class EaseInstaller(
 
     private readonly SemaphoreSlim _installGate = new(1, 1);
 
-    /// <summary>Tied to the channel's switch, which is off unless set to true, so nothing downloads by default.</summary>
+    /// <summary>Tied to the channel's kill switch, default on, like the co-read installer.</summary>
     public async Task<bool> IsEnabledAsync(CancellationToken ct = default) =>
-        string.Equals(await settings.GetAsync(SettingKeys.RecommendationsEase, ct), "true", StringComparison.OrdinalIgnoreCase);
+        !string.Equals(await settings.GetAsync(SettingKeys.RecommendationsEase, ct), "false", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Installs the published table when it is compatible and newer than what is here.

@@ -162,9 +162,9 @@ public class EaseTests : IDisposable
     }
 
     [Fact]
-    public void TheShippedWeight_IsFour()
+    public void TheShippedWeight_IsOne()
     {
-        Assert.Equal(4, EaseTuning.Default.Weight);
+        Assert.Equal(1, EaseTuning.Default.Weight);
     }
 
     [Fact]

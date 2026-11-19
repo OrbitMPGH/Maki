@@ -857,7 +857,7 @@ Research round in `research/recommender/2026-11-15-v7/exp-behaviour/` (main chec
 - **A fold-limited co-read graph is refused like the other evaluation builds.** `fetch-coread-graph.cs build --fold-out` (added so `library` mode can keep co-read on) writes `buildFold` into the working database, and `export` carries it out as `trainingFold`. `graph-artifact.cs coread` and `CoReadInstaller` both refuse anything but `all`; an export from before the option has no key and saw every reader, so a missing key passes there. `EaseInstaller` is stricter and refuses a table with no `trainingFold`, because its builder always writes one. Run `--fold-out` on a copy of the working database: it overwrites the stored matrix.
 - **A data release is created with `--latest=false`** (`publish-graph.ps1`, `publish-embeddings.ps1`). `gh release create` marks a new release Latest by default, and `UpdateCheckService` reads `releases/latest` for the app version, so a new artifact tag would hide the real latest version from every install until the next app release.
 - **`--dump-features` carries the EASE term** (column `ease`, between `avoid` and `avoidtag`), and `fit-weights.cs` fits it as `easeweight` and refuses a dump with the old header. A `single` dump has it constant at 0, because one seed is under `MinSeeds`.
-- **The harness follows the app, except for the EASE switch since v8.** `default` runs EASE at weight 4 from `<config>/ease-table.db`, and runs without it when the file is absent. The app has shipped the channel off since "v8: EASE off by default", and the harness does not read `recommendations.ease`, so the shipped engine is `easeweight=0` on top of the default tuning. `noease` is the baseline; the three `rail*` shorthands never run it. In `library --fold-users` mode the table has to be a fold-limited build, passed with `--ease <path>` (the fold guard refuses the all-readers one). Reproduced after shipping, `default` against `noease` (scripts and logs in `step4-ease/ship/`), identical to the rows above because the card-reason attribution changes no rank. That was before `MinSeeds`; with it the single row is zero by construction (the panel prints 1.633 for both) and the other two are unchanged:
+- **The harness follows the app.** `default` runs EASE at `EaseTuning.Weight` (1 since "v8: EASE at weight 1"; the tables in this section ran at 4) from `<config>/ease-table.db`, and runs without it when the file is absent. The harness does not read `recommendations.ease`. `noease` is the baseline; the three `rail*` shorthands never run it. In `library --fold-users` mode the table has to be a fold-limited build, passed with `--ease <path>` (the fold guard refuses the all-readers one). Reproduced after shipping, `default` against `noease` (scripts and logs in `step4-ease/ship/`), identical to the rows above because the card-reason attribution changes no rank. That was before `MinSeeds`; with it the single row is zero by construction (the panel prints 1.633 for both) and the other two are unchanged:
 
   | run | default | noease | paired | pop |
   |---|---|---|---|---|
@@ -1211,9 +1211,24 @@ The owner found the Recommended tab's captions dull: of the top 20 on their page
 - **Unjudged pairs.** The margin rows' added claims are partly unjudged, since the named seed is often not the nearest series. With every unjudged pair scored 3 the margin 0.25 rows still miss the bar (2.18 and 1.95); the lower margins could reach it only in that best case. Queue: `.artifacts/reco-v8/ship/caption-queue.tsv`, with the owner page's named pairs in it.
 - **Not checked:** folds other than 0; whether a reader prefers a named weak claim to "Readers like you" (the judge scores story fit, not interest); taste-vector or EASE neighbours as the named series, which would make a crowd claim and need the "Fans of" wording.
 
-## v8: EASE off by default
+## v8: EASE at weight 1
 
-The owner's page through the shipping engine filled about a third of its top 40 with long Korean action webtoons and cross-genre hits that EASE brought in; with `recommendations.ease` set to false the same instance kept v0.37.0's page (31 of 40 shared) and still dropped the watched anime. The owner chose off. `recommendations.ease` now reads unset as off (`RecommendationService.EaseEnabledAsync`, `EaseInstaller.IsEnabledAsync`, `GET settings/recommendations/ease`), so nothing downloads either; an explicit `true` turns it back on. Scripts, logs and the owner's pages are in `research/recommender/2026-11-17-v8/noease/` in the main checkout.
+The owner's page through the shipping engine filled about a third of its top 40 with long Korean action webtoons and cross-genre hits that EASE brought in; with `recommendations.ease` set to false the same instance kept v0.37.0's page (31 of 40 shared) and still dropped the watched anime. EASE off was measured first (below, `noease/`), then a weight sweep (`easeweight/`). Off loses on finished shelves once fully judged, so the channel stays on by default and `EaseTuning.Weight` ships at 1 instead of 4. Scripts, logs and the owner's pages are in `research/recommender/2026-11-17-v8/noease/` and `easeweight/` in the main checkout.
+
+**The sweep** (v8 tuning, fold 0, n = 500, dev split; owner page through the real service, top 40):
+
+| weight | COMPLETED gates vs dev | CURRENT gates vs dev | COMPLETED wantN vs dev | CURRENT want@10 vs 4 (judged) | owner page: shared with off / webtoons / top-1k of 40 |
+|---|---|---|---|---|---|
+| 0 | FAIL 1,2 | FAIL 1,2,6 | -0.0423 | +0.041 [-0.004, +0.088] | 40 / 2 / 13 |
+| 1 | FAIL 1,2 | FAIL 2 (mainstream -0.0076 [-0.0153, -0.0001]) | -0.0195 | +0.030 [-0.007, +0.067] (97%) | 34 / 3 / 16 |
+| 2 | FAIL 1,2 | PASS | -0.0082 | +0.024 (97%) | 24 / 9 / 19 |
+| 3 | FAIL 1,2 | PASS (confirm agrees) | -0.0022 | +0.015 (97%) | 21 / 9 / 21 |
+| 4 | PASS | PASS | +0.0015 | 0 | 18 / 9 / 22 |
+
+- **No weight serves both.** The webtoons come back between 1 and 2. Weight 1 keeps about half of 4's wantN gain on finished shelves, and on install-like (CURRENT) shelves it is level with 4 on the judge and misses the mainstream third by a hair. The owner chose 1. The page-share table in use was built from pages at weight 4; rebuild it at weight 1 before the next publish.
+- **Fully judged, EASE off against 4** (359 more pairs): COMPLETED feel@10 -0.112 [-0.223, -0.021], want@10 -0.066 [-0.111, -0.019]; CURRENT feel@10 +0.034 [-0.048, +0.115], want@10 +0.041 [-0.004, +0.088]. The +0.09 CURRENT gain the partial table below showed mostly went away once judged.
+
+### EASE off, as first measured
 
 Variants: `dev` is the engine before v8 (`famecap=0,commonweight=0`, EASE on), `devne` the same without EASE, `ship` the v8 tuning with EASE, `shipne` without EASE on the page-share table built from pages with EASE, `shipnet` without EASE on a twin table built from pages without it (`page-frequency-current-cap10-noease.tsv`). Fold 0 of 4, n = 500, dev split, paired against `dev`, 95% bootstrap.
 

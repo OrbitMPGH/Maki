@@ -4113,7 +4113,7 @@ file static class Judgements
 /// <para>
 /// <c>easepath</c> names an EASE table (<c>distribution/build-ease-table.py</c>) and <c>easeweight</c>
 /// sets its coefficient; <c>easenegative</c>, <c>easeminseeds</c>, <c>easemaxinjected</c> and <c>easemininjected</c> are
-/// the rest of <see cref="EaseTuning"/>. The channel ships at weight 4 on personal recommendations,
+/// the rest of <see cref="EaseTuning"/>. The channel ships at weight 1 on personal recommendations,
 /// so every variant runs it from the installed table (or <c>--ease</c>) unless it says otherwise;
 /// <c>noease</c> is the baseline it has to be read against, and the three <c>rail*</c> shorthands
 /// never run it, because <c>SimilarSeriesService</c> passes it off.
