@@ -8185,15 +8185,6 @@ msgstr "正在连接到 Kavita…"
 msgid "Connections"
 msgstr "连接"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "可以考虑禁用两个来源映射中的一个；警告会在下次刷新时消失。"
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr ""
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -9593,6 +9584,14 @@ msgstr "已禁用"
 #, fuzzy
 msgid "Disabled"
 msgstr "已禁用"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -14941,6 +14940,10 @@ msgstr "Maki 在此处已使用 {used}，配额为 {quota}。请移除部分已�
 #, fuzzy
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki 已加载第一页（{0}）。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -26920,11 +26923,6 @@ msgstr "主题, 深色模式, 浅色模式, 强调色, 颜色, 跟随系统, 自
 #, fuzzy
 msgid "Then they can try again."
 msgstr "之后他们可以再试一次。"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "There is no safe automatic merge."
-msgstr "没有安全的自动合并方式。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

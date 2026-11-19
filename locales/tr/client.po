@@ -8185,15 +8185,6 @@ msgstr "Kavita'ya bağlanılıyor…"
 msgid "Connections"
 msgstr "Bağlantılar"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "İki kaynak eşlemesinden birini devre dışı bırakmayı düşünün; uyarı bir sonraki yenilemede kaybolur."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr ""
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -9593,6 +9584,14 @@ msgstr "devre dışı"
 #, fuzzy
 msgid "Disabled"
 msgstr "Devre dışı"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -14941,6 +14940,10 @@ msgstr "Maki burada {used} / {quota} kullanıyor. Kayıtlı bölümlerin bir kı
 #, fuzzy
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki ilk sayfayı yükledi ({0})."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -26920,11 +26923,6 @@ msgstr "tema, koyu mod, açık mod, vurgu rengi, renk, sistemle eşleştir, otom
 #, fuzzy
 msgid "Then they can try again."
 msgstr "Bundan sonra yeniden deneyebilirler."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "There is no safe automatic merge."
-msgstr "Güvenli bir otomatik birleştirme yok."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

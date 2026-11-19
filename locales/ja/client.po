@@ -8185,15 +8185,6 @@ msgstr "Kavitaに接続中…"
 msgid "Connections"
 msgstr "接続"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "2つのソースマッピングのどちらかを無効にすることを検討してください。警告は次回の更新で消えます。"
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr ""
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -9593,6 +9584,14 @@ msgstr "無効"
 #, fuzzy
 msgid "Disabled"
 msgstr "無効"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -14941,6 +14940,10 @@ msgstr "この端末では{used} / {quota}を使用しています。保存し�
 #, fuzzy
 msgid "Maki loaded the first page ({0})."
 msgstr "Makiは最初のページを読み込みました（{0}）。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -26920,11 +26923,6 @@ msgstr "テーマ, theme, ダークモード, dark mode, ライトモード, lig
 #, fuzzy
 msgid "Then they can try again."
 msgstr "その後、もう一度お試しいただけます。"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "There is no safe automatic merge."
-msgstr "安全な自動マージはありません。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

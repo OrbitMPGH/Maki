@@ -91,7 +91,40 @@ public class ChapterFoldService(
             }
         }
 
+        if (folded > 0 && series.NumberingClash is not null)
+        {
+            await NarrowClashAsync(series, ct);
+        }
+
         return folded;
+    }
+
+    /// <summary>
+    /// The clash warning is set by sync, which would otherwise show it until the next full refresh even
+    /// when the fold just removed the rows it was about. Pairs are only dropped here, never added: what
+    /// the links hold is a snapshot, and only a sync sees the sources as they are now.
+    /// </summary>
+    private async Task NarrowClashAsync(Series series, CancellationToken ct)
+    {
+        var links = await db.ChapterSourceLinks
+            .Where(l => l.Chapter!.SeriesId == series.Id && l.SourceMapping!.Enabled)
+            .Select(l => new { l.SourceMapping!.SourceName, l.Chapter!.Number })
+            .ToListAsync(ct);
+        var numbersBySource = links.GroupBy(l => l.SourceName).ToDictionary(
+            g => g.Key, IReadOnlyCollection<decimal?> (g) => [.. g.Select(l => l.Number)]);
+        var still = NumberingClashDetector.Detect(numbersBySource)
+            .Select(c => $"{c.SubChapterSource}|{c.WholeChapterSource}")
+            .ToHashSet(StringComparer.Ordinal);
+        var kept = series.NumberingClash!.Split(';').Where(still.Contains).ToList();
+        var value = kept.Count == 0 ? null : string.Join(';', kept);
+        if (value == series.NumberingClash)
+        {
+            return;
+        }
+
+        logger.LogInformation("Numbering clash on series {SeriesId} after folding: {Value}", series.Id, value ?? "cleared");
+        series.NumberingClash = value;
+        await db.SaveChangesAsync(ct);
     }
 
     private async Task<ChapterFold?> FoldAsync(

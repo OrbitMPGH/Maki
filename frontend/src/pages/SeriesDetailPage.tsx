@@ -2937,8 +2937,8 @@ function SeriesDetailBody() {
                           return numberingClashes.length === 1 ? (
                               <>
                                 {sentences[0]}{' '}
-                                <Trans>There is no safe automatic merge.</Trans>{' '}
-                                <Trans>Consider disabling one of the two source mappings; the warning clears on the next refresh.</Trans>
+                                <Trans>Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm.</Trans>{' '}
+                                <Trans>Disabling one of the two source mappings removes them.</Trans>
                               </>
                           ) : (
                               <>
@@ -2947,8 +2947,8 @@ function SeriesDetailBody() {
                                       <List.Item key={i}>{sentence}</List.Item>
                                   ))}
                                 </List>
-                                <Trans>There is no safe automatic merge.</Trans>{' '}
-                                <Trans>Consider disabling one source mapping in each pair; the warning clears on the next refresh.</Trans>
+                                <Trans>Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm.</Trans>{' '}
+                                <Trans>Disabling one source mapping in each pair removes them.</Trans>
                               </>
                           )
                         })()}

@@ -8185,15 +8185,6 @@ msgstr "Подключение к Kavita…"
 msgid "Connections"
 msgstr "Подключения"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "Рекомендуется отключить одно из двух сопоставлений источников; предупреждение исчезнет после следующего обновления."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr ""
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -9593,6 +9584,14 @@ msgstr "отключено"
 #, fuzzy
 msgid "Disabled"
 msgstr "Отключено"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -14941,6 +14940,10 @@ msgstr "Maki использует здесь {used} из {quota}. Удалите
 #, fuzzy
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki загрузил первую страницу ({0})."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -26920,11 +26923,6 @@ msgstr "тема, тёмная тема, светлая тема, цвет ак�
 #, fuzzy
 msgid "Then they can try again."
 msgstr "После этого они смогут попробовать снова."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "There is no safe automatic merge."
-msgstr "Безопасного автоматического объединения нет."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

@@ -6708,14 +6708,6 @@ msgstr "Connecting to Kavita…"
 msgid "Connections"
 msgstr "Connections"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-
 #: src/components/series/ChapterTableRows.tsx
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
@@ -7862,6 +7854,14 @@ msgstr "disabled"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Disabled"
 msgstr "Disabled"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr "Disabling one of the two source mappings removes them."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr "Disabling one source mapping in each pair removes them."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -12242,6 +12242,10 @@ msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki loaded the first page ({0})."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target."
@@ -22035,10 +22039,6 @@ msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match
 #: src/components/settings/SecuritySection.tsx
 msgid "Then they can try again."
 msgstr "Then they can try again."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "There is no safe automatic merge."
-msgstr "There is no safe automatic merge."
 
 #: src/pages/HealthPage.tsx
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: one of them has not been scanned, so it cannot be measured yet."
