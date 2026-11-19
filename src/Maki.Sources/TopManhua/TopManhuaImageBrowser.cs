@@ -10,14 +10,14 @@ namespace Maki.Sources.TopManhua;
 /// <summary>
 /// Fetches a chapter's page images through a real browser instead of a plain HTTP request. The
 /// image CDN (img-r2.2xstorage.com) sits behind Cloudflare bot management and blocks a bare
-/// re-request for an image URL with a "Sorry, you have been blocked" page — even from a real
-/// browser typed into the address bar — while the exact same image loads fine as an embedded
+/// re-request for an image URL with a "Sorry, you have been blocked" page, even from a real
+/// browser typed into the address bar, while the exact same image loads fine as an embedded
 /// &lt;img&gt; on the chapter page. Headers alone don't close that gap, and neither does a bare
 /// headless Chromium on its own: headless automation carries its own tells (WebGL renderer,
 /// CDP artifacts, missing plugins) that Cloudflare's client-side bot-detection script picks up
 /// regardless of what headers are sent. So this reuses <see cref="ChallengeAwareFetcher"/>'s
-/// FlareSolverr-solved session the same way <c>MangaFireBrowser</c> does — FlareSolverr's browser
-/// is specifically hardened against headless detection — then drives our own Chromium with that
+/// FlareSolverr-solved session the same way <c>MangaFireBrowser</c> does (FlareSolverr's browser
+/// is specifically hardened against headless detection), then drives our own Chromium with that
 /// session's cookies/UA to load the chapter page and let its native image pipeline fetch pages,
 /// capturing the bytes off the network as they come in.
 /// </summary>
@@ -103,7 +103,7 @@ public sealed class TopManhuaImageBrowser(
     /// <summary>
     /// Navigates to <paramref name="chapterUrl"/>, forces every lazy-loaded reading-content image
     /// to load, and returns whatever page bytes were captured off the network keyed by URL. A URL
-    /// missing from the result simply never loaded in time — the caller falls back to a plain
+    /// missing from the result simply never loaded in time; the caller falls back to a plain
     /// fetch for those rather than failing the whole chapter.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, byte[]>> FetchImagesAsync(

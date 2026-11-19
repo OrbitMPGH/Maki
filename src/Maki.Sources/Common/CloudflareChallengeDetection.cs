@@ -12,10 +12,10 @@ public enum PageVerdict
     /// <summary>Not obviously Cloudflare's doing.</summary>
     Unknown,
 
-    /// <summary>The solvable JS interstitial ("Just a moment") — stale clearance, worth re-solving.</summary>
+    /// <summary>The solvable JS interstitial ("Just a moment"): stale clearance, worth re-solving.</summary>
     Challenge,
 
-    /// <summary>A firewall/bot-score block — re-solving alone won't clear it.</summary>
+    /// <summary>A firewall/bot-score block; re-solving alone won't clear it.</summary>
     Blocked,
 }
 

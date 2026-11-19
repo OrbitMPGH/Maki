@@ -46,6 +46,10 @@ public sealed class HeadlessBrowserLauncher(BrowserInstaller? installer = null)
             DefaultViewport = null,
             // The shell starts with no window (--no-startup-window), so there is no first page to wait for.
             WaitForInitialPage = false,
+            // A pipe rather than a localhost port: no other local process can reach the browser, and
+            // Chromium exits when Maki does, even when Maki is killed. Over a port it outlived a hard
+            // kill (checked on Windows, 2026-11-19), which Playwright's driver never let happen.
+            Pipe = true,
             Timeout = LaunchTimeoutMs,
         });
         Interlocked.Increment(ref _running);

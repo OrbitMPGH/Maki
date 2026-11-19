@@ -16,7 +16,7 @@ namespace Maki.Sources.MangaFire;
 /// The site's SPA signs every protected <c>/api</c> call with a <c>vrf</c> query token minted by an
 /// obfuscated, anti-tamper "protection" module (seeded by a per-build <c>window.__config</c>). The
 /// token binds the request's headers, the module actively resists observation/instrumentation, and
-/// it issues requests through a network primitive our page hooks can't reach — so the token can be
+/// it issues requests through a network primitive our page hooks can't reach, so the token can be
 /// neither reverse-implemented in C# nor forged from an injected <c>fetch</c>. The only durable way
 /// in is to let the site's own code sign and issue the request inside a real browser and read the
 /// response back off the network. That is what this class does, matching how upstream Tachiyomi
@@ -144,14 +144,14 @@ public sealed class MangaFireBrowser(
     /// <summary>
     /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
     /// the chapter pager. The title page loads whichever language the site defaults to for that
-    /// series (not always English — a Japanese-only title defaults to <c>ja</c>), so when the request
+    /// series (not always English: a Japanese-only title defaults to <c>ja</c>), so when the request
     /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
     /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
     /// code for the caller to filter on). A title with no chapters in the requested language simply
     /// yields nothing.
     /// </summary>
     /// <summary>
-    /// Pass as <c>language</c> to drive the dropdown to "All" — the mixed view where every item
+    /// Pass as <c>language</c> to drive the dropdown to "All", the mixed view where every item
     /// carries its own <c>language</c> field. It is not a MangaFire language code, which is why it
     /// is absent from <see cref="LanguageLabels"/>: the lookup missing is exactly what routes it to
     /// the "All" item that <see cref="SwitchLanguageAsync"/> already falls back to.
@@ -241,7 +241,7 @@ public sealed class MangaFireBrowser(
                     }
                     else
                     {
-                        // the list was replaced wholesale — the previous language's items don't belong
+                        // the list was replaced wholesale; the previous language's items don't belong
                         items.Clear();
                         lastPage = null;
                         await CollectAsync(switched);
@@ -317,7 +317,7 @@ public sealed class MangaFireBrowser(
                 }
 
                 // The row is painted once the SPA's detail call resolves. A title that genuinely links
-                // nowhere never paints one, so a timeout here is an ordinary outcome, not a failure —
+                // nowhere never paints one, so a timeout here is an ordinary outcome, not a failure:
                 // fall through and return whatever links the page does have.
                 try
                 {
@@ -468,7 +468,7 @@ public sealed class MangaFireBrowser(
     /// <summary>
     /// MangaFire language codes to the label its "Lang" dropdown shows (minus the flag emoji).
     /// Only the codes seen in the wild are certain (en, es-la, pt-br); the rest follow the same
-    /// English-name convention and cost nothing when wrong — an unmatched code falls back to "All".
+    /// English-name convention and cost nothing when wrong: an unmatched code falls back to "All".
     /// </summary>
     private static readonly Dictionary<string, string> LanguageLabels = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -743,12 +743,12 @@ public sealed class MangaFireBrowser(
             {
                 case PageVerdict.Challenge:
                     throw new ChallengeException(
-                        "MangaFire: the headless browser did not clear Cloudflare — the FlareSolverr clearance " +
+                        "MangaFire: the headless browser did not clear Cloudflare: the FlareSolverr clearance " +
                         "cookie was rejected. This usually means Maki's network egress IP differs from " +
                         "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
                 case PageVerdict.Blocked:
                     throw new ChallengeException(
-                        "MangaFire: Cloudflare served an 'Access denied' block page — this is a firewall/bot-score " +
+                        "MangaFire: Cloudflare served an 'Access denied' block page. This is a firewall/bot-score " +
                         "rejection, not a solvable challenge, so re-solving won't help on its own. It's driven by the " +
                         "egress IP's reputation (VPN/VPS ranges score badly) plus the headless browser's fingerprint; " +
                         "route Maki's traffic through a residential-grade egress if it persists.");
