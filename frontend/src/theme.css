@@ -8499,6 +8499,9 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   background: color-mix(in srgb, var(--anime) 60%, transparent);
   transition: background var(--dur-fast) var(--ease), width var(--dur-fast) var(--ease);
 }
+.chapter-span-line[data-static] {
+  pointer-events: none;
+}
 .chapter-span-line:hover::before {
   width: 3px;
   background: var(--anime);
@@ -8642,17 +8645,157 @@ body.column-resizing * {
   background: color-mix(in srgb, var(--anime) 5%, transparent);
 }
 
-/* The header over a volume's chapters. Tinted with the volume pill's colour so it reads as the
-   group's label, and its toggle looks like the row it is. */
-.chapter-volume-row {
-  background: color-mix(in srgb, var(--volume) 10%, transparent);
+/* The heading over a volume's chapters. Taller than a chapter row, tinted with the volume pill's
+   colour and set apart by a gap, so it never reads as another chapter. Opaque, because it sticks under
+   the toolbar while its chapters scroll beneath it. Sticky on the row: a sticky cell can't leave its
+   row. The row sticks for the whole table, so each heading slides over the one before it. */
+.chapter-table {
+  --chapter-band: color-mix(in srgb, var(--volume) 18%, var(--surface-2));
+  --chapter-band-hover: color-mix(in srgb, var(--volume) 23%, var(--surface-2));
 }
-[data-theme='light'] .chapter-volume-row {
-  background: color-mix(in srgb, var(--volume) 8%, transparent);
+[data-theme='light'] .chapter-table {
+  --chapter-band: color-mix(in srgb, var(--volume) 16%, var(--surface-2));
+  --chapter-band-hover: color-mix(in srgb, var(--volume) 21%, var(--surface-2));
+}
+.chapter-table tbody tr.chapter-volume-row {
+  position: sticky;
+  top: var(--chapter-sticky-top, 0px);
+  /* Over the anime season lines' overlay, which is z-index 2. */
+  z-index: 3;
+  background-color: var(--chapter-band);
+}
+.chapter-table tbody tr.chapter-volume-row[data-covered] {
+  visibility: hidden;
+}
+/* The toolbar's fade would wash over the top of a stuck heading, which already marks the edge. */
+.series-detail-chapter-head[data-grouped]::after {
+  display: none;
+}
+.chapter-table tbody tr.chapter-volume-row:hover {
+  background-color: var(--chapter-band-hover);
+}
+.chapter-table tbody tr.chapter-volume-row > td {
+  height: 56px;
+  border-bottom: 0;
+  box-shadow: inset 0 1px 0 var(--border-strong), inset 0 -1px 0 var(--border-strong);
+}
+.chapter-table tbody tr.chapter-volume-gap,
+.chapter-table tbody tr.chapter-volume-gap:hover {
+  background-color: var(--app-bg);
+}
+.chapter-table tbody tr.chapter-volume-gap > td {
+  height: 10px;
+  padding: 0;
+  border-bottom: 0;
+}
+.chapter-volume-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+/* A season the volume's chapters belong to, in the anime's colour like the badges on its rows. */
+.chapter-volume-season {
+  flex: none;
 }
 .chapter-volume-toggle {
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
   width: fit-content;
+  max-width: 100%;
+  padding-inline-end: 8px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.chapter-volume-toggle > svg {
+  flex: none;
+  color: var(--ink-3);
+}
+.chapter-volume-title {
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
+  white-space: nowrap;
+}
+.chapter-volume-range {
+  min-width: 0;
+  margin-inline-start: 4px;
+  overflow: hidden;
+  font-size: var(--type-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.chapter-volume-progress-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+}
+.chapter-volume-counts {
+  font-size: var(--type-meta);
+  color: var(--ink-3);
+}
+.chapter-volume-counts strong {
+  font-weight: var(--fw-medium);
+  color: var(--ink-hi);
+}
+.chapter-volume-count-warn {
+  color: var(--warn);
+}
+.chapter-volume-count-danger {
+  color: var(--danger-fg);
+}
+.chapter-volume-download {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One mark per chapter, coloured like its status pill. Read marks stand taller, so read and
+   downloaded never rely on hue alone (an emerald accent sits right next to the green). */
+.volume-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  /* Shrinks in a narrow column rather than pushing the actions out of the panel, which doesn't scroll. */
+  flex: 0 1 150px;
+  min-width: 48px;
+  height: 10px;
+}
+.volume-strip > i {
+  flex: 1 1 0;
+  min-width: 2px;
+  height: 6px;
+  border-radius: var(--radius-2xs);
+  background: var(--neutral);
+}
+.volume-strip > i[data-kind='read'] {
+  height: 10px;
+  background: var(--brand);
+}
+.volume-strip > i[data-kind='watched'] {
+  height: 10px;
+  background: var(--anime);
+}
+.volume-strip > i[data-kind='downloaded'] {
+  background: var(--ok);
+}
+.volume-strip > i[data-kind='active'] {
+  background: var(--info);
+}
+.volume-strip > i[data-kind='missing'] {
+  background: var(--warn);
+}
+.volume-strip > i[data-kind='failed'] {
+  background: var(--danger);
+}
+.volume-strip > i[data-kind='removed'],
+.volume-strip > i[data-kind='unwanted'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--neutral);
 }
 
 /* A folded span's Wanted switch when the chapters under it disagree. There is no
@@ -8685,16 +8828,17 @@ body.column-resizing * {
 /* A panel a little narrower than the default columns (a laptop with the sidebar open) drops the
    Released column before it falls back to list rows. By position, so folded span rows lose their
    matching empty cell. */
-.chapter-rows-compact .chapter-table :is(th, td):nth-child(4) {
+.chapter-rows-compact .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(4) {
   display: none;
 }
 
-/* Columns the reader hid from the table's view menu. By position like the shed above, so span and
-   volume rows lose their matching cell, and in every layout including the list rows. */
-.chapter-hide-title .chapter-table :is(th, td):nth-child(3),
-.chapter-hide-released .chapter-table :is(th, td):nth-child(4),
-.chapter-hide-source .chapter-table :is(th, td):nth-child(5),
-.chapter-hide-status .chapter-table :is(th, td):nth-child(6) {
+/* Columns the reader hid from the table's view menu. By position like the shed above, so span rows
+   lose their matching cell, and in every layout including the list rows. Volume headings span
+   columns instead, sized to what shows. */
+.chapter-hide-title .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(3),
+.chapter-hide-released .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(4),
+.chapter-hide-source .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(5),
+.chapter-hide-status .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(6) {
   display: none !important;
 }
 
@@ -8798,13 +8942,46 @@ body.column-resizing * {
 }
 /* A folded span's summary and progress bar need the full second line, and its two empty
    cells would otherwise add gaps to it. */
-.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:empty {
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:empty {
   display: none;
 }
-.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:nth-child(3),
-.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:nth-child(6) {
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
   order: 3;
   flex: 1 1 100%;
+}
+/* A volume heading in list rows: name and actions on top, the strip and counts underneath. */
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-row {
+  padding-block: 4px 10px;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td {
+  height: auto;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-name {
+  order: 1;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-progress {
+  order: 3;
+  flex: 1 1 100%;
+  padding-inline-start: 24px !important;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-actions {
+  order: 1;
+  flex: none;
+  margin-inline-start: auto;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-gap {
+  display: block;
+  height: 10px;
+  padding: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-gap::before,
+.chapter-rows-list .chapter-table tbody tr.chapter-volume-gap > td {
+  display: none;
 }
 .chapter-rows-list .chapter-table .chapter-cell {
   padding-inline-end: 0 !important;
@@ -15061,7 +15238,7 @@ button.settings-row-head:hover,
   }
 }
 .series-detail-chapter-table {
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* --- relink files dialog: the chapter map --- */

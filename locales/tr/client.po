@@ -1775,6 +1775,10 @@ msgstr "{exposed} başka yerde okundu veya izlendi"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# tanesi silinemedi} other {# tanesi silinemedi}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{failedCount} failed"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
@@ -1804,6 +1808,10 @@ msgstr "{fileCount, plural, one {# tek dosya} other {# tek dosya}}"
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {Dosyası eksik # indirilmiş bölüm var, bu yüzden İndirmeler onu dışarıda bırakıyor.} other {Dosyaları eksik # indirilmiş bölüm var, bu yüzden İndirmeler onları dışarıda bırakıyor.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2404,6 +2412,10 @@ msgstr "{missing, plural, one {Grubu olmayan #} other {Grubu olmayan #}}"
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {sahip olmadığınız # bölüm ekler} other {sahip olmadığınız # bölüm ekler}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2597,6 +2609,10 @@ msgstr "{noticeTotal, plural, one {# not} other {# not}}"
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {Listede # tane daha var, istenmiyor} other {Listede # tane daha var, istenmiyor}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{notWantedCount} not wanted"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "{of} on"
 msgstr ""
@@ -2765,6 +2781,10 @@ msgstr "{queued, plural, one {Kitaplığa geri yüklendi, # bölüm kuyruğa al�
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Yükseltme taraması bitti: # daha iyi kopya kuyruğa alındı} other {Yükseltme taraması bitti: # daha iyi kopya kuyruğa alındı}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{queuedCount} queued"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{rated} rated"
@@ -2893,6 +2913,10 @@ msgstr "{relinked, plural, one {# dosya yeniden bağlandı} other {# dosya yenid
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# bölüm kaldı} other {# bölüm kaldı}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -3671,11 +3695,6 @@ msgstr "{unread, plural, one {# okunmamış} other {# okunmamış}}"
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# okunmamış} other {# okunmamış}}"
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "{unreadCount} unread"
-msgstr "{unreadCount} okunmamış"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
@@ -3936,6 +3955,10 @@ msgstr "<0>{chapters, plural, one {# bölüm} other {# bölüm}}</0> boyunca {da
 #, fuzzy
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "<0>{deleting}</0> diskten silinecek. Bu işlem geri alınamaz."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "<0>{downloadedCount}/{total}</0> downloaded"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -9799,9 +9822,8 @@ msgid "Download {chapterLbl}"
 msgstr "{chapterLbl} indir"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
 msgid "Download {missingCount} missing"
-msgstr "{missingCount} eksik olanı indir"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9874,11 +9896,6 @@ msgstr "Dizini indir"
 #, fuzzy
 msgid "Download it again"
 msgstr "Yeniden indir"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "{name} içindeki eksik bölümleri indir"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12240,11 +12257,6 @@ msgstr "Grup: {groupName}, bölümlerden"
 #, fuzzy
 msgid "Group: {groupName}, set by you"
 msgstr "Grup: {groupName}, sizin ayarladığınız"
-
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Tabloda anime sezonları işaretli olduğunda gruplama kapalıdır."
 
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
@@ -18087,6 +18099,10 @@ msgstr "Dönüştürülecek bir şey yok"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "İndirilecek bir şey yok"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx
@@ -29031,7 +29047,6 @@ msgstr "C. {fileVolume}"
 
 #: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
-#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -29082,6 +29097,10 @@ msgstr "{number}. Cilt"
 #, fuzzy
 msgid "Volume {range}"
 msgstr "Cilt {range}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Volume {volume}"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts

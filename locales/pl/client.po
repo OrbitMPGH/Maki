@@ -1775,6 +1775,10 @@ msgstr "Przeczytane lub obejrzane gdzie indziej: {exposed}"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# nie udało się usunąć} few {# nie udało się usunąć} many {# nie udało się usunąć} other {# nie udało się usunąć}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{failedCount} failed"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
@@ -1804,6 +1808,10 @@ msgstr "{fileCount, plural, one {# pojedynczy plik} few {# pojedyncze pliki} man
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# pobrany rozdział nie ma pliku, więc Pobrania go pomijają.} few {# pobrane rozdziały nie mają plików, więc Pobrania je pomijają.} many {# pobranych rozdziałów nie ma plików, więc Pobrania je pomijają.} other {# pobranego rozdziału nie ma pliku, więc Pobrania go pomijają.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2404,6 +2412,10 @@ msgstr "{missing, plural, one {# bez grupy} few {# bez grupy} many {# bez grupy}
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {dodaje # rozdział, którego nie masz} few {dodaje # rozdziały, których nie masz} many {dodaje # rozdziałów, których nie masz} other {dodaje # rozdziału, którego nie masz}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2597,6 +2609,10 @@ msgstr "{noticeTotal, plural, one {# adnotacja} few {# adnotacje} many {# adnota
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# więcej na liście, nieoznaczone jako poszukiwane} few {# więcej na liście, nieoznaczone jako poszukiwane} many {# więcej na liście, nieoznaczone jako poszukiwane} other {# więcej na liście, nieoznaczone jako poszukiwane}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{notWantedCount} not wanted"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "{of} on"
 msgstr ""
@@ -2765,6 +2781,10 @@ msgstr "{queued, plural, one {Przywrócono do biblioteki, # rozdział w kolejce}
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Skan ulepszeń zakończony: # lepsza kopia w kolejce} few {Skan ulepszeń zakończony: # lepsze kopie w kolejce} many {Skan ulepszeń zakończony: # lepszych kopii w kolejce} other {Skan ulepszeń zakończony: # lepszej kopii w kolejce}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{queuedCount} queued"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{rated} rated"
@@ -2893,6 +2913,10 @@ msgstr "{relinked, plural, one {Ponownie połączono # plik} few {Ponownie poł�
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {Pozostał # rozdział} few {Pozostały # rozdziały} many {Pozostało # rozdziałów} other {Pozostało # rozdziału}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -3671,11 +3695,6 @@ msgstr "{unread, plural, one {# nieprzeczytany} few {# nieprzeczytane} many {# n
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# nieprzeczytany} few {# nieprzeczytane} many {# nieprzeczytanych} other {# nieprzeczytanego}}"
 
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "{unreadCount} unread"
-msgstr "{unreadCount} nieprzeczytanych"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
@@ -3936,6 +3955,10 @@ msgstr "<0>{chapters, plural, one {# rozdział} few {# rozdziały} many {# rozdz
 #, fuzzy
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "Element <0>{deleting}</0> zostanie usunięty z dysku. Tej zmiany nie można cofnąć."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "<0>{downloadedCount}/{total}</0> downloaded"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -9799,9 +9822,8 @@ msgid "Download {chapterLbl}"
 msgstr "Pobierz {chapterLbl}"
 
 #: src/components/series/ChapterTableRows.tsx
-#, fuzzy
 msgid "Download {missingCount} missing"
-msgstr "Pobierz {missingCount} brakujących"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9874,11 +9896,6 @@ msgstr "Pobierz indeks"
 #, fuzzy
 msgid "Download it again"
 msgstr "Pobierz go ponownie"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "Pobierz brakujące rozdziały w {name}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12240,11 +12257,6 @@ msgstr "Grupa: {groupName}, z rozdziałów"
 #, fuzzy
 msgid "Group: {groupName}, set by you"
 msgstr "Grupa: {groupName}, ustawiona przez ciebie"
-
-#: src/components/series/ChapterViewMenu.tsx
-#, fuzzy
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Grupowanie jest wyłączone, gdy sezony anime są zaznaczone w tabeli."
 
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
@@ -18087,6 +18099,10 @@ msgstr "Nic do konwersji"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "Nic do pobrania"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx
@@ -29031,7 +29047,6 @@ msgstr "T. {fileVolume}"
 
 #: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
-#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -29082,6 +29097,10 @@ msgstr "Tom {number}"
 #, fuzzy
 msgid "Volume {range}"
 msgstr "Tom {range}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Volume {volume}"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts

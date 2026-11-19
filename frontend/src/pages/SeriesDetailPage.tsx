@@ -185,6 +185,8 @@ import {
   serializeHiddenColumns,
   sortChapters,
   volumeOf,
+  volumeQueueState,
+  type VolumeQueueState,
   type ChapterSort,
   type FileOrigin,
   type HidableChapterColumn,
@@ -246,7 +248,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
 import { showRestoreResult } from '../components/series/restoreToast'
-import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
+import { buildAnimeSpans, mergeAnimeMarkers, pairAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis, splitSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
@@ -352,10 +354,14 @@ const chapterTableMinWidthFor = (
       chapterColumnsWidthFor(widths, layout, hidden),
       layout === 'full' ? chapterFullMinWidth(hidden) : chapterCompactMinWidth(hidden),
   )
-const chapterLayoutFor = (panelWidth: number, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS): ChapterLayout =>
-  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden)
+const chapterLayoutFor = (
+  panelWidth: number,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+  extra = 0,
+): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden) + extra
       ? 'full'
-      : panelWidth >= chapterCompactMinWidth(hidden) ? 'compact' : 'list'
+      : panelWidth >= chapterCompactMinWidth(hidden) + extra ? 'compact' : 'list'
 
 type ChapterColumnRoom = {
   panel: number
@@ -625,6 +631,26 @@ function SeriesDetailBody() {
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
+  )
+  // Keyed on the states alone, so a download's page count ticking up doesn't re-render every volume
+  // heading. A chapter can be in the queue twice (a failed bulk run, then a retry), and an attempt
+  // still going wins over an old failure.
+  const volumeQueueKey = useMemo(() => {
+    const states = new Map<number, VolumeQueueState>()
+    for (const q of queue?.items ?? []) {
+      if (q.seriesId !== seriesId || q.chapterId === null) continue
+      const state = volumeQueueState(q.status)
+      const current = states.get(q.chapterId)
+      if (state && current !== 'active' && !(current === 'held' && state === 'failed')) states.set(q.chapterId, state)
+    }
+    return [...states].map(([id, state]) => `${id}:${state}`).join(',')
+  }, [queue, seriesId])
+  const volumeQueueStates = useMemo(
+      () => new Map(volumeQueueKey === '' ? [] : volumeQueueKey.split(',').map((entry) => {
+        const [id, state] = entry.split(':')
+        return [Number(id), state as VolumeQueueState] as const
+      })),
+      [volumeQueueKey],
   )
   const torrentDownloads = useMemo(
       () => (queue?.items ?? []).filter((q) => q.seriesId === seriesId && q.releaseTitle != null),
@@ -1076,6 +1102,12 @@ function SeriesDetailBody() {
     if (lastChapterNumber === null || chapterSortedByRelease) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, lastChapterNumber)
   }, [animeMarkers, lastChapterNumber, chapterSortedByRelease])
+  // What each volume heading names: every adaptation, including one on a single chapter and any past
+  // the lane cap that `animeSpans` drops for the lines.
+  const animeRanges = useMemo(
+      () => (lastChapterNumber === null ? [] : pairAnimeMarkers(animeMarkers, lastChapterNumber)),
+      [animeMarkers, lastChapterNumber],
+  )
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -1138,9 +1170,14 @@ function SeriesDetailBody() {
   /** The span (if any) a marker at this exact chapter number both starts or ends, so its badge can
    *  double as the fold control and as the line's anchor. A marker that lost its pairing, or its
    *  lane to the cap, stays a plain informational badge — same as before spans existed. */
+  // Matched on the label as well as the chapter: a film starting on a season's first chapter would
+  // otherwise take the season's span, its line and its fold.
   const spanForMarker = useCallback(
-      (num: number, kind: 'start' | 'end') =>
-          animeSpans.find((s) => (kind === 'start' ? s.from === num : !s.openEnded && s.to === num)),
+      (num: number, kind: 'start' | 'end', label: string) =>
+          animeSpans.find((s) =>
+            kind === 'start'
+                ? s.from === num && s.label === label
+                : !s.openEnded && s.to === num && (s.endLabel ?? s.label) === label),
       [animeSpans],
   )
 
@@ -1163,32 +1200,19 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
+  // The volume headings stick under the toolbar, which sticks too and changes height as it wraps.
+  const [chapterHead, setChapterHead] = useState<HTMLDivElement | null>(null)
+  const [chapterHeadHeight, setChapterHeadHeight] = useState(0)
+  useEffect(() => {
+    if (!chapterHead) return
+    // Not offsetHeight: a fractional toolbar would round down and leave a slit above the headings.
+    const observer = new ResizeObserver(() => setChapterHeadHeight(chapterHead.getBoundingClientRect().height))
+    observer.observe(chapterHead)
+    return () => observer.disconnect()
+  }, [chapterHead])
   // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
   // rather than on every pixel. The width itself goes to the column specs' drag limits.
   const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
-  useEffect(() => {
-    if (!chapterTable) return
-    const observer = new ResizeObserver(([entry]) => {
-      chapterColumnRoom.current.panel = entry.contentRect.width
-      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns))
-    })
-    observer.observe(chapterTable)
-    return () => observer.disconnect()
-  }, [chapterTable, hiddenChapterColumns])
-  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
-  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
-  // actions out of view.
-  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
-  const chapterRowsAsList = chapterLayout === 'list'
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
-  useLayoutEffect(() => {
-    chapterColumnRoom.current.layout = chapterLayout
-    chapterColumnRoom.current.widths = chapterColumnWidths
-    chapterColumnRoom.current.hidden = hiddenChapterColumns
-  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
-  const [spanLines, setSpanLines] = useState<
-      { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
-  >([])
   /**
    * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
    * Without it only the rows that actually carry a badge leave room at the right of the column,
@@ -1196,13 +1220,54 @@ function SeriesDetailBody() {
    */
   const [markerSlot, setMarkerSlot] = useState(0)
   const hasAnimeMarkers = animeMarkers.size > 0
+  // The reserved marker slot (plus the cell's own 18px) widens the Chapter column, so the layout
+  // budgets for it: the panel doesn't scroll sideways while grouped, and a table wider than it
+  // would clip the actions.
+  const markerRoom = hasAnimeMarkers ? markerSlot + 18 : 0
+  useEffect(() => {
+    if (!chapterTable) return
+    const observer = new ResizeObserver(([entry]) => {
+      chapterColumnRoom.current.panel = entry.contentRect.width
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns, markerRoom))
+    })
+    observer.observe(chapterTable)
+    return () => observer.disconnect()
+  }, [chapterTable, hiddenChapterColumns, markerRoom])
+  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
+  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
+  // actions out of view.
+  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
+  const chapterRowsAsList = chapterLayout === 'list'
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
+  const volumeTitleShown = !hiddenChapterColumns.has('title')
+  // List rows ignore column spans, so there the strip always gets its own cell and line.
+  const volumeProgressSpan = Math.max(
+      chapterRowsAsList ? 1 : 0,
+      shownChapterColumns(chapterLayout, hiddenChapterColumns).filter((key) => key !== 'chapter').length,
+  )
+  const chapterColumnCount = 3 + (volumeTitleShown ? 1 : 0) + volumeProgressSpan
+  useLayoutEffect(() => {
+    chapterColumnRoom.current.layout = chapterLayout
+    chapterColumnRoom.current.widths = chapterColumnWidths
+    chapterColumnRoom.current.hidden = hiddenChapterColumns
+  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
+  const [spanLines, setSpanLines] = useState<{
+    key: string
+    spanKey: string
+    label: string
+    top: number
+    height: number
+    left: number
+    openStart: boolean
+    openEnded: boolean
+  }[]>([])
 
   const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
   const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
   const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
-  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
-  // being in play means the table stays flat.
-  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  // Volumes follow chapter order, so sorting by release date keeps the table flat. Anime seasons
+  // stay as badges and lines inside the volumes; only their folding waits for the flat view.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : null
   const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
   const setChapterGrouping = (on: boolean) => {
     const next = on ? 'on' : 'off'
@@ -1341,6 +1406,54 @@ function SeriesDetailBody() {
    * search on a long page gets the same treatment: the old rows stay until the new ones are ready.
    */
   const shownRows = useDeferredValue(tab === 'chapters' ? pagedRows : NO_ROWS, NO_ROWS)
+
+  // Every volume heading sticks at the same spot for the whole table, so the later one covers the
+  // earlier ones. A heading whose counts wrapped is taller and would show under its successor, so
+  // the covered ones are hidden while the successor is stuck. Focus that lands under the stuck
+  // heading is scrolled clear of it: the browser counts it as on screen and wouldn't move.
+  useEffect(() => {
+    if (!chapterTable || !groupingActive) return
+    let frame = 0
+    const headings = () => [...chapterTable.querySelectorAll<HTMLElement>('tr.chapter-volume-row')]
+    /** The heading pinned under the toolbar right now, if any: the last one at its sticky top. */
+    const stuckHeading = (rows: HTMLElement[]) => {
+      if (rows.length === 0) return null
+      const stickAt = parseFloat(getComputedStyle(rows[0]).top) || 0
+      return rows.findLast((row) => row.getBoundingClientRect().top <= stickAt + 1) ?? null
+    }
+    const update = () => {
+      frame = 0
+      const rows = headings()
+      const stuck = stuckHeading(rows)
+      const stuckIndex = stuck ? rows.indexOf(stuck) : -1
+      rows.forEach((row, i) => row.toggleAttribute('data-covered', i < stuckIndex))
+    }
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(update)
+    }
+    const revealFocus = (event: FocusEvent) => {
+      const el = event.target
+      if (!(el instanceof HTMLElement) || el.closest('tr.chapter-volume-row')) return
+      const stuck = stuckHeading(headings())
+      if (!stuck) return
+      const overlap = stuck.getBoundingClientRect().bottom + 8 - el.getBoundingClientRect().top
+      if (overlap <= 0) return
+      let scroller: HTMLElement | null = el.parentElement
+      while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) {
+        scroller = scroller.parentElement
+      }
+      ;(scroller ?? document.scrollingElement ?? document.documentElement).scrollBy({ top: -overlap })
+    }
+    // Capture, because the page may scroll an inner element rather than the window.
+    document.addEventListener('scroll', schedule, { capture: true, passive: true })
+    chapterTable.addEventListener('focusin', revealFocus)
+    schedule()
+    return () => {
+      document.removeEventListener('scroll', schedule, { capture: true })
+      chapterTable.removeEventListener('focusin', revealFocus)
+      cancelAnimationFrame(frame)
+    }
+  }, [chapterTable, groupingActive, shownRows])
   const chapterRowsLoading = chapters === undefined || (shownRows.length === 0 && pagedRows.length > 0)
 
   useEffect(() => {
@@ -1409,49 +1522,65 @@ function SeriesDetailBody() {
       setMarkerSlot((current) => (current === slot ? current : slot))
 
       const next: typeof spanLines = []
-      const chapterCells = Array.from(wrap.querySelectorAll<HTMLElement>('.chapter-cell[data-chapter-number]'))
+      // Grouped by volume, a season's line stops at each volume heading and picks up again under it,
+      // so the rows are split into runs at the headings and every run gets its own piece of line.
+      const runs: HTMLElement[][] = [[]]
+      for (const row of wrap.querySelectorAll<HTMLElement>('tbody tr')) {
+        if (row.classList.contains('chapter-volume-row')) {
+          if (runs[runs.length - 1].length > 0) runs.push([])
+          continue
+        }
+        const cell = row.querySelector<HTMLElement>('.chapter-cell[data-chapter-number]')
+        if (cell) runs[runs.length - 1].push(cell)
+      }
       for (const span of animeSpans) {
         // An off-page end continues the line; an inferred end is not an actual boundary.
-        if (span.openEnded || foldedSpans.has(span.key)) continue
-        const cells = chapterCells.filter((cell) => {
-          const number = Number(cell.dataset.chapterNumber)
-          return number >= span.from && number <= span.to
-        })
-        if (cells.length === 0) continue
-        const startEl = markerRefs.current.get(`${span.key}:start`)
-        const endEl = markerRefs.current.get(`${span.key}:end`)
-        // Sorted descending, the end badge is the one on top.
-        const topEl = chapterSortDescending ? endEl : startEl
-        const bottomEl = chapterSortDescending ? startEl : endEl
-        // Clip to the visible run, below the table header. Either badge can be on another
-        // page (or hidden by a filter), including both on a middle page of a long season.
-        const top = topEl
-            ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
-            : cells[0].getBoundingClientRect().top - wrapRect.top
-        const bottom = bottomEl
-            ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
-            : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
-        if (bottom - top < 4) continue
+        if (span.openEnded || (!groupingActive && foldedSpans.has(span.key))) continue
+        const startBadge = markerRefs.current.get(`${span.key}:start`)
+        const endBadge = markerRefs.current.get(`${span.key}:end`)
+        for (const [run, runCells] of runs.entries()) {
+          const cells = runCells.filter((cell) => {
+            const number = Number(cell.dataset.chapterNumber)
+            return number >= span.from && number <= span.to
+          })
+          if (cells.length === 0) continue
+          const inRun = (el: HTMLElement | undefined) => (el && cells.some((cell) => cell.contains(el)) ? el : undefined)
+          const startEl = inRun(startBadge)
+          const endEl = inRun(endBadge)
+          // Sorted descending, the end badge is the one on top.
+          const topEl = chapterSortDescending ? endEl : startEl
+          const bottomEl = chapterSortDescending ? startEl : endEl
+          // Clip to the visible run, below the table header. Either badge can be on another
+          // page (or hidden by a filter), including both on a middle page of a long season.
+          const top = topEl
+              ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
+              : cells[0].getBoundingClientRect().top - wrapRect.top
+          const bottom = bottomEl
+              ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
+              : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
+          if (bottom - top < 4) continue
 
-        // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
-        // the series' widest label and centres its badge, so this is one shared x for every season
-        // — a badge's own centre would drift with its label's width. Taking it off the slot rather
-        // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
-        // that carries two markers (one season ending where the next begins).
-        const anchor = startEl ?? endEl
-        const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
-        if (!holder) continue
-        const holderRect = holder.getBoundingClientRect()
+          // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
+          // the series' widest label and centres its badge, so this is one shared x for every season
+          // — a badge's own centre would drift with its label's width. Taking it off the slot rather
+          // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
+          // that carries two markers (one season ending where the next begins).
+          const anchor = startEl ?? endEl
+          const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
+          if (!holder) continue
+          const holderRect = holder.getBoundingClientRect()
 
-        next.push({
-          key: span.key,
-          label: span.label,
-          top,
-          height: bottom - top,
-          left: holderRect.left - wrapRect.left + holderRect.width / 2,
-          openStart: !topEl,
-          openEnded: !bottomEl,
-        })
+          next.push({
+            key: `${span.key}:${run}`,
+            spanKey: span.key,
+            label: span.label,
+            top,
+            height: bottom - top,
+            left: holderRect.left - wrapRect.left + holderRect.width / 2,
+            openStart: !topEl,
+            openEnded: !bottomEl,
+          })
+        }
       }
 
       // Same-value bail-out: this runs from a ResizeObserver, and setting state that re-renders
@@ -1488,7 +1617,7 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
+  }, [chapterTable, animeSpans, foldedSpans, groupingActive, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
@@ -3197,7 +3326,12 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
+            <div
+                className="series-detail-chapter-head"
+                data-sticky={selectMode ? undefined : true}
+                data-grouped={groupingActive || undefined}
+                ref={setChapterHead}
+            >
               <Stack className="series-detail-chapter-toolbar" gap="sm">
                 <SectionHeader
                     icon={IconBook}
@@ -3512,14 +3646,26 @@ function SeriesDetailBody() {
                       ].join(' ')}
                       withBorder
                       radius="lg"
-                      style={{ overflow: 'hidden' }}
+                      // Clip rather than hidden: a hidden overflow makes the panel a scroll container,
+                      // and the volume headings could then never stick to the page.
+                      style={{
+                        overflow: 'clip',
+                        '--chapter-sticky-top': `calc(var(--app-shell-header-offset, 0px) + ${selectMode ? 0 : chapterHeadHeight}px)`,
+                      } as React.CSSProperties}
                   >
                     <Box
                         pos="relative"
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}>
+                      {/* The layout is picked so the table fits the panel. Grouped, the container must not
+                          scroll, or the volume headings couldn't stick to the page; flat, it keeps
+                          sideways scrolling as the fallback for a table that still comes out wider. */}
+                      <Table.ScrollContainer
+                          type="native"
+                          minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}
+                          style={groupingActive ? { overflow: 'clip' } : { overflowX: 'auto' }}
+                      >
                         <Table
                             className="chapter-table"
                             highlightOnHover
@@ -3569,7 +3715,7 @@ function SeriesDetailBody() {
                                 <ChapterRowSkeletons count={pagedRows.length > 0 ? Math.min(pagedRows.length, 12) : 8} />
                             ) : (
                                 <ChunkedRows rows={shownRows}>
-                                  {(rows) => rows.map((row) => {
+                                  {(rows) => rows.map((row, index) => {
                                   if (row.kind === 'volume') {
                                     return (
                                         <ChapterVolumeRow
@@ -3577,7 +3723,13 @@ function SeriesDetailBody() {
                                             group={row.group}
                                             collapsed={row.collapsed}
                                             readProgress={readProgress}
+                                            queueStates={volumeQueueStates}
+                                            seasons={animeRanges}
                                             readTracking={readTracking}
+                                            titleShown={volumeTitleShown}
+                                            progressSpan={volumeProgressSpan}
+                                            columnCount={chapterColumnCount}
+                                            gapBefore={index > 0}
                                             canEditMetadata={canEditMetadata}
                                             canDownload={canDownload}
                                             downloadDisabled={archived}
@@ -3617,6 +3769,7 @@ function SeriesDetailBody() {
                                           markers={markers}
                                           foldedSpans={markers ? foldedSpans : undefined}
                                           spanForMarker={spanForMarker}
+                                          spanFoldable={!groupingActive}
                                           canEditMetadata={canEditMetadata}
                                           canDownload={canDownload}
                                           canDelete={canDelete}
@@ -3646,6 +3799,19 @@ function SeriesDetailBody() {
                       <div className="chapter-span-overlay" aria-hidden={spanLines.length === 0}>
                         {spanLines.map((line) => {
                           const { label: lineLabel } = line
+                          // Grouped by volume, seasons don't fold, so the line is only a marker.
+                          if (groupingActive) {
+                            return (
+                                <span
+                                    key={line.key}
+                                    className="chapter-span-line"
+                                    data-static=""
+                                    style={{ top: line.top, height: line.height, left: line.left }}
+                                    data-open-start={line.openStart ? '' : undefined}
+                                    data-open-ended={line.openEnded ? '' : undefined}
+                                />
+                            )
+                          }
                           return (
                             <button
                                 key={line.key}
@@ -3656,7 +3822,7 @@ function SeriesDetailBody() {
                                 data-open-ended={line.openEnded ? '' : undefined}
                                 title={t`${lineLabel}. Click to collapse.`}
                                 aria-label={t`Collapse ${lineLabel}`}
-                                onClick={() => toggleSpanFold(line.key)}
+                                onClick={() => toggleSpanFold(line.spanKey)}
                             />
                           )
                         })}
