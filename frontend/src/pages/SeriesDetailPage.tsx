@@ -248,7 +248,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
 import { showRestoreResult } from '../components/series/restoreToast'
-import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
+import { buildAnimeSpans, mergeAnimeMarkers, pairAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis, splitSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
@@ -354,10 +354,14 @@ const chapterTableMinWidthFor = (
       chapterColumnsWidthFor(widths, layout, hidden),
       layout === 'full' ? chapterFullMinWidth(hidden) : chapterCompactMinWidth(hidden),
   )
-const chapterLayoutFor = (panelWidth: number, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS): ChapterLayout =>
-  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden)
+const chapterLayoutFor = (
+  panelWidth: number,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+  extra = 0,
+): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden) + extra
       ? 'full'
-      : panelWidth >= chapterCompactMinWidth(hidden) ? 'compact' : 'list'
+      : panelWidth >= chapterCompactMinWidth(hidden) + extra ? 'compact' : 'list'
 
 type ChapterColumnRoom = {
   panel: number
@@ -1098,6 +1102,12 @@ function SeriesDetailBody() {
     if (lastChapterNumber === null || chapterSortedByRelease) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, lastChapterNumber)
   }, [animeMarkers, lastChapterNumber, chapterSortedByRelease])
+  // What each volume heading names: every adaptation, including one on a single chapter and any past
+  // the lane cap that `animeSpans` drops for the lines.
+  const animeRanges = useMemo(
+      () => (lastChapterNumber === null ? [] : pairAnimeMarkers(animeMarkers, lastChapterNumber)),
+      [animeMarkers, lastChapterNumber],
+  )
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -1160,9 +1170,14 @@ function SeriesDetailBody() {
   /** The span (if any) a marker at this exact chapter number both starts or ends, so its badge can
    *  double as the fold control and as the line's anchor. A marker that lost its pairing, or its
    *  lane to the cap, stays a plain informational badge — same as before spans existed. */
+  // Matched on the label as well as the chapter: a film starting on a season's first chapter would
+  // otherwise take the season's span, its line and its fold.
   const spanForMarker = useCallback(
-      (num: number, kind: 'start' | 'end') =>
-          animeSpans.find((s) => (kind === 'start' ? s.from === num : !s.openEnded && s.to === num)),
+      (num: number, kind: 'start' | 'end', label: string) =>
+          animeSpans.find((s) =>
+            kind === 'start'
+                ? s.from === num && s.label === label
+                : !s.openEnded && s.to === num && (s.endLabel ?? s.label) === label),
       [animeSpans],
   )
 
@@ -1198,15 +1213,26 @@ function SeriesDetailBody() {
   // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
   // rather than on every pixel. The width itself goes to the column specs' drag limits.
   const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
+  /**
+   * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
+   * Without it only the rows that actually carry a badge leave room at the right of the column,
+   * and the chapter labels on all the others run straight under the line.
+   */
+  const [markerSlot, setMarkerSlot] = useState(0)
+  const hasAnimeMarkers = animeMarkers.size > 0
+  // The reserved marker slot (plus the cell's own 18px) widens the Chapter column, so the layout
+  // budgets for it: the panel doesn't scroll sideways while grouped, and a table wider than it
+  // would clip the actions.
+  const markerRoom = hasAnimeMarkers ? markerSlot + 18 : 0
   useEffect(() => {
     if (!chapterTable) return
     const observer = new ResizeObserver(([entry]) => {
       chapterColumnRoom.current.panel = entry.contentRect.width
-      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns))
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns, markerRoom))
     })
     observer.observe(chapterTable)
     return () => observer.disconnect()
-  }, [chapterTable, hiddenChapterColumns])
+  }, [chapterTable, hiddenChapterColumns, markerRoom])
   // A panel that can't hold the default columns first drops Released, then turns rows into two-line
   // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
   // actions out of view.
@@ -1235,13 +1261,6 @@ function SeriesDetailBody() {
     openStart: boolean
     openEnded: boolean
   }[]>([])
-  /**
-   * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
-   * Without it only the rows that actually carry a badge leave room at the right of the column,
-   * and the chapter labels on all the others run straight under the line.
-   */
-  const [markerSlot, setMarkerSlot] = useState(0)
-  const hasAnimeMarkers = animeMarkers.size > 0
 
   const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
   const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
@@ -3639,12 +3658,13 @@ function SeriesDetailBody() {
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      {/* The layout is picked so the table always fits the panel, so the container never has to
-                          scroll, and a scrolling one would stop the volume headings sticking. */}
+                      {/* The layout is picked so the table fits the panel. Grouped, the container must not
+                          scroll, or the volume headings couldn't stick to the page; flat, it keeps
+                          sideways scrolling as the fallback for a table that still comes out wider. */}
                       <Table.ScrollContainer
                           type="native"
                           minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}
-                          style={{ overflow: 'clip' }}
+                          style={groupingActive ? { overflow: 'clip' } : { overflowX: 'auto' }}
                       >
                         <Table
                             className="chapter-table"
@@ -3704,7 +3724,7 @@ function SeriesDetailBody() {
                                             collapsed={row.collapsed}
                                             readProgress={readProgress}
                                             queueStates={volumeQueueStates}
-                                            seasons={animeSpans}
+                                            seasons={animeRanges}
                                             readTracking={readTracking}
                                             titleShown={volumeTitleShown}
                                             progressSpan={volumeProgressSpan}

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Box, Button, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Button, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconBook,
   IconChevronDown,
@@ -43,7 +43,7 @@ import type { ChapterDto, QueueItemDto } from '../../api/types'
 import { chapterLabel as houseChapterLabel, chapterRangeLabel, formatCalendarDate } from '../../format'
 import type { OfflineChapter } from '../../pwa/contract'
 import type { SaveProgress } from '../../pwa/offlineChapters'
-import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
+import type { AnimeMarker, AnimeRange, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
 import { MetaList } from '../ui/MetaList'
@@ -100,7 +100,7 @@ type ChapterRowProps = {
   markers: AnimeMarker[] | undefined
   /** Only passed to rows that carry markers, so folding a season doesn't re-render the rest. */
   foldedSpans: ReadonlySet<string> | undefined
-  spanForMarker: (num: number, kind: 'start' | 'end') => AnimeSpan | undefined
+  spanForMarker: (num: number, kind: 'start' | 'end', label: string) => AnimeSpan | undefined
   /** Off while grouped by volume: the badges still mark a season's ends, but volumes are what fold. */
   spanFoldable?: boolean
   canEditMetadata: boolean
@@ -222,7 +222,7 @@ export const ChapterRow = memo(function ChapterRow({
                   // control and as the anchor the overlay measures its line from;
                   // everything else (an unpaired end, or one bumped by the 3-lane cap) is
                   // a plain informational badge, same as always.
-                  const span = spanForMarker(c.number!, marker.kind)
+                  const span = spanForMarker(c.number!, marker.kind, marker.label)
                   const foldable = span !== undefined && spanFoldable
                   const folded = foldable && (foldedSpans?.has(span.key) ?? false)
                   const { label: markerLabel } = marker
@@ -254,14 +254,23 @@ export const ChapterRow = memo(function ChapterRow({
                                       actions.setMarkerRef(`${span.key}:${marker.kind}`, el)
                                   : undefined
                             }
+                            // Only a fold control keeps the click; a plain badge lets it reach the row,
+                            // so select mode still picks the chapter.
                             {...(foldable
                                 ? pressable((e) => {
                                   e.stopPropagation()
                                   actions.toggleSpanFold(span.key)
                                 })
-                                : { onClick: (e: { stopPropagation: () => void }) => e.stopPropagation() })}
+                                : {})}
                         >
-                          {marker.label}
+                          <span aria-hidden>{marker.label}</span>
+                          {/* The tooltip is pointer-only, and list rows hide the line, so the badge
+                              says which end it marks to a screen reader too. */}
+                          <VisuallyHidden>
+                            {marker.kind === 'start'
+                                ? t`${markerLabel} Anime adaptation starts here`
+                                : t`${markerLabel} Anime adaptation ends here`}
+                          </VisuallyHidden>
                         </LightBadge>
                       </HoverTooltip>
                   )
@@ -888,8 +897,8 @@ type ChapterVolumeRowProps = {
   readProgress: ReadonlyMap<number, ChapterProgressDto>
   /** Where each of the volume's chapters stands in the download queue, for the strip and the counts. */
   queueStates: ReadonlyMap<number, VolumeQueueState>
-  /** The series' anime seasons. The heading names each one that covers any of its chapters. */
-  seasons: readonly AnimeSpan[]
+  /** The series' anime adaptations. The heading names each one that covers any of its chapters. */
+  seasons: readonly AnimeRange[]
   readTracking: boolean
   /** Whether the Title column shows, so the heading can take its room as well as the Chapter column's. */
   titleShown: boolean
@@ -936,8 +945,9 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   const total = chapters.length
   const ids = chapters.map((c) => c.id)
   const downloaded = chapters.filter((c) => c.hasFile && !c.fileMissing)
-  // Watched in the anime counts as read for every total, but shows in the anime's colour, as on its row.
-  const watchedIds = new Set(downloaded.filter((c) => readStateOf(readProgress.get(c.id)).watched).map((c) => c.id))
+  // Watched in the anime counts as read for every total, but shows in the anime's colour, as on its
+  // row. Marking a season watched also covers chapters never downloaded, so this isn't limited to files.
+  const watchedIds = new Set(chapters.filter((c) => readStateOf(readProgress.get(c.id)).watched).map((c) => c.id))
   const readIds = new Set(
       downloaded.filter((c) => !watchedIds.has(c.id) && readStateOf(readProgress.get(c.id)).read).map((c) => c.id),
   )
@@ -961,10 +971,8 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
     if (queued === 'failed') return 'failed'
     if (queued === 'active') return 'active'
     if (c.hasFile && c.fileMissing) return 'missing'
-    if (c.hasFile) {
-      if (readTracking && watchedIds.has(c.id)) return 'watched'
-      return readTracking && readIds.has(c.id) ? 'read' : 'downloaded'
-    }
+    if (readTracking && watchedIds.has(c.id)) return 'watched'
+    if (c.hasFile) return readTracking && readIds.has(c.id) ? 'read' : 'downloaded'
     if (!c.wanted) return 'unwanted'
     return c.fileRemovedAt ? 'removed' : 'none'
   })
