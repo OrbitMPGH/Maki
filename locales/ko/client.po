@@ -10068,6 +10068,10 @@ msgstr "{title}의 다운로드가 {time}까지 일시 정지됨"
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "이 시리즈의 다운로드가 일시 정지되었습니다. 대기 중인 챕터는 다시 시작할 때까지 기다리고, 다른 시리즈는 계속 다운로드합니다."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -26193,6 +26197,10 @@ msgstr "압축 파일 안의 페이지 파일명에서 챕터 번호를 확인�
 msgid "The chapter page did not load: {0}"
 msgstr "챕터 페이지를 불러오지 못했습니다: {0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -27796,6 +27804,10 @@ msgstr "휴지통: {trashFilesText}, {trashSize}"
 #, fuzzy
 msgid "Trending now"
 msgstr "지금 인기 급상승 중"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

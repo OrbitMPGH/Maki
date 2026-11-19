@@ -543,6 +543,22 @@ export function SourceMappingsSection({
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                           </Badge>
                         </Tooltip>}
+                        {byQuality && sourceOrder?.demoted[m.id] && (
+                          <Tooltip
+                            label={
+                              sourceOrder.demoted[m.id] === 'unreliable'
+                                ? t`Downloads from ${sourceName} keep failing, so it is tried after every other source whatever its quality.`
+                                : t`The chapters sampled from ${sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality.`
+                            }
+                            withArrow
+                            multiline
+                            w={280}
+                          >
+                            <Badge size="sm" color="var(--warn)" variant="light" style={{ flexShrink: 0 }}>
+                              <Trans>Tried last</Trans>
+                            </Badge>
+                          </Tooltip>
+                        )}
                         {wholeNames && (
                           <Tooltip label={clashTip(wholeNames)}>
                             <Badge size="sm" color="var(--warn)" variant="light" style={{ flexShrink: 0 }}>

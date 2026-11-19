@@ -7,14 +7,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
+/// <summary>Why best quality first put a source behind every other one.</summary>
+public enum SourceDemotion
+{
+    /// <summary>Its downloads keep failing, see <see cref="SourceReliability"/>.</summary>
+    Unreliable,
+
+    /// <summary>Its page counts look like a preview, see <see cref="SourcePageCounts"/>.</summary>
+    Truncated
+}
+
 /// <summary>The order a series' downloads try its sources in, and why.</summary>
 /// <param name="SeriesMode">The series' own setting; null follows <paramref name="DefaultMode"/>.</param>
 /// <param name="Scores">Per mapping id, only in <see cref="SourceOrderMode.Quality"/>.</param>
+/// <param name="Demoted">Per mapping id moved behind every other source whatever its score, only in <see cref="SourceOrderMode.Quality"/>.</param>
 public sealed record SourceOrderResult(
     SourceOrderMode? SeriesMode,
     SourceOrderMode DefaultMode,
     IReadOnlyList<SourceMapping> Ordered,
-    IReadOnlyDictionary<int, QualityScore> Scores)
+    IReadOnlyDictionary<int, QualityScore> Scores,
+    IReadOnlyDictionary<int, SourceDemotion> Demoted)
 {
     public SourceOrderMode Mode => SeriesMode ?? DefaultMode;
 }
@@ -55,7 +67,8 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
         var manual = mappings.OrderBy(m => m.Priority).ThenBy(m => m.Id).ToList();
         if ((force ?? seriesMode ?? defaultMode) != SourceOrderMode.Quality || mappings.Count == 0)
         {
-            return new SourceOrderResult(seriesMode, defaultMode, manual, new Dictionary<int, QualityScore>());
+            return new SourceOrderResult(seriesMode, defaultMode, manual, new Dictionary<int, QualityScore>(),
+                new Dictionary<int, SourceDemotion>());
         }
 
         var evaluator = await new UpgradeEvaluationService(db, quality).ForSeriesAsync(seriesId, ct)
@@ -96,10 +109,21 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
             .Where(q => q.SeriesId == seriesId && q.PageCount > 0)
             .Select(q => new SourcePageCounts.Sample(q.SourceMappingId, q.ChapterId, q.PageCount, q.MedianWidth, q.MedianHeight))
             .ToListAsync(ct));
-        var ordered = SourceReliability.Demote(
-            [.. ranked.Select(e => byId[e.MappingId])],
-            m => SourceReliability.IsUnreliable(outcomes[m.Id]) || truncated.Contains(m.Id));
-        return new SourceOrderResult(seriesMode, defaultMode, ordered, scores);
+        var demoted = new Dictionary<int, SourceDemotion>();
+        foreach (var mapping in mappings)
+        {
+            if (SourceReliability.IsUnreliable(outcomes[mapping.Id]))
+            {
+                demoted[mapping.Id] = SourceDemotion.Unreliable;
+            }
+            else if (truncated.Contains(mapping.Id))
+            {
+                demoted[mapping.Id] = SourceDemotion.Truncated;
+            }
+        }
+
+        var ordered = SourceReliability.Demote([.. ranked.Select(e => byId[e.MappingId])], m => demoted.ContainsKey(m.Id));
+        return new SourceOrderResult(seriesMode, defaultMode, ordered, scores, demoted);
     }
 
     /// <summary>

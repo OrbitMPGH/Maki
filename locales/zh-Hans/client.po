@@ -10068,6 +10068,10 @@ msgstr "{title} 的下载已暂停，直到 {time}"
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "此系列的下载已暂停。排队中的章节会等到你恢复；其他系列继续下载。"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -26193,6 +26197,10 @@ msgstr "压缩包内的页面文件名包含章节编号，这个判断很确定
 msgid "The chapter page did not load: {0}"
 msgstr "章节页面未能加载：{0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -27796,6 +27804,10 @@ msgstr "回收站：{trashFilesText}，共 {trashSize}"
 #, fuzzy
 msgid "Trending now"
 msgstr "当前热门"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

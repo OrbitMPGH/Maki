@@ -8258,6 +8258,10 @@ msgstr "Downloads for {title} paused until {time}"
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+
 #: src/components/QueuePause.tsx
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
 msgstr "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -21452,6 +21456,10 @@ msgstr "The chapter numbers are in the archive's page file names. Certain."
 msgid "The chapter page did not load: {0}"
 msgstr "The chapter page did not load: {0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 msgstr "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -22747,6 +22755,10 @@ msgstr "Trash: {trashSize} across {trashFilesText}"
 #: src/api/hooks.ts
 msgid "Trending now"
 msgstr "Trending now"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr "Tried last"
 
 #: src/pages/HealthPage.tsx
 msgid "Tries {sourceNames} in priority order. Choosing one source pins it, with no fallback."

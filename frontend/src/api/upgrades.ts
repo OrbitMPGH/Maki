@@ -604,7 +604,12 @@ export interface SourceOrderDto {
   qualityOrder: number[]
   /** Per mapping id, the tier its copies count as. Best quality first compares it before the score. */
   tiers: Record<number, QualityTierName>
+  /** Per mapping id that best quality first tries last whatever its score, and why. */
+  demoted: Record<number, SourceDemotion>
 }
+
+/** `unreliable`: its downloads keep failing. `truncated`: its chapters look like previews. */
+export type SourceDemotion = 'unreliable' | 'truncated'
 
 export interface ScoutSnapshot {
   running: boolean

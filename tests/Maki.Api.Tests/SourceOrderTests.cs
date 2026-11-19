@@ -237,6 +237,11 @@ public sealed class SourceOrderTests : IDisposable
 
         // good is truncated, poor keeps failing; ranked on quality alone good comes before poor.
         Assert.Equal([fresh, good, poor], await OrderAsync(db, seriesId));
+        var mappings = await db.SourceMappings.Where(m => m.SeriesId == seriesId).ToListAsync();
+        var result = await new SourceOrderService(Registry, TestQuality.Create(Registry)).OrderAsync(db, seriesId, mappings, CancellationToken.None);
+        Assert.Equal(
+            new Dictionary<int, SourceDemotion> { [good] = SourceDemotion.Truncated, [poor] = SourceDemotion.Unreliable },
+            result.Demoted);
     }
 
     [Fact]

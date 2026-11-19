@@ -102,6 +102,15 @@ export const BestQualityOrder: Story = {
   parameters: { msw: withOrder({ seriesMode: 'quality', mode: 'quality' }) },
 }
 
+export const DemotedSourcesTriedLast: Story = {
+  parameters: {
+    msw: withOrder({ seriesMode: 'quality', mode: 'quality', demoted: { 11: 'truncated', 12: 'unreliable' } }),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getAllByText('Tried last')).toHaveLength(2))
+  },
+}
+
 export const MeasurementRunning: Story = {
   parameters: {
     msw: withOrder({

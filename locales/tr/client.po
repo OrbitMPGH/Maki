@@ -10068,6 +10068,10 @@ msgstr "{title} için indirmeler {time} tarihine kadar duraklatıldı"
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "Bu serinin indirmeleri duraklatıldı. Sıradaki bölümler siz devam ettirene kadar bekler; diğer seriler indirmeye devam eder."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -26193,6 +26197,10 @@ msgstr "Bölüm numaraları arşivdeki sayfa dosyalarının adlarında yer alıy
 msgid "The chapter page did not load: {0}"
 msgstr "Bölüm sayfası yüklenemedi: {0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -27796,6 +27804,10 @@ msgstr "Çöp: {trashFilesText} içinde {trashSize}"
 #, fuzzy
 msgid "Trending now"
 msgstr "Şu anda yükselişte"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

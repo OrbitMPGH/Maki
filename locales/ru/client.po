@@ -10068,6 +10068,10 @@ msgstr "Загрузки для {title} приостановлены до {time}
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "Загрузки для этой серии приостановлены. Главы в очереди ждут, пока вы их не возобновите; остальные серии продолжают загружаться."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -26193,6 +26197,10 @@ msgstr "Номера глав указаны в именах файлов стр
 msgid "The chapter page did not load: {0}"
 msgstr "Страница главы не загрузилась: {0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -27796,6 +27804,10 @@ msgstr "Корзина: {trashSize}, {trashFilesText}"
 #, fuzzy
 msgid "Trending now"
 msgstr "Сейчас в тренде"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

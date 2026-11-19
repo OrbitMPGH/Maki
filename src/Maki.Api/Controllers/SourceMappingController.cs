@@ -326,7 +326,8 @@ public class SourceMappingController(
             [.. qualityOrder.Ordered.Select(m => m.Id)],
             mappings.ToDictionary(m => m.Id, m => QualityNames.Tier(
                 qualityOrder.Scores.GetValueOrDefault(m.Id)?.Tier
-                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false)))));
+                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false))),
+            qualityOrder.Demoted.ToDictionary(d => d.Key, d => d.Value == SourceDemotion.Unreliable ? "unreliable" : "truncated")));
     }
 
     public record ScoutRequest(int SeriesId);

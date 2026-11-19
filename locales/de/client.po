@@ -10068,6 +10068,10 @@ msgstr "Downloads für {title} pausiert bis {time}"
 msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
 msgstr "Downloads für diese Serie sind pausiert. Eingereihte Kapitel warten, bis du fortsetzt; andere Serien laden weiter herunter."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads from {sourceName} keep failing, so it is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
@@ -26193,6 +26197,10 @@ msgstr "Die Kapitelnummern stehen in den Dateinamen der Seiten im Archiv. Sicher
 msgid "The chapter page did not load: {0}"
 msgstr "Die Kapitelseite konnte nicht geladen werden: {0}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "The chapters sampled from {sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
@@ -27796,6 +27804,10 @@ msgstr "Papierkorb: {trashSize} in {trashFilesText}"
 #, fuzzy
 msgid "Trending now"
 msgstr "Gerade im Trend"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Tried last"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
