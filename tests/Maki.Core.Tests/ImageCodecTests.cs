@@ -132,4 +132,46 @@ public class ImageCodecTests : IDisposable
         Assert.True(PerceptualHash.Distance(a, b) <= 4, $"same page differs by {PerceptualHash.Distance(a, b)} bits");
         Assert.True(PerceptualHash.Distance(a, c) > 20, $"different pages differ by only {PerceptualHash.Distance(a, c)} bits");
     }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void Row_deviation_matches_a_plain_count_of_the_luma(int bands)
+    {
+        const int width = 37, height = 53;
+        var random = new Random(bands);
+        var pixels = new byte[width * height * bands];
+        random.NextBytes(pixels);
+        using var raw = NetVips.Image.NewFromMemory(pixels, width, height, bands, NetVips.Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: bands == 1 ? NetVips.Enums.Interpretation.Bw : NetVips.Enums.Interpretation.Srgb);
+
+        var expected = PlainRowDeviation(image);
+
+        Assert.Equal(expected, ImageCodec.RowDeviation(image));
+    }
+
+    private static double[] PlainRowDeviation(NetVips.Image image)
+    {
+        using var flat = image.HasAlpha()
+            ? image.Flatten(background: Enumerable.Repeat(255.0, image.Bands - 1).ToArray())
+            : image.Copy();
+        using var grey = flat.Bands >= 3 ? flat.Colourspace(NetVips.Enums.Interpretation.Bw) : flat.ExtractBand(0);
+        var pixels = grey.WriteToMemory<byte>();
+        var rows = new double[grey.Height];
+        for (var y = 0; y < rows.Length; y++)
+        {
+            long sum = 0, squares = 0;
+            foreach (var value in pixels.AsSpan(y * grey.Width, grey.Width))
+            {
+                sum += value;
+                squares += value * value;
+            }
+
+            var mean = (double)sum / grey.Width;
+            rows[y] = Math.Sqrt(Math.Max(0, (double)squares / grey.Width - mean * mean));
+        }
+
+        return rows;
+    }
 }

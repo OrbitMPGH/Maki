@@ -3,8 +3,8 @@ using Maki.Core.Images.Upscaling;
 namespace Maki.Core.Tests;
 
 /// <summary>
-/// <see cref="UpscalePixels.TakeColourFrom"/> works band by band on a large page to keep its peak down.
-/// Both of its paths must give byte for byte what the colour pass gave before, kept here as
+/// <see cref="UpscalePixels.TakeColourFrom"/> works band by band to keep its peak down. It must give
+/// byte for byte what the whole-page colour pass gave before, kept here as
 /// <see cref="WholePage"/>.
 /// </summary>
 public class UpscalePixelsBandTests
@@ -19,20 +19,15 @@ public class UpscalePixelsBandTests
     [InlineData(17, 70, 4, 7)]
     [InlineData(80, 1000, 2, 4)]
     [InlineData(23, 400, 2, 18)]
-    public void Both_paths_give_the_bytes_the_colour_pass_gave_before(int sourceWidth, int sourceHeight, int scale, int threads)
+    public void Bands_give_the_bytes_the_whole_page_pass_gave(int sourceWidth, int sourceHeight, int scale, int threads)
     {
         var (source, output) = Page(sourceWidth, sourceHeight, scale, seed: sourceWidth * 31 + sourceHeight);
         var expected = (byte[])output.Clone();
         WholePage(expected, sourceWidth * scale, sourceHeight * scale, source, sourceWidth, sourceHeight);
-        var banded = (byte[])output.Clone();
 
-        UpscalePixels.TakeColourFrom(output, sourceWidth * scale, sourceHeight * scale, source, sourceWidth, sourceHeight, threads,
-            banded: false);
-        UpscalePixels.TakeColourFrom(banded, sourceWidth * scale, sourceHeight * scale, source, sourceWidth, sourceHeight, threads,
-            banded: true);
+        UpscalePixels.TakeColourFrom(output, sourceWidth * scale, sourceHeight * scale, source, sourceWidth, sourceHeight, threads);
 
         Assert.Equal(expected, output);
-        Assert.Equal(expected, banded);
     }
 
     /// <summary>A colour page with soft gradients, flat patches a few levels apart, saturated blocks and noise.</summary>

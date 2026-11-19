@@ -82,20 +82,7 @@ public static class UpscalePixels
     /// </para>
     /// </summary>
     public static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads) =>
-        TakeColourFrom(output, width, height, source, sourceWidth, sourceHeight, threads,
-            banded: (long)sourceWidth * sourceHeight > BandedFromPixels);
-
-    /// <summary>
-    /// From this many source pixels the colour pass works band by band. The whole-page pass holds 13 bytes a
-    /// source pixel (136 MB on a 720 x 16000 webtoon slice, the peak of a tall page) and the banded one a few MB,
-    /// for the same bytes out. On a typical 1.7 MP page the banded pass was 7 to 18% slower, on 2.6 MP and up
-    /// within noise of the whole-page one.
-    /// </summary>
-    internal const long BandedFromPixels = 4_000_000;
-
-    internal static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads, bool banded)
+        int threads)
     {
         var scale = sourceWidth > 0 ? width / sourceWidth : 0;
         if (scale < 1 || width != sourceWidth * scale || height != sourceHeight * scale
@@ -106,7 +93,6 @@ public static class UpscalePixels
 
         var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads) };
         var guide = new byte[sourceWidth * sourceHeight];
-        var chroma = banded ? [] : new short[sourceWidth * sourceHeight * 2];
         Parallel.For(0, sourceHeight, options, y =>
         {
             for (var x = 0; x < sourceWidth; x++)
@@ -123,27 +109,13 @@ public static class UpscalePixels
 
                 guide[y * sourceWidth + x] = (byte)((sum + scale * scale / 2) / (scale * scale));
             }
-
-            if (!banded)
-            {
-                ChromaRow(source, chroma, sourceWidth, y, 0);
-            }
         });
-
-        if (!banded)
-        {
-            var smooth = new float[sourceWidth * sourceHeight * 2];
-            var bands = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
-            Parallel.For(0, bands, options, band => SmoothRows(chroma, 0, guide, smooth, 0, sourceWidth, sourceHeight,
-                band * SmoothBandRows, Math.Min(sourceHeight, (band + 1) * SmoothBandRows)));
-            Parallel.For(0, height, options, y => ColourRow(output.AsSpan(y * width * 3, width * 3), width, smooth, 0, sourceWidth, sourceHeight, scale, y));
-            return;
-        }
 
         // Each band of source rows works out its own chroma (with the rows its taps reach) and smoothed colour
         // (with the next row, for the bilinear), then colours the output rows it covers. Nothing waits between
-        // bands; the guide is the only whole-page buffer, taken before any output row changes. Every pixel gets
-        // the same arithmetic as in the whole-page pass.
+        // bands; the guide is the only whole-page buffer, taken before any output row changes. Holding the whole
+        // page's chroma and colour instead costs 12 more bytes a source pixel (22 MB on a 1.7 MP page) to save
+        // about 5 ms.
         var reach = SmoothReach * SmoothStep;
         var count = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
         var starts = new int[count + 1];
