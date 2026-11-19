@@ -8,7 +8,7 @@ type SortKey = 'number' | 'released'
 type GroupingControl = {
   checked: boolean
   /** Why grouping can't apply right now, or null while it can. */
-  blockedBy: 'release' | 'seasons' | 'none' | null
+  blockedBy: 'release' | 'none' | null
   onChange: (on: boolean) => void
   /** The table is grouped at this moment. */
   active: boolean
@@ -65,11 +65,6 @@ export function ChapterViewMenu({ sortKey, onSortKey, hidden, onToggleColumn, gr
               {blockedBy === 'release' && (
                   <Text size="xs" c="var(--ink-3)">
                     <Trans>Volumes follow chapter order, so grouping is off while sorting by release date.</Trans>
-                  </Text>
-              )}
-              {blockedBy === 'seasons' && (
-                  <Text size="xs" c="var(--ink-3)">
-                    <Trans>Grouping is off while anime seasons are marked in the table.</Trans>
                   </Text>
               )}
               {blockedBy === 'none' && (

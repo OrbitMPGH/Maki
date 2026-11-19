@@ -1,9 +1,9 @@
-import { memo, startTransition, useEffect, useState } from 'react'
+import { memo, startTransition, useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Button, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconBook,
   IconChevronDown,
@@ -43,7 +43,7 @@ import type { ChapterDto, QueueItemDto } from '../../api/types'
 import { chapterLabel as houseChapterLabel, chapterRangeLabel, formatCalendarDate } from '../../format'
 import type { OfflineChapter } from '../../pwa/contract'
 import type { SaveProgress } from '../../pwa/offlineChapters'
-import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
+import type { AnimeMarker, AnimeRange, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
 import { MetaList } from '../ui/MetaList'
@@ -51,7 +51,7 @@ import { queueStatusVisual } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
 import { LightActionIcon, LightBadge, LightGroup, LightSwitch, LightText } from './lightMantine'
-import { chapterLabel, readStateOf, type FileOrigin, type VolumeGroup } from './chapterTable'
+import { chapterLabel, readStateOf, type FileOrigin, type VolumeGroup, type VolumeQueueState } from './chapterTable'
 import { displayChapterTitle } from '../../lib/chapterTitle'
 
 /** Stable for the page's lifetime (see `useStableActions`), so rows never re-render over a handler. */
@@ -100,7 +100,9 @@ type ChapterRowProps = {
   markers: AnimeMarker[] | undefined
   /** Only passed to rows that carry markers, so folding a season doesn't re-render the rest. */
   foldedSpans: ReadonlySet<string> | undefined
-  spanForMarker: (num: number, kind: 'start' | 'end') => AnimeSpan | undefined
+  spanForMarker: (num: number, kind: 'start' | 'end', label: string) => AnimeSpan | undefined
+  /** Off while grouped by volume: the badges still mark a season's ends, but volumes are what fold. */
+  spanFoldable?: boolean
   canEditMetadata: boolean
   canDownload: boolean
   canDelete: boolean
@@ -133,6 +135,7 @@ export const ChapterRow = memo(function ChapterRow({
   markers,
   foldedSpans,
   spanForMarker,
+  spanFoldable = true,
   canEditMetadata,
   canDownload,
   canDelete,
@@ -158,7 +161,7 @@ export const ChapterRow = memo(function ChapterRow({
   const removing = c.hasFile && c.fileDeleteDueAt !== null
   return (
       <Table.Tr
-          opacity={c.wanted || c.hasFile || c.fileAutoRemoved ? 1 : 0.55}
+          data-muted={c.wanted || c.hasFile || c.fileAutoRemoved ? undefined : ''}
           className={[
             watched
                 ? 'chapter-row-watched'
@@ -219,14 +222,15 @@ export const ChapterRow = memo(function ChapterRow({
                   // control and as the anchor the overlay measures its line from;
                   // everything else (an unpaired end, or one bumped by the 3-lane cap) is
                   // a plain informational badge, same as always.
-                  const span = spanForMarker(c.number!, marker.kind)
-                  const folded = span !== undefined && (foldedSpans?.has(span.key) ?? false)
+                  const span = spanForMarker(c.number!, marker.kind, marker.label)
+                  const foldable = span !== undefined && spanFoldable
+                  const folded = foldable && (foldedSpans?.has(span.key) ?? false)
                   const { label: markerLabel } = marker
                   return (
                       <HoverTooltip
                           key={i}
                           label={
-                            span
+                            foldable
                                 ? marker.kind === 'start'
                                     ? folded
                                         ? t`${markerLabel} Anime adaptation starts here. Click to expand.`
@@ -242,22 +246,31 @@ export const ChapterRow = memo(function ChapterRow({
                       >
                         <LightBadge
                             color="var(--anime)"
-                            className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
-                            data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
+                            className={`chapter-span-marker${foldable ? ' chapter-span-badge' : ''}`}
+                            data-span-fold={foldable && marker.kind === 'start' ? span.key : undefined}
                             ref={
                               span
                                   ? (el: HTMLDivElement | null) =>
                                       actions.setMarkerRef(`${span.key}:${marker.kind}`, el)
                                   : undefined
                             }
-                            {...(span
+                            // Only a fold control keeps the click; a plain badge lets it reach the row,
+                            // so select mode still picks the chapter.
+                            {...(foldable
                                 ? pressable((e) => {
                                   e.stopPropagation()
                                   actions.toggleSpanFold(span.key)
                                 })
-                                : { onClick: (e: { stopPropagation: () => void }) => e.stopPropagation() })}
+                                : {})}
                         >
-                          {marker.label}
+                          <span aria-hidden>{marker.label}</span>
+                          {/* The tooltip is pointer-only, and list rows hide the line, so the badge
+                              says which end it marks to a screen reader too. */}
+                          <VisuallyHidden>
+                            {marker.kind === 'start'
+                                ? t`${markerLabel} Anime adaptation starts here`
+                                : t`${markerLabel} Anime adaptation ends here`}
+                          </VisuallyHidden>
                         </LightBadge>
                       </HoverTooltip>
                   )
@@ -851,11 +864,50 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
   )
 })
 
+type VolumeStripKind = 'read' | 'watched' | 'downloaded' | 'active' | 'missing' | 'failed' | 'none' | 'removed' | 'unwanted'
+const VOLUME_STRIP_ORDER: VolumeStripKind[] = [
+  'read', 'watched', 'downloaded', 'active', 'missing', 'failed', 'none', 'removed', 'unwanted',
+]
+/** Past this many chapters one segment each gets too thin to see, so the strip shows runs instead. */
+const VOLUME_STRIP_SEGMENT_LIMIT = 30
+
+/** One mark per chapter, coloured like its status pill. The counts beside it carry the same facts as text. */
+function VolumeStrip({ kinds }: { kinds: VolumeStripKind[] }) {
+  if (kinds.length <= VOLUME_STRIP_SEGMENT_LIMIT) {
+    return (
+        <span className="volume-strip" aria-hidden>
+          {kinds.map((kind, i) => <i key={i} data-kind={kind} />)}
+        </span>
+    )
+  }
+  const counts = new Map<VolumeStripKind, number>()
+  for (const kind of kinds) counts.set(kind, (counts.get(kind) ?? 0) + 1)
+  return (
+      <span className="volume-strip" aria-hidden>
+        {VOLUME_STRIP_ORDER.filter((kind) => counts.has(kind)).map((kind) => (
+            <i key={kind} data-kind={kind} style={{ flexGrow: counts.get(kind) }} />
+        ))}
+      </span>
+  )
+}
+
 type ChapterVolumeRowProps = {
   group: VolumeGroup
   collapsed: boolean
   readProgress: ReadonlyMap<number, ChapterProgressDto>
+  /** Where each of the volume's chapters stands in the download queue, for the strip and the counts. */
+  queueStates: ReadonlyMap<number, VolumeQueueState>
+  /** The series' anime adaptations. The heading names each one that covers any of its chapters. */
+  seasons: readonly AnimeRange[]
   readTracking: boolean
+  /** Whether the Title column shows, so the heading can take its room as well as the Chapter column's. */
+  titleShown: boolean
+  /** How many of Released, Source and Status show; the progress spans them. */
+  progressSpan: number
+  /** Every column the table shows, for the gap row. */
+  columnCount: number
+  /** Leaves a gap above the heading, so each volume reads as its own block. Off for a page's first row. */
+  gapBefore: boolean
   canEditMetadata: boolean
   canDownload: boolean
   downloadDisabled: boolean
@@ -865,15 +917,22 @@ type ChapterVolumeRowProps = {
 }
 
 /**
- * The header over one volume's chapters: its counts, and the bulk actions for them. Folds the
- * volume on click. Every action takes the group's chapters, so it reuses the same bulk handlers the
- * selection bar calls.
+ * The heading over one volume's chapters: its name, a strip with one mark per chapter, its counts,
+ * and the bulk actions for them. Folds the volume on click and sticks under the toolbar while its
+ * chapters scroll. Every action takes the group's chapters, so it reuses the same bulk handlers the
+ * selection bar calls. Its cells span columns, so the positional column rules skip this row.
  */
 export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   group,
   collapsed,
   readProgress,
+  queueStates,
+  seasons,
   readTracking,
+  titleShown,
+  progressSpan,
+  columnCount,
+  gapBefore,
   canEditMetadata,
   canDownload,
   downloadDisabled,
@@ -886,20 +945,81 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   const total = chapters.length
   const ids = chapters.map((c) => c.id)
   const downloaded = chapters.filter((c) => c.hasFile && !c.fileMissing)
-  const states = downloaded.map((c) => readStateOf(readProgress.get(c.id)))
-  const readCount = states.filter((st) => st.read).length
-  const unreadCount = downloaded.length - readCount
-  const missingIds = chapters.filter((c) => !c.hasFile && !c.fileRemovedAt).map((c) => c.id)
-  const missingCount = missingIds.length
+  // Watched in the anime counts as read for every total, but shows in the anime's colour, as on its
+  // row. Marking a season watched also covers chapters never downloaded, so this isn't limited to files.
+  const watchedIds = new Set(chapters.filter((c) => readStateOf(readProgress.get(c.id)).watched).map((c) => c.id))
+  const readIds = new Set(
+      downloaded.filter((c) => !watchedIds.has(c.id) && readStateOf(readProgress.get(c.id)).read).map((c) => c.id),
+  )
+  const readCount = readIds.size
+  const watchedCount = watchedIds.size
   const downloadedCount = downloaded.length
+  const queuedCount = chapters.filter((c) => queueStates.get(c.id) === 'active').length
+  const failedCount = chapters.filter((c) => queueStates.get(c.id) === 'failed').length
+  const fileMissingCount = chapters.filter((c) => c.hasFile && c.fileMissing).length
+  const notWantedCount = chapters.filter((c) => !c.wanted && !c.hasFile).length
+  const removedCount = chapters.filter((c) => c.wanted && !c.hasFile && c.fileRemovedAt).length
+  // The same rule as the series' "Download wanted": wanted, no file, not removed on purpose and not
+  // in the queue at all. A failed one is retried from its own row.
+  const downloadIds = chapters
+      .filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueStates.has(c.id))
+      .map((c) => c.id)
+  // Named missingCount so the tooltip keeps its existing translations.
+  const missingCount = downloadIds.length
+  const kinds = chapters.map((c): VolumeStripKind => {
+    const queued = queueStates.get(c.id)
+    if (queued === 'failed') return 'failed'
+    if (queued === 'active') return 'active'
+    if (c.hasFile && c.fileMissing) return 'missing'
+    if (readTracking && watchedIds.has(c.id)) return 'watched'
+    if (c.hasFile) return readTracking && readIds.has(c.id) ? 'read' : 'downloaded'
+    if (!c.wanted) return 'unwanted'
+    return c.fileRemovedAt ? 'removed' : 'none'
+  })
   const numbers = chapters.flatMap((c) => (c.number === null ? [] : [c.number]))
-  const name = volume === null ? t`No volume` : t`Vol. ${volume}`
+  const covering = seasons.filter((s) => numbers.some((n) => n >= s.from && n <= s.to))
+  const name = volume === null ? t`No volume` : t`Volume ${volume}`
   const wantedCount = chapters.filter((c) => c.wanted).length
   const allWanted = wantedCount === total
   const mixed = wantedCount > 0 && !allWanted
   const toggle = () => actions.toggleVolume(key)
+  const rangeId = useId()
+
+  const progress = (
+      <div className="chapter-volume-progress-inner">
+        <VolumeStrip kinds={kinds} />
+        <MetaList
+            className="tnum chapter-volume-counts"
+            items={[
+              // A span, so the space after the bold count survives the list item's flex layout.
+              <span key="downloaded"><Trans><strong>{downloadedCount}/{total}</strong> downloaded</Trans></span>,
+              readTracking && readCount > 0 && <Trans key="read">{readCount} read</Trans>,
+              readTracking && watchedCount > 0 && <Trans key="watched">{watchedCount} watched</Trans>,
+              queuedCount > 0 && <Trans key="queued">{queuedCount} queued</Trans>,
+              fileMissingCount > 0 && (
+                  <span key="missing" className="chapter-volume-count-warn">
+                    {plural(fileMissingCount, { one: '# file missing', other: '# files missing' })}
+                  </span>
+              ),
+              failedCount > 0 && (
+                  <span key="failed" className="chapter-volume-count-danger">
+                    <Trans>{failedCount} failed</Trans>
+                  </span>
+              ),
+              removedCount > 0 && <Trans key="removed">{removedCount} removed</Trans>,
+              notWantedCount > 0 && <Trans key="unwanted">{notWantedCount} not wanted</Trans>,
+            ]}
+        />
+      </div>
+  )
 
   return (
+      <>
+      {gapBefore && (
+          <tr className="chapter-volume-gap" aria-hidden>
+            <td colSpan={columnCount} />
+          </tr>
+      )}
       <Table.Tr className="chapter-volume-row">
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <Tooltip
@@ -929,62 +1049,72 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             />
           </Tooltip>
         </Table.Td>
-        <Table.Td>
-          <Group
-              gap={6}
-              wrap="nowrap"
-              className="chapter-volume-toggle"
-              aria-expanded={!collapsed}
-              aria-label={collapsed ? t`Expand ${name}` : t`Collapse ${name}`}
-              {...pressable(toggle)}
-          >
-            {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
-            {volume === null ? (
-                <Text size="sm" fw={600} className="chapter-label">{name}</Text>
-            ) : (
-                <LightBadge color="var(--volume)" className="tnum chapter-label">{name}</LightBadge>
-            )}
-          </Group>
+        <Table.Td colSpan={titleShown ? 2 : 1} className="chapter-volume-name">
+          <div className="chapter-volume-name-row">
+            <div
+                className="chapter-volume-toggle"
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? t`Expand ${name}` : t`Collapse ${name}`}
+                aria-describedby={numbers.length > 0 ? rangeId : undefined}
+                {...pressable(toggle)}
+            >
+              {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
+              <span className="chapter-volume-title">{name}</span>
+              {numbers.length > 0 && (
+                  <span id={rangeId} className="chapter-volume-range tnum">
+                    {chapterRangeLabel(Math.min(...numbers), Math.max(...numbers))}
+                  </span>
+              )}
+            </div>
+            {covering.map((season) => (
+                <LightBadge
+                    key={season.key}
+                    color="var(--anime)"
+                    leftSection={<IconDeviceTv size={12} />}
+                    className="chapter-volume-season"
+                >
+                  {season.label}
+                </LightBadge>
+            ))}
+          </div>
+          {progressSpan === 0 && progress}
         </Table.Td>
-        <Table.Td>
-          <MetaList
-              className="tnum"
-              style={{ color: 'var(--ink-3)', fontSize: 'var(--mantine-font-size-sm)' }}
-              items={[
-                numbers.length > 0 && chapterRangeLabel(Math.min(...numbers), Math.max(...numbers)),
-                plural(total, { one: '# chapter', other: '# chapters' }),
-                t`${downloadedCount} downloaded`,
-                readTracking && readCount > 0 && <Trans key="read">{readCount} read</Trans>,
-                readTracking && unreadCount > 0 && <Trans key="unread">{unreadCount} unread</Trans>,
-              ]}
-          />
-        </Table.Td>
-        <Table.Td />
-        <Table.Td />
-        <Table.Td>
-          {readTracking && downloaded.length > 0 && (
-              <Progress
-                  value={(readCount / downloaded.length) * 100}
-                  color="var(--brand)"
-                  aria-label={t`Reading progress`}
-              />
-          )}
-        </Table.Td>
-        <Table.Td onClick={(e) => e.stopPropagation()}>
+        {progressSpan > 0 && (
+            <Table.Td colSpan={progressSpan} className="chapter-volume-progress">
+              {progress}
+            </Table.Td>
+        )}
+        <Table.Td className="chapter-volume-actions" onClick={(e) => e.stopPropagation()}>
           <Group gap={2} wrap="nowrap" justify="flex-end">
             {canDownload ? (
                 <Tooltip label={missingCount > 0 ? t`Download ${missingCount} missing` : t`Nothing to download`} withArrow>
-                  <ActionIcon
-                      variant="subtle"
-                      color="var(--neutral)"
-                      data-row-action=""
-                      aria-label={t`Download missing chapters in ${name}`}
-                      disabled={downloadDisabled || missingCount === 0}
-                      loading={downloadPending}
-                      onClick={() => actions.download(missingIds)}
-                  >
-                    <IconDownload size={19} />
-                  </ActionIcon>
+                  {missingCount > 0 ? (
+                      <Button
+                          variant="default"
+                          size="compact-sm"
+                          className="tnum chapter-volume-download"
+                          leftSection={<IconDownload size={16} />}
+                          aria-label={plural(missingCount, {
+                            one: `Download # missing chapter in ${name}`,
+                            other: `Download # missing chapters in ${name}`,
+                          })}
+                          disabled={downloadDisabled}
+                          loading={downloadPending}
+                          onClick={() => actions.download(downloadIds)}
+                      >
+                        {missingCount}
+                      </Button>
+                  ) : (
+                      <ActionIcon
+                          variant="subtle"
+                          color="var(--neutral)"
+                          data-row-action=""
+                          aria-label={t`Nothing to download in ${name}`}
+                          disabled
+                      >
+                        <IconDownload size={19} />
+                      </ActionIcon>
+                  )}
                 </Tooltip>
             ) : (
                 <Box w={32} style={{ flex: 'none' }} aria-hidden />
@@ -1019,6 +1149,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
           </Group>
         </Table.Td>
       </Table.Tr>
+      </>
   )
 })
 

@@ -4,8 +4,8 @@ using Maki.Core.Entities;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The one "N new" rule Home's Recently added rail and the Library rows share: unread files in the
-/// series' latest batch.
+/// The one "N new" rule Home's Recently added rail and the Library rows share: unread chapters in
+/// the series' latest batch.
 /// </summary>
 public class NewChapterBatchTests : IDisposable
 {
@@ -51,19 +51,40 @@ public class NewChapterBatchTests : IDisposable
     [Fact]
     public void Latest_of_no_files_is_empty() => Assert.Empty(NewChapterBatch.Latest([]));
 
+    private static NewChapterBatch.Chapter C(int id, decimal? number, int? volume = null) => new(id, number, volume);
+
     [Fact]
-    public void UnreadFiles_keeps_a_volume_file_until_every_chapter_in_it_is_read()
+    public void UnreadChapters_counts_every_unread_chapter_a_volume_file_holds()
     {
-        var chapters = new Dictionary<int, int[]> { [10] = [100, 101], [11] = [102] };
+        var chapters = new Dictionary<int, NewChapterBatch.Chapter[]>
+        {
+            [10] = [C(100, 1, 1), C(101, 2, 1), C(102, 3, 1)],
+            [11] = [C(103, 4, 2)],
+        };
 
-        var unread = NewChapterBatch.UnreadFiles([10, 11], id => chapters[id], new HashSet<int> { 101 });
+        var unread = NewChapterBatch.UnreadChapters([10, 11], id => chapters[id], new HashSet<int> { 101, 102, 103 });
 
-        Assert.Equal([10], unread);
+        Assert.Equal([101, 102, 103], unread.Select(c => c.Id));
     }
 
     [Fact]
-    public void UnreadFiles_is_empty_when_nothing_is_left_to_read() =>
-        Assert.Empty(NewChapterBatch.UnreadFiles([10], _ => [100], null));
+    public void UnreadChapters_counts_two_copies_of_one_chapter_once()
+    {
+        var chapters = new Dictionary<int, NewChapterBatch.Chapter[]>
+        {
+            [10] = [C(100, 7)],
+            [11] = [C(101, 7)],
+            [12] = [C(102, null), C(103, null)],
+        };
+
+        var unread = NewChapterBatch.UnreadChapters([10, 11, 12], id => chapters[id], new HashSet<int> { 100, 101, 102, 103 });
+
+        Assert.Equal([100, 102, 103], unread.Select(c => c.Id));
+    }
+
+    [Fact]
+    public void UnreadChapters_is_empty_when_nothing_is_left_to_read() =>
+        Assert.Empty(NewChapterBatch.UnreadChapters([10], _ => [C(100, 1)], null));
 
     private int SeedChapter(int seriesId, decimal number, DateTime addedAt)
     {
@@ -95,7 +116,7 @@ public class NewChapterBatchTests : IDisposable
     }
 
     [Fact]
-    public async Task Library_counts_only_the_unread_files_of_the_latest_batch()
+    public async Task Library_counts_only_the_unread_chapters_of_the_latest_batch()
     {
         var seriesId = _db.SeedSeries("Half read");
         SeedChapter(seriesId, 1, Base);
@@ -155,9 +176,10 @@ public class NewChapterBatchTests : IDisposable
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => NewChapterBatch.Latest(g.Select(f => new NewChapterBatch.File(f.Id, f.DateAdded))));
         var next = await new ContinueReadingService(db).NextForAsync(batches.Keys.ToList(), CancellationToken.None);
-        var byFile = db.Chapters.Where(c => c.ChapterFileId != null).ToList().ToLookup(c => c.ChapterFileId!.Value, c => c.Id);
+        var byFile = db.Chapters.Where(c => c.ChapterFileId != null).ToList()
+            .ToLookup(c => c.ChapterFileId!.Value, c => new NewChapterBatch.Chapter(c.Id, c.Number, c.Volume));
         return batches
-            .Select(b => (b.Key, Count: NewChapterBatch.UnreadFiles(b.Value, id => byFile[id], next.GetValueOrDefault(b.Key)?.UnreadChapterIds).Count))
+            .Select(b => (b.Key, Count: NewChapterBatch.UnreadChapters(b.Value, id => byFile[id], next.GetValueOrDefault(b.Key)?.UnreadChapterIds).Count))
             .Where(x => x.Count > 0)
             .ToDictionary(x => x.Key, x => x.Count);
     }
@@ -231,11 +253,11 @@ public class NewChapterBatchTests : IDisposable
         Assert.Equal(1, mine[languages]);
         Assert.Equal(2, mine[extras]);
         Assert.False(mine.ContainsKey(caughtUp));
-        Assert.Equal(2, mine[untouched]);
+        Assert.Equal(3, mine[untouched]);
         Assert.Equal(18, mine[longRun]);
 
         var theirs = await CountsAsync(other);
         Assert.Equal(2, theirs[partly]);
-        Assert.Equal(1, theirs[volumes]);
+        Assert.Equal(2, theirs[volumes]);
     }
 }

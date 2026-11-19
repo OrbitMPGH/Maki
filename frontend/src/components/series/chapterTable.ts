@@ -195,6 +195,21 @@ export type VolumeGroup = {
   chapters: ChapterDto[]
 }
 
+/**
+ * Where a chapter stands in the download queue, as far as its volume's heading cares. Held is parked
+ * (waiting for an early-access release) or waiting on the reader's import decision, which the
+ * queue summary doesn't count as active either.
+ */
+export type VolumeQueueState = 'active' | 'failed' | 'held'
+
+/** Finished and cancelled items no longer say anything about the chapter. */
+export function volumeQueueState(status: string): VolumeQueueState | null {
+  if (status === 'Failed') return 'failed'
+  if (status === 'Waiting' || status === 'AwaitingImport') return 'held'
+  if (status === 'Completed' || status === 'Cancelled') return null
+  return 'active'
+}
+
 /** Grouping starts on by default only when most chapters name a volume. */
 export function mostHaveVolumes(chapters: readonly ChapterDto[]): boolean {
   if (chapters.length === 0) return false

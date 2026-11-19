@@ -38,6 +38,11 @@ msgstr "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" download
 msgid "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 msgstr "\"No scrobble\" keeps a series off your trackers. \"Full\" also keeps it out of stats and history."
 
+#. After "Press a key, Esc cancels": the action the key is for
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "({action})"
+msgstr "({action})"
+
 #: src/components/NamingTokenModal.tsx
 msgid "(blank when unset)"
 msgstr "(blank when unset)"
@@ -53,10 +58,25 @@ msgstr "(cannot be undone)"
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr "{0, plural, one {{1} of # file} other {{2} of # files}}"
 
+#. placeholder {0}: Number(proposalExpiryDays)
+#: src/pages/settings/DownloadCards.tsx
+msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
+msgstr "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
+
+#. placeholder {0}: Number(maxPerDay)
+#: src/pages/settings/DownloadCards.tsx
+msgid "{0, plural, one {{scanTime}, # upgrade a day} other {{scanTime}, # upgrades a day}}"
+msgstr "{0, plural, one {{scanTime}, # upgrade a day} other {{scanTime}, # upgrades a day}}"
+
 #. placeholder {0}: line.files
 #: src/components/pageconversion/PlanEstimate.tsx
 msgid "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
 msgstr "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
+
+#. placeholder {0}: customised.length
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{0, plural, one {# action has keys of your own} other {# actions have keys of your own}}"
+msgstr "{0, plural, one {# action has keys of your own} other {# actions have keys of your own}}"
 
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
@@ -132,6 +152,11 @@ msgstr "{0, plural, one {# creator} other {# creators}}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {# downloaded chapter is no longer listed} other {# downloaded chapters are no longer listed}}"
 msgstr "{0, plural, one {# downloaded chapter is no longer listed} other {# downloaded chapters are no longer listed}}"
+
+#. placeholder {0}: pushedTypes.length
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{0, plural, one {# event} other {# events}}"
+msgstr "{0, plural, one {# event} other {# events}}"
 
 #. placeholder {0}: failed.length
 #: src/components/import/MihonSummary.tsx
@@ -377,6 +402,16 @@ msgstr "{0, plural, one {# source checked} other {# sources checked}}"
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 
+#. placeholder {0}: current.threads
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{0, plural, one {# thread, JPEG XL on} other {# threads, JPEG XL on}}"
+msgstr "{0, plural, one {# thread, JPEG XL on} other {# threads, JPEG XL on}}"
+
+#. placeholder {0}: current.threads
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{0, plural, one {# thread} other {# threads}}"
+msgstr "{0, plural, one {# thread} other {# threads}}"
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -496,6 +531,11 @@ msgstr "{0, plural, one {Import # series} other {Import # series}}"
 msgid "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
 msgstr "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
 
+#. placeholder {0}: Number(trashRetentionDays)
+#: src/pages/settings/DownloadCards.tsx
+msgid "{0, plural, one {Kept # day} other {Kept # days}}"
+msgstr "{0, plural, one {Kept # day} other {Kept # days}}"
+
 #. placeholder {0}: draft.lockoutMaxAttempts
 #: src/components/settings/SecuritySection.tsx
 msgid "{0, plural, one {Lock after # failed sign-in} other {Lock after # failed sign-ins}}"
@@ -535,6 +575,11 @@ msgstr "{0, plural, one {next goes in # day} other {next goes in # days}}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 msgstr "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
+
+#. placeholder {0}: prepared.chapters
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{0, plural, one {On, # chapter held} other {On, # chapters held}}"
+msgstr "{0, plural, one {On, # chapter held} other {On, # chapters held}}"
 
 #. placeholder {0}: stats.timedChapters
 #: src/components/series/SeriesReadingPanel.tsx
@@ -817,9 +862,17 @@ msgstr "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgid "{ariaLabel}: {shown}"
 msgstr "{ariaLabel}: {shown}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "{autoGrabText} MB"
+msgstr "{autoGrabText} MB"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{backgroundName}, cropped"
 msgstr "{backgroundName}, cropped"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{backupCount, plural, one {# backup, {totalSize}} other {# backups, {totalSize}}}"
+msgstr "{backupCount, plural, one {# backup, {totalSize}} other {# backups, {totalSize}}}"
 
 #: src/pages/ActivityPage.tsx
 msgid "{beforeLabel} to {afterLabel}"
@@ -1413,6 +1466,10 @@ msgstr "{exposed} read or watched elsewhere"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{failedCount} failed"
+msgstr "{failedCount} failed"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
 msgstr "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
@@ -1436,6 +1493,10 @@ msgstr "{fileCount, plural, one {# single file} other {# single files}}"
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
+msgstr "{fileMissingCount, plural, one {# file missing} other {# files missing}}"
 
 #: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -1640,6 +1701,26 @@ msgstr "{kb} KB"
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} added to {target}"
+msgstr "{key} added to {target}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} is already on {target}"
+msgstr "{key} is already on {target}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved from {from} to {target}"
+msgstr "{key} moved from {from} to {target}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} moved to {target}"
+msgstr "{key} moved to {target}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{key} removed from {target}"
+msgstr "{key} removed from {target}"
+
 #: src/pages/stats/CreatorList.tsx
 msgid "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
@@ -1656,6 +1737,11 @@ msgstr "{known, plural, one {# chapter} other {# chapters}}"
 #: src/pages/reader/PagedView.tsx
 msgid "{label} - page {pageNumber}"
 msgstr "{label} - page {pageNumber}"
+
+#. A button tooltip followed by the keyboard key that does the same
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{label} ({key})"
+msgstr "{label} ({key})"
 
 #: src/pages/HealthPage.tsx
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
@@ -1787,6 +1873,10 @@ msgstr "{linked, plural, one {Imported # archive} other {Imported # archives}}"
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{linkText}, {removalText}"
+msgstr "{linkText}, {removalText}"
+
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
@@ -1847,6 +1937,10 @@ msgstr "{matchingCount, plural, one {# failed download will be queued again, ign
 msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 msgstr "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{MAX_KEYS_PER_ACTION, plural, one {# key at most} other {# keys at most}}"
+msgstr "{MAX_KEYS_PER_ACTION, plural, one {# key at most} other {# keys at most}}"
+
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "{medianWidth}px"
@@ -1891,6 +1985,10 @@ msgstr "{missing, plural, one {# without a group} other {# without a group}}"
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -1976,6 +2074,10 @@ msgstr "{name} (disabled in {backendName})"
 msgid "{name} {year}"
 msgstr "{name} {year}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{name} already has the most keys it can take"
+msgstr "{name} already has the most keys it can take"
+
 #: src/components/settings/useIndexerForm.ts
 msgid "{name} is reachable"
 msgstr "{name} is reachable"
@@ -2016,14 +2118,14 @@ msgstr "{named, plural, one {Named # notice {typed}} other {Named # notices {typ
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
-msgid "{newChapterCount, plural, one {# new} other {# new}}"
-msgstr "{newChapterCount, plural, one {# new} other {# new}}"
+msgid "{newChapterCount, plural, one {# new chapter to read} other {# new chapters to read}}"
+msgstr "{newChapterCount, plural, one {# new chapter to read} other {# new chapters to read}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
-msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
-msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, one {# new} other {# new}}"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
@@ -2044,6 +2146,10 @@ msgstr "{noticeTotal, plural, one {# notice} other {# notices}}"
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{notWantedCount} not wanted"
+msgstr "{notWantedCount} not wanted"
 
 #: src/components/series/RatingPanel.tsx
 msgid "{of} on"
@@ -2181,6 +2287,10 @@ msgstr "{queued, plural, one {Restored to the library, # chapter queued} other {
 msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 msgstr "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{queuedCount} queued"
+msgstr "{queuedCount} queued"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{rated} rated"
 msgstr "{rated} rated"
@@ -2285,6 +2395,10 @@ msgstr "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr "{removedCount} removed"
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
 msgstr "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
@@ -2373,6 +2487,10 @@ msgstr "{sampleChapters, plural, one {based on # similar read} other {based on #
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "{scanTime}, no daily cap"
+msgstr "{scanTime}, no daily cap"
+
 #: src/components/series/RatingPanel.tsx
 msgid "{scoredCount} of {of} scored"
 msgstr "{scoredCount} of {of} scored"
@@ -2382,8 +2500,12 @@ msgid "{seconds, plural, one {Every second} other {Every # seconds}}"
 msgstr "{seconds, plural, one {Every second} other {Every # seconds}}"
 
 #: src/pages/settings/UpscalingSection.tsx
-msgid "{seconds} s per sample page"
-msgstr "{seconds} s per sample page"
+msgid "{seconds} s"
+msgstr "{seconds} s"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{seconds} s per sample page. Test {name} again"
+msgstr "{seconds} s per sample page. Test {name} again"
 
 #: src/pages/ImportPage.tsx
 msgid "{selectedCount, plural, one {# folder selected} other {# folders selected}}"
@@ -2629,6 +2751,10 @@ msgstr "{speed}/s"
 msgid "{staleChapters, plural, one {# downloaded chapter came from another source.} other {# downloaded chapters came from another source.}}"
 msgstr "{staleChapters, plural, one {# downloaded chapter came from another source.} other {# downloaded chapters came from another source.}}"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{stallHours, plural, one {Given up after # hour} other {Given up after # hours}}"
+msgstr "{stallHours, plural, one {Given up after # hour} other {Given up after # hours}}"
+
 #: src/api/upgrades.ts
 msgid "{start} to {end}"
 msgstr "{start} to {end}"
@@ -2672,6 +2798,10 @@ msgstr "{target, plural, one {# minute} other {# minutes}}"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, one {# series finished} other {# series finished}}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "{target} is back to its default keys"
+msgstr "{target} is back to its default keys"
 
 #: src/pages/ActivityPage.tsx
 msgid "{tierLabel} ({score})"
@@ -2724,6 +2854,10 @@ msgstr "{topReadCount, plural, one {# chapter} other {# chapters}}"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{topSourceName} delivered {topSourceRate} of its downloads in the last 30 days."
 msgstr "{topSourceName} delivered {topSourceRate} of its downloads in the last 30 days."
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "{total, plural, one {{bellCount} of # event} other {{bellCount} of # events}}"
+msgstr "{total, plural, one {{bellCount} of # event} other {{bellCount} of # events}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
@@ -2893,10 +3027,6 @@ msgstr "{unread, plural, one {# unread} other {# unread}}"
 #: src/components/home/ReadingRail.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
-
-#: src/components/series/ChapterTableRows.tsx
-msgid "{unreadCount} unread"
-msgstr "{unreadCount} unread"
 
 #: src/pages/ImportPage.tsx
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
@@ -3108,6 +3238,10 @@ msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {da
 #: src/pages/settings/SystemCards.tsx
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "<0>{deleting}</0> is removed from disk. This can't be undone."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "<0>{downloadedCount}/{total}</0> downloaded"
+msgstr "<0>{downloadedCount}/{total}</0> downloaded"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "<0>{enabledCount}</0> of {total, plural, one {# source} other {# sources}} enabled"
@@ -3665,6 +3799,22 @@ msgstr "Add"
 msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
 msgstr "Add {chapterLanguageToken} to the chapter format to tell them apart."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add {name}"
+msgstr "Add {name}"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key"
+msgstr "Add a key"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Add a key to {name}"
+msgstr "Add a key to {name}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Add a language"
+msgstr "Add a language"
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Add a note"
 msgstr "Add a note"
@@ -3936,6 +4086,10 @@ msgstr "All {total}"
 msgid "All {total} series folders are there."
 msgstr "All {total} series folders are there."
 
+#: src/pages/settings/SystemCards.tsx
+msgid "All backups ({backupCount})"
+msgstr "All backups ({backupCount})"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "All categories"
 msgstr "All categories"
@@ -4129,6 +4283,10 @@ msgstr "Also match every tag filed under this one"
 msgid "Also needs the daily scan on."
 msgstr "Also needs the daily scan on."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Also read"
+msgstr "Also read"
+
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "Also read as {alsoReadAs}"
 msgstr "Also read as {alsoReadAs}"
@@ -4148,6 +4306,11 @@ msgstr "Also set this series to Never"
 #: src/components/TrackerSyncControls.tsx
 msgid "Also sync \"so far\" ratings"
 msgstr "Also sync \"so far\" ratings"
+
+#. The Alt key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Alt"
+msgstr "Alt"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Alt titles"
@@ -4169,6 +4332,10 @@ msgstr "Alternative titles"
 #: src/pages/reader/enhanceMethods.ts
 msgid "Always"
 msgstr "Always"
+
+#: src/lib/shortcuts.ts
+msgid "Always enhance on or off"
+msgstr "Always enhance on or off"
 
 #: src/theme-context.tsx
 msgid "Amber"
@@ -4455,6 +4622,10 @@ msgstr "Approve"
 msgid "Approve and queue"
 msgstr "Approve and queue"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Approve automatically"
+msgstr "Approve automatically"
+
 #: src/pages/RequestsPage.tsx
 msgid "Approve request"
 msgstr "Approve request"
@@ -4689,21 +4860,22 @@ msgstr "Auto-queue limit"
 msgid "Auto-removed"
 msgstr "Auto-removed"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Auto-scroll"
 msgstr "Auto-scroll"
 
-#: src/pages/reader/ReaderToolbar.tsx
-msgid "Auto-scroll (A)"
-msgstr "Auto-scroll (A)"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll faster"
+msgstr "Auto-scroll faster"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Auto-scroll on or off"
 msgstr "Auto-scroll on or off"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Auto-scroll slower and faster"
-msgstr "Auto-scroll slower and faster"
+#: src/lib/shortcuts.ts
+msgid "Auto-scroll slower"
+msgstr "Auto-scroll slower"
 
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -4785,6 +4957,11 @@ msgstr "Avoided"
 msgid "Back"
 msgstr "Back"
 
+#. The arrow key that points against the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Back arrow"
+msgstr "Back arrow"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Back in recommendations since {until}"
 msgstr "Back in recommendations since {until}"
@@ -4820,6 +4997,10 @@ msgstr "Back to series"
 msgid "Back to settings"
 msgstr "Back to settings"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Back to the default"
+msgstr "Back to the default"
+
 #: src/pages/LibraryPage.tsx
 msgid "Back to the library"
 msgstr "Back to the library"
@@ -4827,10 +5008,6 @@ msgstr "Back to the library"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Back to the series"
 msgstr "Back to the series"
-
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Back to where you came from"
-msgstr "Back to where you came from"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Back up now"
@@ -4854,6 +5031,10 @@ msgstr "Background and accent colour are now picked separately. Tinted black is 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Backlog"
 msgstr "Backlog"
+
+#: src/lib/shortcutLabels.ts
+msgid "Backspace"
+msgstr "Backspace"
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -4880,6 +5061,10 @@ msgstr "Backup taken"
 #: src/pages/settings/registry.ts
 msgid "backup, restore, zip, retention, database, export"
 msgstr "backup, restore, zip, retention, database, export"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Backups"
+msgstr "Backups"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Backups hold API keys and passwords in plain text. Treat a downloaded one like a password."
@@ -5061,8 +5246,8 @@ msgstr "Blocks sign-in. Keeps the account and its history."
 msgid "Blush"
 msgstr "Blush"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Bookmark this page"
 msgstr "Bookmark this page"
 
@@ -5539,6 +5724,10 @@ msgstr "Change chapter languages for {sourceName}"
 msgid "Change group"
 msgstr "Change group"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Change keys"
+msgstr "Change keys"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Change linked chapters"
 msgstr "Change linked chapters"
@@ -5686,6 +5875,10 @@ msgstr "Chapter languages"
 msgid "Chapter list"
 msgstr "Chapter list"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Chapter markers"
+msgstr "Chapter markers"
+
 #: src/pages/HealthPage.tsx
 msgid "Chapter not in the series yet"
 msgstr "Chapter not in the series yet"
@@ -5742,6 +5935,7 @@ msgstr "chapters"
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -5871,10 +6065,6 @@ msgstr "Chapters you want that aren't on disk yet."
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters, year, minimum rating"
 msgstr "Chapters, year, minimum rating"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Chapters: {chapters}"
-msgstr "Chapters: {chapters}"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
@@ -6013,9 +6203,17 @@ msgstr "Choose a root folder"
 msgid "Choose a root folder first"
 msgstr "Choose a root folder first"
 
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Choose events"
+msgstr "Choose events"
+
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Choose how each kind of file and page is stored, and look at your own pages before anything is rewritten."
 msgstr "Choose how each kind of file and page is stored, and look at your own pages before anything is rewritten."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Choose languages"
+msgstr "Choose languages"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
@@ -6468,6 +6666,10 @@ msgstr "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker s
 msgid "Connect on the Scrobble page to import."
 msgstr "Connect on the Scrobble page to import."
 
+#: src/components/ImportListsSection.tsx
+msgid "Connect one on the Scrobble page"
+msgstr "Connect one on the Scrobble page"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Connect one on the Scrobble page."
 msgstr "Connect one on the Scrobble page."
@@ -6505,14 +6707,6 @@ msgstr "Connecting to Kavita…"
 #: src/pages/ScrobblePage.tsx
 msgid "Connections"
 msgstr "Connections"
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-msgstr "Consider disabling one of the two source mappings; the warning clears on the next refresh."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
-msgstr "Consider disabling one source mapping in each pair; the warning clears on the next refresh."
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Contained in a volume/compilation file"
@@ -6587,8 +6781,8 @@ msgid "Continue without saving"
 msgstr "Continue without saving"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Continuous"
 msgstr "Continuous"
 
@@ -6655,6 +6849,7 @@ msgstr "Converts scanlator chapters at Lossless, so no pixel changes."
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #: src/components/ui/MonoValue.tsx
 msgid "Copied"
 msgstr "Copied"
@@ -6913,6 +7108,10 @@ msgstr "Couldn't load your notifications"
 msgid "Couldn't load your reading progress"
 msgstr "Couldn't load your reading progress"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't load your shortcuts."
+msgstr "Couldn't load your shortcuts."
+
 #: src/components/QueuePause.tsx
 #: src/components/series/SeriesQueuePause.tsx
 #: src/pages/ActivityPage.tsx
@@ -6953,6 +7152,10 @@ msgstr "Couldn't save the free space to keep"
 #: src/components/settings/RootFolderRulesModal.tsx
 msgid "Couldn't save the rule"
 msgstr "Couldn't save the rule"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Couldn't save the shortcuts"
+msgstr "Couldn't save the shortcuts"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7103,7 +7306,7 @@ msgstr "Crisper lines and solid blacks, close to Real-ESRGAN; takes nearly twice
 msgid "Crop borders"
 msgstr "Crop borders"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Crop borders on or off"
 msgstr "Crop borders on or off"
 
@@ -7114,6 +7317,11 @@ msgstr "Cross-id"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Crowd"
 msgstr "Crowd"
+
+#. The Control key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Ctrl"
+msgstr "Ctrl"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Current"
@@ -7335,11 +7543,11 @@ msgstr "Definition"
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/lib/shortcutLabels.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/UpscalingSection.tsx
 msgid "Delete"
 msgstr "Delete"
 
@@ -7359,6 +7567,10 @@ msgstr "Delete {fileName}"
 #: src/components/TagManagerModal.tsx
 msgid "Delete {label}"
 msgstr "Delete {label}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Delete {name}"
+msgstr "Delete {name}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -7512,6 +7724,10 @@ msgstr "Deleted \"{name}\""
 msgid "Deleted account"
 msgstr "Deleted account"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Deleted at the next cleanup"
+msgstr "Deleted at the next cleanup"
+
 #: src/components/settings/RecycleBinModal.tsx
 msgid "Deleted file"
 msgstr "Deleted file"
@@ -7638,6 +7854,14 @@ msgstr "disabled"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Disabled"
 msgstr "Disabled"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one of the two source mappings removes them."
+msgstr "Disabling one of the two source mappings removes them."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Disabling one source mapping in each pair removes them."
+msgstr "Disabling one source mapping in each pair removes them."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
@@ -7781,18 +8005,24 @@ msgid "Don't want"
 msgstr "Don't want"
 
 #: src/components/AppearanceAnnouncementModal.tsx
+#: src/components/ImportListsSection.tsx
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/CreditGroupsModal.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
+#: src/components/settings/NotificationPrefsSection.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/components/ui/DrillControls.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SystemCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Done"
 msgstr "Done"
 
@@ -7802,7 +8032,7 @@ msgstr "Done"
 msgid "Double"
 msgstr "Double"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Double page"
 msgstr "Double page"
 
@@ -7815,12 +8045,7 @@ msgstr "Doujinshi"
 msgid "Down"
 msgstr "Down"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Down a screen"
-msgstr "Down a screen"
-
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/UpscalingSection.tsx
 msgid "Download"
 msgstr "Download"
 
@@ -7835,6 +8060,10 @@ msgstr "Download {missingCount} missing"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download {missingWanted} wanted"
 msgstr "Download {missingWanted} wanted"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Download {name}"
+msgstr "Download {name}"
 
 #: src/pages/HealthPage.tsx
 msgid "Download again"
@@ -7886,10 +8115,6 @@ msgstr "Download index"
 #: src/pages/HealthPage.tsx
 msgid "Download it again"
 msgstr "Download it again"
-
-#: src/components/series/ChapterTableRows.tsx
-msgid "Download missing chapters in {name}"
-msgstr "Download missing chapters in {name}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download next chapters"
@@ -8147,6 +8372,10 @@ msgstr "Each page takes several seconds of server CPU, and upscaled pages are ke
 msgid "Each person gets their own account and reading history."
 msgstr "Each person gets their own account and reading history."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Each series is searched at most once a week, even with the daily scan off."
+msgstr "Each series is searched at most once a week, even with the daily scan off."
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -8257,6 +8486,10 @@ msgstr "Edit rule"
 msgid "Edit rule {number}"
 msgstr "Edit rule {number}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Edit shortcuts"
+msgstr "Edit shortcuts"
+
 #: src/components/notes/NoteThread.tsx
 msgid "edited"
 msgstr "edited"
@@ -8354,7 +8587,7 @@ msgstr "Enabled for this series"
 msgid "Encoding the page"
 msgstr "Encoding the page"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 msgid "End"
 msgstr "End"
 
@@ -8395,10 +8628,6 @@ msgstr "enhance {level}, {methodLabel}"
 msgid "Enhance is set, but stays off for this chapter because of its quality."
 msgstr "Enhance is set, but stays off for this chapter because of its quality."
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Enhance on Always, or back"
-msgstr "Enhance on Always, or back"
-
 #: src/pages/reader/ReaderPage.tsx
 msgid "Enhance: Always"
 msgstr "Enhance: Always"
@@ -8422,6 +8651,10 @@ msgstr "Enjoyment"
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "Enlarge the image"
 msgstr "Enlarge the image"
+
+#: src/lib/shortcutLabels.ts
+msgid "Enter"
+msgstr "Enter"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Enter the API key in the app, or any username with the API key as the password."
@@ -8454,7 +8687,7 @@ msgstr "Erotica"
 msgid "Error"
 msgstr "Error"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 msgid "Esc"
 msgstr "Esc"
 
@@ -8548,6 +8781,10 @@ msgstr "Every folder in this root is already in the library, ignored, or holds n
 msgid "Every genre"
 msgstr "Every genre"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every key is the default"
+msgstr "Every key is the default"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Every month"
 msgstr "Every month"
@@ -8576,6 +8813,14 @@ msgstr "Every series"
 #: src/components/SetupWizard.tsx
 msgid "Every series folder ends up named the same way."
 msgstr "Every series folder ends up named the same way."
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys"
+msgstr "Every shortcut is back to its default keys"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Every shortcut is back to its default keys."
+msgstr "Every shortcut is back to its default keys."
 
 #: src/api/queue.ts
 msgid "Every source failed for this chapter"
@@ -8620,7 +8865,7 @@ msgstr "Everything"
 
 #: src/components/pageconversion/PlanTable.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Everything else"
 msgstr "Everything else"
 
@@ -8842,8 +9087,8 @@ msgid "Fast"
 msgstr "Fast"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "Faster (])"
-msgstr "Faster (])"
+msgid "Faster"
+msgstr "Faster"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Faster animations"
@@ -8963,10 +9208,6 @@ msgstr "File name parsing"
 #: src/pages/settings/registry.ts
 msgid "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
 msgstr "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "File naming on import"
-msgstr "File naming on import"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "file on disk, not linked"
@@ -9231,7 +9472,7 @@ msgstr "First chapter ready"
 msgid "First download in progress"
 msgstr "First download in progress"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 msgid "First page"
 msgstr "First page"
@@ -9302,10 +9543,6 @@ msgstr "Folder"
 msgid "Folder & file naming"
 msgstr "Folder & file naming"
 
-#: src/pages/settings/LibraryCards.tsx
-msgid "Folder naming on import"
-msgstr "Folder naming on import"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
@@ -9328,6 +9565,10 @@ msgstr "Folders and file names keep the English title."
 #: src/pages/ImportPage.tsx
 msgid "Folders are renamed to the English title."
 msgstr "Folders are renamed to the English title."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Folders on import"
+msgstr "Folders on import"
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "Folders that need a look. The rest are registered as they are."
@@ -9395,10 +9636,6 @@ msgstr "For example, send every manhwa and manhua to a webtoon folder."
 msgid "For example, tag every manhwa from an import list."
 msgstr "For example, tag every manhwa from an import list."
 
-#: src/pages/settings/DownloadCards.tsx
-msgid "For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off."
-msgstr "For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off."
-
 #: src/pages/settings/ReadingCards.tsx
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "For reading apps like Panels, KOReader and Mihon."
@@ -9431,6 +9668,15 @@ msgstr "Formats"
 #: src/pages/reader/TapZoneOverlay.tsx
 msgid "Forward"
 msgstr "Forward"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Forward and back arrows follow the series' reading direction."
+msgstr "Forward and back arrows follow the series' reading direction."
+
+#. The arrow key that points along the reading direction
+#: src/lib/shortcutLabels.ts
+msgid "Forward arrow"
+msgstr "Forward arrow"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9534,8 +9780,8 @@ msgstr "Full"
 msgid "Full review"
 msgstr "Full review"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Full screen"
 msgstr "Full screen"
 
@@ -9800,10 +10046,6 @@ msgstr "Group: {groupName}, from chapters"
 msgid "Group: {groupName}, set by you"
 msgstr "Group: {groupName}, set by you"
 
-#: src/components/series/ChapterViewMenu.tsx
-msgid "Grouping is off while anime seasons are marked in the table."
-msgstr "Grouping is off while anime seasons are marked in the table."
-
 #: src/pages/settings/CustomSourceReport.tsx
 msgid "Groups credited: {groupList}"
 msgstr "Groups credited: {groupList}"
@@ -9843,6 +10085,10 @@ msgstr "Hard to tell from the original."
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Hardlink imported torrents when possible"
 msgstr "Hardlink imported torrents when possible"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Hardlinked"
+msgstr "Hardlinked"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Harem"
@@ -10090,18 +10336,21 @@ msgid "Hold for original"
 msgstr "Hold for original"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Hold to compare"
 msgstr "Hold to compare"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "Hold to compare with the original (H)"
-msgstr "Hold to compare with the original (H)"
+msgid "Hold to compare with the original"
+msgstr "Hold to compare with the original"
+
+#: src/lib/shortcuts.ts
+msgid "Hold to see the original page"
+msgstr "Hold to see the original page"
 
 #: src/components/rails/CustomRailEditor.tsx
+#: src/lib/shortcutLabels.ts
 #: src/nav.ts
 #: src/pages/HomePage.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Home"
 msgstr "Home"
@@ -10624,6 +10873,10 @@ msgstr "Incognito by content rating"
 msgid "Incognito for {ratingLabel}"
 msgstr "Incognito for {ratingLabel}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Incognito series"
+msgstr "Incognito series"
+
 #: src/api/upgrades.ts
 msgid "Incognito series are excluded"
 msgstr "Incognito series are excluded"
@@ -10677,6 +10930,10 @@ msgstr "Indigo"
 #: src/components/SourceMappingsSection.tsx
 msgid "Indonesian"
 msgstr "Indonesian"
+
+#: src/lib/shortcutLabels.ts
+msgid "Insert"
+msgstr "Insert"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Inserts"
@@ -10755,6 +11012,10 @@ msgstr "It also left your shortlist."
 #: src/pages/SeriesDetailPage.tsx
 msgid "It needs a quality profile and downloaded chapters."
 msgstr "It needs a quality profile and downloaded chapters."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "It takes the series folder format."
+msgstr "It takes the series folder format."
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "It's off there now."
@@ -10903,12 +11164,8 @@ msgid "Keep sidebar open"
 msgstr "Keep sidebar open"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Keep the folder name, and put new downloads there too"
-msgstr "Keep the folder name, and put new downloads there too"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep the folder name, but put new downloads in a folder named by the format"
-msgstr "Keep the folder name, but put new downloads in a folder named by the format"
+msgid "Keep the name for everything"
+msgstr "Keep the name for everything"
 
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into a new standard folder"
@@ -10917,6 +11174,10 @@ msgstr "Keep the name, download into a new standard folder"
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into it too"
 msgstr "Keep the name, download into it too"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep the name, new downloads elsewhere"
+msgstr "Keep the name, new downloads elsewhere"
 
 #: src/pages/HealthPage.tsx
 msgid "Keep the other copy and delete this one instead"
@@ -10972,6 +11233,10 @@ msgstr "Kept"
 msgid "Kept as linked"
 msgstr "Kept as linked"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "kept in the client"
+msgstr "kept in the client"
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Kept out of your trackers, Rewind, stats and reading history."
 msgstr "Kept out of your trackers, Rewind, stats and reading history."
@@ -10980,14 +11245,17 @@ msgstr "Kept out of your trackers, Rewind, stats and reading history."
 msgid "kept where it is"
 msgstr "kept where it is"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/registry.ts
 msgid "Keyboard shortcuts"
 msgstr "Keyboard shortcuts"
 
-#: src/pages/reader/ReaderToolbar.tsx
-msgid "Keyboard shortcuts (?)"
-msgstr "Keyboard shortcuts (?)"
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn"
+msgstr "keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -11040,6 +11308,7 @@ msgstr "Label"
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -11166,7 +11435,7 @@ msgstr "Last library scan: {lastScanText}"
 msgid "Last measured {measured}."
 msgstr "Last measured {measured}."
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 msgid "Last page"
 msgstr "Last page"
@@ -11251,6 +11520,10 @@ msgstr "Later than expected. Maki guessed {range}."
 msgid "latest"
 msgstr "latest"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Latest"
+msgstr "Latest"
+
 #: src/pages/LibraryPage.tsx
 msgid "Latest chapter released"
 msgstr "Latest chapter released"
@@ -11266,8 +11539,8 @@ msgid "Latest year"
 msgstr "Latest year"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderSettings.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Layout"
 msgstr "Layout"
 
@@ -11338,6 +11611,10 @@ msgstr "Leave out series in your library"
 #: src/components/pageconversion/ruleTemplates.ts
 msgid "Leave scraped chapters alone"
 msgstr "Leave scraped chapters alone"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Leave the reader"
+msgstr "Leave the reader"
 
 #: src/pages/MetadataGatePage.tsx
 msgid "Left"
@@ -11966,6 +12243,10 @@ msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki loaded the first page ({0})."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+msgstr "Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm."
+
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target."
 msgstr "Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target."
@@ -12011,6 +12292,10 @@ msgstr "Maki's record says {recorded}, the file on disk is {onDisk}. Usually a t
 #: src/components/home/OfflineHome.tsx
 msgid "Manage"
 msgstr "Manage"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Manage models"
+msgstr "Manage models"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Manage queue"
@@ -12516,6 +12801,10 @@ msgstr "Mixed"
 msgid "Mixed JPEG and PNG"
 msgstr "Mixed JPEG and PNG"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Model"
+msgstr "Model"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Model download progress"
 msgstr "Model download progress"
@@ -12525,8 +12814,8 @@ msgid "Model switch: {modelSwitchError}"
 msgstr "Model switch: {modelSwitchError}"
 
 #: src/pages/settings/UpscalingSection.tsx
-msgid "Models"
-msgstr "Models"
+msgid "Models readers can pick"
+msgstr "Models readers can pick"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
@@ -13073,6 +13362,14 @@ msgstr "New default"
 msgid "New downloads"
 msgstr "New downloads"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "New downloads go in a folder named by the format."
+msgstr "New downloads go in a folder named by the format."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "New downloads go in the original folder too."
+msgstr "New downloads go in the original folder too."
+
 #: src/components/import/ImportPlanModal.tsx
 msgid "New downloads go to {seriesFolderName}."
 msgstr "New downloads go to {seriesFolderName}."
@@ -13181,6 +13478,10 @@ msgstr "Newly enabled sources join at the bottom."
 msgid "Next {nextSync}"
 msgstr "Next {nextSync}"
 
+#: src/lib/shortcuts.ts
+msgid "Next bookmark"
+msgstr "Next bookmark"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -13199,7 +13500,7 @@ msgstr "Next check {next}."
 msgid "Next check at {nextAttemptTime}"
 msgstr "Next check at {nextAttemptTime}"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 msgid "Next page"
 msgstr "Next page"
@@ -13256,6 +13557,10 @@ msgstr "No activity yet."
 #: src/components/library/LibraryFilterPanel.tsx
 msgid "No anime"
 msgstr "No anime"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "No backups yet."
+msgstr "No backups yet."
 
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "No better copy found"
@@ -13480,6 +13785,11 @@ msgstr "No indexer set up"
 msgid "No indexers configured in {backendName}."
 msgstr "No indexers configured in {backendName}."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "No key"
+msgstr "No key"
+
 #: src/components/settings/AccountSection.tsx
 msgid "No keys yet"
 msgstr "No keys yet"
@@ -13601,6 +13911,10 @@ msgstr "No other copy is left. Verify this file to clear the finding."
 #: src/pages/HealthPage.tsx
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "No other languages"
+msgstr "No other languages"
 
 #: src/api/upgrades.ts
 msgid "No other source lists it"
@@ -13878,6 +14192,7 @@ msgstr "none"
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "None"
 msgstr "None"
@@ -13913,6 +14228,10 @@ msgstr "None of these chapters has a file on disk."
 #: src/components/settings/UsersSection.tsx
 msgid "None selected means an empty library."
 msgstr "None selected means an empty library."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "None ticked"
+msgstr "None ticked"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "none yet"
@@ -14006,6 +14325,10 @@ msgstr "Not connected"
 #: src/pages/ScrobblePage.tsx
 msgid "Not connected yet."
 msgstr "Not connected yet."
+
+#: src/components/ImportListsSection.tsx
+msgid "Not connected: {names}."
+msgstr "Not connected: {names}."
 
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Not connected."
@@ -14500,6 +14823,10 @@ msgstr "Nothing to convert"
 msgid "Nothing to download"
 msgstr "Nothing to download"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr "Nothing to download in {name}"
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/ImportPage.tsx
@@ -14547,10 +14874,6 @@ msgstr "Nothing to show yet."
 msgid "Nothing unfinished to chart."
 msgstr "Nothing unfinished to chart."
 
-#: src/components/ImportListsSection.tsx
-msgid "Nothing unmatched."
-msgstr "Nothing unmatched."
-
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Nothing was installed from it."
 msgstr "Nothing was installed from it."
@@ -14591,6 +14914,10 @@ msgstr "Notifiarr posts here through its Discord bot."
 #: src/pages/settings/registry.ts
 msgid "Notification connections"
 msgstr "Notification connections"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Notification events"
+msgstr "Notification events"
 
 #: src/pages/NotificationsPage.tsx
 msgid "Notification settings"
@@ -14700,13 +15027,17 @@ msgstr "of reading time"
 #: src/components/ImportListsSection.tsx
 #: src/components/pageconversion/labels.ts
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/NotificationPrefsSection.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Off"
 msgstr "Off"
 
@@ -14725,10 +15056,6 @@ msgstr "Off for this device. Turning it on asks your browser for permission."
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Off for this series"
 msgstr "Off for this series"
-
-#: src/pages/settings/DownloadCards.tsx
-msgid "Off skips series set to No scrobble or Full incognito."
-msgstr "Off skips series set to No scrobble or Full incognito."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Off, credit pages are still found when a chapter is opened, which can take a few seconds."
@@ -14799,6 +15126,7 @@ msgstr "OLED black"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "On"
 msgstr "On"
 
@@ -15096,6 +15424,10 @@ msgstr "Open on MangaBaka"
 msgid "Open recycle bin"
 msgstr "Open recycle bin"
 
+#: src/lib/shortcuts.ts
+msgid "Open search"
+msgstr "Open search"
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
@@ -15263,6 +15595,10 @@ msgstr "Others will see your login name, {loginName}."
 msgid "out of 10"
 msgstr "out of 10"
 
+#: src/lib/shortcuts.ts
+msgid "Outside the reader"
+msgstr "Outside the reader"
+
 #: src/components/pageconversion/RuleEditor.tsx
 msgid "Over"
 msgstr "Over"
@@ -15341,6 +15677,10 @@ msgstr "Page {pageNumber} of {pageCount}"
 msgid "page background, white, grey, gray, auto background, page colour"
 msgstr "page background, white, grey, gray, auto background, page colour"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Page cache"
+msgstr "Page cache"
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
@@ -15358,7 +15698,7 @@ msgstr "Page conversion is rewriting a file in this folder."
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 msgstr "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 msgid "Page Down"
 msgstr "Page Down"
 
@@ -15391,8 +15731,8 @@ msgstr "Page not found"
 msgid "Page preview, scrollable"
 msgstr "Page preview, scrollable"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Page thumbnails"
 msgstr "Page thumbnails"
 
@@ -15404,7 +15744,7 @@ msgstr "Page tolerance %"
 msgid "Page transitions"
 msgstr "Page transitions"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 msgid "Page Up"
 msgstr "Page Up"
 
@@ -15903,6 +16243,7 @@ msgid "Preload"
 msgstr "Preload"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Prepare ahead"
 msgstr "Prepare ahead"
 
@@ -15944,6 +16285,10 @@ msgstr "Prequel to"
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel to {relatedTo}"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Press a key, Esc cancels"
+msgstr "Press a key, Esc cancels"
+
 #: src/components/SeriesTagsEditor.tsx
 msgid "Press Enter to create a new tag"
 msgstr "Press Enter to create a new tag"
@@ -15969,9 +16314,9 @@ msgstr "Preview the import"
 msgid "Preview the import of {folderName}"
 msgstr "Preview the import of {folderName}"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Previous and next bookmark"
-msgstr "Previous and next bookmark"
+#: src/lib/shortcuts.ts
+msgid "Previous bookmark"
+msgstr "Previous bookmark"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
@@ -15981,7 +16326,7 @@ msgstr "Previous chapter"
 msgid "Previous default"
 msgstr "Previous default"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 #: src/theme-context.tsx
 msgid "Previous page"
 msgstr "Previous page"
@@ -16009,6 +16354,10 @@ msgstr "Priority for {sourceName}"
 #: src/pages/reader/NotesMargin.tsx
 msgid "Private"
 msgstr "Private"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Processing"
+msgstr "Processing"
 
 #: src/pages/HealthPage.tsx
 msgid "Processor"
@@ -16131,8 +16480,8 @@ msgid "Push"
 msgstr "Push"
 
 #: src/components/settings/NotificationPrefsSection.tsx
-msgid "Push needs Bell on, and push turned on for the device below."
-msgstr "Push needs Bell on, and push turned on for the device below."
+msgid "Push needs Bell on, and push turned on for this device."
+msgstr "Push needs Bell on, and push turned on for this device."
 
 #: src/components/settings/PushNotificationsSection.tsx
 #: src/pages/settings/registry.ts
@@ -16627,10 +16976,6 @@ msgstr "Reader thumbnails"
 #: src/pages/MetadataGatePage.tsx
 msgid "Reader, OPDS, Komga and KOReader"
 msgstr "Reader, OPDS, Komga and KOReader"
-
-#: src/pages/settings/UpscalingSection.tsx
-msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
-msgstr "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "Readers get it"
@@ -17191,6 +17536,10 @@ msgstr "Remove"
 msgid "Remove {0}?"
 msgstr "Remove {0}?"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Remove {keyName} from {name}"
+msgstr "Remove {keyName} from {name}"
+
 #: src/components/TagBrowserModal.tsx
 msgid "Remove {label}"
 msgstr "Remove {label}"
@@ -17198,6 +17547,10 @@ msgstr "Remove {label}"
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Remove {label} from this device"
 msgstr "Remove {label} from this device"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Remove {name}"
+msgstr "Remove {name}"
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Remove {name} from the preferred groups"
@@ -17437,6 +17790,14 @@ msgstr "Removed {seriesTitle}. It won't be suggested here again."
 msgid "Removed {title} from your shortlist."
 msgstr "Removed {title} from your shortlist."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "removed after import"
+msgstr "removed after import"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "removed after seeding"
+msgstr "removed after seeding"
+
 #: src/components/notes/NoteThread.tsx
 msgid "Removed by an admin"
 msgstr "Removed by an admin"
@@ -17500,8 +17861,8 @@ msgid "Rename saved filter"
 msgstr "Rename saved filter"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Rename the folder to the series folder format"
-msgstr "Rename the folder to the series folder format"
+msgid "Rename the folder"
+msgstr "Rename the folder"
 
 #: src/components/SetupWizard.tsx
 msgid "Rename to the Maki standard"
@@ -17575,6 +17936,10 @@ msgstr "Replace with repository version"
 #: src/components/ImportReviewModal.tsx
 msgid "replaced"
 msgstr "replaced"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Replaced files"
+msgstr "Replaced files"
 
 #: src/pages/HealthPage.tsx
 msgid "Replacement"
@@ -17728,6 +18093,14 @@ msgstr "Rescanning series files"
 msgid "Reset"
 msgstr "Reset"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset {name} to its default keys"
+msgstr "Reset {name} to its default keys"
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Reset all"
+msgstr "Reset all"
+
 #: src/pages/HealthPage.tsx
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
@@ -17752,8 +18125,8 @@ msgstr "Reset two-factor"
 msgid "Reset two-factor for {editName}?"
 msgstr "Reset two-factor for {editName}?"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
@@ -18076,6 +18449,7 @@ msgid "Reverted by a user"
 msgstr "Reverted by a user"
 
 #: src/components/import/ManualImport.tsx
+#: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesTorrentDownloads.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
@@ -18351,6 +18725,10 @@ msgstr "Sample chapter"
 msgid "Sample chapter page"
 msgstr "Sample chapter page"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Sample page"
+msgstr "Sample page"
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Sample series page"
 msgstr "Sample series page"
@@ -18456,6 +18834,10 @@ msgstr "Save range"
 #: src/components/settings/RootFolderRulesModal.tsx
 msgid "Save rule"
 msgstr "Save rule"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Save the card to apply your picks."
+msgstr "Save the card to apply your picks."
 
 #: src/components/DiscoverPresets.tsx
 msgid "Save these filters…"
@@ -18581,6 +18963,10 @@ msgstr "Saving {done}/{total}"
 msgid "Saving a new source needs a test that passes."
 msgstr "Saving a new source needs a test that passes."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Saving a ticked model that isn't downloaded yet starts its download."
+msgstr "Saving a ticked model that isn't downloaded yet starts its download."
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Saving for offline failed. Try again from the chapter's menu."
 msgstr "Saving for offline failed. Try again from the chapter's menu."
@@ -18618,10 +19004,6 @@ msgstr "Scan files"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Scan for upgrades"
 msgstr "Scan for upgrades"
-
-#: src/pages/settings/DownloadCards.tsx
-msgid "Scan incognito series"
-msgstr "Scan incognito series"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -18669,6 +19051,10 @@ msgstr "Scanlation groups..."
 msgid "Scanlator"
 msgstr "Scanlator"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Scanned"
+msgstr "Scanned"
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 msgid "Scanning folder…"
@@ -18681,6 +19067,10 @@ msgstr "Scanning for upgrades…"
 #: src/pages/ImportPage.tsx
 msgid "Scanning needs a root folder."
 msgstr "Scanning needs a root folder."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Schedule and limits"
+msgstr "Schedule and limits"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Scheduled"
@@ -18792,6 +19182,10 @@ msgstr "Scroll"
 msgid "Scroll back"
 msgstr "Scroll back"
 
+#: src/lib/shortcuts.ts
+msgid "Scroll down or next page"
+msgstr "Scroll down or next page"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Scroll faster"
 msgstr "Scroll faster"
@@ -18811,6 +19205,10 @@ msgstr "Scroll slower"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
 msgstr "Scroll to finish the preview"
+
+#: src/lib/shortcuts.ts
+msgid "Scroll up or previous page"
+msgstr "Scroll up or previous page"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Scroll webtoon chapters"
@@ -18889,6 +19287,10 @@ msgstr "Search genres and tags"
 #: src/components/TagBrowserModal.tsx
 msgid "Search genres, tags or groups like Character Traits"
 msgstr "Search genres, tags or groups like Character Traits"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Search limits"
+msgstr "Search limits"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search MangaBaka"
@@ -19346,6 +19748,10 @@ msgstr "Series read longer ago are left alone."
 msgid "Series removed"
 msgstr "Series removed"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Series set to No scrobble or Full incognito are left out."
+msgstr "Series set to No scrobble or Full incognito are left out."
+
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 msgid "Series status changed"
@@ -19582,9 +19988,10 @@ msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than i
 msgid "Sharpens soft pages in the reader with models that run on this server."
 msgstr "Sharpens soft pages in the reader with models that run on this server."
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Shift + Space"
-msgstr "Shift + Space"
+#. The Shift key as printed on keyboards in this language
+#: src/lib/shortcutLabels.ts
+msgid "Shift"
+msgstr "Shift"
 
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Shift-click for a range. Unticking a chapter unlinks it."
@@ -19692,9 +20099,9 @@ msgstr "Show on"
 msgid "Show only: {label}"
 msgstr "Show only: {label}"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Show or hide this list"
-msgstr "Show or hide this list"
+#: src/lib/shortcuts.ts
+msgid "Show or hide keyboard shortcuts"
+msgstr "Show or hide keyboard shortcuts"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -19876,7 +20283,7 @@ msgid "Single"
 msgstr "Single"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Single page"
 msgstr "Single page"
 
@@ -20012,6 +20419,7 @@ msgstr "skipped"
 
 #: src/components/pageconversion/RuleEditor.tsx
 #: src/pages/settings/CustomSourceReport.tsx
+#: src/pages/settings/DownloadCards.tsx
 msgid "Skipped"
 msgstr "Skipped"
 
@@ -20052,8 +20460,8 @@ msgid "Slow"
 msgstr "Slow"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "Slower ([)"
-msgstr "Slower ([)"
+msgid "Slower"
+msgstr "Slower"
 
 #: src/components/pageconversion/TargetSheet.tsx
 msgid "Smaller"
@@ -20256,7 +20664,7 @@ msgid "Sources that number the same chapters differently"
 msgstr "Sources that number the same chapters differently"
 
 #: src/components/pageconversion/CompareView.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcutLabels.ts
 msgid "Space"
 msgstr "Space"
 
@@ -20475,6 +20883,7 @@ msgstr "Stats, Rewind, XP"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Status"
 msgstr "Status"
 
@@ -20552,10 +20961,6 @@ msgstr "Stop"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Stop auto-scroll"
 msgstr "Stop auto-scroll"
-
-#: src/pages/reader/ReaderToolbar.tsx
-msgid "Stop auto-scroll (A)"
-msgstr "Stop auto-scroll (A)"
 
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "Stop ignoring"
@@ -20652,6 +21057,11 @@ msgstr "Suggestive"
 msgid "Suggests <0>{suggested}</0>"
 msgstr "Suggests <0>{suggested}</0>"
 
+#. The logo key on a Linux keyboard (the Windows key on Windows)
+#: src/lib/shortcutLabels.ts
+msgid "Super"
+msgstr "Super"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Supernatural"
 msgstr "Supernatural"
@@ -20673,7 +21083,7 @@ msgstr "Swap back and forward"
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 msgstr "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Switch reading direction"
 msgstr "Switch reading direction"
 
@@ -20896,6 +21306,7 @@ msgstr "Tells you about every new chapter, whatever your default is."
 #: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/SuwayomiCards.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Test"
 msgstr "Test"
 
@@ -20912,8 +21323,8 @@ msgid "Test notification sent."
 msgstr "Test notification sent."
 
 #: src/pages/settings/UpscalingSection.tsx
-msgid "Test speed"
-msgstr "Test speed"
+msgid "Test speed of {name}"
+msgstr "Test speed of {name}"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Text"
@@ -21236,6 +21647,10 @@ msgstr "The last health scan couldn't find this file on disk. Relink files finds
 msgid "The layout could not be loaded."
 msgstr "The layout could not be loaded."
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "The left and right arrows turn pages. Remove them from Next page and Previous page first."
+msgstr "The left and right arrows turn pages. Remove them from Next page and Previous page first."
+
 #: src/pages/stats/AchievementGrid.tsx
 msgid "The library"
 msgstr "The library"
@@ -21366,6 +21781,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "The push service did not accept the test notification."
 msgstr "The push service did not accept the test notification."
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "The reader's keys and the search shortcut."
+msgstr "The reader's keys and the search shortcut."
 
 #: src/pages/HealthPage.tsx
 msgid "The record of the missing archive was removed."
@@ -21620,10 +22039,6 @@ msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match
 #: src/components/settings/SecuritySection.tsx
 msgid "Then they can try again."
 msgstr "Then they can try again."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "There is no safe automatic merge."
-msgstr "There is no safe automatic merge."
 
 #: src/pages/HealthPage.tsx
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: one of them has not been scanned, so it cannot be measured yet."
@@ -22363,12 +22778,12 @@ msgstr "Try a shorter or alternative query."
 #: src/components/MetadataDumpProgress.tsx
 #: src/components/notes/NotesPanel.tsx
 #: src/components/pageconversion/PlanEstimate.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
-#: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -22386,6 +22801,10 @@ msgstr "Try again once it has finished."
 #: src/components/settings/RecycleBinModal.tsx
 msgid "Try clearing the filters."
 msgstr "Try clearing the filters."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Try downloading {name} again"
+msgstr "Try downloading {name} again"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Try the preview again"
@@ -22431,7 +22850,7 @@ msgstr "Turned on per series in its monitoring options."
 msgid "Turning embeddings off…"
 msgstr "Turning embeddings off…"
 
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/lib/shortcuts.ts
 msgid "Turning pages"
 msgstr "Turning pages"
 
@@ -22549,6 +22968,7 @@ msgstr "Underscore (_)"
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/series/UndoConversionModal.tsx
+#: src/components/settings/KeyboardShortcutsSection.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -22578,6 +22998,10 @@ msgstr "Undo import"
 #: src/components/import/RecentImports.tsx
 msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
 msgstr "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
+
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Undo reset"
+msgstr "Undo reset"
 
 #: src/components/import/RecentImports.tsx
 msgid "Undo the import of {name}?"
@@ -22787,10 +23211,6 @@ msgstr "Until: {end}"
 msgid "Up"
 msgstr "Up"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Up a screen"
-msgstr "Up a screen"
-
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Up next"
 msgstr "Up next"
@@ -22798,6 +23218,10 @@ msgstr "Up next"
 #: src/components/settings/FolderBrowserModal.tsx
 msgid "Up one folder"
 msgstr "Up one folder"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Up to {autoApproveText} MB"
+msgstr "Up to {autoApproveText} MB"
 
 #: src/components/settings/RatingCategoriesModal.tsx
 msgid "Up to {MAX_ENABLED_CATEGORIES} on at once. Changing these never changes a rating you already set."
@@ -23011,6 +23435,10 @@ msgstr "Upscales the next chapters of series set to Reading while nobody is read
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Upscaling"
 msgstr "Upscaling"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Upscaling models"
+msgstr "Upscaling models"
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaling this page"
@@ -23345,7 +23773,6 @@ msgstr "Vol. {fileVolume}"
 
 #: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
-#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
@@ -23387,10 +23814,18 @@ msgstr "Volume {number}"
 msgid "Volume {range}"
 msgstr "Volume {range}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Volume {volume}"
+msgstr "Volume {volume}"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "volume first, volume release, new series, torrent, indexer, hold sources"
 msgstr "volume first, volume release, new series, torrent, indexer, hold sources"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Volume markers"
+msgstr "Volume markers"
 
 #: src/api/inbox.ts
 msgid "Volume release proposed"
@@ -23429,6 +23864,7 @@ msgstr "volume, volume packs, volume search, auto-grab, proposals, torrent, miss
 
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "Volumes"
 msgstr "Volumes"
 
@@ -23451,10 +23887,6 @@ msgstr "Volumes follow chapter order, so grouping is off while sorting by releas
 #: src/components/RelinkFilesModal.tsx
 msgid "Volumes that hold chapters still read from single files"
 msgstr "Volumes that hold chapters still read from single files"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Volumes: {volumes}"
-msgstr "Volumes: {volumes}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "vs {fromLabel} to {toLabel}"
@@ -23811,6 +24243,11 @@ msgstr "Whole-series pack, needs your call"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Wide pages"
 msgstr "Wide pages"
+
+#. The Windows logo key on a Windows keyboard
+#: src/lib/shortcutLabels.ts
+msgid "Win"
+msgstr "Win"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
@@ -24213,6 +24650,10 @@ msgstr "Your request was declined"
 msgid "Your requests"
 msgstr "Your requests"
 
+#: src/components/settings/KeyboardShortcutsSection.tsx
+msgid "Your shortcuts are back"
+msgstr "Your shortcuts are back"
+
 #: src/components/ImportListsSection.tsx
 msgid "Your shortlist is full."
 msgstr "Your shortlist is full."
@@ -24258,14 +24699,12 @@ msgstr "Zone size ({width}%)"
 msgid "Zoom"
 msgstr "Zoom"
 
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Zoom in"
 msgstr "Zoom in"
 
-#: src/pages/reader/ShortcutSheet.tsx
-msgid "Zoom in and out"
-msgstr "Zoom in and out"
-
+#: src/lib/shortcuts.ts
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Zoom out"
 msgstr "Zoom out"

@@ -1,13 +1,14 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Button,
   Code,
   Collapse,
+  Divider,
   FileButton,
   Group,
   Modal,
@@ -24,6 +25,7 @@ import {
   Box,
 } from '@mantine/core'
 import {
+  IconArchive,
   IconChevronDown,
   IconChevronRight,
   IconDownload,
@@ -34,6 +36,7 @@ import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { Note } from '../../components/ui/Note'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { TagChip } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
@@ -79,6 +82,13 @@ export function BackupSection() {
   const [scheduled, setScheduled] = useState(false)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [listing, setListing] = useState(false)
+  const backupCount = backups?.length ?? 0
+  const totalSize = formatBytes((backups ?? []).reduce((n, b) => n + b.sizeBytes, 0))
+  const latest = (backups ?? []).reduce<NonNullable<typeof backups>[number] | undefined>(
+    (best, b) => (!best || b.manifest.createdUtc > best.manifest.createdUtc ? b : best),
+    undefined,
+  )
 
   // Named, so the restore sentence extracts as `<0>{backupName}</0>` instead of an anonymous slot.
   const backupName =
@@ -147,7 +157,102 @@ export function BackupSection() {
           </Trans>
         </Note>
 
-        {backups && backups.length > 0 && (
+        {latest ? (
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <Group gap="sm" wrap="nowrap" miw={0}>
+              <Text size="sm" c="var(--ink-3)">
+                <Trans>Latest</Trans>
+              </Text>
+              <Text size="sm" fw={500} className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                <TimeAgo value={latest.manifest.createdUtc} />
+              </Text>
+              <TagChip size="sm">{kindLabel(latest.manifest.kind)}</TagChip>
+              <Text size="sm" c="var(--ink-2)" className="tnum">
+                {formatBytes(latest.sizeBytes)}
+              </Text>
+            </Group>
+            <Group gap={4} wrap="nowrap">
+              <Button
+                size="xs"
+                variant="subtle"
+                color="var(--ink-hi)"
+                onClick={() => setTarget({ kind: 'existing', name: latest.name })}
+              >
+                <Trans>Restore</Trans>
+              </Button>
+              <ActionIcon
+                variant="subtle"
+                color="var(--neutral)"
+                onClick={() => void downloadBackup(latest.name)}
+                aria-label={t`Download backup`}
+              >
+                <IconDownload size={16} />
+              </ActionIcon>
+              <Button size="xs" variant="default" leftSection={<IconArchive size={16} />} onClick={() => setListing(true)}>
+                <Trans>All backups ({backupCount})</Trans>
+              </Button>
+            </Group>
+          </Group>
+        ) : (
+          backups && (
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>No backups yet.</Trans>
+            </Text>
+          )
+        )}
+
+        <Divider />
+
+        <Group>
+          <Button
+            onClick={() =>
+              create.mutate(undefined, {
+                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
+              })
+            }
+            loading={create.isPending}
+          >
+            <Trans>Back up now</Trans>
+          </Button>
+          <FileButton onChange={(f) => f && setTarget({ kind: 'upload', file: f })} accept=".zip">
+            {(props) => (
+              <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
+                <Trans>Restore from file…</Trans>
+              </Button>
+            )}
+          </FileButton>
+        </Group>
+
+        <div className="settings-field-grid" data-pairs>
+          <Switch
+            label={t`Back up on a schedule`}
+            description={t`Follows the backup freshness set on the Health page.`}
+            checked={scheduled}
+            onChange={(e) => setScheduled(e.currentTarget.checked)}
+          />
+          <SettingsNumberInput
+            label={t`Backups to keep`}
+            description={t`Per kind: automatic, manual and scheduled.`}
+            min={1}
+            max={50}
+            value={retention}
+            onChange={setRetention}
+          />
+        </div>
+      </Stack>
+
+      <Modal
+        opened={listing}
+        onClose={() => setListing(false)}
+        // A restore or delete confirm opened from the list sits on top of it and takes Esc alone.
+        closeOnEscape={target === null && deleting === null}
+        size={MODAL_SIZE.wide}
+        title={<ModalHeading title={t`Backups`} />}
+      >
+        <Stack gap="md">
+          <Note>
+            <Trans>Backups hold API keys and passwords in plain text. Treat a downloaded one like a password.</Trans>
+          </Note>
           <Table.ScrollContainer minWidth={520}>
             <Table className="panel-table ops-table">
               <Table.Thead>
@@ -160,7 +265,7 @@ export function BackupSection() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {backups.map((b) => (
+                {(backups ?? []).map((b) => (
                   <Table.Tr key={b.name}>
                     <Table.Td className="tnum" style={{ whiteSpace: 'nowrap' }}><TimeAgo value={b.manifest.createdUtc} /></Table.Td>
                     <Table.Td>
@@ -205,44 +310,15 @@ export function BackupSection() {
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
-        )}
-
-        <Group>
-          <Button
-            onClick={() =>
-              create.mutate(undefined, {
-                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
-              })
-            }
-            loading={create.isPending}
-          >
-            <Trans>Back up now</Trans>
+        </Stack>
+        <ModalFooter
+          status={<Plural value={backupCount} one={`# backup, ${totalSize}`} other={`# backups, ${totalSize}`} />}
+        >
+          <Button onClick={() => setListing(false)}>
+            <Trans>Done</Trans>
           </Button>
-          <FileButton onChange={(f) => f && setTarget({ kind: 'upload', file: f })} accept=".zip">
-            {(props) => (
-              <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
-                <Trans>Restore from file…</Trans>
-              </Button>
-            )}
-          </FileButton>
-        </Group>
-
-        <Switch
-          label={t`Back up on a schedule`}
-          description={t`Follows the backup freshness set on the Health page.`}
-          checked={scheduled}
-          onChange={(e) => setScheduled(e.currentTarget.checked)}
-        />
-
-        <SettingsNumberInput
-          label={t`Backups to keep`}
-          description={t`Per kind: automatic, manual and scheduled.`}
-          min={1}
-          max={50}
-          value={retention}
-          onChange={setRetention}
-        />
-      </Stack>
+        </ModalFooter>
+      </Modal>
 
       <ConfirmDialog
         opened={target !== null}

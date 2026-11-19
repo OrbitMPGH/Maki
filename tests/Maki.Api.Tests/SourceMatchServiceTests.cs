@@ -1336,6 +1336,38 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_result_listing_the_romaji_and_English_titles_together_is_accepted()
+    {
+        var seriesId = _db.SeedSeries(
+            "Shut Up, Takamori!", originalTitle: "高森くんを黙らせたいっ!!",
+            configure: s => s.AltTitles =
+            [
+                new LocalizedTitle("I Wanna Shut Up Takamori-kun!!", "en"),
+                new LocalizedTitle("Takamori-kun wo Damarasetai!!", "ja-Latn"),
+            ]);
+        var pill = new FakeSource
+        {
+            Name = "pill",
+            OnSearch = _ => [Hit("p1", "Takamori-kun wo Damarasetai!! I Wanna Shut Up Takamori-kun!!")],
+        };
+
+        var mapped = await RunAutoMatch(seriesId, pill);
+
+        Assert.Equal(["pill"], mapped);
+        Assert.Empty(NearMissesOf(seriesId));
+    }
+
+    [Theory]
+    [InlineData("Takamori-kun wo Damarasetai!! I Wanna Shut Up Takamori-kun!!", true)]
+    [InlineData("I Wanna Shut Up Takamori-kun!! Takamori-kun wo Damarasetai!!", true)]
+    [InlineData("Takamori-kun wo Damarasetai!! 2", false)]
+    [InlineData("Takamori-kun wo Damarasetai!! Another Story", false)]
+    [InlineData("I Wanna Shut Up Takamori-kun!!", false)]
+    public void Only_two_of_the_series_titles_run_together_count_as_joined(string result, bool joined) =>
+        Assert.Equal(joined, SourceMatchService.JoinsTwoOfItsTitles(
+            ["Shut Up, Takamori!", "I Wanna Shut Up Takamori-kun!!", "Takamori-kun wo Damarasetai!!"], result));
+
+    [Fact]
     public async Task At_most_two_English_alt_titles_are_searched()
     {
         var seriesId = _db.SeedSeries(

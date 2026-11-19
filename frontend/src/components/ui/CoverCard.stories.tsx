@@ -30,7 +30,7 @@ export const PartlyRead: Story = {
     // The latest batch's unread files, as on Home's Recently added rail, not every unread chapter.
     const pill = await canvas.findByText('3 new')
     await expect(pill).toBeVisible()
-    await expect(pill).toHaveAttribute('data-tip', '3 recent chapter files')
+    await expect(pill).toHaveAttribute('data-tip', '3 new chapters to read')
   },
 }
 

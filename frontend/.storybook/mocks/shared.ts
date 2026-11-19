@@ -338,6 +338,9 @@ export const sharedHandlers = [
     const { scores } = (await request.json()) as { scores: Record<string, number> }
     return HttpResponse.json({ ratingBreakdown: Object.keys(scores).length ? scores : null })
   }),
+  // Keyboard shortcut overrides: the search pill and the reader read them on every page.
+  http.get(api('/settings/shortcuts'), () => HttpResponse.json({ bindings: {} })),
+  http.put(api('/settings/shortcuts'), async ({ request }) => HttpResponse.json(await request.json())),
   http.get(api('/settings/setup'), () => HttpResponse.json(setupStatus)),
   http.get(api('/settings/ui'), () => HttpResponse.json(uiSettings)),
   http.get(api('/settings/metadata'), () => HttpResponse.json(metadataSettings)),

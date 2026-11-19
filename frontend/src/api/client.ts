@@ -120,6 +120,11 @@ export function beginSession(): void {
   sessionGeneration++
 }
 
+/** The current session's number, for work that must not outlive the session that started it. */
+export function currentSession(): number {
+  return sessionGeneration
+}
+
 const XSRF_COOKIE = 'XSRF-TOKEN'
 
 function readCookie(name: string): string | null {

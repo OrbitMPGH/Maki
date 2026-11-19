@@ -546,6 +546,18 @@ public partial class SourceMatchService(
                 SourceMappingOrigin.TitleSearch, null);
         }
 
+        string[] allTitles =
+        [
+            .. new[] { target.Title, target.OriginalTitle }.Concat(target.AltTitles.Select(t => t.Title))
+                .OfType<string>().Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
+        if (candidates.FirstOrDefault(c => JoinsTwoOfItsTitles(allTitles, c.Title)) is { } joined)
+        {
+            return new SourceOutcome(
+                source, priority, usable.First(r => r.SourceSeriesId == joined.Id),
+                SourceMappingOrigin.TitleSearch, null);
+        }
+
         var turnedDown = target.Dismissed.GetValueOrDefault(source.Name);
         var near = candidates
             .Where(c => turnedDown?.Contains(c.Id) != true)
@@ -562,6 +574,29 @@ public partial class SourceMatchService(
             NearMiss: near is { } n ? usable.First(r => r.SourceSeriesId == n.Candidate.Id) : null,
             NearMissScore: near?.Score ?? 0);
     }
+
+    /// <summary>
+    /// Whether a result title is two of the series' own titles run together, split at a word
+    /// boundary. MangaPill lists a work as "{romaji} {English}" ("Takamori-kun wo Damarasetai!! I
+    /// Wanna Shut Up Takamori-kun!!"), which scores too low against either one alone. Each half must
+    /// stand on its own (<see cref="JoinedHalfThreshold"/>), so a shared prefix plus a stray tail does not count.
+    /// </summary>
+    internal static bool JoinsTwoOfItsTitles(IReadOnlyList<string> titles, string resultTitle)
+    {
+        var words = ScrobbleMatching.NormalizeTitle(resultTitle).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (var k = 1; k < words.Length; k++)
+        {
+            if (ScrobbleMatching.MatchScore(titles, string.Join(' ', words[..k]), JoinedHalfThreshold) > 0 &&
+                ScrobbleMatching.MatchScore(titles, string.Join(' ', words[k..]), JoinedHalfThreshold) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private const double JoinedHalfThreshold = 0.85;
 
     /// <summary>
     /// Whether two titles carry the same meaningful words, allowing each word a small spelling

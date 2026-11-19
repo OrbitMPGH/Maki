@@ -121,6 +121,39 @@ public sealed class ChapterFoldServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Folding_clears_the_clash_warning_without_waiting_for_a_refresh()
+    {
+        var seriesId = Seed(more: (db, rows) =>
+        {
+            var id = rows[3].SeriesId;
+            db.Set<Series>().Single(s => s.Id == id).NumberingClash = "parts|whole";
+            var mappings = db.Set<SourceMapping>().Where(m => m.SeriesId == id).ToDictionary(m => m.SourceName, m => m.Id);
+            foreach (var (source, number) in new[] { ("parts", 5.1m), ("parts", 5.2m), ("parts", 6.1m), ("whole", 5m), ("whole", 6m) })
+            {
+                var row = db.Add(new Chapter { SeriesId = id, Number = number, Language = "en" }).Entity;
+                db.Add(new ChapterSourceLink
+                {
+                    Chapter = row, SourceMappingId = mappings[source], SourceChapterId = $"{source}{number}", NumberRaw = $"{number}",
+                });
+            }
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+        using (var db = _db.NewContext())
+        {
+            // 5.1, 5.2 and 6.1 still clash, so the pair stays.
+            Assert.Equal("parts|whole", db.Series.Single(s => s.Id == seriesId).NumberingClash);
+        }
+
+        var clean = Seed(more: (db, rows) => db.Set<Series>().Single(s => s.Id == rows[3].SeriesId).NumberingClash = "parts|whole");
+        Assert.Equal(1, await Folds().ApplyAsync(clean, CancellationToken.None));
+        using (var db = _db.NewContext())
+        {
+            Assert.Null(db.Series.Single(s => s.Id == clean).NumberingClash);
+        }
+    }
+
+    [Fact]
     public async Task A_sync_keeps_a_fold_while_the_source_lists_the_same_parts()
     {
         var seriesId = Seed();

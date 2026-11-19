@@ -13,6 +13,10 @@ interface PriorityListProps {
   /** Badges and hints shown after the label. */
   renderExtra?: (id: string) => ReactNode
   toggleLabel: (id: string) => string
+  /** Replaces the row's on/off switch, for a list that shows only the rows that are on. */
+  renderAction?: (id: string, label: string) => ReactNode
+  /** Tighter rows, for a list inside a card that holds more than the list. */
+  dense?: boolean
 }
 
 /**
@@ -27,6 +31,8 @@ export function PriorityList({
   renderLabel,
   renderExtra,
   toggleLabel,
+  renderAction,
+  dense,
 }: PriorityListProps) {
   const { t } = useLingui()
   // The real order only changes on drop. While dragging, rows are shifted purely
@@ -70,7 +76,7 @@ export function PriorityList({
   }
 
   return (
-    <Stack gap={0} mb="md" ref={containerRef} onDragOver={handleContainerDragOver}>
+    <Stack gap={0} mb={dense ? 0 : 'md'} ref={containerRef} onDragOver={handleContainerDragOver}>
       {items.map((id, i) => {
         let shift = 0
         if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
@@ -93,7 +99,7 @@ export function PriorityList({
               justify="space-between"
               align="center"
               wrap="nowrap"
-              py={12}
+              py={dense ? 8 : 12}
               px={4}
               draggable
               onDragStart={(e) => {
@@ -150,15 +156,19 @@ export function PriorityList({
                     <IconChevronDown size={16} />
                   </ActionIcon>
                 </span>
-                <Switch
-                  size="xs"
-                  checked={!disabled.includes(id)}
-                  onChange={(e) => toggle(id, e.currentTarget.checked)}
-                  aria-label={toggleLabel(id)}
-                  // The row is draggable; without this a drag started on the switch swallows the click.
-                  onMouseDown={(e) => e.stopPropagation()}
-                  draggable={false}
-                />
+                {renderAction ? (
+                  renderAction(id, label)
+                ) : (
+                  <Switch
+                    size="xs"
+                    checked={!disabled.includes(id)}
+                    onChange={(e) => toggle(id, e.currentTarget.checked)}
+                    aria-label={toggleLabel(id)}
+                    // The row is draggable; without this a drag started on the switch swallows the click.
+                    onMouseDown={(e) => e.stopPropagation()}
+                    draggable={false}
+                  />
+                )}
               </Group>
             </Group>
             {i < items.length - 1 && <Divider />}

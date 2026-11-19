@@ -10,7 +10,7 @@ import {
   useSaveDropFolderSettings,
   type DropFolderSettings,
 } from '../../api/dropFolder'
-import { DrillPanes } from '../../components/ui/DrillPanes'
+import { SettingsDrill } from '../../components/settings/SettingsDrill'
 import { DrillBack, DrillField, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
@@ -73,8 +73,7 @@ export function DropFolderSection() {
           checked={current.enabled}
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
         />
-        <div>
-          <DrillPanes page={pages.page} depth={pages.depth} bleed={6}>
+        <SettingsDrill page={pages.page} depth={pages.depth}>
             {pages.page === 'main' && (
               <>
                 <DrillRow
@@ -168,8 +167,7 @@ export function DropFolderSection() {
                 </DrillField>
               </>
             )}
-          </DrillPanes>
-        </div>
+        </SettingsDrill>
         {saved?.enabled && (
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Text size="sm" c={status?.lastError ? 'var(--danger)' : 'var(--ink-2)'}>

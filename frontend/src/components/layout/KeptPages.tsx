@@ -29,6 +29,10 @@ const KeptPage = memo(function KeptPage({ at, routes }: { at: Location; routes: 
  *
  * Each hidden page renders against its own last location, so another page's URL never reaches its
  * filters. The shell's Routes answer these paths with nothing, since this draws them.
+ *
+ * Hiding a page drops the timers of any Mantine transition on it. Stock Mantine never restarts them,
+ * so a modal closed just before leaving came back as an invisible overlay over the whole window;
+ * patches/@mantine+core+*.patch settles such a transition when the page shows again.
  */
 export function KeptPages({ homeEnabled, Discover }: { homeEnabled: boolean; Discover: ComponentType }) {
   const location = useLocation()

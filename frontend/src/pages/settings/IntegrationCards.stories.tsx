@@ -118,7 +118,7 @@ export const ImportListsAdmin: Story = {
   render: () => <ImportListSettingsSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('switch', { name: 'Enable import lists for everyone' })).toBeInTheDocument()
-    await expect(await canvas.findByText('Cloudless Archipelago')).toBeVisible()
+    await expect(await canvas.findByText('Not matched or ignored')).toBeVisible()
   },
 }
 
@@ -126,7 +126,7 @@ export const ImportListsReader: Story = {
   render: () => <ImportListSettingsSection />,
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Cloudless Archipelago')).toBeVisible()
+    await expect(await canvas.findByText('Not matched or ignored')).toBeVisible()
     await expect(canvas.queryByRole('switch', { name: 'Enable import lists for everyone' })).toBeNull()
   },
 }
