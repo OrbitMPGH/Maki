@@ -525,9 +525,10 @@ public static class ImageCodec
     internal const int UpscaledJpegXlEffort = 3;
 
     /// <summary>
-    /// A JPEG XL encode holds 25 to 34 bytes a pixel against WebP's 5 to 7, so bigger outputs (a 16 MP
-    /// source upscales to 64 MP) stay WebP or JPEG. 12 MP covers a 1880 x 4000 colour page and a
-    /// 1440 x 8000 webtoon slice at about 400 MB.
+    /// Bigger outputs (a 16 MP source upscales to 64 MP) stay WebP or JPEG. 12 MP covers a 1880 x 4000 colour
+    /// page and a 1440 x 8000 webtoon slice. Streamed (<see cref="EncodeUpscaledJpegXl"/>) the encoder holds
+    /// about the same at any size; the cap also bounds the full decode that converts a page for a browser
+    /// without JPEG XL.
     /// </summary>
     public const long MaxJpegXlPixels = 12_000_000;
 
@@ -547,7 +548,7 @@ public static class ImageCodec
             return EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height);
         }
 
-        if (jpegXl && (long)width * height <= MaxJpegXlPixels && JpegXl.IsAvailable)
+        if (jpegXl && FitsJpegXl(width, height))
         {
             try
             {
@@ -561,6 +562,16 @@ public static class ImageCodec
 
         return EncodeBands(rgb, width, height, 3);
     }
+
+    /// <summary>Whether <see cref="EncodeUpscaled"/> would write a colour page of this size as JPEG XL when asked to.</summary>
+    public static bool FitsJpegXl(int width, int height) => (long)width * height <= MaxJpegXlPixels && JpegXl.IsAvailable;
+
+    /// <summary>
+    /// A colour page as <see cref="EncodeUpscaled"/> writes it as JPEG XL, the same bytes, with the rows read from
+    /// <paramref name="rows"/> as the encoder gets to them. Throws <see cref="JpegXlException"/> when libjxl fails.
+    /// </summary>
+    public static UpscaledImage EncodeUpscaledJpegXl(IJpegXlRows rows, int width, int height) =>
+        new(JpegXl.EncodeRows(rows, width, height, 3, UpscaledJpegXlDistance, UpscaledJpegXlEffort), "jxl", width, height, 3);
 
     /// <summary>
     /// A cached JPEG XL page as the WebP or JPEG <see cref="EncodeUpscaled"/> would have written, for a

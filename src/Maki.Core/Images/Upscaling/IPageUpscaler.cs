@@ -34,8 +34,9 @@ public sealed record UpscaleRun
     public CancellationToken Widen { get; init; }
 
     /// <summary>
-    /// Asked just before the encode. False when nobody who will see the page can decode JPEG XL, so a
-    /// colour page is encoded as WebP at once instead of being converted on every request. Null allows it.
+    /// Asked before the tiles, since a JPEG XL page is encoded while they run, and again at the encode. False when
+    /// nobody who will see the page can decode JPEG XL, so a colour page is stored as WebP instead of being
+    /// converted on every request. Null allows it.
     /// </summary>
     public Func<bool>? JpegXl { get; init; }
 

@@ -292,7 +292,8 @@ public class OnnxPageUpscalerTests : IDisposable
         var output = new byte[80 * 80 * 3];
         Array.Fill(output, (byte)1);
 
-        OnnxPageUpscaler.SnapFlat(source, _catalog.Get(UpscaleModelId.Maki2x), tile, 2, output, 80, 3);
+        OnnxPageUpscaler.SnapFlat(source, _catalog.Get(UpscaleModelId.Maki2x), tile, 2,
+            new OnnxPageUpscaler.StitchedPage(output, 80, output.Length / 240, 3), 3);
 
         for (var x = 0; x < 80; x++)
         {
@@ -383,7 +384,7 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
-    public async Task A_colour_page_nobody_can_show_as_jpeg_xl_is_encoded_as_webp_asked_at_the_encode()
+    public async Task A_colour_page_nobody_can_show_as_jpeg_xl_is_encoded_as_webp_asked_before_the_tiles_and_at_the_encode()
     {
         using var upscaler = NewUpscaler();
         var png = Pattern(400, 500).EncodePng();
@@ -391,12 +392,72 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
             new UpscaleRun { JpegXl = () => ++asked < 0 }, CancellationToken.None);
-        Assert.Equal(0, asked);
+        Assert.Equal(JpegXl.IsAvailable ? 1 : 0, asked);
         var result = await pending.FinishAsync(CancellationToken.None);
 
-        Assert.Equal(1, asked);
+        Assert.Equal(JpegXl.IsAvailable ? 2 : 1, asked);
         Assert.Equal((UpscaleOutcome.Ready, "webp"), (result.Outcome, result.Extension));
         Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+    }
+
+    [JpegXlFact]
+    public async Task A_streamed_page_whose_readers_all_said_no_by_the_encode_is_converted_to_webp_once()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+        var asked = 0;
+
+        var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
+            new UpscaleRun { JpegXl = () => ++asked == 1 }, CancellationToken.None);
+        var result = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(2, asked);
+        Assert.Equal((UpscaleOutcome.Ready, "webp", 800, 1000), (result.Outcome, result.Extension, result.Width, result.Height));
+        Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+    }
+
+    [JpegXlTheory]
+    [InlineData(400, 500)]
+    [InlineData(300, 2500)]
+    [InlineData(1100, 1200)]
+    [InlineData(37, 3001)]
+    public async Task A_colour_page_streamed_into_jpeg_xl_has_the_bytes_of_the_whole_page_encode(int width, int height)
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(width, height).EncodePng();
+        var source = ImageCodec.DecodeForUpscale(png).Raster!;
+        var whole = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
+        UpscalePixels.TakeColourFrom(whole.Pixels, whole.Width, whole.Height, source.Pixels, source.Width, source.Height, 2);
+        var expected = ImageCodec.EncodeUpscaled(whole.Pixels, whole.Width, whole.Height, grey: false, jpegXl: true);
+
+        var streamed = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+
+        Assert.Equal(("jxl", "jxl"), (expected.Extension, streamed.Extension));
+        Assert.Equal(expected.Bytes, streamed.Bytes);
+    }
+
+    [JpegXlFact]
+    public async Task A_page_cancelled_during_its_tiles_releases_the_encoder_for_the_next_page()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(300, 2500).EncodePng();
+        using var cts = new CancellationTokenSource();
+        upscaler.TileCompleted = _ => cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => upscaler.UpscaleAsync(png, "span-s", cts.Token));
+        upscaler.TileCompleted = null;
+        var next = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal((UpscaleOutcome.Ready, "jxl"), (next.Outcome, next.Extension));
+    }
+
+    [JpegXlFact]
+    public async Task A_shutdown_during_a_streamed_finish_cancels_it()
+    {
+        using var upscaler = NewUpscaler();
+        var pending = await upscaler.StartAsync(Pattern(300, 2500).EncodePng(), UpscaleModelId.SpanS, CancellationToken.None);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.FinishAsync(new CancellationToken(canceled: true)));
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace Maki.Core.Images;
@@ -59,6 +60,59 @@ public static class JpegXl
         if ((long)width * height * bands > pixels.Length) throw new ArgumentException("Fewer pixels than the size says.", nameof(pixels));
         EnsureAvailable();
 
+        var encoder = CreateEncoder(width, height, bands, distance, effort, out var settings);
+        try
+        {
+            var format = new PixelFormat((uint)bands, TypeUint8, 0, 0);
+            Check(JxlEncoderAddImageFrame(settings, ref format, pixels, (nuint)((long)width * height * bands)), "JxlEncoderAddImageFrame");
+            JxlEncoderCloseInput(encoder);
+            return Drain(encoder, Math.Max(64 * 1024, width * height / 4));
+        }
+        finally
+        {
+            JxlEncoderDestroy(encoder);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="Encode"/> with the pixels pulled from <paramref name="rows"/> as libjxl needs them, so the
+    /// whole image never sits in one buffer, and libjxl keeps no copy of it either. libjxl asks on the
+    /// calling thread, in rectangles of at most 2048 px a side plus an 8 px border (measured on 0.12: its
+    /// 2048 px DC groups in reading order, each released before the next is asked for). The bytes are the
+    /// same as <see cref="Encode"/>'s. An <see cref="IJpegXlRows.Acquire"/> that throws ends the encode
+    /// with that exception.
+    /// </summary>
+    public static byte[] EncodeRows(IJpegXlRows rows, int width, int height, int bands, float distance, int effort)
+    {
+        if (bands is not (1 or 3)) throw new ArgumentOutOfRangeException(nameof(bands), bands, "1 or 3");
+        EnsureAvailable();
+
+        var encoder = CreateEncoder(width, height, bands, distance, effort, out var settings);
+        var stream = new RowStream(rows, bands, Math.Max(64 * 1024, width * height / 4));
+        var handle = GCHandle.Alloc(stream);
+        try
+        {
+            var opaque = GCHandle.ToIntPtr(handle);
+            // libjxl only streams the input when it can also stream the output.
+            Check(JxlEncoderSetOutputProcessor(encoder, new OutputProcessor(opaque)), "JxlEncoderSetOutputProcessor");
+            var status = JxlEncoderAddChunkedFrame(settings, 1, new ChunkedSource(opaque));
+            stream.ThrowIfFailed();
+            Check(status, "JxlEncoderAddChunkedFrame");
+            status = JxlEncoderFlushInput(encoder);
+            stream.ThrowIfFailed();
+            Check(status, "JxlEncoderFlushInput");
+            return stream.Encoded();
+        }
+        finally
+        {
+            JxlEncoderDestroy(encoder);
+            handle.Free();
+            stream.Dispose();
+        }
+    }
+
+    private static IntPtr CreateEncoder(int width, int height, int bands, float distance, int effort, out IntPtr settings)
+    {
         var encoder = JxlEncoderCreate(IntPtr.Zero);
         if (encoder == IntPtr.Zero) throw new JpegXlException("JxlEncoderCreate");
         try
@@ -77,20 +131,248 @@ public static class JpegXl
             JxlColorEncodingSetToSRGB(colour, bands == 1 ? 1 : 0);
             Check(JxlEncoderSetColorEncoding(encoder, colour), "JxlEncoderSetColorEncoding");
 
-            var settings = JxlEncoderFrameSettingsCreate(encoder, IntPtr.Zero);
+            settings = JxlEncoderFrameSettingsCreate(encoder, IntPtr.Zero);
             if (settings == IntPtr.Zero) throw new JpegXlException("JxlEncoderFrameSettingsCreate");
             Check(JxlEncoderSetFrameDistance(settings, distance), "JxlEncoderSetFrameDistance");
             Check(JxlEncoderFrameSettingsSetOption(settings, FrameSettingEffort, effort), "effort");
-
-            var format = new PixelFormat((uint)bands, TypeUint8, 0, 0);
-            Check(JxlEncoderAddImageFrame(settings, ref format, pixels, (nuint)((long)width * height * bands)), "JxlEncoderAddImageFrame");
-            JxlEncoderCloseInput(encoder);
-            return Drain(encoder, Math.Max(64 * 1024, width * height / 4));
+            return encoder;
         }
-        finally
+        catch
         {
             JxlEncoderDestroy(encoder);
+            throw;
         }
+    }
+
+    /// <summary>
+    /// One <see cref="EncodeRows"/>: the caller's rows, the buffers lent to libjxl, the codestream it writes
+    /// (a seekable, growing native buffer) and the first failure. No callback may throw into libjxl, so each
+    /// failure is kept here and thrown once libjxl returns.
+    /// </summary>
+    private sealed class RowStream(IJpegXlRows rows, int bands, int initialOutput) : IDisposable
+    {
+        private readonly List<(IntPtr At, IntPtr Rows, GCHandle Blank)> _lent = [];
+        private Exception? _failure;
+        private IntPtr _output = Marshal.AllocHGlobal(initialOutput);
+        private long _capacity = initialOutput;
+        private long _position;
+        private long _length;
+
+        public int Bands => bands;
+
+        public IntPtr Lend(int x, int y, int columns, int count, out nuint rowBytes)
+        {
+            if (_failure is null)
+            {
+                try
+                {
+                    var start = rows.Acquire(y, count, out var stride);
+                    var at = start + x * bands;
+                    rowBytes = (nuint)stride;
+                    _lent.Add((at, start, default));
+                    return at;
+                }
+                catch (Exception ex)
+                {
+                    _failure = ex;
+                }
+            }
+
+            return LendBlank(columns, count, out rowBytes);
+        }
+
+        /// <summary>
+        /// Zeroed rows. libjxl cannot be stopped from an input callback, so after a failure it reads blank rows
+        /// until its next output, which is refused.
+        /// </summary>
+        public IntPtr LendBlank(int columns, int count, out nuint rowBytes)
+        {
+            rowBytes = (nuint)(columns * bands);
+            var blank = GCHandle.Alloc(new byte[columns * count * bands], GCHandleType.Pinned);
+            var at = blank.AddrOfPinnedObject();
+            _lent.Add((at, IntPtr.Zero, blank));
+            return at;
+        }
+
+        public void Return(IntPtr buffer)
+        {
+            var i = _lent.FindIndex(lent => lent.At == buffer);
+            if (i < 0)
+            {
+                return;
+            }
+
+            var (_, start, blank) = _lent[i];
+            _lent.RemoveAt(i);
+            if (blank.IsAllocated)
+            {
+                blank.Free();
+                return;
+            }
+
+            try
+            {
+                rows.Release(start);
+            }
+            catch (Exception ex)
+            {
+                _failure ??= ex;
+            }
+        }
+
+        /// <summary>libjxl holds at most one output buffer at a time, so growing here never moves one it is writing.</summary>
+        public IntPtr OutputBuffer(ref nuint size)
+        {
+            if (_failure is not null)
+            {
+                size = 0;
+                return IntPtr.Zero;
+            }
+
+            var wanted = _position + (long)Math.Max(size, 4096);
+            if (wanted > _capacity)
+            {
+                var capacity = Math.Max(wanted, _capacity * 2);
+                if (capacity > Array.MaxLength) throw new JpegXlException("The codestream does not fit in one buffer.");
+                _output = Marshal.ReAllocHGlobal(_output, (IntPtr)capacity);
+                _capacity = capacity;
+            }
+
+            size = (nuint)(_capacity - _position);
+            return _output + (nint)_position;
+        }
+
+        public void Written(nuint bytes)
+        {
+            _position += (long)bytes;
+            _length = Math.Max(_length, _position);
+        }
+
+        public void Seek(ulong position) => _position = (long)position;
+
+        public void Fail(Exception ex) => _failure ??= ex;
+
+        public void ThrowIfFailed()
+        {
+            if (_failure is not null) ExceptionDispatchInfo.Throw(_failure);
+        }
+
+        public byte[] Encoded()
+        {
+            var bytes = new byte[_length];
+            Marshal.Copy(_output, bytes, 0, bytes.Length);
+            return bytes;
+        }
+
+        public void Dispose()
+        {
+            while (_lent.Count > 0)
+            {
+                Return(_lent[^1].At);
+            }
+
+            Marshal.FreeHGlobal(_output);
+            _output = IntPtr.Zero;
+        }
+    }
+
+    private static RowStream StreamOf(IntPtr opaque) => (RowStream)GCHandle.FromIntPtr(opaque).Target!;
+
+    private delegate void FormatCallback(IntPtr opaque, ref PixelFormat format);
+
+    private delegate void ExtraFormatCallback(IntPtr opaque, nuint index, ref PixelFormat format);
+
+    private delegate IntPtr DataCallback(IntPtr opaque, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes);
+
+    private delegate IntPtr ExtraDataCallback(
+        IntPtr opaque, nuint index, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes);
+
+    private delegate void ReleaseBufferCallback(IntPtr opaque, IntPtr buffer);
+
+    private delegate IntPtr GetBufferCallback(IntPtr opaque, ref nuint size);
+
+    private delegate void WrittenCallback(IntPtr opaque, nuint bytes);
+
+    private delegate void SeekCallback(IntPtr opaque, ulong position);
+
+    // Static, so the delegates outlive every encode holding their function pointers.
+    private static readonly FormatCallback ColourFormat = (IntPtr opaque, ref PixelFormat format) =>
+        format = new PixelFormat((uint)StreamOf(opaque).Bands, TypeUint8, 0, 0);
+
+    private static readonly DataCallback ColourData =
+        (IntPtr opaque, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes) =>
+            StreamOf(opaque).Lend((int)x, (int)y, (int)columns, (int)count, out rowBytes);
+
+    // There are no extra channels, so libjxl never calls these two; they only complete the struct.
+    private static readonly ExtraFormatCallback ExtraFormat = (IntPtr opaque, nuint _, ref PixelFormat format) =>
+        format = new PixelFormat(1, TypeUint8, 0, 0);
+
+    private static readonly ExtraDataCallback ExtraData =
+        (IntPtr opaque, nuint _, nuint x, nuint y, nuint columns, nuint count, out nuint rowBytes) =>
+            StreamOf(opaque).LendBlank((int)columns, (int)count, out rowBytes);
+
+    private static readonly ReleaseBufferCallback ReleaseBuffer = (opaque, buffer) => StreamOf(opaque).Return(buffer);
+
+    // A null buffer of size 0 tells libjxl to stop; the encode then fails.
+    private static readonly GetBufferCallback GetBuffer = (IntPtr opaque, ref nuint size) =>
+    {
+        var stream = StreamOf(opaque);
+        try
+        {
+            return stream.OutputBuffer(ref size);
+        }
+        catch (Exception ex)
+        {
+            stream.Fail(ex);
+            size = 0;
+            return IntPtr.Zero;
+        }
+    };
+
+    private static readonly WrittenCallback Written = (opaque, bytes) => StreamOf(opaque).Written(bytes);
+
+    private static readonly SeekCallback Seek = (opaque, position) => StreamOf(opaque).Seek(position);
+
+    private static readonly SeekCallback Finalized = (_, _) => { };
+
+    private static readonly IntPtr[] InputCallbacks =
+    [
+        Marshal.GetFunctionPointerForDelegate(ColourFormat),
+        Marshal.GetFunctionPointerForDelegate(ColourData),
+        Marshal.GetFunctionPointerForDelegate(ExtraFormat),
+        Marshal.GetFunctionPointerForDelegate(ExtraData),
+        Marshal.GetFunctionPointerForDelegate(ReleaseBuffer)
+    ];
+
+    private static readonly IntPtr[] OutputCallbacks =
+    [
+        Marshal.GetFunctionPointerForDelegate(GetBuffer),
+        Marshal.GetFunctionPointerForDelegate(Written),
+        Marshal.GetFunctionPointerForDelegate(Seek),
+        Marshal.GetFunctionPointerForDelegate(Finalized)
+    ];
+
+    /// <summary>JxlChunkedFrameInputSource: the opaque pointer and five callbacks.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly struct ChunkedSource(IntPtr opaque)
+    {
+        private readonly IntPtr _opaque = opaque;
+        private readonly IntPtr _colourFormat = InputCallbacks[0];
+        private readonly IntPtr _colourData = InputCallbacks[1];
+        private readonly IntPtr _extraFormat = InputCallbacks[2];
+        private readonly IntPtr _extraData = InputCallbacks[3];
+        private readonly IntPtr _release = InputCallbacks[4];
+    }
+
+    /// <summary>JxlEncoderOutputProcessor: the opaque pointer and four callbacks.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly struct OutputProcessor(IntPtr opaque)
+    {
+        private readonly IntPtr _opaque = opaque;
+        private readonly IntPtr _getBuffer = OutputCallbacks[0];
+        private readonly IntPtr _releaseBuffer = OutputCallbacks[1];
+        private readonly IntPtr _seek = OutputCallbacks[2];
+        private readonly IntPtr _finalized = OutputCallbacks[3];
     }
 
     /// <summary>
@@ -287,6 +569,9 @@ public static class JpegXl
     [DllImport(Library)] private static extern int JxlEncoderSetFrameDistance(IntPtr settings, float distance);
     [DllImport(Library)] private static extern int JxlEncoderFrameSettingsSetOption(IntPtr settings, int option, long value);
     [DllImport(Library)] private static extern int JxlEncoderAddImageFrame(IntPtr settings, ref PixelFormat format, [In] byte[] buffer, nuint size);
+    [DllImport(Library)] private static extern int JxlEncoderAddChunkedFrame(IntPtr settings, int isLastFrame, ChunkedSource source);
+    [DllImport(Library)] private static extern int JxlEncoderSetOutputProcessor(IntPtr encoder, OutputProcessor processor);
+    [DllImport(Library)] private static extern int JxlEncoderFlushInput(IntPtr encoder);
     [DllImport(Library)] private static extern void JxlEncoderCloseInput(IntPtr encoder);
     [DllImport(Library)] private static extern int JxlEncoderProcessOutput(IntPtr encoder, ref IntPtr nextOut, ref nuint availOut);
     [DllImport(Library)] private static extern IntPtr JxlDecoderCreate(IntPtr memoryManager);
@@ -301,3 +586,17 @@ public static class JpegXl
 }
 
 public sealed class JpegXlException(string message) : Exception(message);
+
+/// <summary>Full-width rows of interleaved 8-bit pixels that <see cref="JpegXl.EncodeRows"/> reads as libjxl asks for them.</summary>
+public interface IJpegXlRows
+{
+    /// <summary>
+    /// The address of row <paramref name="top"/>'s first pixel, with the rest of the <paramref name="count"/>
+    /// rows <paramref name="stride"/> bytes apart after it. They must stay put until the matching
+    /// <see cref="Release"/>. May block until the rows are ready.
+    /// </summary>
+    IntPtr Acquire(int top, int count, out int stride);
+
+    /// <summary>libjxl is done with the rows of one <see cref="Acquire"/>, which returned <paramref name="rows"/>.</summary>
+    void Release(IntPtr rows);
+}

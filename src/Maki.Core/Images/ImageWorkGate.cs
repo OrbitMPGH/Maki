@@ -238,6 +238,31 @@ public static class ImageWorkGate
         }
     }
 
+    /// <summary>
+    /// <see cref="RunAsync{T}(Func{Task{T}}, int, CancellationToken)"/>'s permit and megapixels for work that
+    /// cannot sit inside one call: a streamed JPEG XL encode holds them while libjxl works on a strip and
+    /// gives them back while it waits for the next. Dispose to give them back.
+    /// </summary>
+    public static async Task<IDisposable> HoldAsync(int megapixels, CancellationToken ct = default)
+    {
+        megapixels = Math.Clamp(megapixels, 1, BudgetMegapixels);
+        await EnterAsync(megapixels, ct);
+        return new Held(megapixels);
+    }
+
+    private sealed class Held(int megapixels) : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                Exit(megapixels);
+            }
+        }
+    }
+
     public static async Task RunAsync(Func<Task> work, CancellationToken ct = default)
     {
         await EnterAsync(1, ct);
