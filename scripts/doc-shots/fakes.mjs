@@ -154,6 +154,22 @@ export const SOURCE_SEARCH = [
   },
 ]
 
+// The showcase's tracker tokens are placeholders and MyAnimeList's never connected, and its sync
+// interval was set to an hour to keep runs quiet. Show every tracker connected, on the default 30.
+export const TRACKERS = [
+  {
+    match: /^\/api\/v1\/scrobble\/status$/,
+    apply: (b) => ({
+      ...b,
+      ...(b.intervalMinutes !== undefined ? { intervalMinutes: 30 } : {}),
+      connections: (b.connections ?? []).map((c) =>
+        ['anilist', 'mal', 'kitsu', 'mangabaka'].includes(c.service) ? { ...c, configured: true, connected: true, username: c.username ?? 'maki_reads' } : c,
+      ),
+    }),
+  },
+  { match: /^\/api\/v1\/settings\/scrobble$/, apply: (b) => ({ ...b, intervalMinutes: 30 }) },
+]
+
 // ---- Reader ----
 
 export const NOTES = [
@@ -411,6 +427,11 @@ function scanCandidates(d) {
   return [
     cand('Blue Period (2017) [Digital]', 'Blue Period', 60, 60, [hit('2238', 'Blue Period', 2017, 'Ongoing', 160)]),
     cand('March Comes in Like a Lion v01-17', 'March Comes in Like a Lion', 17, 17, [hit('3347', 'March Comes in Like a Lion', 2007, 'Ongoing', 200)], null, 'new', { matchSource: 'comicInfo', matchHint: '3-gatsu no Lion' }),
+    cand('Skip and Loafer [Seven Seas]', 'Skip and Loafer', 10, 10, [hit('86', 'Skip and Loafer', 2018, 'Ongoing', 70)]),
+    cand('mushishi', 'mushishi', 10, 10, [hit('13246', 'Mushishi', 1999, 'Completed', 50)]),
+    cand('Look Back (2021)', 'Look Back', 1, 1, [hit('9465', 'Look Back', 2021, 'Completed', 1)]),
+    cand('Blue Giant v01-10', 'Blue Giant', 10, 10, [hit('2447', 'Blue Giant', 2013, 'Completed', 80)]),
+    cand('Insomniacs After School', 'Insomniacs After School', 0, 0, [hit('5201', 'Insomniacs After School', 2019, 'Completed', 123)]),
     cand('apothecary diaries', 'apothecary diaries', 40, 38, [hit('222', 'The Apothecary Diaries', 2017, 'Ongoing', 80), hit('84242', 'The Apothecary Diaries (Novel)', 2011, 'Ongoing', 15)]),
     cand('Delicious in Dungeon [Yen Press]', 'Delicious in Dungeon', 97, 97, [hit('6886', 'Delicious in Dungeon', 2014, 'Completed', 97)]),
     cand('Kaguya-sama Love is War', 'Kaguya-sama Love is War', 28, 28, [hit('10236', 'Kaguya-sama: Love is War', 2015, 'Completed', 281)], d.series.kaguya, 'inLibrary', { matchSource: 'library' }),
@@ -463,7 +484,14 @@ function importPlans() {
     plan('Delicious in Dungeon [Yen Press]', 'Delicious in Dungeon', 'keep', 'Delicious in Dungeon [Yen Press]', [
       f('Delicious in Dungeon Vol.1.cbz', 'Vol 1.cbz', 'cbz', 'register', 180_000_000, null, { volume: 1, volumeEnd: 1 }),
     ]),
-    plan('March Comes in Like a Lion v01-17', null, 'keep', null, null, { error: 'The folder holds no readable comic files.', linkDeferred: false, writesCover: false }),
+    plan('March Comes in Like a Lion v01-17', 'March Comes in Like a Lion', 'rename', 'March Comes in Like a Lion (2007)', [
+      f('March Comes in Like a Lion Vol.1.cbz', '3-gatsu no Lion v01.cbz', 'cbz', 'register', 160_000_000, null, { volume: 1, volumeEnd: 1 }),
+    ]),
+    plan('Skip and Loafer [Seven Seas]', 'Skip and Loafer', 'rename', 'Skip and Loafer (2018)', [f('Skip and Loafer Vol.1.cbz', 'Skip and Loafer v01.cbz', 'cbz', 'register', 150_000_000, null, { volume: 1, volumeEnd: 1 })]),
+    plan('mushishi', 'Mushishi', 'rename', 'Mushishi (1999)', [f('Mushishi Vol.1.cbz', 'mushishi_01.cbz', 'cbz', 'register', 140_000_000, null, { volume: 1, volumeEnd: 1 })]),
+    plan('Look Back (2021)', 'Look Back', 'keep', 'Look Back (2021)', [f('Look Back Ch.1.cbz', 'Look Back.cbz', 'cbz', 'register', 90_000_000, '1', { loneFile: true })]),
+    plan('Blue Giant v01-10', 'Blue Giant', 'rename', 'Blue Giant (2013)', [f('Blue Giant Vol.1.cbz', 'Blue Giant v01.cbz', 'cbz', 'register', 170_000_000, null, { volume: 1, volumeEnd: 1 })]),
+    plan('Insomniacs After School', null, 'keep', null, null, { error: 'The folder holds no readable comic files.', linkDeferred: false, writesCover: false }),
   ]
 }
 
@@ -560,9 +588,23 @@ function mihon(d) {
   }
 }
 
+async function withCovers(d, resolve) {
+  const cover = async (m, sid) => {
+    if (!m) return m
+    if (sid) return { ...m, coverUrl: `/api/v1/mediacover/${sid}/cover.jpg` }
+    const detail = await d.api(`/recommendations/detail/${m.providerId}`).catch(() => null)
+    return { ...m, coverUrl: detail?.coverUrl ?? null }
+  }
+  const results = []
+  for (const r of resolve.results) {
+    results.push({ ...r, match: await cover(r.match, r.seriesId), candidates: await Promise.all(r.candidates.map((c) => cover(c, null))) })
+  }
+  return { results }
+}
+
 export const MIHON = [
   { method: 'POST', match: /^\/api\/v1\/mihonimport\/parse$/, respond: (d) => mihon(d).parse },
-  { method: 'POST', match: /^\/api\/v1\/mihonimport\/resolve$/, respond: (d) => mihon(d).resolve },
+  { method: 'POST', match: /^\/api\/v1\/mihonimport\/resolve$/, respond: (d) => withCovers(d, mihon(d).resolve) },
 ]
 
 export { json, seriesId }

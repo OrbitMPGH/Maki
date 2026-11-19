@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "shots": "node --disable-warning=ExperimentalWarning shots.mjs"
+    "shots": "node --disable-warning=ExperimentalWarning shots.mjs",
+    "publish": "node publish.mjs"
   },
   "dependencies": {
-    "puppeteer-core": "25.16.0"
+    "puppeteer-core": "25.16.0",
+    "sharp": "0.35.5"
   }
 }

@@ -22,10 +22,11 @@ const HIDE_NOISE = `
 export async function openPage(browser, ctx, shot) {
   const page = await browser.newPage()
   const signedIn = !shot.signedOut
-  if (signedIn) {
-    await page.setExtraHTTPHeaders({ 'X-Api-Key': ctx.key })
-    if (ctx.cookies?.length) await page.setCookie(...ctx.cookies)
-  }
+  // Account endpoints refuse any request that carries an API key, even next to a session cookie,
+  // so the page signs in with the cookie alone and the key is only a fallback.
+  const useCookie = signedIn && ctx.cookies?.length > 0
+  if (useCookie) await page.setCookie(...ctx.cookies)
+  else if (signedIn) await page.setExtraHTTPHeaders({ 'X-Api-Key': ctx.key })
   await page.setBypassServiceWorker(true)
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
 
@@ -65,7 +66,7 @@ export async function openPage(browser, ctx, shot) {
   )
 
   const cookieHeader = signedIn ? (ctx.cookies ?? []).map((c) => `${c.name}=${c.value}`).join('; ') : ''
-  const upstreamHeaders = signedIn ? { 'X-Api-Key': ctx.key, Cookie: cookieHeader } : {}
+  const upstreamHeaders = useCookie ? { Cookie: cookieHeader } : signedIn ? { 'X-Api-Key': ctx.key } : {}
   await page.setRequestInterception(true)
   page.on('request', async (req) => {
     const url = new URL(req.url())

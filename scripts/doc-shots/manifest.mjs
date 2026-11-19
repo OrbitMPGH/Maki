@@ -87,6 +87,7 @@ export const REWRITES = [
   { match: /^\/api\/v1\/settings\/setup$/, apply: (body) => ({ ...body, completed: true }) },
   { match: /^\/api\/v1\/settings\/announcements$/, apply: (body) => ({ ...body, language: false, appearance: false }) },
   ...FAKE.SOURCE_SEARCH,
+  ...FAKE.TRACKERS,
 ]
 
 // The queue as it looks mid-download: a series torrent grab plus a couple of scraper chapters.
@@ -234,7 +235,7 @@ export const SHOTS = [
   // Series page
   { name: 'series/hero', path: frieren, capture: { css: '.series-hero' }, pad: 0 },
   { name: 'series/progress', path: frieren, capture: { panel: 'Progress' } },
-  { name: 'series/anime-notice', path: frieren, capture: { css: '.anime-resume-callout' } },
+  { name: 'series/anime-notice', viewport: { width: 1000 }, path: frieren, capture: { css: '.anime-resume-callout' } },
   { name: 'series/anime-coverage', path: frieren, capture: { heading: 'Anime coverage' } },
   { name: 'series/your-reading', path: frieren, capture: { panel: 'Your reading' } },
   { name: 'series/sources', path: frieren, capture: { panel: 'Sources' } },
@@ -262,8 +263,8 @@ export const SHOTS = [
 
   // Chapters
   { name: 'chapters/table', path: frierenChapters, capture: { css: 'table' } },
-  { name: 'chapters/states', path: frierenChapters, capture: { rows: { from: 'Ch. 16', to: 'Ch. 29' } }, note: 'Read, auto-removed, downloaded, file missing' },
-  { name: 'chapters/delisted', path: frierenChapters, capture: { rows: { from: 'Ch. 1', to: 'Ch. 3' } }, note: 'Ch. 2.2 is delisted' },
+  { name: 'chapters/states', path: frierenChapters, capture: { rows: { from: 'Ch. 16', to: 'Ch. 29' } }, pad: 0, note: 'Read, auto-removed, downloaded, file missing' },
+  { name: 'chapters/delisted', path: frierenChapters, capture: { rows: { from: 'Ch. 1', to: 'Ch. 3' } }, pad: 0, note: 'Ch. 2.2 is delisted' },
   {
     name: 'chapters/volumes',
     path: (d) => `/series/${d.series.kaguya}?tab=chapters`,
@@ -483,16 +484,16 @@ export const SHOTS = [
 
   // States the prepare step stages
   { name: 'series/delisted-alert', path: frieren, capture: { text: '1 downloaded chapter is no longer listed', closest: '.callout' } },
-  { name: 'series/archived-banner', path: (d) => `/series/${d.series.ouran}`, capture: { text: 'Restore to library', closest: '.callout' } },
+  { name: 'series/archived-banner', viewport: { width: 1000 }, path: (d) => `/series/${d.series.ouran}`, capture: { text: 'Restore to library', closest: '.callout' } },
   { name: 'pages/library-archived', path: '/library/archived' },
   { name: 'chapters/download-wanted', path: frierenChapters, steps: [{ click: { label: 'More download options' } }, { waitFor: '.mantine-Menu-dropdown' }], note: 'Frieren 65 to 72 staged as wanted' },
   { name: 'health/files-findings', path: '/health?tab=files', capture: { css: '[role=tabpanel]' } },
 
   // Faked answers (fakes.mjs)
-  { name: 'series/rating-checkpoint', path: frieren, rewrites: FAKE.RATING_CHECKPOINT, capture: { css: '.rating-prompt' }, note: 'Faked: checkpoint "hooked" at a provisional 7' },
-  { name: 'series/rate-hint', path: frieren, rewrites: FAKE.RATE_HINT, capture: { css: '.series-rate-hint' }, note: 'Faked: finished and unrated' },
+  { name: 'series/rating-checkpoint', viewport: { width: 1000 }, path: frieren, rewrites: FAKE.RATING_CHECKPOINT, capture: { css: '.rating-prompt' }, note: 'Faked: checkpoint "hooked" at a provisional 7' },
+  { name: 'series/rate-hint', viewport: { width: 1000 }, path: frieren, rewrites: FAKE.RATE_HINT, capture: { css: '.series-rate-hint' }, note: 'Faked: finished and unrated' },
   { name: 'series/rating-history', path: frieren, rewrites: FAKE.RATING_HISTORY, steps: [{ wait: 1000 }, { click: { label: 'Your rating over time', real: true } }, { wait: 800 }, { hover: '.series-hero-title' }], capture: { text: '8/10 so far', closest: '[data-position]' }, note: 'Faked history' },
-  { name: 'series/archive-hint', path: frieren, rewrites: FAKE.ARCHIVE_HINT, capture: { css: '.series-archive-hint' }, note: 'Faked' },
+  { name: 'series/archive-hint', viewport: { width: 1000 }, path: frieren, rewrites: FAKE.ARCHIVE_HINT, capture: { css: '.series-archive-hint' }, note: 'Faked' },
   {
     name: 'series/archive-dialog',
     path: frieren,
@@ -622,6 +623,13 @@ export const SHOTS = [
     capture: 'full',
     note: 'Faked backup contents',
   },
+
+  // Screen-height versions of tall pages, for the feature overviews
+  { name: 'discover/taste-top', path: '/discover/taste' },
+  { name: 'discover/taste-how-you-read', path: '/discover/taste', steps: [{ eval: () => { const h = [...document.querySelectorAll('h2, h3')].find((e) => e.textContent.trim().startsWith('How you read')); if (h) window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 90) } }, { wait: 600 }] },
+  { name: 'chapters/tab', path: frierenChapters, steps: [{ eval: () => { const h = [...document.querySelectorAll('h2, h3')].find((e) => e.textContent.trim().startsWith('Chapters')); if (h) window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 90) } }, { wait: 600 }] },
+  { name: 'pages/scrobble-top', path: '/scrobble' },
+  { name: 'library/top', path: '/library', note: 'Grid with the summary counts and filter bar' },
 
   { name: 'pages/add-series-search', path: '/add?q=Mushishi' },
   { name: 'pages/import-mihon', path: '/import', steps: [{ click: 'Mihon backup' }] },

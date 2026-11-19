@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 const DAY = 86400000
 const ALIGNED_KEY = 'docshots.alignedAt'
+const RUN_ENDED_KEY = 'docshots.runEndedAt'
 
 // Values this far before the aligned time are history (old release dates) and stay put.
 const SHIFT_BEFORE = 400 * DAY
@@ -36,9 +37,20 @@ function format(p, ms) {
   return `${date}${p.sep}${time}${p.tz}`
 }
 
-function shiftDates(db, delta, aligned) {
+// Columns whose dates are meant to lie ahead (next check, expiry, announced release). Every other
+// date is a record of something that happened, so it never belongs in the future.
+const FORWARD = /next|expires|until|announced|release|due|scheduled/i
+
+/**
+ * Values from before the last alignment move by the whole gap to now. Values a run wrote while its
+ * backend was up are on real time already, so they only move by the time since that run ended;
+ * otherwise each rerun would push them into the future.
+ */
+function shiftDates(db, aligned, runEnded, now) {
   const lo = aligned - SHIFT_BEFORE
   const hi = aligned + SHIFT_AFTER
+  const sinceAligned = now - aligned
+  const sinceRun = Math.max(0, now - Math.max(runEnded, aligned))
   const tables = db.prepare("select name from sqlite_master where type = 'table'").all().map((r) => r.name)
   let changed = 0
   for (const table of tables) {
@@ -50,11 +62,16 @@ function shiftDates(db, delta, aligned) {
         .all()
       if (rows.length === 0) continue
       const update = db.prepare(`update "${table}" set "${col.name}" = ? where rowid = ?`)
+      const forward = FORWARD.test(col.name)
       for (const { id, v } of rows) {
         const p = parse(v)
         if (!p || p.ms < lo || p.ms > hi) continue
+        const delta = p.ms <= aligned ? sinceAligned : sinceRun
         const step = p.sep ? delta : Math.round(delta / DAY) * DAY
-        update.run(format(p, p.ms + step), id)
+        let next = p.ms + step
+        if (!forward && next > now) next = now - 60000
+        if (next === p.ms) continue
+        update.run(format(p, next), id)
         changed++
       }
     }
@@ -206,9 +223,11 @@ export function prepare(configDir, states, now = Date.now()) {
       const last = db.prepare('select max(EndedAt) m from ReadingSessions').get().m
       aligned = parse(last).ms + 3 * 3600000
     }
+    const runEnded = Date.parse(getConfig(db, RUN_ENDED_KEY) ?? '') || aligned
     const delta = now - aligned
-    const shifted = delta > 60000 ? shiftDates(db, delta, aligned) : 0
+    const shifted = shiftDates(db, aligned, runEnded, now)
     setConfig(db, ALIGNED_KEY, new Date(now).toISOString())
+    db.prepare('delete from AppConfig where Key = ?').run(RUN_ENDED_KEY)
     const log = [...stageStates(db, states), quietTrackers(db, now)]
     db.exec('commit')
     db.exec('pragma wal_checkpoint(truncate)')
@@ -216,6 +235,17 @@ export function prepare(configDir, states, now = Date.now()) {
   } catch (err) {
     if (db.isTransaction) db.exec('rollback')
     throw err
+  } finally {
+    db.close()
+  }
+}
+
+/** Called once the backend has stopped, so the next prepare knows which dates a run wrote. */
+export function markRunEnded(configDir, at = Date.now()) {
+  const db = new DatabaseSync(join(configDir, 'maki.db'))
+  try {
+    db.exec('pragma busy_timeout = 5000')
+    setConfig(db, RUN_ENDED_KEY, new Date(at).toISOString())
   } finally {
     db.close()
   }

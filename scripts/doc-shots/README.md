@@ -14,7 +14,21 @@ npm run shots
 The images land in `out/`, one folder per area (`pages/`, `phone/`, `home/`, `series/`,
 `chapters/`, `reader/`, `discover/`, `activity/`, `health/`, `library/`, `stats/`, `import/`,
 `first-run/`, `settings/`). `out/index.html` is a contact sheet of all of them. `out/` is not
-committed; copy the images you want into `site/src/assets/`. A full run takes about half an hour.
+committed. A full run takes about half an hour.
+
+## Updating the docs site
+
+Docs pages reference a shot as `assets/ui/<group>/<name>.webp`, the same name it has in `out/`.
+After a capture, `npm run publish` writes every referenced shot to `site/src/assets/ui/` as a
+2x WebP and deletes the ones no page uses any more. So refreshing the docs after a UI change is:
+
+```bash
+npm run shots
+npm run publish
+```
+
+To add an image to a page, reference `../../../assets/ui/<group>/<name>.webp` (one more `../`
+under `guides/`) and run `npm run publish`.
 
 Desktop shots use the top-bar layout (sidebar collapsed). The `pages/*-sidebar` shots show the
 sidebar layout.

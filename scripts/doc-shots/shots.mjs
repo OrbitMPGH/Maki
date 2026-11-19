@@ -7,7 +7,7 @@ import puppeteer from 'puppeteer-core'
 import { findChrome } from '../readme-images/chrome.mjs'
 import { MakiClient } from '../showcase/client.mjs'
 import { capture, openPage } from './lib/browser.mjs'
-import { prepare } from './lib/prepare.mjs'
+import { markRunEnded, prepare } from './lib/prepare.mjs'
 import { build, isUp, start } from './lib/server.mjs'
 import { CHAPTERS, DEFAULTS, REWRITES, SERIES, SHOTS, STATES } from './manifest.mjs'
 
@@ -173,7 +173,10 @@ try {
     await browser.close()
   }
 } finally {
-  await server?.stop()
+  if (server) {
+    await server.stop()
+    markRunEnded(configDir)
+  }
 }
 
 writeIndex()
