@@ -2360,6 +2360,10 @@ msgstr "{missing, plural, one {# bez grupy} few {# bez grupy} many {# bez grupy}
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {dodaje # rozdział, którego nie masz} few {dodaje # rozdziały, których nie masz} many {dodaje # rozdziałów, których nie masz} other {dodaje # rozdziału, którego nie masz}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2857,6 +2861,10 @@ msgstr "{relinked, plural, one {Ponownie połączono # plik} few {Ponownie poł�
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {Pozostał # rozdział} few {Pozostały # rozdziały} many {Pozostało # rozdziałów} other {Pozostało # rozdziału}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -9698,7 +9706,7 @@ msgid "Download {chapterLbl}"
 msgstr "Pobierz {chapterLbl}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Download {downloadCount} missing"
+msgid "Download {missingCount} missing"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -9768,11 +9776,6 @@ msgstr "Pobierz indeks"
 #, fuzzy
 msgid "Download it again"
 msgstr "Pobierz go ponownie"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "Pobierz brakujące rozdziały w {name}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17929,6 +17932,10 @@ msgstr "Nic do konwersji"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "Nic do pobrania"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx

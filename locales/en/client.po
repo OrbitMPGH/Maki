@@ -1934,6 +1934,10 @@ msgstr "{missing, plural, one {# without a group} other {# without a group}}"
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
 msgstr "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2338,6 +2342,10 @@ msgstr "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr "{removedCount} removed"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
@@ -7928,8 +7936,8 @@ msgid "Download {chapterLbl}"
 msgstr "Download {chapterLbl}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Download {downloadCount} missing"
-msgstr "Download {downloadCount} missing"
+msgid "Download {missingCount} missing"
+msgstr "Download {missingCount} missing"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download {missingWanted} wanted"
@@ -7985,10 +7993,6 @@ msgstr "Download index"
 #: src/pages/HealthPage.tsx
 msgid "Download it again"
 msgstr "Download it again"
-
-#: src/components/series/ChapterTableRows.tsx
-msgid "Download missing chapters in {name}"
-msgstr "Download missing chapters in {name}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download next chapters"
@@ -14638,6 +14642,10 @@ msgstr "Nothing to convert"
 #: src/components/series/ChapterTableRows.tsx
 msgid "Nothing to download"
 msgstr "Nothing to download"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr "Nothing to download in {name}"
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx

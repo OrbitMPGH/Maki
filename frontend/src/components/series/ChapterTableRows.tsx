@@ -1,4 +1,4 @@
-import { memo, startTransition, useEffect, useState } from 'react'
+import { memo, startTransition, useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -851,8 +851,8 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
   )
 })
 
-type VolumeStripKind = 'read' | 'downloaded' | 'active' | 'missing' | 'failed' | 'none' | 'unwanted'
-const VOLUME_STRIP_ORDER: VolumeStripKind[] = ['read', 'downloaded', 'active', 'missing', 'failed', 'none', 'unwanted']
+type VolumeStripKind = 'read' | 'downloaded' | 'active' | 'missing' | 'failed' | 'none' | 'removed' | 'unwanted'
+const VOLUME_STRIP_ORDER: VolumeStripKind[] = ['read', 'downloaded', 'active', 'missing', 'failed', 'none', 'removed', 'unwanted']
 /** Past this many chapters one segment each gets too thin to see, so the strip shows runs instead. */
 const VOLUME_STRIP_SEGMENT_LIMIT = 30
 
@@ -934,18 +934,22 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   const failedCount = chapters.filter((c) => queueStates.get(c.id) === 'failed').length
   const fileMissingCount = chapters.filter((c) => c.hasFile && c.fileMissing).length
   const notWantedCount = chapters.filter((c) => !c.wanted && !c.hasFile).length
-  // Only chapters the reader wants and that aren't already on their way. A failed one is offered again.
+  const removedCount = chapters.filter((c) => c.wanted && !c.hasFile && c.fileRemovedAt).length
+  // The same rule as the series' "Download wanted": wanted, no file, not removed on purpose and not
+  // in the queue at all. A failed one is retried from its own row.
   const downloadIds = chapters
-      .filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && queueStates.get(c.id) !== 'active')
+      .filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueStates.has(c.id))
       .map((c) => c.id)
-  const downloadCount = downloadIds.length
+  // Named missingCount so the tooltip keeps its existing translations.
+  const missingCount = downloadIds.length
   const kinds = chapters.map((c): VolumeStripKind => {
     const queued = queueStates.get(c.id)
     if (queued === 'failed') return 'failed'
     if (queued === 'active') return 'active'
     if (c.hasFile && c.fileMissing) return 'missing'
     if (c.hasFile) return readTracking && readIds.has(c.id) ? 'read' : 'downloaded'
-    return c.wanted ? 'none' : 'unwanted'
+    if (!c.wanted) return 'unwanted'
+    return c.fileRemovedAt ? 'removed' : 'none'
   })
   const numbers = chapters.flatMap((c) => (c.number === null ? [] : [c.number]))
   const name = volume === null ? t`No volume` : t`Volume ${volume}`
@@ -953,6 +957,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   const allWanted = wantedCount === total
   const mixed = wantedCount > 0 && !allWanted
   const toggle = () => actions.toggleVolume(key)
+  const rangeId = useId()
 
   const progress = (
       <div className="chapter-volume-progress-inner">
@@ -974,6 +979,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
                     <Trans>{failedCount} failed</Trans>
                   </span>
               ),
+              removedCount > 0 && <Trans key="removed">{removedCount} removed</Trans>,
               notWantedCount > 0 && <Trans key="unwanted">{notWantedCount} not wanted</Trans>,
             ]}
         />
@@ -1021,12 +1027,13 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
               className="chapter-volume-toggle"
               aria-expanded={!collapsed}
               aria-label={collapsed ? t`Expand ${name}` : t`Collapse ${name}`}
+              aria-describedby={numbers.length > 0 ? rangeId : undefined}
               {...pressable(toggle)}
           >
             {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
             <span className="chapter-volume-title">{name}</span>
             {numbers.length > 0 && (
-                <span className="chapter-volume-range tnum">
+                <span id={rangeId} className="chapter-volume-range tnum">
                   {chapterRangeLabel(Math.min(...numbers), Math.max(...numbers))}
                 </span>
             )}
@@ -1041,26 +1048,29 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
         <Table.Td className="chapter-volume-actions" onClick={(e) => e.stopPropagation()}>
           <Group gap={2} wrap="nowrap" justify="flex-end">
             {canDownload ? (
-                <Tooltip label={downloadCount > 0 ? t`Download ${downloadCount} missing` : t`Nothing to download`} withArrow>
-                  {downloadCount > 0 ? (
+                <Tooltip label={missingCount > 0 ? t`Download ${missingCount} missing` : t`Nothing to download`} withArrow>
+                  {missingCount > 0 ? (
                       <Button
                           variant="default"
                           size="compact-sm"
                           className="tnum chapter-volume-download"
                           leftSection={<IconDownload size={16} />}
-                          aria-label={t`Download missing chapters in ${name}`}
+                          aria-label={plural(missingCount, {
+                            one: `Download # missing chapter in ${name}`,
+                            other: `Download # missing chapters in ${name}`,
+                          })}
                           disabled={downloadDisabled}
                           loading={downloadPending}
                           onClick={() => actions.download(downloadIds)}
                       >
-                        {downloadCount}
+                        {missingCount}
                       </Button>
                   ) : (
                       <ActionIcon
                           variant="subtle"
                           color="var(--neutral)"
                           data-row-action=""
-                          aria-label={t`Download missing chapters in ${name}`}
+                          aria-label={t`Nothing to download in ${name}`}
                           disabled
                       >
                         <IconDownload size={19} />

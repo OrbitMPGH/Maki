@@ -2360,6 +2360,10 @@ msgstr "{missing, plural, one {# sem grupo} many {# sem grupo} other {# sem grup
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adiciona # capítulo que você não tem} many {adiciona # capítulos que você não tem} other {adiciona # capítulos que você não tem}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2857,6 +2861,10 @@ msgstr "{relinked, plural, one {Reassociado # arquivo} many {Reassociados # arqu
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# capítulo restante} many {# capítulos restantes} other {# capítulos restantes}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -9698,7 +9706,7 @@ msgid "Download {chapterLbl}"
 msgstr "Baixar {chapterLbl}"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Download {downloadCount} missing"
+msgid "Download {missingCount} missing"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -9768,11 +9776,6 @@ msgstr "Baixar índice"
 #, fuzzy
 msgid "Download it again"
 msgstr "Baixar de novo"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "Baixar capítulos faltantes em {name}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17929,6 +17932,10 @@ msgstr "Nada para converter"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "Nada para baixar"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx

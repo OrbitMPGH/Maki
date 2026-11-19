@@ -2360,6 +2360,10 @@ msgstr "{missing, plural, other {그룹 없음 #개}}"
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, other {없는 챕터 #개 추가}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2857,6 +2861,10 @@ msgstr "{relinked, plural, other {파일 #개 다시 연결함}}"
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, other {챕터 #개 남음}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -9698,7 +9706,7 @@ msgid "Download {chapterLbl}"
 msgstr "{chapterLbl} 다운로드"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Download {downloadCount} missing"
+msgid "Download {missingCount} missing"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -9768,11 +9776,6 @@ msgstr "검색 인덱스 다운로드"
 #, fuzzy
 msgid "Download it again"
 msgstr "다시 다운로드"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "{name}의 누락된 챕터 다운로드"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17929,6 +17932,10 @@ msgstr "변환할 것이 없습니다"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "다운로드할 것이 없습니다"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx

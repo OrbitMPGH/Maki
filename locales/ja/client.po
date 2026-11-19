@@ -2360,6 +2360,10 @@ msgstr "{missing, plural, other {グループなし#件}}"
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, other {持っていない章を#章追加}}"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "{missingCount, plural, one {Download # missing chapter in {name}} other {Download # missing chapters in {name}}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
@@ -2857,6 +2861,10 @@ msgstr "{relinked, plural, other {#件のファイルを再リンクしました
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, other {残り#章}}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "{removedCount} removed"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -9698,7 +9706,7 @@ msgid "Download {chapterLbl}"
 msgstr "第{chapterLbl}章をダウンロード"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Download {downloadCount} missing"
+msgid "Download {missingCount} missing"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -9768,11 +9776,6 @@ msgstr "インデックスをダウンロード"
 #, fuzzy
 msgid "Download it again"
 msgstr "もう一度ダウンロード"
-
-#: src/components/series/ChapterTableRows.tsx
-#, fuzzy
-msgid "Download missing chapters in {name}"
-msgstr "{name}の不足している章をダウンロード"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17929,6 +17932,10 @@ msgstr "変換するものはありません"
 #, fuzzy
 msgid "Nothing to download"
 msgstr "ダウンロードするものはありません"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Nothing to download in {name}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx

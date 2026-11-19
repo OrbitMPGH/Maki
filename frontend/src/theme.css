@@ -8657,8 +8657,16 @@ body.column-resizing * {
 .chapter-table tbody tr.chapter-volume-row {
   position: sticky;
   top: var(--chapter-sticky-top, 0px);
-  z-index: 2;
+  /* Over the anime season lines' overlay, which is z-index 2. */
+  z-index: 3;
   background-color: var(--chapter-band);
+}
+.chapter-table tbody tr.chapter-volume-row[data-covered] {
+  visibility: hidden;
+}
+/* The toolbar's fade would wash over the top of a stuck heading, which already marks the edge. */
+.series-detail-chapter-head[data-grouped]::after {
+  display: none;
 }
 .chapter-table tbody tr.chapter-volume-row:hover {
   background-color: var(--chapter-band-hover);
@@ -8699,10 +8707,13 @@ body.column-resizing * {
   white-space: nowrap;
 }
 .chapter-volume-range {
+  min-width: 0;
   margin-inline-start: 4px;
+  overflow: hidden;
   font-size: var(--type-meta);
   color: var(--ink-3);
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .chapter-volume-progress-inner {
   display: flex;
@@ -8735,8 +8746,9 @@ body.column-resizing * {
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  flex: none;
-  width: 150px;
+  /* Shrinks in a narrow column rather than pushing the actions out of the panel, which doesn't scroll. */
+  flex: 0 1 150px;
+  min-width: 48px;
   height: 10px;
 }
 .volume-strip > i {
@@ -8762,6 +8774,7 @@ body.column-resizing * {
 .volume-strip > i[data-kind='failed'] {
   background: var(--danger);
 }
+.volume-strip > i[data-kind='removed'],
 .volume-strip > i[data-kind='unwanted'] {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--neutral);
@@ -8928,6 +8941,7 @@ body.column-resizing * {
 }
 .chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-name {
   order: 1;
+  flex: 0 1 auto;
   min-width: 0;
 }
 .chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-progress {
@@ -8937,6 +8951,7 @@ body.column-resizing * {
 }
 .chapter-rows-list .chapter-table tbody tr.chapter-volume-row > td.chapter-volume-actions {
   order: 1;
+  flex: none;
   margin-inline-start: auto;
 }
 .chapter-rows-list .chapter-table tbody tr.chapter-volume-gap {

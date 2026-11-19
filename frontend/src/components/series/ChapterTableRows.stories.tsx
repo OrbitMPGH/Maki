@@ -393,11 +393,26 @@ export const VolumeHeaderMixedWantedAndMissing = volumeStory({
 export const VolumeHeaderQueueAndFileMissing = volumeStory(
   {
     volume: 3,
-    chapters: chapters.slice(0, 6).map((c, i) =>
-      i === 1 ? { ...c, fileMissing: true } : i >= 3 ? { ...c, hasFile: false } : c),
+    chapters: chapters.slice(0, 8).map((c, i) =>
+      i === 1
+        ? { ...c, fileMissing: true }
+        : i === 5
+          ? { ...c, hasFile: false, fileRemovedAt: '2026-10-01T00:00:00Z' }
+          : i >= 3 ? { ...c, hasFile: false } : c),
   },
-  { queueStates: new Map([[chapters[3].id, 'active'], [chapters[4].id, 'failed']]) },
+  { queueStates: new Map([[chapters[3].id, 'active'], [chapters[4].id, 'failed'], [chapters[6].id, 'held']]) },
 )
+
+export const VolumeHeaderDownloadCountPlay: StoryObj<typeof ChapterVolumeRow> = {
+  ...VolumeHeaderQueueAndFileMissing,
+  play: async ({ canvas }) => {
+    // Eight chapters: three on disk (one missing its file), one queued, one failed, one removed on
+    // purpose, one held. Only the last is fetchable from the heading.
+    await expect(await canvas.findByRole('button', { name: 'Download 1 missing chapter in Volume 3' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('1 queued')).toBeVisible())
+    await waitFor(() => expect(canvas.getByText('1 removed')).toBeVisible())
+  },
+}
 
 export const VolumeHeaderLong = volumeStory({ volume: 4, chapters: chaptersFor(1, { limit: 36 }) }, { gapBefore: true })
 

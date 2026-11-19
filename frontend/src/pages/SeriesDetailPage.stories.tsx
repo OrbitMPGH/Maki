@@ -262,7 +262,7 @@ export const ChaptersUngroupedByRelease: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     const picker = body(canvasElement)
     await userEvent.click(await picker.findByRole('radio', { name: 'Release date' }))
-    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Volume / })).toBeNull())
     await expect(await picker.findByText(/grouping is off while sorting by release date/)).toBeVisible()
   },
 }
@@ -273,7 +273,7 @@ export const ChaptersGroupingOff: Story = {
     await expect(await canvas.findByRole('button', { name: 'Collapse Volume 1' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     await userEvent.click(await body(canvasElement).findByRole('switch', { name: 'Group by volume' }))
-    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Volume / })).toBeNull())
   },
 }
 

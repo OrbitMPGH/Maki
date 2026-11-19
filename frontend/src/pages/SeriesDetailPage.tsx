@@ -628,14 +628,19 @@ function SeriesDetailBody() {
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
   )
-  // Keyed on the states alone, so a download's page count ticking up doesn't re-render every volume heading.
-  const volumeQueueKey = useMemo(
-      () => [...queueByChapterId].flatMap(([id, q]) => {
-        const state = volumeQueueState(q.status)
-        return state ? [`${id}:${state}`] : []
-      }).join(','),
-      [queueByChapterId],
-  )
+  // Keyed on the states alone, so a download's page count ticking up doesn't re-render every volume
+  // heading. A chapter can be in the queue twice (a failed bulk run, then a retry), and an attempt
+  // still going wins over an old failure.
+  const volumeQueueKey = useMemo(() => {
+    const states = new Map<number, VolumeQueueState>()
+    for (const q of queue?.items ?? []) {
+      if (q.seriesId !== seriesId || q.chapterId === null) continue
+      const state = volumeQueueState(q.status)
+      const current = states.get(q.chapterId)
+      if (state && current !== 'active' && !(current === 'held' && state === 'failed')) states.set(q.chapterId, state)
+    }
+    return [...states].map(([id, state]) => `${id}:${state}`).join(',')
+  }, [queue, seriesId])
   const volumeQueueStates = useMemo(
       () => new Map(volumeQueueKey === '' ? [] : volumeQueueKey.split(',').map((entry) => {
         const [id, state] = entry.split(':')
@@ -1185,7 +1190,8 @@ function SeriesDetailBody() {
   const [chapterHeadHeight, setChapterHeadHeight] = useState(0)
   useEffect(() => {
     if (!chapterHead) return
-    const observer = new ResizeObserver(() => setChapterHeadHeight(chapterHead.offsetHeight))
+    // Not offsetHeight: a fractional toolbar would round down and leave a slit above the headings.
+    const observer = new ResizeObserver(() => setChapterHeadHeight(chapterHead.getBoundingClientRect().height))
     observer.observe(chapterHead)
     return () => observer.disconnect()
   }, [chapterHead])
@@ -1208,7 +1214,11 @@ function SeriesDetailBody() {
   const chapterRowsAsList = chapterLayout === 'list'
   const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
   const volumeTitleShown = !hiddenChapterColumns.has('title')
-  const volumeProgressSpan = shownChapterColumns(chapterLayout, hiddenChapterColumns).filter((key) => key !== 'chapter').length
+  // List rows ignore column spans, so there the strip always gets its own cell and line.
+  const volumeProgressSpan = Math.max(
+      chapterRowsAsList ? 1 : 0,
+      shownChapterColumns(chapterLayout, hiddenChapterColumns).filter((key) => key !== 'chapter').length,
+  )
   const chapterColumnCount = 3 + (volumeTitleShown ? 1 : 0) + volumeProgressSpan
   useLayoutEffect(() => {
     chapterColumnRoom.current.layout = chapterLayout
@@ -1370,6 +1380,54 @@ function SeriesDetailBody() {
    * search on a long page gets the same treatment: the old rows stay until the new ones are ready.
    */
   const shownRows = useDeferredValue(tab === 'chapters' ? pagedRows : NO_ROWS, NO_ROWS)
+
+  // Every volume heading sticks at the same spot for the whole table, so the later one covers the
+  // earlier ones. A heading whose counts wrapped is taller and would show under its successor, so
+  // the covered ones are hidden while the successor is stuck. Focus that lands under the stuck
+  // heading is scrolled clear of it: the browser counts it as on screen and wouldn't move.
+  useEffect(() => {
+    if (!chapterTable || !groupingActive) return
+    let frame = 0
+    const headings = () => [...chapterTable.querySelectorAll<HTMLElement>('tr.chapter-volume-row')]
+    /** The heading pinned under the toolbar right now, if any: the last one at its sticky top. */
+    const stuckHeading = (rows: HTMLElement[]) => {
+      if (rows.length === 0) return null
+      const stickAt = parseFloat(getComputedStyle(rows[0]).top) || 0
+      return rows.findLast((row) => row.getBoundingClientRect().top <= stickAt + 1) ?? null
+    }
+    const update = () => {
+      frame = 0
+      const rows = headings()
+      const stuck = stuckHeading(rows)
+      const stuckIndex = stuck ? rows.indexOf(stuck) : -1
+      rows.forEach((row, i) => row.toggleAttribute('data-covered', i < stuckIndex))
+    }
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(update)
+    }
+    const revealFocus = (event: FocusEvent) => {
+      const el = event.target
+      if (!(el instanceof HTMLElement) || el.closest('tr.chapter-volume-row')) return
+      const stuck = stuckHeading(headings())
+      if (!stuck) return
+      const overlap = stuck.getBoundingClientRect().bottom + 8 - el.getBoundingClientRect().top
+      if (overlap <= 0) return
+      let scroller: HTMLElement | null = el.parentElement
+      while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) {
+        scroller = scroller.parentElement
+      }
+      ;(scroller ?? document.scrollingElement ?? document.documentElement).scrollBy({ top: -overlap })
+    }
+    // Capture, because the page may scroll an inner element rather than the window.
+    document.addEventListener('scroll', schedule, { capture: true, passive: true })
+    chapterTable.addEventListener('focusin', revealFocus)
+    schedule()
+    return () => {
+      document.removeEventListener('scroll', schedule, { capture: true })
+      chapterTable.removeEventListener('focusin', revealFocus)
+      cancelAnimationFrame(frame)
+    }
+  }, [chapterTable, groupingActive, shownRows])
   const chapterRowsLoading = chapters === undefined || (shownRows.length === 0 && pagedRows.length > 0)
 
   useEffect(() => {
@@ -3226,7 +3284,12 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true} ref={setChapterHead}>
+            <div
+                className="series-detail-chapter-head"
+                data-sticky={selectMode ? undefined : true}
+                data-grouped={groupingActive || undefined}
+                ref={setChapterHead}
+            >
               <Stack className="series-detail-chapter-toolbar" gap="sm">
                 <SectionHeader
                     icon={IconBook}
