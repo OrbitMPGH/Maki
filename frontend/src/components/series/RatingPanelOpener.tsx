@@ -16,9 +16,12 @@ type PanelProps = Parameters<typeof RatingPanel>[0]
 export function RatingPanelOpener({
   target,
   panel,
+  zIndex,
 }: {
   target: (toggle: () => void, opened: boolean) => ReactNode
   panel: PanelProps
+  /** Above the default, for a trigger inside the reader, which sits over Mantine's own layers. */
+  zIndex?: number
 }) {
   const { t } = useLingui()
   const phone = usePhoneSheet()
@@ -34,6 +37,7 @@ export function RatingPanelOpener({
         onClose={() => setOpened(false)}
         position="bottom"
         size="auto"
+        zIndex={zIndex}
         title={t`Your rating`}
         classNames={{ content: 'rating-panel-drawer', body: 'rating-panel-sheet' }}
       >
@@ -41,7 +45,7 @@ export function RatingPanelOpener({
       </Drawer>
     </>
   ) : (
-    <Popover opened={opened} onChange={setOpened} position="bottom-start" width={PANEL_WIDTH} withArrow shadow="md" trapFocus>
+    <Popover opened={opened} onChange={setOpened} position="bottom-start" width={PANEL_WIDTH} withArrow shadow="md" trapFocus zIndex={zIndex}>
       <Popover.Target>{target(toggle, opened)}</Popover.Target>
       <Popover.Dropdown>{body}</Popover.Dropdown>
     </Popover>

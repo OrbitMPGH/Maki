@@ -8,6 +8,7 @@ import { RateHint } from '../../components/series/RateHint'
 import { RatingPanelOpener } from '../../components/series/RatingPanelOpener'
 import { RATING_STEP, roundRating } from '../../lib/rating'
 import { IconAdjustmentsHorizontal, IconMinus, IconPlus } from '../../lib/icons'
+import { OVERLAY_Z } from './ReaderSettings'
 
 const NUDGE_DELAY_MS = 600
 
@@ -57,6 +58,7 @@ export default function ChapterEndRating({ seriesId, soFar }: { seriesId: number
   const breakDown = panel && (
     <RatingPanelOpener
       panel={panel}
+      zIndex={OVERLAY_Z}
       target={(toggle) => (
         <Button size="compact-sm" variant="subtle" leftSection={<IconAdjustmentsHorizontal size={16} />} onClick={toggle}>
           <Trans>Break it down</Trans>
@@ -107,6 +109,7 @@ export default function ChapterEndRating({ seriesId, soFar }: { seriesId: number
       onDismiss={() => dismiss.mutate(seriesId, { onSuccess: () => settle(null) })}
       wrap="wrap"
       panel={panel}
+      panelZIndex={OVERLAY_Z}
     />
   )
 }

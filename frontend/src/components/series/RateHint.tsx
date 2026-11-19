@@ -18,6 +18,7 @@ export function RateHint({
   onDismiss,
   wrap = 'nowrap',
   panel,
+  panelZIndex,
 }: {
   soFar?: number | null
   onRate: (rating: number) => void
@@ -26,6 +27,7 @@ export function RateHint({
   wrap?: 'wrap' | 'nowrap'
   /** Offers the rating breakdown beside the stars. */
   panel?: Parameters<typeof RatingPanel>[0]
+  panelZIndex?: number
 }) {
   const { t } = useLingui()
   const { format } = useRatingFormat()
@@ -49,6 +51,7 @@ export function RateHint({
         {panel && (
           <RatingPanelOpener
             panel={panel}
+            zIndex={panelZIndex}
             target={(toggle) => (
               <Button size="compact-sm" variant="subtle" leftSection={<IconAdjustmentsHorizontal size={16} />} onClick={toggle}>
                 <Trans>Break it down</Trans>
