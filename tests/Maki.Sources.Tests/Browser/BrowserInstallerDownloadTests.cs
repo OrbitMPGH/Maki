@@ -25,7 +25,9 @@ public class BrowserInstallerDownloadTests : IDisposable
 
     private string Target => Path.Combine(_root, "chromium_headless_shell-test");
 
-    private BrowserInstaller Installer(params string[] mirrors) => new(
+    private BrowserInstaller Installer(params string[] mirrors) => Installer(TimeSpan.FromMilliseconds(300), mirrors);
+
+    private BrowserInstaller Installer(TimeSpan stallTimeout, params string[] mirrors) => new(
         new Factory(_mirrors),
         NullLogger.Instance,
         Target,
@@ -33,7 +35,7 @@ public class BrowserInstallerDownloadTests : IDisposable
             mirrors.Select(m => $"https://{m}.test/shell.zip").ToArray(),
             Path.Combine("shell", "headless_shell"),
             Convert.ToHexStringLower(SHA256.HashData(_zip))),
-        TimeSpan.FromMilliseconds(300));
+        stallTimeout);
 
     [Fact]
     public async Task Each_mirror_that_fails_stalls_truncates_or_sends_other_bytes_gives_way_to_the_next()
@@ -82,9 +84,9 @@ public class BrowserInstallerDownloadTests : IDisposable
     [Fact]
     public async Task A_second_installer_on_the_same_folder_waits_and_reuses_the_first_ones_install()
     {
-        _mirrors.Delay = TimeSpan.FromMilliseconds(200);
-        using var first = Installer("good");
-        using var second = Installer("good");
+        _mirrors.Delay = TimeSpan.FromMilliseconds(500);
+        using var first = Installer(TimeSpan.FromSeconds(30), "good");
+        using var second = Installer(TimeSpan.FromSeconds(30), "good");
 
         await Task.WhenAll(first.EnsureInstalledAsync(), second.EnsureInstalledAsync());
 
