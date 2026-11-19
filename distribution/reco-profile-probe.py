@@ -141,7 +141,9 @@ def profile(entries, browse, indexed):
         for g in set(browse[mid]["genres"]):
             shares[g] += 1
     manhwa = sum(1 for mid in read if browse[mid]["type"] == "manhwa")
-    return n, {g: c / n for g, c in shares.items()} if n else {}, manhwa / n if n else 0.0
+    action = sum(1 for mid in read if browse[mid]["type"] == "manhwa" and "Action" in browse[mid]["genres"])
+    return (n, {g: c / n for g, c in shares.items()} if n else {}, manhwa / n if n else 0.0,
+            action / n if n else 0.0)
 
 
 def select(args):
@@ -167,16 +169,17 @@ def select(args):
         completed = [m for m in library if entries[m][0] == "COMPLETED"]
         if not (args.min_entries <= len(library) <= args.max_entries) or len(completed) < args.min_completed:
             continue
-        n, shares, manhwa = profile(entries, browse, indexed)
+        n, shares, manhwa, action_manhwa = profile(entries, browse, indexed)
         if n < args.min_read:
             continue
-        eligible[user] = (len(library), len(completed), n, shares, manhwa)
+        eligible[user] = (len(library), len(completed), n, shares, manhwa, action_manhwa)
 
     def lookalike(p):
-        _, _, _, s, manhwa = p
+        s, manhwa, action_manhwa = p[3], p[4], p[5]
         return (s.get("Romance", 0) >= args.romance and s.get("Comedy", 0) >= args.comedy
                 and max(s.get("School Life", 0), s.get("Slice of Life", 0)) >= args.school
-                and manhwa <= args.max_manhwa)
+                and args.min_manhwa <= manhwa <= args.max_manhwa
+                and action_manhwa >= args.min_action_manhwa)
 
     pool_look = sorted(u for u, p in eligible.items() if lookalike(p))
     rng = random.Random(args.seed)
@@ -211,7 +214,7 @@ def select(args):
             (users_dir / f"{key}.library.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
             (users_dir / f"{key}.hidden.tsv").write_text(
                 "mangabaka_id\n" + "".join(f"{m}\n" for m in sorted(hidden)), encoding="utf-8")
-            _, _, n, s, manhwa = eligible[user]
+            _, _, n, s, manhwa, _ = eligible[user]
             manifest.append("\t".join(str(x) for x in (
                 key, user, group, len(lines) - 1, len(completed), n, len(hidden),
                 f"{s.get('Romance', 0):.3f}", f"{s.get('Comedy', 0):.3f}", f"{s.get('School Life', 0):.3f}",
@@ -224,12 +227,13 @@ def select(args):
         "excluded_builders": len(excluded), "eligible": len(eligible), "lookalike_pool": len(pool_look),
         "chosen": {"look": len(look), "ctrl": len(ctrl)},
         "cuts": {k: getattr(args, k) for k in (
-            "min_entries", "max_entries", "min_completed", "min_read", "romance", "comedy", "school", "max_manhwa")},
+            "min_entries", "max_entries", "min_completed", "min_read", "romance", "comedy", "school", "min_manhwa", "max_manhwa", "min_action_manhwa")},
         "eligible_means": {
             name: sum(fn(p) for p in eligible.values()) / max(1, len(eligible)) for name, fn in (
                 ("romance", lambda p: p[3].get("Romance", 0)), ("comedy", lambda p: p[3].get("Comedy", 0)),
                 ("school", lambda p: p[3].get("School Life", 0)), ("slice", lambda p: p[3].get("Slice of Life", 0)),
-                ("action", lambda p: p[3].get("Action", 0)), ("manhwa", lambda p: p[4]))},
+                ("action", lambda p: p[3].get("Action", 0)), ("manhwa", lambda p: p[4]),
+                ("action_manhwa", lambda p: p[5]))},
     }
     (out / "selection.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
@@ -449,7 +453,10 @@ def main():
     s.add_argument("--romance", type=float, default=0.75)
     s.add_argument("--comedy", type=float, default=0.7)
     s.add_argument("--school", type=float, default=0.5)
+    s.add_argument("--min-manhwa", type=float, default=0.0)
     s.add_argument("--max-manhwa", type=float, default=0.08)
+    s.add_argument("--min-action-manhwa", type=float, default=0.0,
+                   help="share of read titles that are manhwa carrying the Action genre")
     s.add_argument("--skip-status", action="append", help="leave this AniList status off the library, e.g. PLANNING")
     p = sub.add_parser("prepare")
     p.add_argument("--out", required=True)
