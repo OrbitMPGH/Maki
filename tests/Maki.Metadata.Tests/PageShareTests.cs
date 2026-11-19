@@ -117,6 +117,37 @@ public class PageShareTests : IDisposable
         Assert.Equal(PageShareInstaller.MinRows, PageShareInstaller.ValidateStaged(Build()));
     }
 
+    [Fact]
+    public void ValidateStaged_RefusesRowsWithoutAnIntegerSeriesId()
+    {
+        var path = Path.Combine(_dir, Guid.NewGuid().ToString("N") + ".db");
+        using (var conn = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            conn.Open();
+            Execute(conn, """
+                CREATE TABLE share (series_id, share REAL);
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO meta VALUES ('schemaVersion', '1'), ('trainingFold', 'all');
+                """);
+            using var tx = conn.BeginTransaction();
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = "INSERT INTO share VALUES ($id, 0.1)";
+            var id = cmd.Parameters.Add("$id", SqliteType.Integer);
+            for (var i = 0L; i < PageShareInstaller.MinRows; i++)
+            {
+                id.Value = i == 0 ? DBNull.Value : 1_000_000 + i;
+                cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+
+        SqliteConnection.ClearAllPools();
+        Assert.Contains("integer series id", Assert.Throws<InvalidOperationException>(
+            () => PageShareInstaller.ValidateStaged(path)).Message);
+    }
+
     private PageShareCache Cache() => new(new PageShareOptions(_tablePath, _dir), NullLogger<PageShareCache>.Instance);
 
     private PageShareInstaller Installer(PageShareCache? cache = null) => new(

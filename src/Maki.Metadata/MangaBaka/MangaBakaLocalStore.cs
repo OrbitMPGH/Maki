@@ -707,10 +707,15 @@ public class MangaBakaLocalStore(
     /// The <paramref name="candidates"/> that are another edition of a series in
     /// <paramref name="owned"/>: an <c>alternative</c> relation either way, the same type, the same
     /// native title, and no more chapters than the owned one (a promotional one-shot or a pilot).
+    /// When the owned row's chapter count is unknown, only a candidate of at most
+    /// <see cref="UnknownOwnedPilotChapters"/> chapters counts, so an owned pilot with no count never
+    /// hides its full serial.
     /// <see cref="FranchiseGraph"/> leaves <c>alternative</c> out on purpose, because a different
     /// serialization is often worth offering; one under the very same native title is the same
     /// story, and the full serial of an owned pilot is kept.
     /// </summary>
+    public const int UnknownOwnedPilotChapters = 3;
+
     public virtual async Task<IReadOnlySet<long>> GetOwnedEditionIdsAsync(
         IReadOnlyCollection<long> owned, IReadOnlyCollection<long> candidates, CancellationToken ct = default)
     {
@@ -752,7 +757,7 @@ public class MangaBakaLocalStore(
                     && (pick.Alternatives.Contains(other) || mine.Alternatives.Contains(id))
                     && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
-                    && (mine.Chapters is null || length <= mine.Chapters))
+                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
                 {
                     found.Add(id);
                     break;

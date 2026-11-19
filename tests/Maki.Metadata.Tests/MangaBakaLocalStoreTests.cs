@@ -1246,4 +1246,18 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal([2L, 24L], found.Order());
     }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_with_an_unknown_owned_count_drops_only_a_short_pilot()
+    {
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "Owned pilot, no count", nativeTitle: "パイロット", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its full serial", nativeTitle: "パイロット", totalChapters: "80");
+        _db.AddSeries(10, "Owned ongoing, no count", nativeTitle: "連載中", relationshipsV2: Alt(11));
+        _db.AddSeries(11, "Its one-shot", nativeTitle: "連載中", totalChapters: "1");
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10], [2, 11]);
+
+        Assert.Equal([11L], found.Order());
+    }
 }

@@ -262,13 +262,15 @@ public class PageShareInstaller(
         using var stats = conn.CreateCommand();
         stats.CommandText = """
             SELECT COUNT(*),
-                   COALESCE(SUM(CASE WHEN share IS NULL OR NOT (share BETWEEN 0 AND 1) THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN share IS NULL OR NOT (share BETWEEN 0 AND 1) THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN typeof(series_id) <> 'integer' THEN 1 ELSE 0 END), 0)
             FROM share
             """;
         using var reader = stats.ExecuteReader();
         reader.Read();
         var rows = reader.GetInt64(0);
         var bad = reader.GetInt64(1);
+        var badIds = reader.GetInt64(2);
 
         if (rows < MinRows)
         {
@@ -278,6 +280,11 @@ public class PageShareInstaller(
         if (bad > 0)
         {
             throw new InvalidOperationException($"downloaded table has {bad} missing or out-of-range shares");
+        }
+
+        if (badIds > 0)
+        {
+            throw new InvalidOperationException($"downloaded table has {badIds} rows without an integer series id");
         }
 
         if (advertisedRows > 0 && rows < advertisedRows * 0.95)

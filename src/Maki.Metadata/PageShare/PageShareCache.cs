@@ -95,7 +95,7 @@ public sealed class PageShareCache(PageShareOptions options, ILogger<PageShareCa
                 _table = loaded;
                 return loaded;
             }
-            catch (Exception ex) when (ex is SqliteException or IOException or InvalidDataException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _failed.Record(observed);
                 logger.LogWarning(ex, "Could not read the page-share table at {Path}", options.DatabasePath);
