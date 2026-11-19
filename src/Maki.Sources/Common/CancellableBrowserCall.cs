@@ -14,10 +14,30 @@ internal static class CancellableBrowserCall
     public static async Task<T> RunAsync<T>(Func<Task> closePage, Func<Task<T>> action, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        using var registration = ct.Register(() => _ = closePage());
+        // The call ends on this signal rather than on WaitAsync(ct): a token runs its newest callback
+        // first, so WaitAsync's would end the call and dispose this registration before the page closed.
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = ct.Register(() =>
+        {
+            try
+            {
+                _ = closePage();
+            }
+            finally
+            {
+                cancelled.TrySetResult();
+            }
+        });
+        var work = action();
         try
         {
-            return await action().WaitAsync(ct);
+            if (await Task.WhenAny(work, cancelled.Task) != work)
+            {
+                _ = work.ContinueWith(t => _ = t.Exception, CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                throw new OperationCanceledException(ct);
+            }
+            return await work;
         }
         catch (Exception ex) when ((ex is PuppeteerException or TimeoutException) && ct.IsCancellationRequested)
         {
