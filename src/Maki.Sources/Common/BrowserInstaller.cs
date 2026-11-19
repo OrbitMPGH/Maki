@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Maki.Core.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +30,7 @@ public sealed class BrowserUnavailableException(string message, Exception? inner
 /// and an installed build share one copy.
 /// </para>
 /// </summary>
-public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILogger<BrowserInstaller> logger) : IDisposable
+public sealed class BrowserInstaller : IDisposable
 {
     public const string HttpClientName = "headless-browser";
 
@@ -47,15 +48,50 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
     /// from every sync while a disk stays full or a proxy blocks the download.</summary>
     private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromMinutes(15);
 
+    /// <summary>The HTTP client's timeout ends once the headers are in, so a mirror that answers 200
+    /// and then stops sending would hold the install forever without this.</summary>
+    private static readonly TimeSpan DefaultStallTimeout = TimeSpan.FromMinutes(1);
+
+    /// <summary>How long a second Maki process waits for another one's install of the same folder,
+    /// which covers a full download on a slow line.</summary>
+    private static readonly TimeSpan LockWait = TimeSpan.FromMinutes(30);
+
+    private readonly IHttpClientFactory? _httpClientFactory;
+    private readonly ILogger _logger;
+    private readonly string? _directory;
+    private readonly BrowserBuild? _build;
+    private readonly TimeSpan _stallTimeout;
     private readonly Lock _gate = new();
     private readonly CancellationTokenSource _shutdown = new();
     private Task? _install;
     private volatile bool _confirmed;
     private DateTimeOffset _failedAt;
 
+    public BrowserInstaller(IHttpClientFactory? httpClientFactory, ILogger<BrowserInstaller> logger)
+        : this(httpClientFactory, logger, BrowserDirectory(), Build(), DefaultStallTimeout)
+    {
+    }
+
+    internal BrowserInstaller(
+        IHttpClientFactory? httpClientFactory, ILogger logger, string? directory, BrowserBuild? build, TimeSpan stallTimeout)
+    {
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _directory = directory;
+        _build = build;
+        _stallTimeout = stallTimeout;
+    }
+
     public BrowserInstallState State { get; private set; } = BrowserInstallState.NotInstalled;
     public int? Percent { get; private set; }
     public string? Error { get; private set; }
+
+    /// <summary>The browser this installer manages, whether or not it is installed yet.</summary>
+    internal string? Executable => _directory is { } dir && _build is { } build ? Path.Combine(dir, build.Executable) : null;
+
+    internal string? InstallDirectory => _directory;
+
+    private string? Marker => _directory is { } dir ? Path.Combine(dir, MarkerName) : null;
 
     /// <summary>Checks the disk only, so it is cheap enough for a health check.</summary>
     public bool IsInstalled()
@@ -63,7 +99,7 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
         if (_confirmed)
             return true;
 
-        if (InstallMarker() is not { } marker || !File.Exists(marker) || ExecutablePath() is not { } exe || !File.Exists(exe))
+        if (!IsOnDisk())
             return false;
 
         _confirmed = true;
@@ -108,7 +144,7 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
         Error = null;
         try
         {
-            if (Build() is not { } build || BrowserDirectory() is not { } target)
+            if (_build is not { } build || _directory is not { } target)
                 throw new BrowserUnavailableException($"No headless browser build exists for {RuntimeInformation.RuntimeIdentifier}.");
 
             var root = Path.GetDirectoryName(target)!;
@@ -119,38 +155,23 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
                     $"{RequiredFreeBytes / 1048576} MB needed.");
             }
 
-            if (httpClientFactory is null)
+            if (_httpClientFactory is null)
                 throw new BrowserUnavailableException("The headless browser is missing and this build cannot download it.");
 
-            logger.LogInformation("Installing the headless browser, about 100 MB");
-            Directory.CreateDirectory(root);
-            var archive = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.zip");
-            var staging = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.tmp");
-            try
+            System.IO.Directory.CreateDirectory(root);
+            await using (await LockFolderAsync(root, Path.GetFileName(target), ct))
             {
-                await DownloadAsync(build.Urls, archive, ct);
-                Percent = 100;
-                Unpack(archive, staging, build.Executable);
-                if (Directory.Exists(target))
-                    Directory.Delete(target, recursive: true);
-                Directory.Move(staging, target);
-                await File.WriteAllTextAsync(InstallMarker()!, string.Empty, CancellationToken.None);
-            }
-            finally
-            {
-                TryDelete(archive);
-                if (Directory.Exists(staging))
-                {
-                    try { Directory.Delete(staging, recursive: true); }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
-                }
+                // Another process sharing this folder (an installed build and a dev checkout) may have
+                // finished the same install while this one waited for the lock.
+                if (!IsOnDisk())
+                    await DownloadAndUnpackAsync(build, root, target, ct);
             }
 
             if (!IsInstalled())
                 throw new BrowserUnavailableException("The browser install finished but the browser is still missing.");
 
             Percent = null;
-            logger.LogInformation("Headless browser installed");
+            _logger.LogInformation("Headless browser installed");
         }
         catch (OperationCanceledException)
         {
@@ -164,30 +185,97 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
             Percent = null;
             Error = ex.Message;
             _failedAt = DateTimeOffset.UtcNow;
-            logger.LogWarning(ex, "Could not install the headless browser");
+            _logger.LogWarning(ex, "Could not install the headless browser");
             throw ex as BrowserUnavailableException ?? new BrowserUnavailableException(ex.Message, ex);
         }
     }
 
-    /// <summary>Tries each mirror in turn; the first one to deliver the whole file wins.</summary>
-    private async Task DownloadAsync(IReadOnlyList<string> urls, string path, CancellationToken ct)
+    private async Task DownloadAndUnpackAsync(BrowserBuild build, string root, string target, CancellationToken ct)
     {
-        var client = httpClientFactory!.CreateClient(HttpClientName);
-        Exception? last = null;
-        foreach (var url in urls)
+        _logger.LogInformation("Installing the headless browser, about 100 MB");
+        var archive = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.zip");
+        var staging = Path.Combine(root, $"{Path.GetFileName(target)}.{Environment.ProcessId}.tmp");
+        try
+        {
+            await DownloadAsync(build, archive, ct);
+            Percent = 100;
+            Unpack(archive, staging, build.Executable);
+            if (System.IO.Directory.Exists(target))
+                System.IO.Directory.Delete(target, recursive: true);
+            System.IO.Directory.Move(staging, target);
+            await File.WriteAllTextAsync(Marker!, string.Empty, CancellationToken.None);
+        }
+        finally
+        {
+            TryDelete(archive);
+            if (System.IO.Directory.Exists(staging))
+            {
+                try { System.IO.Directory.Delete(staging, recursive: true); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Holds a lock file beside the browser folder for the length of an install. The in-process gate
+    /// covers one Maki only: a second process sharing the folder would otherwise delete the first
+    /// one's unpacked browser between its move and its marker. FileShare.None is an exclusive
+    /// <c>flock</c> on Linux and macOS and a sharing lock on Windows, and both go with the process.
+    /// </summary>
+    private async Task<FileStream> LockFolderAsync(string root, string name, CancellationToken ct)
+    {
+        var path = Path.Combine(root, $"{name}.lock");
+        var deadline = DateTime.UtcNow + LockWait;
+        var waiting = false;
+        while (true)
         {
             try
             {
-                using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                if (!waiting)
+                {
+                    _logger.LogInformation("Another Maki process is installing the headless browser; waiting for it");
+                    waiting = true;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tries each mirror in turn; the first one to deliver the whole file with the pinned checksum
+    /// wins. A mirror that sends nothing for the stall timeout counts as failed.
+    /// </summary>
+    private async Task DownloadAsync(BrowserBuild build, string path, CancellationToken ct)
+    {
+        var client = _httpClientFactory!.CreateClient(HttpClientName);
+        Exception? last = null;
+        foreach (var url in build.Urls)
+        {
+            using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            try
+            {
+                stall.CancelAfter(_stallTimeout);
+                using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token);
                 response.EnsureSuccessStatusCode();
                 var total = response.Content.Headers.ContentLength;
-                await using var source = await response.Content.ReadAsStreamAsync(ct);
+                await using var source = await response.Content.ReadAsStreamAsync(stall.Token);
                 await using var file = File.Create(path);
+                using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                 var buffer = new byte[81920];
                 long read = 0;
-                int n;
-                while ((n = await source.ReadAsync(buffer, ct)) > 0)
+                while (true)
                 {
+                    stall.CancelAfter(_stallTimeout);
+                    var n = await source.ReadAsync(buffer, stall.Token);
+                    if (n == 0)
+                        break;
+
+                    hash.AppendData(buffer, 0, n);
                     await file.WriteAsync(buffer.AsMemory(0, n), ct);
                     read += n;
                     if (total is > 0)
@@ -196,12 +284,19 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
 
                 if (total is { } expected && read != expected)
                     throw new IOException($"{url} ended after {read} of {expected} bytes");
+                var sha256 = Convert.ToHexStringLower(hash.GetHashAndReset());
+                if (!string.Equals(sha256, build.Sha256, StringComparison.OrdinalIgnoreCase))
+                    throw new IOException($"{url} sent a file with SHA-256 {sha256}, expected {build.Sha256}");
                 return;
             }
-            catch (Exception ex) when (ex is HttpRequestException or IOException
-                                           || (ex is TaskCanceledException && !ct.IsCancellationRequested))
+            catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
             {
-                logger.LogInformation("Headless browser download from {Url} failed: {Error}", url, ex.Message);
+                _logger.LogInformation("Headless browser download from {Url} stalled for {Seconds:F0} s", url, _stallTimeout.TotalSeconds);
+                last = new IOException($"{url} stopped sending data", ex);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException)
+            {
+                _logger.LogInformation("Headless browser download from {Url} failed: {Error}", url, ex.Message);
                 last = ex;
             }
         }
@@ -237,7 +332,9 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
         }
     }
 
-    internal sealed record BrowserBuild(IReadOnlyList<string> Urls, string Executable);
+    /// <summary><paramref name="Sha256"/> is the archive's, checked after every download. Hashed
+    /// from each mirror on 2026-11-19 and matched against the MD5 the publisher's storage reports.</summary>
+    internal sealed record BrowserBuild(IReadOnlyList<string> Urls, string Executable, string Sha256);
 
     /// <summary>Where this platform's build comes from and the executable inside the archive, or
     /// null on a platform no build exists for.</summary>
@@ -247,7 +344,7 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
 
     internal static BrowserBuild? Build(OSPlatform os, Architecture arch)
     {
-        static BrowserBuild Cft(string platform, string executable)
+        static BrowserBuild Cft(string platform, string executable, string sha256)
         {
             var file = $"{platform}/chrome-headless-shell-{platform}.zip";
             return new(
@@ -255,17 +352,18 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
                     $"https://cdn.playwright.dev/builds/cft/{Version}/{file}",
                     $"https://storage.googleapis.com/chrome-for-testing-public/{Version}/{file}",
                 ],
-                Path.Combine($"chrome-headless-shell-{platform}", executable));
+                Path.Combine($"chrome-headless-shell-{platform}", executable),
+                sha256);
         }
 
         if (os == OSPlatform.Windows && arch == Architecture.X64)
-            return Cft("win64", "chrome-headless-shell.exe");
+            return Cft("win64", "chrome-headless-shell.exe", "5cfda0c763aa6a867ce2efad0c467e3220e9c5c01c4cba02fd57afe49ede5457");
         if (os == OSPlatform.OSX && arch == Architecture.X64)
-            return Cft("mac-x64", "chrome-headless-shell");
+            return Cft("mac-x64", "chrome-headless-shell", "a32029e1861329a431b712d5b864e213d9cf8ef51a82ce4c24b27e25f6605434");
         if (os == OSPlatform.OSX && arch == Architecture.Arm64)
-            return Cft("mac-arm64", "chrome-headless-shell");
+            return Cft("mac-arm64", "chrome-headless-shell", "302f82603be06683947594ecd60f849e362a8fe3dd82a89bd4408477c97e75a6");
         if (os == OSPlatform.Linux && arch == Architecture.X64)
-            return Cft("linux64", "chrome-headless-shell");
+            return Cft("linux64", "chrome-headless-shell", "410c9407d5de3fea80d9398666be06f2aa09154a3fa7b327dc254e336bb4c4b7");
         if (os == OSPlatform.Linux && arch == Architecture.Arm64)
         {
             var path = $"builds/chromium/{Revision}/chromium-headless-shell-linux-arm64.zip";
@@ -275,7 +373,8 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
                     $"https://playwright.download.prss.microsoft.com/dbazure/download/playwright/{path}",
                     $"https://cdn.playwright.dev/{path}",
                 ],
-                Path.Combine("chrome-linux", "headless_shell"));
+                Path.Combine("chrome-linux", "headless_shell"),
+                "1652929a70f4afb17aca36fce073fb7ed22262d16825be761b0801972f43ac4f");
         }
 
         return null;
@@ -290,7 +389,12 @@ public sealed class BrowserInstaller(IHttpClientFactory? httpClientFactory, ILog
 
     /// <summary>The marker written once the browser is fully unpacked. An unfinished install has none.</summary>
     internal static string? InstallMarker() =>
-        BrowserDirectory() is { } dir ? Path.Combine(dir, "INSTALLATION_COMPLETE") : null;
+        BrowserDirectory() is { } dir ? Path.Combine(dir, MarkerName) : null;
+
+    private const string MarkerName = "INSTALLATION_COMPLETE";
+
+    private bool IsOnDisk() =>
+        Marker is { } marker && File.Exists(marker) && Executable is { } exe && File.Exists(exe);
 
     internal static string? BrowserDirectory() =>
         BrowsersPath() is { } root ? Path.Combine(root, $"chromium_headless_shell-{Revision}") : null;
