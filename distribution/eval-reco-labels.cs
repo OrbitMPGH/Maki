@@ -4443,6 +4443,10 @@ file static class Variants
             {
                 recommender = recommender with { FameCapRatio = double.Parse(value, CultureInfo.InvariantCulture) };
             }
+            else if (key == "calibration")
+            {
+                recommender = recommender with { ShelfCalibration = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
             else if (key == "famecappseudo")
             {
                 recommender = recommender with { FameCapPseudoSeeds = double.Parse(value, CultureInfo.InvariantCulture) };

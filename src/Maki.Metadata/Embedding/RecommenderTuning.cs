@@ -485,6 +485,16 @@ public sealed record RecommenderTuning
     public double CommonPower { get; init; } = 1.0;
 
     /// <summary>
+    /// How hard the page's type and genre mix is pulled toward the shelf's (<see cref="ShelfCalibration"/>).
+    /// 0 is off; 0.1 ships (0.2 raises passed household titles on CURRENT shelves). Runs inside <c>SelectWinners</c> from two seeds up, before the fame cap.
+    /// The shelf-wide channels give a title fitting a fifth of the shelf about a fifth of their
+    /// signal, so a second taste falls off the page while the main one fills it; this puts it back
+    /// and trims a webtoon flood on in-progress shelves too. Eval key <c>calibration</c>. See
+    /// distribution/CLAUDE.md, "v9: why a second taste falls off the page".
+    /// </summary>
+    public double ShelfCalibration { get; init; } = 0.1;
+
+    /// <summary>
     /// How many times the shelf's own share of famous titles a list may hold at any point
     /// (<see cref="ShelfFame"/>). 0 is off; 1.0 ships. 1.0 holds every prefix of the list
     /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are

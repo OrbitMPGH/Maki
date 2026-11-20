@@ -2322,11 +2322,20 @@ public class SemanticRecommender(
         // The fame cap re-orders the whole window, so its replacements come from past `limit`.
         // One seed is a claim about two works, not a shelf to measure against.
         var capped = tuning.FameCapRatio > 0 && seedIds.Count >= 2;
-        var picked = EmbeddingMath.SelectDiverse(
-            relevance,
-            (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1),
-            capped ? pool.Count : limit,
-            diversity);
+        Func<int, int, double> similarity = (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1);
+        var target = tuning.ShelfCalibration > 0 && seedIds.Count >= 2
+            ? CalibrationTarget(index, seedIds, seedWeights)
+            : null;
+        var picked = target is { } shelf
+            ? ShelfCalibration.Order(
+                relevance,
+                pool.Select(c => ShelfCalibration.Facets(index, c.Row, shelf.TypeCount, shelf.Mix.Length)).ToList(),
+                shelf.Mix,
+                capped ? pool.Count : limit,
+                tuning.ShelfCalibration,
+                similarity,
+                diversity)
+            : EmbeddingMath.SelectDiverse(relevance, similarity, capped ? pool.Count : limit, diversity);
         var winners = picked.Select(i => pool[i]).ToList();
         if (!capped)
         {
@@ -2340,6 +2349,47 @@ public class SemanticRecommender(
             tuning.FameCapRatio,
             tuning.FameCapPseudoSeeds);
         return ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, limit);
+    }
+
+    /// <summary>
+    /// The shelf's facet mix for <see cref="ShelfCalibration"/>: each seed the index holds, by its
+    /// seed weight. Null when no seed is indexed, which leaves the page uncalibrated.
+    /// </summary>
+    private static (double[] Mix, int TypeCount)? CalibrationTarget(
+        VectorIndex index, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights)
+    {
+        var typeCount = index.TypeCount;
+        var dims = typeCount + (index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1);
+        var mix = new double[dims];
+        var total = 0.0;
+        foreach (var id in seedIds.Distinct())
+        {
+            var weight = seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0;
+            if (weight <= 0 || !index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            var facets = ShelfCalibration.Facets(index, row, typeCount, dims);
+            for (var d = 0; d < dims; d++)
+            {
+                mix[d] += weight * facets[d];
+            }
+
+            total += weight;
+        }
+
+        if (total <= 0)
+        {
+            return null;
+        }
+
+        for (var d = 0; d < dims; d++)
+        {
+            mix[d] /= total;
+        }
+
+        return (mix, typeCount);
     }
 
     /// <summary>
