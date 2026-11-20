@@ -1395,7 +1395,22 @@ Started from the owner's page: 23% Korean webtoons on the shelf (half of them ro
   | CURRENT | 0.5 | -0.080 [-0.208, +0.056] | 0.897 | 0.006 | +5.0 |
 
   It pulls both ways: it restores an under-served second taste and also trims the webtoon flood on CURRENT shelves, which is the job the page-share penalty was partly doing.
-- **Not measured:** the re-rank inside the engine (after `SelectWinners`' franchise collapse and diversity, which this offline version skips), `passed` and the household floor, the judged panels, the owner's page, and whether genre tags from the dump are clean enough to calibrate on (the owner's shelf reads 16% "Boys Love").
+- **In the engine it widens pages but lets in passed household titles, so it ships off** (`RecommenderTuning.ShelfCalibration`, `ShelfCalibration.Order`, eval key `calibration`; facets are the index's type plus every genre, target the seed-weighted mix; inside `SelectWinners` after the franchise collapse, before the fame cap, from two seeds up). Paired against `calibration=0`, n = 500:
+
+  | split, shelves | strength | wantN | passed | kept / lost | webtoons for webtoon readers |
+  |---|---|---|---|---|---|
+  | dev, COMPLETED | 0.1 | +0.0007 | +0.1 | +0.024 / -0.030 | -1.1 |
+  | dev, COMPLETED | 0.2 | -0.0002 | +0.1 | +0.041 / -0.051 | -1.6 |
+  | dev, COMPLETED | 0.4 | **-0.0042, FAIL** | +0.4 (niche FAIL) | +0.069 / -0.072 | -2.9 |
+  | dev, CURRENT | 0.1 | +0.0004 | +0.1 | +0.024 / -0.031 | -4.6 |
+  | dev, CURRENT | 0.2 | +0.0001 | **+0.5, FAIL** | +0.042 / -0.050 | -7.6 |
+  | dev, CURRENT | 0.4 | -0.0015 (wantT, niche FAIL) | **+0.6, FAIL** | +0.071 / -0.073 | -11.0 |
+  | confirm, COMPLETED | 0.1 | +0.0004 | +0.3 (niche +0.4, FAIL) | +0.038 / -0.043 | -2.5 |
+  | confirm, CURRENT | 0.1 | +0.0007 | **+0.5, FAIL** (middle +0.8) | +0.044 / -0.051 | -8.4 |
+
+  Judged panels at 0.1 (80 shelves, 94 pairs unjudged): want@10 +0.008 and +0.009, feel@10 +0.003 and +0.019, all inside noise. Pulling the genre mix toward the shelf pulls in popular titles of the under-served genres, some of them household titles the reader already passed over.
+- **It barely moves the owner's page.** Real service, top 40: webtoons 3 to 4 at 0.1 and 0.2, Action 10 to 11, `lost` 0.22 to 0.11, still no romance webtoon. With the page-share penalty at 2 as well, webtoons 5, Action 12, household titles in the top 20 4 to 7. With the CURRENT-at-0.5 table it falls back to 3 webtoons and Action 8. The owner's page is held back by something calibration does not reach; the next step is the owner's own scored pool.
+- **Not measured:** whether genre tags from the dump are clean enough to calibrate on (the owner's shelf reads 16% "Boys Love"); a type-only calibration, which would not touch the genre mix that brings the passed titles in.
 
 ## v9: co-read per-user cap, list dates and index eligibility, measured
 

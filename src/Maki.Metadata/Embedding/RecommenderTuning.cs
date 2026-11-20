@@ -486,13 +486,14 @@ public sealed record RecommenderTuning
 
     /// <summary>
     /// How hard the page's type and genre mix is pulled toward the shelf's (<see cref="ShelfCalibration"/>).
-    /// 0 is off; 0.1 ships (0.2 raises passed household titles on CURRENT shelves). Runs inside <c>SelectWinners</c> from two seeds up, before the fame cap.
+    /// 0 is off and ships: 0.1 widens pages with wantN flat but raises passed household titles on the
+    /// confirm split, 0.2 does so on dev too. Runs inside <c>SelectWinners</c> from two seeds up, before the fame cap.
     /// The shelf-wide channels give a title fitting a fifth of the shelf about a fifth of their
     /// signal, so a second taste falls off the page while the main one fills it; this puts it back
     /// and trims a webtoon flood on in-progress shelves too. Eval key <c>calibration</c>. See
     /// distribution/CLAUDE.md, "v9: why a second taste falls off the page".
     /// </summary>
-    public double ShelfCalibration { get; init; } = 0.1;
+    public double ShelfCalibration { get; init; } = 0;
 
     /// <summary>
     /// How many times the shelf's own share of famous titles a list may hold at any point
