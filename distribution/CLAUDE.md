@@ -1335,3 +1335,30 @@ The full dump carries MangaUpdates' own aggregates, which nothing read: a Bayesi
 - **The drop rate punishes ongoing series.** A series still running collects "unfinished" lists from readers who paused, so on CURRENT shelves the signal marks down what those readers are reading. Taking it relative to the same status and popularity bin narrows the loss but never turns it into a gain.
 - **So the seventh hand-built signal measures flat, and this one came from an outside population.** What helped before was learned from behaviour (the taste vectors, EASE); aggregate ratings and list counts per title do not tell the engine anything the channels have not already priced. The two harness keys and the builder are kept so the finding stays reproducible.
 - **Not checked:** the judged panels and the confirm split, since nothing passed on the dev split with a gain to confirm; folds other than 0; the page-share eval twin has no provenance file (built from fold-0 readers 501 to 1,500, graded on the first 500, see "v8: what shipped"), so the runs pass `--common-unchecked`, which is the same table for every variant.
+
+## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 is a candidate
+
+EASE trained on COMPLETED rows only, and nothing had tried another status set or a score floor. `--statuses` takes a list with optional weights (`COMPLETED,CURRENT=0.5`; a reader's cell keeps its largest weight, and the item counts that pick the universe and drive the popularity damp are weighted sums), `--drop-below-mean D` leaves out scored rows D points (of 100) under the reader's own mean. Both default to the shipped table, which a default build reproduces byte for byte. Each table is graded in its own run with `--ease` and paired across runs on the same requests. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout.
+
+- **Gates** (next-read grader, fold 0 of 4, n = 500, paired against the rebuilt shipped table):
+
+  | table | COMPLETED wantN | CURRENT wantN | CURRENT passed | CURRENT floor | CURRENT nDCG@40 |
+  |---|---|---|---|---|---|
+  | `COMPLETED,CURRENT` | -0.0016 (middle third -0.0024, FAIL) | +0.0092 [+0.0064, +0.0121] | -3.4 | -4.6, FAIL | +0.0094 |
+  | `COMPLETED,CURRENT=0.5` | -0.0007 [-0.0021, +0.0009] | +0.0057 [+0.0031, +0.0084] | -3.2 | -4.4, FAIL | +0.0043 |
+  | `COMPLETED,CURRENT=0.25` | -0.0001 | +0.0033 [+0.0009, +0.0058] | -2.8 | -3.9, FAIL | +0.0001 |
+  | `COMPLETED,CURRENT,PAUSED` | -0.0023 (FAIL, niche and middle) | +0.0086 | -3.4 | -4.7, FAIL | +0.0068 |
+  | `--drop-below-mean 20` / `10` | flat | flat | flat | ok | flat |
+
+- **Confirm split, one look:** `CURRENT=0.5` holds on finished shelves (wantN -0.0005 [-0.0019, +0.0009], nDCG -0.0014, no third moves) and gains more on CURRENT ones: wantN **+0.0099 [+0.0071, +0.0126]**, wantT +0.0243, niche third +0.0171, middle +0.0119, mainstream +0.0005, passed -3.4 points, overlap -0.1, nDCG@40 +0.0064 [+0.0015, +0.0114]. Full weight fails finished shelves on confirm too (wantN -0.0023, niche -0.0042, nDCG -0.0058).
+- **What fails is the floor.** On CURRENT shelves the shipping engine's page already sits at the shelf's household share (about 0 points), so any change that takes household titles off it fails gate 6, and every CURRENT weight does (-3.9 to -5.6 points). The gate's reason is that past it a change removes titles readers go on to read; here wantN and wantT rise in the niche and middle thirds and the mainstream third holds, which is the opposite. Accepting it is a decision about the gate, not a measurement.
+- **The overlap "FAIL" on finished shelves is a rounding artefact**: a certain rise that prints as +0.0 points, and the co-read cap rows below, which change nothing else, fail it the same way.
+- **The score floor is inert.** Completions scored 10 or 20 points under the reader's mean (8% and 4% of rows) carry nothing EASE does not already discount.
+- **Not done:** the judged shelf panels (gate 7), the owner's page through the real service (gate 9), an all-readers table, and a page-share table rebuilt from pages at the new table, which v8 requires whenever the ranking changes.
+
+## v9: co-read per-user cap, list dates and index eligibility, measured
+
+- **The co-read cap is inert at 400 and 800** (`fetch-coread-graph.cs build --max-items`, fold-limited, graded with the new `eval-reco-labels.cs --coread <path>`). 400 keeps 2.31M pairs against 1.79M and 800 2.69M; on both shelf kinds wantN, passed and nDCG@40 move by under 0.0015 with every interval across zero. The 39% of finished rows the cap drops (v7 audit) cost nothing on these gates, which fits co-read off moving wantN by +0.0002 in v8. The uncapped build was not run.
+- **The index already holds what readers read.** Of AniList list rows mapped to an active non-novel series, 96.4% of COMPLETED, 93.3% of PLANNING and 97.9% of CURRENT are indexed. The rows eligibility excludes are mostly rated titles with no usable text (1.6% of COMPLETED); rows with no rating but some text are 0.09%. Relaxing eligibility is not worth a re-embed. (A first count read 76% indexed because an AniList id maps to a merged row and its canonical row both; resolve to the canonical row.)
+- **List dates exist** (`research/recommender/2026-11-20-dated-lists/probe.py`, 200 sampled public readers, aggregates only). COMPLETED entries carry a finish date with the day on 69%, `startedAt` 30%, `createdAt` 75%, `updatedAt` 81%; 74% of readers date at least half their completions. About 22% of readers have half or more of their dated completions on one day (bulk imports); for the median reader the busiest day holds 16% and 60% of dated completions fall on distinct days. A time-split grader and recency or sequence models are possible after a refetch of the lists with these fields, which the fetcher does not request today.
+- **`tags_v2` already carries a per-series weight class** (defining, core, recurring, incidental, unweighted), so AniList's tag rank would refine an existing signal on a different taxonomy; not pursued.

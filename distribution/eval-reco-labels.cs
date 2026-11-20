@@ -140,6 +140,7 @@ var maxLibrary = 300;
 var workPath = Path.Combine(artifactsDir, "coread-graph.db");
 string? muPathOverride = null;
 string? tastePathOverride = null;
+string? coReadPathOverride = null;
 string? easePathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
@@ -213,6 +214,11 @@ for (var i = 0; i < args.Length; i++)
         // fold-limited build without copying it into the config dir.
         case "--taste":
             tastePathOverride = args[++i];
+            break;
+        // A co-read artifact other than the installed one, so a build-knob sweep can grade
+        // several fold-limited builds on one config dir.
+        case "--coread":
+            coReadPathOverride = args[++i];
             break;
         // An EASE table other than the installed one, for the same reason: `library --fold-users`
         // grades a fold-limited build (`build-ease-table.py --fold-out`) without installing it.
@@ -494,7 +500,7 @@ if (mode == "single")
 var dumpPath = Path.Combine(configDir, "mangabaka.db");
 var vectorPath = Path.Combine(configDir, "embeddings.db");
 var graphPath = Path.Combine(configDir, "reco-edges.db");
-var coReadPath = Path.Combine(configDir, "coread-edges.db");
+var coReadPath = coReadPathOverride ?? Path.Combine(configDir, "coread-edges.db");
 // Built by distribution/build-mu-graph.cs out of the MangaBaka FULL dump. Unlike the other two it
 // is not part of an install, so it defaults to .artifacts/ like the co-read working database does.
 // Prefer an installed copy if one exists, so this keeps working once an MU channel ships.
