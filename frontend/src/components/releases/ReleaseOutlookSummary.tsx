@@ -1,4 +1,4 @@
-import { Badge, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconCalendarEvent } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -6,6 +6,7 @@ import { confidenceLevel, useSeriesOutlook, type ReleaseOutlookDto } from '../..
 import { formatDayRange, formatWeekdayDateTime } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { PanelTitle } from '../ui/PanelTitle'
+import { LightBadge } from '../series/lightMantine'
 import { relativeTime } from '../ui/time'
 import { CONFIDENCE_LABEL, REFRESH_TIER_TEXT } from './outlookText'
 
@@ -59,9 +60,9 @@ export function ReleaseOutlookView({ outlook, idleReason }: { outlook: ReleaseOu
             w={260}
             label={t`${hits} of the last ${checked} chapters came out inside the window drawn for them.`}
           >
-            <Badge variant="light" className="release-confidence" data-level={level}>
+            <LightBadge color={level === 'medium' ? 'var(--neutral)' : 'var(--brand)'}>
               {renderLabel(CONFIDENCE_LABEL[level])}
-            </Badge>
+            </LightBadge>
           </Tooltip>
         )}
       </Group>

@@ -33,6 +33,7 @@ import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { ConditionFieldPage, ConditionGroupRows } from './RuleConditions'
 import { conditionParents, savedGroups, useGroupsSummary } from './conditionGroups'
 import { MODAL_SIZE } from '../ui/modalSizes'
+import { MonoValue } from '../ui/MonoValue'
 
 type View = { kind: 'list' } | { kind: 'edit'; id: number | null; draft: SaveRootFolderRule } | { kind: 'check' }
 
@@ -159,9 +160,7 @@ function RuleList({
                     {position}
                   </Badge>
                   <IconFolder size={14} aria-hidden />
-                  <Text size="sm" fw={600} ff="monospace" truncate>
-                    {pathOf(rule.rootFolderId)}
-                  </Text>
+                  <MonoValue value={pathOf(rule.rootFolderId)} copy />
                 </Group>
                 <Text size="xs" c="var(--ink-3)">
                   {summary(rule.groups)}

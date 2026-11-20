@@ -3738,14 +3738,28 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .rating-pill[data-state='so-far'] .rating-pill-bar > span[data-filled] {
   background: var(--ink-4);
 }
-.rating-prompt {
+/* SeriesHint: a Note at body size whose actions follow the text instead of sitting at the far end. */
+.series-hint {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-xs);
   margin-top: var(--mantine-spacing-md);
 }
-.rating-prompt .rating-words {
-  padding-left: 24px;
+.series-hint > .note {
+  align-items: center;
+  font-size: var(--type-body);
+}
+.series-hint > .note .note-icon {
+  margin-top: 0;
+}
+.series-hint > .note .note-body {
+  flex: 0 1 auto;
+}
+.series-hint > .note .note-action {
+  margin-inline-start: 0;
+}
+.series-hint .rating-words {
+  padding-inline-start: calc(16px + var(--mantine-spacing-xs));
 }
 .rating-words[data-layout='grid'] {
   display: grid;
@@ -6010,6 +6024,10 @@ button.site-chip:hover {
   background: var(--warn-soft);
   color: var(--warn);
 }
+.setup-summary-line[data-tone='neutral'] .setup-summary-icon {
+  background: var(--neutral-soft);
+  color: var(--ink-3);
+}
 .setup-summary-text {
   flex: 1;
   min-width: 0;
@@ -7210,6 +7228,29 @@ button.site-chip:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.filter-bar-button[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* ListControls: the sort and filter menus that open from a filter-bar button. */
+.list-control-menu {
+  max-height: min(360px, 60dvh);
+  overflow-y: auto;
+}
+.list-control-hint {
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+}
+.tag-chip-count {
+  margin-inline-start: 6px;
+  color: var(--ink-4);
+}
+.tag-chip-body > .tag-chip-count {
+  margin-inline-start: -2px;
+}
+.tag-chip[data-active] .tag-chip-count {
+  color: var(--ink-2);
+}
 .filter-bar-excluded {
   margin-inline-start: 6px;
   color: var(--danger-fg);
@@ -8099,7 +8140,6 @@ button.site-chip:hover {
   width: 132px;
   border-color: color-mix(in srgb, var(--brand) 65%, transparent);
   background: color-mix(in srgb, var(--brand) 8%, transparent);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 6%, transparent);
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 a.empty-shelf-slot:hover .empty-shelf-cover {
@@ -9208,51 +9248,6 @@ body.column-resizing * {
   flex-shrink: 0;
 }
 
-/* Manage signals: filters as one row of underlined segments that scrolls instead of wrapping. */
-.signals-filters {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-bottom: 1px solid var(--hairline);
-}
-.signals-filters::-webkit-scrollbar {
-  display: none;
-}
-.signals-filter {
-  flex: none;
-}
-.signals-filter-icon {
-  display: none;
-}
-.signals-filter .signals-filter-label {
-  gap: 6px;
-  height: 36px;
-  padding-inline: 10px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: none;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-.signals-filter .signals-filter-label:hover {
-  background: none;
-  color: var(--ink-hi);
-}
-.signals-filter .signals-filter-label[data-checked] {
-  padding-inline: 10px;
-  border-bottom-color: var(--brand);
-  background: none;
-  color: var(--ink-hi);
-}
-.signals-filter-count {
-  margin-inline-start: 6px;
-  color: var(--ink-4);
-  font-weight: var(--fw-medium);
-}
 .signals-statuses {
   display: flex;
   flex-wrap: wrap;
@@ -11659,6 +11654,22 @@ body.reader-open {
   flex: 1 1 16rem;
   min-width: 0;
 }
+/* SettingsSummaryRow: label and summary on the left, the button that opens the modal on the right. */
+.settings-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.settings-summary-row + .settings-summary-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+.settings-summary-action {
+  flex-shrink: 0;
+}
 /* The Notifications card's summary of what each channel delivers, and its event table in two columns. */
 .notify-summary-icon {
   flex-shrink: 0;
@@ -12188,8 +12199,6 @@ body.reader-open {
   animation: reader-chapter-banner var(--dur-banner) var(--ease) both;
 }
 
-/* End of chapter. The cover, blurred far past recognition, is the only colour on the screen: the
-   same light the series page's band takes from it, turned down to suit a reader that stays dark. */
 .reader-end {
   position: relative;
   min-height: 100dvh;
@@ -12199,15 +12208,10 @@ body.reader-open {
     max(16px, env(safe-area-inset-left));
   overflow: hidden;
 }
-.reader-end-backdrop {
-  position: absolute;
-  inset: -12%;
-  background-size: cover;
-  background-position: center 30%;
-  filter: blur(56px) saturate(1.15);
-  opacity: 0.24;
-  mask-image: radial-gradient(closest-side, black 30%, transparent 100%);
-  pointer-events: none;
+/* End of chapter: a flat wash of the cover's sampled colour, mixed the way the Cover ground mixes
+   its tint. Always into the reader's own dark, so no theme or reader ground can lighten it. */
+.reader-root .reader-end[data-tint] {
+  background: color-mix(in srgb, var(--reader-surface) 90%, var(--reader-end-tint));
 }
 .reader-end-body {
   position: relative;
@@ -13899,9 +13903,7 @@ button.step-strip-item:disabled {
   color: var(--warn);
 }
 .import-root-select {
-  flex: 1 1 20rem;
-  min-width: min(100%, 20rem);
-  max-width: 34rem;
+  max-width: 100%;
 }
 .import-results > .mantine-Text-root {
   overflow-wrap: anywhere;
@@ -13976,7 +13978,7 @@ button.step-strip-item:disabled {
     gap: 8px;
   }
   .import-root-select {
-    min-width: 100%;
+    flex: 1 1 100%;
   }
   .import-toolbar .mantine-Button-root {
     flex: 1 1 auto;
@@ -14080,7 +14082,7 @@ button.import-plan-folder-head:hover {
 /* --- Operational page chrome (ported from redesignv2) --- */
 
 .health-filter-rail {
-  align-items: flex-end;
+  align-items: center;
   gap: var(--mantine-spacing-sm);
   padding-block: 0.75rem;
   border-block: 1px solid var(--line-soft);
@@ -14091,6 +14093,13 @@ button.import-plan-folder-head:hover {
 }
 .health-filter-rail .mantine-InputWrapper-root {
   min-width: 12rem;
+}
+.health-filter-rail > .filter-bar-button {
+  flex: none;
+  align-self: center;
+}
+.health-filter-rail > .health-finding-chips {
+  flex-basis: 100%;
 }
 
 .settings-content {
@@ -14131,6 +14140,13 @@ button.import-plan-folder-head:hover {
 }
 .settings-section-actions {
   margin-left: auto;
+}
+.settings-section-status {
+  display: inline-flex;
+  margin-inline-end: 6px;
+}
+.settings-section-status:empty {
+  display: none;
 }
 .new-setting-pill {
   margin-left: 8px;
@@ -14657,6 +14673,11 @@ button.settings-row-head:hover,
 .settings-row-status {
   flex-shrink: 0;
 }
+/* Why a notification connection is failing: in full, under its tags, not cut at the row's edge. */
+.delivery-problem {
+  color: var(--danger);
+  white-space: normal;
+}
 .settings-row-chevron {
   flex-shrink: 0;
   color: var(--ink-3);
@@ -14734,13 +14755,6 @@ button.settings-row-head:hover,
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
-.user-disabled {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--type-meta);
-}
-
 .user-form-group {
   display: grid;
   gap: var(--mantine-spacing-sm);
@@ -14843,11 +14857,7 @@ button.settings-row-head:hover,
   align-items: center;
   gap: 10px;
 }
-.account-secret > code {
-  flex: 1 1 260px;
-  min-width: 0;
-  padding: 8px 10px;
-  overflow-wrap: anywhere;
+.account-secret .mono-value-text {
   user-select: all;
 }
 [data-revoked] {
@@ -14885,7 +14895,7 @@ button.settings-row-head:hover,
   .health-filter-rail {
     align-items: stretch;
   }
-  .health-filter-rail > * {
+  .health-filter-rail > :not(.filter-bar-button) {
     flex-basis: 100%;
   }
   .health-filter-rail .mantine-InputWrapper-root {
@@ -14941,23 +14951,6 @@ button.settings-row-head:hover,
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
   min-width: min(14rem, 100%);
-}
-/* Sort field and direction as one joined control. */
-.library-sort-control {
-  display: flex;
-  flex: none;
-}
-.library-sort-control .library-sort {
-  width: 10.625rem;
-}
-.library-sort-control .library-sort .mantine-Input-input {
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-}
-.library-sort-control > .mantine-ActionIcon-root {
-  margin-inline-start: -1px;
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -15152,6 +15145,7 @@ button.settings-row-head:hover,
     min-width: 0;
   }
   .library-sort-control,
+  .library-group-by,
   .library-toolbar-row > .tnum {
     display: none;
   }
@@ -16375,6 +16369,13 @@ button.credit-notice-image {
 .modal-heading-title {
   display: block;
 }
+/* A heading that keeps its section's accent icon, drawn the way PanelTitle draws one. */
+.modal-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
 .modal-heading-description {
   display: block;
   margin-top: 2px;
@@ -16490,6 +16491,12 @@ button.credit-notice-image {
 }
 .callout[data-tone='brand'] {
   --callout-tone: var(--brand);
+}
+/* Anime keeps a full-strength edge and its own soft fill, stronger than the other tones' mix. */
+.callout[data-tone='anime'] {
+  --callout-tone: var(--anime);
+  border-color: var(--anime);
+  background: var(--anime-soft);
 }
 .callout-icon {
   flex: none;
@@ -17954,14 +17961,6 @@ button.series-title:hover {
 }
 
 /* Series page: the confidence badge under "Next chapter" follows the timeline's two levels. */
-.release-confidence[data-level='high'] {
-  --badge-bg: color-mix(in srgb, var(--brand) 18%, transparent);
-  --badge-color: var(--brand-fg);
-}
-.release-confidence[data-level='medium'] {
-  --badge-bg: var(--neutral-soft);
-  --badge-color: var(--ink-2);
-}
 .release-announced {
   color: var(--info);
 }
@@ -18514,6 +18513,14 @@ button.series-title:hover {
   padding: 12px 22px;
   border-bottom: 1px solid var(--border);
 }
+/* State chips and filter buttons, on their own line under the search. */
+.source-manager-filters {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
 .source-manager-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -18534,17 +18541,14 @@ button.series-title:hover {
   font-size: var(--type-meta);
   color: var(--ink-4);
 }
-.source-manager-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 22px;
-  border-top: 1px solid var(--border);
+/* The modal body has no padding here, so the shared footer drops the margins that reach over it. */
+.source-manager > .modal-footer {
+  position: static;
+  margin: 0;
+  padding-inline: 22px;
 }
 .source-manager[data-narrow] .source-manager-tools,
-.source-manager[data-narrow] .source-manager-foot {
+.source-manager[data-narrow] > .modal-footer {
   padding-inline: 14px;
 }
 
@@ -18707,39 +18711,6 @@ button.series-title:hover {
 .source-tag[data-tone='language'] {
   font-family: var(--mantine-font-family-monospace);
   font-size: var(--type-badge);
-}
-
-.source-filter-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: var(--radius-pill);
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-  font-size: var(--type-label);
-  font-weight: var(--fw-semibold);
-}
-.source-filter-pop {
-  display: grid;
-  gap: 10px;
-  max-width: calc(100vw - 32px);
-}
-.source-filter-label {
-  margin-bottom: 6px;
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-3);
-}
-.source-filter-n {
-  margin-left: 4px;
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-.source-filter-foot {
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
 }
 
 .source-rail {
@@ -19073,8 +19044,7 @@ button.series-title:hover {
   padding: 12px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--surface);
   box-shadow: var(--shadow-object);
 }
 .pc-plan-footer-sampling {
@@ -19175,10 +19145,6 @@ button.series-title:hover {
   justify-content: space-between;
   gap: 12px;
 }
-.shortlist-chip-count {
-  margin-inline-start: 4px;
-  color: var(--ink-4);
-}
 .shortlist-row {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr) auto;
@@ -19252,22 +19218,6 @@ button.shortlist-title {
 }
 button.shortlist-title:hover {
   text-decoration: underline;
-}
-.shortlist-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
-  border-radius: var(--radius-chip);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
-  white-space: nowrap;
-}
-.shortlist-pill[data-quiet] {
-  color: var(--ink-3);
-  border: 1px solid var(--border-strong);
 }
 .shortlist-note {
   display: flex;
@@ -19464,14 +19414,14 @@ button.shortlist-title:hover {
 .note-actions {
   margin-inline-start: -6px;
 }
-.note-body {
+.note-content {
   font-size: var(--type-body);
   line-height: 1.45;
   color: var(--ink);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.note-body a {
+.note-content a {
   color: var(--brand-fg);
   text-decoration: underline;
 }
@@ -19540,10 +19490,10 @@ button.shortlist-title:hover {
   -webkit-line-clamp: 3;
   overflow: hidden;
 }
-.reader-end-notes .note-body {
+.reader-end-notes .note-content {
   color: inherit;
 }
-.reader-end-notes .note-body a {
+.reader-end-notes .note-content a {
   color: #fff;
 }
 .reader-end-notes .note-spoiler:not([data-revealed]) {
@@ -19765,7 +19715,7 @@ button.shortlist-title:hover {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
-.notes-margin-text .note-body {
+.notes-margin-text .note-content {
   font-size: var(--type-meta);
 }
 .notes-margin-replies {

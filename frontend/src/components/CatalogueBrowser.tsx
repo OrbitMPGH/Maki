@@ -11,7 +11,6 @@ import {
   Group,
   Loader,
   SegmentedControl,
-  Select,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -44,6 +43,7 @@ import {
   type SearchFallback,
 } from '../api/hooks'
 import { CatalogueFilterBar, useCatalogueFilterSlots } from './CatalogueFilterBar'
+import { SortControl } from './ListControls'
 import {
   filtersFromSpec,
   normalizeFilters,
@@ -420,17 +420,7 @@ export function CatalogueBrowser({
               )}
             </Group>
             <Group gap="xs">
-              {!searching && (
-                <Select
-                  size="sm"
-                  w={150}
-                  value={sort}
-                  onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-                  data={sortOptions}
-                  allowDeselect={false}
-                  aria-label={t`Sort`}
-                />
-              )}
+              {!searching && <SortControl value={sort} options={sortOptions} onChange={setSort} />}
               <ViewPrefsControls prefs={prefs} />
             </Group>
           </Group>

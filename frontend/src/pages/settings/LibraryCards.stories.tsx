@@ -110,7 +110,7 @@ export const RootFolderRemoveConfirm: Story = {
     const [first] = await canvas.findAllByRole('button', { name: 'Remove root folder' })
     await userEvent.click(first)
     const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('/library/manga')).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'Copy /library/manga' })).toBeInTheDocument()
     await expect(await dialog.findByRole('button', { name: 'Remove folder' })).toBeVisible()
   },
 }

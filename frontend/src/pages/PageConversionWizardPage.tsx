@@ -47,6 +47,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { MODAL_SIZE } from '../components/ui/modalSizes'
+import { ModalHeading } from '../components/ui/ModalShell'
 
 const SETTINGS_URL = '/settings?tab=library&s=page-conversion'
 
@@ -322,7 +323,7 @@ function Plan({
       <Modal
         opened={detailsOpen}
         onClose={() => setDetailsOpen(false)}
-        title={<Trans>What the pass would do</Trans>}
+        title={<ModalHeading title={<Trans>What the pass would do</Trans>} />}
         size={MODAL_SIZE.wide}
         centered
       >

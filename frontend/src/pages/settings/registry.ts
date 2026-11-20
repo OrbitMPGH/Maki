@@ -583,6 +583,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'downloads',
     title: msg`Smart download`,
     admin: true,
+    within: 'downloads',
     keywords: msg({
       message: `smart download, unread trigger`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,

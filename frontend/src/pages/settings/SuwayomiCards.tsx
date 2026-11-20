@@ -7,7 +7,8 @@ import { SettingsSection } from './SettingsSection'
 import { FieldAction } from '../../components/settings/FieldAction'
 import { savedToast } from './sharedRecord'
 import { ManageSourcesModal } from './ManageSourcesModal'
-import { ConnectionTestLine } from '../../components/ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from '../../components/ConnectionSettingsCardStatus'
+import { IconAdjustments } from '../../lib/icons'
 import { useSources } from '../../api/hooks'
 import {
   useSaveSuwayomiConnection, useSuwayomiConnection, useTestSuwayomiConnection,
@@ -67,6 +68,7 @@ export function SuwayomiCard() {
       id="suwayomi"
       title="Suwayomi"
       description={t`Uses the sources of the extensions installed in Suwayomi.`}
+      status={saved && <ConnectionStatus testKey="suwayomi" configured={connected} />}
       dirty={dirty}
       saving={save.isPending}
       onSave={() => save.mutate(input(), { onSuccess: savedToast })}
@@ -144,21 +146,25 @@ export function SuwayomiCard() {
             />
           </Group>
         )}
-        {connected && <ConnectionTestLine testKey="suwayomi" mt={0} />}
+        {connected && <ConnectionTestDetail testKey="suwayomi" mt={0} />}
         <Group justify="space-between" wrap="wrap">
           <Text size="sm" c="var(--ink-3)">
-            {connected ? (
+            {connected && (
               <Plural
                 value={installed}
                 _0="No Suwayomi sources yet."
                 one={`# Suwayomi source, ${inUse} switched on.`}
                 other={`# Suwayomi sources, ${inUse} switched on.`}
               />
-            ) : (
-              <Trans>Not connected.</Trans>
             )}
           </Text>
-          <Button variant="default" disabled={!connected || dirty} onClick={() => setManaging(true)}>
+          <Button
+            variant="default"
+            size="xs"
+            leftSection={<IconAdjustments size={16} />}
+            disabled={!connected || dirty}
+            onClick={() => setManaging(true)}
+          >
             <Trans>Manage sources</Trans>
           </Button>
         </Group>

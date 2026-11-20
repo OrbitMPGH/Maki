@@ -63,7 +63,7 @@ function SeedTargetFields({ form, clientName, clientKind }: { form: TorrentLifec
       <SettingsHelp>
         <Trans>Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target.</Trans>
       </SettingsHelp>
-      <Group align="flex-end" wrap="wrap" gap="sm">
+      <div className="settings-field-grid" data-align="end">
         <NumberInput
           label={t`Seed ratio`}
           placeholder={t`No target`}
@@ -74,7 +74,7 @@ function SeedTargetFields({ form, clientName, clientKind }: { form: TorrentLifec
           value={form.seedRatio}
           onChange={form.setSeedRatio}
           disabled={!form.loaded}
-          w={150}
+          classNames={{ wrapper: 'settings-number-field' }}
         />
         <NumberInput
           label={t`Seeding time (minutes)`}
@@ -87,7 +87,7 @@ function SeedTargetFields({ form, clientName, clientKind }: { form: TorrentLifec
           value={form.seedMinutes}
           onChange={form.setSeedMinutes}
           disabled={!form.loaded}
-          w={200}
+          classNames={{ wrapper: 'settings-number-field' }}
         />
         <Button
           variant="default"
@@ -109,7 +109,7 @@ function SeedTargetFields({ form, clientName, clientKind }: { form: TorrentLifec
         >
           <Trans>Read from {clientName}</Trans>
         </Button>
-      </Group>
+      </div>
       {noTargets && form.loaded && (
         <Text size="sm" c="var(--warn)">
           <Trans>With no target, torrents stay in the client after import.</Trans>

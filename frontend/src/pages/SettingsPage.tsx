@@ -67,7 +67,6 @@ import {
   FlareSolverrCard,
   IndexerSection,
   DownloadClientCard,
-  SmartDownloadSection,
   ReadFileCleanupSection,
   SourceLanguageSection,
   SourcePrioritySection,
@@ -131,7 +130,6 @@ function useSectionNodes(): Record<string, ReactNode> {
       recommendations: <RecommendationIndexSection />,
 
       downloads: <DownloadQueueSection />,
-      'smart-download': <SmartDownloadSection />,
       'read-cleanup': <ReadFileCleanupSection />,
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,

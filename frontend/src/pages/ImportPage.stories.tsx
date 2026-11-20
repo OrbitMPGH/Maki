@@ -19,15 +19,15 @@ type Canvas = ReturnType<typeof within>
 
 /** Picks the first root folder and scans it. */
 async function scan(canvas: Canvas, body: Canvas, userEvent: { click: (element: Element) => Promise<void> }) {
-  await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
-  await userEvent.click(await body.findByRole('option', { name: '/library/manga' }))
+  await userEvent.click(await canvas.findByRole('button', { name: /^Root folder/ }))
+  await userEvent.click(await body.findByRole('menuitemradio', { name: '/library/manga' }))
   await userEvent.click(await canvas.findByRole('button', { name: 'Scan' }))
   await canvas.findByText('Moth Orchard')
 }
 
 export const BeforeScanning: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('combobox', { name: 'Root folder' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Root folder/ })).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Scan' })).toHaveAttribute('aria-disabled', 'true'))
     await expect(await canvas.findByText('Choose a root folder')).toBeVisible()
   },
@@ -72,8 +72,8 @@ export const RestoreAnArchivedSeries: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
-    await userEvent.click(await body.findByRole('option', { name: '/library/manga' }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Root folder/ }))
+    await userEvent.click(await body.findByRole('menuitemradio', { name: '/library/manga' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Scan' }))
     await expect(await canvas.findByText('Restore Lantern Keepers')).toBeVisible()
     await expect(canvas.queryByRole('switch', { name: /already in the library/ })).not.toBeInTheDocument()
@@ -99,8 +99,8 @@ export const RestoreNeedsArchivePermission: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
-    await userEvent.click(await body.findByRole('option', { name: '/library/manga' }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Root folder/ }))
+    await userEvent.click(await body.findByRole('menuitemradio', { name: '/library/manga' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Scan' }))
     await canvas.findByRole('checkbox', { name: 'Restore Lantern Keepers' })
     await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Restore Lantern Keepers' })).toBeDisabled())
@@ -111,8 +111,8 @@ export const NothingToImport: Story = {
   parameters: { msw: [http.get(api('/libraryimport/scan'), () => HttpResponse.json([]))] },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
-    await userEvent.click(await body.findByRole('option', { name: '/library/manga' }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Root folder/ }))
+    await userEvent.click(await body.findByRole('menuitemradio', { name: '/library/manga' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Scan' }))
     await expect(await canvas.findByText('Nothing to import')).toBeVisible()
   },
@@ -178,8 +178,8 @@ export const IgnoredFolders: Story = {
 export const RecentImportsListed: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await canvas.findByRole('combobox', { name: 'Root folder' }))
-    await userEvent.click(await body.findByRole('option', { name: rootFolders[0].path }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Root folder/ }))
+    await userEvent.click(await body.findByRole('menuitemradio', { name: rootFolders[0].path }))
     await expect(await canvas.findByText('Recent imports')).toBeVisible()
     await expect(await canvas.findByText('Imports can be undone for 30 days.')).toBeVisible()
   },

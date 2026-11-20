@@ -1,7 +1,6 @@
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Button,
   Checkbox,
   Group,
@@ -57,6 +56,7 @@ import { contentRatingVisual } from '../ui/status'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { TimeAgo } from '../ui/TimeAgo'
 import { MODAL_SIZE } from '../ui/modalSizes'
+import { LightBadge } from '../series/lightMantine'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -238,34 +238,33 @@ export function UsersSection() {
                       </span>
                       <Text fz="sm" fw={600} c="var(--ink-hi)">{name}</Text>
                       {user.id === me?.id && (
-                        <Badge size="xs" variant="outline">
-                          <Trans>you</Trans>
-                        </Badge>
+                        <LightBadge color="var(--brand)">
+                          <Trans>You</Trans>
+                        </LightBadge>
                       )}
                       {user.disabled && (
-                        <span className="user-disabled">
-                          <IconBan size={14} aria-hidden />
-                          <Trans>disabled</Trans>
-                        </span>
+                        <LightBadge color="var(--neutral)" leftSection={<IconBan size={12} aria-hidden />}>
+                          <Trans>Disabled</Trans>
+                        </LightBadge>
                       )}
                     </Group>
                   </Table.Td>
                   <Table.Td>
                     {user.isAdmin ? (
-                      <Badge size="sm" variant="light" leftSection={<IconShield size={12} />}>
+                      <LightBadge color="var(--brand)" leftSection={<IconShield size={12} />}>
                         <Trans>Administrator</Trans>
-                      </Badge>
+                      </LightBadge>
                     ) : (
-                      <Badge size="sm" variant="default">
+                      <LightBadge color="var(--neutral)">
                         <Plural value={granted} one="# permission" other="# permissions" />
-                      </Badge>
+                      </LightBadge>
                     )}
                   </Table.Td>
                   <Table.Td>
                     {rating ? (
-                      <Badge size="sm" variant="light" color={rating.color} leftSection={<rating.Icon size={12} />}>
+                      <LightBadge color={rating.color} leftSection={<rating.Icon size={12} />}>
                         {renderLabel(rating.label)}
-                      </Badge>
+                      </LightBadge>
                     ) : (
                       <Text fz="xs" c="var(--ink-3)">
                         {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
@@ -273,7 +272,7 @@ export function UsersSection() {
                     )}
                   </Table.Td>
                   <Table.Td c="var(--ink-3)">
-                    {user.lastLoginAt ? <TimeAgo value={user.lastLoginAt} /> : <Trans>never</Trans>}
+                    {user.lastLoginAt ? <TimeAgo value={user.lastLoginAt} /> : <Trans>Never</Trans>}
                   </Table.Td>
                   <Table.Td ta="right">
                     <Group gap={2} justify="flex-end" wrap="nowrap">

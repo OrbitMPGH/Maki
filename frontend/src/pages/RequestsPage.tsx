@@ -291,7 +291,7 @@ export default function RequestsPage() {
                       <Badge size="sm" variant="light" color={STATUS_COLOR[r.status]}>
                         {renderLabel(STATUS_LABEL[r.status])}
                       </Badge>
-                      <Badge size="sm" variant="outline" color="var(--neutral)">
+                      <Badge size="sm" variant="light" color="var(--neutral)">
                         {r.kind === 'NewSeries' ? t`New series` : t`Chapters`}
                       </Badge>
                     </Group>

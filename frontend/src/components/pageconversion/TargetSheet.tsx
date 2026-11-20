@@ -19,6 +19,8 @@ import { formatBytes, formatPercent } from '../../format'
 import { Callout } from '../ui/Callout'
 import { SelectCards } from '../SelectCards'
 import { ComparePicker } from './ComparePicker'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 import { CompareView } from './CompareView'
 import { sampleKey } from './compareChoice'
 import type { Recommendation } from './recommendation'
@@ -73,11 +75,10 @@ export function TargetSheet({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={title}
-      size={1180}
+      title={<ModalHeading title={title} />}
+      size={MODAL_SIZE.xwide}
       fullScreen={narrow}
       centered
-      classNames={{ title: 'pc-sheet-title' }}
     >
       {opened && (
         <SheetBody
@@ -164,164 +165,167 @@ function SheetBody({
   const fallbackLabel = targetLabel(fallback)
 
   return (
-    <div className="pc-sheet">
-      <Stack gap="sm" className="pc-sheet-view">
-        {samples.isLoading && <Skeleton height={64} radius="md" />}
-        {options.length > 0 && (
-          <SelectCards
-            fillLeft={false}
-            cols={{ base: 1, xs: Math.min(options.length, 3) }}
-            value={active ? sampleKey(active) : ''}
-            onChange={setActiveKey}
-            options={options.map((s) => {
-              const chapter = s.chapterLabel
-              const page = s.page + 1
-              return { value: sampleKey(s), title: s.seriesTitle, subtitle: t`${chapter}, page ${page}` }
-            })}
-          />
-        )}
-        {samples.isError && (
-          <Text size="sm" c="var(--danger-fg)" role="alert">
-            <Trans>The pages for this row could not be found. Pick a page from your library instead.</Trans>
-          </Text>
-        )}
-        {!samples.isLoading && !samples.isError && options.length === 0 && (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              Maki found no {kindName} pages in the files this row converts. Pick a page from your library to see the
-              target on.
-            </Trans>
-          </Text>
-        )}
-        <Group justify="flex-end">
-          <Button variant="default" size="xs" leftSection={<IconPhotoSearch size={16} />} onClick={() => setPickerOpen(true)}>
-            <Trans>Pick another page</Trans>
-          </Button>
-        </Group>
+    <>
+      <div className="pc-sheet">
+        <Stack gap="sm" className="pc-sheet-view">
+          {samples.isLoading && <Skeleton height={64} radius="md" />}
+          {options.length > 0 && (
+            <SelectCards
+              fillLeft={false}
+              cols={{ base: 1, xs: Math.min(options.length, 3) }}
+              value={active ? sampleKey(active) : ''}
+              onChange={setActiveKey}
+              options={options.map((s) => {
+                const chapter = s.chapterLabel
+                const page = s.page + 1
+                return { value: sampleKey(s), title: s.seriesTitle, subtitle: t`${chapter}, page ${page}` }
+              })}
+            />
+          )}
+          {samples.isError && (
+            <Text size="sm" c="var(--danger-fg)" role="alert">
+              <Trans>The pages for this row could not be found. Pick a page from your library instead.</Trans>
+            </Text>
+          )}
+          {!samples.isLoading && !samples.isError && options.length === 0 && (
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>
+                Maki found no {kindName} pages in the files this row converts. Pick a page from your library to see the
+                target on.
+              </Trans>
+            </Text>
+          )}
+          <Group justify="flex-end">
+            <Button variant="default" size="xs" leftSection={<IconPhotoSearch size={16} />} onClick={() => setPickerOpen(true)}>
+              <Trans>Pick another page</Trans>
+            </Button>
+          </Group>
 
-        {active && (
-          <CompareView
-            key={sampleKey(active)}
-            originalUrl={original.data?.url}
-            encodedUrl={encoded.data?.url}
-            encodedLabel={targetLabel({ format, stop })}
-            loading={encoded.isFetching || original.isFetching || !settled}
-          />
-        )}
-        {encoded.isError && (
-          <Callout tone="danger" role="alert">
-            <Trans>Maki could not encode this page. Try another page or another format.</Trans>
-          </Callout>
-        )}
-      </Stack>
-
-      <Stack gap="md" className="pc-sheet-controls">
-        <Stack gap={6}>
-          <Text size="sm" fw={600}>
-            <Trans>Format</Trans>
-          </Text>
-          <SegmentedControl
-            fullWidth
-            aria-label={t`Format`}
-            value={formatChoice}
-            data={formatData}
-            onChange={(next) =>
-              onChange(
-                next === 'same'
-                  ? null
-                  : { format: next as PageConversionFormat, stop: lossless ? 'high' : shown.stop },
-              )
-            }
-          />
-          <Text size="xs" c="var(--ink-3)">
-            {same ? (
-              <Trans>Colour pages are stored like black-and-white pages in this row: {fallbackLabel}.</Trans>
-            ) : lossless ? (
-              <Trans>Lossless is always stored as lossless WebP.</Trans>
-            ) : onRecommendedFormat ? (
-              <>
-                <span className="pc-rec-line">{t(recommended.line)}</span> {t(FORMAT_HINTS[shown.format])}
-              </>
-            ) : (
-              t(FORMAT_HINTS[shown.format])
-            )}
-          </Text>
+          {active && (
+            <CompareView
+              key={sampleKey(active)}
+              originalUrl={original.data?.url}
+              encodedUrl={encoded.data?.url}
+              encodedLabel={targetLabel({ format, stop })}
+              loading={encoded.isFetching || original.isFetching || !settled}
+            />
+          )}
+          {encoded.isError && (
+            <Callout tone="danger" role="alert">
+              <Trans>Maki could not encode this page. Try another page or another format.</Trans>
+            </Callout>
+          )}
         </Stack>
 
-        <Stack gap={6}>
-          <Group justify="space-between" gap={4}>
+        <Stack gap="md" className="pc-sheet-controls">
+          <Stack gap={6}>
             <Text size="sm" fw={600}>
-              <Trans>Quality</Trans>
+              <Trans>Format</Trans>
             </Text>
-            <Group gap={6} wrap="nowrap" aria-live="polite">
-              <Text size="sm" fw={600} c="var(--brand)">
-                {t(STOP_LABELS[shown.stop])}
-              </Text>
-              {onRecommendedStop && (
-                <span className="pc-rec-pill">
-                  <Trans>Recommended</Trans>
-                </span>
+            <SegmentedControl
+              fullWidth
+              aria-label={t`Format`}
+              value={formatChoice}
+              data={formatData}
+              onChange={(next) =>
+                onChange(
+                  next === 'same'
+                    ? null
+                    : { format: next as PageConversionFormat, stop: lossless ? 'high' : shown.stop },
+                )
+              }
+            />
+            <Text size="xs" c="var(--ink-3)">
+              {same ? (
+                <Trans>Colour pages are stored like black-and-white pages in this row: {fallbackLabel}.</Trans>
+              ) : lossless ? (
+                <Trans>Lossless is always stored as lossless WebP.</Trans>
+              ) : onRecommendedFormat ? (
+                <>
+                  <span className="pc-rec-line">{t(recommended.line)}</span> {t(FORMAT_HINTS[shown.format])}
+                </>
+              ) : (
+                t(FORMAT_HINTS[shown.format])
               )}
+            </Text>
+          </Stack>
+
+          <Stack gap={6}>
+            <Group justify="space-between" gap={4}>
+              <Text size="sm" fw={600}>
+                <Trans>Quality</Trans>
+              </Text>
+              <Group gap={6} wrap="nowrap" aria-live="polite">
+                <Text size="sm" fw={600} c="var(--brand)">
+                  {t(STOP_LABELS[shown.stop])}
+                </Text>
+                {onRecommendedStop && (
+                  <span className="pc-rec-pill">
+                    <Trans>Recommended</Trans>
+                  </span>
+                )}
+              </Group>
             </Group>
-          </Group>
-          <Slider
-            mt={same ? undefined : 14}
-            classNames={{ mark: 'pc-rec-mark', markLabel: 'pc-rec-mark-label' }}
-            marks={
-              same
-                ? undefined
-                : [{ value: recommendedStop, label: <IconCircleCheckFilled size={14} aria-label={t`Recommended`} /> }]
-            }
-            min={0}
-            max={PAGE_CONVERSION_STOPS.length - 1}
-            step={1}
-            label={null}
-            disabled={same}
-            value={PAGE_CONVERSION_STOPS.indexOf(shown.stop)}
-            thumbLabel={t`Quality`}
-            onChange={(index) => setStop(PAGE_CONVERSION_STOPS[index])}
-          />
-          <Group justify="space-between" gap={4}>
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>Smaller</Trans>
+            <Slider
+              mt={same ? undefined : 14}
+              classNames={{ mark: 'pc-rec-mark', markLabel: 'pc-rec-mark-label' }}
+              marks={
+                same
+                  ? undefined
+                  : [{ value: recommendedStop, label: <IconCircleCheckFilled size={14} aria-label={t`Recommended`} /> }]
+              }
+              min={0}
+              max={PAGE_CONVERSION_STOPS.length - 1}
+              step={1}
+              label={null}
+              disabled={same}
+              value={PAGE_CONVERSION_STOPS.indexOf(shown.stop)}
+              thumbLabel={t`Quality`}
+              onChange={(index) => setStop(PAGE_CONVERSION_STOPS[index])}
+            />
+            <Group justify="space-between" gap={4}>
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>Smaller</Trans>
+              </Text>
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>Closer to the original</Trans>
+              </Text>
+            </Group>
+            <Text size="xs" c="var(--ink-3)" aria-live="polite">
+              {t((kind === 'colour' ? COLOUR_STOP_HINTS : STOP_HINTS)[shown.stop])}
             </Text>
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>Closer to the original</Trans>
-            </Text>
-          </Group>
-          <Text size="xs" c="var(--ink-3)" aria-live="polite">
-            {t((kind === 'colour' ? COLOUR_STOP_HINTS : STOP_HINTS)[shown.stop])}
-          </Text>
+          </Stack>
+
+          {active && (
+            <Sizes
+              fileId={active.fileId}
+              page={active.page}
+              format={format}
+              stop={stop}
+              pngLossless={pngLossless}
+              encodedBytes={encoded.data?.encodedBytes}
+              originalBytes={encoded.data?.originalBytes}
+              kept={encoded.data?.kept ?? false}
+              keptReason={encoded.data?.keptReason ?? null}
+            />
+          )}
         </Stack>
 
-        {active && (
-          <Sizes
-            fileId={active.fileId}
-            page={active.page}
-            format={format}
-            stop={stop}
-            pngLossless={pngLossless}
-            encodedBytes={encoded.data?.encodedBytes}
-            originalBytes={encoded.data?.originalBytes}
-            kept={encoded.data?.kept ?? false}
-            keptReason={encoded.data?.keptReason ?? null}
-          />
-        )}
-
-        <Button onClick={onDone} mt="auto">
+        <ComparePicker
+          opened={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onPick={(sample) => {
+            setCustom(sample)
+            setActiveKey(sampleKey(sample))
+          }}
+        />
+      </div>
+      <ModalFooter>
+        <Button onClick={onDone}>
           <Trans>Done</Trans>
         </Button>
-      </Stack>
-
-      <ComparePicker
-        opened={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onPick={(sample) => {
-          setCustom(sample)
-          setActiveKey(sampleKey(sample))
-        }}
-      />
-    </div>
+      </ModalFooter>
+    </>
   )
 }
 

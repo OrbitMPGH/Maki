@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { actionFor, buildKeyMap, comboFromEvent, useShortcutBindings } from '../../lib/shortcuts'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'
+import { useCoverColour } from '../../lib/coverTint'
 import { useReaderSettings } from '../../api/reader'
 import { useReadingProfiles } from '../../api/readingProfiles'
 import ContinuousView from '../../pages/reader/ContinuousView'
@@ -79,6 +80,7 @@ export function SeriesPreviewReader({
   const [page, setPage] = useState(0)
   const [seekVersion, setSeekVersion] = useState(0)
   const [atEnd, setAtEnd] = useState(false)
+  const endTint = useCoverColour(atEnd ? coverUrl : null)
   const seekToPage = useCallback((index: number) => {
     setPage(index)
     setSeekVersion((v) => v + 1)
@@ -194,10 +196,11 @@ export function SeriesPreviewReader({
     )
   } else if (atEnd) {
     body = (
-      <div className="reader-end">
-        {coverUrl && (
-          <div className="reader-end-backdrop" style={{ backgroundImage: `url("${coverUrl}")` }} aria-hidden />
-        )}
+      <div
+        className="reader-end"
+        data-tint={endTint ? '' : undefined}
+        style={endTint ? ({ '--reader-end-tint': endTint } as CSSProperties) : undefined}
+      >
         <div className="reader-end-body">
           <div className="reader-end-finished">
             {coverUrl && <img className="reader-end-cover" src={coverUrl} alt="" />}

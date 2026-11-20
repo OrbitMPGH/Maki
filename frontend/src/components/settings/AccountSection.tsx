@@ -30,6 +30,7 @@ import { formatDateTime } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
+import { MonoValue } from '../ui/MonoValue'
 
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
@@ -359,7 +360,6 @@ function TwoFactorRow() {
   const [regenPassword, setRegenPassword] = useState('')
   const [regenCode, setRegenCode] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
-  const keyCopy = useCopyText()
   const codesCopy = useCopyText()
 
   useEffect(() => {
@@ -539,17 +539,7 @@ function TwoFactorRow() {
                     lock you out.
                   </Trans>
                 </Text>
-                <Group gap="xs">
-                  <Code>{enrolling.sharedKey}</Code>
-                  <Button
-                    size="compact-xs"
-                    variant="default"
-                    onClick={() => void keyCopy.copy(enrolling.sharedKey)}
-                    leftSection={keyCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                  >
-                    {keyCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-                  </Button>
-                </Group>
+                <MonoValue value={enrolling.sharedKey} copy wrap />
                 <Group grow align="flex-start">
                   <TextInput
                     label={t`Code from your app`}
@@ -652,7 +642,6 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
   const [keyPassword, setKeyPassword] = useState('')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
-  const secretCopy = useCopyText()
   const revokingName = revoking?.name ?? ''
 
   // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
@@ -784,17 +773,11 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
               it, revoke this one and create another.
             </Trans>
           </ModalNote>
-          <div className="account-secret">
-            <Code>{created?.secret}</Code>
-            <Button
-              size="xs"
-              variant="default"
-              onClick={() => void secretCopy.copy(created?.secret ?? '')}
-              leftSection={secretCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-            >
-              {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-            </Button>
-          </div>
+          {created && (
+            <div className="account-secret">
+              <MonoValue value={created.secret} copy wrap />
+            </div>
+          )}
         </Stack>
         <ModalFooter
           status={

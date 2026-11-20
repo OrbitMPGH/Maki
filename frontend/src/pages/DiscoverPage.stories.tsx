@@ -116,11 +116,14 @@ export const DetailModal: Story = {
 }
 
 export const ExpandedRail: Story = {
-  play: async ({ canvas, canvasElement }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const buttons = await canvas.findAllByRole('button', { name: 'Show more' })
     buttons[0].click()
-    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(await within(dialog).findByText('Hidden everywhere (2)')).toBeVisible()
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog')
+    await expect(await within(dialog).findByRole('toolbar', { name: 'Filters' })).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'More filter actions' }))
+    await expect(await body.findByRole('menuitem', { name: 'Hidden everywhere (2)' })).toBeVisible()
   },
 }
 

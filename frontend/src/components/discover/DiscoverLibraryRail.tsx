@@ -306,7 +306,7 @@ export function DiscoverLibraryRail({
             <PanelTitle order={2}>
               <Trans>In your library</Trans>
             </PanelTitle>
-            <Badge color="gray" variant="light">
+            <Badge color="var(--neutral)" variant="light">
               <Trans context="series">Archived</Trans>
             </Badge>
           </Group>

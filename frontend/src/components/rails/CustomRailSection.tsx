@@ -20,6 +20,7 @@ import {
   IconTrash,
 } from '../../lib/icons'
 import { OverflowButton } from '../ui/OverflowButton'
+import { ModalHeading } from '../ui/ModalShell'
 import {
   useSeries,
   useSeriesIdLookup,
@@ -253,7 +254,7 @@ function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => 
   const { cols } = useDensityPref('custom-rail-expand')
   const series = (data?.seriesIds ?? []).map((id) => byId.get(id)).filter((s): s is SeriesDto => s != null)
   return (
-    <Modal opened onClose={onClose} fullScreen title={rail.name}>
+    <Modal opened onClose={onClose} fullScreen title={<ModalHeading title={rail.name} />}>
       {isError ? (
         <EmptyState
           title={t`Couldn't load this rail`}

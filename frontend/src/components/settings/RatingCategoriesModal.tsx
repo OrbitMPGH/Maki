@@ -12,6 +12,7 @@ import type { RatingCategory } from '../../lib/rating'
 import { randomUUID } from '../../lib/uuid'
 import { IconPlus, IconTrash } from '../../lib/icons'
 import { ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 const NAME_MAX = 40
 
@@ -125,7 +126,7 @@ export function RatingCategoriesEditor() {
 /** The category editor as a dialog, for Settings. */
 export function RatingCategoriesModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   return (
-    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={<Trans>Breakdown categories</Trans>} />} size="lg">
+    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={<Trans>Breakdown categories</Trans>} />} size={MODAL_SIZE.default}>
       <RatingCategoriesEditor />
     </Modal>
   )

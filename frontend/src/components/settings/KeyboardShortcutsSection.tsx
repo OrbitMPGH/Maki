@@ -29,6 +29,7 @@ import { twoColumns } from '../../lib/columns'
 import { formatList } from '../../format'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 import { SettingsGroupTitle } from './SettingsGroupTitle'
 
 const sameKeys = (a: string[], b: string[]) => a.length === b.length && a.every((key, i) => key === b[i])
@@ -344,7 +345,7 @@ export function KeyboardShortcutsSection() {
       <Modal
         opened={open}
         onClose={close}
-        size={1080}
+        size={MODAL_SIZE.xwide}
         // While a key is being recorded, Esc cancels the recording rather than closing the list.
         closeOnEscape={recording === null}
         title={<ModalHeading title={t`Keyboard shortcuts`} />}

@@ -2,6 +2,7 @@ import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core
 import { IconSend } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FormEvent } from 'react'
+import { ModalFooter } from './ui/ModalShell'
 
 /**
  * The chapter range + note a request carries, and its submit button.
@@ -24,6 +25,7 @@ export function RequestForm({
   pending,
   label,
   dense = false,
+  onCancel,
 }: {
   chapterStart: number | ''
   chapterEnd: number | ''
@@ -40,6 +42,8 @@ export function RequestForm({
    * gap overflow it.
    */
   dense?: boolean
+  /** Drawn in a modal: Cancel and the submit button go in the modal's footer. */
+  onCancel?: () => void
 }) {
   const { t } = useLingui()
   const buttonLabel = label ?? t`Request series`
@@ -96,11 +100,22 @@ export function RequestForm({
         minRows={2}
         maxRows={4}
       />
-      <Group grow={dense}>
-        <Button type="submit" leftSection={<IconSend size={16} />} loading={pending}>
-          {buttonLabel}
-        </Button>
-      </Group>
+      {onCancel ? (
+        <ModalFooter>
+          <Button variant="default" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button type="submit" leftSection={<IconSend size={16} />} loading={pending}>
+            {buttonLabel}
+          </Button>
+        </ModalFooter>
+      ) : (
+        <Group grow={dense}>
+          <Button type="submit" leftSection={<IconSend size={16} />} loading={pending}>
+            {buttonLabel}
+          </Button>
+        </Group>
+      )}
     </Stack>
   )
 }

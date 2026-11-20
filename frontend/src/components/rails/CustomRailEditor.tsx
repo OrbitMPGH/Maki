@@ -5,8 +5,8 @@ import { t as now } from '@lingui/core/macro'
 import {
   Button,
   Group,
+  Input,
   Modal,
-  Pill,
   SegmentedControl,
   Select,
   SimpleGrid,
@@ -32,10 +32,14 @@ import {
   type CustomRailSpec,
 } from '../../api/customRails'
 import { useLabel } from '../../i18n-context'
-import { CatalogueFilters, filtersFromSpec, useCatalogueFilters } from '../CatalogueFilters'
+import { filtersFromSpec, useCatalogueFilters } from '../CatalogueFilters'
+import { CatalogueFilterBar, SeedThumb, useCatalogueFilterSlots } from '../CatalogueFilterBar'
+import { useLibraryCoverLookup } from '../../api/seriesLookup'
 import { RecommenderDials } from '../discover/RecommenderDials'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
-import { IconPlus } from '../../lib/icons'
+import { Note } from '../ui/Note'
+import { TagChip, TagChips } from '../ui/TagChip'
+import { IconPlus, IconX } from '../../lib/icons'
 import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** A rail that doesn't exist yet: what the editor opens with when creating one. */
@@ -64,10 +68,13 @@ export function CustomRailEditor({
   onClose: () => void
 }) {
   const { t } = useLingui()
+  // An open filter editor takes Escape first, so the modal behind it stays open.
+  const [editorOpen, setEditorOpen] = useState(false)
   return (
     <Modal
       opened
       onClose={onClose}
+      closeOnEscape={!editorOpen}
       size={MODAL_SIZE.wide}
       title={
         <ModalHeading
@@ -85,6 +92,7 @@ export function CustomRailEditor({
           onClose()
         }}
         onCancel={onClose}
+        onFilterEditorChange={setEditorOpen}
       />
     </Modal>
   )
@@ -103,6 +111,7 @@ export function CustomRailForm({
   onCancel,
   placementLocked = false,
   inModal = false,
+  onFilterEditorChange,
 }: {
   rail?: CustomRail
   draft?: CustomRailDraft
@@ -111,6 +120,8 @@ export function CustomRailForm({
   placementLocked?: boolean
   /** Ends the form with the modal's pinned footer instead of an inline action row. */
   inModal?: boolean
+  /** Reports a filter editor opening and closing, so the frame can leave Escape to it. */
+  onFilterEditorChange?: (opened: boolean) => void
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -136,6 +147,8 @@ export function CustomRailForm({
   const liveFilterId = savedFilterGone ? null : libraryFilterId
   const [error, setError] = useState<string | null>(null)
   const catalogue = useCatalogueFilters(filtersFromSpec(start.spec.filters ?? {}))
+  const filterSlots = useCatalogueFilterSlots(catalogue.controls, { creators: true })
+  const coverFor = useLibraryCoverLookup()
 
   const changeSource = (next: CustomRailSource) => {
     setSource(next)
@@ -226,37 +239,52 @@ export function CustomRailForm({
 
         <SimpleGrid cols={{ base: 1, sm: placementLocked ? 1 : 2 }} spacing="md">
           {!placementLocked && (
-          <Stack gap={4}>
-            <Text size="sm" fw={500}>
-              <Trans>Show on</Trans>
-            </Text>
-            <SegmentedControl
-              aria-label={t`Show on`}
-              value={placement}
-              onChange={(v) => changePlacement(v as CustomRailPlacement)}
-              data={[
-                { value: 'home', label: t`Home` },
-                { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
-              ]}
-            />
-          </Stack>
+            <Input.Wrapper label={t`Show on`} labelElement="div">
+              <SegmentedControl
+                aria-label={t`Show on`}
+                fullWidth
+                value={placement}
+                onChange={(v) => changePlacement(v as CustomRailPlacement)}
+                data={[
+                  { value: 'home', label: t`Home` },
+                  { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
+                ]}
+              />
+            </Input.Wrapper>
           )}
-          <Stack gap={4}>
-            <Text size="sm" fw={500}>
-              <Trans>Titles from</Trans>
-            </Text>
+          <Input.Wrapper
+            label={t`Titles from`}
+            labelElement="div"
+            inputWrapperOrder={['label', 'input', 'description']}
+            description={
+              fromSavedFilter ? undefined : source === 'library' ? (
+                <Trans>Series you already have that match these filters.</Trans>
+              ) : source === 'recommendations' ? (
+                <Trans>Picks for you, ranked the same way as the Recommended tab with these settings.</Trans>
+              ) : (
+                <Trans>Anything in the MangaBaka catalogue that matches these filters.</Trans>
+              )
+            }
+          >
             <SegmentedControl
               aria-label={t`Titles from`}
+              fullWidth
               value={source}
               onChange={(v) => changeSource(v as CustomRailSource)}
               data={sourceOptions}
             />
-          </Stack>
+          </Input.Wrapper>
         </SimpleGrid>
 
         {source === 'library' && (savedFilters ?? []).length > 0 && (
           <Select
             label={t`Saved Library filter`}
+            inputWrapperOrder={['label', 'input', 'description', 'error']}
+            description={
+              fromSavedFilter ? (
+                <Trans>Series your saved Library filter shows, in its own sort. Editing the filter changes this rail.</Trans>
+              ) : undefined
+            }
             data={savedFilterOptions}
             value={liveFilterId != null ? String(liveFilterId) : ''}
             onChange={(v) => setLibraryFilterId(v ? Number(v) : null)}
@@ -265,44 +293,45 @@ export function CustomRailForm({
           />
         )}
         {savedFilterGone && (
-          <Text size="sm" c="var(--warn)">
+          <Note tone="warn">
             <Trans>The saved Library filter this rail used was deleted. Pick another, or use the filters below.</Trans>
-          </Text>
+          </Note>
         )}
 
-        <Text size="xs" c="var(--ink-3)">
-          {fromSavedFilter ? (
-            <Trans>Series your saved Library filter shows, in its own sort. Editing the filter changes this rail.</Trans>
-          ) : source === 'library' ? (
-            <Trans>Series you already have that match these filters.</Trans>
-          ) : source === 'recommendations' ? (
-            <Trans>Picks for you, ranked the same way as the Recommended tab with these settings.</Trans>
-          ) : (
-            <Trans>Anything in the MangaBaka catalogue that matches these filters.</Trans>
-          )}
-        </Text>
-
-        {!fromSavedFilter && <CatalogueFilters controls={catalogue.controls} cols={{ base: 1, sm: 2 }} />}
+        {!fromSavedFilter && (
+          <Input.Wrapper label={t`Filters`} labelElement="div">
+            <CatalogueFilterBar
+              slots={filterSlots}
+              isCustomized={catalogue.isCustomized}
+              onReset={catalogue.reset}
+              menu={false}
+              onOpenChange={onFilterEditorChange}
+            />
+          </Input.Wrapper>
+        )}
 
         {source === 'recommendations' && (
           <>
             {seeds.length > 0 && (
-              <Stack gap={4}>
-                <Text size="sm" fw={500}>
-                  <Trans>Seeded from</Trans>
-                </Text>
-                <Pill.Group>
-                  {seeds.map((seed) => (
-                    <Pill
-                      key={seed.id}
-                      withRemoveButton
-                      onRemove={() => setSeeds((prev) => prev.filter((s) => s.id !== seed.id))}
-                    >
-                      {seed.title ?? `#${seed.id}`}
-                    </Pill>
-                  ))}
-                </Pill.Group>
-              </Stack>
+              <Input.Wrapper label={t`Seeded from`} labelElement="div">
+                <TagChips>
+                  {seeds.map((seed) => {
+                    const seedTitle = seed.title ?? `#${seed.id}`
+                    const cover = coverFor(String(seed.id))
+                    return (
+                      <TagChip
+                        key={seed.id}
+                        aria-label={t`Remove ${seedTitle}`}
+                        onClick={() => setSeeds((prev) => prev.filter((s) => s.id !== seed.id))}
+                      >
+                        {cover && <SeedThumb url={cover} />}
+                        {seedTitle}
+                        <IconX size={12} aria-hidden />
+                      </TagChip>
+                    )
+                  })}
+                </TagChips>
+              </Input.Wrapper>
             )}
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
               <RecommenderDials

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Anchor, Button, Group, NumberInput, Paper, Stack, Text } from '@mantine/core'
-import { IconDeviceTv } from '../../lib/icons'
+import { Button, NumberInput, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { AnimeResume, SeriesAnimeResume } from '../../api/animeResume'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { Callout } from '../ui/Callout'
 
 /**
  * "Start where the anime ended": a callout saying which anime the reader finished, how far it
@@ -65,43 +65,37 @@ export function AnimeResumeCallout({
     onMarkWatched?.(n)
   }
 
+  const actions =
+    variant === 'library' ? (
+      <>
+        {unmarkedCount !== 0 && (
+          <Button
+            size="xs"
+            variant="light"
+            color="var(--anime)"
+            onClick={openConfirm}
+            loading={pending === 'mark'}
+            disabled={!!pending && pending !== 'mark'}
+          >
+            <Trans>Mark ch. 1 to {coveredTo} watched</Trans>
+          </Button>
+        )}
+        <Button size="xs" variant="default" onClick={onRead} loading={pending === 'read'} disabled={!!pending && pending !== 'read'}>
+          <Trans>Read ch. {resumeAt}</Trans>
+        </Button>
+        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onDismiss} disabled={!!pending}>
+          <Trans>Not this anime?</Trans>
+        </Button>
+      </>
+    ) : inLibrarySeriesId != null ? (
+      <Button component={Link} to={`/series/${inLibrarySeriesId}`} size="xs" variant="subtle" color="var(--anime)">
+        <Trans>Open series</Trans>
+      </Button>
+    ) : undefined
+
   return (
-    <Paper
-      withBorder
-      radius="lg"
-      p="md"
-      className="anime-resume-callout"
-      style={{ borderColor: 'var(--anime)', background: 'var(--anime-soft)' }}
-    >
-      <Group align="flex-start" wrap="nowrap" gap="sm">
-        <IconDeviceTv size={20} style={{ flexShrink: 0, marginTop: 2, color: 'var(--anime)' }} aria-hidden />
-        <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-          <Text size="sm">{copy}</Text>
-
-          {variant === 'library' && (
-            <Group gap="xs" wrap="wrap">
-              {unmarkedCount !== 0 && (
-                <Button size="xs" onClick={openConfirm} loading={pending === 'mark'} disabled={!!pending && pending !== 'mark'}>
-                  <Trans>Mark ch. 1 to {coveredTo} watched</Trans>
-                </Button>
-              )}
-              <Button size="xs" variant="default" onClick={onRead} loading={pending === 'read'} disabled={!!pending && pending !== 'read'}>
-                <Trans>Read ch. {resumeAt}</Trans>
-              </Button>
-              <Button size="xs" variant="subtle" c="var(--ink-3)" onClick={onDismiss} disabled={!!pending}>
-                <Trans>Not this anime?</Trans>
-              </Button>
-            </Group>
-          )}
-
-          {variant === 'catalogue' && inLibrarySeriesId != null && (
-            <Anchor component={Link} to={`/series/${inLibrarySeriesId}`} size="xs">
-              <Trans>Open series</Trans>
-            </Anchor>
-          )}
-        </Stack>
-      </Group>
-
+    <Callout tone="anime" actions={actions}>
+      {copy}
       {variant === 'library' && (
         <ConfirmDialog
           opened={confirmOpen}
@@ -128,6 +122,6 @@ export function AnimeResumeCallout({
           </Stack>
         </ConfirmDialog>
       )}
-    </Paper>
+    </Callout>
   )
 }

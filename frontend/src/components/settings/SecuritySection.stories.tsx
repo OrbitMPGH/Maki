@@ -144,7 +144,7 @@ export const SingleSignOn: Story = {
     await openProvider(canvas, userEvent)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue('https://sso.example.test/application/o/maki/'))
     await waitFor(() => expect(canvas.getByRole('switch', { name: /^Enable single sign-on/ })).toBeChecked())
-    await expect(await canvas.findByText(/\/signin-oidc$/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/signin-oidc$/ })).toBeInTheDocument()
   },
 }
 

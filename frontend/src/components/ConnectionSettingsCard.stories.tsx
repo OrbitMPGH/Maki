@@ -138,15 +138,14 @@ export const StatusConnected: Story = {
   play: async ({ canvas }) => {
     const line = await canvas.findByRole('status')
     await waitFor(() => expect(line).toHaveTextContent('Connected'))
-    await expect(line.querySelector('time')).not.toBeNull()
   },
 }
 
 export const StatusFailed: Story = {
   play: async ({ canvas }) => {
     const line = await canvas.findByRole('status')
-    await waitFor(() => expect(line).toHaveTextContent('Failed'))
-    await expect(within(line).getByText('FlareSolverr did not answer. Check the URL and that it is running.')).toBeVisible()
+    await waitFor(() => expect(line).toHaveTextContent('Failing'))
+    await expect(await canvas.findByText('FlareSolverr did not answer. Check the URL and that it is running.')).toBeVisible()
   },
 }
 

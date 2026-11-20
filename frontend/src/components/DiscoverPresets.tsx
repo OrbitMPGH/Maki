@@ -198,7 +198,7 @@ function SavePresetModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Save filters`} size={MODAL_SIZE.narrow}>
+    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={t`Save filters`} />} size={MODAL_SIZE.narrow}>
       <Stack gap="sm">
         <TextInput
           label={t`Name`}
@@ -224,27 +224,6 @@ function SavePresetModal({
         </ModalFooter>
       </Stack>
     </Modal>
-  )
-}
-
-/** Opens the never-show list. Shows how many terms it holds so the list is never invisible. */
-export function HiddenContentButton() {
-  const { data } = useHiddenContent()
-  const [open, setOpen] = useState(false)
-  const count = data?.terms?.length ?? 0
-  return (
-    <>
-      <Button
-        size="xs"
-        variant="subtle"
-        color="var(--neutral)"
-        leftSection={<IconEyeOff size={16} />}
-        onClick={() => setOpen(true)}
-      >
-        {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}
-      </Button>
-      {open && <HiddenContentModal onClose={() => setOpen(false)} />}
-    </>
   )
 }
 

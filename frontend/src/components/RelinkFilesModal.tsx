@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, Checkbox, Group, Loader, Modal, Radio, ScrollArea, Stack, Text, Tooltip } from '@mantine/core'
 import { IconTrash } from '../lib/icons'
-import { ModalFooter, ModalNote } from './ui/ModalShell'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -266,7 +266,7 @@ export function RelinkFilesModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Relink files`} size={MODAL_SIZE.wide}>
+    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={t`Relink files`} />} size={MODAL_SIZE.wide}>
       <Stack gap="md">
         {isLoading ? (
           <Group py="md" gap="xs">

@@ -54,7 +54,7 @@ type LightBadgeProps = Omit<HTMLAttributes<HTMLDivElement>, 'color'> & {
 }
 
 /** `<Badge size="sm">` with the theme's Badge defaults (radius sm, weight 600). */
-export function LightBadge({ color, variant = 'light', c, leftSection, rightSection, className, children, ...rest }: LightBadgeProps) {
+export function LightBadge({ color, variant = 'light', c, leftSection, rightSection, className, style: callerStyle, children, ...rest }: LightBadgeProps) {
   const colors = variantColors(useMantineTheme(), color, variant)
   const style: Vars = {
     '--badge-height': 'var(--badge-height-sm)',
@@ -66,6 +66,7 @@ export function LightBadge({ color, variant = 'light', c, leftSection, rightSect
     '--badge-bd': colors.border,
     fontWeight: 600,
     color: c,
+    ...callerStyle,
   }
   return (
       <div

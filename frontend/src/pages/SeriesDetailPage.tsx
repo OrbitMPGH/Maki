@@ -3199,7 +3199,7 @@ function SeriesDetailBody() {
         <Modal
             opened={nextCountOpen}
             onClose={() => setNextCountOpen(false)}
-            title={t`Download next chapters`}
+            title={<ModalHeading title={t`Download next chapters`} />}
         >
           <Stack
               component="form"
@@ -4113,7 +4113,7 @@ function SeriesDetailBody() {
         <Modal
             opened={requestModalOpen}
             onClose={() => setRequestModalOpen(false)}
-            title={t`Request chapters of ${seriesTitle}`}
+            title={<ModalHeading title={t`Request chapters of ${seriesTitle}`} />}
         >
           <RequestForm
               chapterStart={requestStart}
@@ -4124,6 +4124,7 @@ function SeriesDetailBody() {
               onNote={setRequestNote}
               pending={createRequest.isPending}
               label={t`Send request`}
+              onCancel={() => setRequestModalOpen(false)}
               onSubmit={() =>
                   createRequest.mutate(
                       {

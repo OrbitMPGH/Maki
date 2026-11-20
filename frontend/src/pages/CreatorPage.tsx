@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Button,
   Group,
-  Select,
   Text,
 } from '@mantine/core'
 import { IconArrowLeft, IconBell, IconBellCheck } from '../lib/icons'
@@ -31,6 +30,7 @@ import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import type { ShortlistSource } from '../api/shortlist'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
 import { PresetMenu } from '../components/DiscoverPresets'
+import { SortControl } from '../components/ListControls'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -290,15 +290,7 @@ export default function CreatorPage() {
         }
       />
       <Group gap="xs" mb="md" justify="flex-end">
-        <Select
-          size="sm"
-          w={150}
-          value={sort}
-          onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-          data={sortOptions}
-          allowDeselect={false}
-          aria-label={t`Sort`}
-        />
+        <SortControl value={sort} options={sortOptions} onChange={setSort} />
         <ViewPrefsControls prefs={prefs} />
       </Group>
 
