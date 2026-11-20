@@ -1376,6 +1376,27 @@ EASE trained on COMPLETED rows only, and nothing had tried another status set or
   For held-out readers in general CURRENT at 0.5 does not narrow pages: `kept`, `lost` and `drift` hold or improve on every split. It does take 1 to 2 points of webtoons off pages that already carry more webtoons than the shelf. The owner's page is the minority case: among readers with webtoons as a second taste, the page holds under a third of the shelf's webtoon share for 13 to 15% on COMPLETED shelves and 3 to 5% on CURRENT ones, with either table. On the owner metric, shipped `kept` 0.81, cc50 0.71, `lost` 0.22 for both.
 - **Not done:** a page-share table rebuilt from pages at the new table (v8 requires one whenever the ranking changes), publishing the all-reader table, and the builder or publish script change that makes `COMPLETED,CURRENT=0.5` the default.
 
+## v9: why a second taste falls off the page, and a calibrated re-rank (offline)
+
+Started from the owner's page: 23% Korean webtoons on the shelf (half of them romance webtoons), 3 of 40 on the page, no romance webtoon in the top 120. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout (`ablate.sh`, `owner-ablate.ps1`, `pool-webtoons.py`, `calibrate.py`).
+
+- **No v8 piece causes it for held-out readers.** Fame cap, page-share penalty and EASE off one at a time and all together (dev, n = 500): the 17 COMPLETED-shelf readers whose page holds under a third of their webtoon share stay at 3.2 to 3.7% webtoons on the page against 20% on the shelf and 18% in their next reads. On CURRENT shelves the penalty is the one piece that narrows: off, `kept` +0.024 [+0.020, +0.028], `lost` -0.025.
+- **On the owner's page the penalty is what holds action webtoons back:** off, webtoons in the top 40 go 3 to 7 and Action titles 10 to 15. The fame cap is inert there. Romance webtoons reach the top 120 under no setting.
+- **The webtoons are in the pool and lose on score.** For those 17 readers webtoons are 19% of the scored pool, 12% of its top 200, 4% of its top 40. Against the top 40, the webtoons ranked 41 to 300 lose on the channels that score a candidate against the whole shelf at once: taste vector -0.44 (weighted), same author -0.39, tags -0.30, EASE -0.23, reco graph -0.13, and gain on per-seed text similarity (+0.16). A candidate that fits a fifth of the shelf gets about a fifth of an aggregate signal.
+- **A calibrated re-rank fixes it offline at no measurable cost.** Greedy top 40 from the pool's top 300, maximising (1 - lam) x mean normalised score - lam x KL(shelf facet mix || page facet mix), facets = type (manga, manhwa, manhua) and 22 genres (Steck 2018). 250 readers, dev, held-out hits in the top 40 paired against plain top 40:
+
+  | shelves | lam | hits@40 | kept | lost | webtoon page minus shelf (webtoon readers) |
+  |---|---|---|---|---|---|
+  | COMPLETED | 0 | 4.884 | 0.814 | 0.099 | +3.4 points |
+  | COMPLETED | 0.2 | +0.056 [-0.036, +0.156] | 0.862 | 0.037 | +2.1 |
+  | COMPLETED | 0.5 | +0.044 [-0.072, +0.164] | 0.913 | 0.007 | +1.2 |
+  | CURRENT | 0 | 3.384 | 0.777 | 0.115 | +22.2 |
+  | CURRENT | 0.2 | +0.032 [-0.052, +0.124] | 0.838 | 0.046 | +12.1 |
+  | CURRENT | 0.5 | -0.080 [-0.208, +0.056] | 0.897 | 0.006 | +5.0 |
+
+  It pulls both ways: it restores an under-served second taste and also trims the webtoon flood on CURRENT shelves, which is the job the page-share penalty was partly doing.
+- **Not measured:** the re-rank inside the engine (after `SelectWinners`' franchise collapse and diversity, which this offline version skips), `passed` and the household floor, the judged panels, the owner's page, and whether genre tags from the dump are clean enough to calibrate on (the owner's shelf reads 16% "Boys Love").
+
 ## v9: co-read per-user cap, list dates and index eligibility, measured
 
 - **The co-read cap is inert at 400 and 800** (`fetch-coread-graph.cs build --max-items`, fold-limited, graded with the new `eval-reco-labels.cs --coread <path>`). 400 keeps 2.31M pairs against 1.79M and 800 2.69M; on both shelf kinds wantN, passed and nDCG@40 move by under 0.0015 with every interval across zero. The 39% of finished rows the cap drops (v7 audit) cost nothing on these gates, which fits co-read off moving wantN by +0.0002 in v8. The uncapped build was not run.
