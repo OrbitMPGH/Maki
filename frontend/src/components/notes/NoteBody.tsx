@@ -59,5 +59,5 @@ export default function NoteBody({ text }: { text: string }) {
     last = start + match[0].length
   }
   if (last < text.length) nodes.push(...linkify(text.slice(last), `t${last}`))
-  return <div className="note-body">{nodes}</div>
+  return <div className="note-content">{nodes}</div>
 }

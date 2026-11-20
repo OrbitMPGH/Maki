@@ -5,7 +5,7 @@ import { randomUUID } from '../../lib/uuid'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
+  Button, Group, Menu, Modal, Stack, Tabs, Text,
   
 } from '@mantine/core'
 import {
@@ -29,7 +29,10 @@ import { formatRecentDate } from '../../format'
 import { useRatingFormat } from '../../api/ratings'
 import { useLabel } from '../../i18n-context'
 import { MODAL_SIZE } from '../../components/ui/modalSizes'
+import { ModalHeading } from '../../components/ui/ModalShell'
 import { Callout } from '../../components/ui/Callout'
+import { TagChip, TagChips } from '../../components/ui/TagChip'
+import { SortControl } from '../../components/ListControls'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
 const EXPOSURE_LABELS: Record<string, MessageDescriptor> = {
@@ -212,11 +215,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     <Modal
       opened={opened} onClose={onClose} size={MODAL_SIZE.wide} radius="lg"
       closeButtonProps={{ 'aria-label': t`Close` }}
-      title={
-        <div>
-          <Text fw={600}><Trans>Manage signals</Trans></Text>
-        </div>
-      }
+      title={<ModalHeading title={<Trans>Manage signals</Trans>} />}
     >
       <Tabs
         value={tab}
@@ -233,18 +232,18 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
         <Tabs.Panel value="titles">
           <Stack gap="sm">
-            <Group gap="sm" align="center" wrap="wrap">
+            <Group gap="sm" align="center" justify="space-between" wrap="wrap">
               <SearchInput
                 value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
                 placeholder={t`Search titles`}
                 w={240} aria-label={t`Search titles`}
               />
-              <Select
-                value={sort} onChange={(value) => setSort(value === 'title' ? 'title' : 'recent')}
-                aria-label={t`Sort`} w={190} allowDeselect={false}
-                data={[
-                  { value: 'recent', label: t`Recently changed` },
-                  { value: 'title', label: t`Title` },
+              <SortControl
+                value={sort}
+                onChange={setSort}
+                options={[
+                  { value: 'recent', label: t`Recently changed`, direction: 'desc' },
+                  { value: 'title', label: t`Title`, direction: 'asc' },
                 ]}
               />
             </Group>
@@ -400,29 +399,25 @@ function AnimeSignalsPanel() {
 
 type ClearAction = 'clear-suppression' | 'clear-exposure' | 'clear-sentiment'
 
-/** One row of underlined segments with their counts, scrolling sideways rather than wrapping. */
+/** One row of filter chips with their counts. */
 function SegmentFilters({ value, onChange, items }: {
   value: string
   onChange: (value: string) => void
   items: { value: string; label: string; count: number }[]
 }) {
   return (
-    <Chip.Group multiple={false} value={value} onChange={(next) => onChange(next as string)}>
-      <div className="signals-filters">
-        {items.map((item) => (
-          <Chip
-            key={item.value}
-            value={item.value}
-            size="sm"
-            icon={null}
-            classNames={{ root: 'signals-filter', label: 'signals-filter-label', iconWrapper: 'signals-filter-icon' }}
-          >
-            {item.label}
-            <span className="signals-filter-count tnum">{item.count}</span>
-          </Chip>
-        ))}
-      </div>
-    </Chip.Group>
+    <TagChips>
+      {items.map((item) => (
+        <TagChip
+          key={item.value}
+          active={value === item.value}
+          count={item.count}
+          onClick={() => onChange(item.value)}
+        >
+          {item.label}
+        </TagChip>
+      ))}
+    </TagChips>
   )
 }
 

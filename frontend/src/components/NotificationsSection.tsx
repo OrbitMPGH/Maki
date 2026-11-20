@@ -13,7 +13,6 @@ import {
   Switch,
   Text,
   TextInput,
-  Tooltip,
 } from '@mantine/core'
 import {
   IconBell,
@@ -51,10 +50,10 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
-import { SettingsRow, SettingsRows, SettingsRowsBlock } from './settings/SettingsRow'
+import { SettingsRow, SettingsRows, SettingsRowsBlock, type RowStatus } from './settings/SettingsRow'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
-import { ModalFooter } from './ui/ModalShell'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
@@ -232,48 +231,32 @@ function useDeliveryErrorText() {
   }
 }
 
-/** Failing after any miss, healthy after a delivery, and quiet until the connection has sent something. */
-function DeliveryChip({ n }: { n: NotificationDto }) {
+/**
+ * Where a connection stands, in the words every Settings connection uses: failing after any miss,
+ * connected after a delivery, not tested until it has sent something, off when switched off.
+ */
+function useDeliveryStatus() {
+  const { t } = useLingui()
+  return (n: NotificationDto): RowStatus => {
+    if (!n.enabled) return { tone: 'neutral', label: t`Off` }
+    if (n.consecutiveFailures > 0) return { tone: 'danger', label: t`Failing` }
+    if (!n.lastSuccessAt) return { tone: 'neutral', label: t`Not tested` }
+    return { tone: 'ok', label: t`Connected` }
+  }
+}
+
+/** Why a failing connection fails: the misses, the last error and when it last got through. */
+function DeliveryProblem({ n }: { n: NotificationDto }) {
   const { t } = useLingui()
   const errorText = useDeliveryErrorText()
-  const lastSuccess = n.lastSuccessAt ? formatDateTime(n.lastSuccessAt) : null
-
   const misses = n.consecutiveFailures
-  if (misses > 0) {
-    const label = plural(misses, { one: 'Failing: # miss in a row', other: 'Failing: # misses in a row' })
-    return (
-      <Tooltip
-        multiline
-        maw={280}
-        label={
-          <>
-            {errorText(n.lastError)}
-            {' '}
-            {lastSuccess ? t`Last delivered ${lastSuccess}.` : t`Never delivered.`}
-          </>
-        }
-      >
-        <Badge size="sm" variant="light" color="var(--danger)" tabIndex={0}>
-          {label}
-        </Badge>
-      </Tooltip>
-    )
-  }
-
-  if (!lastSuccess) {
-    return (
-      <Badge size="sm" variant="light" color="var(--neutral)">
-        <Trans>Not used yet</Trans>
-      </Badge>
-    )
-  }
-
+  if (!n.enabled || misses === 0) return null
+  const lastSuccess = n.lastSuccessAt ? formatDateTime(n.lastSuccessAt) : null
   return (
-    <Tooltip label={t`Last delivered ${lastSuccess}.`}>
-      <Badge size="sm" variant="light" color="var(--ok)" tabIndex={0}>
-        <Trans>Healthy</Trans>
-      </Badge>
-    </Tooltip>
+    <span className="delivery-problem">
+      {plural(misses, { one: '# miss in a row.', other: '# misses in a row.' })} {errorText(n.lastError)}.{' '}
+      {lastSuccess ? t`Last delivered ${lastSuccess}.` : t`Never delivered.`}
+    </span>
   )
 }
 
@@ -399,6 +382,7 @@ function TypeBadge({ type }: { type: NotificationType }) {
 
 export function NotificationsSection() {
   const { t } = useLingui()
+  const deliveryStatus = useDeliveryStatus()
   const renderLabel = useLabel()
   const { singleUser } = useAuth()
   const { data: providers } = useNotificationProviders()
@@ -498,11 +482,11 @@ export function NotificationsSection() {
               key={n.id}
               title={n.name}
               chips={<TypeBadge type={n.type} />}
-              status={n.enabled ? { tone: 'ok', label: t`Enabled` } : { tone: 'neutral', label: t`Disabled` }}
+              status={deliveryStatus(n)}
               summary={
                 <Group component="span" gap={6} wrap="wrap">
                   <TagScope tagIds={n.tagIds} tags={tags} />
-                  {n.enabled && <DeliveryChip n={n} />}
+                  <DeliveryProblem n={n} />
                 </Group>
               }
               aside={
@@ -550,7 +534,7 @@ export function NotificationsSection() {
       <Modal
         opened={editing !== null}
         onClose={close}
-        title={editing?.id === null ? t`Add connection` : t`Edit connection`}
+        title={<ModalHeading title={editing?.id === null ? t`Add connection` : t`Edit connection`} />}
       >
         {form && (
           <Stack>

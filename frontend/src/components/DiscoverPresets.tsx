@@ -198,7 +198,7 @@ function SavePresetModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Save filters`} size={MODAL_SIZE.narrow}>
+    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={t`Save filters`} />} size={MODAL_SIZE.narrow}>
       <Stack gap="sm">
         <TextInput
           label={t`Name`}

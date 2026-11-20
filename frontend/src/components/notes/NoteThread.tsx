@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Badge, Button, Group, Stack, Text } from '@mantine/core'
 import { IconLock, IconUsers } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { LightBadge } from '../series/lightMantine'
 import { errorText } from '../../api/errorText'
 import { notePage, type NoteDto, type NotePatch } from '../../api/notes'
 import { formatDateTime } from '../../format'
@@ -116,19 +117,17 @@ export default function NoteThread({
             {author}
           </Text>
           {isRoot && n.isMine && !singleUser && n.deleted === null && (
-            <Badge
-              size="xs"
-              variant="light"
+            <LightBadge
               color="var(--neutral)"
-              leftSection={n.visibility === 'shared' ? <IconUsers size={10} /> : <IconLock size={10} />}
+              leftSection={n.visibility === 'shared' ? <IconUsers size={12} /> : <IconLock size={12} />}
             >
               {n.visibility === 'shared' ? <Trans>Shared</Trans> : <Trans>Private</Trans>}
-            </Badge>
+            </LightBadge>
           )}
           {page !== null &&
             (onGoToPage ? (
               <Badge
-                size="xs"
+                size="sm"
                 variant="outline"
                 color="var(--neutral)"
                 component="button"
@@ -140,9 +139,9 @@ export default function NoteThread({
                 <Trans>Page {pageNumber}</Trans>
               </Badge>
             ) : (
-              <Badge size="xs" variant="outline" color="var(--neutral)">
+              <LightBadge color="var(--neutral)">
                 <Trans>Page {pageNumber}</Trans>
-              </Badge>
+              </LightBadge>
             ))}
           <Text size="xs" c="var(--ink-3)" component="time" dateTime={n.createdAt}>
             {when}

@@ -161,6 +161,8 @@ export const UnsavedChangesGuard: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=downloads'] } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
+    const row = await canvas.findByRole('button', { name: /^Chapters at once.*2/ })
+    await userEvent.click(row)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)

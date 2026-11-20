@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Group, SegmentedControl, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Button, Group, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Link } from 'react-router-dom'
@@ -10,8 +10,8 @@ import {
   useSaveDropFolderSettings,
   type DropFolderSettings,
 } from '../../api/dropFolder'
-import { SettingsDrill } from '../../components/settings/SettingsDrill'
-import { DrillBack, DrillField, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
+import { SettingsDrill, SettingsDrillPage } from '../../components/settings/SettingsDrill'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { formatDateTime } from '../../format'
@@ -19,14 +19,14 @@ import { IconClock, IconCopy, IconFolder, IconFolderSearch, IconRefresh } from '
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 
-type Page = 'main' | 'folder' | 'interval'
+type Page = 'main' | 'folder' | 'interval' | 'files'
 
-const PARENTS: Record<Page, Page> = { main: 'main', folder: 'main', interval: 'main' }
+const PARENTS: Record<Page, Page> = { main: 'main', folder: 'main', interval: 'main', files: 'main' }
 
 /**
  * A folder Maki polls for comics. Whatever names exactly one library series is imported into it;
  * the rest waits in the Manual import tab. Laid out as a drill panel: the first page shows every
- * setting's current value, the folder and the interval open a page of their own.
+ * setting's current value, and each opens a page of its own.
  */
 export function DropFolderSection() {
   const { t } = useLingui()
@@ -44,6 +44,18 @@ export function DropFolderSection() {
   const patch = (p: Partial<DropFolderSettings>) => setDraft({ ...current, ...p })
   const minutes = current.intervalMinutes
   const pendingCount = status?.pending.length ?? 0
+  const placements = [
+    {
+      value: 'copy',
+      label: t`Copy`,
+      hint: t`Matched comics are hardlinked or copied, as the download settings say. The originals stay in the drop folder and are not imported again.`,
+    },
+    {
+      value: 'move',
+      label: t`Move`,
+      hint: t`Matched comics move into the series folder. Archives that have to be converted are built there and their originals stay.`,
+    },
+  ]
 
   return (
     <SettingsSection
@@ -74,99 +86,74 @@ export function DropFolderSection() {
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
         />
         <SettingsDrill page={pages.page} depth={pages.depth}>
-            {pages.page === 'main' && (
-              <>
-                <DrillRow
-                  ref={pages.rowRef('folder')}
-                  icon={IconFolder}
-                  label={<Trans>Folder</Trans>}
-                  value={current.path || t`Not set`}
-                  onClick={() => pages.open('folder')}
+          {pages.page === 'main' && (
+            <>
+              <DrillRow
+                ref={pages.rowRef('folder')}
+                icon={IconFolder}
+                label={<Trans>Folder</Trans>}
+                value={current.path || t`Not set`}
+                onClick={() => pages.open('folder')}
+              />
+              <DrillRow
+                ref={pages.rowRef('interval')}
+                icon={IconClock}
+                label={<Trans>Check every</Trans>}
+                value={<Plural value={minutes} one="# minute" other="# minutes" />}
+                onClick={() => pages.open('interval')}
+              />
+              <DrillRow
+                ref={pages.rowRef('files')}
+                icon={IconCopy}
+                label={<Trans>Files</Trans>}
+                value={placements.find((p) => p.value === current.placement)?.label}
+                onClick={() => pages.open('files')}
+              />
+            </>
+          )}
+          {pages.page === 'folder' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Folder</Trans>} onBack={pages.back} />
+              <Group gap="sm" wrap="nowrap" align="flex-end">
+                <TextInput
+                  style={{ flex: 1 }}
+                  label={t`Folder`}
+                  description={t`A folder on the server. It must not hold a root folder.`}
+                  value={current.path ?? ''}
+                  onChange={(e) => patch({ path: e.currentTarget.value })}
                 />
-                <DrillRow
-                  ref={pages.rowRef('interval')}
-                  icon={IconClock}
-                  label={<Trans>Check every</Trans>}
-                  value={<Plural value={minutes} one="# minute" other="# minutes" />}
-                  onClick={() => pages.open('interval')}
+                <Button variant="default" leftSection={<IconFolderSearch size={16} />} onClick={() => setBrowsing(true)}>
+                  <Trans>Browse</Trans>
+                </Button>
+              </Group>
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'interval' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Check every</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Check every (minutes)`}
+                description={t`A file is only touched once its size stayed the same across two checks.`}
+                min={1}
+                max={1440}
+                value={minutes}
+                onChange={(v) => patch({ intervalMinutes: v })}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'files' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Files</Trans>} onBack={pages.back} />
+              <div className="settings-drill-choices">
+                <DrillChoices
+                  label={t`Files`}
+                  value={current.placement}
+                  options={placements}
+                  onPick={(v) => patch({ placement: v === 'move' ? 'move' : 'copy' })}
                 />
-                <DrillField
-                  icon={IconCopy}
-                  title={<Trans>Files</Trans>}
-                  help={
-                    current.placement === 'move' ? (
-                      <Trans>
-                        Matched comics move into the series folder. Archives that have to be converted are built there
-                        and their originals stay.
-                      </Trans>
-                    ) : (
-                      <Trans>
-                        Matched comics are hardlinked or copied, as the download settings say. The originals stay in the
-                        drop folder and are not imported again.
-                      </Trans>
-                    )
-                  }
-                >
-                  <SegmentedControl
-                    size="xs"
-                    fullWidth
-                    value={current.placement}
-                    onChange={(v) => patch({ placement: v === 'move' ? 'move' : 'copy' })}
-                    data={[
-                      { value: 'copy', label: t`Copy` },
-                      { value: 'move', label: t`Move` },
-                    ]}
-                  />
-                </DrillField>
-              </>
-            )}
-            {pages.page === 'folder' && (
-              <>
-                <DrillBack ref={pages.backRef} title={<Trans>Folder</Trans>} onBack={pages.back} />
-                <DrillField
-                  icon={IconFolder}
-                  title={<Trans>Folder</Trans>}
-                  help={<Trans>A folder on the server. It must not hold a root folder.</Trans>}
-                >
-                  <Group gap="xs" wrap="nowrap">
-                    <TextInput
-                      size="xs"
-                      style={{ flex: 1 }}
-                      aria-label={t`Folder`}
-                      value={current.path ?? ''}
-                      onChange={(e) => patch({ path: e.currentTarget.value })}
-                    />
-                    <Button
-                      size="xs"
-                      variant="default"
-                      leftSection={<IconFolderSearch size={16} />}
-                      onClick={() => setBrowsing(true)}
-                    >
-                      <Trans>Browse</Trans>
-                    </Button>
-                  </Group>
-                </DrillField>
-              </>
-            )}
-            {pages.page === 'interval' && (
-              <>
-                <DrillBack ref={pages.backRef} title={<Trans>Check every</Trans>} onBack={pages.back} />
-                <DrillField
-                  icon={IconClock}
-                  title={<Trans>Check every (minutes)</Trans>}
-                  help={<Trans>A file is only touched once its size stayed the same across two checks.</Trans>}
-                >
-                  <SettingsNumberInput
-                    size="xs"
-                    aria-label={t`Check every (minutes)`}
-                    min={1}
-                    max={1440}
-                    value={minutes}
-                    onChange={(v) => patch({ intervalMinutes: v })}
-                  />
-                </DrillField>
-              </>
-            )}
+              </div>
+            </SettingsDrillPage>
+          )}
         </SettingsDrill>
         {saved?.enabled && (
           <Group justify="space-between" wrap="wrap" gap="sm">

@@ -171,6 +171,11 @@ msgstr "{0, plural, one {# taşınamadı (kilitli veya izin reddedildi)} other {
 msgid "{0, plural, one {# creator} other {# creators}}"
 msgstr "{0, plural, one {# yaratıcı} other {# yaratıcı}}"
 
+#. placeholder {0}: Number(days)
+#: src/pages/settings/DownloadCards.tsx
+msgid "{0, plural, one {# day} other {# days}}"
+msgstr ""
+
 #. placeholder {0}: alertDelistedIds.length
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -336,12 +341,6 @@ msgstr "{0, plural, one {# dosya, {size}} other {# dosya, {size}}}"
 #, fuzzy
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# dosya} other {# dosya}}"
-
-#. placeholder {0}: counts[group]
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "{0, plural, one {# filter active} other {# filters active}}"
-msgstr "{0, plural, one {# filtre etkin} other {# filtre etkin}}"
 
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
@@ -588,6 +587,11 @@ msgstr "{0, plural, one {# dosyayı kalıcı olarak siler.} other {# dosyayı ka
 #, fuzzy
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, one {# gömülü seri indirildi} other {# gömülü seri indirildi}}"
+
+#. placeholder {0}: Number(smartDownloadChapters)
+#: src/pages/settings/DownloadCards.tsx
+msgid "{0, plural, one {Fetch # chapter at {unreadLeft} unread} other {Fetch # chapters at {unreadLeft} unread}}"
+msgstr ""
 
 #. placeholder {0}: draft.lockoutMinutes
 #: src/components/settings/SecuritySection.tsx
@@ -841,6 +845,11 @@ msgstr "{0, plural, one {# bölümü barındıran cilt dosyası} other {# bölü
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {# bölüm isteniyor} other {# bölüm isteniyor}}"
 
+#. placeholder {0}: value.backupDays
+#: src/pages/settings/SystemCards.tsx
+msgid "{0, plural, one {Warn after # day} other {Warn after # days}}"
+msgstr ""
+
 #. placeholder {0}: -diff
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -943,6 +952,10 @@ msgstr "{active, plural, one {# seri} other {# seri}}"
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, one {Etkinlik, # indirme sürüyor} other {Etkinlik, # indirme sürüyor}}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{activeFilterCount, plural, one {Filters, # active} other {Filters, # active}}"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "{addedWithin, plural, one {# day} other {# days}}"
@@ -1026,6 +1039,10 @@ msgstr "{ariaLabel}: {shown}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "{autoGrabText} MB"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "{autoQueue, plural, one {Up to # chapter} other {Up to # chapters}}"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -1986,6 +2003,14 @@ msgstr "{hiddenCount, plural, one {Bu bölümde # sayfa gizli} other {Bu bölüm
 msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
 msgstr "Son {checked} bölümden {hits} tanesi, onlar için çizilen aralığın içine düştü."
 
+#: src/pages/settings/SystemCards.tsx
+msgid "{hour}, {zone}"
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{hour}, server time"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -2334,14 +2359,8 @@ msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {su
 msgstr "{matched} / {total} eşleşti, {positive} olumlu, {avoided} kaçınılan, {superseded} zaten sizde"
 
 #: src/components/QueueActions.tsx
-#, fuzzy
-msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
-msgstr "{matchingCount, plural, one {# başarısız indirme, otomatik yeniden deneme sınırı yok sayılarak yeniden kuyruğa alınacak.} other {# başarısız indirme, otomatik yeniden deneme sınırı yok sayılarak yeniden kuyruğa alınacak.}}"
-
-#: src/components/QueueActions.tsx
-#, fuzzy
-msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
-msgstr "{matchingCount, plural, one {# başarısız indirme kuyruktan kaldırılacak.} other {# başarısız indirme kuyruktan kaldırılacak.}}"
+msgid "{matchingCount, plural, one {# failed download matches} other {# failed downloads match}}"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "{MAX_KEYS_PER_ACTION, plural, one {# key at most} other {# keys at most}}"
@@ -2384,9 +2403,8 @@ msgid "{minutesPerChapter} min / ch."
 msgstr "{minutesPerChapter} dk / bl."
 
 #: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
-msgstr "{misses, plural, one {Hata: üst üste # başarısız deneme} other {Hata: üst üste # başarısız deneme}}"
+msgid "{misses, plural, one {# miss in a row.} other {# misses in a row.}}"
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -2546,6 +2564,10 @@ msgstr "{name}: {ok}/{total} başarılı, ilk hata: {firstError}"
 #, fuzzy
 msgid "{name}: {reason}"
 msgstr "{name}: {reason}"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{name}: {value}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2977,6 +2999,10 @@ msgstr "{indexerCount, plural, one {# dizinleyiciden} other {# dizinleyiciden}} 
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {# gün saklanır} other {# gün saklanır}}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "{retries, plural, one {Up to # attempt} other {Up to # attempts}}"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -3425,6 +3451,10 @@ msgstr "{tierLabel}, {width}px"
 #, fuzzy
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
 msgstr "{timedChapters, plural, one {Hız, süresi ölçülen {formattedTimed} bölümden geliyor; süreyi yalnızca yerleşik okuyucu kaydeder.} other {Hız, süresi ölçülen {formattedTimed} bölümden geliyor; süreyi yalnızca yerleşik okuyucu kaydeder.}}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "{timeout, plural, one {# minute} other {# minutes}}"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -4037,11 +4067,6 @@ msgstr "0, bu makine için bir sayı seçer."
 #, fuzzy
 msgid "0 stops at the cutoff."
 msgstr "0, eşik değerinde durur."
-
-#: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "0 to 23."
-msgstr "0 ile 23 arası."
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4822,6 +4847,10 @@ msgid "Added manually"
 msgstr "Elle eklendi"
 
 #: src/components/library/LibraryFilterPanel.tsx
+msgid "Added within"
+msgstr ""
+
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Added within (days)"
 msgstr "Eklenme süresi (gün)"
@@ -5281,6 +5310,10 @@ msgstr "Her zaman"
 msgid "Always enhance on or off"
 msgstr ""
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Always queue"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Amber"
@@ -5430,14 +5463,12 @@ msgstr "Başka bir yükseltme taraması zaten çalışıyordu, bu yüzden bu ça
 msgid "Another user"
 msgstr "Başka bir kullanıcı"
 
-#: src/components/CatalogueFilters.tsx
 #: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "any"
 msgstr "herhangi"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
@@ -5455,6 +5486,14 @@ msgstr "Herhangi bir biçim"
 #, fuzzy
 msgid "Any kind"
 msgstr "Herhangi bir tür"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Any language"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Any provider"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -5520,11 +5559,6 @@ msgstr "Kaydettiğiniz her şey korunur ve katalog kurulduğunda burada görün�
 msgid "API key"
 msgstr "API anahtarı"
 
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "API key copied"
-msgstr "API anahtarı kopyalandı"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -5574,7 +5608,6 @@ msgstr "Okuduğunuz seriler ve bekletme kuralının duraklattığı seriler içi
 msgid "Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs."
 msgstr "Kitaplık taramasına ve yeni indirmelere uygulanır. Daha yüksek değer daha hızlı biter ama çalışırken sunucunun işlemcisini daha çok kullanır."
 
-#: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -5767,6 +5800,7 @@ msgstr "{label} olarak"
 msgid "As owned"
 msgstr "Sahip olunduğu gibi"
 
+#: src/components/ListControls.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Ascending"
@@ -6145,6 +6179,10 @@ msgstr "Yedek ve önbellek araçları"
 #, fuzzy
 msgid "Backup created"
 msgstr "Yedek oluşturuldu"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Backup freshness"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -6664,6 +6702,7 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/RequestForm.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
@@ -6688,7 +6727,6 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
-#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Cancel"
 msgstr "İptal"
@@ -7272,6 +7310,10 @@ msgstr "Zaten inmekte olan bölümler tamamlanır. İndirme istemcisine verilmi�
 msgid "Chapters already listed keep their own setting."
 msgstr "Zaten listelenmiş bölümler kendi ayarlarını korur."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Chapters at once"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "Chapters below are read off the file names until sources are found."
@@ -7381,16 +7423,6 @@ msgstr "İndirilmiş ya da indirilmemiş, İsteniyor açık olan bölümler."
 #, fuzzy
 msgid "Chapters you want that aren't on disk yet."
 msgstr "İstediğiniz ama henüz diskte olmayan bölümler."
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Chapters, year, minimum rating"
-msgstr "Bölümler, yıl, en düşük puan"
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Chapters: {chaptersMin}–{chaptersMax}"
-msgstr "Bölümler: {chaptersMin}–{chaptersMax}"
 
 #: src/api/ratings.ts
 msgid "Characters"
@@ -7556,6 +7588,10 @@ msgstr "Kök klasör seçin"
 msgid "Choose a root folder first"
 msgstr "Önce bir kök klasör seçin"
 
+#: src/components/settings/RatingsSection.tsx
+msgid "Choose categories"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Choose events"
 msgstr ""
@@ -7593,10 +7629,12 @@ msgstr "Okunmuş dosyaları temizle"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/ListControls.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear"
 msgstr "Temizle"
@@ -7632,7 +7670,6 @@ msgid "Clear default"
 msgstr "Varsayılanı temizle"
 
 #: src/pages/ActivityPage.tsx
-#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear filters"
 msgstr "Filtreleri temizle"
@@ -7690,11 +7727,6 @@ msgstr "Beğenmedim işaretini temizle"
 #, fuzzy
 msgid "Clear the thumbs up"
 msgstr "Beğendim işaretini temizle"
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Clear your saved default"
-msgstr "Kaydedilmiş varsayılanınızı temizleyin"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8138,6 +8170,7 @@ msgid "Connect your trackers"
 msgstr "İzleme servislerinizi bağlayın"
 
 #: src/components/ConnectionSettingsCardStatus.tsx
+#: src/components/NotificationsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
@@ -8182,7 +8215,6 @@ msgstr "İçerik"
 
 #: src/api/autoTagRules.ts
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -8336,15 +8368,12 @@ msgid "Converts scanlator chapters at Lossless, so no pixel changes."
 msgstr "Scanlator bölümlerini Kayıpsız kalitede dönüştürür, bu yüzden hiçbir piksel değişmez."
 
 #: src/components/settings/AccountSection.tsx
-#: src/components/settings/SecuritySection.tsx
 #: src/components/settings/TorrentLifecycleFields.tsx
 #: src/components/ui/MonoValue.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "Kopyalandı"
 
-#: src/components/settings/AccountSection.tsx
-#: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/DropFolderSection.tsx
 #, fuzzy
 msgid "Copy"
@@ -8355,30 +8384,10 @@ msgstr "Kopyala"
 msgid "Copy {whole}"
 msgstr "{whole} kopyala"
 
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Copy API key"
-msgstr "API anahtarını kopyala"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
 msgstr "Kodları kopyala"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Copy feed URL"
-msgstr "Besleme URL'sini kopyala"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Copy server address"
-msgstr "Sunucu adresini kopyala"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Copy sync server address"
-msgstr "Eşitleme sunucusu adresini kopyala"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -8804,14 +8813,12 @@ msgid "Create accounts on first sign-in"
 msgstr "İlk oturum açmada hesap oluştur"
 
 #: src/pages/settings/IntegrationCards.tsx
-#, fuzzy
-msgid "Create an API client at anilist.co/settings/developer with redirect URL <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
-msgstr "anilist.co/settings/developer adresinde <0>{origin}/api/v1/scrobble/oauth/anilist</0> yönlendirme URL'siyle bir API istemcisi oluşturun"
+msgid "Create an API client at anilist.co/settings/developer with redirect URL <0/>"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
-#, fuzzy
-msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>"
-msgstr "myanimelist.net/apiconfig adresinde bir API istemcisi oluşturun (Uygulama türü: web), yönlendirme URL'si <0>{origin}/api/v1/scrobble/oauth/mal</0>"
+msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0/>"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8859,11 +8866,6 @@ msgstr "Takip ettiğiniz yaratıcılar"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Tekrar okuduğun yaratıcılar"
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Creators, type, status, content rating"
-msgstr "Yaratıcılar, tür, durum, içerik derecesi"
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -9009,6 +9011,10 @@ msgstr "Eşik karşılanmadı ({cutoffUnmetFilterCount})"
 #, fuzzy
 msgid "Cutoff: {cutoffLabel}"
 msgstr "Eşik: {cutoffLabel}"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Daily scan"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -9417,6 +9423,10 @@ msgstr ""
 msgid "Deleted file"
 msgstr "Silinen dosya"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Deleted files"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -9478,6 +9488,7 @@ msgstr "Demografi"
 msgid "Density"
 msgstr "Yoğunluk"
 
+#: src/components/ListControls.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Descending"
@@ -9555,13 +9566,7 @@ msgstr "Yön"
 msgid "Disable"
 msgstr "Devre dışı bırak"
 
-#: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "disabled"
-msgstr "devre dışı"
-
 #: src/components/library/LibraryTable.tsx
-#: src/components/NotificationsSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9889,6 +9894,10 @@ msgstr "Sonraki bölümleri indir"
 msgid "Download order"
 msgstr "İndirme sırası"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Download order: {orderLabel}"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Download path not accessible from Maki"
@@ -10202,7 +10211,6 @@ msgid "Each series is searched at most once a week, even with the daily scan off
 msgstr ""
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Earliest year"
@@ -10236,7 +10244,6 @@ msgstr "Kenarlar"
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
-#: src/components/settings/RatingsSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -10605,6 +10612,7 @@ msgid "Event"
 msgstr "Olay"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Events"
 msgstr "Olaylar"
@@ -10944,7 +10952,6 @@ msgstr "<0/> olarak bağlanması bekleniyor"
 msgid "Export"
 msgstr "Dışa aktar"
 
-#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -11034,6 +11041,11 @@ msgstr "Okuma durumu güncellenemedi: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "Etiketler güncellenemedi: {detail}"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
+#: src/components/NotificationsSection.tsx
+msgid "Failing"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Fair"
@@ -11087,11 +11099,6 @@ msgstr "En hızlı"
 #, fuzzy
 msgid "Feed URL"
 msgstr "Besleme URL'si"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Feed URL copied"
-msgstr "Besleme URL'si kopyalandı"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11165,7 +11172,6 @@ msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You ca
 msgstr "{minSeeders} tohumdan az olduğu için Maki bunu kendi başına almaz. Yine de buradan alabilirsiniz."
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Fewest chapters"
 msgstr "En az bölüm"
@@ -11339,11 +11345,6 @@ msgstr "Bulguya göre filtrele"
 msgid "Filter by match status"
 msgstr "Eşleşme durumuna göre filtrele"
 
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "Filter by root folder"
-msgstr "Kök klasöre göre filtrele"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Filter by series"
@@ -11353,12 +11354,6 @@ msgstr "Seriye göre filtrele"
 #, fuzzy
 msgid "Filter by series or file"
 msgstr "Seriye veya dosyaya göre filtrele"
-
-#: src/pages/HealthPage.tsx
-#: src/pages/settings/ManageSourcesModal.tsx
-#, fuzzy
-msgid "Filter by state"
-msgstr "Duruma göre filtrele"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11383,8 +11378,8 @@ msgstr "Kataloğu filtrele"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Filters"
 msgstr "Filtreler"
@@ -11717,6 +11712,10 @@ msgstr "Bildirim ayarlarınızdaki varsayılanı takip eder."
 msgid "Follows the default profile set in Settings."
 msgstr "Ayarlar'da belirlenen varsayılan profili takip eder."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Follows the order set in Settings."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "For 1 hour"
@@ -11967,7 +11966,6 @@ msgid "Genres"
 msgstr "Türler"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -12365,7 +12363,6 @@ msgstr "Sağlık ayarları"
 msgid "health, scan, verify, reconciliation, scan hour, timezone, low disk, disk space, threshold, stale backup"
 msgstr "sağlık, tarama, doğrulama, mutabakat, tarama saati, saat dilimi, az disk, disk alanı, eşik, eski yedek"
 
-#: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Healthy"
@@ -12841,6 +12838,10 @@ msgstr "Yoksayılan klasörler"
 #, fuzzy
 msgid "Ignored on {since}"
 msgstr "{since} tarihinde yoksayıldı"
+
+#: src/components/QueueActions.tsx
+msgid "Ignores the automatic retry limit."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -14061,7 +14062,6 @@ msgid "Latest release"
 msgstr "Son sürüm"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Latest year"
@@ -14189,11 +14189,6 @@ msgstr "soldan sağa"
 #, fuzzy
 msgid "Left to right"
 msgstr "Soldan sağa"
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Length, year and rating"
-msgstr "Uzunluk, yıl ve puan"
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -14661,6 +14656,10 @@ msgstr "Kayıpsız her zaman kayıpsız WebP olarak saklanır."
 #, fuzzy
 msgid "Low confidence"
 msgstr "Düşük güven"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Low disk"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -15765,7 +15764,6 @@ msgid "Moss"
 msgstr "Yosun"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Most chapters"
 msgstr "En çok bölüm"
@@ -16181,13 +16179,13 @@ msgstr "Nötr"
 msgid "neutral, seeds at shelf weight"
 msgstr "nötr, raf ağırlığıyla başlar"
 
-#: src/components/settings/UsersSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
 msgstr "asla"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/UsersSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Never"
@@ -16832,6 +16830,10 @@ msgstr "Eşleşen dil yok"
 #, fuzzy
 msgid "No library folder yet. Series need one to download into."
 msgstr "Henüz kitaplık klasörü yok. Serilerin indirilebilmesi için bir klasör gerekir."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "No limit"
+msgstr ""
 
 #: src/components/series/CoverPicker.tsx
 #, fuzzy
@@ -17481,11 +17483,6 @@ msgstr "Henüz bağlı değil."
 msgid "Not connected: {names}."
 msgstr ""
 
-#: src/pages/settings/SuwayomiCards.tsx
-#, fuzzy
-msgid "Not connected."
-msgstr "Bağlı değil."
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Not downloaded"
@@ -17684,6 +17681,7 @@ msgstr ""
 msgid "Not set"
 msgstr "Ayarlanmadı"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -17723,6 +17721,7 @@ msgid "Not synced yet"
 msgstr "Henüz senkronize edilmedi"
 
 #: src/components/ConnectionSettingsCardStatus.tsx
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Not tested"
 msgstr "Test edilmedi"
@@ -17742,11 +17741,6 @@ msgstr "Güncellenmedi"
 msgid "Not upscaled"
 msgstr "Büyütülmedi"
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Not used yet"
-msgstr "Henüz kullanılmadı"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not verified yet. Replacing or deleting this file needs a verify first."
@@ -17763,11 +17757,6 @@ msgstr "Çalışmıyor"
 #, fuzzy
 msgid "Not yet"
 msgstr "Henüz değil"
-
-#: src/components/SeriesScrobbleSection.tsx
-#, fuzzy
-msgid "not yet synced"
-msgstr "henüz senkronize edilmedi"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -18336,6 +18325,7 @@ msgid "of reading time"
 msgstr "okuma süresinin"
 
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/labels.ts
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
@@ -18859,11 +18849,6 @@ msgstr "Kitaplığı bununla aç"
 #, fuzzy
 msgid "Open the page to check it's the right series"
 msgstr "Doğru seri olduğunu kontrol etmek için sayfayı açın"
-
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Open the search with these filters from now on"
-msgstr "Bundan sonra aramayı bu filtrelerle aç"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -19449,11 +19434,6 @@ msgstr "Rewind'ı duraklat"
 #, fuzzy
 msgid "Pause rotating picks"
 msgstr "Dönen önerileri duraklat"
-
-#: src/components/pageconversion/SaveActions.tsx
-#, fuzzy
-msgid "Pause the running pass and restart it with the new settings?"
-msgstr "Çalışan geçiş durdurulup yeni ayarlarla yeniden başlatılsın mı?"
 
 #: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
@@ -20395,7 +20375,6 @@ msgstr "{score} olarak derecelendirildi"
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
-#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Rating"
 msgstr "Derecelendirme"
@@ -21431,6 +21410,10 @@ msgstr "{name} grubunu tercih edilen gruplardan kaldır"
 msgid "Remove {removingSourceName}?"
 msgstr "{removingSourceName} kaldırılsın mı?"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Remove {seedTitle}"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "Remove {seriesTitle} from this device"
@@ -21513,6 +21496,10 @@ msgstr "Başarısız indirmeleri kaldır"
 #, fuzzy
 msgid "Remove files"
 msgstr "Dosyaları kaldır"
+
+#: src/pages/LibraryPage.tsx
+msgid "Remove filter: {filterLabel}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -22041,11 +22028,6 @@ msgstr "HTTPS zorunlu kıl"
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "Düz bir HTTP adresinden HTTPS zorunlu kılınsın mı?"
 
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Require or exclude genres and tags"
-msgstr "Türleri ve etiketleri zorunlu kıl veya hariç tut"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require single sign-on"
@@ -22079,7 +22061,6 @@ msgid "Rescanning series files"
 msgstr "Seri dosyaları yeniden taranıyor"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/ui/DrillControls.tsx
 #, fuzzy
 msgid "Reset"
@@ -22416,6 +22397,10 @@ msgstr "{time} tarihinde devam eder."
 msgid "Retried {retryCount}x"
 msgstr "{retryCount}x yeniden denendi"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Retries"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/AnimeResumeRail.tsx
@@ -22483,6 +22468,7 @@ msgstr "Etkin ön ayarın adını yeniden kullanmak onun üzerine yazar."
 msgid "Reverse proxy setup"
 msgstr "Ters vekil sunucu kurulumu"
 
+#: src/components/ListControls.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Reverse sort order"
@@ -22542,6 +22528,10 @@ msgstr "{author} tarafından inceleme"
 #, fuzzy
 msgid "Review every candidate before applying. Originals remain unchanged until approval."
 msgstr "Uygulamadan önce her adayı inceleyin. Onaya kadar orijinaller değişmeden kalır."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Review groups"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -22650,6 +22640,7 @@ msgstr ""
 #: src/components/ImportListsSection.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -22738,6 +22729,7 @@ msgstr "Kural türü"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Rules"
 msgstr "Kurallar"
@@ -22927,7 +22919,6 @@ msgid "Save as a rail…"
 msgstr "Bölüm olarak kaydet…"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Save as default"
 msgstr "Varsayılan olarak kaydet"
@@ -23681,6 +23672,7 @@ msgid "Searched for {triedList}. Try a shorter or alternative query."
 msgstr "{triedList} için arandı. Daha kısa ya da farklı bir sorgu deneyin."
 
 #: src/components/discover/PreviewChapterButton.tsx
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Searching"
 msgstr "Aranıyor"
@@ -23966,7 +23958,6 @@ msgstr "{relatedTo} devam serisi"
 msgid "sequel, prequel, spin-off, side story, related works, catalogue"
 msgstr "devam, önceki hikaye, yan hikaye, ilgili yapımlar, katalog"
 
-#: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -24168,11 +24159,6 @@ msgstr "Kaydettiğiniz Kitaplık filtresinin kendi sıralamasıyla gösterdiği 
 #, fuzzy
 msgid "Server address"
 msgstr "Sunucu adresi"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Server address copied"
-msgstr "Sunucu adresi kopyalandı"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -25071,19 +25057,12 @@ msgstr "Yazdığınız ya da katıldığınız bir konuşmaya biri yanıt verdi.
 msgid "Something went wrong, Maki will try again"
 msgstr "Bir şeyler ters gitti, Maki tekrar deneyecek"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/pages/CreatorPage.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#: src/pages/discover/ShortlistTab.tsx
-#, fuzzy
-msgid "Sort"
-msgstr "Sırala"
-
 #: src/components/series/ChapterViewMenu.tsx
 #, fuzzy
 msgid "Sort and columns"
 msgstr "Sıralama ve sütunlar"
 
+#: src/components/ListControls.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -25458,6 +25437,7 @@ msgid "Starting the estimate"
 msgstr "Tahmin başlatılıyor"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "State"
 msgstr "Durum"
@@ -25479,7 +25459,6 @@ msgid "Stats, Rewind, XP"
 msgstr "İstatistikler, Rewind, XP"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
@@ -25780,11 +25759,6 @@ msgstr "Puanları senkronize et"
 #, fuzzy
 msgid "Sync server"
 msgstr "Eşitleme sunucusu"
-
-#: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "Sync server address copied"
-msgstr "Eşitleme sunucusu adresi kopyalandı"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -27348,11 +27322,6 @@ msgstr "Bu seriler zaten eşleştiriliyor."
 msgid "Threads"
 msgstr "İş parçacığı"
 
-#: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "Thresholds"
-msgstr "Eşikler"
-
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Thriller"
@@ -27963,7 +27932,6 @@ msgstr "Bu hesap için iki adımlı doğrulama kapatıldı"
 
 #: src/api/autoTagRules.ts
 #: src/components/CatalogueFilterBar.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
@@ -29270,6 +29238,10 @@ msgstr "İsteniyor ({wantedFilterCount})"
 msgid "Wanted chapters may be downloaded again by existing automation."
 msgstr "İstenen bölümler mevcut otomasyon tarafından yeniden indirilebilir."
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Warn at {warnPercent} or {warnGiB} GiB, error at {errorPercent} or {errorGiB} GiB"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"
@@ -29536,11 +29508,6 @@ msgstr "Hangi notlar gösterilsin"
 msgid "Which series notify me"
 msgstr "Hangi seriler bana bildirim gönderir"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Which source a chapter downloads from first."
-msgstr "Bir bölüm önce hangi kaynaktan indirilsin."
-
 #: src/components/ui/seriesNotifications.ts
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -29737,11 +29704,6 @@ msgstr "Dosyalarınızdan farklı bir dilde yazılmış"
 msgid "Year"
 msgstr "Yıl"
 
-#: src/components/CatalogueFilters.tsx
-#, fuzzy
-msgid "Year: {yearMin}–{yearMax}"
-msgstr "Yıl: {yearMin}–{yearMax}"
-
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Yes"
@@ -29759,12 +29721,8 @@ msgstr "Evet, işaretlendi"
 msgid "Yesterday"
 msgstr "Dün"
 
-#: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "you"
-msgstr "siz"
-
 #: src/components/notes/useAuthorLabel.ts
+#: src/components/settings/UsersSection.tsx
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You"

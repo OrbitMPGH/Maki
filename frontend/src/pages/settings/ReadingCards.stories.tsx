@@ -126,7 +126,7 @@ export const OpdsKomgaEnabled: Story = {
   },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('switch', { name: /^Komga-compatible API/ })).toBeChecked())
-    await expect(await canvas.findByText(/\/komga$/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/komga$/ })).toBeInTheDocument()
     await expect(await canvas.findByText(/last part of your feed URL/)).toBeVisible()
   },
 }
@@ -158,7 +158,7 @@ export const OpdsFirstEnableShowsFeedUrlOnce: Story = {
     await userEvent.type(await within(dialog).findByLabelText('Your password'), 'correct horse')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Enable' }))
     await expect(await canvas.findByText(/Copy this now/)).toBeVisible()
-    await expect(await canvas.findByText(/\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0$/ })).toBeInTheDocument()
   },
 }
 
@@ -172,7 +172,7 @@ export const OpdsRegenerate: Story = {
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Regenerate' })).toBeDisabled())
     await userEvent.type(await within(dialog).findByLabelText('Your password'), 'correct horse')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Regenerate' }))
-    await expect(await canvas.findByText(/f07be2c19a44d85e7a30/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/f07be2c19a44d85e7a30$/ })).toBeInTheDocument()
   },
 }
 
@@ -195,7 +195,7 @@ export const OpdsEnableWithRecentSso: Story = {
     await expect(dialog.queryByLabelText('Your password')).toBeNull()
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Enable' })).toBeEnabled())
     await userEvent.click(dialog.getByRole('button', { name: 'Enable' }))
-    await expect(await canvas.findByText(/\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0$/ })).toBeInTheDocument()
   },
 }
 
@@ -225,8 +225,7 @@ export const OpdsLoading: Story = {
 export const KoreaderSyncReady: Story = {
   render: () => <KoreaderSyncSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/\/api\/v1\/kosync$/)).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Copy sync server address' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Copy .*\/api\/v1\/kosync$/ })).toBeInTheDocument()
     await expect(await canvas.findByText(/Set Document matching method to Binary/)).toBeVisible()
   },
 }

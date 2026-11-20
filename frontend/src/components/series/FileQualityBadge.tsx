@@ -8,6 +8,7 @@ import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
 import { HoverTooltip } from './HoverTooltip'
 import { LightBadge } from './lightMantine'
+import { StatusDot } from '../ui/StatusDot'
 
 const TIER_COLOR = QUALITY_TIER_COLOR
 
@@ -29,14 +30,7 @@ const FORMAT_LABEL: Partial<Record<string, MessageDescriptor>> = {
  * but its tier is still unknown, the label drops the tier word and shows only the width; if there
  * is no width either, it renders nothing.
  */
-export function FileQualityBadge({
-  quality,
-  neutral = false,
-}: {
-  quality: ChapterFileQualityDto | null | undefined
-  /** One outline style for every tier, for tables where colour is kept for the file's state. */
-  neutral?: boolean
-}) {
+export function FileQualityBadge({ quality }: { quality: ChapterFileQualityDto | null | undefined }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
   if (!quality || (quality.tier === 'unknown' && !quality.measured)) return null
@@ -106,23 +100,9 @@ export function FileQualityBadge({
       }
     >
       <LightBadge
-        color={neutral ? 'var(--neutral)' : TIER_COLOR[tier]}
-        variant={neutral ? 'outline' : 'light'}
+        color={TIER_COLOR[tier]}
         rightSection={
-          trusted ? (
-            <IconLock size={9} aria-hidden />
-          ) : cutoffUnmet ? (
-            <span
-              aria-hidden
-              style={{
-                display: 'inline-block',
-                width: 5,
-                height: 5,
-                borderRadius: '50%',
-                background: 'var(--warn)',
-              }}
-            />
-          ) : undefined
+          trusted ? <IconLock size={12} aria-hidden /> : cutoffUnmet ? <StatusDot tone="warn" aria-hidden /> : undefined
         }
       >
         {label}

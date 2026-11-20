@@ -314,7 +314,8 @@ export const LibraryHealth: Story = {
     await waitFor(() =>
       expect(canvas.getByRole('switch', { name: 'Analyze new files and run daily reconciliation' })).toBeChecked(),
     )
-    await expect(await canvas.findByLabelText('Low disk warning (%)')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Low disk.*Warn at/ })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Backup freshness.*Warn after/ })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Save' })).toBeNull()
   },
 }
@@ -326,6 +327,7 @@ export const LibraryHealthEditShowsSave: Story = {
     </AfterSignIn>
   ),
   play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Daily scan/ }))
     const hour = await canvas.findByLabelText('Daily scan hour')
     await userEvent.clear(hour)
     await userEvent.type(hour, '5')

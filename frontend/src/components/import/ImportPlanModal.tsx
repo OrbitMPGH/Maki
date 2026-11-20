@@ -290,12 +290,12 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
         </>
       )}
       {plan.kind === 'restore' ? (
-        <Badge size="sm" variant="light">
+        <Badge size="sm" variant="light" color="var(--brand)">
           {t({ message: `Restore ${title}`, context: 'series' })}
         </Badge>
       ) : (
         plan.existingSeriesId !== null && (
-          <Badge size="sm" variant="light" color="var(--ok)">
+          <Badge size="sm" variant="light" color="var(--brand)">
             <Trans>In library</Trans>
           </Badge>
         )

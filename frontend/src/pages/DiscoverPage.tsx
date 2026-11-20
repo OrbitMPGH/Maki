@@ -64,14 +64,13 @@ import {
 } from '../api/hooks'
 import { useLibraryCoverLookup } from '../api/seriesLookup'
 import {
-  CatalogueFilterActions,
-  CatalogueFilters,
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
   normalizeFilters,
   normalizeStoredYears,
   useCatalogueFilters,
+  useLiveApply,
   YEAR_MAX,
   YEAR_MIN,
 } from '../components/CatalogueFilters'
@@ -103,7 +102,7 @@ import {
 } from '../components/ui/DiscoverRail'
 import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, useTermFilters } from '../components/CatalogueRules'
-import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
+import { PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
 import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
@@ -116,7 +115,6 @@ import { CountIndicator } from '../components/ui/CountIndicator'
 import { ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { Panel } from '../components/ui/Panel'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { DelayedLoader } from '../components/ui/DelayedLoader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -832,7 +830,11 @@ function FeedExpandModal({
 }) {
   const { t } = useLingui()
   const catalogue = useCatalogueFilters()
+  const filterSlots = useCatalogueFilterSlots(catalogue.controls, { creators: true })
   const [applied, setApplied] = useState<RecommendationFilters>({})
+  useLiveApply(catalogue.build, setApplied)
+  // An open filter editor takes Escape first, so the modal behind it stays open.
+  const [editorOpen, setEditorOpen] = useState(false)
   useModalHistory(rail != null, onClose)
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
   const { density, setDensity, cols } = useDensityPref('discover-expand')
@@ -854,7 +856,7 @@ function FeedExpandModal({
   useEffect(() => {
     if (presetFilters) {
       hydrateAll(presetFilters)
-      setApplied(presetFilters)
+      setApplied(normalizeFilters(presetFilters))
     } else {
       resetAll()
       setApplied({})
@@ -939,36 +941,33 @@ function FeedExpandModal({
       opened={rail != null}
       onClose={onClose}
       fullScreen
+      closeOnEscape={!editorOpen}
       title={<ModalHeading title={rail?.title} />}
     >
-      <Panel p="md" mb="md">
-        <Stack gap="md">
-          <CatalogueFilters controls={catalogue.controls} collapsed />
-          <CatalogueFilterActions
-            isCustomized={catalogue.isCustomized || Object.keys(applied).length > 0}
-            onReset={() => {
-              catalogue.reset()
-              setApplied({})
+      <CatalogueFilterBar
+        slots={filterSlots}
+        isCustomized={catalogue.isCustomized || Object.keys(applied).length > 0}
+        onReset={() => {
+          catalogue.reset()
+          setApplied({})
+        }}
+        onOpenChange={setEditorOpen}
+        count={
+          !personalised && !cohort && rail ? (
+            <FilterMatchCount filters={catalogue.build()} feed={rail.feed} genre={rail.genre} />
+          ) : undefined
+        }
+        saved={
+          <PresetMenu
+            compact
+            current={catalogue.build}
+            onLoad={(f) => {
+              catalogue.hydrate(f)
+              setApplied(f)
             }}
-            onApply={() => setApplied(catalogue.build())}
-            extra={
-              <>
-                <PresetMenu
-                  current={catalogue.build}
-                  onLoad={(f) => {
-                    catalogue.hydrate(f)
-                    setApplied(f)
-                  }}
-                />
-                <HiddenContentButton />
-                {!personalised && !cohort && rail && (
-                  <FilterMatchCount filters={catalogue.build()} feed={rail.feed} genre={rail.genre} />
-                )}
-              </>
-            }
           />
-        </Stack>
-      </Panel>
+        }
+      />
 
       {error && (
         <Callout tone="warn" role="alert">

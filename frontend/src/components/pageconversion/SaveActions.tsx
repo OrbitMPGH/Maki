@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Group, Modal, Stack, Text } from '@mantine/core'
+import { Button, Group, Modal } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -12,6 +12,7 @@ import {
   type PageConversionStatus,
 } from '../../api/pageConversion'
 import { sameRules, toRuleDtos } from './ruleTemplates'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 
 type Action = 'save' | 'start'
 
@@ -88,23 +89,23 @@ export function SaveActions({
         )}
       </Group>
 
-      <Modal opened={asking !== null} onClose={() => setAsking(null)} title={<Trans>Pause the running pass?</Trans>} centered>
-        <Stack gap="sm">
-          <Text size="sm">
-            <Trans>Pause the running pass and restart it with the new settings?</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setAsking(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button variant="default" loading={busy} onClick={() => asking && void run(asking, 'pause')}>
-              <Trans>Save and pause</Trans>
-            </Button>
-            <Button loading={busy} onClick={() => asking && void run(asking, 'restart')}>
-              <Trans>Restart</Trans>
-            </Button>
-          </Group>
-        </Stack>
+      <Modal
+        opened={asking !== null}
+        onClose={() => setAsking(null)}
+        title={<ModalHeading title={<Trans>Pause the running pass?</Trans>} />}
+        centered
+      >
+        <ModalFooter>
+          <Button variant="default" onClick={() => setAsking(null)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button variant="default" loading={busy} onClick={() => asking && void run(asking, 'pause')}>
+            <Trans>Save and pause</Trans>
+          </Button>
+          <Button loading={busy} onClick={() => asking && void run(asking, 'restart')}>
+            <Trans>Restart</Trans>
+          </Button>
+        </ModalFooter>
       </Modal>
     </>
   )

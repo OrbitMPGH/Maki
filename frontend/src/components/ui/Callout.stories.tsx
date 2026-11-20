@@ -54,3 +54,5 @@ export const Ok: Story = { args: { tone: 'ok' } }
 export const Brand: Story = { args: { tone: 'brand' } }
 
 export const Neutral: Story = { args: { tone: 'neutral' } }
+
+export const Anime: Story = { args: { tone: 'anime' } }

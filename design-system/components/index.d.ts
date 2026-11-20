@@ -103,6 +103,8 @@ export interface TagChipProps {
   onClick?: MouseEventHandler<HTMLButtonElement>
   href?: string
   size?: 'sm' | 'md'
+  /** A muted number after the label, such as how many rows a filter chip matches. */
+  count?: number
   className?: string
   title?: string
   style?: CSSProperties

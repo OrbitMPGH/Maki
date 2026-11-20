@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { Anchor, Button, Drawer, Group, Stack, Text, Title } from '@mantine/core'
+import { Anchor, Button, Drawer, Group, Stack, Text } from '@mantine/core'
 import { IconExternalLink, IconMessage2 } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useSeriesReviews, type ReviewIds } from '../../api/hooks'
 import { ReviewList } from '../discover/DiscoverReviews'
+import { ModalHeading } from '../ui/ModalShell'
 
 /**
  * A Reviews button beside the series page's metadata links, opening MyAnimeList, AniList and Kitsu
@@ -39,12 +40,10 @@ export function SeriesReviews({ ids }: { ids: ReviewIds }) {
         position="right"
         size="md"
         title={
-          <Group gap="xs" wrap="nowrap">
-            <IconMessage2 size={20} color="var(--brand-fg)" />
-            <Title order={3} fz="var(--type-section)">
-              <Trans>Reviews</Trans>
-            </Title>
-          </Group>
+          <span className="modal-heading-row">
+            <IconMessage2 size={16} className="panel-title-icon" aria-hidden />
+            <ModalHeading title={<Trans>Reviews</Trans>} />
+          </span>
         }
         closeButtonProps={{ 'aria-label': t`Close` }}
       >

@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { useThemeChoice } from '../theme-context'
 import { EASE_LOOP_CSS, PAGE, pacedMs } from './motion'
 import { prefersReducedMotion } from './motionPrefs'
@@ -153,6 +153,26 @@ function easeTint(tint: string | null) {
     timer.play()
     step()
   })
+}
+
+/**
+ * The same sampled colour for a surface that owns its own ground (the reader's end screen), without
+ * touching the app's. Null until the cover loads, and for a cover with no real colour or one the
+ * canvas may not read.
+ */
+export function useCoverColour(coverUrl: string | null | undefined): string | null {
+  const [sampled, setSampled] = useState<{ url: string; tint: string | null } | null>(null)
+  useEffect(() => {
+    if (!coverUrl) return
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = () => setSampled({ url: coverUrl, tint: sampleTint(img) })
+    img.src = coverUrl
+    return () => {
+      img.onload = null
+    }
+  }, [coverUrl])
+  return sampled && sampled.url === coverUrl ? sampled.tint : null
 }
 
 export function useCoverTint(coverUrl: string | null | undefined) {

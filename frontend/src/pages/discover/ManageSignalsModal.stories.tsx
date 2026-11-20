@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../../.storybook/mocks/api'
 import { discoverPage, feedbackLab, resetTabState } from '../../../.storybook/mocks/discover'
@@ -21,7 +21,8 @@ const body = (el: HTMLElement) => within(el.ownerDocument.body)
 export const Titles: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await body(canvasElement).findByRole('dialog')
-    await expect(await within(dialog).findByRole('radio', { name: /^All\s*\d+$/ })).toBeChecked()
+    const all = await within(dialog).findByRole('button', { name: /^All\s*\d+$/ })
+    await waitFor(() => expect(all).toHaveAttribute('aria-pressed', 'true'))
     await expect(await within(dialog).findByText('Lanterns Over Kasumi')).toBeVisible()
   },
 }
@@ -29,7 +30,7 @@ export const Titles: Story = {
 export const FilteredToHidden: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await body(canvasElement).findByRole('dialog')
-    await userEvent.click(await within(dialog).findByRole('radio', { name: /^Hidden\s*\d+$/ }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: /^Hidden\s*\d+$/ }))
     await expect(await within(dialog).findByText(/Showing \d+ of \d+/)).toBeVisible()
   },
 }

@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ActionIcon, Button, Group, Menu, Modal, SimpleGrid, Text, ThemeIcon } from '@mantine/core'
+import { ActionIcon, Button, Group, Menu, Modal, SimpleGrid, Text } from '@mantine/core'
 import { IconClock, IconDeviceTv, IconDots, IconEyeOff, IconPlus } from '../../lib/icons'
 import { useDismissFromAnimeRail, useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
 import { errorText } from '../../api/errorText'
@@ -9,6 +9,7 @@ import type { RecommendationItem } from '../../api/hooks'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { PosterSkeletons } from '../CatalogueBrowser'
 import { EmptyState } from '../ui/EmptyState'
+import { ModalHeading } from '../ui/ModalShell'
 import { Rail } from '../ui/Rail'
 import { DensityControl, useDensityPref } from '../ui/viewPrefs'
 import { chapterLabel, serverChapterLabel } from '../../format'
@@ -62,20 +63,10 @@ export function AnimeResumeExpandModal({
       onClose={onClose}
       fullScreen
       title={
-        <Group gap="xs">
-          <ThemeIcon variant="light" color="brand" size="md" radius="md">
-            <IconDeviceTv size={16} />
-          </ThemeIcon>
-          <Text
-            span
-            fz="var(--mantine-h4-font-size)"
-            fw="var(--mantine-h4-font-weight)"
-            lh="var(--mantine-h4-line-height)"
-            ff="var(--mantine-font-family-headings)"
-          >
-            <Trans>Continue from the anime</Trans>
-          </Text>
-        </Group>
+        <span className="modal-heading-row">
+          <IconDeviceTv size={16} className="panel-title-icon" aria-hidden />
+          <ModalHeading title={<Trans>Continue from the anime</Trans>} />
+        </span>
       }
     >
       {isError ? (

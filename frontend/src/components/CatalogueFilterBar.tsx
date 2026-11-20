@@ -79,6 +79,8 @@ export function CatalogueFilterBar({
   count,
   onSaveAsDefault,
   savingDefault = false,
+  menu = true,
+  onOpenChange,
 }: {
   slots: FilterSlot[]
   isCustomized: boolean
@@ -90,10 +92,20 @@ export function CatalogueFilterBar({
   /** Saving an untouched bar clears the stored default, so the item reads "Clear default" then. */
   onSaveAsDefault?: () => void
   savingDefault?: boolean
+  /** The overflow menu (save as default, hidden content). Off for a bar inside an editor. */
+  menu?: boolean
+  /** Reports an editor opening and closing, for a dialog that has to hold its own Escape meanwhile. */
+  onOpenChange?: (opened: boolean) => void
 }) {
   const { t } = useLingui()
   const [hiddenOpen, setHiddenOpen] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
+  const anyOpen = openId !== null
+  useEffect(() => {
+    if (!anyOpen) return
+    onOpenChange?.(true)
+    return () => onOpenChange?.(false)
+  }, [anyOpen, onOpenChange])
   const setKey = slots.filter((s) => s.value != null).map((s) => s.id).join(',')
   const [frozenKey, setFrozenKey] = useState(setKey)
   if (openId === null && frozenKey !== setKey) setFrozenKey(setKey)
@@ -174,25 +186,27 @@ export function CatalogueFilterBar({
             <Trans>Reset</Trans>
           </Button>
         )}
-        <Menu position="bottom-end" withinPortal>
-          <Menu.Target>
-            <ActionIcon variant="subtle" color="var(--ink-2)" aria-label={t`More filter actions`}>
-              <IconDots size={18} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            {onSaveAsDefault && (
-              <Menu.Item
-                leftSection={<IconDeviceFloppy size={16} />}
-                disabled={savingDefault}
-                onClick={onSaveAsDefault}
-              >
-                {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
-              </Menu.Item>
-            )}
-            <HiddenContentMenuItem onOpen={() => setHiddenOpen(true)} />
-          </Menu.Dropdown>
-        </Menu>
+        {menu && (
+          <Menu position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="var(--ink-2)" aria-label={t`More filter actions`}>
+                <IconDots size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {onSaveAsDefault && (
+                <Menu.Item
+                  leftSection={<IconDeviceFloppy size={16} />}
+                  disabled={savingDefault}
+                  onClick={onSaveAsDefault}
+                >
+                  {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
+                </Menu.Item>
+              )}
+              <HiddenContentMenuItem onOpen={() => setHiddenOpen(true)} />
+            </Menu.Dropdown>
+          </Menu>
+        )}
       </div>
       {hiddenOpen && <HiddenContentModal onClose={() => setHiddenOpen(false)} />}
     </div>
@@ -207,8 +221,9 @@ const ADD_WIDTH = 120
 /**
  * Closes a popover on a press outside it. Mantine's own check only knows the popover's DOM, so a
  * tag picker's dropdown or a modal opened from inside an editor, which render in their own
- * portals, would close the editor they belong to. Any portal counts as inside. Escape is handled
- * here too, since Mantine's own handler closes the editor before a nested list can take the key.
+ * portals, would close the editor they belong to. Any portal counts as inside, except the one the
+ * bar itself sits in when it is inside a modal. Escape is handled here too, since Mantine's own
+ * handler closes the editor before a nested list can take the key.
  */
 function useDismissOutside(
   opened: boolean,
@@ -224,7 +239,9 @@ function useDismissOutside(
     if (!opened) return
     const handler = (event: PointerEvent) => {
       const el = event.target as Element | null
-      if (!el || target.current?.contains(el) || el.closest('[data-portal]')) return
+      if (!el || target.current?.contains(el)) return
+      const portal = el.closest('[data-portal]')
+      if (portal && !(target.current && portal.contains(target.current))) return
       close.current()
     }
     // Escape closes the editor only from inside it, and not while one of its own lists is open:

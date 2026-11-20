@@ -21,7 +21,7 @@ const dialogIn = (canvasElement: HTMLElement, name = 'Root folder rules') =>
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogIn(canvasElement)
-    await expect(await within(dialog).findByText('/library/webtoons')).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Copy /library/webtoons' })).toBeInTheDocument()
     await expect(await within(dialog).findByText('Type: Manhwa or Type: Manhua')).toBeVisible()
     await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Move up' })[0]).toBeDisabled())
   },
