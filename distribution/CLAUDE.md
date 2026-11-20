@@ -1315,3 +1315,23 @@ The 20,000-item table held 77% of the owner's action webtoons but 54% of their r
 - **Through the real service** (`reco-profile-probe.py`, 75 readers a group, now with a `lowcov` group: read shelves the 20,000-item table covers below 60%, 527 of 6,530 eligible, 44% manhwa): wider tables at 4 bring back +1.0 to +2.1 points more hidden titles than weight 1 on romcom shelves (today's table at 4: +3.2), -0.4 to +1.3 on mixed (+1.5) and +0.7 to +1.4 on control (+0.9), with household titles at weight 1's level (-1.8 to +1.5 points); on the low-coverage readers they recover +0.6 to +1.3 (today's at 4: +3.7) and drop household by 2 to 3 points. No group's webtoon-flood count moves.
 - **Owner's page** (real service, top 40): action webtoons 9 at weight 4 on today's table, 0 to 2 on any wider table at 4; top-1k 55% today at 4, 32% (60,000 items) to 42% (40,000 over 100+ entry readers, every item), 55% at plain 40,000.
 - **Not shipped.** The CURRENT judged panel is 70% judged for the wider tables at 4 (`shelf-queue-easewide.tsv`, 827 pairs), the page-share twin was built on weight-4 pages of the old table, and no confirm split was run.
+
+## v9: MangaUpdates quality priors (`build-mu-prior.py`, `priorpath=`), measured and NOT shipped
+
+The full dump carries MangaUpdates' own aggregates, which nothing read: a Bayesian rating with its vote count (84% of index rows) and list counts by status (87%). They are the one outside population in the dump, so they were the candidate most likely to help where the hand-designed feel channels had not. `build-mu-prior.py` turns them into per-series values and the harness's `priorpath=<tsv>,priorweight=<w>` adds `w x value` to the score through the `demote` map. Scripts and logs are in `research/recommender/2026-11-20-mu-prior/` in the main checkout.
+
+- **The signals.** `bayes` is the Bayesian rating minus the value MangaUpdates shrinks low-vote titles toward (6.23, the median at one or two votes), so thin evidence sits at 0 rather than below the median. `drop` is minus the share of lists holding the title as unfinished, out of reading, complete and unfinished, shrunk with 50 pseudo-lists toward the pooled 3.35%, in units of 4 points. `bayes-res` and `drop-res` subtract the mean of rows in the same log-popularity bin, and for drop the same publication status. Against log popularity rank the Bayesian rating correlates -0.31 where MangaBaka's `rating` correlates -0.48, and the two correlate 0.27 with each other, so it is not the existing quality term again.
+- **Gates** (next-read grader, fold 0 of 4, dev split, n = 500, paired against the shipping engine, weights 0.1 / 0.25 / 0.5):
+
+  | signal | COMPLETED | CURRENT |
+  |---|---|---|
+  | `bayes` | FAIL at every weight: passed +0.3 / +0.9 / +1.7 points, wantN flat, middle third -0.0074 at 0.5 | FAIL at every weight: passed +0.6 / +1.5 / +2.7, runaway pages up |
+  | `bayes` replacing `rating` (`wquality=0`, 0.25) | FAIL: passed +0.6 | FAIL: passed +1.3 |
+  | `drop` | inert (wantN within ±0.0015, passed flat) | FAIL: wantN -0.0008 / -0.0016 / -0.0027 |
+  | `bayes-res` | PASS at 0.1, flat everywhere; wantN middle -0.0042 at 0.5 | passed +0.4 at 0.25; wantN flat |
+  | `drop-res` | inert | PASS at 0.1 (passed -0.2, wantN -0.0007 [-0.0014, +0.0000]); FAIL wantN at 0.25 and 0.5 |
+
+- **The Bayesian rating is a fame score, as the `rating` term was in v4 Phase 5.** `passed` (household titles on none of the reader's lists) rises monotonically with its weight on both shelf kinds while `wantN` does not move. Taking it relative to titles of the same popularity removes the fame and leaves nothing: no weight raises `wantN` in any third.
+- **The drop rate punishes ongoing series.** A series still running collects "unfinished" lists from readers who paused, so on CURRENT shelves the signal marks down what those readers are reading. Taking it relative to the same status and popularity bin narrows the loss but never turns it into a gain.
+- **So the seventh hand-built signal measures flat, and this one came from an outside population.** What helped before was learned from behaviour (the taste vectors, EASE); aggregate ratings and list counts per title do not tell the engine anything the channels have not already priced. The two harness keys and the builder are kept so the finding stays reproducible.
+- **Not checked:** the judged panels and the confirm split, since nothing passed on the dev split with a gain to confirm; folds other than 0; the page-share eval twin has no provenance file (built from fold-0 readers 501 to 1,500, graded on the first 500, see "v8: what shipped"), so the runs pass `--common-unchecked`, which is the same table for every variant.

@@ -1676,6 +1676,30 @@ static double Overlap(List<HashSet<long>> picks)
 /// </summary>
 async Task<IReadOnlyDictionary<long, double>?> AiredDemotion(Variant variant)
 {
+    var aired = await AiredOnly(variant);
+    if (variant.PriorWeight == 0 || variant.PriorPath is null)
+    {
+        return aired;
+    }
+
+    var demote = aired is null ? new Dictionary<long, double>() : new Dictionary<long, double>(aired);
+    foreach (var line in File.ReadLines(variant.PriorPath))
+    {
+        var parts = line.Split('	');
+        if (parts.Length < 2 || !long.TryParse(parts[0], CultureInfo.InvariantCulture, out var id))
+        {
+            continue;
+        }
+
+        var value = double.Parse(parts[1], CultureInfo.InvariantCulture);
+        demote[id] = demote.GetValueOrDefault(id) - (variant.PriorWeight * value);
+    }
+
+    return demote;
+}
+
+async Task<IReadOnlyDictionary<long, double>?> AiredOnly(Variant variant)
+{
     if (variant.AiredWeight <= 0)
     {
         return null;
@@ -4353,6 +4377,8 @@ file static class Variants
         var airedWeight = 0.0;
         var airedMaxRank = 1000;
         var airedRate = 1.0;
+        string? priorPath = null;
+        var priorWeight = 0.0;
 
         // The baseline the avoid channel has to be read against, the same way `nocrowd` and
         // `notaste` are for the other channels. A bare `avoid` would be a variant NAME rather than
@@ -4668,6 +4694,16 @@ file static class Variants
             {
                 commonPath = value;
             }
+            // A per-series prior from a file of `id<TAB>value` lines (build-mu-prior.py): score +=
+            // priorweight x value, through the same demotion map as airedweight.
+            else if (key == "priorpath")
+            {
+                priorPath = value;
+            }
+            else if (key == "priorweight")
+            {
+                priorWeight = double.Parse(value, CultureInfo.InvariantCulture);
+            }
             else if (key == "airedweight")
             {
                 airedWeight = double.Parse(value, CultureInfo.InvariantCulture);
@@ -4720,7 +4756,8 @@ file static class Variants
 
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
-            taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline);
+            taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline,
+            priorPath, priorWeight);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -4785,7 +4822,9 @@ file sealed record Variant(
     double AiredWeight = 0,
     int AiredMaxRank = 1000,
     double AiredRate = 1,
-    string? Baseline = null);
+    string? Baseline = null,
+    string? PriorPath = null,
+    double PriorWeight = 0);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings
