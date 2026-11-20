@@ -1,4 +1,4 @@
-import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { forwardRef, useEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Menu, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { IconChevronDown, IconSortAscending, IconSortDescending, type Icon } from '../lib/icons'
@@ -103,6 +103,21 @@ interface FilterMenuBase {
   className?: string
 }
 
+/** A menu that unmounts while open never reports closing, so the close is also reported on unmount. */
+function useReportOpen(onOpenChange?: (opened: boolean) => void) {
+  const [opened, setOpened] = useState(false)
+  const report = useRef(onOpenChange)
+  useEffect(() => {
+    report.current = onOpenChange
+  })
+  useEffect(() => {
+    if (!opened) return
+    report.current?.(true)
+    return () => report.current?.(false)
+  }, [opened])
+  return setOpened
+}
+
 /** Menu.Target hands the face its ref and handlers, so both pass through. */
 const FilterMenuFace = forwardRef<
   HTMLButtonElement,
@@ -158,8 +173,9 @@ export function FilterMenuButton({
   anyLabel?: string
 }) {
   const picked = options.find((o) => o.value === value)
+  const reportOpen = useReportOpen(onOpenChange)
   return (
-    <Menu position="bottom-start" withinPortal onChange={onOpenChange} disabled={disabled}>
+    <Menu position="bottom-start" withinPortal onChange={reportOpen} disabled={disabled}>
       <Menu.Target>
         <FilterMenuFace
           icon={icon}
@@ -203,8 +219,9 @@ export function FilterMultiMenuButton({
 }) {
   const { t } = useLingui()
   const names = value.map((v) => options.find((o) => o.value === v)?.label ?? v)
+  const reportOpen = useReportOpen(onOpenChange)
   return (
-    <Menu position="bottom-start" withinPortal onChange={onOpenChange} disabled={disabled}>
+    <Menu position="bottom-start" withinPortal onChange={reportOpen} disabled={disabled}>
       <Menu.Target>
         <FilterMenuFace
           icon={icon}

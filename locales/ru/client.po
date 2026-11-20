@@ -26004,6 +26004,10 @@ msgstr "Тестовое уведомление отправлено."
 msgid "Test speed of {name}"
 msgstr ""
 
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Tested <0/>"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Text"

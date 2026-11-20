@@ -4,7 +4,7 @@ import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
 import { FieldAction } from './settings/FieldAction'
-import { ConnectionStatus, ConnectionTestFailure } from './ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from './ConnectionSettingsCardStatus'
 import { notifications } from '../lib/toast'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -79,7 +79,7 @@ export function ConnectionSettingsCard({
       }}
     >
       <ConnectionFieldRow form={form} />
-      <ConnectionTestFailure testKey={testKey} />
+      <ConnectionTestDetail testKey={testKey} />
       {children}
     </SettingsSection>
   )

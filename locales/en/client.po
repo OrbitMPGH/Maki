@@ -21329,6 +21329,10 @@ msgstr "Test notification sent."
 msgid "Test speed of {name}"
 msgstr "Test speed of {name}"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Tested <0/>"
+msgstr "Tested <0/>"
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Text"
 msgstr "Text"

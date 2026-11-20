@@ -1,5 +1,5 @@
 import { Text, type MantineSpacing } from '@mantine/core'
-import { useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useConnectionTest, type ConnectionTestKey, type ConnectionTestStatus } from '../api/hooks'
 import { MetaList } from './ui/MetaList'
 import { StatusDot } from './ui/StatusDot'
@@ -44,13 +44,21 @@ export function ConnectionStatusView({
   )
 }
 
-/** Why the last Test failed and when, under the card's fields. Nothing while the connection works. */
-export function ConnectionTestFailure({ testKey, mt = 'sm' }: { testKey: ConnectionTestKey | undefined; mt?: MantineSpacing }) {
+/** When the last Test ran, and why it failed if it did, under the card's fields. */
+export function ConnectionTestDetail({ testKey, mt = 'sm' }: { testKey: ConnectionTestKey | undefined; mt?: MantineSpacing }) {
   const { status } = useConnectionTest(testKey)
-  if (!testKey || !status || status.ok) return null
+  if (!testKey || !status) return null
   return (
     <Text component="div" size="xs" c="var(--ink-3)" mt={mt} className="connection-test-line">
-      <MetaList inline items={[status.message, <TimeAgo key="when" value={status.testedAt} />]} />
+      <MetaList
+        inline
+        items={[
+          !status.ok && status.message,
+          <Trans key="when">
+            Tested <TimeAgo value={status.testedAt} />
+          </Trans>,
+        ]}
+      />
     </Text>
   )
 }

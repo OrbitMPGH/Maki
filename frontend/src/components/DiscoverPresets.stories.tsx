@@ -3,7 +3,9 @@ import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import { discoverPage } from '../../.storybook/mocks/discover'
-import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
+import { useState } from 'react'
+import { Menu, UnstyledButton } from '@mantine/core'
+import { HiddenContentMenuItem, HiddenContentModal, PresetMenu } from './DiscoverPresets'
 
 const meta = {
   component: PresetMenu,
@@ -16,6 +18,24 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const body = (el: HTMLElement) => within(el.ownerDocument.body)
+
+/** The never-show list as the filter bar's overflow menu offers it. */
+function HiddenMenu() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Menu defaultOpened>
+        <Menu.Target>
+          <UnstyledButton>More filter actions</UnstyledButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <HiddenContentMenuItem onOpen={() => setOpen(true)} />
+        </Menu.Dropdown>
+      </Menu>
+      {open && <HiddenContentModal onClose={() => setOpen(false)} />}
+    </>
+  )
+}
 
 export const Closed: Story = {}
 
@@ -78,27 +98,27 @@ export const DeleteWithUndo: Story = {
   },
 }
 
-export const HiddenButton: StoryObj = {
-  render: () => <HiddenContentButton />,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Hidden everywhere (2)' })).toBeVisible()
+export const HiddenMenuItem: StoryObj = {
+  render: () => <HiddenMenu />,
+  play: async ({ canvasElement }) => {
+    await expect(await body(canvasElement).findByRole('menuitem', { name: 'Hidden everywhere (2)' })).toBeVisible()
   },
 }
 
-export const HiddenButtonEmptyList: StoryObj = {
-  render: () => <HiddenContentButton />,
+export const HiddenMenuItemEmptyList: StoryObj = {
+  render: () => <HiddenMenu />,
   parameters: {
     msw: discoverPage(http.get(api('/recommendations/discover/hidden'), () => HttpResponse.json({ terms: [] }))),
   },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Hidden everywhere' })).toBeVisible()
+  play: async ({ canvasElement }) => {
+    await expect(await body(canvasElement).findByRole('menuitem', { name: 'Hidden everywhere' })).toBeVisible()
   },
 }
 
 export const HiddenListModal: StoryObj = {
-  render: () => <HiddenContentButton />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: /Hidden everywhere/ }))
+  render: () => <HiddenMenu />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: /Hidden everywhere/ }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Hidden everywhere' })
     await expect(await within(dialog).findByText('Gore')).toBeVisible()
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))

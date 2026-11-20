@@ -7,7 +7,7 @@ import { SettingsSection } from './SettingsSection'
 import { FieldAction } from '../../components/settings/FieldAction'
 import { savedToast } from './sharedRecord'
 import { ManageSourcesModal } from './ManageSourcesModal'
-import { ConnectionStatus, ConnectionTestFailure } from '../../components/ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from '../../components/ConnectionSettingsCardStatus'
 import { IconAdjustments } from '../../lib/icons'
 import { useSources } from '../../api/hooks'
 import {
@@ -146,7 +146,7 @@ export function SuwayomiCard() {
             />
           </Group>
         )}
-        {connected && <ConnectionTestFailure testKey="suwayomi" mt={0} />}
+        {connected && <ConnectionTestDetail testKey="suwayomi" mt={0} />}
         <Group justify="space-between" wrap="wrap">
           <Text size="sm" c="var(--ink-3)">
             {connected && (

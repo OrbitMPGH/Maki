@@ -53,7 +53,7 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
-import { ConnectionStatus, ConnectionTestFailure } from '../../components/ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from '../../components/ConnectionSettingsCardStatus'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
@@ -1264,7 +1264,7 @@ export function IndexerSection() {
     >
       <IndexerFieldRow
         form={form}
-        status={<ConnectionTestFailure testKey={testKey} mt={0} />}
+        status={<ConnectionTestDetail testKey={testKey} mt={0} />}
       />
       {form.switching ? (
         <Text size="sm" c="var(--ink-3)" mt="md">

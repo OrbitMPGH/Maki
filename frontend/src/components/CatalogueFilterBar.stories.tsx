@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { Modal, Text } from '@mantine/core'
+import { expect, waitFor, within } from 'storybook/test'
 import { discoverPage, resetTabState } from '../../.storybook/mocks/discover'
 import type { RecommendationFilters } from '../api/hooks'
 import { CatalogueFilterBar, useCatalogueFilterSlots } from './CatalogueFilterBar'
@@ -78,5 +79,25 @@ export const RatingStops: Story = {
     await userEvent.keyboard('{ArrowRight}')
     await expect(await canvas.findByText('6.8+')).toBeVisible()
     await expect(await body.findByText('Top 76% of popular series')).toBeVisible()
+  },
+}
+
+/** Inside a modal every portal shares one node: a press in the editor keeps it open, one on the modal closes it. */
+export const InsideModal: Story = {
+  args: { menu: false },
+  render: (args) => (
+    <Modal opened onClose={() => {}} title="Rail">
+      <Harness menu={args.menu} />
+      <Text>Modal body</Text>
+    </Modal>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: 'Genres' }))
+    const heading = await body.findByText('Genres and tags')
+    await userEvent.click(heading)
+    await expect(heading).toBeVisible()
+    await userEvent.click(await body.findByText('Modal body'))
+    await waitFor(() => expect(body.queryByText('Genres and tags')).toBeNull())
   },
 }

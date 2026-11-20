@@ -8,6 +8,7 @@ import {
   Checkbox,
   Group,
   Image,
+  Loader,
   Menu,
   Modal,
   MultiSelect,
@@ -408,7 +409,7 @@ export function SourceMappingsSection({
           <Menu position="bottom-end" width={280} withinPortal>
             <Menu.Target>
               <ActionIcon variant="default" size={30} aria-label={t`More source actions`}>
-                <IconDots size={16} />
+                {scouting || measureSources.isPending ? <Loader size={12} /> : <IconDots size={16} />}
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>

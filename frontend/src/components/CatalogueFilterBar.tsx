@@ -221,8 +221,8 @@ const ADD_WIDTH = 120
 /**
  * Closes a popover on a press outside it. Mantine's own check only knows the popover's DOM, so a
  * tag picker's dropdown or a modal opened from inside an editor, which render in their own
- * portals, would close the editor they belong to. Any portal counts as inside, except the one the
- * bar itself sits in when it is inside a modal. Escape is handled here too, since Mantine's own
+ * portals, would close the editor they belong to. Any portalled layer counts as inside, except the
+ * modal the bar itself sits in. Escape is handled here too, since Mantine's own
  * handler closes the editor before a nested list can take the key.
  */
 function useDismissOutside(
@@ -239,9 +239,13 @@ function useDismissOutside(
     if (!opened) return
     const handler = (event: PointerEvent) => {
       const el = event.target as Element | null
-      if (!el || target.current?.contains(el)) return
-      const portal = el.closest('[data-portal]')
-      if (portal && !(target.current && portal.contains(target.current))) return
+      if (!el || target.current?.contains(el) || dropdown.current?.contains(el)) return
+      if (el.closest('[data-portal]')) {
+        // Mantine renders every portal into one shared node, so the nearest dropdown or dialog
+        // decides: only the layer the bar itself sits in counts as outside.
+        const layer = el.closest('[data-position], [role="dialog"]')
+        if (!layer || !target.current || !layer.contains(target.current)) return
+      }
       close.current()
     }
     // Escape closes the editor only from inside it, and not while one of its own lists is open:

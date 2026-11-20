@@ -245,13 +245,14 @@ function useDeliveryStatus() {
   }
 }
 
-/** Why a failing connection fails: the misses, the last error and when it last got through. */
-function DeliveryProblem({ n }: { n: NotificationDto }) {
+/** When a connection last got through, and for a failing one the misses and the last error. */
+function DeliveryDetail({ n }: { n: NotificationDto }) {
   const { t } = useLingui()
   const errorText = useDeliveryErrorText()
+  if (!n.enabled) return null
   const misses = n.consecutiveFailures
-  if (!n.enabled || misses === 0) return null
   const lastSuccess = n.lastSuccessAt ? formatDateTime(n.lastSuccessAt) : null
+  if (misses === 0) return lastSuccess ? <span className="delivery-detail">{t`Last delivered ${lastSuccess}.`}</span> : null
   return (
     <span className="delivery-problem">
       {plural(misses, { one: '# miss in a row.', other: '# misses in a row.' })} {errorText(n.lastError)}.{' '}
@@ -486,7 +487,7 @@ export function NotificationsSection() {
               summary={
                 <Group component="span" gap={6} wrap="wrap">
                   <TagScope tagIds={n.tagIds} tags={tags} />
-                  <DeliveryProblem n={n} />
+                  <DeliveryDetail n={n} />
                 </Group>
               }
               aside={
