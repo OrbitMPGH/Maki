@@ -1336,7 +1336,7 @@ The full dump carries MangaUpdates' own aggregates, which nothing read: a Bayesi
 - **So the seventh hand-built signal measures flat, and this one came from an outside population.** What helped before was learned from behaviour (the taste vectors, EASE); aggregate ratings and list counts per title do not tell the engine anything the channels have not already priced. The two harness keys and the builder are kept so the finding stays reproducible.
 - **Not checked:** the judged panels and the confirm split, since nothing passed on the dev split with a gain to confirm; folds other than 0; the page-share eval twin has no provenance file (built from fold-0 readers 501 to 1,500, graded on the first 500, see "v8: what shipped"), so the runs pass `--common-unchecked`, which is the same table for every variant.
 
-## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 recommended, not shipped
+## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 passes every gate but the floor, not shipped
 
 EASE trained on COMPLETED rows only, and nothing had tried another status set or a score floor. `--statuses` takes a list with optional weights (`COMPLETED,CURRENT=0.5`; a reader's cell keeps its largest weight, and the item counts that pick the universe and drive the popularity damp are weighted sums), `--drop-below-mean D` leaves out scored rows D points (of 100) under the reader's own mean. Both default to the shipped table, which a default build reproduces byte for byte. Each table is graded in its own run with `--ease` and paired across runs on the same requests. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout.
 
@@ -1363,6 +1363,17 @@ EASE trained on COMPLETED rows only, and nothing had tried another status set or
 
   The picks that replace the household titles on CURRENT shelves are judged as fitting, so the floor failure is not filler.
 - **Owner's page (gate 9)**, real service, all-reader tables built with the same code and dump (`all-base.db`, `all-cc50.db`), shipped settings, EASE weight 1, top 40: 29 of 40 shared, 14 of the top 20. Korean webtoons 3 to 1, top-1k 16 to 11, household titles in the top 20 4 to 1. All 11 incoming titles are romance manga (median popularity rank 1,698 against 553 for the 11 outgoing). Author picks drop from 3 to 1 in the top 20 but stay on the page (22nd and 24th). The probe used the 2026-11-18 page-share table for both cases.
+- **The owner's page got narrower, which no gate measured.** Against a shelf that is 22% Action and 23% Korean webtoons, the shipped page has 10 Action titles and 3 webtoons in 40, CURRENT at 0.5 has 4 and 1, and neither has a romance webtoon (12% of the shelf). The judged panel scores each pick against the shelf series nearest to it, and the next-read gates reward the reader's main taste because most next reads are more of it, so a page that drops a second taste can score as well or better on both.
+- **Breadth gate (`eval-breadth.py`).** Pages from `library --next --dump-picks`, both tables in one run (it reproduces the confirm wantN gain to the digit). Per reader, a second taste is a facet (type manhwa or manhua, or one of 24 genres) on 15% to 50% of their seeds; `kept` is the mean of min(page share / shelf share, 1) over them, `lost` the share with page share under a third of shelf share, `drift` the mean |page - shelf| over facets either holds at 5%+. `kept_next` and `lost_next` measure against the held-out next reads instead. As a reference, readers' own next reads keep 0.81 to 0.83 and lose 0.06 to 0.08 against their shelf. n = 500, fold 0, paired bootstrap:
+
+  | split, shelves | kept | lost | drift | webtoons as a second taste (shelf / page, shipped to cc50) | Action as a second taste |
+  |---|---|---|---|---|---|
+  | dev, COMPLETED | 0.798 to 0.799 | 0.104 to 0.106 | -0.001 | 29% / 35.1 to 34.2% (-0.8 [-1.3, -0.4]) | 31% / 35.6 to 35.5% |
+  | dev, CURRENT | 0.774 to 0.779 (+0.005 [+0.001, +0.009]) | 0.115 to 0.113 | -0.002 | 29% / 45.8 to 44.1% (-1.7) | 33% / 43.6 to 43.1% |
+  | confirm, COMPLETED | 0.801 to 0.803 | 0.097 to 0.093 | -0.001 | 29% / 39.0 to 38.2% (-0.8) | 31% / 37.2 to 36.8% (-0.4) |
+  | confirm, CURRENT | 0.773 to 0.774 | 0.122 to 0.122 | -0.001 | 31% / 50.2 to 48.2% (-2.0 [-3.0, -1.0]) | 32% / 41.3 to 40.2% (-1.0) |
+
+  For held-out readers in general CURRENT at 0.5 does not narrow pages: `kept`, `lost` and `drift` hold or improve on every split. It does take 1 to 2 points of webtoons off pages that already carry more webtoons than the shelf. The owner's page is the minority case: among readers with webtoons as a second taste, the page holds under a third of the shelf's webtoon share for 13 to 15% on COMPLETED shelves and 3 to 5% on CURRENT ones, with either table. On the owner metric, shipped `kept` 0.81, cc50 0.71, `lost` 0.22 for both.
 - **Not done:** a page-share table rebuilt from pages at the new table (v8 requires one whenever the ranking changes), publishing the all-reader table, and the builder or publish script change that makes `COMPLETED,CURRENT=0.5` the default.
 
 ## v9: co-read per-user cap, list dates and index eligibility, measured
