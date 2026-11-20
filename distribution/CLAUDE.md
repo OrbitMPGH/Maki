@@ -1336,7 +1336,7 @@ The full dump carries MangaUpdates' own aggregates, which nothing read: a Bayesi
 - **So the seventh hand-built signal measures flat, and this one came from an outside population.** What helped before was learned from behaviour (the taste vectors, EASE); aggregate ratings and list counts per title do not tell the engine anything the channels have not already priced. The two harness keys and the builder are kept so the finding stays reproducible.
 - **Not checked:** the judged panels and the confirm split, since nothing passed on the dev split with a gain to confirm; folds other than 0; the page-share eval twin has no provenance file (built from fold-0 readers 501 to 1,500, graded on the first 500, see "v8: what shipped"), so the runs pass `--common-unchecked`, which is the same table for every variant.
 
-## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 is a candidate
+## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 recommended, not shipped
 
 EASE trained on COMPLETED rows only, and nothing had tried another status set or a score floor. `--statuses` takes a list with optional weights (`COMPLETED,CURRENT=0.5`; a reader's cell keeps its largest weight, and the item counts that pick the universe and drive the popularity damp are weighted sums), `--drop-below-mean D` leaves out scored rows D points (of 100) under the reader's own mean. Both default to the shipped table, which a default build reproduces byte for byte. Each table is graded in its own run with `--ease` and paired across runs on the same requests. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout.
 
@@ -1354,7 +1354,16 @@ EASE trained on COMPLETED rows only, and nothing had tried another status set or
 - **What fails is the floor.** On CURRENT shelves the shipping engine's page already sits at the shelf's household share (about 0 points), so any change that takes household titles off it fails gate 6, and every CURRENT weight does (-3.9 to -5.6 points). The gate's reason is that past it a change removes titles readers go on to read; here wantN and wantT rise in the niche and middle thirds and the mainstream third holds, which is the opposite. Accepting it is a decision about the gate, not a measurement.
 - **The overlap "FAIL" on finished shelves is a rounding artefact**: a certain rise that prints as +0.0 points, and the co-read cap rows below, which change nothing else, fail it the same way.
 - **The score floor is inert.** Completions scored 10 or 20 points under the reader's mean (8% and 4% of rows) carry nothing EASE does not already discount.
-- **Not done:** the judged shelf panels (gate 7), the owner's page through the real service (gate 9), an all-readers table, and a page-share table rebuilt from pages at the new table, which v8 requires whenever the ranking changes.
+- **Judged shelf panels (gate 7)**, 80 shelves, depth 10, dev split, paired against the shipped table in one run (`easepath=`), 95 to 99% of top-10 picks judged (66 pairs left unjudged, too few to turn either verdict):
+
+  | shelves | want@10 | feel@10 | passed |
+  |---|---|---|---|
+  | COMPLETED | -0.0009 [-0.0145, +0.0127] | +0.0176 [-0.0067, +0.0441] | 17.9% to 17.4% |
+  | CURRENT | **+0.0423 [+0.0145, +0.0700]** | **+0.0464 [+0.0060, +0.0863]** | 16.4% to 13.1% |
+
+  The picks that replace the household titles on CURRENT shelves are judged as fitting, so the floor failure is not filler.
+- **Owner's page (gate 9)**, real service, all-reader tables built with the same code and dump (`all-base.db`, `all-cc50.db`), shipped settings, EASE weight 1, top 40: 29 of 40 shared, 14 of the top 20. Korean webtoons 3 to 1, top-1k 16 to 11, household titles in the top 20 4 to 1. All 11 incoming titles are romance manga (median popularity rank 1,698 against 553 for the 11 outgoing). Author picks drop from 3 to 1 in the top 20 but stay on the page (22nd and 24th). The probe used the 2026-11-18 page-share table for both cases.
+- **Not done:** a page-share table rebuilt from pages at the new table (v8 requires one whenever the ranking changes), publishing the all-reader table, and the builder or publish script change that makes `COMPLETED,CURRENT=0.5` the default.
 
 ## v9: co-read per-user cap, list dates and index eligibility, measured
 
