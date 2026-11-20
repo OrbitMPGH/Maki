@@ -496,6 +496,15 @@ public sealed record RecommenderTuning
     public double ShelfCalibration { get; init; } = 0;
 
     /// <summary>
+    /// Calibrates on type x genre cells instead of types and genres apart. Off and unshipped. The
+    /// separate facets cannot see a second taste that is a combination: a romance shelf with some
+    /// romance webtoons reads as "enough Romance" and "a few webtoons", which action webtoons fill.
+    /// Only read when <see cref="ShelfCalibration"/> is above 0. Eval key <c>calibrationjoint</c>.
+    /// See distribution/CLAUDE.md, "v9: a second taste that is a combination".
+    /// </summary>
+    public bool ShelfCalibrationJoint { get; init; }
+
+    /// <summary>
     /// How many times the shelf's own share of famous titles a list may hold at any point
     /// (<see cref="ShelfFame"/>). 0 is off; 1.0 ships. 1.0 holds every prefix of the list
     /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are

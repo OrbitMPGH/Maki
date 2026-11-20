@@ -14,12 +14,49 @@ public static class ShelfCalibration
     /// <summary>
     /// A row's facet mix: half on its type, half spread evenly over its genres (all on the type
     /// when it has none). Facets are type ids first, then genre ids offset by <paramref name="typeCount"/>.
+    /// With <paramref name="joint"/> the facets are type x genre cells instead (the row spread evenly
+    /// over its own type's cells, cell 0 of a type for a row with no genre), so a shelf's romance
+    /// webtoons are a facet of their own and not a share of "webtoon" plus a share of "Romance".
     /// </summary>
-    public static double[] Facets(VectorIndex index, int row, int typeCount, int dims)
+    public static double[] Facets(VectorIndex index, int row, int typeCount, int dims, bool joint = false)
     {
         var v = new double[dims];
         var genres = index.GenresAt(row);
         var type = index.TypeAt(row);
+        if (joint)
+        {
+            var width = typeCount == 0 ? 0 : dims / typeCount;
+            if (type >= typeCount || width == 0)
+            {
+                return v;
+            }
+
+            var placed = 0;
+            foreach (var g in genres)
+            {
+                if (g + 1 < width)
+                {
+                    placed++;
+                }
+            }
+
+            if (placed == 0)
+            {
+                v[type * width] = 1;
+                return v;
+            }
+
+            foreach (var g in genres)
+            {
+                if (g + 1 < width)
+                {
+                    v[(type * width) + g + 1] += 1.0 / placed;
+                }
+            }
+
+            return v;
+        }
+
         var typeShare = genres.Length == 0 ? 1.0 : 0.5;
         if (type < typeCount)
         {

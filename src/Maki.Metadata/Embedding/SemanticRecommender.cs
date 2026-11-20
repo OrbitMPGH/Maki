@@ -2324,12 +2324,13 @@ public class SemanticRecommender(
         var capped = tuning.FameCapRatio > 0 && seedIds.Count >= 2;
         Func<int, int, double> similarity = (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1);
         var target = tuning.ShelfCalibration > 0 && seedIds.Count >= 2
-            ? CalibrationTarget(index, seedIds, seedWeights)
+            ? CalibrationTarget(index, seedIds, seedWeights, tuning.ShelfCalibrationJoint)
             : null;
         var picked = target is { } shelf
             ? ShelfCalibration.Order(
                 relevance,
-                pool.Select(c => ShelfCalibration.Facets(index, c.Row, shelf.TypeCount, shelf.Mix.Length)).ToList(),
+                pool.Select(c => ShelfCalibration.Facets(
+                    index, c.Row, shelf.TypeCount, shelf.Mix.Length, tuning.ShelfCalibrationJoint)).ToList(),
                 shelf.Mix,
                 capped ? pool.Count : limit,
                 tuning.ShelfCalibration,
@@ -2356,10 +2357,12 @@ public class SemanticRecommender(
     /// seed weight. Null when no seed is indexed, which leaves the page uncalibrated.
     /// </summary>
     private static (double[] Mix, int TypeCount)? CalibrationTarget(
-        VectorIndex index, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights)
+        VectorIndex index, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights,
+        bool joint)
     {
         var typeCount = index.TypeCount;
-        var dims = typeCount + (index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1);
+        var genreCount = index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1;
+        var dims = joint ? typeCount * (genreCount + 1) : typeCount + genreCount;
         var mix = new double[dims];
         var total = 0.0;
         foreach (var id in seedIds.Distinct())
@@ -2370,7 +2373,7 @@ public class SemanticRecommender(
                 continue;
             }
 
-            var facets = ShelfCalibration.Facets(index, row, typeCount, dims);
+            var facets = ShelfCalibration.Facets(index, row, typeCount, dims, joint);
             for (var d = 0; d < dims; d++)
             {
                 mix[d] += weight * facets[d];
