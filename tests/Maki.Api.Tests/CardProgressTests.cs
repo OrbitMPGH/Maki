@@ -64,7 +64,8 @@ public sealed class CardProgressTests : IDisposable
     public async Task OnlyTheReaderAndOnlyThisUserCount()
     {
         Add(User, StatsEventType.ChaptersRead, Now.AddDays(-1), Now.AddDays(-2), Now.AddDays(-3));
-        Add(2, StatsEventType.ReadingTime, Now.AddDays(-1), Now.AddDays(-2), Now.AddDays(-3));
+        var other = _db.SeedUser("other");
+        Add(other, StatsEventType.ReadingTime, Now.AddDays(-1), Now.AddDays(-2), Now.AddDays(-3));
         Assert.Equal(CardProgress.Downloads, await Auto());
     }
 }
