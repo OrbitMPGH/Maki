@@ -1469,7 +1469,17 @@ The owner's shelf is 12% romance webtoons and the page holds none in 40 and two 
 
 - **Why the in-progress inserts are weak.** At 0.75 an insert is a next read 4.0% of the time against 6.8% for the pick it displaces, and no slice of the inserts reaches 6.8%. The worst are inserts into a taste the shipped page held none of (2.6%, 40% of the inserts), lanes at 5 to 20% of the shelf (2.0 to 2.6%) and the manga lane that is neither Action nor Romance (2.1%). The displaced action webtoons are next reads 9.9% of the time. A lower ratio leaves mostly the inserts into tastes the page held none of, so each insert gets weaker (3.1% at 0.25) while the count falls. `lanes2held` removes that slice and passes everywhere, but it also removes the case lanes exist for: the owner's page holds no romance webtoon, so `lanes2held` leaves it unchanged.
 - **One ratio, not one per shelf kind.** The app cannot tell a finished shelf from an in-progress one. The nearest thing it could compute is the in-progress share of the seed weight, and the harness only grades pure shelf kinds. 0.5 with the fame rule meets the provisional tolerance (wantN within 0.002 pooled and 0.004 per third, `passed` not up) on both kinds. Owner's page at 0.5 (and at 0.35 and 0.25): one romance webtoon at rank 26, webtoons 3 to 4 in the top 40, Action and household titles unchanged.
-- **Not done:** the confirm split, judged panels, mixed `CURRENT,COMPLETED` shelves, a ratio blended by in-progress share, a real "passed over" exclusion.
+- **Confirm split, one look at 0.5 with the fame rule** (500 readers, fold 0, same settings as dev):
+
+  | shelves | split | wantN (worst third) | wantT | passed | floor, lanes2 (shipped) | kept / lost / lost_next | recall, cells second / main | recall, facets outside / second | strict gate |
+  |---|---|---|---|---|---|---|---|---|---|
+  | COMPLETED | dev | -0.0001 (middle -0.0011) | -0.0004 | -0.2, better | +2.2 (+2.6) | +0.027 / -0.043 / 0.165 to 0.133 | +8.6% / -2.8% | +6.2% / +0.7% | PASS |
+  | COMPLETED | confirm | -0.0001 (mainstream -0.0007) | +0.0002 | -0.1 | +1.7 (+2.0) | +0.026 / -0.037 / 0.155 to 0.128 | +9.0% / -3.8% | +7.7% / +0.2% | PASS |
+  | CURRENT | dev | -0.0011 (niche -0.0019) | **-0.0016** | -0.2 | -0.3 (+0.1) | +0.036 / -0.053 / 0.175 to 0.125 | +10.5% / -7.4% | 0.0% / -2.2% | fail (wantN, wantT) |
+  | CURRENT | confirm | -0.0001 (niche -0.0007) | -0.0007 | -0.2 | **-1.4 (-1.0), FAIL** | +0.037 / -0.051 / 0.176 to 0.139 | +16.0% / -6.6% | +14% (8 hits of 382) / +0.1% | fail (floor) |
+
+  It holds on fresh readers, and on in-progress shelves wantN comes out better than on dev. The one gate that fails is the floor, and the shipped page fails it on those readers already (-1.0 [-2.0, -0.1]). Every lanes2 run makes the top 20 slightly less household than the shipped page (paired -0.3 to -0.4 points on both splits and both shelf kinds), which takes that floor from -1.0 to -1.4. On confirm in-progress shelves an insert is a next read 5.4% of the time against 5.9% for the pick it displaces (dev: 3.8% against 7.0%).
+- **Not done:** judged panels, mixed `CURRENT,COMPLETED` shelves, a ratio blended by in-progress share, a real "passed over" exclusion.
 
 ## v9: series the reader data does not cover (`tastemissing`, mapped and predicted taste rows, seed scales), nothing shipped
 
