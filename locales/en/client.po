@@ -1633,6 +1633,14 @@ msgstr "{have, plural, one {# chapter} other {# chapters}}"
 msgid "{have} of {total}"
 msgstr "{have} of {total}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded"
+msgstr "{have} of {total} downloaded"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded, {read} read"
+msgstr "{have} of {total} downloaded, {read} read"
+
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -4914,6 +4922,7 @@ msgid "Auto-tag rules"
 msgstr "Auto-tag rules"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Automatic"
 msgstr "Automatic"
@@ -4949,6 +4958,14 @@ msgstr "Automatic download failed"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Automatic downloads from sources wait for it until {holdUntil}."
 msgstr "Automatic downloads from sources wait for it until {holdUntil}."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+msgstr "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
+msgstr "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
 
 #: src/api/upgrades.ts
 msgid "Automatic upgrades are off, needs your call"
@@ -5126,6 +5143,10 @@ msgstr "balanced"
 #: src/pages/reader/enhanceMethods.ts
 msgid "Balanced"
 msgstr "Balanced"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Bar"
+msgstr "Bar"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Barely nudges. A show you loved stays below a book you never rated."
@@ -5571,6 +5592,11 @@ msgstr "Cancelled. Nothing in the library was changed."
 #: src/pages/HealthPage.tsx
 msgid "Candidate page {pageNumber}"
 msgstr "Candidate page {pageNumber}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "cards, covers, progress bar, downloads, reading progress, read ring"
+msgstr "cards, covers, progress bar, downloads, reading progress, read ring"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "cat {ratioValue}"
@@ -17062,6 +17088,7 @@ msgstr "Reading profile: {profileName}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/pages/settings/PreferenceCards.tsx
 msgid "Reading progress"
 msgstr "Reading progress"
 
@@ -18552,6 +18579,10 @@ msgstr "right to left"
 msgid "Right to left"
 msgstr "Right to left"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Ring"
+msgstr "Ring"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
 msgid "Roll again"
@@ -19695,6 +19726,11 @@ msgctxt "series"
 msgid "Series archived"
 msgstr "Series archived"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Series cards"
+msgstr "Series cards"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Series details"
 msgstr "Series details"
@@ -20282,6 +20318,14 @@ msgstr "Signs out every other browser and device. This one stays signed in."
 #: src/components/ui/DiscoverRail.tsx
 msgid "Similar feel"
 msgstr "Similar feel"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers finished it"
+msgstr "Similar readers finished it"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers recommend it"
+msgstr "Similar readers recommend it"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Similarity to start"

@@ -1974,6 +1974,14 @@ msgstr "{have, plural, one {# bölüm} other {# bölüm}}"
 msgid "{have} of {total}"
 msgstr "{have} / {total}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded, {read} read"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -5983,6 +5991,7 @@ msgid "Auto-tag rules"
 msgstr "Otomatik etiket kuralları"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Automatic"
@@ -6027,6 +6036,14 @@ msgstr "Otomatik indirme başarısız oldu"
 #, fuzzy
 msgid "Automatic downloads from sources wait for it until {holdUntil}."
 msgstr "Kaynaklardan otomatik indirmeler {holdUntil} tarihine kadar bekler."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -6236,6 +6253,10 @@ msgstr "dengeli"
 #, fuzzy
 msgid "Balanced"
 msgstr "Dengeli"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Bar"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6775,6 +6796,11 @@ msgstr "İptal edildi. Kitaplıkta hiçbir şey değiştirilmedi."
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "Aday sayfası {pageNumber}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "cards, covers, progress bar, downloads, reading progress, read ring"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -20797,6 +20823,7 @@ msgstr "Okuma profili: {profileName}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "Okuma ilerlemesi"
@@ -22616,6 +22643,10 @@ msgstr "sağdan sola"
 msgid "Right to left"
 msgstr "Sağdan sola"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Ring"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -24004,6 +24035,11 @@ msgctxt "series"
 msgid "Series archived"
 msgstr "Seri arşivlendi"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Series cards"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "Series details"
@@ -24725,6 +24761,14 @@ msgstr "Diğer her tarayıcının ve cihazın oturumunu kapatır. Bu cihaz oturu
 #, fuzzy
 msgid "Similar feel"
 msgstr "Benzer his"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers finished it"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers recommend it"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

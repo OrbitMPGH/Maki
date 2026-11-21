@@ -45,7 +45,8 @@ public record HomeRecentSeriesItem(
     DateTime AddedAt,
     int NewChapterCount,
     string? NewestChapterLabel,
-    int? ReadChapterId);
+    int? ReadChapterId,
+    string? CoverAccent = null);
 
 /// <summary>
 /// View-shaped queries for the Home dashboard.
@@ -408,7 +409,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                     candidate.AddedAt,
                     unread.Count,
                     ChapterLabel.For(newest.Number, newest.Volume, newest.Title, newest.IsOneShot),
-                    upNext.ChapterId));
+                    upNext.ChapterId,
+                    accents.AccentFor(series.Id)));
 
                 if (items.Count == limit)
                 {

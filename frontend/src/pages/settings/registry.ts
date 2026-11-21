@@ -139,6 +139,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'series-cards',
+    tab: 'preferences',
+    since: 'next',
+    title: msg`Series cards`,
+    keywords: msg({
+      message: `cards, covers, progress bar, downloads, reading progress, read ring`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'language',
     tab: 'preferences',
     title: msg`Language`,

@@ -1934,11 +1934,37 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   width: 105%;
   height: 105%;
 }
+/* Covers less of the art than a plain fade to 2/3 would, nudged toward the cover's own colour where
+   the server lends one (`--series-accent`). Behind the text it is a step darker and carries less of
+   that colour, so a title never sits on a tone close to the art; the colour lives in the fade above.
+   The extra stops ease it out so there is no line where it ends. */
 .cover-scrim {
+  --scrim-base: color-mix(in oklab, var(--series-accent, #06070b) 26%, #06070b);
+  --scrim-deep: color-mix(in oklab, var(--series-accent, #06070b) 12%, #06070b);
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.58) 40%, transparent 66%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--scrim-deep) 93%, transparent) 0,
+    color-mix(in srgb, var(--scrim-deep) 82%, transparent) 20%,
+    color-mix(in srgb, var(--scrim-base) 68%, transparent) 33%,
+    color-mix(in srgb, var(--scrim-base) 42%, transparent) 43%,
+    color-mix(in srgb, var(--scrim-base) 15%, transparent) 52%,
+    transparent 60%
+  );
   pointer-events: none;
+}
+/* Catalogue covers have no tint to lift the shade, so they take a lighter one of the same shape. */
+.discover-card .cover-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(6, 7, 11, 0.9) 0,
+    rgba(6, 7, 11, 0.72) 20%,
+    rgba(6, 7, 11, 0.55) 33%,
+    rgba(6, 7, 11, 0.33) 43%,
+    rgba(6, 7, 11, 0.12) 52%,
+    transparent 60%
+  );
 }
 /* A series with no cover gets the same brand tile as a cover that failed to load (lib/coverFallback.ts). */
 .cover-placeholder {
@@ -2280,14 +2306,21 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   text-wrap: pretty;
   color: #fff;
   /* Over pale art the scrim alone let titles drop to 2.9:1. */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
+/* Under the count row, so the title and count read as one block. */
 .cover-bar {
-  height: 3px;
-  margin: 7px 0 6px;
+  position: relative;
+  height: 4px;
   border-radius: var(--radius-pill);
   background: var(--on-art-chip);
   overflow: hidden;
+}
+/* Holds the bar's spacing, and its padding is a taller hover target for the tooltip than the 4px
+   bar. It starts 3px under the count row so it never takes the hover from the count or "N new". */
+.cover-bar-hit {
+  padding-block: 4px;
+  margin: 3px 0 -2px;
 }
 .cover-bar[data-empty] {
   visibility: hidden;
@@ -2304,7 +2337,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   line-height: 1;
   white-space: nowrap;
   color: var(--on-art-ink-2);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 /* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
    a line-height of 1, so the padding widens the overflow clip and the margin gives the space back. */
@@ -2417,6 +2450,21 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--brand);
 }
 .cover-bar-fill[data-complete] {
+  background: var(--ok);
+}
+/* Reading on the bar (the "Series cards" setting set to Bar, with reading tracked): faint accent is
+   downloaded and unread, solid accent is read, and the whole bar turns green once every chapter is
+   read. Otherwise the bar stays downloads: accent, then green when all are on disk. */
+.cover-bar-read {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+}
+.cover-bar[data-reading] .cover-bar-fill {
+  background: color-mix(in srgb, var(--brand) 42%, transparent);
+}
+.cover-bar[data-finished] .cover-bar-read {
   background: var(--ok);
 }
 .cover-count {
@@ -3226,8 +3274,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    card and a library card line up, but its own class: this measures pages within one chapter,
    not chapters within a series, and conflating the two would be a lie at a glance. */
 .home-resume-bar {
-  height: 3px;
-  margin: 7px 0 6px;
+  height: 4px;
+  margin: 7px 0 2px;
   border-radius: var(--radius-pill);
   background: var(--on-art-chip);
   overflow: hidden;
@@ -4152,7 +4200,7 @@ button.site-chip:hover {
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
   color: var(--on-art-ink-2);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 /* Wraps inside a one-line box, so a year with no room drops out whole instead of ellipsizing. */
 .discover-sub-status {
@@ -4241,16 +4289,23 @@ button.site-chip:hover {
 .engine-card .cover-poster {
   height: auto;
 }
+/* One fixed height so a row of cards lines up: the reason on up to two lines over its chips, or the
+   chips alone in a shorter footer. */
 .engine-why {
   container-type: inline-size;
   display: flex;
-  flex: 1;
+  flex: none;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 10px 9px;
+  gap: 4px;
+  height: 76px;
+  padding: 8px 10px;
   border-top: 1px solid var(--hairline);
   background: var(--surface);
+}
+.engine-why:has(> .engine-why-chips:only-child),
+.engine-why:empty {
+  height: 42px;
 }
 .engine-why-line {
   display: flex;
@@ -4276,6 +4331,7 @@ button.site-chip:hover {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 15px;
 }
 .engine-why-seed-row {
   display: flex;
@@ -4342,6 +4398,12 @@ button.site-chip:hover {
   flex: none;
   max-width: 100%;
   overflow: hidden;
+}
+.engine-why-chips > .tag-chip > .tag-chip-body {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* The reason every card in a rail shares, said once above it instead of on each card. */
 .engine-rail-reason {

@@ -474,6 +474,9 @@ export default function ReaderPage() {
       void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
       void queryClient.invalidateQueries({ queryKey: ['progress'] })
       void queryClient.invalidateQueries({ queryKey: ['stats'] })
+      // Reading days decide what Automatic picks for the series cards. Marked stale only, so the
+      // cards pick it up on the next page instead of refetching on every flush here.
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'], refetchType: 'none' })
     },
     [queryClient],
   )

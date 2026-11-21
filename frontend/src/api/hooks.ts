@@ -1029,6 +1029,8 @@ export interface HomeRecentSeriesItem {
   newestChapterLabel: string | null
   /** Next unread downloaded chapter. The server drops fully read series, so null is only defensive. */
   readChapterId: number | null
+  /** The colour the cover lends to the card's foot, as #rrggbb, or null when the art has no hue. */
+  coverAccent?: string | null
 }
 
 /** Most cards a Home rail asks for: the server's `HomeController.MaxRailItems`. The rails scroll. */
@@ -1216,6 +1218,10 @@ export interface UiSettings {
   language: string
   /** How Discover's Browse tab is arranged. Leaving it out of a save keeps the stored one. */
   discoverLayout?: DiscoverLayout | null
+  /** What a library cover's progress bar leads with. Leaving it out of a save keeps the stored one. */
+  cardProgress?: 'auto' | 'downloads' | 'reading' | null
+  /** Read-only: what "auto" resolves to for this user, from their use of Maki's own reader. */
+  cardProgressAuto?: 'downloads' | 'reading' | null
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -1265,10 +1271,16 @@ export function useSavePageLayout() {
     mutationFn: ({ page, sections }: { page: 'home' | 'discover'; sections: PageSection[] }) => {
       const ui = queryClient.getQueryData<UiSettings>(['settings', 'ui'])
       if (!ui) throw new Error(t`Settings not loaded`)
+      // `cardProgress: null` keeps the stored choice, so a tab with an older copy cannot undo it.
       const next: UiSettings =
         page === 'home'
-          ? { ...ui, homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] }, discoverLayout: null }
-          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] } }
+          ? {
+              ...ui,
+              homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] },
+              discoverLayout: null,
+              cardProgress: null,
+            }
+          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] }, cardProgress: null }
       return api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(next) })
     },
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'ui'], saved),

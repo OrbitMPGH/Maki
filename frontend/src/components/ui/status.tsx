@@ -172,6 +172,11 @@ export interface SeriesProgressVisual {
    * The ring alone is easy to miss, so both views spell the same number out in a badge.
    */
   unread: number | null
+  /**
+   * Chapters read, uncapped: someone reading elsewhere can be past what is on disk. Null when
+   * nothing tracks it.
+   */
+  read: number | null
 }
 
 /**
@@ -218,6 +223,7 @@ export function seriesProgressVisual(
     complete: !nothingWanted && total > 0 && have >= total,
     readPct: tracked ? Math.min(100, (read / have) * 100) : null,
     unread: tracked ? Math.max(0, have - read) : null,
+    read: tracked ? read : null,
   }
 }
 
