@@ -1454,7 +1454,22 @@ The owner's shelf is 12% romance webtoons and the page holds none in 40 and two 
 - **What costs wantN on in-progress shelves is the lane picks themselves.** About 4.6 inserts per page. On finished shelves an insert is a next read 7.4% of the time against 6.4% for the pick it displaces; on in-progress shelves 4.0% against 6.8%.
 - **The gain is in the lanes' own cells.** Recall of next reads in a side cell rises by a fifth to a third. At 0.75 with the fame rule that is +128 next reads found against -103 in the main cell on finished shelves, and +90 against -150 on in-progress ones. On the script's independent facets second-taste recall falls with overall recall on in-progress shelves; only next reads outside every main facet gain on both, and certainly only on finished shelves.
 - **Owner's page** (the real-service lane pages of the `lanes` round, merged in Python with the same rule): at 0.75 two romance webtoons are inserted (ranks 18 and 33), webtoons in the top 40 go 3 to 5, romance webtoons 0 to 2, Action stays 10, household titles 4 to 4 in the top 20 and 8 to 9 in the top 40, `lost` 0.22 to 0.11. The fame rule changes nothing there; 1.0 adds one Action title.
-- **Not done:** the confirm split, judged panels, a ratio under 0.75, a per-shelf-kind ratio, a real "passed over" exclusion.
+- **Lower ratios, and two rules** (fame rule on throughout; `lanes2held=1` skips a side taste the shipped page holds none of, `lanes2max=1` keeps only the largest side taste). Against the shipped page:
+
+  | arm | shelves | wantN (worst third) | passed | lost_next | recall, cells second | recall, facets outside / second | strict gate |
+  |---|---|---|---|---|---|---|---|
+  | 0.5 | COMPLETED | -0.0001 (middle -0.0011) | -0.2, better | 0.165 to 0.133 | +8.6% | +6.2% (n.s.) / +0.7% | PASS |
+  | 0.5 | CURRENT | -0.0011 (niche -0.0019) | -0.2 | 0.175 to 0.125 | +10.5% | 0.0% / -2.2% | fail (wantN) |
+  | 0.35 | CURRENT | -0.0011 (niche -0.0016) | -0.2, better | 0.175 to 0.141 | +5.0% | 0.0% / -1.6% | fail (wantN) |
+  | 0.25 | CURRENT | -0.0008 (niche -0.0013) | -0.1 | 0.175 to 0.156 | +3.0% | 0.0% / -1.1% | fail (wantN) |
+  | 0.5, held | COMPLETED | +0.0003 (middle -0.0007) | -0.3, better | 0.165 to 0.150 | +5.6% | +4.1% / +0.7% | PASS |
+  | 0.5, held | CURRENT | -0.0000 (niche -0.0007) | -0.3, better | 0.175 to 0.152 | +7.5% | 0.0% / -0.4% | PASS |
+  | 0.75, held | CURRENT | -0.0007 (niche -0.0015) | -0.5, better | 0.175 to 0.141 | +14.8% | +7.7% / -1.4% | fail (wantT only) |
+  | 0.75, max 1 | CURRENT | -0.0006 | -0.1 | 0.175 to 0.140 | +13.5% | +15% / -0.6% | fail (wantT only) |
+
+- **Why the in-progress inserts are weak.** At 0.75 an insert is a next read 4.0% of the time against 6.8% for the pick it displaces, and no slice of the inserts reaches 6.8%. The worst are inserts into a taste the shipped page held none of (2.6%, 40% of the inserts), lanes at 5 to 20% of the shelf (2.0 to 2.6%) and the manga lane that is neither Action nor Romance (2.1%). The displaced action webtoons are next reads 9.9% of the time. A lower ratio leaves mostly the inserts into tastes the page held none of, so each insert gets weaker (3.1% at 0.25) while the count falls. `lanes2held` removes that slice and passes everywhere, but it also removes the case lanes exist for: the owner's page holds no romance webtoon, so `lanes2held` leaves it unchanged.
+- **One ratio, not one per shelf kind.** The app cannot tell a finished shelf from an in-progress one. The nearest thing it could compute is the in-progress share of the seed weight, and the harness only grades pure shelf kinds. 0.5 with the fame rule meets the provisional tolerance (wantN within 0.002 pooled and 0.004 per third, `passed` not up) on both kinds. Owner's page at 0.5 (and at 0.35 and 0.25): one romance webtoon at rank 26, webtoons 3 to 4 in the top 40, Action and household titles unchanged.
+- **Not done:** the confirm split, judged panels, mixed `CURRENT,COMPLETED` shelves, a ratio blended by in-progress share, a real "passed over" exclusion.
 
 ## v9: series the reader data does not cover (`tastemissing`, mapped and predicted taste rows, seed scales), nothing shipped
 
