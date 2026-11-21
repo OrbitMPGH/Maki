@@ -11,6 +11,14 @@ A facet is a second taste when 15% <= s <= 50%. Per reader:
 Also kept/lost against next reads (facets with 15% <= n <= 50%, readers with 5+ next reads), which
 is what the reader actually went on to read. Paired bootstrap over readers, variant minus base.
 
+Per-taste recall: of a reader's held-out next reads that carry one of their second-taste facets
+(15% to 50% of the seeds), the share the top 40 holds, beside the same for their main facets (over
+50% of the seeds); "outside" is the second-taste next reads that carry no main facet. Pooled over
+every such next read, and per reader for readers with 3 or more there.
+These are this script's facets, not the lanes' taste groups, so a lanes variant is not graded on its
+own definition. The same recall over the lanes' cells (type by Action, else Romance, else neither;
+main = the largest by seed count, second = 3+ seeds and 5% of them) is printed under it for reference.
+
 Pages come from `eval-reco-labels.cs library --next --dump-picks <dir>`, with both variants in one
 run so they share requests.
 
@@ -40,7 +48,11 @@ def load_meta(ids, dump):
         for i, t, g in con.execute(q, chunk):
             gs = set(json.loads(g)) if g else set()
             meta[i] = {f for f in FACETS if f == t or f in gs}
+            cells[i] = (t, "Action" if "Action" in gs else "Romance" if "Romance" in gs else "")
     return meta
+
+
+cells = {}
 
 
 def shares(ids, meta):
@@ -98,8 +110,46 @@ def per_reader(rows, meta, depth):
                 sc = reader_scores(n, s)
                 if sc:
                     rec["next_kept_shelf"], rec["next_lost_shelf"] = sc
+        page_set = set(r["page"][:depth])
+        nxt = [n for n in r["next"] if n in meta]
+        second = {f for f in FACETS if 0.15 <= s[f] <= 0.5}
+        main = {f for f in FACETS if s[f] > 0.5}
+        for name, test in (("rec_second", lambda f: f & second), ("rec_outside", lambda f: f & second and not f & main),
+                           ("rec_main", lambda f: f & main)):
+            items = [n for n in nxt if test(meta[n])]
+            if items:
+                rec[name] = (sum(n in page_set for n in items), len(items))
+        counts = {}
+        for seed in r["seeds"]:
+            if seed in cells:
+                counts[cells[seed]] = counts.get(cells[seed], 0) + 1
+        if counts:
+            total = sum(counts.values())
+            main_cell = max(counts, key=counts.get)
+            side = {c for c, v in counts.items() if c != main_cell and v >= 3 and v / total >= 0.05}
+            for name, test in (("cell_second", lambda c: c in side), ("cell_main", lambda c: c == main_cell)):
+                items = [n for n in r["next"] if n in cells and test(cells[n])]
+                if items:
+                    rec[name] = (sum(n in page_set for n in items), len(items))
         out[i] = rec
     return out
+
+
+def recall_rows(pb, pv, common, keys, label):
+    print(label)
+    for key in keys:
+        both = [i for i in common if key in pb[i] and key in pv[i]]
+        if not both:
+            continue
+        nb = sum(pb[i][key][0] for i in both)
+        nv = sum(pv[i][key][0] for i in both)
+        total = sum(pb[i][key][1] for i in both)
+        per = [i for i in both if pb[i][key][1] >= 3]
+        mb = sum(pb[i][key][0] / pb[i][key][1] for i in per) / len(per)
+        mv = sum(pv[i][key][0] / pv[i][key][1] for i in per) / len(per)
+        m, lo, hi = boot([pv[i][key][0] / pv[i][key][1] - pb[i][key][0] / pb[i][key][1] for i in per])
+        print(f"  {key.split('_')[1]:7} pooled {total:5} next reads {nb / total:.4f} -> {nv / total:.4f} ({(nv - nb) / max(nb, 1):+.1%}); "
+              f"per reader ({len(per)} with 3+) {mb:.4f} -> {mv:.4f} {m:+.4f} [{lo:+.4f}, {hi:+.4f}]")
 
 
 def boot(diffs, reps=2000):
@@ -145,6 +195,10 @@ def main():
     refl = [pb[i]["next_lost_shelf"] for i in common if "next_lost_shelf" in pb[i]]
     if ref:
         print(f"{'next reads vs shelf':22}{len(ref):6}  kept {sum(ref) / len(ref):.3f}, lost {sum(refl) / len(refl):.3f}  (the readers themselves)")
+    recall_rows(pb, pv, common, ("rec_second", "rec_outside", "rec_main"),
+                f"per-taste recall@{a.depth} of held-out next reads (this script's facets)")
+    recall_rows(pb, pv, common, ("cell_second", "cell_main"),
+                f"per-taste recall@{a.depth}, lanes cells (type by Action/Romance/neither, by seed count)")
     for facet, key in (("webtoons", "web"), ("Action", "action")):
         sub = [i for i in common if 0.15 <= pb[i][key][0] <= 0.5]
         if not sub:
