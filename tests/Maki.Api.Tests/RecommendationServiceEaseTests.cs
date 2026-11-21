@@ -157,6 +157,20 @@ public class RecommendationServiceEaseTests : IDisposable
     }
 
     [Fact]
+    public async Task A_custom_rail_without_seeds_keeps_the_plain_ranking_in_its_own_pool()
+    {
+        SeedLibrary(101, 202);
+        var recommender = new CapturingRecommender([Pick(77)]);
+        var service = Service(recommender, new FakeAppSettings());
+
+        var rail = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1), origin: PoolOrigin.Rail);
+        var tab = await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal([false, true], recommender.SeenLanes);
+        Assert.NotEqual(rail.PoolVersion, tab.PoolVersion);
+    }
+
+    [Fact]
     public async Task A_pick_the_table_explains_is_balanced_like_a_co_read_pick()
     {
         // The recommender names the strongest seed on every card it explains, so three picks all

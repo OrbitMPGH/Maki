@@ -269,10 +269,11 @@ public class RecommendationService(
         var knownKey = knownExcluded.Count == 0
             ? string.Empty
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..16];
-        // Side tastes are topped up on the whole-shelf page only, the population that was graded.
-        // A caller with its own seed list (recent activity, side interests, custom rails) keeps the
-        // plain ranking, so the same seeds can mean two pools.
-        var lanes = request.SeedIds is not { Count: > 0 };
+        // Side tastes are topped up on the whole-shelf page only, the population that was graded: the
+        // Recommended tab (filtered or not, since each lane scan gets the same filters) and Home's
+        // "You might like". A caller with its own seed list (recent activity, side interests) and
+        // every custom rail, seeded or not, keep the plain ranking, so the same seeds can mean two pools.
+        var lanes = request.SeedIds is not { Count: > 0 } && origin == PoolOrigin.Interactive;
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
