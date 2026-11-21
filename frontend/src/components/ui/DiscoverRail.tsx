@@ -393,6 +393,8 @@ type EngineWhy = {
   seed?: { label: string; title: string; id: string | null; thumb: string | null }
   /** The same reason said of a whole rail, for when every card in it would carry it. */
   rail?: string
+  /** A shorter form for the card's fixed-height footer. Falls back to `text`. */
+  brief?: string
 }
 
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
@@ -443,8 +445,20 @@ function engineWhy(item: RecommendationItem): EngineWhy {
       },
     }
   }
-  if (item.coRead) return { Glyph: IconUsers, text: coReadPhrase(item) }
-  if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
+  if (item.coRead) {
+    return {
+      Glyph: IconUsers,
+      text: coReadPhrase(item),
+      brief: now`Similar readers finished it`,
+    }
+  }
+  if (item.coRecommended) {
+    return {
+      Glyph: IconUsers,
+      text: now`Readers like you also recommended this`,
+      brief: now`Similar readers recommend it`,
+    }
+  }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
   return { Glyph: IconIntersect, text: now`Similar feel` }
 }
@@ -515,7 +529,8 @@ export const EngineCard = memo(function EngineCard({
 }) {
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
-  const { Glyph, text, seed } = engineWhy(item)
+  const { Glyph, text, seed, brief } = engineWhy(item)
+  const shown = brief ?? text
   const { title } = item
   const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
@@ -600,7 +615,7 @@ export const EngineCard = memo(function EngineCard({
           ) : (
             <span className="engine-why-line" title={text}>
               <Glyph size={13} />
-              <span className="engine-why-text">{text}</span>
+              <span className="engine-why-text">{shown}</span>
             </span>
           )}
           {!seed && chips.length > 0 && (

@@ -39,6 +39,7 @@ import { SettingsIndex, SettingsJump } from '../components/settings/SettingsInde
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
   AppearanceSection,
+  SeriesCardsSection,
   DiscoverSection,
   HomeSectionsSection,
   LanguageSection,
@@ -95,6 +96,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'api-keys': <ApiKeysSection />,
 
       appearance: <AppearanceSection />,
+      'series-cards': <SeriesCardsSection />,
       language: <LanguageSection />,
       'title-language': <TitleLanguageSection />,
       'discover-rating': <DiscoverSection />,

@@ -13,6 +13,7 @@ import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { CoverCardMenu } from './CoverCardMenu'
+import { useCardProgress } from '../../lib/cardProgress'
 
 /** What a library entry offers while the server is out of reach. */
 export type OfflineAvailability = 'saved' | 'unavailable'
@@ -60,6 +61,8 @@ export const CoverCard = memo(function CoverCard({
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
+  // The "Series cards" setting moves reading from the ring round the disc onto the bar.
+  const readsOnBar = useCardProgress() === 'reading'
   const download = seriesDownloadStateVisual(series)
   const status = seriesStatusVisual(series.status)
   const statusLabel = renderLabel(status.label)
@@ -104,16 +107,47 @@ export const CoverCard = memo(function CoverCard({
   // the ring; the disc keeps its status glyph.
   const showsRead = readPct !== null && readPct > 0
   const readThrough = showsRead && unread === 0
+  // On the bar, reading is drawn over the downloaded share.
+  const readOfTotal = readsOnBar && showsRead ? (pct * readPct) / 100 : 0
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
   const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
   const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
 
+  // The bar's numbers on hover, read included whenever reading is tracked.
+  const readCount = unread !== null ? have - unread : null
+  const barTip =
+    total === 0
+      ? undefined
+      : readCount !== null
+        ? t`${have} of ${total} downloaded, ${readCount} read`
+        : t`${have} of ${total} downloaded`
+
+  // With no total the bar would only ever read 0%; it keeps its space so the grid holds still.
+  // The wrapper is a taller hover target for the tooltip than the 4px bar.
+  const bar = (
+    <div className="cover-bar-hit" data-tip={barTip}>
+      <div
+        className="cover-bar"
+        data-empty={total === 0 || undefined}
+        data-finished={readOfTotal >= 100 || undefined}
+      >
+        <div
+          className="cover-bar-fill"
+          data-complete={complete || undefined}
+          style={{ width: `${pct}%` }}
+        />
+        {readOfTotal > 0 && <div className="cover-bar-read" style={{ width: `${readOfTotal}%` }} />}
+      </div>
+    </div>
+  )
+
   const card = (
     <Link
       to={`/series/${series.id}`}
       className="cover-card"
+      style={series.coverAccent ? ({ '--series-accent': series.coverAccent } as React.CSSProperties) : undefined}
       data-selected={selected || undefined}
       data-offline={offline}
       role={selectMode ? 'checkbox' : undefined}
@@ -155,14 +189,6 @@ export const CoverCard = memo(function CoverCard({
           <span className="cover-title" title={series.title}>
             {series.displayTitle}
           </span>
-          {/* With no total the bar would only ever read 0%; it keeps its space so the grid holds still. */}
-          <div className="cover-bar" data-empty={total === 0 || undefined}>
-            <div
-              className="cover-bar-fill"
-              data-complete={complete || undefined}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
           <div className="cover-row">
             {offline === 'unavailable' ? (
               <span>{t`Not available offline`}</span>
@@ -177,6 +203,7 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
           </div>
+          {bar}
         </div>
 
         <div className="cover-corners">
@@ -222,7 +249,7 @@ export const CoverCard = memo(function CoverCard({
               className="cover-state"
               data-tone="status"
               data-unmonitored={!series.monitored || undefined}
-              data-read={readThrough ? 'all' : showsRead ? 'part' : undefined}
+              data-read={readsOnBar ? undefined : readThrough ? 'all' : showsRead ? 'part' : undefined}
               data-tip={statusTip}
               role="img"
               aria-label={statusTip}

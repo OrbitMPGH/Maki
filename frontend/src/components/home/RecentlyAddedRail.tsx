@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBookFilled } from '../../lib/icons'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
@@ -16,7 +16,11 @@ export const RecentlyAddedRail = memo(function RecentlyAddedRail({ items }: { it
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.seriesId} className="discover-rail-item reading-card">
+        <div
+          key={item.seriesId}
+          className="discover-rail-item reading-card"
+          style={item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined}
+        >
           <RecentCard item={item} />
           {item.readChapterId != null && <ReadNextButton chapterId={item.readChapterId} />}
         </div>
