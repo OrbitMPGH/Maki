@@ -6,7 +6,7 @@ namespace Maki.Metadata.Embedding;
 /// <summary>
 /// Outcome of asking to switch models: whether a switch actually started, and why not.
 /// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
-/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// <c>ILocalizer</c> (see <c>AGENTS.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
 /// renders it.
 /// </summary>
 public record ModelSwitchStart(bool Started, string Model, string Reason);

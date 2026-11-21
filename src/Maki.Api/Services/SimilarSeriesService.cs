@@ -30,7 +30,7 @@ namespace Maki.Api.Services;
 /// and the reader-cohort rail exist for, and they are off here whatever the instance settings
 /// say. The other two were off as well until the rail was graded on its own, on a judged panel of
 /// 300 seeds, for "similar story, tone and feel" on a 0 to 3 scale
-/// (<c>distribution/CLAUDE.md</c>, "v7"): content only 1.45 with 8% of picks unrelated, with the
+/// (<c>distribution/AGENTS.md</c>, "v7"): content only 1.45 with 8% of picks unrelated, with the
 /// taste vectors 1.57 and 3%, with the votes as well 1.65. A vote is a reader saying "if you
 /// liked this, try that", a statement about two works, which is what this rail's heading claims.
 /// Each follows its instance switch (<c>recommendations.tastevectors</c>,

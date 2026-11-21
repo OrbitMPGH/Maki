@@ -237,7 +237,7 @@ Add `.claude/rules/notes.md` with paths covering `src/Maki.Core/Entities/Chapter
 - the reply, tombstone and series-lock rules;
 - no note text in inbox rows, pushes or hub payloads, and no inbox param named `note`.
 
-List it in `CLAUDE.md`'s rule-file line. Add a line to the merge gotcha in `downloads.md` too: its `Services/Chapter*.cs` path already loads for both `ChapterSyncService` and `ChapterFromFilesService`, which is where someone would forget the notes.
+List it in `AGENTS.md`'s rule-file line. Add a line to the merge gotcha in `downloads.md` too: its `Services/Chapter*.cs` path already loads for both `ChapterSyncService` and `ChapterFromFilesService`, which is where someone would forget the notes.
 
 ## Tests
 

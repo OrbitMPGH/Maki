@@ -26,7 +26,7 @@ wrong side of zero):
 `lowers fame` is the claim a fame fix has to earn on top: passed certainly falls, pooled.
 Plain nDCG@40, want and plan@20 are printed by the grader and are not gates: a page of the most
 popular titles earns 17%, 38% and 70% of the engine's score on them. The judged panel, the confirm
-split and a real mixed shelf are the gates this file cannot check (distribution/CLAUDE.md, "v8").
+split and a real mixed shelf are the gates this file cannot check (distribution/AGENTS.md, "v8").
 """
 import csv
 import json

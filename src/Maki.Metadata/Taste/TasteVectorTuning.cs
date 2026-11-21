@@ -68,7 +68,7 @@ public sealed record TasteVectorTuning
 
     /// <summary>
     /// Replaces the seed centroid with the implicit-ALS user solve (<see cref="TasteFoldIn"/>).
-    /// Measurement only, ships off; numbers in <c>distribution/CLAUDE.md</c>. Eval knob:
+    /// Measurement only, ships off; numbers in <c>distribution/AGENTS.md</c>. Eval knob:
     /// <c>tasteusersolve</c>.
     /// </summary>
     public bool UserSolve { get; init; }
@@ -130,7 +130,7 @@ public sealed record TasteVectorTuning
     /// Measurement only (eval key <c>tastemissing</c>). At 0 a row without a vector gives up the
     /// whole term, about 1.5 points against a page pick, and on held-out readers no such row reaches
     /// the page. A flat stand-in does not fix that: rows without reader data are next reads about a
-    /// tenth as often as covered ones at the same score. See distribution/CLAUDE.md, "v9: series the
+    /// tenth as often as covered ones at the same score. See distribution/AGENTS.md, "v9: series the
     /// reader data does not cover".
     /// </para>
     /// </summary>

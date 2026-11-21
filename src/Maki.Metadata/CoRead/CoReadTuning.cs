@@ -173,7 +173,7 @@ public sealed record CoReadTuning
     /// </para>
     ///
     /// <para>
-    /// Re-swept on the 1.99M-pair artifact (distribution/CLAUDE.md, "v5.3"): 0.60 measures +0.0017
+    /// Re-swept on the 1.99M-pair artifact (distribution/AGENTS.md, "v5.3"): 0.60 measures +0.0017
     /// at three seeds on MangaUpdates pairs and +0.0024 on vote pairs, with median pick popularity
     /// within 4%; 0.80 loses on every grader. Together with the vote graph at 0.55 it adds Hell's
     /// Paradise and Golden Kamuy to the dev library's page and nothing obscure.

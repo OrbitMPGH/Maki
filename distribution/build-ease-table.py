@@ -13,7 +13,7 @@ Raw B favours whatever many readers finished, and inside the blend that turned a
 into a chart of hits. So each candidate's column is divided by (its completers / the median
 completers) ** --pop-damp before anything is kept. 0.35 keeps the held-out gain (nDCG@40 0.277
 against 0.283 undamped and 0.199 without the channel) with picks less mainstream than without the
-channel; 0 is the raw table, 1 loses the gain (distribution/CLAUDE.md, "v7: the EASE table is
+channel; 0 is the raw table, 1 loses the gain (distribution/AGENTS.md, "v7: the EASE table is
 popularity-damped").
 
 The solve is an items x items inverse, so memory goes with the square of --items (20,000 items is
@@ -23,7 +23,7 @@ at 20,000 items it matches the direct table to 7e-7. --max-gb refuses a solve th
 
 --statuses picks which list rows are positives, each at an optional weight (COMPLETED,CURRENT=0.5),
 and --drop-below-mean leaves out rows scored well under the reader's own mean; both default to the
-shipped table (distribution/CLAUDE.md, "v9: what EASE learns from").
+shipped table (distribution/AGENTS.md, "v9: what EASE learns from").
 
 The dense B is items x items, so the artifact keeps each seed row's top N weights by ABSOLUTE value.
 Dropping the negatives instead costs three times as much on held-out readers and makes the picks

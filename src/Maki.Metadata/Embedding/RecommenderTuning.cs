@@ -129,7 +129,7 @@ public enum AttributionScale
 /// There are two of them because each alone has a known failure. The semantic half penalizes
 /// everything near an avoided vector, and a reader's dislikes are disproportionately famous, so the
 /// penalty lands on the popular part of the space rather than on resemblance: measured, median pick
-/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/CLAUDE.md</c>, "v5: negative
+/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/AGENTS.md</c>, "v5: negative
 /// signals"). The tag half on its own would penalize every title carrying an avoided tag, including
 /// the harem comedies a harem reader would have liked.
 /// </para>
@@ -172,7 +172,7 @@ public enum AvoidBlend
 /// same reason: in this space a raw cosine is a popularity hub effect before it is a resemblance
 /// measure. Famous rows sit near everything, a reader's dislikes are disproportionately famous, and
 /// median pick popularity therefore left its band in every configuration that moved anything
-/// (<c>distribution/CLAUDE.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
+/// (<c>distribution/AGENTS.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
 /// resemblance beyond what something else already predicts.
 /// </para>
 /// </summary>
@@ -474,7 +474,7 @@ public sealed record RecommenderTuning
     /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0 is off; 4 ships. Only
     /// applies when a table is installed (<c>page-share.db</c>) and the caller asks for it (personal
     /// recommendations, behind <c>recommendations.pageshare</c>), never on the series-page rail. Eval
-    /// key <c>commonweight</c>. See distribution/CLAUDE.md, "v8: what shipped".
+    /// key <c>commonweight</c>. See distribution/AGENTS.md, "v8: what shipped".
     /// </summary>
     public double CommonWeight { get; init; } = 4.0;
 
@@ -491,7 +491,7 @@ public sealed record RecommenderTuning
     /// The shelf-wide channels give a title fitting a fifth of the shelf about a fifth of their
     /// signal, so a second taste falls off the page while the main one fills it; this puts it back
     /// and trims a webtoon flood on in-progress shelves too. Eval key <c>calibration</c>. See
-    /// distribution/CLAUDE.md, "v9: why a second taste falls off the page".
+    /// distribution/AGENTS.md, "v9: why a second taste falls off the page".
     /// </summary>
     public double ShelfCalibration { get; init; } = 0;
 
@@ -500,7 +500,7 @@ public sealed record RecommenderTuning
     /// separate facets cannot see a second taste that is a combination: a romance shelf with some
     /// romance webtoons reads as "enough Romance" and "a few webtoons", which action webtoons fill.
     /// Only read when <see cref="ShelfCalibration"/> is above 0. Eval key <c>calibrationjoint</c>.
-    /// See distribution/CLAUDE.md, "v9: a second taste that is a combination".
+    /// See distribution/AGENTS.md, "v9: a second taste that is a combination".
     /// </summary>
     public bool ShelfCalibrationJoint { get; init; }
 
@@ -511,7 +511,7 @@ public sealed record RecommenderTuning
     /// deferred, not dropped, and a one-seed request is never limited. On held-out readers 1.25
     /// costs 0.003 nDCG@40 for 4 points of top-1k share and 1.0 costs 0.007 for 8; on a real mixed
     /// shelf they take a page from 98% top-1k to 68% and 55%. Eval key <c>famecap</c>. See
-    /// distribution/CLAUDE.md, "v8: a shelf-relative fame cap" and "v8: what shipped".
+    /// distribution/AGENTS.md, "v8: a shelf-relative fame cap" and "v8: what shipped".
     /// </summary>
     public double FameCapRatio { get; init; } = 1.0;
 
@@ -529,7 +529,7 @@ public sealed record RecommenderTuning
     /// recommendations from the whole shelf, never the series-page rail) and from two seeds up.
     /// At 0.5 with <see cref="LanesFame"/> wantN stayed flat, passed fell slightly and the next reads
     /// the page lost fell by 17 to 21% on dev and confirm, both shelf kinds. Eval key <c>lanes2</c>.
-    /// See distribution/CLAUDE.md, "v9: lanes as a top-up".
+    /// See distribution/AGENTS.md, "v9: lanes as a top-up".
     /// </summary>
     public double Lanes { get; init; } = 0.5;
 

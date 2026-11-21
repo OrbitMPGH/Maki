@@ -34,7 +34,7 @@ Mention alternatives you rejected and why, so a reviewer doesn't propose them ag
 
 ## Rules that apply
 
-<!-- The `.claude/rules/*.md` and nested CLAUDE.md files covering what this touches. A reviewer
+<!-- The `.claude/rules/*.md` and nested AGENTS.md files covering what this touches. A reviewer
 loads them before reading the diff. Say which invariant from them this change leans on. -->
 
 -

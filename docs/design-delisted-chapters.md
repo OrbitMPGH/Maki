@@ -180,7 +180,7 @@ Elsewhere: `ChapterController` list returns `delistedAt`; the clear endpoint cle
 
 ## Rule file
 
-Add to `.claude/rules/downloads.md`, near the `FileRemovedAt` entry: what `DelistedAt` means, that it is decided once at the end of sync from live links only, that free-window sources never delist, that nothing reads it to decide a download, and that Keep clears it for good. Add `SourceCapabilities.FreeWindowListing` to `src/Maki.Sources/CLAUDE.md` so a new official source gets asked the question.
+Add to `.claude/rules/downloads.md`, near the `FileRemovedAt` entry: what `DelistedAt` means, that it is decided once at the end of sync from live links only, that free-window sources never delist, that nothing reads it to decide a download, and that Keep clears it for good. Add `SourceCapabilities.FreeWindowListing` to `src/Maki.Sources/AGENTS.md` so a new official source gets asked the question.
 
 ## Phases
 

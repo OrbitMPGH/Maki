@@ -32,7 +32,8 @@ design-system/out/
 .devimport/
 **/.claude/launch.json
 TODO.md
-/.agents
+/.agents/*
+!/.agents/rules/
 /.claude/skills
 /.github/skills
 .github/hooks/impeccable.json

@@ -84,7 +84,7 @@
 // reading lists, with --fold-users / --fold-out keeping the graded readers out of the training set.
 //
 // So nothing is missing from THIS tool. Written recommendations and finished reading lists are
-// different signals - they disagree on 73% of the pairs both cover - and distribution/CLAUDE.md
+// different signals - they disagree on 73% of the pairs both cover - and distribution/AGENTS.md
 // requires they stay separate artifacts and separate channels. Do not grow one into the other.
 
 using System.Diagnostics;

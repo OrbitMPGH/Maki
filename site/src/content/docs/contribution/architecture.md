@@ -38,7 +38,7 @@ dotnet ef migrations add <Name> --project src/Maki.Data --startup-project src/Ma
 
 One `ISource` per site, each in its own folder such as `Asura/` or `MangaFire/`. Page URLs are resolved at download time, not when queued, because some expire. Page requests carry their own headers (Referer, cookies) to the image fetch, so hotlink-protected CDNs work.
 
-Site notes are in [`src/Maki.Sources/CLAUDE.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/CLAUDE.md). To add a source, see [Add a source](/Maki/contribution/add-a-source/).
+Site notes are in [`src/Maki.Sources/AGENTS.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/AGENTS.md). To add a source, see [Add a source](/Maki/contribution/add-a-source/).
 
 ## Maki.Metadata
 

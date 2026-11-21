@@ -405,7 +405,7 @@ Export writes exactly the stored definition minus `origin`, `previous` and `deta
 
 ## Rule files
 
-- `src/Maki.Sources/Custom/**` is covered by `src/Maki.Sources/CLAUDE.md` automatically; the engine gotchas go there.
+- `src/Maki.Sources/Custom/**` is covered by `src/Maki.Sources/AGENTS.md` automatically; the engine gotchas go there.
 - The fetching and SSRF rules belong in `.claude/rules/auth.md`, which already covers `CoverHostPolicy` and Suwayomi. Its `paths` frontmatter gains `src/Maki.Sources/Custom/**`, `src/Maki.Api/Controllers/CustomSources*.cs` and `src/Maki.Core/Sources/Custom/**`.
 - `src/Maki.Api/Jobs/CustomSource*.cs` and the frontend wizard files need a home too. Check whether an existing rule file's globs already match them, and add them if not.
 - `docs/sources.md` gets a "Custom sources" section. The README's built-in source count doesn't change.

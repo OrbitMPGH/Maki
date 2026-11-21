@@ -298,7 +298,7 @@ public class SettingsController(
 
     /// <param name="ClientSecret">
     /// Returned in plaintext, like every other secret this controller serves — which is why the
-    /// whole endpoint is admin-only. See the settings-secrets note in CLAUDE.md.
+    /// whole endpoint is admin-only. See the settings-secrets note in AGENTS.md.
     /// </param>
     /// <param name="RedirectPath">
     /// Read-only. The path to register with the provider as this client's redirect URI, shown so an

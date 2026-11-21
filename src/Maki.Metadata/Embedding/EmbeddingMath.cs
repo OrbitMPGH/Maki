@@ -523,7 +523,7 @@ public static class EmbeddingMath
         // Product blend fires only where a neutralized semantic score and a contrastive tag score
         // are both positive, which on a real page is a handful of rows. Measured at nDCG@40 +0.0003
         // [+0.0001, +0.0006] and median pick popularity 1,522 against the default's 1,448, the
-        // first configuration in three phases inside that band. See distribution/CLAUDE.md,
+        // first configuration in three phases inside that band. See distribution/AGENTS.md,
         // "v5.2: negative signals, neutralized", including what it does NOT do.
         double Avoid = 12.0,
         // The EASE item-item channel (Maki.Metadata.Ease). Set from EaseTuning.Weight only when its

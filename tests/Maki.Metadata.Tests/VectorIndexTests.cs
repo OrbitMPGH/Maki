@@ -334,7 +334,7 @@ public class VectorIndexTests
     }
 
     /// <summary>
-    /// The invariant CLAUDE.md states for every filter, made executable. A credit applied to the
+    /// The invariant AGENTS.md states for every filter, made executable. A credit applied to the
     /// result page instead could only ever remove rows the channels happened to rank, so
     /// <c>author:X</c> would narrow a page rather than search within that author's work.
     /// </summary>

@@ -51,7 +51,7 @@ Self-hosters often open Maki over plain HTTP on a LAN address, where some browse
 
 ## Writing style
 
-These rules come from the repo's `CLAUDE.md` and apply to code comments, docs and UI text.
+These rules come from the repo's `AGENTS.md` and apply to code comments, docs and UI text.
 
 - Comment only where the reason is not obvious from the code.
 - Write plain, direct sentences. No filler such as "leverage", "seamless", "robust" or "delve".

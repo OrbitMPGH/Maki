@@ -103,7 +103,7 @@ public sealed record TasteTuning(
     /// <summary>
     /// Multiplier on the seed weight of a shelf series with no rating and no chapter read. 1 ships.
     /// Measurement only: an unread add otherwise steers at 1.0 to 1.5, the same as a series read
-    /// halfway. See distribution/CLAUDE.md, "v9: series the reader data does not cover".
+    /// halfway. See distribution/AGENTS.md, "v9: series the reader data does not cover".
     /// </summary>
     public double UnreadSeedScale { get; init; } = 1.0;
 

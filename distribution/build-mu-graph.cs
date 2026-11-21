@@ -38,7 +38,7 @@ using System.Globalization;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
-// Every count printed here ends up quoted in distribution/CLAUDE.md next to figures from the other
+// Every count printed here ends up quoted in distribution/AGENTS.md next to figures from the other
 // tools, all of which pin this. A comma-locale machine would produce a table nothing compares to.
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
