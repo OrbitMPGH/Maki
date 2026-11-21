@@ -1973,6 +1973,14 @@ msgstr "{have, plural, other {챕터 #개}}"
 msgid "{have} of {total}"
 msgstr "{have}/{total}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded, {readCount} read"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -5982,6 +5990,7 @@ msgid "Auto-tag rules"
 msgstr "자동 태그 규칙"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Automatic"
@@ -6235,6 +6244,10 @@ msgstr "균형"
 #, fuzzy
 msgid "Balanced"
 msgstr "균형"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Bar"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6774,6 +6787,11 @@ msgstr "취소했습니다. 라이브러리의 아무것도 바꾸지 않았습�
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "후보 페이지 {pageNumber}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "cards, covers, progress bar, downloads, reading progress, read ring"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -18492,6 +18510,10 @@ msgstr "보류 중"
 msgid "On shelf"
 msgstr "라이브러리에 있음"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in the last 30, and picks {auto} for you right now."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -20796,6 +20818,7 @@ msgstr "읽기 프로필: {profileName}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "읽기 진행 상황"
@@ -22615,6 +22638,10 @@ msgstr "오른쪽에서 왼쪽"
 msgid "Right to left"
 msgstr "오른쪽에서 왼쪽"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Ring"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -24003,6 +24030,11 @@ msgctxt "series"
 msgid "Series archived"
 msgstr "시리즈 보관됨"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Series cards"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "Series details"
@@ -24724,6 +24756,14 @@ msgstr "다른 모든 브라우저와 기기에서 로그아웃합니다. 현재
 #, fuzzy
 msgid "Similar feel"
 msgstr "비슷한 느낌"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers finished it"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers recommend it"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

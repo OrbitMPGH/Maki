@@ -1973,6 +1973,14 @@ msgstr "{have, plural, one {# глава} few {# главы} many {# глав} o
 msgid "{have} of {total}"
 msgstr "{have} из {total}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total} downloaded, {readCount} read"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -5982,6 +5990,7 @@ msgid "Auto-tag rules"
 msgstr "Правила автотегов"
 
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Automatic"
@@ -6235,6 +6244,10 @@ msgstr "сбалансированный"
 #, fuzzy
 msgid "Balanced"
 msgstr "Сбалансированно"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Bar"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6774,6 +6787,11 @@ msgstr "Отменено. Библиотека не изменена."
 #, fuzzy
 msgid "Candidate page {pageNumber}"
 msgstr "Страница-кандидат {pageNumber}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "cards, covers, progress bar, downloads, reading progress, read ring"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -18492,6 +18510,10 @@ msgstr "Отложено"
 msgid "On shelf"
 msgstr "На полке"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in the last 30, and picks {auto} for you right now."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -20796,6 +20818,7 @@ msgstr "Профиль чтения: {profileName}"
 #: src/components/home/ContinueHero.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "Прогресс чтения"
@@ -22615,6 +22638,10 @@ msgstr "справа налево"
 msgid "Right to left"
 msgstr "Справа налево"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Ring"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -24003,6 +24030,11 @@ msgctxt "series"
 msgid "Series archived"
 msgstr "Серия архивирована"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Series cards"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "Series details"
@@ -24724,6 +24756,14 @@ msgstr "Завершает сеанс во всех других браузер�
 #, fuzzy
 msgid "Similar feel"
 msgstr "Похожее ощущение"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers finished it"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Similar readers recommend it"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
