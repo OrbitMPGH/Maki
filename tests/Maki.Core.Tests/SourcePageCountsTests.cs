@@ -149,4 +149,34 @@ public class SourcePageCountsTests
 
         Assert.Equal([1], SourcePageCounts.Truncated(samples));
     }
+
+    [Fact]
+    public void One_longer_outlier_does_not_mark_agreeing_short_sources_as_previews()
+    {
+        // Four sources agree on ~12-page chapters while a single outlier reports much longer copies
+        // (e.g. a wrong title-search match, merged chapters, or extra pages).
+        var samples = new[]
+        {
+            Sized(1, 1, 30, 1440, 2100), Sized(1, 2, 32, 1440, 2100), Sized(1, 3, 28, 1440, 2100),
+            Sized(2, 1, 12, 1440, 2100), Sized(2, 2, 13, 1440, 2100), Sized(2, 3, 12, 1440, 2100),
+            Sized(3, 1, 12, 1200, 1750), Sized(3, 2, 13, 1200, 1750), Sized(3, 3, 12, 1200, 1750),
+            Sized(4, 1, 12, 1200, 1750), Sized(4, 2, 13, 1200, 1750), Sized(4, 3, 12, 1200, 1750),
+            Sized(5, 1, 12, 1100, 1600), Sized(5, 2, 13, 1100, 1600), Sized(5, 3, 12, 1100, 1600)
+        };
+
+        Assert.Empty(SourcePageCounts.Truncated(samples));
+    }
+
+    [Fact]
+    public void A_slightly_shorter_fixed_length_source_is_not_a_preview()
+    {
+        // 15 pages vs 20 pages is 75% of the length, not a preview cap.
+        var samples = new[]
+        {
+            S(1, 1, 15), S(1, 2, 14), S(1, 3, 15),
+            S(2, 1, 20), S(2, 2, 20), S(2, 3, 20)
+        };
+
+        Assert.Empty(SourcePageCounts.Truncated(samples));
+    }
 }
