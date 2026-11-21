@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
@@ -588,10 +589,15 @@ export function useRecommendations(
   /** Keeps the previous answer up while a changed request loads, for a request that follows live filters. */
   keepPrevious = false,
 ) {
+  const client = useQueryClient()
   const { refresh, ...identity } = request
   const identityKey = JSON.stringify(identity)
-  return useInfiniteQuery({
-    queryKey: ['recommendations', identity],
+  const queryKey = useMemo(
+    () => ['recommendations', JSON.parse(identityKey) as Omit<RecommendationRequest, 'refresh'>] as const,
+    [identityKey],
+  )
+  const query = useInfiniteQuery({
+    queryKey,
     // The signal lets a superseded live-apply request go: the server drops a queued pool build once
     // nobody waits on it.
     queryFn: ({ pageParam, signal }) => {
@@ -630,6 +636,23 @@ export function useRecommendations(
     retry: false,
     placeholderData: keepPrevious ? keepPreviousData : undefined,
   })
+
+  // Prune superseded pre-restart pages from the raw cache as well (not only in `select`), so
+  // feedback mutations do not retain or decrement stale pages and a later refetch starts at page 0.
+  useEffect(() => {
+    const raw = client.getQueryData<
+      InfiniteData<RecommendationsResult, { page: number; poolVersion: string | undefined }>
+    >(queryKey)
+    if (!raw) return
+    const restart = raw.pages.findLastIndex((page) => page?.restartRequired)
+    if (restart <= 0) return
+    client.setQueryData(queryKey, {
+      pages: raw.pages.slice(restart),
+      pageParams: [{ page: 0, poolVersion: undefined }, ...raw.pageParams.slice(restart + 1)],
+    })
+  }, [client, queryKey, query.dataUpdatedAt])
+
+  return query
 }
 
 /** One catalogue-browse rail on the Discover tab (Popular / New / Trending / …). */

@@ -63,10 +63,17 @@ public class RecommendationService(
 
     private const int PageSize = 40;
 
+    /// <summary>
+    /// The head size that pins <c>SemanticRecommender</c>'s fusion budget, MMR window, and
+    /// <c>AttributionCutoff</c> reference distribution. Kept separate from <see cref="PoolSize"/> so
+    /// extending the scrollable tail does not perturb the calibrated top pages.
+    /// </summary>
+    private const int CalibrationLimit = 200;
+
     /// <summary>Matches the custom rails' seed cap, so a bound request cannot build a megabyte cache key.</summary>
     internal const int MaxSeeds = 100;
 
-    /// <summary>The page ceiling; the pool is a few hundred rows, so no real pager gets near it.</summary>
+    /// <summary>The page ceiling; the pool is up to <see cref="PoolSize"/> rows, so no real pager gets near it.</summary>
     internal const int MaxPage = 1000;
 
     /// <summary>Clamps the dials, seed count and page of a request bound from a POST body.</summary>
@@ -77,7 +84,16 @@ public class RecommendationService(
         Diversity = Math.Clamp(double.IsFinite(request.Diversity) ? request.Diversity : 0, 0, 1),
         Page = Math.Clamp(request.Page, 0, MaxPage),
     };
-    private const int PoolSize = 200;
+
+    /// <summary>
+    /// Compact pool depth for semantic builds (25 pages of <see cref="PageSize"/>). Stored as
+    /// lightweight <see cref="RankedRecommendationPick"/> rows and hydrated one 40-item page at a
+    /// time from the dump, so deeper scrolling does not inflate cache memory or upfront SQLite I/O.
+    /// </summary>
+    internal const int PoolSize = 1000;
+
+    /// <summary>Cap for the SQL genre/tag fallback that runs only while the embedding index is absent.</summary>
+    private const int FallbackPoolSize = 200;
 
     /// <summary>
     /// How many distinct pools to keep. More than one because the cache key carries the caller's
@@ -85,8 +101,7 @@ public class RecommendationService(
     /// own key — a single slot would thrash between them and recompute a full index scan per request.
     /// Two per person, in fact: the Recommended tab seeds on the whole library while Discover's
     /// recent-activity rail seeds on the last few series read, and the rail is on the tab people land
-    /// on. Small even so, because a pool is 200 hydrated recommendations and stale ones age out on
-    /// their own.
+    /// on. Compact pools are small enough to keep the same slot budgets while holding 1,000 picks.
     /// </summary>
     private const int CacheSlots = 16;
 
@@ -121,6 +136,7 @@ public class RecommendationService(
     private readonly object _poolsGate = new();
     private readonly SemaphoreSlim _scanGate = new(1, 1);
     private readonly Dictionary<string, PoolBuild> _building = [];
+    private long _nextBuildId;
 
     /// <summary>
     /// One pending pool build and how many readers are waiting on it. When the last one leaves
@@ -140,7 +156,7 @@ public class RecommendationService(
 
     private sealed class PoolBuild
     {
-        public Task<RecommendationsResult> Task { get; set; } = null!;
+        public Task<CachedRecommendationPool> Task { get; set; } = null!;
         public int Waiters { get; set; }
         public bool Scanning { get; set; }
         public CancellationTokenSource Abandoned { get; } = new();
@@ -173,8 +189,6 @@ public class RecommendationService(
         // joins snapshot.Avoided, which the recommender subtracts with rather than steers by.
         SeedSnapshot snapshot;
         HashSet<long> suppressed;
-        long feedbackRevision;
-        long nextDismissalExpiry;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -185,14 +199,6 @@ public class RecommendationService(
             // choose their own seeds (recent activity, side interests, custom rails) would otherwise
             // recommend it straight back.
             suppressed.UnionWith(await RecommendationFeedbackService.LikedAsync(db, scope.UserId, ct));
-            feedbackRevision = (await RecommendationFeedbackService.VersionsAsync(db, scope.UserId, ct))
-                .FeedbackRevision;
-            var now = DateTime.UtcNow;
-            nextDismissalExpiry = (await db.RecommendationFeedback.AsNoTracking()
-                .Where(x => x.UserId == scope.UserId &&
-                    x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now)
-                .OrderBy(x => x.DismissedUntilUtc)
-                .Select(x => x.DismissedUntilUtc).FirstOrDefaultAsync(ct))?.Ticks ?? 0;
         }
 
         var seeded = snapshot.Effective;
@@ -269,6 +275,7 @@ public class RecommendationService(
         var knownKey = knownExcluded.Count == 0
             ? string.Empty
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..16];
+        var dumpStamp = store.DumpStamp();
         // Side tastes are topped up on the whole-shelf page only, the population that was graded: the
         // Recommended tab (filtered or not, since each lane scan gets the same filters) and Home's
         // "You might like". A caller with its own seed list (recent activity, side interests) and
@@ -278,12 +285,12 @@ public class RecommendationService(
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
                   $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}" +
-                  $"|l:{(lanes ? 1 : 0)}";
+                  $"|l:{(lanes ? 1 : 0)}|dump:{dumpStamp}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
         // next reader start it again; one still queued when its last reader leaves is dropped.
-        RecommendationsResult? pool = null;
+        CachedRecommendationPool? pool = null;
         PoolBuild? build = null;
         lock (_poolsGate)
         {
@@ -298,7 +305,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors, ease, pageShare, lanes, demote, knownExcluded));
+                        coGraph, coRead, tasteVectors, ease, pageShare, lanes, demote, knownExcluded, dumpStamp));
                     _building[key] = created;
                     build = created;
                 }
@@ -329,36 +336,55 @@ public class RecommendationService(
             }
         }
 
-
-        var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
+        // Keyed on inputs (including dump stamp) plus this build's monotonic id, never on
+        // feedbackRevision. Refresh, cache eviction, TTL expiry or a dump swap restart paging; a
+        // reader hiding or dismissing a card on page 15 keeps scrolling without losing their place.
+        var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{pool.BuildId}";
 
         // The caller is paging a pool that no longer exists, so their page number means nothing
         // against this one and honouring it would skip or repeat titles. Serve the new pool from
         // the top and say so, rather than an empty page: the client drops what it had and keeps
         // this, so paging restarts instead of dead-ending mid-scroll.
         var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
-        var similarVisible = RecommendationReasons.Balance(
-            Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList()));
-        var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
         var page = restart ? 0 : Math.Max(0, request.Page);
-        return pool with
+        var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
+        if (pool.CompactSimilar is { } compact)
         {
-            Related = relatedVisible,
-            Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
-            Page = page,
-            HasMore = similarVisible.Count > (page + 1) * PageSize,
-            PoolVersion = version,
-            RestartRequired = restart,
-            TotalSimilar = similarVisible.Count,
-        };
+            // Keep the build-time Spread order rather than re-spreading after per-reader suppression:
+            // hiding a card mid-scroll then never reshuffles earlier cards into later pages.
+            var visible = compact.Where(p => !suppressed.Contains(p.SeriesId)).ToList();
+            var slice = RecommendationReasons.BalanceSlice(visible, page * PageSize, PageSize);
+            var hydrated = await store.HydratePicksAsync(slice, pool.Seeds!, ct);
+            return new RecommendationsResult(
+                relatedVisible,
+                hydrated,
+                pool.GeneratedAt,
+                Page: page,
+                HasMore: visible.Count > (page + 1) * PageSize,
+                PoolVersion: version,
+                RestartRequired: restart,
+                TotalSimilar: visible.Count);
+        }
+
+        var similarVisible = RecommendationReasons.Balance(
+            pool.HydratedSimilar!.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
+        return new RecommendationsResult(
+            relatedVisible,
+            similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
+            pool.GeneratedAt,
+            Page: page,
+            HasMore: similarVisible.Count > (page + 1) * PageSize,
+            PoolVersion: version,
+            RestartRequired: restart,
+            TotalSimilar: similarVisible.Count);
     }
 
-    private async Task<RecommendationsResult> BuildPoolAsync(
+    private async Task<CachedRecommendationPool> BuildPoolAsync(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
         bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare, bool lanes,
-        IReadOnlyDictionary<long, double> demote, IReadOnlySet<long> known)
+        IReadOnlyDictionary<long, double> demote, IReadOnlySet<long> known, string dumpStamp)
     {
         var entered = false;
         try
@@ -372,6 +398,7 @@ public class RecommendationService(
             }
 
             var started = DateTime.UtcNow;
+            var buildId = Interlocked.Increment(ref _nextBuildId);
             var exclude = new HashSet<long>(libraryIds.Concat(seeds));
             var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, CancellationToken.None);
             foreach (var r in related)
@@ -383,10 +410,54 @@ public class RecommendationService(
             // expected to be familiar.
             exclude.UnionWith(known);
 
+            var owned = libraryIds.Concat(seeds).Concat(known).ToHashSet();
+
             // Prefer semantic ("feel") matches once the embedding index is built; fall back to
             // the genre/tag/author scan while it's still populating (or empty).
-            var similar = semantic.IsReady()
-                ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
+            if (semantic.IsReady() && semantic.SupportsCompactPool)
+            {
+                var compact = await semantic.GetSimilarPoolAsync(
+                    seeds, exclude, CalibrationLimit, PoolSize, filters, request.Obscurity,
+                    seedWeight.Count > 0 ? seedWeight : null,
+                    avoided.Count > 0 ? avoided : null, request.Diversity,
+                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
+                    demote: demote.Count > 0 ? demote : null, common: pageShare, lanes: lanes,
+                    stampFranchises: true, ct: CancellationToken.None);
+                if (compact.Picks.Count > 0)
+                {
+                    var picks = compact.Picks;
+                    var editions = await store.GetOwnedEditionIdsAsync(
+                        owned, picks.Select(p => p.SeriesId).ToList(), CancellationToken.None);
+                    if (editions.Count > 0)
+                    {
+                        picks = picks.Where(p => !editions.Contains(p.SeriesId)).ToList();
+                    }
+
+                    logger.LogInformation(
+                        "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar (semantic)",
+                        seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, picks.Count);
+
+                    if (related.Count > 0)
+                    {
+                        var relatedFranchises = await semantic.FranchisesAsync(
+                            related.Select(CatalogueId).Where(id => id > 0).ToList(), CancellationToken.None);
+                        related = WithFranchises(related, relatedFranchises);
+                    }
+
+                    var spreadPicks = Spread(picks);
+                    var compactPool = new CachedRecommendationPool(
+                        related, spreadPicks, compact.Seeds, HydratedSimilar: null, DateTime.UtcNow, buildId, dumpStamp);
+                    lock (_poolsGate)
+                    {
+                        _pools.Store(key, compactPool, origin);
+                    }
+
+                    return compactPool;
+                }
+            }
+
+            var similar = semantic.IsReady() && !semantic.SupportsCompactPool
+                ? await semantic.GetSimilarAsync(seeds, exclude, CalibrationLimit, filters, request.Obscurity,
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
                     coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
@@ -398,15 +469,15 @@ public class RecommendationService(
             {
                 // The fallback scan has no vectors, so there is nothing to measure resemblance
                 // against and the avoid channel simply cannot apply here.
-                similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, CancellationToken.None);
+                similar = await store.GetSimilarAsync(seeds, exclude, FallbackPoolSize, filters, CancellationToken.None);
             }
 
-            var editions = await store.GetOwnedEditionIdsAsync(
-                libraryIds.Concat(seeds).Concat(known).ToHashSet(), similar.Select(CatalogueId).Where(id => id > 0).ToList(),
+            var hydratedEditions = await store.GetOwnedEditionIdsAsync(
+                owned, similar.Select(CatalogueId).Where(id => id > 0).ToList(),
                 CancellationToken.None);
-            if (editions.Count > 0)
+            if (hydratedEditions.Count > 0)
             {
-                similar = similar.Where(p => !editions.Contains(CatalogueId(p))).ToList();
+                similar = similar.Where(p => !hydratedEditions.Contains(CatalogueId(p))).ToList();
             }
 
             logger.LogInformation(
@@ -420,7 +491,8 @@ public class RecommendationService(
             related = WithFranchises(related, franchises);
             similar = Spread(WithFranchises(similar, franchises));
 
-            var pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
+            var pool = new CachedRecommendationPool(
+                related, CompactSimilar: null, Seeds: null, similar, DateTime.UtcNow, buildId, dumpStamp);
             lock (_poolsGate)
             {
                 _pools.Store(key, pool, origin);
@@ -532,30 +604,38 @@ public class RecommendationService(
     /// </para>
     /// </summary>
     internal static IReadOnlyList<MangaBakaRecommendation> Spread(
-        IReadOnlyList<MangaBakaRecommendation> ranked)
+        IReadOnlyList<MangaBakaRecommendation> ranked) =>
+        Spread(ranked, static p => p.FranchiseId, static p => p.LaneFloor);
+
+    internal static IReadOnlyList<RankedRecommendationPick> Spread(
+        IReadOnlyList<RankedRecommendationPick> ranked) =>
+        Spread(ranked, static p => p.FranchiseId, static p => p.LaneFloor);
+
+    private static IReadOnlyList<T> Spread<T>(
+        IReadOnlyList<T> ranked, Func<T, int?> franchiseOf, Func<T, int> laneFloorOf)
     {
         if (ranked.Count < 2)
         {
             return ranked;
         }
 
-        var remaining = new LinkedList<MangaBakaRecommendation>(ranked);
+        var remaining = new LinkedList<T>(ranked);
         var placedAt = new Dictionary<int, int>();
-        var ordered = new List<MangaBakaRecommendation>(ranked.Count);
+        var ordered = new List<T>(ranked.Count);
 
         while (remaining.First is { } head)
         {
-            LinkedListNode<MangaBakaRecommendation>? chosen = null;
-            LinkedListNode<MangaBakaRecommendation>? fallback = null;
-            for (LinkedListNode<MangaBakaRecommendation>? node = head; node is not null; node = node.Next)
+            LinkedListNode<T>? chosen = null;
+            LinkedListNode<T>? fallback = null;
+            for (LinkedListNode<T>? node = head; node is not null; node = node.Next)
             {
-                if (node.Value.LaneFloor > ordered.Count)
+                if (laneFloorOf(node.Value) > ordered.Count)
                 {
                     continue;
                 }
 
                 fallback ??= node;
-                if (node.Value.FranchiseId is not int franchise
+                if (franchiseOf(node.Value) is not int franchise
                     || !placedAt.TryGetValue(franchise, out var last)
                     || ordered.Count - last >= FranchiseSpacing)
                 {
@@ -565,7 +645,7 @@ public class RecommendationService(
             }
 
             chosen ??= fallback ?? head;
-            if (chosen.Value.FranchiseId is int placed)
+            if (franchiseOf(chosen.Value) is int placed)
             {
                 placedAt[placed] = ordered.Count;
             }

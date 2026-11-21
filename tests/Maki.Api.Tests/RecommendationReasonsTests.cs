@@ -115,4 +115,51 @@ public class RecommendationReasonsTests
 
         Assert.Equal(["1", "1", "1"], balanced.Select(p => p.CoReadWithId));
     }
+
+    [Fact]
+    public void BalanceSlice_matches_full_balance_across_pages_and_preserves_original_seeds()
+    {
+        var seeds = Enumerable.Range(1, 5).Select(i => new ReasonSeed($"{i}", $"Seed {i}", $"{i}.jpg")).ToArray();
+        var hydrated = Enumerable.Range(1, 50)
+            .Select(i => i % 5 == 0
+                ? CoRead(i, seeds[0], seeds[1], seeds[2]) with { AuthorMatch = true }
+                : i % 3 == 0
+                    ? CoRead(i, seeds[0], seeds[1], seeds[2])
+                    : Feel(i, seeds[0], seeds[1], seeds[2]))
+            .ToList();
+        var compact = Enumerable.Range(1, 50)
+            .Select(i => new RankedRecommendationPick(
+                SeriesId: i,
+                FallbackRating: 80,
+                MatchedGenres: [],
+                CandidateTags: [],
+                AuthorMatch: i % 5 == 0,
+                CoRecommended: false,
+                CoRead: i % 5 == 0 || i % 3 == 0,
+                TasteMatch: false,
+                FeelSeedIds: i % 5 == 0 || i % 3 == 0 ? null : [1L, 2L, 3L],
+                CoReadSeedIds: i % 5 == 0 || i % 3 == 0 ? [1L, 2L, 3L] : null))
+            .ToList();
+
+        var full = RecommendationReasons.Balance(hydrated);
+        var page0 = RecommendationReasons.BalanceSlice(compact, skip: 0, take: 20);
+        var page1 = RecommendationReasons.BalanceSlice(compact, skip: 20, take: 20);
+        var page2 = RecommendationReasons.BalanceSlice(compact, skip: 40, take: 20);
+        var combined = page0.Concat(page1).Concat(page2).ToList();
+
+        Assert.Equal(full.Count, combined.Count);
+        for (var i = 0; i < full.Count; i++)
+        {
+            var expected = full[i].AuthorMatch ? null : Named(full[i]);
+            var actual = combined[i].AuthorMatch
+                ? null
+                : (combined[i].BalancedFeelSeedId ?? combined[i].BalancedCoReadSeedId)?.ToString();
+            Assert.Equal(expected, actual);
+            // Original seed lists remain untouched so callers like SideInterestRailService can re-balance.
+            if (combined[i].FeelSeedIds is { } feel)
+            {
+                Assert.Equal([1L, 2L, 3L], feel);
+            }
+        }
+    }
 }

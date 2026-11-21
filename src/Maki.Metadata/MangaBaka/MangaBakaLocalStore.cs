@@ -74,6 +74,22 @@ public class MangaBakaLocalStore(
         Task.FromResult(File.Exists(options.DatabasePath));
 
     /// <summary>
+    /// Identifies the dump file currently on disk (write ticks and length), or empty when absent.
+    /// Used to version cached pools that lazily hydrate from the dump across pages, so a dump swap
+    /// invalidates the pool rather than serving missing or merged rows.
+    /// </summary>
+    public virtual string DumpStamp()
+    {
+        if (string.IsNullOrEmpty(options.DatabasePath))
+        {
+            return string.Empty;
+        }
+
+        var info = new FileInfo(options.DatabasePath);
+        return info.Exists ? $"{info.LastWriteTimeUtc.Ticks}:{info.Length}" : string.Empty;
+    }
+
+    /// <summary>
     /// Title search, reporting the spelling it fell back on when the query as typed found next to
     /// nothing.
     ///
@@ -1319,6 +1335,154 @@ public class MangaBakaLocalStore(
         }
 
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    /// <summary>
+    /// Hydrates a slice of compact ranked picks from the local dump in one primary-key query,
+    /// preserving the input order and applying per-series spoiler filtering to each pick's
+    /// precomputed <see cref="RankedRecommendationPick.CandidateTags"/>.
+    /// </summary>
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
+        IReadOnlyList<RankedRecommendationPick> picks,
+        IReadOnlyDictionary<long, ReasonSeed> seeds,
+        CancellationToken ct = default)
+    {
+        if (picks.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        return await HydratePicksAsync(conn, string.Empty, picks, seeds, ct);
+    }
+
+    /// <summary>
+    /// Shared hydration implementation over an already-open connection (either the dump directly or
+    /// an attached <c>dump.</c> schema). Keeps <see cref="HydratePicksAsync(IReadOnlyList{RankedRecommendationPick}, IReadOnlyDictionary{long, ReasonSeed}, CancellationToken)"/>
+    /// and <see cref="SemanticRecommender.GetSimilarAsync"/> on one query and spoiler-filter path.
+    /// </summary>
+    internal static async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
+        SqliteConnection conn,
+        string tablePrefix,
+        IReadOnlyList<RankedRecommendationPick> picks,
+        IReadOnlyDictionary<long, ReasonSeed> seeds,
+        CancellationToken ct = default)
+    {
+        if (picks.Count == 0)
+        {
+            return [];
+        }
+
+        var table = $"{tablePrefix}series";
+        var ids = picks.Select(p => p.SeriesId).Distinct().Take(MaxInlineIds).ToList();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            $"SELECT id, {DisplayTitleSql(table)}, cover_raw_url, year, " +
+            "description, status, rating, total_chapters, cover_x250_x1, cover_x250_x2, tags_v2 " +
+            $"FROM {table} WHERE id IN ({string.Join(",", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)))})";
+        cmd.CommandTimeout = 600;
+
+        var rows = new Dictionary<long, (
+            string Title,
+            string? CoverUrl,
+            int? Year,
+            string? Description,
+            SeriesStatus Status,
+            double? Rating,
+            int? TotalChapters,
+            string? ThumbUrl,
+            string? ThumbUrlHiDpi,
+            string? TagsV2)>(ids.Count);
+        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                rows[id] = (
+                    GetString(reader, 1) ?? string.Empty,
+                    GetString(reader, 2),
+                    GetInt(reader, 3),
+                    GetString(reader, 4),
+                    MangaBakaProvider.MapStatus(GetString(reader, 5)),
+                    reader.IsDBNull(6) ? null : reader.GetDouble(6),
+                    ParseCount(GetString(reader, 7)),
+                    GetString(reader, 8),
+                    GetString(reader, 9),
+                    GetString(reader, 10));
+            }
+        }
+
+        var results = new List<MangaBakaRecommendation>(picks.Count);
+        foreach (var pick in picks)
+        {
+            if (!rows.TryGetValue(pick.SeriesId, out var row))
+            {
+                continue;
+            }
+
+            var feelSeeds = ResolveSeeds(pick.FeelSeedIds, seeds);
+            var coReadSeeds = ResolveSeeds(pick.CoReadSeedIds, seeds);
+            var feelSeed = ResolveChosen(pick.BalancedFeelSeedId ?? pick.PrimaryFeelSeedId, seeds);
+            var coReadSeed = pick.CoRead
+                ? ResolveChosen(pick.BalancedCoReadSeedId ?? pick.PrimaryCoReadSeedId, seeds)
+                : null;
+
+            results.Add(new MangaBakaRecommendation(
+                pick.SeriesId.ToString(CultureInfo.InvariantCulture),
+                row.Title,
+                row.CoverUrl,
+                row.Year,
+                row.Description,
+                row.Status,
+                row.Rating ?? pick.FallbackRating,
+                row.TotalChapters,
+                pick.MatchedGenres,
+                WithoutSpoilerTags(pick.CandidateTags, row.TagsV2).Take(4).ToList(),
+                pick.AuthorMatch,
+                RelationKind: null,
+                RelatedToTitle: null,
+                BecauseOfTitle: feelSeed?.Title,
+                ThumbUrl: row.ThumbUrl,
+                ThumbUrlHiDpi: row.ThumbUrlHiDpi,
+                CoRecommended: pick.CoRecommended,
+                CoRead: pick.CoRead,
+                TasteMatch: pick.TasteMatch,
+                FranchiseId: pick.FranchiseId,
+                CoReadWithTitle: coReadSeed?.Title,
+                BecauseOfId: feelSeed?.Id,
+                CoReadWithId: coReadSeed?.Id,
+                BecauseOfThumbUrl: feelSeed?.ThumbUrl,
+                CoReadWithThumbUrl: coReadSeed?.ThumbUrl,
+                FeelSeeds: feelSeeds,
+                CoReadSeeds: coReadSeeds)
+            {
+                LaneFloor = pick.LaneFloor,
+            });
+        }
+
+        return results;
+
+        static ReasonSeed? ResolveChosen(long? id, IReadOnlyDictionary<long, ReasonSeed> lookup) =>
+            id is { } seedId && lookup.TryGetValue(seedId, out var seed) ? seed : null;
+
+        static List<ReasonSeed>? ResolveSeeds(IReadOnlyList<long>? ids, IReadOnlyDictionary<long, ReasonSeed> lookup)
+        {
+            if (ids is not { Count: > 0 })
+            {
+                return null;
+            }
+
+            List<ReasonSeed>? list = null;
+            foreach (var id in ids)
+            {
+                if (lookup.TryGetValue(id, out var seed))
+                {
+                    (list ??= new List<ReasonSeed>(ids.Count)).Add(seed);
+                }
+            }
+
+            return list;
+        }
     }
 
     /// <summary>

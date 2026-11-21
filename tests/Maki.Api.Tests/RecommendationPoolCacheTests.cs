@@ -8,7 +8,8 @@ namespace Maki.Api.Tests;
 /// </summary>
 public class RecommendationPoolCacheTests
 {
-    private static RecommendationsResult Pool(DateTime generatedAt) => new([], [], generatedAt);
+    private static CachedRecommendationPool Pool(DateTime generatedAt) =>
+        new([], CompactSimilar: null, Seeds: null, HydratedSimilar: [], generatedAt, BuildId: 1, DumpStamp: string.Empty);
 
     [Fact]
     public void Rail_inserts_never_evict_interactive_entries()
