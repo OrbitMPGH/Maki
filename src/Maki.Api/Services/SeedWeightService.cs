@@ -266,10 +266,31 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var now = DateTime.UtcNow;
 
         var effectiveWeights = Weigh(positiveRows, signals, behavioural, addWeighting, now);
+        if (tuning.UnreadSeedScale != 1.0)
+        {
+            foreach (var r in positiveRows.Where(r => r.Rating is null && r.Provisional is null &&
+                (!signals.TryGetValue(r.Id, out var signal) || signal.Completed <= 0)))
+            {
+                effectiveWeights[r.Id] = effectiveWeights.GetValueOrDefault(r.Id, 1) * tuning.UnreadSeedScale;
+            }
+        }
+
+        var shelfIds = libraryIds.ToHashSet();
+        var offShelf = tuning.OffShelfSeedScale;
         // A liked title the reader then rated 2 is a contradiction they created, and the rating
         // wins: it is the considered action, same argument as LikedWeight's own remarks.
         foreach (var id in liked.Where(id => !avoided.ContainsKey(id)))
         {
+            if (!shelfIds.Contains(id) && offShelf != 1.0)
+            {
+                if (offShelf > 0)
+                {
+                    effectiveWeights[id] = RecommendationFeedbackPolicy.LikedWeight * offShelf;
+                }
+
+                continue;
+            }
+
             // Max, not overwrite: a liked title the reader also rated 10 keeps the rating's 2.0.
             effectiveWeights[id] = Math.Max(
                 effectiveWeights.GetValueOrDefault(id, 1), RecommendationFeedbackPolicy.LikedWeight);
@@ -325,7 +346,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                     continue;
                 }
 
-                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score, strength);
+                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score, strength) * offShelf;
                 if (weight > 0 && !avoided.ContainsKey(id))
                 {
                     animeSeeds[id] = weight;
@@ -342,7 +363,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         return new SeedSnapshot(
             new SeedWeights(libraryIds, effectiveWeights,
                 positiveIds
-                    .Concat(liked.Where(id => !avoided.ContainsKey(id)))
+                    .Concat(liked.Where(id => !avoided.ContainsKey(id) && effectiveWeights.ContainsKey(id)))
                     // Seeds and nothing else, exactly like a liked title: not LibraryIds, which is
                     // the owned-candidate list, and not the observed population, which describes a
                     // shelf these are not on. Being a seed is also what keeps a matched title out of

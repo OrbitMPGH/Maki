@@ -609,6 +609,10 @@ public class SemanticRecommender(
             }
         }
 
+        var tasteMissing = tasteLive && tasteQueries.Count > 0 && _tasteTuning.MissingShare > 0
+            ? (float)(_tasteTuning.MissingShare * MeanOfBest(tasteByRow, poolRows, 40))
+            : 0f;
+
         var pageShare = common && _tuning.CommonWeight > 0
             ? pageFrequency ?? (pageShareCache is null ? null : await pageShareCache.GetAsync(ct))
             : null;
@@ -685,6 +689,11 @@ public class SemanticRecommender(
             var tasteScore = tasteByRow.Length > row && !float.IsNegativeInfinity(tasteByRow[row])
                 ? tasteByRow[row]
                 : 0;
+            var tasteImputed = tasteMissing > 0 && !index.HasTasteAt(row);
+            if (tasteImputed)
+            {
+                tasteScore = tasteMissing;
+            }
             if (bestCosine < _tuning.CosineFloor && !crowdInjected.Contains(row))
             {
                 // Counted, not just skipped: a row the crowd channels paid a MaxInjected slot for
@@ -789,7 +798,7 @@ public class SemanticRecommender(
                 storedRank == VectorIndex.Unknown ? 0 : storedRank, score));
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
-                graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
+                graphScore > 0, coReadScore > 0, tasteScore > 0 && !tasteImputed, avoidScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity, seedIds, seedWeights, _tuning);
@@ -1377,6 +1386,34 @@ public class SemanticRecommender(
         }
 
         return kept;
+    }
+
+    /// <summary>Mean of the <paramref name="count"/> highest values among the pool's rows, 0 for an empty pool.</summary>
+    private static double MeanOfBest(float[] byRow, List<int> poolRows, int count)
+    {
+        var values = new List<float>(poolRows.Count);
+        foreach (var row in poolRows)
+        {
+            if (row < byRow.Length && !float.IsNegativeInfinity(byRow[row]))
+            {
+                values.Add(byRow[row]);
+            }
+        }
+
+        if (values.Count == 0)
+        {
+            return 0;
+        }
+
+        values.Sort();
+        var take = Math.Min(count, values.Count);
+        double sum = 0;
+        for (var i = values.Count - take; i < values.Count; i++)
+        {
+            sum += values[i];
+        }
+
+        return sum / take;
     }
 
     /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>

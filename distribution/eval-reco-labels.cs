@@ -4645,6 +4645,10 @@ file static class Variants
             {
                 taste = taste with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
             }
+            else if (key == "tastemissing")
+            {
+                taste = taste with { MissingShare = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
             else if (key == "tastemininjected")
             {
                 taste = taste with { MinInjectedScore = double.Parse(value, CultureInfo.InvariantCulture) };
