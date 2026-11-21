@@ -1435,6 +1435,54 @@ The owner's shelf is 12% romance webtoons and the page holds none in 40 and two 
 - **Lanes (eval key `lanes=<min share>`, harness only)** score a seed group on its own seeds and give its picks page slots by seed weight (Sainte-Lague) among the whole-shelf picks. Groups are type by Action, Romance or neither; every group but the largest with three seeds and the minimum share, three at most. This is the one change that reaches the cause, and it fails: at 0.05, COMPLETED wantN -0.0044 [-0.0069, -0.0018], passed +1.0; CURRENT wantN -0.0038, passed +2.0 [+1.3, +2.7]; kept +0.077 and +0.089, lost -0.067 and -0.078. 0.10 is the same shape (wantN -0.0036 and -0.0032, passed +0.7 and +1.6). A lane's page leads with the famous titles of that group, and the grader counts those as passed. Owner's page with its three lanes: webtoons 3 to 7, romance webtoons 0 to 2, Action 10 to 15, household titles in the top 20 4 to 5. Both romance webtoons come from the unread seeds the reader data covers, not from the ones that were read.
 - **Not done:** a lane definition that is not hand-made (clusters of seeds), a lane with its own fame cap or page-share table, reader data that covers in-progress webtoons (taste vectors and EASE are fitted on COMPLETED lists of readers with 300 entries), the confirm split, unit tests for the joint facets.
 
+## v9: series the reader data does not cover (`tastemissing`, mapped and predicted taste rows, seed scales), nothing shipped
+
+A candidate with no taste vector scores 0 on the largest term, and a seed with none drops out of the centroid. This measures what that costs and grades every way of filling the gap. Scripts, logs and the private owner pages are in `research/recommender/2026-11-21-coverage/` in the main checkout (`gap.py`, `sim_missing.py`, `sim_pred.py`, `predict_taste.py`, `align_taste.py`, `grade.sh`, `covmoves.py`, `owner-cov.ps1`).
+
+- **A missing taste vector is a wall, not a handicap.** On the shipping engine's scored pools (dev, n = 500, fold 0) 46% of pool rows have no vector and none of them is in a top 40; the best such row sits at rank 293 (finished shelves) and 319 (in-progress shelves) at the median. Held-out titles that rank in the top 40 on the text side alone (score minus the taste, EASE, co-read and graph terms) reach the page 86 to 92% of the time with a vector and 0 of 19 times without one.
+- **Who it reaches.** On finished shelves 0.7% of held-out titles and seeds lack a vector (11% an EASE row), because the labels are COMPLETED rows like the training data. On in-progress shelves it is 10.5% of held-out titles (49.6% for EASE) and 9.3% of seeds; 10% of those readers have under 80% of their seeds covered. Of the 1,688 uncovered held-out titles there, none is on a page and 0.1% are in a top 200, where the text side alone would put 1.0% and 4.7%. If they were recovered at the covered rate the page would hold 0.39 more hits per reader (+12%); that is the ceiling.
+- **Missing is evidence, so a flat stand-in fails.** `TasteVectorTuning.MissingShare` (eval key `tastemissing`, 0 = off) scores a row without a vector at a share of the mean of the pool's 40 best taste scores. Simulated on the dumped pools, the rows it lets on to the page are next reads a tenth as often as the rows they replace (0.8% a slot against 8.4%). In the engine 0.5 is inert and 0.85 fails (wantN -0.0014 and -0.0051).
+- **The reader data already on disk covers in-progress titles.** `coread-graph.db` holds 5.2M CURRENT rows that the taste build drops. `build-taste-vectors.cs --statuses COMPLETED,CURRENT` gives 12,086 more index rows a vector (53,787 to 65,873) and lifts coverage of in-progress held-out titles from 89.5% to 99.8% (EASE with `CURRENT=0.5`: 50.4% to 85.9%). A reader floor of 150 instead of 300 adds 550 rows and nothing to coverage. No new fetch is needed.
+- **Three ways to fill the gap** (taste artifacts, graded with `--taste`, one run each, paired on the same requests):
+  - `tcc`: the taste build with CURRENT rows. `tcc150` the same at a reader floor of 150.
+  - `align`: the shipped vectors untouched, plus the rows only the CURRENT build covers, mapped into the shipped space by a ridge map fitted on the 58,183 shared rows (held-out cosine 0.85, neighbour overlap@40 0.56). The suffix is the norm the added rows are stored at; the stored scale carries it, so an added row scores norm x cosine as a candidate and pulls the centroid by its norm as a seed, with no engine change.
+  - `pred`: a content-to-taste MLP (text vector, tag SVD, metadata; the v7 `exp-content` map) for every index row without a vector (held-out cosine 0.56). `alpred50` is `align100` plus predicted rows at 0.5 for the rest.
+
+  | variant | finished wantN | in-progress wantN | in-progress passed | uncovered wanted titles on the page, per reader | verdict (finished / in-progress) |
+  |---|---|---|---|---|---|
+  | shipped | | | 22.2% | 0.000 of 22.0 | |
+  | `tastemissing=0.5` | +0.0001 | -0.0001 | -0.0 | 0.032 | pass / pass |
+  | `tastemissing=0.85` | -0.0014 | -0.0051 | -0.6 | 0.102 | FAIL / FAIL |
+  | `pred` 0.5 / 0.75 / 1.0 | 0.0000 / 0.0000 / -0.0001 | -0.0001 / -0.0003 / -0.0009 | -0.2 / -0.3 / -0.5 | 0.004 / 0.038 / 0.130 | pass / fails one third at each norm |
+  | `tcc` | -0.0027 [-0.0045, -0.0010] | +0.0015 [-0.0015, +0.0045] | +0.7 | 0.120 | FAIL / FAIL (passed) |
+  | `tcc150` | -0.0018 [-0.0035, -0.0002] | +0.0035 [+0.0005, +0.0064] | -0.3 | 0.124 | FAIL / pass, kept -0.013 |
+  | `tcc` with the EASE `CURRENT=0.5` table | -0.0036 | +0.0080 [+0.0040, +0.0120] | -1.0 | 0.154 | FAIL / floor -1.4 |
+  | EASE `CURRENT=0.5` alone | -0.0007 | +0.0057 | -3.2 | 0.000 | overlap artefact / floor -4.4 |
+  | `align75` | +0.0002 | -0.0003 [-0.0011, +0.0004] | -0.3 | 0.046 | pass / pass |
+  | `align100` | -0.0001 | -0.0004 [-0.0018, +0.0009] | -0.5 | 0.170 | pass / mainstream third -0.0009 |
+  | `align100` with the EASE `CURRENT=0.5` table | -0.0006 | +0.0060 [+0.0031, +0.0090] | -3.5 | 0.214 | overlap artefact / floor -4.9 |
+  | `alpred50` | 0.0000 | -0.0005 | -0.5 | 0.170 | pass / mainstream third -0.0010 |
+
+  "Wanted" is held-out plus plan-to-read titles, and "uncovered" always means no vector in the shipped fold-0 table.
+- **Lifting the wall moves the uncovered titles and nothing else.** Mapped rows put 0.17 to 0.21 uncovered wanted titles on a page that had none (1% of the 22 a reader holds), at 4% of the page, and `wantN` does not move: a slot given to a newly covered row is a wanted title about 10% of the time against 14% for the page. Retraining the taste vectors on CURRENT rows buys the same coverage and costs finished shelves (-0.0027), as every status but COMPLETED has since v4. Breadth (`kept`, `lost`) holds within 0.01 for every variant but `tcc150`. The 50 in-progress readers with under 80% of their seeds covered gain nothing certain from any variant (wanted hits@40 -0.94 to +0.26).
+- **The seed mix, through the real service.** `TasteTuning.UnreadSeedScale` multiplies the weight of a shelf seed with no rating and no chapter read, `OffShelfSeedScale` the weight of a liked title or an anime match that is not on the shelf (0 leaves them out). Both ship at 1. On held-out lists (`reco-profile-probe.py`, 75 + 75 readers, plan-to-read entries as the unread adds, new probe keys `unreadscale`, `offshelf`, `tastemissing`) unread at 0.5 brings +1.3 points [+0.5, +2.2] of hidden titles back into the top 20 on control shelves and +0.7 [-0.3, +1.7] on romcom shelves; at 0.1 it is +1.6 on both, with the top 40 inside noise. Household and passed titles do not move. Held-out lists have no thumbs or anime seeds, so the off-shelf scale has no grader.
+- **Owner's page** (real service, shipped settings, all-reader tables, top 40; the off-shelf seeds are 41% of the owner's seed weight):
+
+  | case | webtoons | romance webtoons | best romance webtoon rank | Action | household in the top 20 | kept / lost |
+  |---|---|---|---|---|---|---|
+  | shipped | 3 | 0 | 100 | 10 | 4 | 0.81 / 0.22 |
+  | unread seeds x0.5, x0.25 | 5, 5 | 0 | 110, past 120 | 12, 13 | 4 | 0.84 / 0.11 |
+  | off-shelf seeds x0.5, out | 7, 6 | 0 | 55, 75 | 11, 7 | 5, 3 | 0.84 / 0.11, 0.77 / 0.11 |
+  | unread x0.5 and off-shelf out | 7 | 0 | 69 | 8 | 4 | 0.77 / 0.11 |
+  | `tastemissing` 0.5, 0.85 | 3, 4 | 0, 1 | 100, 22 | 10, 7 | 4 | 0.81 / 0.22, 0.79 / 0.11 |
+  | `pred` 0.5, 0.75, 1.0 | 3, 3, 4 | 0 | 94, 92, 90 | 8 | 4, 4, 3 | 0.81 / 0.22 (0.82 / 0.11 at 1.0) |
+  | `tcc` | 0 | 0 | 78 | 0 | 3 | 0.54 / 0.44 |
+  | `align75`, `align100` | 3 | 0 | 92 | 8 | 4 | 0.81 / 0.22 |
+  | `align100` with EASE `CURRENT=0.5` | 1 | 0 | 63 | 3 | 1 | 0.67 / 0.22 |
+
+- **Coverage is not what buries the owner's romance webtoons.** With the CURRENT rows mapped in, all 11 romance webtoon seeds have a vector (6 before) and 82% of the romance webtoon candidates do (64%), and their mean taste score against the centroid is still 0.08, against 0.70 for the page's picks. The centroid is 81% romance manga by weight, and covered or not a romance webtoon sits far from it. Unread seeds weighted down make it worse for this shelf, because 7 of its 11 romance webtoon seeds are unread. The retrained table drops every webtoon and Action title from the page.
+- **Not done:** the confirm split and the judged panels for any variant; a page-share table rebuilt for a changed ranking; co-read with CURRENT rows (`fetch-coread-graph.cs build` reads COMPLETED only); a lower reader floor for EASE; the mapped rows through the held-out profile probe (its hidden titles are COMPLETED rows, which the shipped table covers); unit tests for `MissingShare` and `UnreadSeedScale`; `predict_taste.py` and `align_taste.py` live in `research/`, not `distribution/`.
+
 ## v9: co-read per-user cap, list dates and index eligibility, measured
 
 - **The co-read cap is inert at 400 and 800** (`fetch-coread-graph.cs build --max-items`, fold-limited, graded with the new `eval-reco-labels.cs --coread <path>`). 400 keeps 2.31M pairs against 1.79M and 800 2.69M; on both shelf kinds wantN, passed and nDCG@40 move by under 0.0015 with every interval across zero. The 39% of finished rows the cap drops (v7 audit) cost nothing on these gates, which fits co-read off moving wantN by +0.0002 in v8. The uncapped build was not run.
