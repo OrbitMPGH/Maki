@@ -258,6 +258,15 @@ public sealed class RecommendationServiceProfileProbe
                 });
                 var ease = Maki.Metadata.Ease.EaseTuning.Default;
                 services.AddSingleton(ease with { Weight = Num(options, "easeweight", ease.Weight) });
+                services.AddSingleton(Maki.Core.Recommendations.TasteTuning.Default with
+                {
+                    UnreadSeedScale = Num(options, "unreadscale", 1),
+                    OffShelfSeedScale = Num(options, "offshelf", 1),
+                });
+                services.AddSingleton(Maki.Metadata.Taste.TasteVectorTuning.Default with
+                {
+                    MissingShare = Num(options, "tastemissing", 0),
+                });
                 services.AddSingleton(new Maki.Metadata.PageShare.PageShareOptions(Path.Combine(run, PageTable)));
             }));
 

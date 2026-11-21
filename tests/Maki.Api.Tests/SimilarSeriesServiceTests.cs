@@ -37,6 +37,7 @@ public class SimilarSeriesServiceTests
         public bool LastCoRead = true;
         public bool LastTaste = true;
         public bool LastEase = true;
+        public bool LastLanes = true;
         public double? LastGraphWeight;
 
         public string? Stamp;
@@ -56,7 +57,7 @@ public class SimilarSeriesServiceTests
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
-            IReadOnlyDictionary<long, double>? demote = null, bool common = false,
+            IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
@@ -66,6 +67,7 @@ public class SimilarSeriesServiceTests
             LastCoRead = coRead;
             LastTaste = taste;
             LastEase = ease;
+            LastLanes = lanes;
             LastGraphWeight = graphWeight;
             if (Gate is not null)
             {
@@ -111,6 +113,16 @@ public class SimilarSeriesServiceTests
         await Service(recommender, settings).GetAsync(1, ["safe"]);
 
         Assert.False(recommender.LastEase);
+    }
+
+    [Fact]
+    public async Task The_rail_never_tops_up_side_tastes()
+    {
+        var recommender = new CountingRecommender();
+
+        await Service(recommender, new FakeAppSettings()).GetAsync(1, ["safe"]);
+
+        Assert.False(recommender.LastLanes);
     }
 
     [Fact]

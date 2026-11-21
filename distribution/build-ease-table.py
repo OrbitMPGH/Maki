@@ -21,6 +21,10 @@ The solve is an items x items inverse, so memory goes with the square of --items
 ((lam I + X^T X)^-1 = (I - X^T (lam I + X X^T)^-1 X) / lam) and forms B a block of rows at a time;
 at 20,000 items it matches the direct table to 7e-7. --max-gb refuses a solve that would not fit.
 
+--statuses picks which list rows are positives, each at an optional weight (COMPLETED,CURRENT=0.5),
+and --drop-below-mean leaves out rows scored well under the reader's own mean; both default to the
+shipped table (distribution/CLAUDE.md, "v9: what EASE learns from").
+
 The dense B is items x items, so the artifact keeps each seed row's top N weights by ABSOLUTE value.
 Dropping the negatives instead costs three times as much on held-out readers and makes the picks
 much more famous (research/recommender/2026-11-15-v7/exp-behaviour/report.md in the main checkout).
@@ -168,7 +172,17 @@ def main():
     p.add_argument("--max-gb", type=float, default=10.0, help="refuse a solve whose estimated memory exceeds this")
     p.add_argument("--min-reader-entries", type=int, default=300,
                    help="floor on a reader's whole list, every status, as build-taste-vectors.cs")
+    p.add_argument("--statuses", default="COMPLETED",
+                   help="list statuses that count as a positive, comma-separated, each optionally STATUS=weight "
+                        "(COMPLETED,CURRENT=0.5); a reader's cell keeps the largest weight it gets")
+    p.add_argument("--drop-below-mean", type=float, default=None,
+                   help="leave out scored rows this many points (of 100) under the reader's own mean score")
     a = p.parse_args()
+    status_weight = {}
+    for part in (x.strip() for x in a.statuses.split(",") if x.strip()):
+        name, _, w = part.partition("=")
+        status_weight[name.strip().upper()] = float(w) if w else 1.0
+    statuses = list(status_weight)
 
     dump = a.dump or os.path.join(os.environ.get("MAKI_CONFIG_DIR", ""), "mangabaka.db")
     # --out is deleted before it is written, and the working database is days of fetching.
@@ -193,11 +207,20 @@ def main():
                  if n >= a.min_reader_entries and (fold_n == 0 or user_fold(u, fold_n) != fold_k)}
     log(f"readers {len(size):,}, training on {len(keep_user):,}")
 
-    uslot, mslot, U, I = {}, {}, [], []
-    cur = g.execute("SELECT user_id, media_id FROM user_entry WHERE status = 'COMPLETED'")
+    floor = {}
+    if a.drop_below_mean is not None:
+        for u, mean in g.execute("SELECT user_id, AVG(score) FROM user_entry WHERE score > 0 GROUP BY user_id"):
+            floor[u] = mean - a.drop_below_mean
+    dropped = 0
+    uslot, mslot, U, I, V = {}, {}, [], [], []
+    marks = ",".join("?" * len(statuses))
+    cur = g.execute(f"SELECT user_id, media_id, score, status FROM user_entry WHERE status IN ({marks})", statuses)
     while rows := cur.fetchmany(200_000):
-        for u, m in rows:
+        for u, m, score, status in rows:
             if u not in keep_user:
+                continue
+            if score > 0 and u in floor and score < floor[u]:
+                dropped += 1
                 continue
             mb = xref.get(m)
             if mb is None:
@@ -206,16 +229,23 @@ def main():
             ms = mslot.setdefault(mb, len(mslot))
             U.append(us)
             I.append(ms)
+            V.append(status_weight[status])
     g.close()
     U = np.asarray(U, np.int32)
     I = np.asarray(I, np.int32)
     ids = np.empty(len(mslot), np.int64)
     for mb, s in mslot.items():
         ids[s] = mb
-    # Two AniList ids can map to one MangaBaka id; a reader finishing both counts once.
-    X = sp.csr_matrix((np.ones(len(U), np.float32), (U, I)), shape=(len(uslot), len(mslot)))
-    X.data[:] = 1.0
-    log(f"completed rows {X.nnz:,} over {X.shape[1]:,} items ({time.time() - t:.0f}s)")
+    # Two AniList ids can map to one MangaBaka id; a reader finishing both counts once, at the
+    # larger of the two weights (COO duplicates are kept apart until the max-reduce below).
+    V = np.asarray(V, np.float32)
+    order = np.lexsort((-V, I, U))
+    U, I, V = U[order], I[order], V[order]
+    first = np.ones(len(U), bool)
+    first[1:] = (U[1:] != U[:-1]) | (I[1:] != I[:-1])
+    X = sp.csr_matrix((V[first], (U[first], I[first])), shape=(len(uslot), len(mslot)))
+    log(f"{'+'.join(statuses)} rows {X.nnz:,} over {X.shape[1]:,} items ({time.time() - t:.0f}s)"
+        + (f"; {dropped:,} scored under the reader's mean - {a.drop_below_mean:g} left out" if floor else ""))
 
     counts = np.asarray(X.sum(0)).ravel()
     n = min(a.items, X.shape[1])
@@ -285,13 +315,15 @@ def main():
         "weightCount": str(len(weights)),
         "trainedReaders": str(len(uslot)),
         "trainingFold": trained_on,
-        "statuses": "COMPLETED",
+        "statuses": ",".join(s if status_weight[s] == 1.0 else f"{s}={status_weight[s]:g}" for s in statuses),
         "lambda": f"{a.lam:g}",
         "popDamp": f"{a.pop_damp:g}",
         "topPerItem": str(k),
         "minReaderEntries": str(a.min_reader_entries),
         "source": "anilist-lists-ease",
     }
+    if a.drop_below_mean is not None:
+        meta["dropBelowMean"] = f"{a.drop_below_mean:g}"
     o.executemany("INSERT INTO meta VALUES (?, ?)", meta.items())
     o.commit()
     o.execute("VACUUM")

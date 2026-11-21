@@ -112,7 +112,15 @@ public record MangaBakaRecommendation(
     string? BecauseOfThumbUrl = null,
     string? CoReadWithThumbUrl = null,
     [property: JsonIgnore] IReadOnlyList<ReasonSeed>? FeelSeeds = null,
-    [property: JsonIgnore] IReadOnlyList<ReasonSeed>? CoReadSeeds = null);
+    [property: JsonIgnore] IReadOnlyList<ReasonSeed>? CoReadSeeds = null)
+{
+    /// <summary>
+    /// Set on a pick the side-taste top-up inserted (<c>ShelfLanes</c>): how many leading slots a later
+    /// re-order must not move it into, so the top-up never reaches the top of the page.
+    /// </summary>
+    [JsonIgnore]
+    public int LaneFloor { get; init; }
+}
 
 /// <summary>One of the reader's series a pick's reason can name.</summary>
 public record ReasonSeed(string? Id, string Title, string? ThumbUrl);

@@ -140,6 +140,7 @@ var maxLibrary = 300;
 var workPath = Path.Combine(artifactsDir, "coread-graph.db");
 string? muPathOverride = null;
 string? tastePathOverride = null;
+string? coReadPathOverride = null;
 string? easePathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
@@ -213,6 +214,11 @@ for (var i = 0; i < args.Length; i++)
         // fold-limited build without copying it into the config dir.
         case "--taste":
             tastePathOverride = args[++i];
+            break;
+        // A co-read artifact other than the installed one, so a build-knob sweep can grade
+        // several fold-limited builds on one config dir.
+        case "--coread":
+            coReadPathOverride = args[++i];
             break;
         // An EASE table other than the installed one, for the same reason: `library --fold-users`
         // grades a fold-limited build (`build-ease-table.py --fold-out`) without installing it.
@@ -494,7 +500,7 @@ if (mode == "single")
 var dumpPath = Path.Combine(configDir, "mangabaka.db");
 var vectorPath = Path.Combine(configDir, "embeddings.db");
 var graphPath = Path.Combine(configDir, "reco-edges.db");
-var coReadPath = Path.Combine(configDir, "coread-edges.db");
+var coReadPath = coReadPathOverride ?? Path.Combine(configDir, "coread-edges.db");
 // Built by distribution/build-mu-graph.cs out of the MangaBaka FULL dump. Unlike the other two it
 // is not part of an install, so it defaults to .artifacts/ like the co-read working database does.
 // Prefer an installed copy if one exists, so this keeps working once an MU channel ships.
@@ -1404,7 +1410,15 @@ async Task<ResultRow> Score(Variant variant)
                 coRead: coRead,
                 features: features,
                 demote: demote,
-                common: true);
+                common: true,
+                lanes: variant.Lanes <= 0);
+
+        if (variant.Lanes > 0 && variant.Baseline is null)
+        {
+            picks = await LanePicks(
+                picks, request.Seeds, buildPages ? request.Shelf ?? request.Seeds : request.Seeds, seedWeights,
+                request.Avoid, variant, recommender, coGraph, coRead, demote);
+        }
 
         poolDump?.Write(i, request, seedWeights, features!, picks, RankOf);
 
@@ -1676,6 +1690,30 @@ static double Overlap(List<HashSet<long>> picks)
 /// </summary>
 async Task<IReadOnlyDictionary<long, double>?> AiredDemotion(Variant variant)
 {
+    var aired = await AiredOnly(variant);
+    if (variant.PriorWeight == 0 || variant.PriorPath is null)
+    {
+        return aired;
+    }
+
+    var demote = aired is null ? new Dictionary<long, double>() : new Dictionary<long, double>(aired);
+    foreach (var line in File.ReadLines(variant.PriorPath))
+    {
+        var parts = line.Split('	');
+        if (parts.Length < 2 || !long.TryParse(parts[0], CultureInfo.InvariantCulture, out var id))
+        {
+            continue;
+        }
+
+        var value = double.Parse(parts[1], CultureInfo.InvariantCulture);
+        demote[id] = demote.GetValueOrDefault(id) - (variant.PriorWeight * value);
+    }
+
+    return demote;
+}
+
+async Task<IReadOnlyDictionary<long, double>?> AiredOnly(Variant variant)
+{
     if (variant.AiredWeight <= 0)
     {
         return null;
@@ -1930,6 +1968,85 @@ async Task<JudgedRow> ScoreJudged(
 }
 
 /// <summary>
+/// Measurement only (variant key <c>lanes</c>): gives a second taste its own request and its share
+/// of the page. The side tastes are <see cref="ShelfLanes.Sides"/> with <c>lanes</c> as the minimum
+/// share; each is scored on its own seeds, and its picks take page slots in proportion to that
+/// weight (Sainte-Lague order) among the whole-shelf picks, which come without the engine's own
+/// top-up. Not in the engine. The top-up that shipped is <see cref="ShelfLanes"/> (keys
+/// <c>lanes2</c>, <c>lanes2min</c>, <c>lanes2max</c>, <c>lanes2from</c>, <c>lanes2page</c>,
+/// <c>lanes2fame</c>, <c>lanes2held</c>; <c>lanes2=0</c> is the page before it).
+/// </summary>
+async Task<IReadOnlyList<MangaBakaRecommendation>> LanePicks(
+    IReadOnlyList<MangaBakaRecommendation> whole, IReadOnlyList<long> seeds, IReadOnlyList<long> exclude,
+    IReadOnlyDictionary<long, double>? seedWeights, IReadOnlyDictionary<long, double>? avoid, Variant variant,
+    SemanticRecommender recommender, bool coGraph, bool coRead, IReadOnlyDictionary<long, double>? demote)
+{
+    var sides = ShelfLanes.Sides(index, seeds, seedWeights, variant.Lanes, 3);
+    if (sides.Count == 0)
+    {
+        return whole;
+    }
+
+    var lists = new List<(IReadOnlyList<MangaBakaRecommendation> Picks, double Weight)>
+    {
+        (whole, sides[0].Total - sides.Sum(g => g.Weight)),
+    };
+    foreach (var side in sides)
+    {
+        lists.Add((await recommender.GetSimilarAsync(
+            side.Ids,
+            exclude.Concat(seeds).Distinct().ToList(),
+            limit,
+            RecommendationFilters.None,
+            obscurity: variant.Obscurity,
+            seedWeights: seedWeights,
+            avoidWeights: avoid,
+            diversity: variant.Diversity,
+            weights: variant.Weights,
+            coGraph: coGraph,
+            coRead: coRead,
+            demote: demote,
+            common: true), side.Weight));
+    }
+
+    var merged = new List<MangaBakaRecommendation>(limit);
+    var taken = new HashSet<string>();
+    var served = new int[lists.Count];
+    var cursor = new int[lists.Count];
+    while (merged.Count < limit)
+    {
+        var lane = -1;
+        var best = double.NegativeInfinity;
+        for (var l = 0; l < lists.Count; l++)
+        {
+            while (cursor[l] < lists[l].Picks.Count && taken.Contains(lists[l].Picks[cursor[l]].ProviderId))
+            {
+                cursor[l]++;
+            }
+
+            var quotient = lists[l].Weight / ((2 * served[l]) + 1);
+            if (cursor[l] < lists[l].Picks.Count && quotient > best)
+            {
+                best = quotient;
+                lane = l;
+            }
+        }
+
+        if (lane < 0)
+        {
+            break;
+        }
+
+        var pick = lists[lane].Picks[cursor[lane]++];
+        taken.Add(pick.ProviderId);
+        merged.Add(pick);
+        served[lane]++;
+    }
+
+    return merged;
+}
+
+/// <summary>
 /// The judged panel for whole-shelf requests. The rubric scores one seed against one pick, so each
 /// pick is scored against the reader's series nearest to it in the text space ("does this feel like
 /// something they read") and against the series its card names ("is the reason true"). The card
@@ -1987,7 +2104,8 @@ async Task<ShelfRow> ScoreShelf(
             coGraph: coGraph,
             coRead: coRead,
             demote: demote,
-            common: true);
+            common: true,
+            lanes: true);
 
         var seedRows = new List<(long Id, int Row)>();
         foreach (var id in request.Seeds)
@@ -4329,6 +4447,7 @@ file static class Variants
         var textOnly = lower == "textonly";
         var baseline = lower is "popular" or "random" ? lower : null;
         var obscurity = 0.0;
+        var lanes = 0.0;
         var noCrowd = lower == "nocrowd" || textOnly;
         var coGraph = !noCrowd && lower != "nograph";
         var coRead = !noCrowd && lower != "nocoread";
@@ -4353,6 +4472,8 @@ file static class Variants
         var airedWeight = 0.0;
         var airedMaxRank = 1000;
         var airedRate = 1.0;
+        string? priorPath = null;
+        var priorWeight = 0.0;
 
         // The baseline the avoid channel has to be read against, the same way `nocrowd` and
         // `notaste` are for the other channels. A bare `avoid` would be a variant NAME rather than
@@ -4410,6 +4531,46 @@ file static class Variants
             else if (key == "famecap")
             {
                 recommender = recommender with { FameCapRatio = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "calibration")
+            {
+                recommender = recommender with { ShelfCalibration = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes")
+            {
+                lanes = double.Parse(value, CultureInfo.InvariantCulture);
+            }
+            else if (key == "lanes2")
+            {
+                recommender = recommender with { Lanes = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2min")
+            {
+                recommender = recommender with { LanesMinShare = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2from")
+            {
+                recommender = recommender with { LanesFrom = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2page")
+            {
+                recommender = recommender with { LanesPage = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2fame")
+            {
+                recommender = recommender with { LanesFame = value is "1" or "true" };
+            }
+            else if (key == "lanes2max")
+            {
+                recommender = recommender with { LanesMaxSides = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2held")
+            {
+                recommender = recommender with { LanesHeldOnly = value is "1" or "true" };
+            }
+            else if (key == "calibrationjoint")
+            {
+                recommender = recommender with { ShelfCalibrationJoint = value is "1" or "true" };
             }
             else if (key == "famecappseudo")
             {
@@ -4490,6 +4651,10 @@ file static class Variants
             else if (key == "tasteweight")
             {
                 taste = taste with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastemissing")
+            {
+                taste = taste with { MissingShare = double.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "tastemininjected")
             {
@@ -4668,6 +4833,16 @@ file static class Variants
             {
                 commonPath = value;
             }
+            // A per-series prior from a file of `id<TAB>value` lines (build-mu-prior.py): score +=
+            // priorweight x value, through the same demotion map as airedweight.
+            else if (key == "priorpath")
+            {
+                priorPath = value;
+            }
+            else if (key == "priorweight")
+            {
+                priorWeight = double.Parse(value, CultureInfo.InvariantCulture);
+            }
             else if (key == "airedweight")
             {
                 airedWeight = double.Parse(value, CultureInfo.InvariantCulture);
@@ -4720,7 +4895,8 @@ file static class Variants
 
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
-            taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline);
+            taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline,
+            priorPath, priorWeight, lanes);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -4785,7 +4961,10 @@ file sealed record Variant(
     double AiredWeight = 0,
     int AiredMaxRank = 1000,
     double AiredRate = 1,
-    string? Baseline = null);
+    string? Baseline = null,
+    string? PriorPath = null,
+    double PriorWeight = 0,
+    double Lanes = 0);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings

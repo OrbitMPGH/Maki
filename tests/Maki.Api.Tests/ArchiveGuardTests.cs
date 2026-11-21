@@ -1261,7 +1261,7 @@ public sealed class ArchiveGuardTests : IDisposable
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             Maki.Metadata.Embedding.EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, bool ease = true, ICollection<Maki.Metadata.Embedding.EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
-            IReadOnlyDictionary<long, double>? demote = null, bool common = false,
+            IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
             CancellationToken ct = default)
         {
             Seen.Add(seedIds);

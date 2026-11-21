@@ -269,10 +269,16 @@ public class RecommendationService(
         var knownKey = knownExcluded.Count == 0
             ? string.Empty
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..16];
+        // Side tastes are topped up on the whole-shelf page only, the population that was graded: the
+        // Recommended tab (filtered or not, since each lane scan gets the same filters) and Home's
+        // "You might like". A caller with its own seed list (recent activity, side interests) and
+        // every custom rail, seeded or not, keep the plain ranking, so the same seeds can mean two pools.
+        var lanes = request.SeedIds is not { Count: > 0 } && origin == PoolOrigin.Interactive;
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}";
+                  $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}" +
+                  $"|l:{(lanes ? 1 : 0)}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
@@ -292,7 +298,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors, ease, pageShare, demote, knownExcluded));
+                        coGraph, coRead, tasteVectors, ease, pageShare, lanes, demote, knownExcluded));
                     _building[key] = created;
                     build = created;
                 }
@@ -351,7 +357,7 @@ public class RecommendationService(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
-        bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare,
+        bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare, bool lanes,
         IReadOnlyDictionary<long, double> demote, IReadOnlySet<long> known)
     {
         var entered = false;
@@ -384,7 +390,8 @@ public class RecommendationService(
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
                     coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
-                    demote: demote.Count > 0 ? demote : null, common: pageShare, ct: CancellationToken.None)
+                    demote: demote.Count > 0 ? demote : null, common: pageShare, lanes: lanes,
+                    ct: CancellationToken.None)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)
@@ -518,6 +525,11 @@ public class RecommendationService(
     /// entirely of one franchise from stalling, and it is also why this cannot promote anything past
     /// a pick with no franchise: those are never held back.
     /// </para>
+    /// <para>
+    /// A pick the side-taste top-up inserted is never placed above its
+    /// <see cref="MangaBakaRecommendation.LaneFloor"/>, so the visible first picks are the ones the
+    /// page had without the top-up. Every other pick moves exactly as before.
+    /// </para>
     /// </summary>
     internal static IReadOnlyList<MangaBakaRecommendation> Spread(
         IReadOnlyList<MangaBakaRecommendation> ranked)
@@ -533,9 +545,16 @@ public class RecommendationService(
 
         while (remaining.First is { } head)
         {
-            var chosen = head;
+            LinkedListNode<MangaBakaRecommendation>? chosen = null;
+            LinkedListNode<MangaBakaRecommendation>? fallback = null;
             for (LinkedListNode<MangaBakaRecommendation>? node = head; node is not null; node = node.Next)
             {
+                if (node.Value.LaneFloor > ordered.Count)
+                {
+                    continue;
+                }
+
+                fallback ??= node;
                 if (node.Value.FranchiseId is not int franchise
                     || !placedAt.TryGetValue(franchise, out var last)
                     || ordered.Count - last >= FranchiseSpacing)
@@ -545,6 +564,7 @@ public class RecommendationService(
                 }
             }
 
+            chosen ??= fallback ?? head;
             if (chosen.Value.FranchiseId is int placed)
             {
                 placedAt[placed] = ordered.Count;

@@ -1315,3 +1315,262 @@ The 20,000-item table held 77% of the owner's action webtoons but 54% of their r
 - **Through the real service** (`reco-profile-probe.py`, 75 readers a group, now with a `lowcov` group: read shelves the 20,000-item table covers below 60%, 527 of 6,530 eligible, 44% manhwa): wider tables at 4 bring back +1.0 to +2.1 points more hidden titles than weight 1 on romcom shelves (today's table at 4: +3.2), -0.4 to +1.3 on mixed (+1.5) and +0.7 to +1.4 on control (+0.9), with household titles at weight 1's level (-1.8 to +1.5 points); on the low-coverage readers they recover +0.6 to +1.3 (today's at 4: +3.7) and drop household by 2 to 3 points. No group's webtoon-flood count moves.
 - **Owner's page** (real service, top 40): action webtoons 9 at weight 4 on today's table, 0 to 2 on any wider table at 4; top-1k 55% today at 4, 32% (60,000 items) to 42% (40,000 over 100+ entry readers, every item), 55% at plain 40,000.
 - **Not shipped.** The CURRENT judged panel is 70% judged for the wider tables at 4 (`shelf-queue-easewide.tsv`, 827 pairs), the page-share twin was built on weight-4 pages of the old table, and no confirm split was run.
+
+## v9: MangaUpdates quality priors (`build-mu-prior.py`, `priorpath=`), measured and NOT shipped
+
+The full dump carries MangaUpdates' own aggregates, which nothing read: a Bayesian rating with its vote count (84% of index rows) and list counts by status (87%). They are the one outside population in the dump, so they were the candidate most likely to help where the hand-designed feel channels had not. `build-mu-prior.py` turns them into per-series values and the harness's `priorpath=<tsv>,priorweight=<w>` adds `w x value` to the score through the `demote` map. Scripts and logs are in `research/recommender/2026-11-20-mu-prior/` in the main checkout.
+
+- **The signals.** `bayes` is the Bayesian rating minus the value MangaUpdates shrinks low-vote titles toward (6.23, the median at one or two votes), so thin evidence sits at 0 rather than below the median. `drop` is minus the share of lists holding the title as unfinished, out of reading, complete and unfinished, shrunk with 50 pseudo-lists toward the pooled 3.35%, in units of 4 points. `bayes-res` and `drop-res` subtract the mean of rows in the same log-popularity bin, and for drop the same publication status. Against log popularity rank the Bayesian rating correlates -0.31 where MangaBaka's `rating` correlates -0.48, and the two correlate 0.27 with each other, so it is not the existing quality term again.
+- **Gates** (next-read grader, fold 0 of 4, dev split, n = 500, paired against the shipping engine, weights 0.1 / 0.25 / 0.5):
+
+  | signal | COMPLETED | CURRENT |
+  |---|---|---|
+  | `bayes` | FAIL at every weight: passed +0.3 / +0.9 / +1.7 points, wantN flat, middle third -0.0074 at 0.5 | FAIL at every weight: passed +0.6 / +1.5 / +2.7, runaway pages up |
+  | `bayes` replacing `rating` (`wquality=0`, 0.25) | FAIL: passed +0.6 | FAIL: passed +1.3 |
+  | `drop` | inert (wantN within ±0.0015, passed flat) | FAIL: wantN -0.0008 / -0.0016 / -0.0027 |
+  | `bayes-res` | PASS at 0.1, flat everywhere; wantN middle -0.0042 at 0.5 | passed +0.4 at 0.25; wantN flat |
+  | `drop-res` | inert | PASS at 0.1 (passed -0.2, wantN -0.0007 [-0.0014, +0.0000]); FAIL wantN at 0.25 and 0.5 |
+
+- **The Bayesian rating is a fame score, as the `rating` term was in v4 Phase 5.** `passed` (household titles on none of the reader's lists) rises monotonically with its weight on both shelf kinds while `wantN` does not move. Taking it relative to titles of the same popularity removes the fame and leaves nothing: no weight raises `wantN` in any third.
+- **The drop rate punishes ongoing series.** A series still running collects "unfinished" lists from readers who paused, so on CURRENT shelves the signal marks down what those readers are reading. Taking it relative to the same status and popularity bin narrows the loss but never turns it into a gain.
+- **So the seventh hand-built signal measures flat, and this one came from an outside population.** What helped before was learned from behaviour (the taste vectors, EASE); aggregate ratings and list counts per title do not tell the engine anything the channels have not already priced. The two harness keys and the builder are kept so the finding stays reproducible.
+- **Not checked:** the judged panels and the confirm split, since nothing passed on the dev split with a gain to confirm; folds other than 0; the page-share eval twin has no provenance file (built from fold-0 readers 501 to 1,500, graded on the first 500, see "v8: what shipped"), so the runs pass `--common-unchecked`, which is the same table for every variant.
+
+## v9: what EASE learns from (`build-ease-table.py --statuses`), measured; CURRENT at 0.5 passes every gate but the floor, not shipped
+
+EASE trained on COMPLETED rows only, and nothing had tried another status set or a score floor. `--statuses` takes a list with optional weights (`COMPLETED,CURRENT=0.5`; a reader's cell keeps its largest weight, and the item counts that pick the universe and drive the popularity damp are weighted sums), `--drop-below-mean D` leaves out scored rows D points (of 100) under the reader's own mean. Both default to the shipped table, which a default build reproduces byte for byte. Each table is graded in its own run with `--ease` and paired across runs on the same requests. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout.
+
+- **Gates** (next-read grader, fold 0 of 4, n = 500, paired against the rebuilt shipped table):
+
+  | table | COMPLETED wantN | CURRENT wantN | CURRENT passed | CURRENT floor | CURRENT nDCG@40 |
+  |---|---|---|---|---|---|
+  | `COMPLETED,CURRENT` | -0.0016 (middle third -0.0024, FAIL) | +0.0092 [+0.0064, +0.0121] | -3.4 | -4.6, FAIL | +0.0094 |
+  | `COMPLETED,CURRENT=0.5` | -0.0007 [-0.0021, +0.0009] | +0.0057 [+0.0031, +0.0084] | -3.2 | -4.4, FAIL | +0.0043 |
+  | `COMPLETED,CURRENT=0.25` | -0.0001 | +0.0033 [+0.0009, +0.0058] | -2.8 | -3.9, FAIL | +0.0001 |
+  | `COMPLETED,CURRENT,PAUSED` | -0.0023 (FAIL, niche and middle) | +0.0086 | -3.4 | -4.7, FAIL | +0.0068 |
+  | `--drop-below-mean 20` / `10` | flat | flat | flat | ok | flat |
+
+- **Confirm split, one look:** `CURRENT=0.5` holds on finished shelves (wantN -0.0005 [-0.0019, +0.0009], nDCG -0.0014, no third moves) and gains more on CURRENT ones: wantN **+0.0099 [+0.0071, +0.0126]**, wantT +0.0243, niche third +0.0171, middle +0.0119, mainstream +0.0005, passed -3.4 points, overlap -0.1, nDCG@40 +0.0064 [+0.0015, +0.0114]. Full weight fails finished shelves on confirm too (wantN -0.0023, niche -0.0042, nDCG -0.0058).
+- **What fails is the floor.** On CURRENT shelves the shipping engine's page already sits at the shelf's household share (about 0 points), so any change that takes household titles off it fails gate 6, and every CURRENT weight does (-3.9 to -5.6 points). The gate's reason is that past it a change removes titles readers go on to read; here wantN and wantT rise in the niche and middle thirds and the mainstream third holds, which is the opposite. Accepting it is a decision about the gate, not a measurement.
+- **The overlap "FAIL" on finished shelves is a rounding artefact**: a certain rise that prints as +0.0 points, and the co-read cap rows below, which change nothing else, fail it the same way.
+- **The score floor is inert.** Completions scored 10 or 20 points under the reader's mean (8% and 4% of rows) carry nothing EASE does not already discount.
+- **Judged shelf panels (gate 7)**, 80 shelves, depth 10, dev split, paired against the shipped table in one run (`easepath=`), 95 to 99% of top-10 picks judged (66 pairs left unjudged, too few to turn either verdict):
+
+  | shelves | want@10 | feel@10 | passed |
+  |---|---|---|---|
+  | COMPLETED | -0.0009 [-0.0145, +0.0127] | +0.0176 [-0.0067, +0.0441] | 17.9% to 17.4% |
+  | CURRENT | **+0.0423 [+0.0145, +0.0700]** | **+0.0464 [+0.0060, +0.0863]** | 16.4% to 13.1% |
+
+  The picks that replace the household titles on CURRENT shelves are judged as fitting, so the floor failure is not filler.
+- **Owner's page (gate 9)**, real service, all-reader tables built with the same code and dump (`all-base.db`, `all-cc50.db`), shipped settings, EASE weight 1, top 40: 29 of 40 shared, 14 of the top 20. Korean webtoons 3 to 1, top-1k 16 to 11, household titles in the top 20 4 to 1. All 11 incoming titles are romance manga (median popularity rank 1,698 against 553 for the 11 outgoing). Author picks drop from 3 to 1 in the top 20 but stay on the page (22nd and 24th). The probe used the 2026-11-18 page-share table for both cases.
+- **The owner's page got narrower, which no gate measured.** Against a shelf that is 22% Action and 23% Korean webtoons, the shipped page has 10 Action titles and 3 webtoons in 40, CURRENT at 0.5 has 4 and 1, and neither has a romance webtoon (12% of the shelf). The judged panel scores each pick against the shelf series nearest to it, and the next-read gates reward the reader's main taste because most next reads are more of it, so a page that drops a second taste can score as well or better on both.
+- **Breadth gate (`eval-breadth.py`).** Pages from `library --next --dump-picks`, both tables in one run (it reproduces the confirm wantN gain to the digit). Per reader, a second taste is a facet (type manhwa or manhua, or one of 24 genres) on 15% to 50% of their seeds; `kept` is the mean of min(page share / shelf share, 1) over them, `lost` the share with page share under a third of shelf share, `drift` the mean |page - shelf| over facets either holds at 5%+. `kept_next` and `lost_next` measure against the held-out next reads instead. As a reference, readers' own next reads keep 0.81 to 0.83 and lose 0.06 to 0.08 against their shelf. n = 500, fold 0, paired bootstrap:
+
+  | split, shelves | kept | lost | drift | webtoons as a second taste (shelf / page, shipped to cc50) | Action as a second taste |
+  |---|---|---|---|---|---|
+  | dev, COMPLETED | 0.798 to 0.799 | 0.104 to 0.106 | -0.001 | 29% / 35.1 to 34.2% (-0.8 [-1.3, -0.4]) | 31% / 35.6 to 35.5% |
+  | dev, CURRENT | 0.774 to 0.779 (+0.005 [+0.001, +0.009]) | 0.115 to 0.113 | -0.002 | 29% / 45.8 to 44.1% (-1.7) | 33% / 43.6 to 43.1% |
+  | confirm, COMPLETED | 0.801 to 0.803 | 0.097 to 0.093 | -0.001 | 29% / 39.0 to 38.2% (-0.8) | 31% / 37.2 to 36.8% (-0.4) |
+  | confirm, CURRENT | 0.773 to 0.774 | 0.122 to 0.122 | -0.001 | 31% / 50.2 to 48.2% (-2.0 [-3.0, -1.0]) | 32% / 41.3 to 40.2% (-1.0) |
+
+  For held-out readers in general CURRENT at 0.5 does not narrow pages: `kept`, `lost` and `drift` hold or improve on every split. It does take 1 to 2 points of webtoons off pages that already carry more webtoons than the shelf. The owner's page is the minority case: among readers with webtoons as a second taste, the page holds under a third of the shelf's webtoon share for 13 to 15% on COMPLETED shelves and 3 to 5% on CURRENT ones, with either table. On the owner metric, shipped `kept` 0.81, cc50 0.71, `lost` 0.22 for both.
+- **Not done:** a page-share table rebuilt from pages at the new table (v8 requires one whenever the ranking changes), publishing the all-reader table, and the builder or publish script change that makes `COMPLETED,CURRENT=0.5` the default.
+
+## v9: why a second taste falls off the page, and a calibrated re-rank (offline)
+
+Started from the owner's page: 23% Korean webtoons on the shelf (half of them romance webtoons), 3 of 40 on the page, no romance webtoon in the top 120. Scripts and logs are in `research/recommender/2026-11-20-ease-status/` in the main checkout (`ablate.sh`, `owner-ablate.ps1`, `pool-webtoons.py`, `calibrate.py`).
+
+- **No v8 piece causes it for held-out readers.** Fame cap, page-share penalty and EASE off one at a time and all together (dev, n = 500): the 17 COMPLETED-shelf readers whose page holds under a third of their webtoon share stay at 3.2 to 3.7% webtoons on the page against 20% on the shelf and 18% in their next reads. On CURRENT shelves the penalty is the one piece that narrows: off, `kept` +0.024 [+0.020, +0.028], `lost` -0.025.
+- **On the owner's page the penalty is what holds action webtoons back:** off, webtoons in the top 40 go 3 to 7 and Action titles 10 to 15. The fame cap is inert there. Romance webtoons reach the top 120 under no setting.
+- **The webtoons are in the pool and lose on score.** For those 17 readers webtoons are 19% of the scored pool, 12% of its top 200, 4% of its top 40. Against the top 40, the webtoons ranked 41 to 300 lose on the channels that score a candidate against the whole shelf at once: taste vector -0.44 (weighted), same author -0.39, tags -0.30, EASE -0.23, reco graph -0.13, and gain on per-seed text similarity (+0.16). A candidate that fits a fifth of the shelf gets about a fifth of an aggregate signal.
+- **A calibrated re-rank fixes it offline at no measurable cost.** Greedy top 40 from the pool's top 300, maximising (1 - lam) x mean normalised score - lam x KL(shelf facet mix || page facet mix), facets = type (manga, manhwa, manhua) and 22 genres (Steck 2018). 250 readers, dev, held-out hits in the top 40 paired against plain top 40:
+
+  | shelves | lam | hits@40 | kept | lost | webtoon page minus shelf (webtoon readers) |
+  |---|---|---|---|---|---|
+  | COMPLETED | 0 | 4.884 | 0.814 | 0.099 | +3.4 points |
+  | COMPLETED | 0.2 | +0.056 [-0.036, +0.156] | 0.862 | 0.037 | +2.1 |
+  | COMPLETED | 0.5 | +0.044 [-0.072, +0.164] | 0.913 | 0.007 | +1.2 |
+  | CURRENT | 0 | 3.384 | 0.777 | 0.115 | +22.2 |
+  | CURRENT | 0.2 | +0.032 [-0.052, +0.124] | 0.838 | 0.046 | +12.1 |
+  | CURRENT | 0.5 | -0.080 [-0.208, +0.056] | 0.897 | 0.006 | +5.0 |
+
+  It pulls both ways: it restores an under-served second taste and also trims the webtoon flood on CURRENT shelves, which is the job the page-share penalty was partly doing.
+- **In the engine it widens pages but lets in passed household titles, so it ships off** (`RecommenderTuning.ShelfCalibration`, `ShelfCalibration.Order`, eval key `calibration`; facets are the index's type plus every genre, target the seed-weighted mix; inside `SelectWinners` after the franchise collapse, before the fame cap, from two seeds up). Paired against `calibration=0`, n = 500:
+
+  | split, shelves | strength | wantN | passed | kept / lost | webtoons for webtoon readers |
+  |---|---|---|---|---|---|
+  | dev, COMPLETED | 0.1 | +0.0007 | +0.1 | +0.024 / -0.030 | -1.1 |
+  | dev, COMPLETED | 0.2 | -0.0002 | +0.1 | +0.041 / -0.051 | -1.6 |
+  | dev, COMPLETED | 0.4 | **-0.0042, FAIL** | +0.4 (niche FAIL) | +0.069 / -0.072 | -2.9 |
+  | dev, CURRENT | 0.1 | +0.0004 | +0.1 | +0.024 / -0.031 | -4.6 |
+  | dev, CURRENT | 0.2 | +0.0001 | **+0.5, FAIL** | +0.042 / -0.050 | -7.6 |
+  | dev, CURRENT | 0.4 | -0.0015 (wantT, niche FAIL) | **+0.6, FAIL** | +0.071 / -0.073 | -11.0 |
+  | confirm, COMPLETED | 0.1 | +0.0004 | +0.3 (niche +0.4, FAIL) | +0.038 / -0.043 | -2.5 |
+  | confirm, CURRENT | 0.1 | +0.0007 | **+0.5, FAIL** (middle +0.8) | +0.044 / -0.051 | -8.4 |
+
+  Judged panels at 0.1 (80 shelves, 94 pairs unjudged): want@10 +0.008 and +0.009, feel@10 +0.003 and +0.019, all inside noise. Pulling the genre mix toward the shelf pulls in popular titles of the under-served genres, some of them household titles the reader already passed over.
+- **It barely moves the owner's page.** Real service, top 40: webtoons 3 to 4 at 0.1 and 0.2, Action 10 to 11, `lost` 0.22 to 0.11, still no romance webtoon. With the page-share penalty at 2 as well, webtoons 5, Action 12, household titles in the top 20 4 to 7. With the CURRENT-at-0.5 table it falls back to 3 webtoons and Action 8. The owner's page is held back by something calibration does not reach; the next step is the owner's own scored pool.
+- **Not measured:** whether genre tags from the dump are clean enough to calibrate on (the owner's shelf reads 16% "Boys Love"); a type-only calibration, which would not touch the genre mix that brings the passed titles in.
+
+## v9: a second taste that is a combination (the owner's scored pool, `calibrationjoint`, `lanes`), nothing shipped
+
+The owner's shelf is 12% romance webtoons and the page holds none in 40 and two in 120. This traces the owner's own scored pool through the real service. Scripts, logs and the private pages are in `research/recommender/2026-11-20-romance-webtoons/` in the main checkout (`owner-pool.ps1` dumps every scored candidate's channel values through a `SemanticRecommender` subclass in the temporary probe; `analyze.py`, `coverage.py`, `whatif.py`, `simulate.py`, `pages.py`, `grade.sh`).
+
+- **The evidence the engine may use is smaller than the shelf.** 16 romance webtoons on a shelf of 134, but 5 are fully incognito and so never seed, and 7 of the 11 that do seed are unread at neutral weight. The 59 seeds that come from thumbs up and the anime list hold no romance webtoon. That leaves 5.7% of the seed weight (4 series actually read), which is 2 of 40 slots at a proportional share. Exclusions, the filters and the catalogue are not the limit: 8,604 unread romance webtoons pass the filters, 106 of them in the top 1,000 by popularity.
+- **They are retrieved and lose on score.** 2,827 are in the scored pool of 19,760 and 25 in the 600 window; the best ranks 101st, 0.31 under the 40th pick. A type-restricted pass over every romance webtoon finds none outside the pool that would rank higher.
+- **Text similarity is not what holds them down, the shelf-wide channels are.** Weighted contributions, the top 40 against the 20 best romance webtoons: semantic 1.83 and 1.88, taste 1.75 and 1.37, tags 1.28 and 1.07, same author 0.15 and 0.04, genre 0.74 and 0.66, votes 0.10 and 0.02, EASE 0.09 and 0.02. Ranked on semantic, tags, genre and rating alone the top 40 holds 5 romance webtoons (12%, the shelf's own share) and the top 120 holds 21.
+- **The behavioural centroid is the largest term and it is the main taste alone.** The taste query is one centroid; its cosine to the centroid of the romance manga seeds is 0.99 and to that of the romance webtoon seeds 0.25. The owner's own romance webtoon seeds score 0.14 against it (romance manga seeds 0.52, action webtoon seeds 0.58, the top 40 picks 0.70). Among unread candidates with a vector, 196 romance manga and 12 action webtoons reach 0.70 and 5 romance webtoons do. AniList readers of this romance manga also read action webtoons; romance webtoons are read by other people.
+- **The series the reader actually read are missing from the reader data.** A taste vector exists for 55% of the romance webtoon seeds (romance manga 93%) and for 1 of the 4 that were read; EASE rows for 36% and none of the 4; two of the 4 have no co-read pair and a third has 3. A page seeded on those 4 alone is 39 romance webtoons of 40, and in the whole-shelf pool its top 20 score semantic 1.87, taste 0.20, tags 0.93, for a median rank of 2,722.
+- **A re-rank inside the window cannot reach them.** On the owner's pool, offline: calibration on types alone 0 romance webtoons at any strength, seeds as facets (a pick counts for its nearest seed) 0 to 1, an xQuAD pass with seeds as aspects 0. The picks that are like the read series sit outside the 600 the re-rank sees: the first 20 of that page rank 745th or lower, and 2 of its 40 are inside.
+- **Joint facets (`RecommenderTuning.ShelfCalibrationJoint`, eval key `calibrationjoint`, off)** calibrate on type x genre cells, so "romance webtoon" is a facet of its own. Paired against `calibration=0`, dev, n = 500:
+
+  | variant | shelves | wantN | passed | nDCG@40 | kept / lost | verdict |
+  |---|---|---|---|---|---|---|
+  | joint 0.1 | COMPLETED | +0.0001 | +0.2 [-0.1, +0.4] | +0.0012 | +0.037 / -0.046 | pass (overlap prints +0.0, the rounding artefact) |
+  | joint 0.1 | CURRENT | +0.0000 | **+0.4 [+0.1, +0.7], FAIL** | +0.0027 | +0.037 / -0.044 | fail |
+  | joint 0.2 | COMPLETED | **-0.0023, FAIL** (middle -0.0039) | +0.3 (niche +0.4, FAIL) | -0.0039 | +0.058 / -0.062 | fail |
+  | joint 0.2 | CURRENT | -0.0005 | **+0.6, FAIL** | +0.0026 | +0.059 / -0.065 | fail |
+
+  It widens more than the separate facets at the same strength (kept +0.037 against +0.024) and fails the same gate on in-progress shelves. Owner's page, real service, top 40: romance webtoons 0 to 1 at 0.1 and 0.2 and 2 at 0.4, webtoons 3 to 4, 5 and 5, Action 10 throughout, household titles in the top 20 4 to 5 (4 at 0.4), `lost` 0.22 to 0.11.
+- **Lanes (eval key `lanes=<min share>`, harness only)** score a seed group on its own seeds and give its picks page slots by seed weight (Sainte-Lague) among the whole-shelf picks. Groups are type by Action, Romance or neither; every group but the largest with three seeds and the minimum share, three at most. This is the one change that reaches the cause, and it fails: at 0.05, COMPLETED wantN -0.0044 [-0.0069, -0.0018], passed +1.0; CURRENT wantN -0.0038, passed +2.0 [+1.3, +2.7]; kept +0.077 and +0.089, lost -0.067 and -0.078. 0.10 is the same shape (wantN -0.0036 and -0.0032, passed +0.7 and +1.6). A lane's page leads with the famous titles of that group, and the grader counts those as passed. Owner's page with its three lanes: webtoons 3 to 7, romance webtoons 0 to 2, Action 10 to 15, household titles in the top 20 4 to 5. Both romance webtoons come from the unread seeds the reader data covers, not from the ones that were read.
+- **Not done:** a lane definition that is not hand-made (clusters of seeds), a lane with its own fame cap or page-share table, reader data that covers in-progress webtoons (taste vectors and EASE are fitted on COMPLETED lists of readers with 300 entries), the confirm split, unit tests for the joint facets.
+
+## v9: lanes as a top-up (`lanes2`), shipped at 0.5 (see "What shipped" at the end)
+
+`lanes` failed on its merge, not its picks, so `lanes2` keeps the lanes and changes the merge (`TopUpPicks` in `eval-reco-labels.cs`, keys `lanes2=<ratio>`, `lanes2fame` 1, `lanes2min` 0.05, `lanes2from` 10). The shipped page is kept through rank 10. Each side taste (same groups and qualification as `lanes`) has a target of ratio x its seed-weight share x the page, the page's own picks of that taste count toward it, and only the shortfall comes from the lane, of that taste only. Inserts replace the lowest picks outside every side taste and are spread evenly from rank 11. With `lanes2fame` an insert may not add a breach of `ShelfFame`'s limits computed on the whole shelf; it waits for a later slot or stays out. The harness has no "passed over" signal to skip (that is the grader's own label). Scripts and logs in `research/recommender/2026-11-21-lanes2/` in the main checkout (`grade.sh`, `inserts.py`, `owner-lanes2.py`).
+
+`eval-breadth.py` now prints per-taste recall@40 of held-out next reads: on its own facets (second = 15 to 50% of the seeds, main = over 50%, "outside" = a second facet and no main one), and for reference on the lanes' cells by seed count, which is the definition `lanes2` fills and so grades it on its own terms. Dev, n = 500, fold 0, against the shipped page:
+
+| arm | shelves | wantN (worst third) | passed | kept / lost_next | recall, lanes cells second / main | recall, facets outside / second | verdict |
+|---|---|---|---|---|---|---|---|
+| 0.75, fame | COMPLETED | -0.0005 (middle -0.0020, FAIL) | -0.3, better | +0.050 / 0.165 to 0.111 | +18% / -6.5% | +23% [CI above 0] / +1.0% | gate fails on the middle third |
+| 0.75, fame | CURRENT | **-0.0023, FAIL** (niche -0.0034) | -0.4, better | +0.063 / 0.175 to 0.106 | +21% / -14% | +8% (n.s.) / -3.8% | fail |
+| 0.75, no fame | COMPLETED | -0.0003 (middle -0.0021, FAIL) | **+0.5, FAIL** | +0.051 / 0.165 to 0.109 | +21% / -6.5% | +24% / +1.9% | fail |
+| 0.75, no fame | CURRENT | **-0.0021, FAIL** | **+0.8, FAIL** | +0.065 / 0.175 to 0.105 | +24% / -14% | +15% (n.s.) / -2.9% | fail |
+| 1.0, fame | COMPLETED | **-0.0017, FAIL** (middle -0.0026) | -0.7, better | +0.071 / 0.165 to 0.099 | +29% / -12% | +24% / +0.6% | fail |
+| 1.0, fame | CURRENT | **-0.0030, FAIL** (niche -0.0049) | -0.3 | +0.084 / 0.175 to 0.099 | +33% / -21% | +8% (n.s.) / -5.0% | fail |
+
+- **The fame rule is what keeps passed titles off.** Without it the inserts are a third household (0.33 and 0.39 against 0.25 and 0.28 for the picks they displace) and `passed` rises on both shelf kinds; with it the inserts are as household as what they replace and `passed` falls, because the inserts push shipped picks out of the top 20.
+- **What costs wantN on in-progress shelves is the lane picks themselves.** About 4.6 inserts per page. On finished shelves an insert is a next read 7.4% of the time against 6.4% for the pick it displaces; on in-progress shelves 4.0% against 6.8%.
+- **The gain is in the lanes' own cells.** Recall of next reads in a side cell rises by a fifth to a third. At 0.75 with the fame rule that is +128 next reads found against -103 in the main cell on finished shelves, and +90 against -150 on in-progress ones. On the script's independent facets second-taste recall falls with overall recall on in-progress shelves; only next reads outside every main facet gain on both, and certainly only on finished shelves.
+- **Owner's page** (the real-service lane pages of the `lanes` round, merged in Python with the same rule): at 0.75 two romance webtoons are inserted (ranks 18 and 33), webtoons in the top 40 go 3 to 5, romance webtoons 0 to 2, Action stays 10, household titles 4 to 4 in the top 20 and 8 to 9 in the top 40, `lost` 0.22 to 0.11. The fame rule changes nothing there; 1.0 adds one Action title.
+- **Lower ratios, and two rules** (fame rule on throughout; `lanes2held=1` skips a side taste the shipped page holds none of, `lanes2max=1` keeps only the largest side taste). Against the shipped page:
+
+  | arm | shelves | wantN (worst third) | passed | lost_next | recall, cells second | recall, facets outside / second | strict gate |
+  |---|---|---|---|---|---|---|---|
+  | 0.5 | COMPLETED | -0.0001 (middle -0.0011) | -0.2, better | 0.165 to 0.133 | +8.6% | +6.2% (n.s.) / +0.7% | PASS |
+  | 0.5 | CURRENT | -0.0011 (niche -0.0019) | -0.2 | 0.175 to 0.125 | +10.5% | 0.0% / -2.2% | fail (wantN) |
+  | 0.35 | CURRENT | -0.0011 (niche -0.0016) | -0.2, better | 0.175 to 0.141 | +5.0% | 0.0% / -1.6% | fail (wantN) |
+  | 0.25 | CURRENT | -0.0008 (niche -0.0013) | -0.1 | 0.175 to 0.156 | +3.0% | 0.0% / -1.1% | fail (wantN) |
+  | 0.5, held | COMPLETED | +0.0003 (middle -0.0007) | -0.3, better | 0.165 to 0.150 | +5.6% | +4.1% / +0.7% | PASS |
+  | 0.5, held | CURRENT | -0.0000 (niche -0.0007) | -0.3, better | 0.175 to 0.152 | +7.5% | 0.0% / -0.4% | PASS |
+  | 0.75, held | CURRENT | -0.0007 (niche -0.0015) | -0.5, better | 0.175 to 0.141 | +14.8% | +7.7% / -1.4% | fail (wantT only) |
+  | 0.75, max 1 | CURRENT | -0.0006 | -0.1 | 0.175 to 0.140 | +13.5% | +15% / -0.6% | fail (wantT only) |
+
+- **Why the in-progress inserts are weak.** At 0.75 an insert is a next read 4.0% of the time against 6.8% for the pick it displaces, and no slice of the inserts reaches 6.8%. The worst are inserts into a taste the shipped page held none of (2.6%, 40% of the inserts), lanes at 5 to 20% of the shelf (2.0 to 2.6%) and the manga lane that is neither Action nor Romance (2.1%). The displaced action webtoons are next reads 9.9% of the time. A lower ratio leaves mostly the inserts into tastes the page held none of, so each insert gets weaker (3.1% at 0.25) while the count falls. `lanes2held` removes that slice and passes everywhere, but it also removes the case lanes exist for: the owner's page holds no romance webtoon, so `lanes2held` leaves it unchanged.
+- **One ratio, not one per shelf kind.** The app cannot tell a finished shelf from an in-progress one. The nearest thing it could compute is the in-progress share of the seed weight, and the harness only grades pure shelf kinds. 0.5 with the fame rule meets the provisional tolerance (wantN within 0.002 pooled and 0.004 per third, `passed` not up) on both kinds. Owner's page at 0.5 (and at 0.35 and 0.25): one romance webtoon at rank 26, webtoons 3 to 4 in the top 40, Action and household titles unchanged.
+- **Confirm split, one look at 0.5 with the fame rule** (500 readers, fold 0, same settings as dev):
+
+  | shelves | split | wantN (worst third) | wantT | passed | floor, lanes2 (shipped) | kept / lost / lost_next | recall, cells second / main | recall, facets outside / second | strict gate |
+  |---|---|---|---|---|---|---|---|---|---|
+  | COMPLETED | dev | -0.0001 (middle -0.0011) | -0.0004 | -0.2, better | +2.2 (+2.6) | +0.027 / -0.043 / 0.165 to 0.133 | +8.6% / -2.8% | +6.2% / +0.7% | PASS |
+  | COMPLETED | confirm | -0.0001 (mainstream -0.0007) | +0.0002 | -0.1 | +1.7 (+2.0) | +0.026 / -0.037 / 0.155 to 0.128 | +9.0% / -3.8% | +7.7% / +0.2% | PASS |
+  | CURRENT | dev | -0.0011 (niche -0.0019) | **-0.0016** | -0.2 | -0.3 (+0.1) | +0.036 / -0.053 / 0.175 to 0.125 | +10.5% / -7.4% | 0.0% / -2.2% | fail (wantN, wantT) |
+  | CURRENT | confirm | -0.0001 (niche -0.0007) | -0.0007 | -0.2 | **-1.4 (-1.0), FAIL** | +0.037 / -0.051 / 0.176 to 0.139 | +16.0% / -6.6% | +14% (8 hits of 382) / +0.1% | fail (floor) |
+
+  It holds on fresh readers, and on in-progress shelves wantN comes out better than on dev. The one gate that fails is the floor, and the shipped page fails it on those readers already (-1.0 [-2.0, -0.1]). Every lanes2 run makes the top 20 slightly less household than the shipped page (paired -0.3 to -0.4 points on both splits and both shelf kinds), which takes that floor from -1.0 to -1.4. On confirm in-progress shelves an insert is a next read 5.4% of the time against 5.9% for the pick it displaces (dev: 3.8% against 7.0%).
+- **Not done:** judged panels, mixed `CURRENT,COMPLETED` shelves, a ratio blended by in-progress share, a real "passed over" exclusion.
+
+### What shipped
+
+0.5 with the fame rule, in the engine. Scripts, logs and the private owner pages are in `research/recommender/2026-11-21-lanes-engine/` in the main checkout (`grade.sh`, `tables.sh`, `owner.sh`, `OwnerShelfProbe.lanes.cs.txt`, `owner-summary.py`).
+
+- **Where.** `ShelfLanes` (groups, targets, merge), `RecommenderTuning.Lanes` 0.5 with `LanesMinShare`, `LanesMaxSides`, `LanesFrom`, `LanesPage`, `LanesFame` and `LanesHeldOnly`, run by `SemanticRecommender.GetSimilarAsync(lanes: true)` after the whole-shelf ranking, on one `VectorIndex` snapshot for the whole-shelf rank, the lane ranks and the merge. `RecommendationService` asks for it on the automatic whole-shelf path of an interactive pool only, the population that was graded: the Recommended tab and Home's "You might like". A filtered Recommended page keeps it, since each lane scan gets the same filters. Custom rails (`PoolOrigin.Rail`, with chosen seeds or not), recent activity and side interests keep the plain ranking, and the switch is in the pool key (`l:`). `SimilarSeriesService` never passes it. The eval's `lanes2*` keys now set those fields and the harness calls the engine (`TopUpPicks` is gone, `lanes2=0` is the page before it), and the engine reproduces the harness picks byte for byte on dev and confirm, both shelf kinds.
+- **A 200-pick pool.** The targets are counted on the first `LanesPage` (40) picks and each lane is a 40-pick request, the graded setting, so the top 40 is the graded page. Picks 41 to 200 keep the whole-shelf order with the displaced picks first (`ShelfLanes.Assemble`), so nothing the ranking wanted is dropped, and a lane pick the whole-shelf ranking also held past 40 appears once. The app's own top 40 at 200 picks still differs from the eval's 40-pick request (800 rows per query fused and a 600 window against 200 and 120), as for every ranking change.
+- **Cost.** A short side taste is one more full ranking on its own seeds, its own scan, inside the same scan-gate hold. On the owner config one lane (12 seed queries) adds a median 65 ms (53 to 85) to a 320 ms whole-shelf ranking per pool build. Harness mean per request: 188 to 219 ms on finished shelves, 149 to 221 ms on in-progress ones. Scoring the lanes inside the existing row pass would share only the filter and row unpack; every per-seed-set step after the scan would still run per lane.
+- **Reasons.** A lane pick is hydrated by its lane, so "Feels like", author, co-read and EASE reasons come from that taste's seeds and `Balance` rotates among them; precedence is unchanged. The owner's one insert reads "By an author you read".
+- **The page-share table, rebuilt with lanes on and published to `page-share-latest` on 2026-11-21.** Fold-0 twins on the recipe of `page-frequency-current-cap10.tsv` (readers 501 to 1,500, CURRENT, penalty off): `page-frequency-current-tl50.tsv` (lanes) and `-tl0.tsv` (lanes off). The publishable table from the header recipe on `ship/cfg-all`: `.artifacts/lanes-engine/page-share-lanes.db`, 8,040 series from 3,000 CURRENT shelves, highest share 0.345, `trainingFold` all. Paired against the shipped page on the old twin (`ship`), n = 500, fold 0; `l2f50` is lanes on the old twin, `l2f50n` lanes on its own twin, `shipn` no lanes on the rebuilt lanes-off twin:
+
+  | split, shelves | arm | wantN (worst third) | wantT | passed | floor | lost_next | strict gate |
+  |---|---|---|---|---|---|---|---|
+  | dev, COMPLETED | l2f50 | -0.0001 (middle -0.0011) | -0.0004 | -0.2, better | +2.2 | 0.165 to 0.133 | PASS |
+  | dev, COMPLETED | l2f50n | -0.0000 (middle -0.0010) | +0.0001 | -0.4, better | +2.2 | 0.165 to 0.137 | PASS |
+  | dev, COMPLETED | shipn | +0.0003 | +0.0005 | -0.2, better | +2.5 | 0.165 to 0.170 | PASS |
+  | dev, CURRENT | l2f50 | **-0.0011** (niche **-0.0019**) | **-0.0016** | -0.2 | -0.3 | 0.175 to 0.125 | fail (wantN, wantT) |
+  | dev, CURRENT | l2f50n | +0.0008 (niche -0.0014) | **-0.0024** | **+0.7** (middle +1.1) | +1.2 | 0.175 to 0.121 | fail (wantT, passed) |
+  | dev, CURRENT | shipn | +0.0015, better | **-0.0012** | **+0.9** (every third) | +1.5 | 0.175 to 0.169 | fail (wantT, passed) |
+  | confirm, COMPLETED | l2f50 | -0.0001 (mainstream -0.0007) | +0.0002 | -0.1 | +1.7 | 0.155 to 0.128 | PASS |
+  | confirm, COMPLETED | l2f50n | +0.0007 | +0.0008 | -0.3, better | +1.5 | 0.155 to 0.127 | PASS |
+  | confirm, COMPLETED | shipn | +0.0010, better | +0.0010, better | -0.2 | +1.8 | 0.155 to 0.154 | PASS |
+  | confirm, CURRENT | l2f50 | -0.0001 (niche -0.0007) | -0.0007 | -0.2 | **-1.4** | 0.176 to 0.139 | fail (floor) |
+  | confirm, CURRENT | l2f50n | +0.0017, better (niche -0.0005) | **-0.0024** | **+0.8** (every third) | +0.5 | 0.176 to 0.141 | fail (wantT, passed) |
+  | confirm, CURRENT | shipn | +0.0019, better | **-0.0019** | **+1.1** (every third) | +0.8 | 0.176 to 0.173 | fail (wantT, passed) |
+
+- **The in-progress `passed` rise is the twin's recipe, not the lanes.** `shipn` raises `passed` without any lanes, by more. `page-frequency-current-cap10.tsv` was built from pages at EASE weight 4, the shape of the first published table (top-20 mean share 0.276 and 0.273), while the table published on 2026-11-19 comes from weight-1 pages (0.237), like every twin rebuilt today (`tl0` 0.228, `tl50` 0.228, the lanes all-reader table 0.238). So `shipn` is the closer model of what installs run. Against it, `l2f50n` passes the strict gates on dev CURRENT, confirm COMPLETED and confirm CURRENT (passed -0.2, -0.1 and -0.2; wantN -0.0007, -0.0004 and -0.0002) and fails only dev COMPLETED's middle third (wantN -0.0013 [-0.0024, -0.0002]), inside the provisional tolerance. Gate files `*-gates-vs-shipn.txt`.
+- **Review fixes, regraded.** `ShelfLanes.Merge` used to fix its drop set up front and append displaced picks at the end, so a refused insert reordered the page. Now each accepted insert displaces one pick, a refused slot displaces nothing, and the fame check runs on the page as placed. `RecommendationService.Spread` never places an insert above `LaneFloor` (`LanesFrom`), so franchise spacing cannot pull one into the visible top 10 (the eval never runs `Spread`). Dev, n = 500, fold 0, against the shipped page on the old twin, same settings as `l2f50` above (`grade.sh`, `TAG=fix`): finished shelves 3 pages changed (2 as a set, none in the top 10), in-progress 17 (12 as a set, none in the top 10, 1,208 inserts to 1,200). One page per kind whose only insert was refused is now the shipped page exactly. The gates do not move:
+
+  | shelves | arm | wantN (worst third) | wantT | passed | floor | lost_next | strict gate |
+  |---|---|---|---|---|---|---|---|
+  | COMPLETED | l2f50 | -0.0001 (middle -0.0011) | -0.0004 | -0.2, better | +2.2 | 0.165 to 0.133 | PASS |
+  | COMPLETED | l2f50, fixed | -0.0001 (middle -0.0011) | -0.0004 | -0.2, better | +2.3 | 0.165 to 0.133 | PASS |
+  | CURRENT | l2f50 | **-0.0011** (niche **-0.0019**) | **-0.0016** | -0.2 | -0.3 | 0.175 to 0.125 | fail (wantN, wantT) |
+  | CURRENT | l2f50, fixed | **-0.0011** (niche **-0.0019**) | **-0.0016** | -0.2, better | -0.3 | 0.175 to 0.125 | fail (wantN, wantT) |
+
+  `dotnet run` on a file-based harness does not rebuild when only a referenced project changed; `dotnet build distribution/eval-reco-labels.cs` first, or the run grades the old engine.
+- **Owner's page** (real service, top 40, against the published 2026-11-19 table and with the lanes all-reader table; the `lanes2` round above used the 2026-11-18 table, hence its other baseline counts): one romance webtoon inserted at rank 26 with either table, webtoons 4 to 5, romance webtoons 0 to 1, Action 8 and household titles 5 in the top 20 and 9 in the top 40 unchanged, `lost` 0.11 either way. The rebuilt table does not change the owner's top 40 as a set.
+- **Published.** `page-share-lanes.db` went to `page-share-latest` on 2026-11-21 (`graph-artifact.cs pageshare` / `publish-graph.ps1`, as in the build-page-share.py header), so installs run lanes on the table built with lanes on, closest to `l2f50n` against `shipn` above (the lanes and lanes-off twins are nearly the same table: 4,990 and 4,860 titles, top-20 mean share 0.228 both).
+
+## v9: series the reader data does not cover (`tastemissing`, mapped and predicted taste rows, seed scales), nothing shipped
+
+A candidate with no taste vector scores 0 on the largest term, and a seed with none drops out of the centroid. This measures what that costs and grades every way of filling the gap. Scripts, logs and the private owner pages are in `research/recommender/2026-11-21-coverage/` in the main checkout (`gap.py`, `sim_missing.py`, `sim_pred.py`, `predict_taste.py`, `align_taste.py`, `grade.sh`, `covmoves.py`, `owner-cov.ps1`).
+
+- **A missing taste vector is a wall, not a handicap.** On the shipping engine's scored pools (dev, n = 500, fold 0) 46% of pool rows have no vector and none of them is in a top 40; the best such row sits at rank 293 (finished shelves) and 319 (in-progress shelves) at the median. Held-out titles that rank in the top 40 on the text side alone (score minus the taste, EASE, co-read and graph terms) reach the page 86 to 92% of the time with a vector and 0 of 19 times without one.
+- **Who it reaches.** On finished shelves 0.7% of held-out titles and seeds lack a vector (11% an EASE row), because the labels are COMPLETED rows like the training data. On in-progress shelves it is 10.5% of held-out titles (49.6% for EASE) and 9.3% of seeds; 10% of those readers have under 80% of their seeds covered. Of the 1,688 uncovered held-out titles there, none is on a page and 0.1% are in a top 200, where the text side alone would put 1.0% and 4.7%. If they were recovered at the covered rate the page would hold 0.39 more hits per reader (+12%); that is the ceiling.
+- **Missing is evidence, so a flat stand-in fails.** `TasteVectorTuning.MissingShare` (eval key `tastemissing`, 0 = off) scores a row without a vector at a share of the mean of the pool's 40 best taste scores. Simulated on the dumped pools, the rows it lets on to the page are next reads a tenth as often as the rows they replace (0.8% a slot against 8.4%). In the engine 0.5 is inert and 0.85 fails (wantN -0.0014 and -0.0051).
+- **The reader data already on disk covers in-progress titles.** `coread-graph.db` holds 5.2M CURRENT rows that the taste build drops. `build-taste-vectors.cs --statuses COMPLETED,CURRENT` gives 12,086 more index rows a vector (53,787 to 65,873) and lifts coverage of in-progress held-out titles from 89.5% to 99.8% (EASE with `CURRENT=0.5`: 50.4% to 85.9%). A reader floor of 150 instead of 300 adds 550 rows and nothing to coverage. No new fetch is needed.
+- **Three ways to fill the gap** (taste artifacts, graded with `--taste`, one run each, paired on the same requests):
+  - `tcc`: the taste build with CURRENT rows. `tcc150` the same at a reader floor of 150.
+  - `align`: the shipped vectors untouched, plus the rows only the CURRENT build covers, mapped into the shipped space by a ridge map fitted on the 58,183 shared rows (held-out cosine 0.85, neighbour overlap@40 0.56). The suffix is the norm the added rows are stored at; the stored scale carries it, so an added row scores norm x cosine as a candidate and pulls the centroid by its norm as a seed, with no engine change.
+  - `pred`: a content-to-taste MLP (text vector, tag SVD, metadata; the v7 `exp-content` map) for every index row without a vector (held-out cosine 0.56). `alpred50` is `align100` plus predicted rows at 0.5 for the rest.
+
+  | variant | finished wantN | in-progress wantN | in-progress passed | uncovered wanted titles on the page, per reader | verdict (finished / in-progress) |
+  |---|---|---|---|---|---|
+  | shipped | | | 22.2% | 0.000 of 22.0 | |
+  | `tastemissing=0.5` | +0.0001 | -0.0001 | -0.0 | 0.032 | pass / pass |
+  | `tastemissing=0.85` | -0.0014 | -0.0051 | -0.6 | 0.102 | FAIL / FAIL |
+  | `pred` 0.5 / 0.75 / 1.0 | 0.0000 / 0.0000 / -0.0001 | -0.0001 / -0.0003 / -0.0009 | -0.2 / -0.3 / -0.5 | 0.004 / 0.038 / 0.130 | pass / fails one third at each norm |
+  | `tcc` | -0.0027 [-0.0045, -0.0010] | +0.0015 [-0.0015, +0.0045] | +0.7 | 0.120 | FAIL / FAIL (passed) |
+  | `tcc150` | -0.0018 [-0.0035, -0.0002] | +0.0035 [+0.0005, +0.0064] | -0.3 | 0.124 | FAIL / pass, kept -0.013 |
+  | `tcc` with the EASE `CURRENT=0.5` table | -0.0036 | +0.0080 [+0.0040, +0.0120] | -1.0 | 0.154 | FAIL / floor -1.4 |
+  | EASE `CURRENT=0.5` alone | -0.0007 | +0.0057 | -3.2 | 0.000 | overlap artefact / floor -4.4 |
+  | `align75` | +0.0002 | -0.0003 [-0.0011, +0.0004] | -0.3 | 0.046 | pass / pass |
+  | `align100` | -0.0001 | -0.0004 [-0.0018, +0.0009] | -0.5 | 0.170 | pass / mainstream third -0.0009 |
+  | `align100` with the EASE `CURRENT=0.5` table | -0.0006 | +0.0060 [+0.0031, +0.0090] | -3.5 | 0.214 | overlap artefact / floor -4.9 |
+  | `alpred50` | 0.0000 | -0.0005 | -0.5 | 0.170 | pass / mainstream third -0.0010 |
+
+  "Wanted" is held-out plus plan-to-read titles, and "uncovered" always means no vector in the shipped fold-0 table.
+- **Lifting the wall moves the uncovered titles and nothing else.** Mapped rows put 0.17 to 0.21 uncovered wanted titles on a page that had none (1% of the 22 a reader holds), at 4% of the page, and `wantN` does not move: a slot given to a newly covered row is a wanted title about 10% of the time against 14% for the page. Retraining the taste vectors on CURRENT rows buys the same coverage and costs finished shelves (-0.0027), as every status but COMPLETED has since v4. Breadth (`kept`, `lost`) holds within 0.01 for every variant but `tcc150`. The 50 in-progress readers with under 80% of their seeds covered gain nothing certain from any variant (wanted hits@40 -0.94 to +0.26).
+- **The seed mix, through the real service.** `TasteTuning.UnreadSeedScale` multiplies the weight of a shelf seed with no rating and no chapter read, `OffShelfSeedScale` the weight of a liked title or an anime match that is not on the shelf (0 leaves them out). Both ship at 1. On held-out lists (`reco-profile-probe.py`, 75 + 75 readers, plan-to-read entries as the unread adds, new probe keys `unreadscale`, `offshelf`, `tastemissing`) unread at 0.5 brings +1.3 points [+0.5, +2.2] of hidden titles back into the top 20 on control shelves and +0.7 [-0.3, +1.7] on romcom shelves; at 0.1 it is +1.6 on both, with the top 40 inside noise. Household and passed titles do not move. Held-out lists have no thumbs or anime seeds, so the off-shelf scale has no grader.
+- **Owner's page** (real service, shipped settings, all-reader tables, top 40; the off-shelf seeds are 41% of the owner's seed weight):
+
+  | case | webtoons | romance webtoons | best romance webtoon rank | Action | household in the top 20 | kept / lost |
+  |---|---|---|---|---|---|---|
+  | shipped | 3 | 0 | 100 | 10 | 4 | 0.81 / 0.22 |
+  | unread seeds x0.5, x0.25 | 5, 5 | 0 | 110, past 120 | 12, 13 | 4 | 0.84 / 0.11 |
+  | off-shelf seeds x0.5, out | 7, 6 | 0 | 55, 75 | 11, 7 | 5, 3 | 0.84 / 0.11, 0.77 / 0.11 |
+  | unread x0.5 and off-shelf out | 7 | 0 | 69 | 8 | 4 | 0.77 / 0.11 |
+  | `tastemissing` 0.5, 0.85 | 3, 4 | 0, 1 | 100, 22 | 10, 7 | 4 | 0.81 / 0.22, 0.79 / 0.11 |
+  | `pred` 0.5, 0.75, 1.0 | 3, 3, 4 | 0 | 94, 92, 90 | 8 | 4, 4, 3 | 0.81 / 0.22 (0.82 / 0.11 at 1.0) |
+  | `tcc` | 0 | 0 | 78 | 0 | 3 | 0.54 / 0.44 |
+  | `align75`, `align100` | 3 | 0 | 92 | 8 | 4 | 0.81 / 0.22 |
+  | `align100` with EASE `CURRENT=0.5` | 1 | 0 | 63 | 3 | 1 | 0.67 / 0.22 |
+
+- **Coverage is not what buries the owner's romance webtoons.** With the CURRENT rows mapped in, all 11 romance webtoon seeds have a vector (6 before) and 82% of the romance webtoon candidates do (64%), and their mean taste score against the centroid is still 0.08, against 0.70 for the page's picks. The centroid is 81% romance manga by weight, and covered or not a romance webtoon sits far from it. Unread seeds weighted down make it worse for this shelf, because 7 of its 11 romance webtoon seeds are unread. The retrained table drops every webtoon and Action title from the page.
+- **Not done:** the confirm split and the judged panels for any variant; a page-share table rebuilt for a changed ranking; co-read with CURRENT rows (`fetch-coread-graph.cs build` reads COMPLETED only); a lower reader floor for EASE; the mapped rows through the held-out profile probe (its hidden titles are COMPLETED rows, which the shipped table covers); unit tests for `MissingShare` and `UnreadSeedScale`; `predict_taste.py` and `align_taste.py` live in `research/`, not `distribution/`.
+
+## v9: co-read per-user cap, list dates and index eligibility, measured
+
+- **The co-read cap is inert at 400 and 800** (`fetch-coread-graph.cs build --max-items`, fold-limited, graded with the new `eval-reco-labels.cs --coread <path>`). 400 keeps 2.31M pairs against 1.79M and 800 2.69M; on both shelf kinds wantN, passed and nDCG@40 move by under 0.0015 with every interval across zero. The 39% of finished rows the cap drops (v7 audit) cost nothing on these gates, which fits co-read off moving wantN by +0.0002 in v8. The uncapped build was not run.
+- **The index already holds what readers read.** Of AniList list rows mapped to an active non-novel series, 96.4% of COMPLETED, 93.3% of PLANNING and 97.9% of CURRENT are indexed. The rows eligibility excludes are mostly rated titles with no usable text (1.6% of COMPLETED); rows with no rating but some text are 0.09%. Relaxing eligibility is not worth a re-embed. (A first count read 76% indexed because an AniList id maps to a merged row and its canonical row both; resolve to the canonical row.)
+- **List dates exist** (`research/recommender/2026-11-20-dated-lists/probe.py`, 200 sampled public readers, aggregates only). COMPLETED entries carry a finish date with the day on 69%, `startedAt` 30%, `createdAt` 75%, `updatedAt` 81%; 74% of readers date at least half their completions. About 22% of readers have half or more of their dated completions on one day (bulk imports); for the median reader the busiest day holds 16% and 60% of dated completions fall on distinct days. A time-split grader and recency or sequence models are possible after a refetch of the lists with these fields, which the fetcher does not request today.
+- **`tags_v2` already carries a per-series weight class** (defining, core, recurring, incidental, unweighted), so AniList's tag rank would refine an existing signal on a different taxonomy; not pursued.

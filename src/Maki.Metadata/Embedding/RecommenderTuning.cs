@@ -485,6 +485,26 @@ public sealed record RecommenderTuning
     public double CommonPower { get; init; } = 1.0;
 
     /// <summary>
+    /// How hard the page's type and genre mix is pulled toward the shelf's (<see cref="ShelfCalibration"/>).
+    /// 0 is off and ships: 0.1 widens pages with wantN flat but raises passed household titles on the
+    /// confirm split, 0.2 does so on dev too. Runs inside <c>SelectWinners</c> from two seeds up, before the fame cap.
+    /// The shelf-wide channels give a title fitting a fifth of the shelf about a fifth of their
+    /// signal, so a second taste falls off the page while the main one fills it; this puts it back
+    /// and trims a webtoon flood on in-progress shelves too. Eval key <c>calibration</c>. See
+    /// distribution/CLAUDE.md, "v9: why a second taste falls off the page".
+    /// </summary>
+    public double ShelfCalibration { get; init; } = 0;
+
+    /// <summary>
+    /// Calibrates on type x genre cells instead of types and genres apart. Off and unshipped. The
+    /// separate facets cannot see a second taste that is a combination: a romance shelf with some
+    /// romance webtoons reads as "enough Romance" and "a few webtoons", which action webtoons fill.
+    /// Only read when <see cref="ShelfCalibration"/> is above 0. Eval key <c>calibrationjoint</c>.
+    /// See distribution/CLAUDE.md, "v9: a second taste that is a combination".
+    /// </summary>
+    public bool ShelfCalibrationJoint { get; init; }
+
+    /// <summary>
     /// How many times the shelf's own share of famous titles a list may hold at any point
     /// (<see cref="ShelfFame"/>). 0 is off; 1.0 ships. 1.0 holds every prefix of the list
     /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
@@ -502,6 +522,41 @@ public sealed record RecommenderTuning
     /// changes a shelf of 100 or more. Eval key <c>famecappseudo</c>.
     /// </summary>
     public double FameCapPseudoSeeds { get; init; } = 10;
+
+    /// <summary>
+    /// How much of its seed-weight share of the page a side taste is topped up to
+    /// (<see cref="ShelfLanes"/>). 0 is off; 0.5 ships. Only runs when the caller asks (personal
+    /// recommendations from the whole shelf, never the series-page rail) and from two seeds up.
+    /// At 0.5 with <see cref="LanesFame"/> wantN stayed flat, passed fell slightly and the next reads
+    /// the page lost fell by 17 to 21% on dev and confirm, both shelf kinds. Eval key <c>lanes2</c>.
+    /// See distribution/CLAUDE.md, "v9: lanes as a top-up".
+    /// </summary>
+    public double Lanes { get; init; } = 0.5;
+
+    /// <summary>The least share of the seed weight a side taste needs. Eval key <c>lanes2min</c>.</summary>
+    public double LanesMinShare { get; init; } = 0.05;
+
+    /// <summary>The most side tastes topped up. Eval key <c>lanes2max</c>.</summary>
+    public int LanesMaxSides { get; init; } = 3;
+
+    /// <summary>How many leading picks the top-up never touches. Eval key <c>lanes2from</c>.</summary>
+    public int LanesFrom { get; init; } = 10;
+
+    /// <summary>
+    /// The page the targets are counted on and each lane's own request size. 40 is the page the
+    /// harness grades; deeper picks keep the whole-shelf order. Eval key <c>lanes2page</c>.
+    /// </summary>
+    public int LanesPage { get; init; } = 40;
+
+    /// <summary>
+    /// Whether an insert must not add a breach of <see cref="ShelfFame"/>'s limits for the whole
+    /// shelf. Without it the inserts are a third household titles and passed rises. Eval key
+    /// <c>lanes2fame</c>.
+    /// </summary>
+    public bool LanesFame { get; init; } = true;
+
+    /// <summary>Skips a side taste the page holds none of. Off. Eval key <c>lanes2held</c>.</summary>
+    public bool LanesHeldOnly { get; init; }
 
     /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own

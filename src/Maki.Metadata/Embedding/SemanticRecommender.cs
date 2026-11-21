@@ -327,6 +327,12 @@ public class SemanticRecommender(
     /// resemblance.
     /// </para>
     /// </param>
+    /// <param name="lanes">
+    /// Whether the reader's side tastes are topped up on the page (<see cref="ShelfLanes"/>,
+    /// <see cref="RecommenderTuning.Lanes"/>). Personal recommendations from the whole shelf only;
+    /// the series-page rail never passes it. Each side taste that falls short is scored on its own
+    /// seeds, so a lane pick's reasons name a seed of its own taste.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
@@ -334,8 +340,91 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
         bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
-        IReadOnlyDictionary<long, double>? demote = null, bool common = false,
+        IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
         CancellationToken ct = default)
+    {
+        // One index for the whole build: a refresh between the scans would otherwise leave the merge
+        // unable to place lane picks the lanes found.
+        var (whole, index) = await RankAsync(
+            seedIds, excludeIds, limit, filters, obscurity, seedWeights, avoidWeights, diversity, weights,
+            coGraph, coRead, taste, ease, features, graphWeight, demote, common, null, ct);
+        if (!lanes || _tuning.Lanes <= 0 || seedIds.Count < 2 || whole.Count <= _tuning.LanesFrom
+            || index is null || index.Count == 0)
+        {
+            return whole;
+        }
+
+        var sides = ShelfLanes.Sides(index, seedIds, seedWeights, _tuning.LanesMinShare, _tuning.LanesMaxSides);
+        var size = Math.Min(_tuning.LanesPage, whole.Count);
+        if (sides.Count == 0 || size <= _tuning.LanesFrom)
+        {
+            return whole;
+        }
+
+        ShelfLanes.Key? KeyOf(MangaBakaRecommendation pick) =>
+            long.TryParse(pick.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+            && index.TryGetRow(id, out var row)
+                ? ShelfLanes.KeyOf(index, row)
+                : null;
+        int RankOf(MangaBakaRecommendation pick) =>
+            long.TryParse(pick.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+            && index.TryGetRow(id, out var row)
+                ? index.PopularityAt(row)
+                : VectorIndex.Unknown;
+
+        var started = DateTime.UtcNow;
+        var page = whole.Take(size).ToList();
+        var onPage = page.Select(p => p.ProviderId).ToHashSet();
+        var laneExclude = excludeIds.Concat(seedIds).Distinct().ToList();
+        var queues = new List<(List<MangaBakaRecommendation> Picks, int Need)>();
+        foreach (var shortfall in ShelfLanes.Shortfalls(page, sides, KeyOf, _tuning.Lanes, _tuning.LanesHeldOnly))
+        {
+            var (lane, _) = await RankAsync(
+                shortfall.Side.Ids, laneExclude, _tuning.LanesPage, filters, obscurity, seedWeights, avoidWeights,
+                diversity, weights, coGraph, coRead, taste, ease, null, graphWeight, demote, common, index, ct);
+            var candidates = lane
+                .Where(p => KeyOf(p) == shortfall.Side.Key && !onPage.Contains(p.ProviderId))
+                .ToList();
+            if (candidates.Count > 0)
+            {
+                queues.Add((candidates, Math.Min(shortfall.Target - shortfall.Have, candidates.Count)));
+            }
+        }
+
+        if (queues.Count == 0)
+        {
+            return whole;
+        }
+
+        var limits = _tuning.LanesFame && _tuning.FameCapRatio > 0
+            ? ShelfFame.Limits(
+                seedIds.Distinct().Select(id => (
+                    index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
+                    seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
+                _tuning.FameCapRatio,
+                _tuning.FameCapPseudoSeeds)
+            : null;
+        var merged = ShelfLanes.Merge(
+                page, sides.Select(s => s.Key).ToHashSet(), queues, KeyOf, RankOf, _tuning.LanesFrom, limits)
+            .Select(p => onPage.Contains(p.ProviderId) ? p : p with { LaneFloor = _tuning.LanesFrom })
+            .ToList();
+        logger.LogInformation(
+            "Topped up {Inserted} picks from {Lanes} side taste(s) in {Elapsed:F0}ms",
+            merged.Count(p => p.LaneFloor > 0), queues.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+        return ShelfLanes.Assemble(merged, whole, size, p => p.ProviderId, limit);
+    }
+
+    /// <param name="pinned">The index to rank on, so a lanes build reads one; null fetches it.</param>
+    /// <returns>The picks and the index they were ranked on, null when none was built.</returns>
+    private async Task<(IReadOnlyList<MangaBakaRecommendation> Picks, VectorIndex? Index)> RankAsync(
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, RecommendationFilters? filters, double obscurity,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        IReadOnlyDictionary<long, double>? avoidWeights, double diversity,
+        EmbeddingMath.Weights? weights, bool coGraph, bool coRead,
+        bool taste, bool ease, ICollection<EmbeddingMath.CandidateFeatures>? features, double? graphWeight,
+        IReadOnlyDictionary<long, double>? demote, bool common, VectorIndex? pinned,
+        CancellationToken ct)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;
@@ -353,24 +442,24 @@ public class SemanticRecommender(
             && seedIds.Count >= _easeTuning.MinSeeds;
         Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
-        var index = await cache.GetAsync(ct);
+        var index = pinned ?? await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — the vector index isn't built yet");
-            return [];
+            return ([], index);
         }
 
         var plan = index.Plan(filters);
         if (plan.Impossible)
         {
-            return [];
+            return ([], index);
         }
 
         var seedVectors = store.GetVectors(seedIds);
         if (seedVectors.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");
-            return [];
+            return ([], index);
         }
 
         // Co-recommendation evidence, keyed by index row so the scan and the scoring loop can both
@@ -475,7 +564,7 @@ public class SemanticRecommender(
         var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
         if (queries.Count == 0)
         {
-            return [];
+            return ([], index);
         }
 
         // Live only when an artifact is actually loaded and the weight is positive, exactly like the
@@ -609,6 +698,10 @@ public class SemanticRecommender(
             }
         }
 
+        var tasteMissing = tasteLive && tasteQueries.Count > 0 && _tasteTuning.MissingShare > 0
+            ? (float)(_tasteTuning.MissingShare * MeanOfBest(tasteByRow, poolRows, 40))
+            : 0f;
+
         var pageShare = common && _tuning.CommonWeight > 0
             ? pageFrequency ?? (pageShareCache is null ? null : await pageShareCache.GetAsync(ct))
             : null;
@@ -685,6 +778,11 @@ public class SemanticRecommender(
             var tasteScore = tasteByRow.Length > row && !float.IsNegativeInfinity(tasteByRow[row])
                 ? tasteByRow[row]
                 : 0;
+            var tasteImputed = tasteMissing > 0 && !index.HasTasteAt(row);
+            if (tasteImputed)
+            {
+                tasteScore = tasteMissing;
+            }
             if (bestCosine < _tuning.CosineFloor && !crowdInjected.Contains(row))
             {
                 // Counted, not just skipped: a row the crowd channels paid a MaxInjected slot for
@@ -789,7 +887,7 @@ public class SemanticRecommender(
                 storedRank == VectorIndex.Unknown ? 0 : storedRank, score));
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
-                graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
+                graphScore > 0, coReadScore > 0, tasteScore > 0 && !tasteImputed, avoidScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity, seedIds, seedWeights, _tuning);
@@ -831,7 +929,7 @@ public class SemanticRecommender(
             "avoided tag)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
             injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided), tagAvoidRows);
-        return results;
+        return (results, index);
     }
 
     /// <summary>Which stage put pool row <paramref name="poolIndex"/> in: see <c>CandidateFeatures.Route</c>.</summary>
@@ -1377,6 +1475,34 @@ public class SemanticRecommender(
         }
 
         return kept;
+    }
+
+    /// <summary>Mean of the <paramref name="count"/> highest values among the pool's rows, 0 for an empty pool.</summary>
+    private static double MeanOfBest(float[] byRow, List<int> poolRows, int count)
+    {
+        var values = new List<float>(poolRows.Count);
+        foreach (var row in poolRows)
+        {
+            if (row < byRow.Length && !float.IsNegativeInfinity(byRow[row]))
+            {
+                values.Add(byRow[row]);
+            }
+        }
+
+        if (values.Count == 0)
+        {
+            return 0;
+        }
+
+        values.Sort();
+        var take = Math.Min(count, values.Count);
+        double sum = 0;
+        for (var i = values.Count - take; i < values.Count; i++)
+        {
+            sum += values[i];
+        }
+
+        return sum / take;
     }
 
     /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>
@@ -2322,11 +2448,21 @@ public class SemanticRecommender(
         // The fame cap re-orders the whole window, so its replacements come from past `limit`.
         // One seed is a claim about two works, not a shelf to measure against.
         var capped = tuning.FameCapRatio > 0 && seedIds.Count >= 2;
-        var picked = EmbeddingMath.SelectDiverse(
-            relevance,
-            (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1),
-            capped ? pool.Count : limit,
-            diversity);
+        Func<int, int, double> similarity = (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1);
+        var target = tuning.ShelfCalibration > 0 && seedIds.Count >= 2
+            ? CalibrationTarget(index, seedIds, seedWeights, tuning.ShelfCalibrationJoint)
+            : null;
+        var picked = target is { } shelf
+            ? ShelfCalibration.Order(
+                relevance,
+                pool.Select(c => ShelfCalibration.Facets(
+                    index, c.Row, shelf.TypeCount, shelf.Mix.Length, tuning.ShelfCalibrationJoint)).ToList(),
+                shelf.Mix,
+                capped ? pool.Count : limit,
+                tuning.ShelfCalibration,
+                similarity,
+                diversity)
+            : EmbeddingMath.SelectDiverse(relevance, similarity, capped ? pool.Count : limit, diversity);
         var winners = picked.Select(i => pool[i]).ToList();
         if (!capped)
         {
@@ -2340,6 +2476,49 @@ public class SemanticRecommender(
             tuning.FameCapRatio,
             tuning.FameCapPseudoSeeds);
         return ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, limit);
+    }
+
+    /// <summary>
+    /// The shelf's facet mix for <see cref="ShelfCalibration"/>: each seed the index holds, by its
+    /// seed weight. Null when no seed is indexed, which leaves the page uncalibrated.
+    /// </summary>
+    private static (double[] Mix, int TypeCount)? CalibrationTarget(
+        VectorIndex index, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights,
+        bool joint)
+    {
+        var typeCount = index.TypeCount;
+        var genreCount = index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1;
+        var dims = joint ? typeCount * (genreCount + 1) : typeCount + genreCount;
+        var mix = new double[dims];
+        var total = 0.0;
+        foreach (var id in seedIds.Distinct())
+        {
+            var weight = seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0;
+            if (weight <= 0 || !index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            var facets = ShelfCalibration.Facets(index, row, typeCount, dims, joint);
+            for (var d = 0; d < dims; d++)
+            {
+                mix[d] += weight * facets[d];
+            }
+
+            total += weight;
+        }
+
+        if (total <= 0)
+        {
+            return null;
+        }
+
+        for (var d = 0; d < dims; d++)
+        {
+            mix[d] /= total;
+        }
+
+        return (mix, typeCount);
     }
 
     /// <summary>

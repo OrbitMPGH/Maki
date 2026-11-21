@@ -121,4 +121,18 @@ public sealed record TasteVectorTuning
     /// </para>
     /// </summary>
     public int MaxInjected { get; init; } = 100;
+
+    /// <summary>
+    /// What a candidate the artifact has no vector for scores on this channel, as a share of the
+    /// mean of the 40 best behavioural scores in the request's pool. 0, which ships, scores it 0.
+    ///
+    /// <para>
+    /// Measurement only (eval key <c>tastemissing</c>). At 0 a row without a vector gives up the
+    /// whole term, about 1.5 points against a page pick, and on held-out readers no such row reaches
+    /// the page. A flat stand-in does not fix that: rows without reader data are next reads about a
+    /// tenth as often as covered ones at the same score. See distribution/CLAUDE.md, "v9: series the
+    /// reader data does not cover".
+    /// </para>
+    /// </summary>
+    public double MissingShare { get; init; }
 }
