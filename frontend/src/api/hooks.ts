@@ -1271,10 +1271,16 @@ export function useSavePageLayout() {
     mutationFn: ({ page, sections }: { page: 'home' | 'discover'; sections: PageSection[] }) => {
       const ui = queryClient.getQueryData<UiSettings>(['settings', 'ui'])
       if (!ui) throw new Error(t`Settings not loaded`)
+      // `cardProgress: null` keeps the stored choice, so a tab with an older copy cannot undo it.
       const next: UiSettings =
         page === 'home'
-          ? { ...ui, homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] }, discoverLayout: null }
-          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] } }
+          ? {
+              ...ui,
+              homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] },
+              discoverLayout: null,
+              cardProgress: null,
+            }
+          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] }, cardProgress: null }
       return api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(next) })
     },
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'ui'], saved),

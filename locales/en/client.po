@@ -1637,8 +1637,8 @@ msgid "{have} of {total} downloaded"
 msgstr "{have} of {total} downloaded"
 
 #: src/components/ui/CoverCard.tsx
-msgid "{have} of {total} downloaded, {readCount} read"
-msgstr "{have} of {total} downloaded, {readCount} read"
+msgid "{have} of {total} downloaded, {read} read"
+msgstr "{have} of {total} downloaded, {read} read"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -4957,6 +4957,14 @@ msgstr "Automatic download failed"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Automatic downloads from sources wait for it until {holdUntil}."
 msgstr "Automatic downloads from sources wait for it until {holdUntil}."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+msgstr "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
+msgstr "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
 
 #: src/api/upgrades.ts
 msgid "Automatic upgrades are off, needs your call"
@@ -15188,10 +15196,6 @@ msgstr "On hold"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On shelf"
 msgstr "On shelf"
-
-#: src/pages/settings/PreferenceCards.tsx
-msgid "On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in the last 30, and picks {auto} for you right now."
-msgstr "On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in the last 30, and picks {auto} for you right now."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx

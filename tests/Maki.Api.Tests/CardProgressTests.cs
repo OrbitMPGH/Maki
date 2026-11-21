@@ -21,10 +21,10 @@ public sealed class CardProgressTests : IDisposable
         db.SaveChanges();
     }
 
-    private async Task<string> Auto(int userId = User)
+    private async Task<string> Auto(int userId = User, TimeZoneInfo? zone = null)
     {
         using var db = _db.NewContext();
-        return await CardProgress.ResolveAutoAsync(db, userId, Now, CancellationToken.None);
+        return await CardProgress.ResolveAutoAsync(db, userId, zone ?? TimeZoneInfo.Utc, Now, CancellationToken.None);
     }
 
     [Theory]
@@ -51,6 +51,18 @@ public sealed class CardProgressTests : IDisposable
     {
         Add(User, StatsEventType.ReadingTime, Now.AddDays(-1), Now.AddDays(-1).AddHours(-2), Now.AddDays(-2));
         Assert.Equal(CardProgress.Downloads, await Auto());
+    }
+
+    [Fact]
+    public async Task DaysAreTheReadersLocalDays()
+    {
+        // Three UTC dates (18th, 19th, 20th) but two evenings in New York (18th, 19th).
+        var evening = new DateTime(2026, 11, 18, 23, 30, 0, DateTimeKind.Utc);
+        Add(User, StatsEventType.ReadingTime, evening, evening.AddHours(1), evening.AddDays(1).AddHours(1));
+        var newYork = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+        Assert.Equal(CardProgress.Reading, await Auto());
+        Assert.Equal(CardProgress.Downloads, await Auto(zone: newYork));
     }
 
     [Fact]

@@ -171,7 +171,7 @@ internal static class LibraryListRows
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
                 NewChapterCount = newChapterCounts.GetValueOrDefault(s.Id),
-                CoverAccent = accents?.AccentFor(s.Id),
+                CoverAccent = accents?.CachedAccentFor(s.Id),
                 LatestChapterAt = latestReleaseBySeries.GetValueOrDefault(s.Id),
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)

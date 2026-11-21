@@ -2312,15 +2312,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-bar {
   position: relative;
   height: 4px;
-  margin: 7px 0 2px;
   border-radius: var(--radius-pill);
   background: var(--on-art-chip);
   overflow: hidden;
 }
-/* A taller hover target for the bar's tooltip, without moving anything. */
+/* Holds the bar's spacing, and its padding is a taller hover target for the tooltip than the 4px
+   bar. It starts 3px under the count row so it never takes the hover from the count or "N new". */
 .cover-bar-hit {
   padding-block: 4px;
-  margin-block: -4px;
+  margin: 3px 0 -2px;
 }
 .cover-bar[data-empty] {
   visibility: hidden;
@@ -2452,19 +2452,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-bar-fill[data-complete] {
   background: var(--ok);
 }
-/* Reading on the bar (the "Series cards" setting set to Bar): the bar is only about reading. Faint
-   accent is downloaded and unread, solid accent is read, and the whole bar turns green once every
-   chapter is read. Set to Ring, the bar stays downloads: accent, then green when all are on disk. */
+/* Reading on the bar (the "Series cards" setting set to Bar, with reading tracked): faint accent is
+   downloaded and unread, solid accent is read, and the whole bar turns green once every chapter is
+   read. Otherwise the bar stays downloads: accent, then green when all are on disk. */
 .cover-bar-read {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
-:root[data-card-progress='reading'] .cover-bar .cover-bar-fill {
+.cover-bar[data-reading] .cover-bar-fill {
   background: color-mix(in srgb, var(--brand) 42%, transparent);
 }
-:root[data-card-progress='reading'] .cover-bar[data-finished] .cover-bar-read {
+.cover-bar[data-finished] .cover-bar-read {
   background: var(--ok);
 }
 .cover-count {
@@ -4303,7 +4303,8 @@ button.site-chip:hover {
   border-top: 1px solid var(--hairline);
   background: var(--surface);
 }
-.engine-why:has(> .engine-why-chips:only-child) {
+.engine-why:has(> .engine-why-chips:only-child),
+.engine-why:empty {
   height: 42px;
 }
 .engine-why-line {

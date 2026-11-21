@@ -26,11 +26,14 @@ public static class CardProgress
 
     /// <summary>
     /// "reading" when the user read in Maki's reader on at least <see cref="ReaderDays"/> different
-    /// days in the last <see cref="Window"/>, else "downloads". Counted from
+    /// days in the last <see cref="Window"/>, else "downloads". Days are the user's local days
+    /// (<paramref name="zone"/>), like every other day-based stat, so a session across UTC midnight
+    /// counts once. Counted from
     /// <see cref="StatsEventType.ReadingTime"/>, which only the built-in reader emits: read progress
     /// itself also arrives from Kavita and so cannot tell the two apart.
     /// </summary>
-    public static async Task<string> ResolveAutoAsync(MakiDbContext db, int userId, DateTime nowUtc, CancellationToken ct)
+    public static async Task<string> ResolveAutoAsync(
+        MakiDbContext db, int userId, TimeZoneInfo zone, DateTime nowUtc, CancellationToken ct)
     {
         var since = nowUtc - Window;
         var stamps = await db.StatsEvents
@@ -38,6 +41,10 @@ public static class CardProgress
             .Where(e => e.UserId == userId && e.Type == StatsEventType.ReadingTime && e.Timestamp >= since)
             .Select(e => e.Timestamp)
             .ToListAsync(ct);
-        return stamps.Select(t => t.Date).Distinct().Count() >= ReaderDays ? Reading : Downloads;
+        var days = stamps
+            .Select(t => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(t, DateTimeKind.Utc), zone).Date)
+            .Distinct()
+            .Count();
+        return days >= ReaderDays ? Reading : Downloads;
     }
 }

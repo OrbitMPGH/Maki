@@ -586,8 +586,9 @@ export const EngineCard = memo(function EngineCard({
       </div>
 
       {reasonInRail ? (
-        chips.length > 0 && (
-          <div className="engine-why">
+        // Kept even with no chips, so every card in the rail ends at the same height.
+        <div className="engine-why">
+          {chips.length > 0 && (
             <span className="engine-why-chips">
               {chips.map((c) => (
                 <TagChip key={c} size="sm" title={c}>
@@ -595,8 +596,8 @@ export const EngineCard = memo(function EngineCard({
                 </TagChip>
               ))}
             </span>
-          </div>
-        )
+          )}
+        </div>
       ) : (
         <div className="engine-why">
           {seed ? (

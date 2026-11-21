@@ -61,18 +61,20 @@ export const CoverCard = memo(function CoverCard({
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
-  // The "Series cards" setting moves reading from the ring round the disc onto the bar.
-  const readsOnBar = useCardProgress() === 'reading'
+  const progressMode = useCardProgress()
   const download = seriesDownloadStateVisual(series)
   const status = seriesStatusVisual(series.status)
   const statusLabel = renderLabel(status.label)
   const StatusGlyph = seriesStatusGlyph(series.status)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series.
-  const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
+  const { total, nothingWanted, have, pct, complete, readPct, unread, read } = seriesProgressVisual(
     series,
     readTracking,
   )
+  // The "Series cards" setting moves reading from the ring round the disc onto the bar. With nothing
+  // tracking reading the bar has nothing to add, so it stays a download bar.
+  const readsOnBar = progressMode === 'reading' && read !== null
   const { readChapterCount, newChapterCount = 0 } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
@@ -107,8 +109,8 @@ export const CoverCard = memo(function CoverCard({
   // the ring; the disc keeps its status glyph.
   const showsRead = readPct !== null && readPct > 0
   const readThrough = showsRead && unread === 0
-  // On the bar, reading is drawn over the downloaded share.
-  const readOfTotal = readsOnBar && showsRead ? (pct * readPct) / 100 : 0
+  // On the bar, reading is drawn as a share of the whole series, so it can pass what is downloaded.
+  const readOfTotal = readsOnBar && total > 0 && read > 0 ? Math.min(100, (read / total) * 100) : 0
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
@@ -116,12 +118,11 @@ export const CoverCard = memo(function CoverCard({
   const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
 
   // The bar's numbers on hover, read included whenever reading is tracked.
-  const readCount = unread !== null ? have - unread : null
   const barTip =
     total === 0
       ? undefined
-      : readCount !== null
-        ? t`${have} of ${total} downloaded, ${readCount} read`
+      : read !== null
+        ? t`${have} of ${total} downloaded, ${read} read`
         : t`${have} of ${total} downloaded`
 
   // With no total the bar would only ever read 0%; it keeps its space so the grid holds still.
@@ -131,6 +132,7 @@ export const CoverCard = memo(function CoverCard({
       <div
         className="cover-bar"
         data-empty={total === 0 || undefined}
+        data-reading={readsOnBar || undefined}
         data-finished={readOfTotal >= 100 || undefined}
       >
         <div

@@ -190,7 +190,6 @@ export function SeriesCardsSection() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
-  const auto = ui?.cardProgressAuto === 'reading' ? t`Bar` : t`Ring`
 
   return (
     <SettingsSection id="series-cards" title={<Trans>Series cards</Trans>}>
@@ -210,11 +209,11 @@ export function SeriesCardsSection() {
           />
         </Input.Wrapper>
         <Text size="sm" c="dimmed" mt="xs">
-          <Trans>
-            On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you
-            have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in
-            the last 30, and picks {auto} for you right now.
-          </Trans>
+          {ui?.cardProgressAuto === 'reading' ? (
+            <Trans>Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30.</Trans>
+          ) : (
+            <Trans>Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30.</Trans>
+          )}
         </Text>
       </div>
     </SettingsSection>

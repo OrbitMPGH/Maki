@@ -634,8 +634,15 @@ public class SettingsController(
             SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage)),
             discoverLayout,
             Maki.Api.Services.CardProgress.Normalize(rows.GetValueOrDefault(SettingKeys.UiCardProgress)),
-            await Maki.Api.Services.CardProgress.ResolveAutoAsync(db, currentUser.UserId, DateTime.UtcNow, ct)));
+            await CardProgressAutoAsync(ct)));
     }
+
+    /// <summary>What "auto" picks for the series cards right now, counted in the user's own days.</summary>
+    private async Task<string> CardProgressAutoAsync(CancellationToken ct) =>
+        await Maki.Api.Services.CardProgress.ResolveAutoAsync(
+            db, currentUser.UserId,
+            Maki.Api.Services.UserTimeZone.FromId(await userSettings.GetAsync(SettingKeys.UserTimeZone, ct)) ?? TimeZoneInfo.Utc,
+            DateTime.UtcNow, ct);
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
     [HttpPut("ui")]
@@ -707,7 +714,7 @@ public class SettingsController(
         userLocales.Forget(currentUser.UserId);
         return Ok(new UiSettings(
             startPage, layout, seriesSections, titleLanguage, language, discoverLayout, cardProgress,
-            await Maki.Api.Services.CardProgress.ResolveAutoAsync(db, currentUser.UserId, DateTime.UtcNow, ct)));
+            await CardProgressAutoAsync(ct)));
     }
 
     /// <summary>

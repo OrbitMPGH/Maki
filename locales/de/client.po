@@ -1978,7 +1978,7 @@ msgid "{have} of {total} downloaded"
 msgstr ""
 
 #: src/components/ui/CoverCard.tsx
-msgid "{have} of {total} downloaded, {readCount} read"
+msgid "{have} of {total} downloaded, {read} read"
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
@@ -6035,6 +6035,14 @@ msgstr "Automatischer Download fehlgeschlagen"
 #, fuzzy
 msgid "Automatic downloads from sources wait for it until {holdUntil}."
 msgstr "Automatische Downloads aus Quellen warten bis {holdUntil} darauf."
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30."
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18509,10 +18517,6 @@ msgstr "Pausiert"
 #, fuzzy
 msgid "On shelf"
 msgstr "Im Regal"
-
-#: src/pages/settings/PreferenceCards.tsx
-msgid "On the bar, read chapters fill in over the downloaded ones, and the bar turns green once you have read every chapter. Automatic picks the bar once you have read in Maki's reader on 3 days in the last 30, and picks {auto} for you right now."
-msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
