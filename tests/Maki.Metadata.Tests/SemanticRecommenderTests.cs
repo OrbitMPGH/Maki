@@ -1617,6 +1617,88 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Equal(["30", "6001", "6002"], excluded.Select(p => p.ProviderId));
     }
 
+    /// <summary>
+    /// Nine action manga seeds and three romance manhwa ones. The whole-shelf page fills with action
+    /// manga, so the side taste falls short of its share and the lanes top it up.
+    /// </summary>
+    private void TwoTasteFixture()
+    {
+        var vectors = new List<(long, string, float[])>();
+        for (var i = 1; i <= 9; i++)
+        {
+            Add(i, $"Action seed {i}");
+            vectors.Add((i, "h", Nudge(Axis(0), i, 0.1f)));
+        }
+
+        for (var i = 1; i <= 3; i++)
+        {
+            Add(100 + i, $"Romance seed {i}", type: "manhwa", genres: """["Romance"]""");
+            vectors.Add((100 + i, "h", Nudge(Axis(12), 12 + i, 0.1f)));
+        }
+
+        for (var i = 1; i <= 20; i++)
+        {
+            Add(1000 + i, $"Action pick {i}");
+            vectors.Add((1000 + i, "h", Nudge(Axis(0), 1 + (i % 9), 0.05f + (0.01f * i))));
+        }
+
+        for (var i = 1; i <= 6; i++)
+        {
+            Add(2000 + i, $"Romance pick {i}", type: "manhwa", genres: """["Romance"]""");
+            vectors.Add((2000 + i, "h", Nudge(Axis(12), 12 + (i % 3) + 1, 0.3f + (0.05f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+    }
+
+    private static readonly RecommenderTuning SmallLanes =
+        RecommenderTuning.Default with { Lanes = 1.0, LanesPage = 10, LanesFrom = 2, CommonWeight = 0 };
+
+    [Fact]
+    public async Task TheLanes_TopUpAShortSideTaste_BelowTheTop_WithPicksNamedForItsOwnSeeds()
+    {
+        TwoTasteFixture();
+        long[] seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103];
+
+        var plain = await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10);
+        var topped = await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10, lanes: true);
+
+        Assert.True(plain.Count(p => p.ProviderId.StartsWith('2')) < 2);
+        Assert.Equal(10, topped.Count);
+        Assert.Equal(plain.Take(2).Select(p => p.ProviderId), topped.Take(2).Select(p => p.ProviderId));
+        var inserted = topped.Where(p => plain.All(q => q.ProviderId != p.ProviderId)).ToList();
+        Assert.NotEmpty(inserted);
+        Assert.Equal(2, topped.Count(p => p.ProviderId.StartsWith('2')));
+        Assert.All(inserted, p => Assert.StartsWith("200", p.ProviderId));
+        var named = inserted
+            .SelectMany(p => (p.FeelSeeds ?? []).Concat(p.CoReadSeeds ?? []).Select(r => r.Id)
+                .Append(p.BecauseOfId).Append(p.CoReadWithId))
+            .OfType<string>()
+            .ToList();
+        Assert.All(named, id => Assert.Contains(id, new[] { "101", "102", "103" }));
+    }
+
+    [Fact]
+    public async Task TheLanes_LeaveThePageAlone_ForOneSeed_ForNoQualifyingSideTaste_AndWhenOff()
+    {
+        TwoTasteFixture();
+        long[] twoSideSeeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102];
+        long[] seeds = [.. twoSideSeeds, 103];
+
+        static List<string> Ids(IReadOnlyList<MangaBakaRecommendation> picks) => [.. picks.Select(p => p.ProviderId)];
+
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync([1], [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync([1], [], limit: 10, lanes: true)));
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(twoSideSeeds, [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(twoSideSeeds, [], limit: 10, lanes: true)));
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes with { Lanes = 0 }).GetSimilarAsync(seeds, [], limit: 10, lanes: true)));
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,

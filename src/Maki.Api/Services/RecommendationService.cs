@@ -268,10 +268,15 @@ public class RecommendationService(
         var knownKey = knownExcluded.Count == 0
             ? string.Empty
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(",", knownExcluded.Order()))))[..16];
+        // Side tastes are topped up on the whole-shelf page only, the population that was graded.
+        // A caller with its own seed list (recent activity, side interests, custom rails) keeps the
+        // plain ranking, so the same seeds can mean two pools.
+        var lanes = request.SeedIds is not { Count: > 0 };
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                  $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}";
+                  $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}" +
+                  $"|l:{(lanes ? 1 : 0)}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
         // per key and run one at a time behind _scanGate. A scan that has started finishes on no
         // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
@@ -291,7 +296,7 @@ public class RecommendationService(
                     var created = new PoolBuild();
                     created.Task = Task.Run(() => BuildPoolAsync(
                         key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                        coGraph, coRead, tasteVectors, ease, pageShare, demote, knownExcluded));
+                        coGraph, coRead, tasteVectors, ease, pageShare, lanes, demote, knownExcluded));
                     _building[key] = created;
                     build = created;
                 }
@@ -349,7 +354,7 @@ public class RecommendationService(
         string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
-        bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare,
+        bool coGraph, bool coRead, bool tasteVectors, bool ease, bool pageShare, bool lanes,
         IReadOnlyDictionary<long, double> demote, IReadOnlySet<long> known)
     {
         var entered = false;
@@ -382,7 +387,8 @@ public class RecommendationService(
                     seedWeight.Count > 0 ? seedWeight : null,
                     avoided.Count > 0 ? avoided : null, request.Diversity,
                     coGraph: coGraph, coRead: coRead, taste: tasteVectors, ease: ease,
-                    demote: demote.Count > 0 ? demote : null, common: pageShare, ct: CancellationToken.None)
+                    demote: demote.Count > 0 ? demote : null, common: pageShare, lanes: lanes,
+                    ct: CancellationToken.None)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)

@@ -524,6 +524,41 @@ public sealed record RecommenderTuning
     public double FameCapPseudoSeeds { get; init; } = 10;
 
     /// <summary>
+    /// How much of its seed-weight share of the page a side taste is topped up to
+    /// (<see cref="ShelfLanes"/>). 0 is off; 0.5 ships. Only runs when the caller asks (personal
+    /// recommendations from the whole shelf, never the series-page rail) and from two seeds up.
+    /// At 0.5 with <see cref="LanesFame"/> wantN stayed flat, passed fell slightly and the next reads
+    /// the page lost fell by 17 to 21% on dev and confirm, both shelf kinds. Eval key <c>lanes2</c>.
+    /// See distribution/CLAUDE.md, "v9: lanes as a top-up".
+    /// </summary>
+    public double Lanes { get; init; } = 0.5;
+
+    /// <summary>The least share of the seed weight a side taste needs. Eval key <c>lanes2min</c>.</summary>
+    public double LanesMinShare { get; init; } = 0.05;
+
+    /// <summary>The most side tastes topped up. Eval key <c>lanes2max</c>.</summary>
+    public int LanesMaxSides { get; init; } = 3;
+
+    /// <summary>How many leading picks the top-up never touches. Eval key <c>lanes2from</c>.</summary>
+    public int LanesFrom { get; init; } = 10;
+
+    /// <summary>
+    /// The page the targets are counted on and each lane's own request size. 40 is the page the
+    /// harness grades; deeper picks keep the whole-shelf order. Eval key <c>lanes2page</c>.
+    /// </summary>
+    public int LanesPage { get; init; } = 40;
+
+    /// <summary>
+    /// Whether an insert must not add a breach of <see cref="ShelfFame"/>'s limits for the whole
+    /// shelf. Without it the inserts are a third household titles and passed rises. Eval key
+    /// <c>lanes2fame</c>.
+    /// </summary>
+    public bool LanesFame { get; init; } = true;
+
+    /// <summary>Skips a side taste the page holds none of. Off. Eval key <c>lanes2held</c>.</summary>
+    public bool LanesHeldOnly { get; init; }
+
+    /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own
     /// spread. See <see cref="Embedding.AttributionScale"/>; defaults to
     /// <see cref="AttributionScale.PoolRelative"/>, which is what makes one margin work across

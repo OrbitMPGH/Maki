@@ -327,6 +327,12 @@ public class SemanticRecommender(
     /// resemblance.
     /// </para>
     /// </param>
+    /// <param name="lanes">
+    /// Whether the reader's side tastes are topped up on the page (<see cref="ShelfLanes"/>,
+    /// <see cref="RecommenderTuning.Lanes"/>). Personal recommendations from the whole shelf only;
+    /// the series-page rail never passes it. Each side taste that falls short is scored on its own
+    /// seeds, so a lane pick's reasons name a seed of its own taste.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
@@ -334,8 +340,96 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
         bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
-        IReadOnlyDictionary<long, double>? demote = null, bool common = false,
+        IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
         CancellationToken ct = default)
+    {
+        var whole = await RankAsync(
+            seedIds, excludeIds, limit, filters, obscurity, seedWeights, avoidWeights, diversity, weights,
+            coGraph, coRead, taste, ease, features, graphWeight, demote, common, ct);
+        if (!lanes || _tuning.Lanes <= 0 || seedIds.Count < 2 || whole.Count <= _tuning.LanesFrom)
+        {
+            return whole;
+        }
+
+        var index = await cache.GetAsync(ct);
+        if (index is null || index.Count == 0)
+        {
+            return whole;
+        }
+
+        var sides = ShelfLanes.Sides(index, seedIds, seedWeights, _tuning.LanesMinShare, _tuning.LanesMaxSides);
+        var size = Math.Min(_tuning.LanesPage, whole.Count);
+        if (sides.Count == 0 || size <= _tuning.LanesFrom)
+        {
+            return whole;
+        }
+
+        ShelfLanes.Key? KeyOf(MangaBakaRecommendation pick) =>
+            long.TryParse(pick.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+            && index.TryGetRow(id, out var row)
+                ? ShelfLanes.KeyOf(index, row)
+                : null;
+        int RankOf(MangaBakaRecommendation pick) =>
+            long.TryParse(pick.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+            && index.TryGetRow(id, out var row)
+                ? index.PopularityAt(row)
+                : VectorIndex.Unknown;
+
+        var started = DateTime.UtcNow;
+        var page = whole.Take(size).ToList();
+        var onPage = page.Select(p => p.ProviderId).ToHashSet();
+        var laneExclude = excludeIds.Concat(seedIds).Distinct().ToList();
+        var queues = new List<(List<MangaBakaRecommendation> Picks, int Need)>();
+        foreach (var shortfall in ShelfLanes.Shortfalls(page, sides, KeyOf, _tuning.Lanes, _tuning.LanesHeldOnly))
+        {
+            var lane = await RankAsync(
+                shortfall.Side.Ids, laneExclude, _tuning.LanesPage, filters, obscurity, seedWeights, avoidWeights,
+                diversity, weights, coGraph, coRead, taste, ease, null, graphWeight, demote, common, ct);
+            var candidates = lane
+                .Where(p => KeyOf(p) == shortfall.Side.Key && !onPage.Contains(p.ProviderId))
+                .ToList();
+            if (candidates.Count > 0)
+            {
+                queues.Add((candidates, Math.Min(shortfall.Target - shortfall.Have, candidates.Count)));
+            }
+        }
+
+        if (queues.Count == 0)
+        {
+            return whole;
+        }
+
+        var limits = _tuning.LanesFame && _tuning.FameCapRatio > 0
+            ? ShelfFame.Limits(
+                seedIds.Distinct().Select(id => (
+                    index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
+                    seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
+                _tuning.FameCapRatio,
+                _tuning.FameCapPseudoSeeds)
+            : null;
+        var merged = ShelfLanes.Merge(
+            page, sides.Select(s => s.Key).ToHashSet(), queues, KeyOf, RankOf, _tuning.LanesFrom, limits);
+        var placed = merged.Select(p => p.ProviderId).ToHashSet();
+        var inserted = merged.Count(p => !onPage.Contains(p.ProviderId));
+        logger.LogInformation(
+            "Topped up {Inserted} picks from {Lanes} side taste(s) in {Elapsed:F0}ms",
+            inserted, queues.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+        return merged
+            .Concat(page.Where(p => !placed.Contains(p.ProviderId)))
+            .Concat(whole.Skip(size).Where(p => !placed.Contains(p.ProviderId)))
+            .Take(limit)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<MangaBakaRecommendation>> RankAsync(
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, RecommendationFilters? filters, double obscurity,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        IReadOnlyDictionary<long, double>? avoidWeights, double diversity,
+        EmbeddingMath.Weights? weights, bool coGraph, bool coRead,
+        bool taste, bool ease, ICollection<EmbeddingMath.CandidateFeatures>? features, double? graphWeight,
+        IReadOnlyDictionary<long, double>? demote, bool common,
+        CancellationToken ct)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;

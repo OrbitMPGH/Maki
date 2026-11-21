@@ -1410,17 +1410,12 @@ async Task<ResultRow> Score(Variant variant)
                 coRead: coRead,
                 features: features,
                 demote: demote,
-                common: true);
+                common: true,
+                lanes: variant.Lanes <= 0);
 
         if (variant.Lanes > 0 && variant.Baseline is null)
         {
             picks = await LanePicks(
-                picks, request.Seeds, buildPages ? request.Shelf ?? request.Seeds : request.Seeds, seedWeights,
-                request.Avoid, variant, recommender, coGraph, coRead, demote);
-        }
-        else if (variant.Lanes2 > 0 && variant.Baseline is null)
-        {
-            picks = await TopUpPicks(
                 picks, request.Seeds, buildPages ? request.Shelf ?? request.Seeds : request.Seeds, seedWeights,
                 request.Avoid, variant, recommender, coGraph, coRead, demote);
         }
@@ -1974,23 +1969,19 @@ async Task<JudgedRow> ScoreJudged(
 
 /// <summary>
 /// Measurement only (variant key <c>lanes</c>): gives a second taste its own request and its share
-/// of the page. Seeds are grouped by type and by Action, Romance or neither; every group but the
-/// largest that holds three seeds and <c>lanes</c> of the seed weight (the three largest at most)
-/// is scored on its own seeds, and its picks take page slots in proportion to that weight
-/// (Sainte-Lague order) among the whole-shelf picks. Not in the engine.
+/// of the page. The side tastes are <see cref="ShelfLanes.Sides"/> with <c>lanes</c> as the minimum
+/// share; each is scored on its own seeds, and its picks take page slots in proportion to that
+/// weight (Sainte-Lague order) among the whole-shelf picks, which come without the engine's own
+/// top-up. Not in the engine. The top-up that shipped is <see cref="ShelfLanes"/> (keys
+/// <c>lanes2</c>, <c>lanes2min</c>, <c>lanes2max</c>, <c>lanes2from</c>, <c>lanes2page</c>,
+/// <c>lanes2fame</c>, <c>lanes2held</c>; <c>lanes2=0</c> is the page before it).
 /// </summary>
 async Task<IReadOnlyList<MangaBakaRecommendation>> LanePicks(
     IReadOnlyList<MangaBakaRecommendation> whole, IReadOnlyList<long> seeds, IReadOnlyList<long> exclude,
     IReadOnlyDictionary<long, double>? seedWeights, IReadOnlyDictionary<long, double>? avoid, Variant variant,
     SemanticRecommender recommender, bool coGraph, bool coRead, IReadOnlyDictionary<long, double>? demote)
 {
-    var (groups, total) = SeedGroups(seeds, seedWeights);
-    var sides = groups.Values
-        .OrderByDescending(g => g.Weight)
-        .Skip(1)
-        .Where(g => g.Ids.Count >= 3 && g.Weight / total >= variant.Lanes)
-        .Take(3)
-        .ToList();
+    var sides = ShelfLanes.Sides(index, seeds, seedWeights, variant.Lanes, 3);
     if (sides.Count == 0)
     {
         return whole;
@@ -1998,7 +1989,7 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> LanePicks(
 
     var lists = new List<(IReadOnlyList<MangaBakaRecommendation> Picks, double Weight)>
     {
-        (whole, total - sides.Sum(g => g.Weight)),
+        (whole, sides[0].Total - sides.Sum(g => g.Weight)),
     };
     foreach (var side in sides)
     {
@@ -2053,204 +2044,6 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> LanePicks(
     }
 
     return merged;
-}
-
-/// <summary>A row's lane: its type, and Action (1), else Romance (2), else neither (0).</summary>
-(int Type, int Bucket) LaneKey(int row)
-{
-    var genres = index.GenresAt(row);
-    var action = index.GenreVocabulary.GetValueOrDefault("Action", -1);
-    var romance = index.GenreVocabulary.GetValueOrDefault("Romance", -1);
-    return (index.TypeAt(row), genres.Contains(action) ? 1 : genres.Contains(romance) ? 2 : 0);
-}
-
-(Dictionary<(int Type, int Bucket), (List<long> Ids, double Weight)> Groups, double Total) SeedGroups(
-    IReadOnlyList<long> seeds, IReadOnlyDictionary<long, double>? seedWeights)
-{
-    var groups = new Dictionary<(int Type, int Bucket), (List<long> Ids, double Weight)>();
-    var total = 0.0;
-    foreach (var id in seeds)
-    {
-        var weight = seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0;
-        if (weight <= 0 || !index.TryGetRow(id, out var row))
-        {
-            continue;
-        }
-
-        var key = LaneKey(row);
-        var group = groups.GetValueOrDefault(key, ([], 0.0));
-        group.Ids.Add(id);
-        groups[key] = (group.Ids, group.Weight + weight);
-        total += weight;
-    }
-
-    return (groups, total);
-}
-
-/// <summary>
-/// Measurement only (variant key <c>lanes2</c>): the lanes of <see cref="LanePicks"/>, merged as a
-/// top-up. The whole-shelf page stays as it is through <c>lanes2from</c> (10). Each side taste (three
-/// seeds and <c>lanes2min</c> of the seed weight, the three largest at most) has a target of
-/// <c>lanes2</c> x its seed-weight share x the page; the page's own picks of that taste count toward
-/// it, and only the shortfall is filled from that lane's best picks of the same taste. Inserted picks
-/// replace the page's lowest picks outside every side taste and are spread evenly from
-/// <c>lanes2from</c> down. With <c>lanes2fame</c> (on by default) an inserted pick must not add a
-/// breach of the shipped fame cap (<see cref="ShelfFame"/>) judged on the whole shelf; one that would
-/// waits for a later slot or stays out. <c>lanes2max</c> (3) caps the side tastes and <c>lanes2held</c>
-/// skips a side taste the page holds none of. Not in the engine.
-/// </summary>
-async Task<IReadOnlyList<MangaBakaRecommendation>> TopUpPicks(
-    IReadOnlyList<MangaBakaRecommendation> whole, IReadOnlyList<long> seeds, IReadOnlyList<long> exclude,
-    IReadOnlyDictionary<long, double>? seedWeights, IReadOnlyDictionary<long, double>? avoid, Variant variant,
-    SemanticRecommender recommender, bool coGraph, bool coRead, IReadOnlyDictionary<long, double>? demote)
-{
-    var from = variant.Lanes2From;
-    var (groups, total) = SeedGroups(seeds, seedWeights);
-    var sides = groups
-        .OrderByDescending(g => g.Value.Weight)
-        .Skip(1)
-        .Where(g => g.Value.Ids.Count >= 3 && g.Value.Weight / total >= variant.Lanes2Min)
-        .Take(variant.Lanes2Max)
-        .ToList();
-    if (sides.Count == 0 || whole.Count <= from)
-    {
-        return whole;
-    }
-
-    (int Type, int Bucket)? KeyOf(MangaBakaRecommendation p) =>
-        index.TryGetRow(long.Parse(p.ProviderId, CultureInfo.InvariantCulture), out var row) ? LaneKey(row) : null;
-    var page = whole.ToList();
-    var sideKeys = sides.Select(s => s.Key).ToHashSet();
-    var onPage = page.Select(p => p.ProviderId).ToHashSet();
-    var queues = new List<(List<MangaBakaRecommendation> Picks, int Need)>();
-    foreach (var side in sides)
-    {
-        var have = page.Count(p => KeyOf(p) == side.Key);
-        var target = (int)Math.Round(variant.Lanes2 * side.Value.Weight / total * page.Count);
-        if (target <= have || (variant.Lanes2Held && have == 0))
-        {
-            continue;
-        }
-
-        var lane = await recommender.GetSimilarAsync(
-            side.Value.Ids,
-            exclude.Concat(seeds).Distinct().ToList(),
-            limit,
-            RecommendationFilters.None,
-            obscurity: variant.Obscurity,
-            seedWeights: seedWeights,
-            avoidWeights: avoid,
-            diversity: variant.Diversity,
-            weights: variant.Weights,
-            coGraph: coGraph,
-            coRead: coRead,
-            demote: demote,
-            common: true);
-        var candidates = lane.Where(p => KeyOf(p) == side.Key && !onPage.Contains(p.ProviderId)).ToList();
-        if (candidates.Count > 0)
-        {
-            queues.Add((candidates, Math.Min(target - have, candidates.Count)));
-        }
-    }
-
-    var droppable = Enumerable.Range(from, page.Count - from)
-        .Reverse()
-        .Where(i => KeyOf(page[i]) is not { } key || !sideKeys.Contains(key))
-        .ToList();
-    var k = Math.Min(queues.Sum(q => q.Need), droppable.Count);
-    if (k == 0)
-    {
-        return whole;
-    }
-
-    // Each taste's inserts spread evenly through the schedule, the larger shortfall first on a tie.
-    var served = new int[queues.Count];
-    var schedule = new List<int>(k);
-    while (schedule.Count < k)
-    {
-        var next = Enumerable.Range(0, queues.Count)
-            .Where(q => served[q] < queues[q].Need)
-            .OrderBy(q => (served[q] + 0.5) / queues[q].Need)
-            .ThenByDescending(q => queues[q].Need)
-            .First();
-        schedule.Add(next);
-        served[next]++;
-    }
-
-    var drop = droppable.Take(k).ToHashSet();
-    var restore = drop.Order().Select(i => page[i]).ToList();
-    var kept = page.Where((_, i) => !drop.Contains(i)).ToList();
-    var output = kept.Take(from).ToList();
-    var tail = new Queue<MangaBakaRecommendation>(kept.Skip(from));
-    var span = tail.Count + k;
-    var slots = Enumerable.Range(0, k).Select(j => from + (int)((j + 0.5) * span / k)).ToHashSet();
-
-    double[]? limits = null;
-    if (variant.Lanes2Fame && variant.Recommender.FameCapRatio > 0 && seeds.Count >= 2)
-    {
-        limits = ShelfFame.Limits(
-            seeds.Distinct().Select(id => (
-                index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
-                seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
-            variant.Recommender.FameCapRatio,
-            variant.Recommender.FameCapPseudoSeeds);
-    }
-
-    int Breaches(IEnumerable<MangaBakaRecommendation> list)
-    {
-        var counts = new int[ShelfFame.Thresholds.Length];
-        var breaches = 0;
-        var slot = 0;
-        foreach (var p in list.Take(page.Count))
-        {
-            slot++;
-            var rank = index.TryGetRow(long.Parse(p.ProviderId, CultureInfo.InvariantCulture), out var row)
-                ? index.PopularityAt(row)
-                : VectorIndex.Unknown;
-            var over = false;
-            for (var t = 0; t < counts.Length; t++)
-            {
-                if (rank > 0 && rank <= ShelfFame.Thresholds[t])
-                {
-                    counts[t]++;
-                }
-
-                over |= counts[t] > Math.Ceiling(limits![t] * slot);
-            }
-
-            breaches += over ? 1 : 0;
-        }
-
-        return breaches;
-    }
-
-    var turn = 0;
-    for (var position = from; position < from + span; position++)
-    {
-        if (slots.Contains(position))
-        {
-            var queue = queues[schedule[turn++]].Picks;
-            var future = tail.Concat(restore).ToList();
-            var without = limits is null ? 0 : Breaches(output.Concat(future));
-            var chosen = queue.FindIndex(p =>
-                limits is null || Breaches(output.Append(p).Concat(future)) <= without);
-            if (chosen >= 0)
-            {
-                output.Add(queue[chosen]);
-                queue.RemoveAt(chosen);
-                continue;
-            }
-        }
-
-        if (tail.Count > 0)
-        {
-            output.Add(tail.Dequeue());
-        }
-    }
-
-    output.AddRange(tail);
-    output.AddRange(restore.Take(page.Count - output.Count));
-    return output;
 }
 
 /// <summary>
@@ -2311,7 +2104,8 @@ async Task<ShelfRow> ScoreShelf(
             coGraph: coGraph,
             coRead: coRead,
             demote: demote,
-            common: true);
+            common: true,
+            lanes: true);
 
         var seedRows = new List<(long Id, int Row)>();
         foreach (var id in request.Seeds)
@@ -4654,12 +4448,6 @@ file static class Variants
         var baseline = lower is "popular" or "random" ? lower : null;
         var obscurity = 0.0;
         var lanes = 0.0;
-        var lanes2 = 0.0;
-        var lanes2Min = 0.05;
-        var lanes2From = 10;
-        var lanes2Fame = true;
-        var lanes2Max = 3;
-        var lanes2Held = false;
         var noCrowd = lower == "nocrowd" || textOnly;
         var coGraph = !noCrowd && lower != "nograph";
         var coRead = !noCrowd && lower != "nocoread";
@@ -4754,27 +4542,31 @@ file static class Variants
             }
             else if (key == "lanes2")
             {
-                lanes2 = double.Parse(value, CultureInfo.InvariantCulture);
+                recommender = recommender with { Lanes = double.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "lanes2min")
             {
-                lanes2Min = double.Parse(value, CultureInfo.InvariantCulture);
+                recommender = recommender with { LanesMinShare = double.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "lanes2from")
             {
-                lanes2From = int.Parse(value, CultureInfo.InvariantCulture);
+                recommender = recommender with { LanesFrom = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "lanes2page")
+            {
+                recommender = recommender with { LanesPage = int.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "lanes2fame")
             {
-                lanes2Fame = value is "1" or "true";
+                recommender = recommender with { LanesFame = value is "1" or "true" };
             }
             else if (key == "lanes2max")
             {
-                lanes2Max = int.Parse(value, CultureInfo.InvariantCulture);
+                recommender = recommender with { LanesMaxSides = int.Parse(value, CultureInfo.InvariantCulture) };
             }
             else if (key == "lanes2held")
             {
-                lanes2Held = value is "1" or "true";
+                recommender = recommender with { LanesHeldOnly = value is "1" or "true" };
             }
             else if (key == "calibrationjoint")
             {
@@ -5104,7 +4896,7 @@ file static class Variants
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
             taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline,
-            priorPath, priorWeight, lanes, lanes2, lanes2Min, lanes2From, lanes2Fame, lanes2Max, lanes2Held);
+            priorPath, priorWeight, lanes);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -5172,13 +4964,7 @@ file sealed record Variant(
     string? Baseline = null,
     string? PriorPath = null,
     double PriorWeight = 0,
-    double Lanes = 0,
-    double Lanes2 = 0,
-    double Lanes2Min = 0.05,
-    int Lanes2From = 10,
-    bool Lanes2Fame = true,
-    int Lanes2Max = 3,
-    bool Lanes2Held = false);
+    double Lanes = 0);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings

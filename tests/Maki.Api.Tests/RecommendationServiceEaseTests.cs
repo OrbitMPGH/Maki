@@ -37,6 +37,7 @@ public class RecommendationServiceEaseTests : IDisposable
             NullLogger<SemanticRecommender>.Instance)
     {
         public readonly List<bool> SeenEase = [];
+        public readonly List<bool> SeenLanes = [];
         public readonly List<IReadOnlyDictionary<long, double>?> SeenWeights = [];
 
         public override bool IsReady() => true;
@@ -52,10 +53,11 @@ public class RecommendationServiceEaseTests : IDisposable
             IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
-            IReadOnlyDictionary<long, double>? demote = null, bool common = false,
+            IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
             CancellationToken ct = default)
         {
             SeenEase.Add(ease);
+            SeenLanes.Add(lanes);
             SeenWeights.Add(seedWeights);
             return Task.FromResult(picks);
         }
@@ -138,6 +140,20 @@ public class RecommendationServiceEaseTests : IDisposable
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
         Assert.Equal([true, false], recommender.SeenEase);
+    }
+
+    [Fact]
+    public async Task Side_tastes_are_topped_up_on_the_whole_shelf_page_only_and_that_is_its_own_pool()
+    {
+        SeedLibrary(101, 202);
+        var recommender = new CapturingRecommender([Pick(77)]);
+        var service = Service(recommender, new FakeAppSettings());
+
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        await service.GetAsync(new RecommendationRequest(SeedIds: [101, 202]), new TestCurrentUser(1));
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal([true, false], recommender.SeenLanes);
     }
 
     [Fact]
