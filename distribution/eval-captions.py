@@ -1,4 +1,4 @@
-"""Card caption policies over the judged shelf panels (distribution/CLAUDE.md, "v8: card captions").
+"""Card caption policies over the judged shelf panels (distribution/AGENTS.md, "v8: card captions").
 
 Reads eval-reco-labels.cs `library --shelf-judged --dump-captions <dir>` output: one file per variant
 and shelf kind, `captions-<variant>-<kind>.tsv`. It needs `default` and, for the attribution-margin

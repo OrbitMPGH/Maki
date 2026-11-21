@@ -19,7 +19,7 @@ in two steps: the eval harness writes pages for many readers, and this turns the
      measures what everybody gets before the penalty acts; built from penalised pages it would hold
      the hub titles lower and the next build would penalise them less. The cap stays at its default.
      CURRENT shelves, because a table from finished shelves holds the titles everybody gets at 1 to
-     2% and moves nothing (distribution/CLAUDE.md, "v8: titles the reader already knows").
+     2% and moves nothing (distribution/AGENTS.md, "v8: titles the reader already knows").
   2. The artifact:
        python distribution/build-page-share.py --picks .artifacts/page-share-pages/picks-pages-library.tsv \\
          --out .artifacts/page-share.db

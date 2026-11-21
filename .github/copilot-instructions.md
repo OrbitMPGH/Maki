@@ -1,7 +1,7 @@
 # Copilot instructions for Maki
 
 Maki is a self-hosted manga collection manager (Sonarr/Radarr-style) — .NET 10 API +
-Vite/React/Mantine frontend. **Read [CLAUDE.md](../CLAUDE.md) before making changes** — it documents
+Vite/React/Mantine frontend. **Read [AGENTS.md](../AGENTS.md) before making changes** — it documents
 directory ownership and the non-obvious domain gotchas below in full; this file is a short pointer,
 not a replacement.
 
@@ -20,7 +20,7 @@ not a replacement.
 - MangaBaka has no MangaDex IDs; source matching is by normalized-title search, not shared UUID.
 - Series monitoring is only `Series.MonitorNewItems` — there is no separate `Monitored` flag.
 - Settings secrets (qBittorrent, Transmission, Deluge, Kavita, Prowlarr, MAL, tracker tokens) are intentionally plaintext
-  in the `AppConfig` table — don't "fix" this without reading why in CLAUDE.md.
+  in the `AppConfig` table — don't "fix" this without reading why in AGENTS.md.
 - Images go through `Maki.Core.Images` (`ImageCodec`, `Raster`), never `NetVips.Image` directly. ImageSharp is gone; do not reintroduce it.
 - EF Core migrations auto-apply on startup; never suggest a manual migration step for users.
 - Page requests carry their own `Headers` end-to-end and must be resolved at **download** time, not

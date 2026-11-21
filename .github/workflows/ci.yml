@@ -203,6 +203,17 @@ jobs:
         timeout-minutes: 8
         run: npm run test-storybook -- --shard=${{ matrix.shard }}/3
 
+  # Antigravity can't read .claude/rules or nested AGENTS.md files, so .agents/rules holds glob
+  # wrappers generated from them. A rule whose paths changed without a regenerate would point
+  # Antigravity at the old files.
+  agent-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Antigravity rule wrappers match their sources
+        run: node scripts/agents/sync-antigravity-rules.mjs --check
+
   # Release notes are collected in changes/ as work lands (changes/README.md). A PR that touches the
   # app without an entry is usually fine (refactor, fix to unreleased work), so this warns, never fails.
   release-notes-entry:

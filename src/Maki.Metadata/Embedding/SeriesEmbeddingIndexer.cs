@@ -116,7 +116,7 @@ public class SeriesEmbeddingIndexer(
             {
                 logger.LogWarning("Embedding index skipped — embedder not ready");
                 // A server message catalogue key, not display text: this project has no ILocalizer
-                // (see CLAUDE.md's directory ownership), and EmbeddingIndexStatus.LastError is read
+                // (see AGENTS.md's directory ownership), and EmbeddingIndexStatus.LastError is read
                 // by SettingsController and rendered there.
                 status.End(0, 0, "install.embeddingModel.notAvailable");
                 return new IndexResult(0, 0, 0);

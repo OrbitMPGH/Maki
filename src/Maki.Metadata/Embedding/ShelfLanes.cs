@@ -6,7 +6,7 @@ namespace Maki.Metadata.Embedding;
 /// <see cref="RecommenderTuning.LanesMinShare"/> of the seed weight is a side taste. The whole-shelf
 /// page is kept through <see cref="RecommenderTuning.LanesFrom"/>, and each side taste is topped up
 /// from picks scored on its own seeds until it holds <see cref="RecommenderTuning.Lanes"/> x its
-/// share of the page, counting what the page already holds. See distribution/CLAUDE.md, "v9: lanes
+/// share of the page, counting what the page already holds. See distribution/AGENTS.md, "v9: lanes
 /// as a top-up".
 /// </summary>
 public static class ShelfLanes

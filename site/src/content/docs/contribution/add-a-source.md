@@ -51,4 +51,4 @@ Build the source on `FakeHttpClientFactory`, which answers requests with canned 
 - **Empty list and exception differ.** An empty list means the site lists no pages. A response with no page payload throws `InvalidOperationException` naming the URL.
 - **Images on another domain need `CoverHosts`.** The cover proxy only fetches hosts the source lists, and a blocked host is logged with its name.
 
-Read [`src/Maki.Sources/CLAUDE.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/CLAUDE.md) first. It records what other sites have needed, such as Cloudflare clearance, rate limits and residential IPs.
+Read [`src/Maki.Sources/AGENTS.md`](https://github.com/OrbitMPGH/Maki/blob/main/src/Maki.Sources/AGENTS.md) first. It records what other sites have needed, such as Cloudflare clearance, rate limits and residential IPs.

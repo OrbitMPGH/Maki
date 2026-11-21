@@ -4,7 +4,7 @@ namespace Maki.Metadata.Ease;
 /// The knobs behind the EASE channel, a signed item-item table fitted on AniList reading lists
 /// (<see cref="EaseScorer"/>, artifact <c>ease-table.db</c>, kill switch
 /// <c>recommendations.ease</c>). It runs on personal recommendations only: the series page's "More
-/// like this" passes <c>ease: false</c>. <c>distribution/CLAUDE.md</c> has the numbers.
+/// like this" passes <c>ease: false</c>. <c>distribution/AGENTS.md</c> has the numbers.
 /// </summary>
 public sealed record EaseTuning
 {
@@ -14,7 +14,7 @@ public sealed record EaseTuning
     /// The channel's coefficient in <c>EmbeddingMath.HybridScore</c>, against a score whose best
     /// candidate is 1. 0 switches the channel off entirely. Ships at 1 under the v8 tuning: 4 gains the
     /// most on held-out Completed lists but fills a romance-heavy page with long webtoons, and 1 keeps
-    /// about half of that gain while matching 4 on install-like shelves (<c>distribution/CLAUDE.md</c>,
+    /// about half of that gain while matching 4 on install-like shelves (<c>distribution/AGENTS.md</c>,
     /// "v8: EASE at weight 1").
     /// </summary>
     public double Weight { get; init; } = 1;

@@ -290,7 +290,7 @@ Tests in `Maki.Api.Tests`:
 ## Docs and rules
 
 - `README.md`: a short "Install as an app and read offline" section: needs HTTPS (reverse proxy); on plain HTTP the manifest still allows "Add to Home Screen" but nothing works offline; on iPhone and iPad, save for offline only in the installed app.
-- New `.claude/rules/pwa.md` with `paths` covering `frontend/src/sw/**`, `frontend/src/pwa/**`, `frontend/src/lib/pwa/**`, `frontend/src/lib/connectivity.ts`, `frontend/vite/sw-plugin.ts`, `Services/*Push*.cs`, `Controllers/PushController.cs`. It records the routing table's pass-through list, the user-keying rule, the queue and replay rules, the 502/504 rule and the secure-context rule. `CLAUDE.md`'s rule-file list gains `pwa.md`.
+- New `.claude/rules/pwa.md` with `paths` covering `frontend/src/sw/**`, `frontend/src/pwa/**`, `frontend/src/lib/pwa/**`, `frontend/src/lib/connectivity.ts`, `frontend/vite/sw-plugin.ts`, `Services/*Push*.cs`, `Controllers/PushController.cs`. It records the routing table's pass-through list, the user-keying rule, the queue and replay rules, the 502/504 rule and the secure-context rule. `AGENTS.md`'s rule-file list gains `pwa.md`.
 
 ## Implementation lanes
 

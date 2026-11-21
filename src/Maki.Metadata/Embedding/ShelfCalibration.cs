@@ -4,7 +4,7 @@ namespace Maki.Metadata.Embedding;
 /// Orders a page so its mix of types and genres stays near the shelf's (Steck 2018, calibrated
 /// recommendations). Every channel that scores a candidate against the whole shelf at once gives a
 /// title fitting a fifth of the shelf about a fifth of the signal, so a reader's second taste falls
-/// off the page even when it is in the pool. See distribution/CLAUDE.md, "v9: why a second taste
+/// off the page even when it is in the pool. See distribution/AGENTS.md, "v9: why a second taste
 /// falls off the page".
 /// </summary>
 public static class ShelfCalibration
