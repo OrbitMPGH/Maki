@@ -55,6 +55,7 @@ import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documen
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 import { KeptPages } from './components/layout/KeptPages'
+import { CardProgressSync } from './components/CardProgressSync'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
@@ -715,6 +716,7 @@ function AppShellRoutes() {
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
       {isAdmin && <MetadataDumpProgress quiet={!setup?.completed} />}
       <TipLayer />
+      <CardProgressSync />
     </AppShell>
   )
 }

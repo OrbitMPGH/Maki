@@ -21,7 +21,8 @@ internal static class LibraryListRows
     /// <param name="ids">The series to build, or null for every series the caller can see.</param>
     public static async Task<List<SeriesDto>> BuildAsync(
         MakiDbContext db, SourceAvailability sourceAvailability, MangaBakaLocalStore mangaBakaStore,
-        IAppSettings appSettings, string? titleLanguage, ILogger logger, int[]? ids, CancellationToken ct)
+        IAppSettings appSettings, string? titleLanguage, ILogger logger, int[]? ids, CancellationToken ct,
+        CoverAccentCache? accents = null)
     {
         var series = await ForSeries(db.Series.AsNoTracking(), ids, s => s.Id).OrderBy(s => s.SortTitle).ToListAsync(ct);
         var chapterCounts = await ChapterTalliesAsync(ForSeries(db.Chapters, ids, c => c.SeriesId), ReadCounts.Read(db), ct);
@@ -170,6 +171,7 @@ internal static class LibraryListRows
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
                 NewChapterCount = newChapterCounts.GetValueOrDefault(s.Id),
+                CoverAccent = accents?.CachedAccentFor(s.Id),
                 LatestChapterAt = latestReleaseBySeries.GetValueOrDefault(s.Id),
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)

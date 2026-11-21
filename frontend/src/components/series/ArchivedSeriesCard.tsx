@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { ActionIcon, Badge, Group, Menu, Stack, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Group, Menu, Stack, Text, Tooltip } from '@mantine/core'
 import { RatingPanelOpener } from './RatingPanelOpener'
 import { RatingPill } from './RatingPill'
 import { IconArchiveOff, IconArrowRight, IconFileOff, IconTrash, IconX } from '../../lib/icons'
@@ -14,6 +14,7 @@ import { isProvisional, shownRating } from '../../lib/rating'
 import { CoverCard, type OfflineAvailability } from '../ui/CoverCard'
 import { SeriesRow } from '../ui/SeriesRow'
 import { countSkipped } from './chapterTable'
+import { LightBadge } from './lightMantine'
 
 export type ArchivedCardAction = 'restore' | 'removeFiles' | 'delete'
 
@@ -157,14 +158,14 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
           </Text>
         )}
         {filesRemoved && (
-          <Badge size="xs" variant="light" color="var(--neutral)">
+          <LightBadge color="var(--neutral)">
             <Trans>Files removed</Trans>
-          </Badge>
+          </LightBadge>
         )}
         {skipped > 0 && (
-          <Badge size="xs" variant="light" color="var(--neutral)">
+          <LightBadge color="var(--neutral)">
             <Plural value={skipped} one="# skipped" other="# skipped" />
-          </Badge>
+          </LightBadge>
         )}
       </Group>
     </>

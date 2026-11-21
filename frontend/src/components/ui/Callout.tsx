@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { ActionIcon } from '@mantine/core'
-import { IconAlertOctagon, IconAlertTriangle, IconCheck, IconInfoCircle, IconX, type Icon } from '../../lib/icons'
+import { IconAlertOctagon, IconAlertTriangle, IconCheck, IconDeviceTv, IconInfoCircle, IconX, type Icon } from '../../lib/icons'
 
-export type CalloutTone = 'info' | 'warn' | 'danger' | 'ok' | 'neutral' | 'brand'
+export type CalloutTone = 'info' | 'warn' | 'danger' | 'ok' | 'neutral' | 'brand' | 'anime'
 
 const CALLOUT_ICONS: Record<CalloutTone, Icon> = {
   info: IconInfoCircle,
@@ -11,6 +11,7 @@ const CALLOUT_ICONS: Record<CalloutTone, Icon> = {
   ok: IconCheck,
   neutral: IconInfoCircle,
   brand: IconInfoCircle,
+  anime: IconDeviceTv,
 }
 
 /**

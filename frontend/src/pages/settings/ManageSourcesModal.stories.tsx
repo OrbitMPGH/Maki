@@ -120,7 +120,7 @@ export const FilterByState: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.click(await dialog.findByRole('radio', { name: 'Disabled' }))
+    await userEvent.click(await dialog.findByRole('button', { name: /^Disabled\s*\d+$/ }))
     await waitFor(() => expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull())
     await expect(await dialog.findByRole('switch', { name: 'Enable Weeb Central' })).toBeInTheDocument()
   },

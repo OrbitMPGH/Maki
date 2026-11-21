@@ -22,6 +22,7 @@ import {
   IconChevronDown,
   IconFolder,
   IconFolderPlus,
+  IconMinus,
   IconTrash,
 } from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
@@ -74,7 +75,7 @@ import { useApplyLanguage, useLanguageOptions } from './ui/language'
 const STEP_IDS = ['welcome', 'library', 'discovery', 'downloads', 'connections', 'finish'] as const
 type StepId = (typeof STEP_IDS)[number]
 
-type Tone = 'ok' | 'warn' | undefined
+type Tone = 'ok' | 'warn' | 'neutral' | undefined
 
 /** One setting: what it is on the left, the control on the right, anything wide underneath. */
 function SettingRow({
@@ -585,7 +586,7 @@ function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNo
   return (
     <div className="setup-summary-line" data-tone={tone}>
       <span className="setup-summary-icon">
-        {tone === 'warn' ? <IconAlertTriangle size={16} /> : <IconCheck size={16} />}
+        {tone === 'warn' ? <IconAlertTriangle size={16} /> : tone === 'neutral' ? <IconMinus size={16} /> : <IconCheck size={16} />}
       </span>
       <Text className="setup-summary-text">{children}</Text>
       {action}
@@ -644,14 +645,14 @@ function FinishStep({
             <Trans>The local MangaBaka database is still downloading. Setup finishes once it is in.</Trans>
           </SummaryLine>
         )}
-        <SummaryLine tone="ok">
+        <SummaryLine tone={recIndex?.embeddingModel === 'off' ? 'neutral' : 'ok'}>
           {recIndex?.embeddingModel === 'off' ? (
             <Trans>Recommendations off</Trans>
           ) : (
             <Trans>Recommendations on</Trans>
           )}
         </SummaryLine>
-        <SummaryLine tone="ok">
+        <SummaryLine tone={connectedNames.length > 0 ? 'ok' : 'neutral'}>
           {connectedNames.length > 0 ? (
             <Trans>Connected: {connectedList}</Trans>
           ) : (

@@ -281,8 +281,8 @@ export const GroupByWritesTheLink: Story = {
   ],
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
-    await userEvent.click(await canvas.findByRole('combobox', { name: 'Group by' }))
-    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Type' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Group by' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitemradio', { name: 'Type' }))
     const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
     await waitFor(() => expect(probe()?.textContent).toContain('groupBy=type'))
     await expect(await canvas.findByRole('button', { name: /^Manga/ })).toBeVisible()
@@ -394,7 +394,8 @@ export const ReverseSortOrder: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     // Newest first by default: the freshly imported series leads.
     await waitFor(() => expect(canvasElement.querySelector('.cover-title')).toHaveTextContent('untitled_import_0042'))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reverse sort order' }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Sort by/ }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: /Reverse sort order/ }))
     await waitFor(() => expect(canvasElement.querySelector('.cover-title')).toHaveTextContent('Under the Willow Gate'))
   },
 }
@@ -484,6 +485,17 @@ export const FilterDrawerEscapeStepsBack: Story = {
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(within(drawer).getByRole('button', { name: /^Year/ })).toHaveFocus())
     await expect(body(canvasElement).getByRole('dialog', { name: 'Filters' })).toBeVisible()
+  },
+}
+
+/** Every active filter shows as a chip under the bar; removing one drops just that filter. */
+export const ActiveFilterChips: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { status: 'Ongoing', completeness: 'behind' } }),
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('5 of 14')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /^Remove filter: Behind/ }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Remove filter: Behind/ })).toBeNull())
+    await expect(await canvas.findByRole('button', { name: /^Remove filter: Ongoing/ })).toBeVisible()
   },
 }
 

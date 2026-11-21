@@ -215,6 +215,12 @@ public record SeriesDto(
     /// </summary>
     public int NewChapterCount { get; init; }
 
+    /// <summary>
+    /// The colour the cover lends to the card's foot (<see cref="CoverAccentCache"/>), as <c>#rrggbb</c>,
+    /// or null when the art has no hue. Library list only.
+    /// </summary>
+    public string? CoverAccent { get; init; }
+
     /// <summary>The newest release date among this series' known chapters, or null when none has one. Library list only.</summary>
     public DateTime? LatestChapterAt { get; init; }
 

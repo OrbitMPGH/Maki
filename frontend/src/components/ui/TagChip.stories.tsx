@@ -22,6 +22,10 @@ export const Small: Story = {
   args: { children: 'Isekai', size: 'sm' },
 }
 
+export const WithCount: Story = {
+  args: { children: 'Missing', count: 12, active: true, onClick: fn() },
+}
+
 export const Toggle: Story = {
   args: { children: 'Comedy', active: false, onClick: fn() },
   play: async ({ args, canvas, userEvent }) => {

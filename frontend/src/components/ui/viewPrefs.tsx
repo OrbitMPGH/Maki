@@ -97,7 +97,7 @@ export function useViewPrefs(scope: string) {
 }
 
 /**
- * Density alone, for a surface with no grid/list choice of its own (Discover's expanded rail).
+ * Density alone, for a surface with no grid/list choice of its own (a library rail's Show more).
  * Same storage key as {@link useViewPrefs}, so a scope can be shared or kept to itself.
  */
 export function useDensityPref(scope: string) {
@@ -222,6 +222,28 @@ export function ToolbarMenuButton({
   )
 }
 
+/** Density behind the toolbar's "..." button, on its own for a grid with no list form. */
+export function DensityMenu({
+  value,
+  onChange,
+  size = 'sm',
+}: {
+  value: Density
+  onChange: (density: Density) => void
+  size?: string
+}) {
+  return (
+    <Menu position="bottom-end" withinPortal>
+      <Menu.Target>
+        <ToolbarMenuButton size={`input-${size}`} />
+      </Menu.Target>
+      <Menu.Dropdown>
+        <DensityMenuItems value={value} onChange={onChange} />
+      </Menu.Dropdown>
+    </Menu>
+  )
+}
+
 /** Grid/list toggle plus a menu holding density, the pattern every poster grid shares. */
 export function ViewPrefsControls({
   prefs,
@@ -233,14 +255,7 @@ export function ViewPrefsControls({
   return (
     <>
       <ViewModeToggle size={size} value={prefs.viewMode} onChange={prefs.setViewMode} />
-      <Menu position="bottom-end" withinPortal>
-        <Menu.Target>
-          <ToolbarMenuButton size={`input-${size}`} />
-        </Menu.Target>
-        <Menu.Dropdown>
-          <DensityMenuItems value={prefs.density} onChange={prefs.setDensity} />
-        </Menu.Dropdown>
-      </Menu>
+      <DensityMenu value={prefs.density} onChange={prefs.setDensity} size={size} />
     </>
   )
 }

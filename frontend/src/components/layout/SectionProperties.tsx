@@ -14,6 +14,7 @@ import type { CustomRail } from '../../api/customRails'
 import { useLabel } from '../../i18n-context'
 import { CustomRailForm } from '../rails/CustomRailEditor'
 import { DeleteRailDialog } from '../rails/DeleteRailDialog'
+import { ModalHeading } from '../ui/ModalShell'
 import type { SectionDef } from './pageLayout'
 
 /**
@@ -49,15 +50,18 @@ export function SectionProperties({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // An open filter editor takes Escape first, so the drawer behind it stays open.
+  const [editorOpen, setEditorOpen] = useState(false)
 
   return (
     <>
       <Drawer
         opened={section != null}
         onClose={onClose}
+        closeOnEscape={!editorOpen}
         position="right"
         size={rail ? 'xl' : 'sm'}
-        title={label}
+        title={<ModalHeading title={label} />}
       >
         {section && (
           <Stack gap="md">
@@ -176,7 +180,7 @@ export function SectionProperties({
                 <Text size="xs" c="var(--ink-3)">
                   <Trans>Rail changes save straight away. Done saves the layout.</Trans>
                 </Text>
-                <CustomRailForm key={rail.id} rail={rail} placementLocked />
+                <CustomRailForm key={rail.id} rail={rail} placementLocked onFilterEditorChange={setEditorOpen} />
                 <Divider />
                 <Group>
                   <Button

@@ -7,6 +7,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
+  Box,
   Button,
   Checkbox,
   Group,
@@ -59,6 +60,7 @@ import {
 } from '../../api/hooks'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from '../../components/settings/SettingsRow'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { SettingsSummaryRow } from '../../components/settings/SettingsSummaryRow'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
 import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
@@ -198,7 +200,11 @@ export function RootFoldersSection() {
         }
       >
         <Stack gap="xs">
-          <Text size="sm" ff="monospace">{deleting?.path}</Text>
+          {deleting && (
+            <Text component="div" size="sm">
+              <MonoValue value={deleting.path} copy wrap />
+            </Text>
+          )}
           <Text size="sm">
             <Trans>
               Files on disk are not touched. Every user's access to this folder is removed, and
@@ -461,20 +467,17 @@ export function CreditScanSection() {
         disabled={data == null}
         onChange={(e) => save.mutate({ enabled: e.currentTarget.checked })}
       />
-      <Group justify="space-between" wrap="nowrap" gap="sm" mt="lg" align="flex-start">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>See the release groups behind the credit pages and ads Maki hides, and correct what it read off them.</Trans>
-        </Text>
-        <Button
-          variant="default"
-          size="xs"
-          leftSection={<IconUsers size={16} />}
-          style={{ flexShrink: 0 }}
+      <Box mt="lg">
+        <SettingsSummaryRow
+          label={<Trans>Release groups</Trans>}
+          summary={
+            <Trans>See the release groups behind the credit pages and ads Maki hides, and correct what it read off them.</Trans>
+          }
+          icon={IconUsers}
+          action={<Trans>Review groups</Trans>}
           onClick={() => setGroupsOpen(true)}
-        >
-          <Trans>Release groups</Trans>
-        </Button>
-      </Group>
+        />
+      </Box>
       <CreditGroupsModal opened={groupsOpen} onClose={() => setGroupsOpen(false)} />
     </SettingsSection>
   )
@@ -663,24 +666,13 @@ export function NameParsingSection() {
       title={<Trans>File name parsing</Trans>}
       description={<Trans>English markers like v01 and Ch. 12 are always read. Turn on a language to read its markers too.</Trans>}
     >
-      <Group justify="space-between" wrap="wrap" gap="md">
-        <Stack gap={2} className="settings-summary">
-          <SettingsGroupTitle>
-            <Trans>Also read</Trans>
-          </SettingsGroupTitle>
-          <Text size="sm" c="var(--ink-3)">
-            {enabled.length > 0 ? formatList(enabled.map((l) => nameOf(l.code))) : <Trans>No other languages</Trans>}
-          </Text>
-        </Stack>
-        <Button
-          variant="default"
-          leftSection={<IconLanguage size={16} />}
-          onClick={() => setChoosing(true)}
-          style={{ flexShrink: 0 }}
-        >
-          <Trans>Choose languages</Trans>
-        </Button>
-      </Group>
+      <SettingsSummaryRow
+        label={<Trans>Also read</Trans>}
+        summary={enabled.length > 0 ? formatList(enabled.map((l) => nameOf(l.code))) : <Trans>No other languages</Trans>}
+        icon={IconLanguage}
+        action={<Trans>Choose languages</Trans>}
+        onClick={() => setChoosing(true)}
+      />
       <Modal
         opened={choosing}
         onClose={() => setChoosing(false)}
@@ -781,23 +773,19 @@ export function RecycleBinSection() {
       onDiscard={() => setRetentionDraft(null)}
     >
       <Stack>
-        <Group justify="space-between" wrap="wrap" gap="sm">
-          <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
-            {count === 0 ? (
+        <SettingsSummaryRow
+          label={<Trans>Deleted files</Trans>}
+          summary={
+            count === 0 ? (
               <Trans>The recycle bin is empty.</Trans>
             ) : (
               <Plural value={count} one={`# file, ${totalSize}`} other={`# files, ${totalSize}`} />
-            )}
-          </Text>
-          <Button
-            variant="default"
-            onClick={() => setBrowsing(true)}
-            size="xs"
-            leftSection={<IconTrash size={16} />}
-          >
-            <Trans>Open recycle bin</Trans>
-          </Button>
-        </Group>
+            )
+          }
+          icon={IconTrash}
+          action={<Trans>Open recycle bin</Trans>}
+          onClick={() => setBrowsing(true)}
+        />
         {isAdmin && (
           <SettingsNumberInput
             label={t`Keep deleted files (days)`}
@@ -827,18 +815,19 @@ export function AutoTagRulesSection() {
       title={<Trans>Auto-tag rules</Trans>}
       description={<Trans>Tag new series by genre, type, rating, folder or source.</Trans>}
     >
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
-          {count === 0 ? (
+      <SettingsSummaryRow
+        label={<Trans>Rules</Trans>}
+        summary={
+          count === 0 ? (
             <Trans>No rules yet.</Trans>
           ) : (
             <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
-          )}
-        </Text>
-        <Button variant="default" size="xs" leftSection={<IconWand size={16} />} onClick={() => setOpen(true)}>
-          <Trans>Manage rules</Trans>
-        </Button>
-      </Group>
+          )
+        }
+        icon={IconWand}
+        action={<Trans>Manage rules</Trans>}
+        onClick={() => setOpen(true)}
+      />
       <AutoTagRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )
@@ -856,18 +845,19 @@ export function RootFolderRulesSection() {
       id="root-folder-rules"
       title={<Trans>Root folder rules</Trans>}
     >
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
-          {count === 0 ? (
+      <SettingsSummaryRow
+        label={<Trans>Rules</Trans>}
+        summary={
+          count === 0 ? (
             <Trans>No rules yet. New series go to the first root folder.</Trans>
           ) : (
             <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
-          )}
-        </Text>
-        <Button variant="default" size="xs" leftSection={<IconRoute size={16} />} onClick={() => setOpen(true)}>
-          <Trans>Manage rules</Trans>
-        </Button>
-      </Group>
+          )
+        }
+        icon={IconRoute}
+        action={<Trans>Manage rules</Trans>}
+        onClick={() => setOpen(true)}
+      />
       <RootFolderRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )

@@ -15,6 +15,7 @@ import {
   useSetRepositoryAutoUpdate, type CustomRepository, type CustomRepositoryEntry, type IdentityReason,
 } from '../../api/customSources'
 import { MetaList } from '../../components/ui/MetaList'
+import { MonoValue } from '../../components/ui/MonoValue'
 import { MODAL_SIZE } from '../../components/ui/modalSizes'
 
 function useReasonLabels(): Record<IdentityReason, string> {
@@ -204,9 +205,7 @@ function RepositoryCard({ repository, onUpdate }: { repository: CustomRepository
         <Group justify="space-between" wrap="nowrap" align="flex-start">
           <div style={{ minWidth: 0 }}>
             <Text fw={600}>{repository.name}</Text>
-            <Text size="xs" c="var(--ink-3)" style={{ wordBreak: 'break-all', fontFamily: 'var(--mantine-font-family-monospace)' }}>
-              {repository.url}
-            </Text>
+            <MonoValue value={repository.url} copy wrap fz="var(--mantine-font-size-xs)" c="var(--ink-3)" />
           </div>
           <Group gap={6} wrap="nowrap">
             <Button size="compact-xs" variant="default" leftSection={<IconRefresh size={12} />} loading={refresh.isPending}

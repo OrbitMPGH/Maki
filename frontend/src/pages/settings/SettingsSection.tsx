@@ -24,6 +24,8 @@ export interface SettingsSectionProps {
   description?: ReactNode
   /** Controls that belong to the heading row whatever the dirty state: "New profile", a master switch. */
   actions?: ReactNode
+  /** Where the card's connection stands, as a StatusDot and a word at the end of the heading row. */
+  status?: ReactNode
   dirty?: boolean
   saving?: boolean
   saveDisabled?: boolean
@@ -44,6 +46,7 @@ export function SettingsSection({
   title,
   description,
   actions,
+  status,
   dirty,
   saving,
   saveDisabled,
@@ -73,8 +76,9 @@ export function SettingsSection({
           {title}
           <NewSettingPill id={id} />
         </h2>
-        {(shownActions || unsaved) && (
+        {(status || shownActions || unsaved) && (
           <Group gap="xs" wrap="nowrap" className="settings-section-actions">
+            {status && <span className="settings-section-status">{status}</span>}
             {shownActions}
             {unsaved && (
               <>

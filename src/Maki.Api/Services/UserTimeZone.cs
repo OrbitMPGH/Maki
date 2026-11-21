@@ -62,7 +62,12 @@ public static class UserTimeZone
     public static async Task<TimeZoneInfo?> TryResolveAsync(
         IUserSettingsStore userSettings, int userId, CancellationToken ct = default)
     {
-        var id = await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct);
+        return FromId(await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct));
+    }
+
+    /// <summary>A stored zone id as a zone, or null when it is empty or unknown here.</summary>
+    public static TimeZoneInfo? FromId(string? id)
+    {
         if (string.IsNullOrWhiteSpace(id))
         {
             return null;

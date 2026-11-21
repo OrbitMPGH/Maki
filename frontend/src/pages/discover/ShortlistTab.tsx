@@ -6,7 +6,6 @@ import {
   Button,
   Group,
   Menu,
-  Select,
   Skeleton,
   Stack,
   Text,
@@ -47,6 +46,7 @@ import {
 } from '../../api/shortlist'
 import { useAuth } from '../../auth/AuthProvider'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
+import { SortControl, type SortOption } from '../../components/ListControls'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
 import { PreviewChapterButton } from '../../components/discover/PreviewChapterButton'
 import { SeriesPreviewReader } from '../../components/discover/SeriesPreviewReader'
@@ -57,9 +57,9 @@ import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { seriesStatusVisual, statusToken } from '../../components/ui/status'
 import { ScoreInline } from '../../components/ui/ScoreInline'
+import { LightBadge } from '../../components/series/lightMantine'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
-import { formatNumber } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { usePageState } from '../../lib/pageState'
 import { notifications } from '../../lib/toast'
@@ -264,16 +264,9 @@ function ShortlistRow({
           <Group gap="xs" wrap="wrap">
             {change && statusChange && (
               <>
-                <span
-                  className="shortlist-pill"
-                  style={{
-                    color: `var(--${statusToken(change.color)})`,
-                    background: `var(--${statusToken(change.color)}-soft)`,
-                  }}
-                >
-                  <change.Icon size={13} />
+                <LightBadge color={`var(--${statusToken(change.color)})`} leftSection={<change.Icon size={12} />}>
                   {changeLabel(statusChange.to)}
-                </span>
+                </LightBadge>
                 <Button
                   size="compact-xs"
                   variant="subtle"
@@ -285,9 +278,9 @@ function ShortlistRow({
               </>
             )}
             {newChapters != null && newChapters > 0 && (
-              <span className="shortlist-pill" data-quiet="true">
+              <LightBadge color="var(--neutral)">
                 {plural(newChapters, { one: '+# chapter', other: '+# chapters' })}
-              </span>
+              </LightBadge>
             )}
           </Group>
         )}
@@ -330,9 +323,9 @@ function ShortlistRow({
         {item && !inLibrary && <PreviewChapterButton providerId={item.providerId} title={title} onRead={() => onPreview(entry)} />}
 
         {item && !inLibrary && requested && (
-          <span className="shortlist-pill" data-quiet="true">
+          <LightBadge color="var(--neutral)">
             <Trans>Requested</Trans>
-          </span>
+          </LightBadge>
         )}
         {item && !inLibrary && !requested && (
           <Button leftSection={<IconPlus size={16} />} onClick={() => onOpen(item)}>
@@ -342,9 +335,9 @@ function ShortlistRow({
 
         {inLibrary && (
           <Group gap="xs" wrap="wrap">
-            <span className="shortlist-pill" data-quiet="true">
+            <LightBadge color="var(--neutral)">
               {library.archived ? <Trans context="series">Archived</Trans> : <Trans>In the library</Trans>}
-            </span>
+            </LightBadge>
             {ownedId != null && (
               <Button component={Link} to={`/series/${ownedId}`} variant="default" size="xs">
                 <Trans>Open series</Trans>
@@ -570,11 +563,11 @@ export function ShortlistTab() {
     { value: 'completed', label: t`Completed` },
     { value: 'anime', label: t`Has an anime` },
   ]
-  const sortOptions: { value: Sort; label: string }[] = [
-    { value: 'recent', label: t`Recently saved` },
-    { value: 'oldest', label: t`Oldest first` },
-    { value: 'score', label: t`Score` },
-    { value: 'title', label: t`Title` },
+  const sortOptions: SortOption<Sort>[] = [
+    { value: 'recent', label: t`Recently saved`, direction: 'desc' },
+    { value: 'oldest', label: t`Oldest first`, direction: 'asc' },
+    { value: 'score', label: t`Score`, direction: 'desc' },
+    { value: 'title', label: t`Title`, direction: 'asc' },
   ]
 
   if (isPending) return <ShortlistSkeleton />
@@ -622,21 +615,19 @@ export function ShortlistTab() {
         <TagChips>
           {filterOptions.map((o) =>
             counts[o.value] === 0 && o.value !== 'all' && filter !== o.value ? null : (
-              <TagChip key={o.value} active={filter === o.value} aria-pressed={filter === o.value} onClick={() => setFilter(o.value)}>
-                {o.label} <span className="tnum shortlist-chip-count">{formatNumber(counts[o.value])}</span>
+              <TagChip
+                key={o.value}
+                active={filter === o.value}
+                aria-pressed={filter === o.value}
+                count={counts[o.value]}
+                onClick={() => setFilter(o.value)}
+              >
+                {o.label}
               </TagChip>
             ),
           )}
         </TagChips>
-        <Select
-          size="xs"
-          w={170}
-          aria-label={t`Sort`}
-          data={sortOptions}
-          value={sort}
-          allowDeselect={false}
-          onChange={(v) => v && setSort(v as Sort)}
-        />
+        <SortControl value={sort} options={sortOptions} onChange={setSort} />
       </div>
 
       {changedRows.length > 0 && (

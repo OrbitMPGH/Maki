@@ -143,7 +143,7 @@ function FolderRow({
             </>
           )}
           {!folder.createdSeries && (
-            <Badge size="sm" variant="light">
+            <Badge size="sm" variant="light" color="var(--brand)">
               <Trans>Existing series</Trans>
             </Badge>
           )}

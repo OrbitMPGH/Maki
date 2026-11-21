@@ -17,7 +17,6 @@ import {
   FlareSolverrCard,
   IndexerSection,
   ReadFileCleanupSection,
-  SmartDownloadSection,
   SourceLanguageSection,
   SourcePrioritySection,
   UpgradeScanSection,
@@ -53,14 +52,17 @@ async function openRow(canvas: Canvas, userEvent: User, row: RegExp) {
 
 export const DownloadQueue: Story = {
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Concurrent chapter downloads' })).toHaveValue('2'))
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Time limit per chapter' })).toHaveValue('120'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Time limit per chapter.*120 minutes/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Smart download.*Fetch 10 chapters at 5 unread/ })).toBeVisible())
     await expect(canvas.queryByText('Unsaved')).toBeNull()
   },
 }
 
 export const DownloadQueueEditShowsSave: Story = {
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -86,6 +88,8 @@ export const DownloadQueueSave: Story = {
   },
   beforeEach: () => onDownloadSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -100,6 +104,8 @@ export const DownloadQueueSave: Story = {
 export const DownloadQueueSaveRejected: Story = {
   parameters: { msw: settingsMsw(http.put(api('/settings/download'), () => failWith(400, 'Concurrent downloads must be between 1 and 8.'))) },
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -117,14 +123,15 @@ export const DownloadQueueNoTimeout: Story = {
     msw: settingsMsw(http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, itemTimeoutMinutes: 0, bulkHoldThreshold: 0 }))),
   },
   play: async ({ canvas }) => {
-    const timeout = await canvas.findByRole('textbox', { name: 'Time limit per chapter' })
-    await waitFor(() => expect(timeout).toHaveValue('0'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Time limit per chapter.*No limit/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Auto-queue limit.*Always queue/ })).toBeVisible())
   },
 }
 
 export const SmartDownload: Story = {
-  render: () => <SmartDownloadSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Smart download.*Fetch 10/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Smart download/)
     const left = await canvas.findByRole('textbox', { name: 'Fetch more when unread chapters drop to' })
     await waitFor(() => expect(left).toHaveValue('5'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Chapters to fetch each time' })).toHaveValue('10'))
@@ -147,7 +154,7 @@ export const ReadFileCleanupOn: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Delete read chapters for every series/ })
     await waitFor(() => expect(toggle).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Days after reading' })).toHaveValue('14'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Days after reading.*14 days/ })).toBeVisible())
   },
 }
 

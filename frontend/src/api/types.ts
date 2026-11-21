@@ -192,6 +192,8 @@ export interface SeriesDto {
    * added rail shows. 0 with nothing new. Library list endpoint only.
    */
   newChapterCount?: number
+  /** The colour the cover lends to the card's foot, as #rrggbb. Library list rows only; null when the art has no hue. */
+  coverAccent?: string | null
   /** The newest release date among the series' known chapters, or null with none dated. Library list endpoint only. */
   latestChapterAt?: string | null
   /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */

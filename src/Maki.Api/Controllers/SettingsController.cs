@@ -263,9 +263,18 @@ public class SettingsController(
     /// means "leave what is stored": this field is saved from Discover's edit mode, and every other
     /// caller that PUTs this record (Settings, an older cached bundle) would otherwise reset it.
     /// </param>
+    /// <param name="CardProgress">
+    /// <see cref="SettingKeys.UiCardProgress"/>: "auto", "downloads" or "reading". Null on write leaves
+    /// the stored value, like <paramref name="DiscoverLayout"/>, so an older cached bundle cannot reset it.
+    /// </param>
+    /// <param name="CardProgressAuto">
+    /// Read-only. What "auto" resolves to for this user right now, so the cards draw the right bar
+    /// on first load. Ignored on write.
+    /// </param>
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
-        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null);
+        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null,
+        string? CardProgress = null, string? CardProgressAuto = null);
 
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
@@ -608,7 +617,8 @@ public class SettingsController(
         var rows = await userSettings.GetManyAsync(
             [
                 SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
-                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections,
+                SettingKeys.UiCardProgress
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var (homeRails, discoverRails) = await RailIdsAsync(ct);
@@ -622,8 +632,17 @@ public class SettingsController(
             StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
             rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
             SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage)),
-            discoverLayout));
+            discoverLayout,
+            Maki.Api.Services.CardProgress.Normalize(rows.GetValueOrDefault(SettingKeys.UiCardProgress)),
+            await CardProgressAutoAsync(ct)));
     }
+
+    /// <summary>What "auto" picks for the series cards right now, counted in the user's own days.</summary>
+    private async Task<string> CardProgressAutoAsync(CancellationToken ct) =>
+        await Maki.Api.Services.CardProgress.ResolveAutoAsync(
+            db, currentUser.UserId,
+            Maki.Api.Services.UserTimeZone.FromId(await userSettings.GetAsync(SettingKeys.UserTimeZone, ct)) ?? TimeZoneInfo.Utc,
+            DateTime.UtcNow, ct);
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
     [HttpPut("ui")]
@@ -680,10 +699,22 @@ public class SettingsController(
                 SettingKeys.UiDiscoverSections, DiscoverLayoutSpec.Serialize(discoverLayout, discoverRails), ct);
         }
 
+        var cardProgress = request.CardProgress is null
+            ? Maki.Api.Services.CardProgress.Normalize(await userSettings.GetAsync(SettingKeys.UiCardProgress, ct))
+            : Maki.Api.Services.CardProgress.Normalize(request.CardProgress);
+        if (request.CardProgress is not null)
+        {
+            // "auto" is the default, so it is stored as no row at all.
+            await userSettings.SetAsync(
+                SettingKeys.UiCardProgress, cardProgress == Maki.Api.Services.CardProgress.Auto ? "" : cardProgress, ct);
+        }
+
         // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
         // short cache, so without this a language change would not reach it for up to five minutes.
         userLocales.Forget(currentUser.UserId);
-        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language, discoverLayout));
+        return Ok(new UiSettings(
+            startPage, layout, seriesSections, titleLanguage, language, discoverLayout, cardProgress,
+            await CardProgressAutoAsync(ct)));
     }
 
     /// <summary>

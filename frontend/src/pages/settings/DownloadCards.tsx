@@ -3,7 +3,7 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { ActionIcon, Box, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
 import {
   IconAdjustments,
   IconCircleCheck,
@@ -11,7 +11,10 @@ import {
   IconDownload,
   IconEyeOff,
   IconGauge,
+  IconLightning,
+  IconListCheck,
   IconPlus,
+  IconRefresh,
   IconSearch,
   IconTrash,
   IconTrophy,
@@ -50,7 +53,7 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
-import { ConnectionTestLine } from '../../components/ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from '../../components/ConnectionSettingsCardStatus'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
@@ -59,6 +62,7 @@ import { NewSettingPill } from '../../components/settings/NewSettingPill'
 import { useNewControlMark } from './newSettings'
 import { useTorrentLifecycleForm } from '../../components/settings/useTorrentLifecycleForm'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
+import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { languageName } from '../../api/titles'
 
 export function SourceLanguageSection() {
@@ -333,6 +337,16 @@ export function SourcePrioritySection() {
   )
 }
 
+type QueuePage = 'main' | 'concurrent' | 'retry' | 'timeout' | 'autoQueue' | 'smart'
+const QUEUE_PARENTS: Record<QueuePage, QueuePage> = {
+  main: 'main',
+  concurrent: 'main',
+  retry: 'main',
+  timeout: 'main',
+  autoQueue: 'main',
+  smart: 'main',
+}
+
 export function DownloadQueueSection() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
@@ -344,7 +358,10 @@ export function DownloadQueueSection() {
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number>(120)
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number>(5)
   const [adaptiveRefresh, setAdaptiveRefresh] = useState(true)
+  const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number>(5)
+  const [smartDownloadChapters, setSmartDownloadChapters] = useState<number>(10)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const pages = useDrillPages<QueuePage>('main', QUEUE_PARENTS)
 
   useSliceSync(
     settings && {
@@ -353,6 +370,8 @@ export function DownloadQueueSection() {
       itemTimeoutMinutes: settings.itemTimeoutMinutes,
       bulkHoldThreshold: settings.bulkHoldThreshold,
       adaptiveRefresh: settings.adaptiveRefresh,
+      smartDownloadChaptersLeft: settings.smartDownloadChaptersLeft,
+      smartDownloadChapters: settings.smartDownloadChapters,
     },
     (slice) => {
       setConcurrentChapters(slice.concurrentChapters)
@@ -360,6 +379,8 @@ export function DownloadQueueSection() {
       setItemTimeoutMinutes(slice.itemTimeoutMinutes)
       setBulkHoldThreshold(slice.bulkHoldThreshold)
       setAdaptiveRefresh(slice.adaptiveRefresh)
+      setSmartDownloadChaptersLeft(slice.smartDownloadChaptersLeft)
+      setSmartDownloadChapters(slice.smartDownloadChapters)
     },
     discarded,
   )
@@ -370,7 +391,14 @@ export function DownloadQueueSection() {
       Number(retryAttempts) !== (settings.retryEnabled ? settings.retryMaxAttempts : 0) ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
       Number(bulkHoldThreshold) !== settings.bulkHoldThreshold ||
-      adaptiveRefresh !== settings.adaptiveRefresh)
+      adaptiveRefresh !== settings.adaptiveRefresh ||
+      Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
+      Number(smartDownloadChapters) !== settings.smartDownloadChapters)
+
+  const retries = Number(retryAttempts)
+  const timeout = Number(itemTimeoutMinutes)
+  const autoQueue = Number(bulkHoldThreshold)
+  const unreadLeft = formatNumber(Number(smartDownloadChaptersLeft))
 
   return (
     <SettingsSection
@@ -380,125 +408,159 @@ export function DownloadQueueSection() {
       saving={save.isPending}
       onDiscard={discard}
       onSave={() => {
-        const retries = Number(retryAttempts)
         save.mutate(
           {
             concurrentChapters: Number(concurrentChapters),
             retryEnabled: retries > 0,
             ...(retries > 0 && { retryMaxAttempts: retries }),
-            itemTimeoutMinutes: clampItemTimeout(Number(itemTimeoutMinutes)),
-            bulkHoldThreshold: Number(bulkHoldThreshold),
+            itemTimeoutMinutes: clampItemTimeout(timeout),
+            bulkHoldThreshold: autoQueue,
             adaptiveRefresh,
-          },
-          { onSuccess: savedToast },
-        )
-      }}
-    >
-      <Box className="settings-field-grid" data-pairs mb="lg">
-        <SettingsNumberInput
-          label={t`Concurrent chapter downloads`}
-          min={1}
-          max={8}
-          value={concurrentChapters}
-          onChange={setConcurrentChapters}
-        />
-        <SettingsNumberInput
-          label={t`Retry attempts for a failed download`}
-          description={t`0 turns retry off.`}
-          min={0}
-          max={20}
-          value={retryAttempts}
-          onChange={setRetryAttempts}
-        />
-        <SettingsNumberInput
-          label={t`Time limit per chapter`}
-          description={t`In minutes. 0 means no limit.`}
-          min={0}
-          max={1440}
-          value={itemTimeoutMinutes}
-          onChange={setItemTimeoutMinutes}
-          settle={clampItemTimeout}
-        />
-        <SettingsNumberInput
-          label={t`Auto-queue limit`}
-          description={t`The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue.`}
-          min={0}
-          max={1000}
-          value={bulkHoldThreshold}
-          onChange={setBulkHoldThreshold}
-        />
-      </Box>
-      <Switch
-        label={t`Check quiet series less often`}
-        checked={adaptiveRefresh}
-        onChange={(e) => setAdaptiveRefresh(e.currentTarget.checked)}
-      />
-    </SettingsSection>
-  )
-}
-
-export function SmartDownloadSection() {
-  const { t } = useLingui()
-  const { data: settings } = useDownloadSettings()
-  const save = useSaveDownloadSettings()
-  const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number>(5)
-  const [smartDownloadChapters, setSmartDownloadChapters] = useState<number>(10)
-  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
-
-  useSliceSync(
-    settings && {
-      smartDownloadChaptersLeft: settings.smartDownloadChaptersLeft,
-      smartDownloadChapters: settings.smartDownloadChapters,
-    },
-    (slice) => {
-      setSmartDownloadChaptersLeft(slice.smartDownloadChaptersLeft)
-      setSmartDownloadChapters(slice.smartDownloadChapters)
-    },
-    discarded,
-  )
-
-  const dirty =
-    settings !== undefined &&
-    (Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
-      Number(smartDownloadChapters) !== settings.smartDownloadChapters)
-
-  return (
-    <SettingsSection
-      id="smart-download"
-      title={<Trans>Smart download</Trans>}
-      description={<Trans>Turned on per series in its monitoring options.</Trans>}
-      dirty={dirty}
-      saving={save.isPending}
-      onDiscard={discard}
-      onSave={() =>
-        save.mutate(
-          {
             smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
             smartDownloadChapters: Number(smartDownloadChapters),
           },
           { onSuccess: savedToast },
         )
-      }
+      }}
     >
-      <Box className="settings-field-grid" data-pairs data-align="end">
-        <SettingsNumberInput
-          label={t`Fetch more when unread chapters drop to`}
-          min={1}
-          max={10}
-          value={smartDownloadChaptersLeft}
-          onChange={setSmartDownloadChaptersLeft}
+      <Stack gap="sm">
+        <Switch
+          label={t`Check quiet series less often`}
+          checked={adaptiveRefresh}
+          onChange={(e) => setAdaptiveRefresh(e.currentTarget.checked)}
         />
-        <SettingsNumberInput
-          label={t`Chapters to fetch each time`}
-          min={1}
-          max={20}
-          value={smartDownloadChapters}
-          onChange={setSmartDownloadChapters}
-        />
-      </Box>
+        <SettingsDrill page={pages.page} depth={pages.depth} targets={['smart-download']} onTarget={pages.reset}>
+          {pages.page === 'main' && (
+            <>
+              <DrillRow
+                ref={pages.rowRef('concurrent')}
+                icon={IconDownload}
+                label={<Trans>Chapters at once</Trans>}
+                value={formatNumber(Number(concurrentChapters))}
+                onClick={() => pages.open('concurrent')}
+              />
+              <DrillRow
+                ref={pages.rowRef('retry')}
+                icon={IconRefresh}
+                label={<Trans>Retries</Trans>}
+                value={retries === 0 ? t`Off` : plural(retries, { one: 'Up to # attempt', other: 'Up to # attempts' })}
+                onClick={() => pages.open('retry')}
+              />
+              <DrillRow
+                ref={pages.rowRef('timeout')}
+                icon={IconClock}
+                label={<Trans>Time limit per chapter</Trans>}
+                value={timeout === 0 ? t`No limit` : plural(timeout, { one: '# minute', other: '# minutes' })}
+                onClick={() => pages.open('timeout')}
+              />
+              <DrillRow
+                ref={pages.rowRef('autoQueue')}
+                icon={IconListCheck}
+                label={<Trans>Auto-queue limit</Trans>}
+                value={
+                  autoQueue === 0
+                    ? t`Always queue`
+                    : plural(autoQueue, { one: 'Up to # chapter', other: 'Up to # chapters' })
+                }
+                onClick={() => pages.open('autoQueue')}
+              />
+              <DrillRow
+                ref={pages.rowRef('smart')}
+                id="setting-smart-download"
+                icon={IconLightning}
+                label={<Trans>Smart download</Trans>}
+                value={plural(Number(smartDownloadChapters), {
+                  one: `Fetch # chapter at ${unreadLeft} unread`,
+                  other: `Fetch # chapters at ${unreadLeft} unread`,
+                })}
+                onClick={() => pages.open('smart')}
+              />
+            </>
+          )}
+          {pages.page === 'concurrent' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Chapters at once</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Concurrent chapter downloads`}
+                min={1}
+                max={8}
+                value={concurrentChapters}
+                onChange={setConcurrentChapters}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'retry' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Retries</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Retry attempts for a failed download`}
+                description={t`0 turns retry off.`}
+                min={0}
+                max={20}
+                value={retryAttempts}
+                onChange={setRetryAttempts}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'timeout' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Time limit per chapter</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Time limit per chapter`}
+                description={t`In minutes. 0 means no limit.`}
+                min={0}
+                max={1440}
+                value={itemTimeoutMinutes}
+                onChange={setItemTimeoutMinutes}
+                settle={clampItemTimeout}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'autoQueue' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Auto-queue limit</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Auto-queue limit`}
+                description={t`The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue.`}
+                min={0}
+                max={1000}
+                value={bulkHoldThreshold}
+                onChange={setBulkHoldThreshold}
+              />
+            </SettingsDrillPage>
+          )}
+          {pages.page === 'smart' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Smart download</Trans>} onBack={pages.back} />
+              <SettingsHelp>
+                <Trans>Turned on per series in its monitoring options.</Trans>
+              </SettingsHelp>
+              <div className="settings-field-grid" data-pairs>
+                <SettingsNumberInput
+                  label={t`Fetch more when unread chapters drop to`}
+                  min={1}
+                  max={10}
+                  value={smartDownloadChaptersLeft}
+                  onChange={setSmartDownloadChaptersLeft}
+                />
+                <SettingsNumberInput
+                  label={t`Chapters to fetch each time`}
+                  min={1}
+                  max={20}
+                  value={smartDownloadChapters}
+                  onChange={setSmartDownloadChapters}
+                />
+              </div>
+            </SettingsDrillPage>
+          )}
+        </SettingsDrill>
+      </Stack>
     </SettingsSection>
   )
 }
+
+type CleanupPage = 'main' | 'days'
+const CLEANUP_PARENTS: Record<CleanupPage, CleanupPage> = { main: 'main', days: 'main' }
 
 export function ReadFileCleanupSection() {
   const { t } = useLingui()
@@ -508,6 +570,7 @@ export function ReadFileCleanupSection() {
   const [days, setDays] = useState<number>(7)
   const [keepLast, setKeepLast] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const pages = useDrillPages<CleanupPage>('main', CLEANUP_PARENTS)
 
   useSliceSync(
     settings,
@@ -535,24 +598,40 @@ export function ReadFileCleanupSection() {
         save.mutate({ enabled, days: Number(days), keepLast }, { onSuccess: savedToast })
       }
     >
-      <Stack gap="md">
+      <Stack gap="sm">
         <Switch
           label={t`Delete read chapters for every series`}
           checked={enabled}
           onChange={(e) => setEnabled(e.currentTarget.checked)}
-        />
-        <SettingsNumberInput
-          label={t`Days after reading`}
-          min={1}
-          max={365}
-          value={days}
-          onChange={setDays}
         />
         <Switch
           label={t`Keep each reader's last read chapter`}
           checked={keepLast}
           onChange={(e) => setKeepLast(e.currentTarget.checked)}
         />
+        <SettingsDrill page={pages.page} depth={pages.depth}>
+          {pages.page === 'main' && (
+            <DrillRow
+              ref={pages.rowRef('days')}
+              icon={IconClock}
+              label={<Trans>Days after reading</Trans>}
+              value={plural(Number(days), { one: '# day', other: '# days' })}
+              onClick={() => pages.open('days')}
+            />
+          )}
+          {pages.page === 'days' && (
+            <SettingsDrillPage>
+              <DrillBack ref={pages.backRef} title={<Trans>Days after reading</Trans>} onBack={pages.back} />
+              <SettingsNumberInput
+                label={t`Days after reading`}
+                min={1}
+                max={365}
+                value={days}
+                onChange={setDays}
+              />
+            </SettingsDrillPage>
+          )}
+        </SettingsDrill>
       </Stack>
     </SettingsSection>
   )
@@ -1160,11 +1239,16 @@ export function IndexerSection() {
   const options = useIndexerOptionsForm()
   const optionsDirty = options.dirty && !form.switching
   const selectedName = indexerBackendName(form.selected)
+  const { data: connection } = useIndexerSettings()
+  const testKey = form.selected ? (`indexer:${form.selected}` as const) : undefined
 
   return (
     <SettingsSection
       id="indexer"
       title={t`Indexer`}
+      status={
+        connection && <ConnectionStatus testKey={testKey} configured={!form.switching && Boolean(connection.url)} />
+      }
       dirty={form.dirty || optionsDirty}
       saving={form.saving || options.saving}
       onSave={() => {
@@ -1180,7 +1264,7 @@ export function IndexerSection() {
     >
       <IndexerFieldRow
         form={form}
-        status={<ConnectionTestLine testKey={form.selected ? `indexer:${form.selected}` : undefined} />}
+        status={<ConnectionTestDetail testKey={testKey} mt={0} />}
       />
       {form.switching ? (
         <Text size="sm" c="var(--ink-3)" mt="md">

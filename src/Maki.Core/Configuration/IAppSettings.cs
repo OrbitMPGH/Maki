@@ -293,6 +293,14 @@ public static class SettingKeys
     public const string UiDiscoverSections = "ui.discoversections";
 
     /// <summary>
+    /// What the progress bar on a library cover leads with: "downloads" (coloured download bar, read
+    /// ring on the status disc), "reading" (reading drawn over the downloaded share of the bar), or
+    /// "auto" (unset), which picks reading for someone who reads in Maki's own reader. See
+    /// <c>CardProgress</c>.
+    /// </summary>
+    public const string UiCardProgress = "ui.cardprogress";
+
+    /// <summary>
     /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
     /// blob. Unset = both on.
     /// <para>

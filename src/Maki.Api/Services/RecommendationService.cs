@@ -19,7 +19,8 @@ public record RecommendationsResult(
     int Page = 0,
     bool HasMore = false,
     string? PoolVersion = null,
-    bool RestartRequired = false);
+    bool RestartRequired = false,
+    int TotalSimilar = 0);
 
 /// <summary>
 /// Recommendation request. <see cref="SeedIds"/> are MangaBaka ids to base the picks on
@@ -347,6 +348,7 @@ public class RecommendationService(
             HasMore = similarVisible.Count > (page + 1) * PageSize,
             PoolVersion = version,
             RestartRequired = restart,
+            TotalSimilar = similarVisible.Count,
         };
     }
 

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Button, Checkbox, Divider, Group, Modal, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import { SettingsSummaryRow } from './SettingsSummaryRow'
 import { SettingsGroupTitle } from './SettingsGroupTitle'
 import { IconBell, IconDeviceMobile, IconListCheck } from '../../lib/icons'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { newControlMark, useNewSettingSet } from '../../pages/settings/newSettings'
 import { NewSettingPill } from './NewSettingPill'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 import {
   INBOX_ADMIN_ONLY,
   visibleInboxCategories,
@@ -180,50 +182,44 @@ export function NotificationPrefsSection() {
 
       <Divider my="md" />
 
-      <Group
-        justify="space-between"
-        wrap="wrap"
-        gap="md"
+      <SettingsSummaryRow
         id="setting-related-work-notifications"
         {...newControlMark(newIds, ...Object.values(TYPE_ENTRIES))}
-      >
-        <Stack gap={6} className="settings-summary">
-          <Group gap="sm" wrap="nowrap">
-            <IconBell size={16} aria-hidden className="notify-summary-icon" />
-            <Text size="sm" fw={500} className="notify-summary-name">
-              <Trans>Bell</Trans>
-            </Text>
-            <Text size="sm" c="var(--ink-2)">
-              <Plural value={total} one={`${bellCount} of # event`} other={`${bellCount} of # events`} />
-            </Text>
-          </Group>
-          <Group gap="sm" wrap="nowrap" miw={0}>
-            <IconDeviceMobile size={16} aria-hidden className="notify-summary-icon" />
-            <Text size="sm" fw={500} className="notify-summary-name">
-              <Trans>Push</Trans>
-            </Text>
-            <Text size="sm" c="var(--ink-2)" lineClamp={1}>
-              {pushedTypes.length === 0 ? (
-                <Trans>Off</Trans>
-              ) : pushedTypes.length <= 3 ? (
-                formatList(pushedTypes.map((type) => renderLabel(INBOX_TYPE_LABELS[type])))
-              ) : (
-                <Plural value={pushedTypes.length} one="# event" other="# events" />
-              )}
-            </Text>
-          </Group>
-        </Stack>
-        <Button
-          variant="default"
-          leftSection={<IconListCheck size={16} />}
-          onClick={() => setOpen(true)}
-          style={{ flexShrink: 0 }}
-        >
-          <Trans>Choose events</Trans>
-        </Button>
-      </Group>
+        label={<Trans>Events</Trans>}
+        summary={
+          <Stack gap={2}>
+            <Group gap="sm" wrap="nowrap">
+              <IconBell size={16} aria-hidden className="notify-summary-icon" />
+              <span className="notify-summary-name">
+                <Trans>Bell</Trans>
+              </span>
+              <span>
+                <Plural value={total} one={`${bellCount} of # event`} other={`${bellCount} of # events`} />
+              </span>
+            </Group>
+            <Group gap="sm" wrap="nowrap" miw={0}>
+              <IconDeviceMobile size={16} aria-hidden className="notify-summary-icon" />
+              <span className="notify-summary-name">
+                <Trans>Push</Trans>
+              </span>
+              <Text span size="sm" lineClamp={1}>
+                {pushedTypes.length === 0 ? (
+                  <Trans>Off</Trans>
+                ) : pushedTypes.length <= 3 ? (
+                  formatList(pushedTypes.map((type) => renderLabel(INBOX_TYPE_LABELS[type])))
+                ) : (
+                  <Plural value={pushedTypes.length} one="# event" other="# events" />
+                )}
+              </Text>
+            </Group>
+          </Stack>
+        }
+        icon={IconListCheck}
+        action={<Trans>Choose events</Trans>}
+        onClick={() => setOpen(true)}
+      />
 
-      <Modal opened={open} onClose={() => setOpen(false)} size={1080} title={<ModalHeading title={t`Notification events`} />}>
+      <Modal opened={open} onClose={() => setOpen(false)} size={MODAL_SIZE.xwide} title={<ModalHeading title={t`Notification events`} />}>
         <div className="notify-columns">
           {columns.map((cats) => (
             <div key={cats[0].id}>{matrix(cats)}</div>

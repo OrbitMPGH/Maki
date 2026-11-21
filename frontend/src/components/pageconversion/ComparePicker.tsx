@@ -10,6 +10,7 @@ import type { SeriesDto } from '../../api/types'
 import { usePageConversionSample, type PageConversionSample } from '../../api/pageConversion'
 import { chapterLabel } from '../series/chapterTable'
 import { MODAL_SIZE } from '../ui/modalSizes'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 
 const MAX_SERIES_ROWS = 40
 
@@ -42,7 +43,7 @@ export function ComparePicker({
   }
 
   return (
-    <Modal opened={opened} onClose={close} title={t`Pick another page`} size={MODAL_SIZE.default} centered>
+    <Modal opened={opened} onClose={close} title={<ModalHeading title={t`Pick another page`} />} size={MODAL_SIZE.default} centered>
       {!series && <SeriesStage onPick={setSeries} />}
       {series && !file && <ChapterStage series={series} onBack={() => setSeries(null)} onPick={setFile} />}
       {series && file && (
@@ -224,11 +225,11 @@ function PageStage({
             value={typed === '' ? suggested : typed}
             onChange={setTyped}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button disabled={!valid} onClick={() => onPick({ ...sample, page: pageNumber - 1, reason: 'custom' })}>
               <Trans>Compare this page</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </>
       )}
     </Stack>

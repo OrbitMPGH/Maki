@@ -107,7 +107,6 @@ export default function ChapterEndRating({ seriesId, soFar }: { seriesId: number
       onRate={rate}
       onKeep={() => finalize.mutate({ seriesId }, { onSuccess: ({ rating }) => settle(rating ?? soFar) })}
       onDismiss={() => dismiss.mutate(seriesId, { onSuccess: () => settle(null) })}
-      wrap="wrap"
       panel={panel}
       panelZIndex={OVERLAY_Z}
     />

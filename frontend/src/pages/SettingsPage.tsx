@@ -39,6 +39,7 @@ import { SettingsIndex, SettingsJump } from '../components/settings/SettingsInde
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
   AppearanceSection,
+  SeriesCardsSection,
   DiscoverSection,
   HomeSectionsSection,
   LanguageSection,
@@ -67,7 +68,6 @@ import {
   FlareSolverrCard,
   IndexerSection,
   DownloadClientCard,
-  SmartDownloadSection,
   ReadFileCleanupSection,
   SourceLanguageSection,
   SourcePrioritySection,
@@ -96,6 +96,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'api-keys': <ApiKeysSection />,
 
       appearance: <AppearanceSection />,
+      'series-cards': <SeriesCardsSection />,
       language: <LanguageSection />,
       'title-language': <TitleLanguageSection />,
       'discover-rating': <DiscoverSection />,
@@ -131,7 +132,6 @@ function useSectionNodes(): Record<string, ReactNode> {
       recommendations: <RecommendationIndexSection />,
 
       downloads: <DownloadQueueSection />,
-      'smart-download': <SmartDownloadSection />,
       'read-cleanup': <ReadFileCleanupSection />,
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,

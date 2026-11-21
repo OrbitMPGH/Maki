@@ -1,5 +1,6 @@
 import type { AriaAttributes, CSSProperties, MouseEventHandler, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { formatNumber } from '../../format'
 
 export interface TagChipProps {
   children: ReactNode
@@ -9,6 +10,8 @@ export interface TagChipProps {
   onClick?: MouseEventHandler<HTMLButtonElement>
   href?: string
   size?: 'sm' | 'md'
+  /** A muted number after the label, such as how many rows a filter chip matches. */
+  count?: number
   className?: string
   title?: string
   style?: CSSProperties
@@ -25,6 +28,7 @@ export function TagChip({
   onClick,
   href,
   size = 'md',
+  count,
   className,
   ...rest
 }: TagChipProps & Pick<AriaAttributes, 'aria-label' | 'aria-pressed' | 'aria-current'>) {
@@ -32,7 +36,10 @@ export function TagChip({
   const inner = (
     <>
       {dot && <span className="tag-dot" style={{ '--bucket': dot } as CSSProperties} />}
-      <span className="tag-chip-body">{children}</span>
+      <span className="tag-chip-body">
+        {children}
+        {count != null && <span className="tag-chip-count tnum">{formatNumber(count)}</span>}
+      </span>
     </>
   )
   const shared = {

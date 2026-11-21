@@ -58,7 +58,8 @@ public class SeriesController(
     IUserSettings userSettings,
     NotificationService notifications,
     IUserLocaleResolver locales,
-    ILogger<SeriesController> logger) : ControllerBase
+    ILogger<SeriesController> logger,
+    CoverAccentCache? coverAccents = null) : ControllerBase
 {
     private string? _titleLanguage;
     private bool _titleLanguageRead;
@@ -393,7 +394,7 @@ public class SeriesController(
     /// <param name="ids">The series to build, or null for every series the caller can see.</param>
     private async Task<List<SeriesDto>> ListRowsAsync(int[]? ids, CancellationToken ct) =>
         await LibraryListRows.BuildAsync(
-            db, sourceAvailability, mangaBakaStore, appSettings, await TitleLanguageAsync(ct), logger, ids, ct);
+            db, sourceAvailability, mangaBakaStore, appSettings, await TitleLanguageAsync(ct), logger, ids, ct, coverAccents);
 
     /// <summary>
     /// The caller's own per-series state: their score, and their notification mode. Needed by every

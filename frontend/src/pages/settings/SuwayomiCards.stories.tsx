@@ -43,8 +43,8 @@ export const LastTestFailed: Story = {
   },
   play: async ({ canvas }) => {
     const line = await canvas.findByRole('status')
-    await waitFor(() => expect(line).toHaveTextContent('Failed'))
-    await expect(within(line).getByText('Suwayomi refused the username or password.')).toBeVisible()
+    await waitFor(() => expect(line).toHaveTextContent('Failing'))
+    await expect(await canvas.findByText('Suwayomi refused the username or password.')).toBeVisible()
   },
 }
 
@@ -56,11 +56,10 @@ export const NotConnected: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Not connected.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Not set up'))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled())
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled())
     await expect(canvas.queryByRole('textbox', { name: 'Username' })).toBeNull()
-    await expect(canvas.queryByRole('status')).toBeNull()
   },
 }
 
