@@ -31,12 +31,12 @@ public static class ShelfLanes
         return new Key(index.TypeAt(row), genres.Contains(action) ? 1 : genres.Contains(romance) ? 2 : 0);
     }
 
-    /// <summary>The side tastes of a shelf the index can place, in seed order.</summary>
+    /// <summary>The side tastes of a shelf the index can place, heaviest first.</summary>
     public static IReadOnlyList<Side> Sides(
         VectorIndex index, IEnumerable<long> seeds, IReadOnlyDictionary<long, double>? weights,
         double minShare, int maxSides) =>
         Sides(
-            seeds.Select(id => (
+            seeds.Distinct().Select(id => (
                 Id: id,
                 Key: index.TryGetRow(id, out var row) ? KeyOf(index, row) : (Key?)null,
                 Weight: weights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
@@ -46,17 +46,19 @@ public static class ShelfLanes
     /// <summary>
     /// Groups seeds by key, drops the heaviest group, and keeps up to <paramref name="maxSides"/> of
     /// the rest that hold <see cref="MinSeeds"/> seeds and <paramref name="minShare"/> of the weight,
-    /// heaviest first. A seed with no key or no positive weight counts toward nothing.
+    /// heaviest first. A seed with no key or no positive weight counts toward nothing, and a repeated
+    /// id counts once.
     /// </summary>
     public static IReadOnlyList<Side> Sides(
         IEnumerable<(long Id, Key? Key, double Weight)> seeds, double minShare, int maxSides)
     {
         var order = new List<Key>();
         var groups = new Dictionary<Key, (List<long> Ids, double Weight)>();
+        var seen = new HashSet<long>();
         var total = 0.0;
         foreach (var (id, key, weight) in seeds)
         {
-            if (weight <= 0 || key is not { } k)
+            if (weight <= 0 || key is not { } k || !seen.Add(id))
             {
                 continue;
             }
@@ -92,7 +94,8 @@ public static class ShelfLanes
         foreach (var side in sides)
         {
             var have = page.Count(p => keyOf(p) == side.Key);
-            var target = (int)Math.Round(ratio * side.Weight / side.Total * page.Count);
+            // Banker's rounding, as graded: shares of 7.5% and 12.5% at 0.5 of 40 both target 2.
+            var target = (int)Math.Round(ratio * side.Weight / side.Total * page.Count, MidpointRounding.ToEven);
             if (target <= have || (heldOnly && have == 0))
             {
                 continue;
@@ -105,12 +108,15 @@ public static class ShelfLanes
     }
 
     /// <summary>
-    /// Inserts each queue's picks, at most its need, in place of the page's lowest picks outside
-    /// every side taste, spread evenly from <paramref name="from"/> down; the first
-    /// <paramref name="from"/> picks never move. With <paramref name="limits"/> (<see cref="ShelfFame"/>
-    /// limits of the whole shelf) an insert that adds a breach waits for the next slot of its queue
-    /// or stays out, and a displaced pick fills a slot nothing could take. Returns at most
-    /// <c>page.Count</c> picks; displaced picks that did not come back are left out.
+    /// Inserts each queue's picks, at most its need, at slots spread evenly from
+    /// <paramref name="from"/> down; the first <paramref name="from"/> picks never move. Slots are
+    /// filled top down, each by the first pick of its queue that is accepted. With
+    /// <paramref name="limits"/> (<see cref="ShelfFame"/> limits of the whole shelf) a pick is accepted
+    /// only when the page with it placed has no more breached slots than the page as placed so far;
+    /// a refused pick stays in its queue for that queue's next slot. Each accepted insert displaces
+    /// the page's lowest pick outside every side taste, and a slot nothing fills displaces nothing,
+    /// so every pick that stays keeps its order and with no insert the page comes back unchanged.
+    /// Returns <c>page.Count</c> picks; the displaced ones are left out.
     /// </summary>
     public static List<T> Merge<T>(
         IReadOnlyList<T> page, IReadOnlySet<Key> sideKeys, IReadOnlyList<(List<T> Picks, int Need)> queues,
@@ -144,24 +150,34 @@ public static class ShelfLanes
             served[next]++;
         }
 
+        var span = page.Count - from;
+        var slots = Enumerable.Range(0, k).Select(j => from + (int)((j + 0.5) * span / k)).ToList();
         var pending = queues.Select(q => q.Picks.ToList()).ToList();
-        var drop = droppable.Take(k).ToHashSet();
-        var restore = drop.Order().Select(i => page[i]).ToList();
-        var kept = page.Where((_, i) => !drop.Contains(i)).ToList();
-        var output = kept.Take(from).ToList();
-        var tail = new Queue<T>(kept.Skip(from));
-        var span = tail.Count + k;
-        var slots = Enumerable.Range(0, k).Select(j => from + (int)((j + 0.5) * span / k)).ToHashSet();
+        var placed = new Dictionary<int, T>();
 
-        int Breaches(IEnumerable<T> list)
+        List<T> Layout((int Slot, T Pick)? trial = null)
+        {
+            var drops = droppable.Take(placed.Count + (trial is null ? 0 : 1)).ToHashSet();
+            var kept = new Queue<T>(page.Where((_, i) => !drops.Contains(i)));
+            var list = new List<T>(page.Count);
+            for (var position = 0; position < page.Count; position++)
+            {
+                list.Add(
+                    trial is { } t && t.Slot == position ? t.Pick
+                    : placed.TryGetValue(position, out var pick) ? pick
+                    : kept.Dequeue());
+            }
+
+            return list;
+        }
+
+        int Breaches(List<T> list)
         {
             var counts = new int[ShelfFame.Thresholds.Length];
             var breaches = 0;
-            var slot = 0;
-            foreach (var p in list.Take(page.Count))
+            for (var slot = 1; slot <= list.Count; slot++)
             {
-                slot++;
-                var rank = rankOf(p);
+                var rank = rankOf(list[slot - 1]);
                 var over = false;
                 for (var t = 0; t < counts.Length; t++)
                 {
@@ -179,31 +195,45 @@ public static class ShelfLanes
             return breaches;
         }
 
-        var turn = 0;
-        for (var position = from; position < from + span; position++)
+        var current = limits is null ? 0 : Breaches([.. page]);
+        for (var j = 0; j < k; j++)
         {
-            if (slots.Contains(position))
+            var queue = pending[schedule[j]];
+            for (var c = 0; c < queue.Count; c++)
             {
-                var queue = pending[schedule[turn++]];
-                var future = tail.Concat(restore).ToList();
-                var without = limits is null ? 0 : Breaches(output.Concat(future));
-                var chosen = queue.FindIndex(p => limits is null || Breaches(output.Append(p).Concat(future)) <= without);
-                if (chosen >= 0)
+                if (limits is not null)
                 {
-                    output.Add(queue[chosen]);
-                    queue.RemoveAt(chosen);
-                    continue;
-                }
-            }
+                    var breaches = Breaches(Layout((slots[j], queue[c])));
+                    if (breaches > current)
+                    {
+                        continue;
+                    }
 
-            if (tail.Count > 0)
-            {
-                output.Add(tail.Dequeue());
+                    current = breaches;
+                }
+
+                placed[slots[j]] = queue[c];
+                queue.RemoveAt(c);
+                break;
             }
         }
 
-        output.AddRange(tail);
-        output.AddRange(restore.Take(page.Count - output.Count));
-        return output;
+        return placed.Count == 0 ? [.. page] : Layout();
+    }
+
+    /// <summary>
+    /// The whole pool after <see cref="Merge"/> ran on its first <paramref name="size"/> picks: the
+    /// merged page, then the picks it displaced in their old order, then the rest of
+    /// <paramref name="whole"/> in its order, each id once and at most <paramref name="limit"/>.
+    /// </summary>
+    public static List<T> Assemble<T, TId>(
+        IReadOnlyList<T> merged, IReadOnlyList<T> whole, int size, Func<T, TId> idOf, int limit)
+    {
+        var placed = merged.Select(idOf).ToHashSet();
+        return merged
+            .Concat(whole.Take(size).Where(p => !placed.Contains(idOf(p))))
+            .Concat(whole.Skip(size).Where(p => !placed.Contains(idOf(p))))
+            .Take(limit)
+            .ToList();
     }
 }

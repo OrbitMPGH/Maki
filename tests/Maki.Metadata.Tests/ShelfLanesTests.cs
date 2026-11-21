@@ -124,4 +124,108 @@ public class ShelfLanesTests
         Assert.Equal(page, Merge(page, []));
         Assert.Equal(page.Take(10), Merge(page.Take(10).ToList(), [(Page(3, Romance, 100), 3)]));
     }
+
+    [Fact]
+    public void A_refused_insert_leaves_a_protected_side_pick_at_the_bottom_where_it_was()
+    {
+        var page = Page(39, Main).Append(new Pick(100, Romance)).ToList();
+        double[] limits = [0, 0, 0];
+
+        var merged = Merge(page, [([new Pick(200, Romance, Rank: 50)], 1)], limits);
+
+        Assert.Equal(page, merged);
+    }
+
+    [Fact]
+    public void With_every_insert_refused_the_page_is_identical()
+    {
+        var page = Page(30, Main).Concat(Page(5, Romance, 100)).Concat(Page(5, Main, 31)).ToList();
+        double[] limits = [0, 0, 0];
+        var famous = new List<Pick> { new(200, Romance, Rank: 10), new(201, Romance, Rank: 20) };
+        var famousOther = new List<Pick> { new(300, Other, Rank: 30) };
+
+        var merged = Merge(page, [(famous, 2), (famousOther, 1)], limits, Romance, Other);
+
+        Assert.Equal(page, merged);
+    }
+
+    [Fact]
+    public void A_partly_refused_top_up_displaces_only_as_many_picks_as_it_inserts()
+    {
+        var page = Page(40, Main);
+        double[] limits = [0, 0, 0];
+        var lane = new List<Pick> { new(101, Romance, Rank: 6000), new(100, Romance, Rank: 50) };
+
+        var merged = Merge(page, [(lane, 2)], limits);
+
+        // Slots 17 and 32 are planned; the second has only the famous pick left, so it stays as it was.
+        Assert.Equal([.. page.Take(17), new Pick(101, Romance, Rank: 6000), .. page.Skip(17).Take(22)], merged);
+    }
+
+    [Fact]
+    public void Two_queues_take_turns_by_how_far_each_is_from_its_need()
+    {
+        var page = Page(40, Main);
+        var romance = Page(3, Romance, 100);
+        var other = Page(3, Other, 200);
+
+        var merged = Merge(page, [(romance, 2), (other, 1)], null, Romance, Other);
+
+        Assert.Equal(
+            [(15, 100L), (25, 200L), (35, 101L)],
+            merged.Select((p, i) => (i, p.Id)).Where(x => x.Id >= 100));
+        Assert.Equal(page.Take(37), merged.Where(p => p.Key == Main));
+    }
+
+    [Fact]
+    public void A_queue_shorter_than_its_need_inserts_what_it_has()
+    {
+        var page = Page(40, Main);
+
+        var merged = Merge(page, [(Page(1, Romance, 100), 3)]);
+
+        Assert.Equal([.. page.Take(15), new Pick(100, Romance), .. page.Skip(15).Take(24)], merged);
+    }
+
+    [Fact]
+    public void Picks_past_the_page_keep_the_whole_order_with_the_displaced_first_and_nothing_twice()
+    {
+        var whole = Page(200, Main);
+        var page = whole.Take(40).ToList();
+        // 150 is a lane pick that the whole-shelf ranking also had, at rank 150.
+        var lane = new List<Pick> { new(150, Romance), new(300, Romance) };
+
+        var merged = Merge(page, [(lane, 2)]);
+        var pool = ShelfLanes.Assemble(merged, whole, 40, p => p.Id, 200);
+
+        Assert.Equal(200, pool.Count);
+        Assert.Equal(merged, pool.Take(40));
+        Assert.Equal([39L, 40L], pool.Skip(40).Take(2).Select(p => p.Id));
+        Assert.Equal(
+            whole.Skip(40).Where(p => p.Id != 150).Take(158).Select(p => p.Id),
+            pool.Skip(42).Select(p => p.Id));
+        Assert.Equal(pool.Count, pool.Select(p => p.Id).Distinct().Count());
+        Assert.Single(pool, p => p.Id == 150);
+    }
+
+    [Fact]
+    public void A_repeated_seed_counts_once()
+    {
+        var seeds = Seeds(Main, 20, 1).Concat(Enumerable.Repeat((100L, (ShelfLanes.Key?)Romance, 1.0), 3));
+
+        Assert.Empty(ShelfLanes.Sides(seeds, 0.05, 3));
+    }
+
+    [Fact]
+    public void Midpoint_targets_round_to_even()
+    {
+        // 1.5 and 2.5 picks both target 2.
+        var page = Page(32, Main);
+        var oneAndHalf = new ShelfLanes.Side(Romance, [100, 101, 102], 6, 64);
+        var twoAndHalf = new ShelfLanes.Side(Other, [200, 201, 202], 10, 64);
+
+        var shortfalls = ShelfLanes.Shortfalls(page, [oneAndHalf, twoAndHalf], p => p.Key, 0.5, heldOnly: false);
+
+        Assert.Equal([2, 2], shortfalls.Select(s => s.Target));
+    }
 }
