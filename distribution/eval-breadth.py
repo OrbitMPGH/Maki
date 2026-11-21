@@ -145,11 +145,14 @@ def recall_rows(pb, pv, common, keys, label):
         nv = sum(pv[i][key][0] for i in both)
         total = sum(pb[i][key][1] for i in both)
         per = [i for i in both if pb[i][key][1] >= 3]
+        line = f"  {key.split('_')[1]:7} pooled {total:5} next reads {nb / total:.4f} -> {nv / total:.4f} ({(nv - nb) / max(nb, 1):+.1%}); "
+        if not per:
+            print(line + "per reader (0 with 3+) n/a")
+            continue
         mb = sum(pb[i][key][0] / pb[i][key][1] for i in per) / len(per)
         mv = sum(pv[i][key][0] / pv[i][key][1] for i in per) / len(per)
         m, lo, hi = boot([pv[i][key][0] / pv[i][key][1] - pb[i][key][0] / pb[i][key][1] for i in per])
-        print(f"  {key.split('_')[1]:7} pooled {total:5} next reads {nb / total:.4f} -> {nv / total:.4f} ({(nv - nb) / max(nb, 1):+.1%}); "
-              f"per reader ({len(per)} with 3+) {mb:.4f} -> {mv:.4f} {m:+.4f} [{lo:+.4f}, {hi:+.4f}]")
+        print(line + f"per reader ({len(per)} with 3+) {mb:.4f} -> {mv:.4f} {m:+.4f} [{lo:+.4f}, {hi:+.4f}]")
 
 
 def boot(diffs, reps=2000):
@@ -174,6 +177,11 @@ def main():
         return next(p for p in glob.glob(os.path.join(a.picks, f"{prefix}*.tsv"))
                     if "-" not in os.path.basename(p)[len(prefix):])
     rb, rv = read_picks(path(a.base)), read_picks(path(a.variant))
+    mismatched = [i for i in sorted(set(rb) & set(rv))
+                  if sorted(rb[i]["seeds"]) != sorted(rv[i]["seeds"]) or sorted(rb[i]["next"]) != sorted(rv[i]["next"])]
+    if mismatched:
+        raise SystemExit(f"{a.base} and {a.variant} disagree on the seeds or held-out reads of {len(mismatched)} request(s) "
+                         f"(first: {mismatched[0]}); the dumps are not from one run over the same requests")
     ids = set()
     for rows in (rb, rv):
         for r in rows.values():
