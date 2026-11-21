@@ -3252,6 +3252,10 @@ msgstr "{shown}、ほか{more}件"
 msgid "{shownCount, plural, one {# series} other {# series}}"
 msgstr "{shownCount, plural, other {#シリーズ}}"
 
+#: src/pages/DiscoverPage.tsx
+msgid "{similarCount, plural, one {All # pick shown} other {All # picks shown}}"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{siteName} languages"
@@ -4970,6 +4974,7 @@ msgstr "アグリゲーター"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -6822,6 +6827,10 @@ msgstr "カタログのフォールバックが有効です。個人の追加に
 msgid "Catalogue feeds"
 msgstr "カタログフィード"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Catalogue filters apply to recommendations, not direct relations."
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -8512,6 +8521,10 @@ msgstr "Kavitaからライブラリを読み込めませんでした: {kavitaLib
 #, fuzzy
 msgid "Could not load library stats"
 msgstr "ライブラリ統計を読み込めませんでした"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Could not load more recommendations."
+msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
@@ -14797,6 +14810,10 @@ msgstr "Mainのみ"
 msgid "Main only, no specials"
 msgstr "Mainのみ、特別編なし"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Main stories"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Main story of"
@@ -18999,6 +19016,7 @@ msgstr ""
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/TagBuckets.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/stats/charts/SplitBar.tsx
 #, fuzzy
 msgid "Other"
@@ -19884,6 +19902,10 @@ msgstr "前日譚："
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo}の前日譚"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Prequels"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -21023,6 +21045,10 @@ msgstr "最近保存"
 msgid "Recommend from this"
 msgstr "これを基に推薦"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Recommendation views"
+msgstr ""
+
 #: src/api/customRails.ts
 #, fuzzy
 msgid "Recommendations"
@@ -21277,6 +21303,10 @@ msgstr "ライブラリに関連"
 #, fuzzy
 msgid "Related to your seeds"
 msgstr "シードに関連"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Relation type"
+msgstr ""
 
 #: src/components/settings/DeclinedReleasesModal.tsx
 #, fuzzy
@@ -23990,6 +24020,10 @@ msgstr "{relatedTo}の続編"
 msgid "sequel, prequel, spin-off, side story, related works, catalogue"
 msgstr "続編, 前編, スピンオフ, 外伝, 関連作品, カタログ"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Sequels"
+msgstr ""
+
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -24656,6 +24690,10 @@ msgstr "依頼者に表示"
 #, fuzzy
 msgid "Side interests"
 msgstr "関連する関心"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Side stories"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -25330,6 +25368,10 @@ msgstr "スピンオフ："
 #, fuzzy
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo}のスピンオフ"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Spin-offs"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx

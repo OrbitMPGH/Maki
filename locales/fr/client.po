@@ -3252,6 +3252,10 @@ msgstr "{shown} +{more} de plus"
 msgid "{shownCount, plural, one {# series} other {# series}}"
 msgstr "{shownCount, plural, one {# série} many {# séries} other {# séries}}"
 
+#: src/pages/DiscoverPage.tsx
+msgid "{similarCount, plural, one {All # pick shown} other {All # picks shown}}"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "{siteName} languages"
@@ -4970,6 +4974,7 @@ msgstr "Agrégateur"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -6822,6 +6827,10 @@ msgstr "Le repli sur le catalogue est actif. Les poids d'ajout personnels néces
 msgid "Catalogue feeds"
 msgstr "Flux du catalogue"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Catalogue filters apply to recommendations, not direct relations."
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -8512,6 +8521,10 @@ msgstr "Impossible de charger les bibliothèques depuis Kavita : {kavitaLibrarie
 #, fuzzy
 msgid "Could not load library stats"
 msgstr "Impossible de charger les statistiques de la bibliothèque"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Could not load more recommendations."
+msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
@@ -14797,6 +14810,10 @@ msgstr "Main uniquement"
 msgid "Main only, no specials"
 msgstr "Main uniquement, sans chapitres spéciaux"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Main stories"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Main story of"
@@ -18999,6 +19016,7 @@ msgstr ""
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/TagBuckets.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/stats/charts/SplitBar.tsx
 #, fuzzy
 msgid "Other"
@@ -19884,6 +19902,10 @@ msgstr "Préquelle de"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "Préquelle de {relatedTo}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Prequels"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -21023,6 +21045,10 @@ msgstr "Enregistré récemment"
 msgid "Recommend from this"
 msgstr "Recommander à partir de ceci"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Recommendation views"
+msgstr ""
+
 #: src/api/customRails.ts
 #, fuzzy
 msgid "Recommendations"
@@ -21277,6 +21303,10 @@ msgstr "Associé à votre bibliothèque"
 #, fuzzy
 msgid "Related to your seeds"
 msgstr "Associé à vos titres de départ"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Relation type"
+msgstr ""
 
 #: src/components/settings/DeclinedReleasesModal.tsx
 #, fuzzy
@@ -23990,6 +24020,10 @@ msgstr "Suite de {relatedTo}"
 msgid "sequel, prequel, spin-off, side story, related works, catalogue"
 msgstr "suite, préquelle, spin-off, histoire parallèle, œuvres liées, catalogue"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Sequels"
+msgstr ""
+
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -24656,6 +24690,10 @@ msgstr "Affiché à la personne qui l'a demandé"
 #, fuzzy
 msgid "Side interests"
 msgstr "Centres d'intérêt secondaires"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Side stories"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -25330,6 +25368,10 @@ msgstr "Dérivé de"
 #, fuzzy
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off de {relatedTo}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Spin-offs"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx

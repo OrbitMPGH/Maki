@@ -129,7 +129,32 @@ function withoutTitle(value: unknown, id: number): unknown {
       'providerId' in item && Number(item.providerId) === id))
     .map((item) => withoutTitle(item, id))
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withoutTitle(item, id)]))
+    const obj = value as Record<string, unknown>
+    if (Array.isArray(obj.pages)) {
+      let removedSimilar = 0
+      const pages = obj.pages.map((page) => {
+        if (page && typeof page === 'object' && Array.isArray((page as Record<string, unknown>).similar)) {
+          const before = ((page as Record<string, unknown>).similar as unknown[]).length
+          const nextPage = withoutTitle(page, id) as Record<string, unknown>
+          const after = (nextPage.similar as unknown[]).length
+          removedSimilar += before - after
+          return nextPage
+        }
+        return withoutTitle(page, id)
+      })
+      const adjustedPages = removedSimilar > 0
+        ? pages.map((page) =>
+            page && typeof page === 'object' && typeof (page as Record<string, unknown>).totalSimilar === 'number'
+              ? {
+                  ...(page as Record<string, unknown>),
+                  totalSimilar: Math.max(0, ((page as Record<string, unknown>).totalSimilar as number) - removedSimilar),
+                }
+              : page,
+          )
+        : pages
+      return { ...obj, pages: adjustedPages }
+    }
+    return Object.fromEntries(Object.entries(obj).map(([key, item]) => [key, withoutTitle(item, id)]))
   }
   return value
 }

@@ -1,7 +1,7 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
-import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -16,6 +16,7 @@ import {
   Tabs,
   Text,
   Tooltip,
+  useMatches,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal,
@@ -32,8 +33,13 @@ import {
   IconUsers,
 } from '../lib/icons'
 import { useIsFetching } from '@tanstack/react-query'
+import type { MessageDescriptor } from '@lingui/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import { formatNumber } from '../format'
+import { useLabel } from '../i18n-context'
+import { pageScroller } from '../lib/pageScroll'
+import { onRovingKeyDown } from '../lib/rovingFocus'
 import { notifications } from '../lib/toast'
 import {
   useDiscover,
@@ -138,6 +144,18 @@ import { Callout } from '../components/ui/Callout'
 
 const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
 
+const RELATION_KIND_ORDER = ['Sequel', 'Prequel', 'Spin-off', 'Side story', 'Main story'] as const
+const RELATION_KIND_LABELS: Record<string, MessageDescriptor> = {
+  Sequel: msg`Sequels`,
+  Prequel: msg`Prequels`,
+  'Spin-off': msg`Spin-offs`,
+  'Side story': msg`Side stories`,
+  'Main story': msg`Main stories`,
+}
+const OTHER_RELATION_LABEL = msg`Other`
+
+type RecommendedSection = 'similar' | 'related'
+
 function migrateBrowseDensity() {
   try {
     if (localStorage.getItem('discover-density') !== null) return
@@ -191,6 +209,43 @@ function PosterSkeletons({
   viewMode?: 'grid' | 'list'
 }) {
   return <SharedPosterSkeletons density={density} viewMode={viewMode} />
+}
+
+function NextPageSkeleton({
+  density,
+  viewMode,
+}: {
+  density: Density
+  viewMode: 'grid' | 'list'
+}) {
+  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  if (viewMode === 'list') {
+    const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+    return (
+      <Stack gap="xs" className="recommended-next-skeleton" aria-hidden>
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className={`series-row ${density}`}>
+            <Skeleton
+              radius="var(--radius-thumb)"
+              style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
+            />
+            <div className="row-body">
+              <Skeleton h={14} w="42%" mb="sm" />
+              <Skeleton h={10} w="68%" mb="sm" />
+              <Skeleton h={10} w="24%" />
+            </div>
+          </div>
+        ))}
+      </Stack>
+    )
+  }
+  return (
+    <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md" className="recommended-next-skeleton" aria-hidden>
+      {Array.from({ length: columns }, (_, i) => (
+        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
+      ))}
+    </SimpleGrid>
+  )
 }
 
 function DiscoverHeroSkeleton() {
@@ -263,10 +318,14 @@ function DiscoverGenreSkeleton() {
  */
 function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget: HTMLElement | null }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
+  const tabsId = useId()
   const { data: library } = useSeries()
   const coverFor = useLibraryCoverLookup()
   const { data: rootFolders } = useRootFolders()
   const { viewMode, density } = prefs
+  const [section, setSection] = usePageState<RecommendedSection | null>(`${MEM}:section`, null)
+  const [relationKind, setRelationKind] = useState('all')
 
   // --- customization controls ---
   // Remembered for the tab session (see usePageState): the bar is a dozen controls, and losing
@@ -424,14 +483,104 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     setHydrated,
   ])
 
-  const { data, isFetching, isPlaceholderData, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useRecommendations(applied, hydrated, true)
+  const {
+    data,
+    isFetching,
+    isPlaceholderData,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useRecommendations(applied, hydrated, true)
   // The headings describe the picks on screen, which trail the bar while a live change loads.
   const appliedSeeded = (applied.seedIds?.length ?? 0) > 0
   const appliedCustomized =
     appliedSeeded || applied.filters != null || applied.obscurity != null || applied.diversity != null
-  const related = data?.pages[0]?.related ?? []
-  const similar = data?.pages.flatMap((p) => p.similar) ?? []
+  const related = useMemo(() => data?.pages[0]?.related ?? [], [data])
+  const similar = useMemo(() => data?.pages.flatMap((p) => p.similar) ?? [], [data])
+  const similarCount = similar.length
+  const totalSimilar = hasNextPage
+    ? Math.max(data?.pages[0]?.totalSimilar ?? 0, similarCount)
+    : similarCount
+  const showSubTabs = related.length > 0
+  const activeSection: RecommendedSection =
+    section === 'related' && related.length === 0
+      ? 'similar'
+      : section != null
+        ? section
+        : !appliedCustomized && similarCount === 0 && related.length > 0
+          ? 'related'
+          : 'similar'
+  const similarTabId = `${tabsId}-tab-similar`
+  const relatedTabId = `${tabsId}-tab-related`
+  const similarPanelId = `${tabsId}-panel-similar`
+  const relatedPanelId = `${tabsId}-panel-related`
+
+  const relationKinds = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of related) {
+      const kind = item.relationKind ?? ''
+      counts.set(kind, (counts.get(kind) ?? 0) + 1)
+    }
+    const ordered: { value: string; count: number }[] = []
+    for (const kind of RELATION_KIND_ORDER) {
+      const count = counts.get(kind)
+      if (count) {
+        ordered.push({ value: kind, count })
+        counts.delete(kind)
+      }
+    }
+    for (const [value, count] of counts) {
+      ordered.push({ value, count })
+    }
+    return ordered
+  }, [related])
+
+  const activeRelationKind =
+    relationKind !== 'all' && relationKinds.some((k) => k.value === relationKind) ? relationKind : 'all'
+  const visibleRelated = useMemo(
+    () =>
+      activeRelationKind === 'all'
+        ? related
+        : related.filter((item) => (item.relationKind ?? '') === activeRelationKind),
+    [related, activeRelationKind],
+  )
+
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (
+      activeSection !== 'similar' ||
+      !sentinel ||
+      !hasNextPage ||
+      isFetching ||
+      isFetchingNextPage ||
+      isFetchNextPageError ||
+      isPlaceholderData
+    ) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          void fetchNextPage()
+        }
+      },
+      { root: pageScroller(), rootMargin: '0px 0px 600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [
+    activeSection,
+    sentinel,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    isPlaceholderData,
+    fetchNextPage,
+    similarCount,
+  ])
 
   const currentFilters = () => {
     const filters: RecommendationFilters = {}
@@ -533,8 +682,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     setApplied((prev) => ({ nonce: prev.nonce }))
   }
 
-  const isCustomized =
-    seedIds.length > 0 ||
+  const hasCatalogueFilters =
     years[0] > YEAR_MIN ||
     years[1] < YEAR_MAX ||
     types.length > 0 ||
@@ -547,6 +695,8 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
     diversity !== 0 ||
     contentRatings.length > 0 ||
     credits.length > 0
+
+  const isCustomized = seedIds.length > 0 || hasCatalogueFilters
 
 
   // --- detail modal ---
@@ -565,14 +715,14 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   const seedCover = useSeedCover()
 
   const luckyItems = useMemo(() => {
+    const source = activeSection === 'related' ? visibleRelated : similar
     const seen = new Set<string>()
-    const pages = data?.pages ?? []
-    return [...(pages[0]?.related ?? []), ...pages.flatMap((p) => p.similar)].filter((item) => {
+    return source.filter((item) => {
       if (seen.has(item.providerId)) return false
       seen.add(item.providerId)
       return true
     })
-  }, [data])
+  }, [activeSection, visibleRelated, similar])
   const luckyPool = useMemo(
     () =>
       luckyItems.map((item) => ({
@@ -673,27 +823,119 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
           toolsTarget,
         )}
 
-      <CatalogueFilterBar
-        slots={filterSlots}
-        isCustomized={isCustomized}
-        onReset={reset}
-        saved={
-          <PresetMenu
-            compact
-            current={currentFilters}
-            onLoad={loadCatalogueFilters}
-            railDraft={() => ({
-              source: 'recommendations',
-              filters: currentFilters(),
-              seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
-              obscurity,
-              diversity,
-            })}
-          />
-        }
-        onSaveAsDefault={!isCustomized && !hasAnyDefault(savedDefaults) ? undefined : saveAsDefault}
-        savingDefault={saveDefaults.isPending}
-      />
+      {showSubTabs && (
+        <div
+          className="series-tabs sub-tabs recommended-sub-tabs"
+          role="tablist"
+          aria-label={t`Recommendation views`}
+          onKeyDown={onRovingKeyDown}
+        >
+          <button
+            type="button"
+            role="tab"
+            id={similarTabId}
+            aria-controls={similarPanelId}
+            aria-selected={activeSection === 'similar'}
+            tabIndex={activeSection === 'similar' ? 0 : -1}
+            data-active={activeSection === 'similar' || undefined}
+            className="series-tab"
+            onClick={() => setSection('similar')}
+          >
+            <IconCompass size={15} aria-hidden />
+            <span>{appliedSeeded ? <Trans>Feels like your seeds</Trans> : <Trans>Because of what you collect</Trans>}</span>
+            <span className="recommended-tab-count tnum">{formatNumber(totalSimilar)}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id={relatedTabId}
+            aria-controls={relatedPanelId}
+            aria-selected={activeSection === 'related'}
+            tabIndex={activeSection === 'related' ? 0 : -1}
+            data-active={activeSection === 'related' || undefined}
+            className="series-tab"
+            onClick={() => setSection('related')}
+          >
+            <IconAffiliate size={15} aria-hidden />
+            <span>{appliedSeeded ? <Trans>Related to your seeds</Trans> : <Trans>Related to your library</Trans>}</span>
+            <span className="recommended-tab-count tnum">{formatNumber(related.length)}</span>
+          </button>
+        </div>
+      )}
+
+      <div
+        role={showSubTabs ? 'tabpanel' : undefined}
+        id={showSubTabs ? (activeSection === 'related' ? relatedPanelId : similarPanelId) : undefined}
+        aria-labelledby={showSubTabs ? (activeSection === 'related' ? relatedTabId : similarTabId) : undefined}
+      >
+      {activeSection === 'similar' ? (
+        <CatalogueFilterBar
+          slots={filterSlots}
+          isCustomized={isCustomized}
+          onReset={reset}
+          saved={
+            <PresetMenu
+              compact
+              current={currentFilters}
+              onLoad={loadCatalogueFilters}
+              railDraft={() => ({
+                source: 'recommendations',
+                filters: currentFilters(),
+                seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
+                obscurity,
+                diversity,
+              })}
+            />
+          }
+          onSaveAsDefault={!isCustomized && !hasAnyDefault(savedDefaults) ? undefined : saveAsDefault}
+          savingDefault={saveDefaults.isPending}
+        />
+      ) : (relationKinds.length > 1 || hasCatalogueFilters) && (
+        <div className="recommended-related-bar">
+          {relationKinds.length > 1 && (
+            <div className="tag-chips" role="group" aria-label={t`Relation type`}>
+              <button
+                type="button"
+                className="tag-chip filter-chip"
+                data-interactive
+                data-on={activeRelationKind === 'all' || undefined}
+                aria-pressed={activeRelationKind === 'all'}
+                onClick={() => setRelationKind('all')}
+              >
+                <span className="tag-chip-body">
+                  <Trans>All</Trans>
+                  <span className="recommended-related-count tnum">{formatNumber(related.length)}</span>
+                </span>
+              </button>
+              {relationKinds.map((kind) => {
+                const on = activeRelationKind === kind.value
+                const kindLabel = renderLabel(RELATION_KIND_LABELS[kind.value] ?? OTHER_RELATION_LABEL)
+                return (
+                  <button
+                    key={kind.value || '__other'}
+                    type="button"
+                    className="tag-chip filter-chip"
+                    data-interactive
+                    data-on={on || undefined}
+                    aria-pressed={on}
+                    onClick={() => setRelationKind(kind.value)}
+                  >
+                    <span className="tag-chip-body">
+                      {kindLabel}
+                      <span className="recommended-related-count tnum">{formatNumber(kind.count)}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {hasCatalogueFilters && (
+            <span className="recommended-related-note">
+              <Trans>Catalogue filters apply to recommendations, not direct relations.</Trans>
+            </span>
+          )}
+        </div>
+      )}
 
       {error && (
         <Callout tone="warn" role="alert">
@@ -701,13 +943,11 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
         </Callout>
       )}
       {isFetching && !data && (
-        <>
-          <PosterSkeletons density={density} viewMode={viewMode} />
-        </>
+        <PosterSkeletons density={density} viewMode={viewMode} />
       )}
 
       <div className="filter-results" data-stale={isPlaceholderData || undefined} aria-busy={isPlaceholderData || undefined}>
-        {data && related.length === 0 && similar.length === 0 && (
+        {data && related.length === 0 && similarCount === 0 && (
           <EmptyState
             title={appliedCustomized ? t`No matches` : t`Nothing to recommend yet`}
             description={appliedCustomized ? undefined : t`Add some series to your library first and Maki will suggest more like them.`}
@@ -716,13 +956,12 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
           />
         )}
 
-        {similar.length > 0 && (
+        {activeSection === 'similar' && data && similarCount === 0 && related.length > 0 && (
+          <EmptyState title={t`No matches`} />
+        )}
+
+        {activeSection === 'similar' && similarCount > 0 && (
           <>
-            <SectionHeader
-              icon={IconCompass}
-              title={appliedSeeded ? t`Feels like your seeds` : t`Because of what you collect`}
-              count={similar.length}
-            />
             {viewMode === 'grid' ? (
               <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
                 {similar.map((item) => (
@@ -749,56 +988,66 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                 ))}
               </Stack>
             )}
-            {hasNextPage && (
-              <Group justify="center" mt="md">
-                <Button
-                  variant="default"
-                  leftSection={<IconPlus size={16} />}
-                  loading={isFetchingNextPage}
-                  onClick={() => fetchNextPage()}
-                >
-                  <Trans>Show more</Trans>
+            {isFetchingNextPage && <NextPageSkeleton density={density} viewMode={viewMode} />}
+            {isFetchNextPageError && (
+              <div className="recommended-stream-end" role="alert">
+                <span><Trans>Could not load more recommendations.</Trans></span>
+                <Button variant="default" size="xs" onClick={() => void fetchNextPage()}>
+                  <Trans>Try again</Trans>
                 </Button>
-              </Group>
+              </div>
+            )}
+            {hasNextPage && !isFetchNextPageError && (
+              <div ref={setSentinel} className="recommended-stream-sentinel" aria-hidden />
+            )}
+            {!hasNextPage && !isFetchingNextPage && (
+              <div className="recommended-stream-end">
+                <span>
+                  <Plural value={similarCount} one="All # pick shown" other="All # picks shown" />
+                </span>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  leftSection={<IconRefresh size={14} />}
+                  loading={isFetching}
+                  onClick={() => apply(true)}
+                >
+                  <Trans>Refresh</Trans>
+                </Button>
+              </div>
             )}
           </>
         )}
 
-        {related.length > 0 && (
-          <>
-            <SectionHeader
-              icon={IconAffiliate}
-              title={appliedSeeded ? t`Related to your seeds` : t`Related to your library`}
-              count={related.length}
-            />
-            {viewMode === 'grid' ? (
-              <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-                {related.map((item) => (
-                  <EngineCard
-                    key={item.providerId}
-                    item={item}
-                    inLibrarySeriesId={seriesIdFor(item)}
-                    onOpen={setDetailItem}
-                    seedCoverUrl={seedCover(item)}
-                  />
-                ))}
-              </SimpleGrid>
-            ) : (
-              <Stack gap="xs">
-                {related.map((item) => (
-                  <RecommendationRow
-                    key={item.providerId}
-                    item={item}
-                    inLibrarySeriesId={seriesIdFor(item)}
-                    density={density}
-                    onOpen={setDetailItem}
-                    reasonOverride={engineReason(item)?.text}
-                  />
-                ))}
-              </Stack>
-            )}
-          </>
+        {activeSection === 'related' && visibleRelated.length > 0 && (
+          viewMode === 'grid' ? (
+            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+              {visibleRelated.map((item) => (
+                <EngineCard
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  onOpen={setDetailItem}
+                  seedCoverUrl={seedCover(item)}
+                />
+              ))}
+            </SimpleGrid>
+          ) : (
+            <Stack gap="xs">
+              {visibleRelated.map((item) => (
+                <RecommendationRow
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  density={density}
+                  onOpen={setDetailItem}
+                  reasonOverride={engineReason(item)?.text}
+                />
+              ))}
+            </Stack>
+          )
         )}
+      </div>
       </div>
 
       <DiscoverDetailModal

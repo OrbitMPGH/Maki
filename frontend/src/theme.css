@@ -4469,6 +4469,63 @@ button.site-chip:hover {
   margin-top: 0;
 }
 
+.recommended-sub-tabs {
+  margin-bottom: var(--mantine-spacing-md);
+}
+@media (max-width: 36em) {
+  .recommended-sub-tabs {
+    gap: 16px;
+  }
+  .recommended-sub-tabs .series-tab > svg {
+    display: none;
+  }
+}
+.recommended-tab-count {
+  color: var(--ink-4);
+  font-weight: var(--fw-medium);
+}
+.series-tab[data-active] .recommended-tab-count {
+  color: var(--ink-3);
+}
+.recommended-related-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: var(--mantine-spacing-md);
+}
+.recommended-related-count {
+  margin-inline-start: 4px;
+  color: var(--ink-4);
+  font-weight: var(--fw-medium);
+}
+.filter-chip[data-on] .recommended-related-count {
+  color: var(--ink-2);
+}
+.recommended-related-note {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.recommended-stream-sentinel {
+  height: 1px;
+}
+.recommended-next-skeleton {
+  margin-top: var(--mantine-spacing-md);
+}
+.recommended-stream-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: var(--mantine-spacing-xl);
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+
 /* Initial Discover paint follows the current feature band instead of dropping straight into a
    generic poster grid. The geometry stays local because the real hero owns richer shared rules. */
 .discover-loading-hero {

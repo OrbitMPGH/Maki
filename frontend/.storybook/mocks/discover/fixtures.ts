@@ -447,11 +447,11 @@ export const presets: DiscoverPreset[] = [
 
 export const recommendedPicks: RecommendationItem[] = [
   catalogueItem(0, { relationKind: 'Sequel', relatedToTitle: catalogue[4].title, relatedToId: String(catalogue[4].mangaBakaId) }),
-  catalogueItem(3, { authorMatch: true }),
-  catalogueItem(6, { coRead: true, coReadWithTitle: catalogue[1].title, coReadWithId: String(catalogue[1].mangaBakaId) }),
+  catalogueItem(3, { relationKind: 'Spin-off', relatedToTitle: catalogue[1].title, relatedToId: String(catalogue[1].mangaBakaId) }),
+  catalogueItem(6, { relationKind: 'Side story', relatedToTitle: catalogue[2].title, relatedToId: String(catalogue[2].mangaBakaId) }),
   catalogueItem(10, { tasteMatch: true }),
-  catalogueItem(12),
-  catalogueItem(14),
+  catalogueItem(12, { authorMatch: true }),
+  catalogueItem(14, { coRead: true, coReadWithTitle: catalogue[1].title, coReadWithId: String(catalogue[1].mangaBakaId) }),
   ownedItem(9),
   catalogueItem(18, { becauseOfTitle: catalogue[2].title, becauseOfId: String(catalogue[2].mangaBakaId) }),
   catalogueItem(21),
@@ -470,6 +470,7 @@ export function recommendationsPage(page: number): RecommendationsResult {
     page,
     hasMore: page === 0,
     poolVersion: 'story-pool',
+    totalSimilar: recommendedPicks.length - 3,
   }
 }
 

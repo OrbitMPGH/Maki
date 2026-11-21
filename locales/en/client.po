@@ -2682,6 +2682,10 @@ msgstr "{shown} +{more} more"
 msgid "{shownCount, plural, one {# series} other {# series}}"
 msgstr "{shownCount, plural, one {# series} other {# series}}"
 
+#: src/pages/DiscoverPage.tsx
+msgid "{similarCount, plural, one {All # pick shown} other {All # picks shown}}"
+msgstr "{similarCount, plural, one {All # pick shown} other {All # picks shown}}"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{siteName} languages"
 msgstr "{siteName} languages"
@@ -4083,6 +4087,7 @@ msgstr "Aggregator"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -5614,6 +5619,10 @@ msgstr "Catalogue fallback is active. Personal add weights need semantic ranking
 msgid "Catalogue feeds"
 msgstr "Catalogue feeds"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Catalogue filters apply to recommendations, not direct relations."
+msgstr "Catalogue filters apply to recommendations, not direct relations."
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Catalogue title {id}"
@@ -6999,6 +7008,10 @@ msgstr "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Could not load library stats"
 msgstr "Could not load library stats"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Could not load more recommendations."
+msgstr "Could not load more recommendations."
 
 #: src/components/notes/NotesPanel.tsx
 msgid "Could not load the notes."
@@ -12154,6 +12167,10 @@ msgstr "Main only"
 msgid "Main only, no specials"
 msgstr "Main only, no specials"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Main stories"
+msgstr "Main stories"
+
 #: src/components/ui/DiscoverRail.tsx
 msgid "Main story of"
 msgstr "Main story of"
@@ -15591,6 +15608,7 @@ msgstr "Originality"
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/TagBuckets.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/stats/charts/SplitBar.tsx
 msgid "Other"
 msgstr "Other"
@@ -16312,6 +16330,10 @@ msgstr "Prequel to"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel to {relatedTo}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Prequels"
+msgstr "Prequels"
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Press a key, Esc cancels"
@@ -17250,6 +17272,10 @@ msgstr "Recently saved"
 msgid "Recommend from this"
 msgstr "Recommend from this"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Recommendation views"
+msgstr "Recommendation views"
+
 #: src/api/customRails.ts
 msgid "Recommendations"
 msgstr "Recommendations"
@@ -17455,6 +17481,10 @@ msgstr "Related to your library"
 #: src/pages/DiscoverPage.tsx
 msgid "Related to your seeds"
 msgstr "Related to your seeds"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Relation type"
+msgstr "Relation type"
 
 #: src/components/settings/DeclinedReleasesModal.tsx
 msgid "Release"
@@ -19688,6 +19718,10 @@ msgstr "Sequel to {relatedTo}"
 msgid "sequel, prequel, spin-off, side story, related works, catalogue"
 msgstr "sequel, prequel, spin-off, side story, related works, catalogue"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Sequels"
+msgstr "Sequels"
+
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -20233,6 +20267,10 @@ msgstr "Shown to whoever asked"
 #: src/api/hooks.ts
 msgid "Side interests"
 msgstr "Side interests"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Side stories"
+msgstr "Side stories"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Side story of"
@@ -20784,6 +20822,10 @@ msgstr "Spin-off of"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off of {relatedTo}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Spin-offs"
+msgstr "Spin-offs"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx

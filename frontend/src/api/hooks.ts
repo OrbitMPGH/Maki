@@ -313,6 +313,7 @@ export interface RecommendationsResult {
   hasMore: boolean
   poolVersion?: string | null
   restartRequired?: boolean
+  totalSimilar?: number
 }
 
 export interface RecommendationFilters {
