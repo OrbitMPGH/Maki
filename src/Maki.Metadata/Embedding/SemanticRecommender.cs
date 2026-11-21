@@ -104,11 +104,6 @@ public class SemanticRecommender(
     /// </summary>
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
-    /// <summary>
-    /// Whether this instance can build compact ranked pools via <see cref="GetSimilarPoolAsync"/>
-    /// for lazy per-page hydration. False only for test doubles that pass a null vector cache and
-    /// override <see cref="GetSimilarAsync"/> directly.
-    /// </summary>
     public virtual bool SupportsCompactPool => cache is not null;
 
     /// <summary>
@@ -361,7 +356,7 @@ public class SemanticRecommender(
 
         using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
         conn.Open();
-        return await MangaBakaLocalStore.HydratePicksAsync(conn, string.Empty, pool.Picks, pool.Seeds, ct);
+        return await MangaBakaLocalStore.HydratePicksAsync(conn, pool.Picks, pool.Seeds, ct);
     }
 
     /// <summary>
@@ -2538,18 +2533,42 @@ public class SemanticRecommender(
             return winners;
         }
 
-        if (targetDepth > limit && scored.Count > pool.Count)
-        {
-            winners.AddRange(scored.Skip(pool.Count));
-        }
-
         var limits = ShelfFame.Limits(
             seedIds.Distinct().Select(id => (
                 index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
                 seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
             tuning.FameCapRatio,
             tuning.FameCapPseudoSeeds);
-        return ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, targetDepth);
+        // Defer the calibrated head over the `limit * 3` window alone so `depth > limit` never pulls
+        // tail rows into the first `limit` slots (or shifts `AttributionCutoff`).
+        var head = ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, limit);
+        if (targetDepth <= head.Count)
+        {
+            return head;
+        }
+
+        var inHead = head.Select(c => c.Row).ToHashSet();
+        var tailCandidates = new List<Candidate>(winners.Count - head.Count + Math.Max(0, scored.Count - pool.Count));
+        foreach (var candidate in winners)
+        {
+            if (!inHead.Contains(candidate.Row))
+            {
+                tailCandidates.Add(candidate);
+            }
+        }
+
+        if (scored.Count > pool.Count)
+        {
+            tailCandidates.AddRange(scored.Skip(pool.Count));
+        }
+
+        if (tailCandidates.Count == 0)
+        {
+            return head;
+        }
+
+        head.AddRange(ShelfFame.Defer(tailCandidates, c => index.PopularityAt(c.Row), limits, targetDepth - head.Count));
+        return head;
     }
 
     /// <summary>
@@ -2595,18 +2614,6 @@ public class SemanticRecommender(
         return (mix, typeCount);
     }
 
-    /// <summary>
-    /// Pre-spoiler tag names retained per compact pick so per-page hydration can apply each series'
-    /// own <c>tags_v2</c> spoiler filter and still keep four chips without reloading the vector index.
-    /// </summary>
-    private const int MaxCandidateTags = 16;
-
-    /// <summary>
-    /// Captures every ranking-derived field while the vector index is pinned: matched genres,
-    /// weighted non-spoiler tag candidates, optional franchise component, and ordered seed ids for
-    /// "Feels like" and "Fans of" reasons. Per-page hydration then needs only a primary-key lookup
-    /// against the dump.
-    /// </summary>
     private static async Task<RankedRecommendationPool> BuildCompactPoolAsync(
         SqliteConnection conn,
         VectorIndex index,
@@ -2701,7 +2708,6 @@ public class SemanticRecommender(
                     .Select(m => vocab.TryGetValue(m.Id, out var info) && !info.IsSpoiler ? info.Name : null)
                     .OfType<string>()
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Take(MaxCandidateTags)
                     .ToList();
 
             var feelSeed = winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff

@@ -162,4 +162,35 @@ public class RecommendationReasonsTests
             }
         }
     }
+
+    [Fact]
+    public void BalanceSlice_matches_Balance_after_suppressing_earlier_page_items()
+    {
+        var seeds = Enumerable.Range(1, 4).Select(i => new ReasonSeed($"{i}", $"Seed {i}", null)).ToArray();
+        var suppressed = new HashSet<long> { 1, 2, 5, 8, 12 };
+        var hydrated = Enumerable.Range(1, 50)
+            .Where(i => !suppressed.Contains(i))
+            .Select(i => Feel(i, seeds[0], seeds[1], seeds[2]))
+            .ToList();
+        var compact = Enumerable.Range(1, 50)
+            .Where(i => !suppressed.Contains(i))
+            .Select(i => new RankedRecommendationPick(
+                SeriesId: i,
+                FallbackRating: 80,
+                MatchedGenres: [],
+                CandidateTags: [],
+                AuthorMatch: false,
+                CoRecommended: false,
+                CoRead: false,
+                TasteMatch: false,
+                FeelSeedIds: [1L, 2L, 3L]))
+            .ToList();
+
+        var full = RecommendationReasons.Balance(hydrated);
+        var page1 = RecommendationReasons.BalanceSlice(compact, skip: 18, take: 20);
+
+        Assert.Equal(
+            full.Skip(18).Take(20).Select(p => p.BecauseOfId),
+            page1.Select(p => p.BalancedFeelSeedId?.ToString()));
+    }
 }

@@ -12,11 +12,6 @@ public enum PoolOrigin
     Rail,
 }
 
-/// <summary>
-/// One cached recommendation pool. Semantic builds store <see cref="CompactSimilar"/> plus
-/// <see cref="Seeds"/> and hydrate only the requested 40-item page from the dump; the SQL fallback
-/// (and test doubles that override <c>GetSimilarAsync</c>) store <see cref="HydratedSimilar"/>.
-/// </summary>
 internal sealed record CachedRecommendationPool(
     IReadOnlyList<MangaBakaRecommendation> Related,
     IReadOnlyList<RankedRecommendationPick>? CompactSimilar,

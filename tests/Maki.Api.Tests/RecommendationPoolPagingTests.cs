@@ -88,6 +88,7 @@ public class RecommendationPoolPagingTests : IDisposable
         }
 
         public string CurrentDumpStamp { get; set; } = "dump-v1";
+        public Action? OnHydrate { get; set; }
         public List<int> HydratedBatchSizes { get; } = [];
 
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
@@ -109,6 +110,7 @@ public class RecommendationPoolPagingTests : IDisposable
             CancellationToken ct = default)
         {
             HydratedBatchSizes.Add(picks.Count);
+            OnHydrate?.Invoke();
             IReadOnlyList<MangaBakaRecommendation> result = picks
                 .Select(p =>
                 {
@@ -180,12 +182,13 @@ public class RecommendationPoolPagingTests : IDisposable
     }
 
     [Fact]
-    public async Task Hiding_a_title_mid_scroll_keeps_PoolVersion_and_does_not_restart_or_duplicate()
+    public async Task Hiding_a_title_mid_scroll_keeps_PoolVersion_and_does_not_skip_or_duplicate()
     {
         var (service, recommender, _) = Create(120);
         var user = new TestCurrentUser(1);
 
         var page0 = await service.GetAsync(new RecommendationRequest(SeedIds: [1], Page: 0), user);
+        Assert.Equal(40, page0.NextCursor);
         var hiddenId = long.Parse(page0.Similar[5].ProviderId);
         using (var db = _db.NewContext())
         {
@@ -200,15 +203,135 @@ public class RecommendationPoolPagingTests : IDisposable
         }
 
         var page1 = await service.GetAsync(
-            new RecommendationRequest(SeedIds: [1], Page: 1, PoolVersion: page0.PoolVersion), user);
+            new RecommendationRequest(SeedIds: [1], Page: 1, PoolVersion: page0.PoolVersion, Cursor: page0.NextCursor),
+            user);
 
         Assert.Equal(1, recommender.Builds);
         Assert.False(page1.RestartRequired);
         Assert.Equal(page0.PoolVersion, page1.PoolVersion);
         Assert.Equal(1, page1.Page);
         Assert.Equal(119, page1.TotalSimilar);
+        // Rank 41 ("1041") must not be skipped after hiding rank 6 on page 0.
+        Assert.Equal("1041", page1.Similar[0].ProviderId);
+        Assert.Equal(80, page1.NextCursor);
         Assert.DoesNotContain(page1.Similar, p => p.ProviderId == hiddenId.ToString());
         Assert.Empty(page0.Similar.Select(p => p.ProviderId).Intersect(page1.Similar.Select(p => p.ProviderId)));
+    }
+
+    [Fact]
+    public async Task Expiring_dismissal_mid_scroll_does_not_duplicate_boundary_card()
+    {
+        var (service, recommender, _) = Create(120);
+        var user = new TestCurrentUser(1);
+
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1,
+                ProviderId = 1006,
+                Suppression = RecommendationSuppression.Dismissed,
+                DismissedUntilUtc = DateTime.UtcNow.AddMinutes(5),
+                UpdatedAtUtc = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Page 0 skips dismissed rank 6 and returns 40 visible items ending at rank 41 ("1041").
+        var page0 = await service.GetAsync(new RecommendationRequest(SeedIds: [1], Page: 0), user);
+        Assert.Equal("1041", page0.Similar[^1].ProviderId);
+        Assert.Equal(41, page0.NextCursor);
+
+        // Dismissal expires before page 1 is requested.
+        using (var db = _db.NewContext())
+        {
+            var row = db.RecommendationFeedback.Single(x => x.ProviderId == 1006);
+            row.DismissedUntilUtc = DateTime.UtcNow.AddMinutes(-1);
+            await db.SaveChangesAsync();
+        }
+
+        var page1 = await service.GetAsync(
+            new RecommendationRequest(SeedIds: [1], Page: 1, PoolVersion: page0.PoolVersion, Cursor: page0.NextCursor),
+            user);
+
+        Assert.Equal(1, recommender.Builds);
+        Assert.False(page1.RestartRequired);
+        Assert.Equal("1042", page1.Similar[0].ProviderId);
+        Assert.Empty(page0.Similar.Select(p => p.ProviderId).Intersect(page1.Similar.Select(p => p.ProviderId)));
+    }
+
+    [Fact]
+    public async Task Process_restart_changes_PoolVersion_and_restarts_stale_pager()
+    {
+        var (firstService, _, _) = Create(120);
+        var (restartedService, _, _) = Create(120);
+        var user = new TestCurrentUser(1);
+
+        var page0 = await firstService.GetAsync(new RecommendationRequest(SeedIds: [1], Page: 0), user);
+        var next = await restartedService.GetAsync(
+            new RecommendationRequest(SeedIds: [1], Page: 1, PoolVersion: page0.PoolVersion, Cursor: page0.NextCursor),
+            user);
+
+        Assert.NotEqual(page0.PoolVersion, next.PoolVersion);
+        Assert.True(next.RestartRequired);
+        Assert.Equal(0, next.Page);
+        Assert.Equal("1001", next.Similar[0].ProviderId);
+    }
+
+    [Fact]
+    public async Task Mid_hydration_dump_swap_rebuilds_and_restarts_cleanly()
+    {
+        var (service, recommender, store) = Create(120);
+        var user = new TestCurrentUser(1);
+
+        var page0 = await service.GetAsync(new RecommendationRequest(SeedIds: [1], Page: 0), user);
+        var swapped = false;
+        store.OnHydrate = () =>
+        {
+            if (swapped)
+            {
+                return;
+            }
+
+            swapped = true;
+            store.CurrentDumpStamp = "dump-v2";
+        };
+
+        var next = await service.GetAsync(
+            new RecommendationRequest(SeedIds: [1], Page: 1, PoolVersion: page0.PoolVersion, Cursor: page0.NextCursor),
+            user);
+
+        Assert.Equal(2, recommender.Builds);
+        Assert.True(next.RestartRequired);
+        Assert.Equal(0, next.Page);
+        Assert.NotEqual(page0.PoolVersion, next.PoolVersion);
+        Assert.Equal("1001", next.Similar[0].ProviderId);
+    }
+
+    [Fact]
+    public void DumpStamp_changes_when_real_dump_file_is_rewritten()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "maki-dumpstamp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "mangabaka.db");
+            var store = new MangaBakaLocalStore(
+                new MangaBakaDumpOptions(path, dir), NullLogger<MangaBakaLocalStore>.Instance);
+
+            Assert.Equal(string.Empty, store.DumpStamp());
+            File.WriteAllText(path, "v1");
+            var first = store.DumpStamp();
+            Assert.NotEmpty(first);
+
+            File.WriteAllText(path, "v2-longer-content");
+            var second = store.DumpStamp();
+            Assert.NotEqual(first, second);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     [Fact]

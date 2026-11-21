@@ -73,11 +73,7 @@ public class MangaBakaLocalStore(
     public virtual Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         Task.FromResult(File.Exists(options.DatabasePath));
 
-    /// <summary>
-    /// Identifies the dump file currently on disk (write ticks and length), or empty when absent.
-    /// Used to version cached pools that lazily hydrate from the dump across pages, so a dump swap
-    /// invalidates the pool rather than serving missing or merged rows.
-    /// </summary>
+    /// <summary>Write ticks and length of the dump file on disk, or empty when absent.</summary>
     public virtual string DumpStamp()
     {
         if (string.IsNullOrEmpty(options.DatabasePath))
@@ -760,6 +756,25 @@ public class MangaBakaLocalStore(
         }
 
         var ownedSet = owned.ToHashSet();
+        var reverseAlternatives = new Dictionary<long, List<long>>();
+        foreach (var other in ownedSet)
+        {
+            if (!rows.TryGetValue(other, out var mine) || mine.Alternatives.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var target in mine.Alternatives)
+            {
+                if (!reverseAlternatives.TryGetValue(target, out var list))
+                {
+                    reverseAlternatives[target] = list = [];
+                }
+
+                list.Add(other);
+            }
+        }
+
         foreach (var id in candidates)
         {
             if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not double length)
@@ -767,21 +782,37 @@ public class MangaBakaLocalStore(
                 continue;
             }
 
-            foreach (var other in ownedSet)
+            if (MatchesAny(pick.Alternatives, id, pick, length, ownedSet, rows)
+                || (reverseAlternatives.TryGetValue(id, out var linked) && MatchesAny(linked, id, pick, length, ownedSet, rows)))
             {
-                if (rows.TryGetValue(other, out var mine)
-                    && (pick.Alternatives.Contains(other) || mine.Alternatives.Contains(id))
-                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
-                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
-                {
-                    found.Add(id);
-                    break;
-                }
+                found.Add(id);
             }
         }
 
         return found;
+
+        static bool MatchesAny(
+            List<long> others,
+            long id,
+            (string? Type, string Native, double? Chapters, List<long> Alternatives) pick,
+            double length,
+            HashSet<long> ownedSet,
+            Dictionary<long, (string? Type, string Native, double? Chapters, List<long> Alternatives)> rows)
+        {
+            foreach (var other in others)
+            {
+                if (ownedSet.Contains(other)
+                    && rows.TryGetValue(other, out var mine)
+                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
+                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -1337,11 +1368,6 @@ public class MangaBakaLocalStore(
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
     }
 
-    /// <summary>
-    /// Hydrates a slice of compact ranked picks from the local dump in one primary-key query,
-    /// preserving the input order and applying per-series spoiler filtering to each pick's
-    /// precomputed <see cref="RankedRecommendationPick.CandidateTags"/>.
-    /// </summary>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
         IReadOnlyList<RankedRecommendationPick> picks,
         IReadOnlyDictionary<long, ReasonSeed> seeds,
@@ -1353,17 +1379,11 @@ public class MangaBakaLocalStore(
         }
 
         using var conn = Open();
-        return await HydratePicksAsync(conn, string.Empty, picks, seeds, ct);
+        return await HydratePicksAsync(conn, picks, seeds, ct);
     }
 
-    /// <summary>
-    /// Shared hydration implementation over an already-open connection (either the dump directly or
-    /// an attached <c>dump.</c> schema). Keeps <see cref="HydratePicksAsync(IReadOnlyList{RankedRecommendationPick}, IReadOnlyDictionary{long, ReasonSeed}, CancellationToken)"/>
-    /// and <see cref="SemanticRecommender.GetSimilarAsync"/> on one query and spoiler-filter path.
-    /// </summary>
     internal static async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
         SqliteConnection conn,
-        string tablePrefix,
         IReadOnlyList<RankedRecommendationPick> picks,
         IReadOnlyDictionary<long, ReasonSeed> seeds,
         CancellationToken ct = default)
@@ -1373,13 +1393,12 @@ public class MangaBakaLocalStore(
             return [];
         }
 
-        var table = $"{tablePrefix}series";
         var ids = picks.Select(p => p.SeriesId).Distinct().Take(MaxInlineIds).ToList();
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
-            $"SELECT id, {DisplayTitleSql(table)}, cover_raw_url, year, " +
+            $"SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, " +
             "description, status, rating, total_chapters, cover_x250_x1, cover_x250_x2, tags_v2 " +
-            $"FROM {table} WHERE id IN ({string.Join(",", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)))})";
+            $"FROM series WHERE id IN ({string.Join(",", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)))})";
         cmd.CommandTimeout = 600;
 
         var rows = new Dictionary<long, (

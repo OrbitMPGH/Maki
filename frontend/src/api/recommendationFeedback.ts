@@ -252,16 +252,15 @@ export function useSignalOverrides() {
 function useRefreshRecommendations() {
   const client = useQueryClient()
   return (scope: 'full' | 'lazy' = 'full') => {
-    if (scope === 'full') {
-      // Trim multi-page infinite queries back to page 0 before invalidating, or TanStack
-      // sequentially refetches every loaded page (up to 25 POSTs at PoolSize = 1000).
-      for (const [queryKey, data] of client.getQueriesData<InfiniteData<unknown>>({ queryKey: ['recommendations'] })) {
-        if (data && Array.isArray(data.pages) && data.pages.length > 1) {
-          client.setQueryData(queryKey, {
-            pages: data.pages.slice(0, 1),
-            pageParams: Array.isArray(data.pageParams) ? data.pageParams.slice(0, 1) : data.pageParams,
-          })
-        }
+    // Trim only inactive multi-page feeds so returning to Discover later refetches 1 page instead
+    // of up to 25, while an actively scrolled feed keeps its loaded pages on Undo or franchise hide.
+    for (const query of client.getQueryCache().findAll({ queryKey: ['recommendations'], type: 'inactive' })) {
+      const data = query.state.data as InfiniteData<unknown> | undefined
+      if (data && Array.isArray(data.pages) && data.pages.length > 1) {
+        client.setQueryData(query.queryKey, {
+          pages: data.pages.slice(0, 1),
+          pageParams: Array.isArray(data.pageParams) ? data.pageParams.slice(0, 1) : data.pageParams,
+        })
       }
     }
     for (const key of affectedKeys) {
@@ -307,7 +306,7 @@ export function useMutateFeedback() {
           client.setQueryData(queryKey, restored)
         }
       }
-      refresh()
+      refresh('lazy')
     },
     onSuccess: (_result, command) => {
       if (pendingOptimistic.get(command.id) === command.clientMutationId) pendingOptimistic.delete(command.id)
