@@ -11,7 +11,7 @@ import { PosterSkeletons } from '../CatalogueBrowser'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalHeading } from '../ui/ModalShell'
 import { Rail } from '../ui/Rail'
-import { DensityControl, useDensityPref } from '../ui/viewPrefs'
+import { DensityMenu, useDensityPref } from '../ui/viewPrefs'
 import { chapterLabel, serverChapterLabel } from '../../format'
 
 /**
@@ -79,7 +79,7 @@ export function AnimeResumeExpandModal({
             <Text c="var(--ink-3)" size="sm">
               <Plural value={items.length} one="# title" other="# titles" />
             </Text>
-            <DensityControl value={density} onChange={setDensity} />
+            <DensityMenu value={density} onChange={setDensity} />
           </Group>
           <SimpleGrid cols={cols} spacing="md">
             {items.map((item) => (

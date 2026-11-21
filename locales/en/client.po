@@ -1194,6 +1194,7 @@ msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# series matches} other {# series match}}"
 
 #: src/components/library/LibraryGroupHeader.tsx
+#: src/components/rails/CustomRailSection.tsx
 msgid "{count, plural, one {# series} other {# series}}"
 msgstr "{count, plural, one {# series} other {# series}}"
 

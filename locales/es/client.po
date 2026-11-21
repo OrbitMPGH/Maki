@@ -1429,6 +1429,7 @@ msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# coincidencia de serie} many {# coincidencias de series} other {# coincidencias de series}}"
 
 #: src/components/library/LibraryGroupHeader.tsx
+#: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# series} other {# series}}"
 msgstr "{count, plural, one {# serie} many {# series} other {# series}}"

@@ -95,12 +95,12 @@ import {
   DiscoverRailRow,
   EngineCard,
   EngineRailRow,
+  engineReason,
   useSeedCover,
-  RecommendationCard,
   RecommendationRow,
   type OpenItem,
 } from '../components/ui/DiscoverRail'
-import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { FilterMatchCount, useTermFilters } from '../components/CatalogueRules'
 import { PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -121,13 +121,12 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { usePageState } from '../lib/pageState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
-  DensityControl,
   DensityMenuItems,
   POSTER_COLS_BY_DENSITY,
   ToolbarMenuButton,
   ViewModeToggle,
   readStored,
-  useDensityPref,
+  ViewPrefsControls,
   writeStored,
   useViewPrefs,
   type ViewPrefs,
@@ -745,6 +744,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                     inLibrarySeriesId={seriesIdFor(item)}
                     density={density}
                     onOpen={setDetailItem}
+                    reasonOverride={engineReason(item)?.text}
                   />
                 ))}
               </Stack>
@@ -792,6 +792,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                     inLibrarySeriesId={seriesIdFor(item)}
                     density={density}
                     onOpen={setDetailItem}
+                    reasonOverride={engineReason(item)?.text}
                   />
                 ))}
               </Stack>
@@ -837,7 +838,8 @@ function FeedExpandModal({
   const [editorOpen, setEditorOpen] = useState(false)
   useModalHistory(rail != null, onClose)
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
-  const { density, setDensity, cols } = useDensityPref('discover-expand')
+  const prefs = useViewPrefs('discover-expand')
+  const seedCover = useSeedCover()
 
   // Reset filters whenever a different rail is opened. A custom rail opens with its filter loaded
   // instead, since the filter is the whole point of the rail, and so does the follow rail, whose
@@ -975,7 +977,7 @@ function FeedExpandModal({
         </Callout>
       )}
 
-      {isFetching && !items && <PosterSkeletons density={density} />}
+      {isFetching && !items && <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />}
 
       {items && items.length === 0 && (
         <EmptyState
@@ -989,22 +991,45 @@ function FeedExpandModal({
             <Text c="var(--ink-3)" size="sm">
               <Plural value={items.length} one="# title" other="# titles" />
             </Text>
-            <DensityControl value={density} onChange={setDensity} />
+            <Group gap="xs">
+              <ViewPrefsControls prefs={prefs} />
+            </Group>
           </Group>
-          <SimpleGrid cols={cols} spacing="md">
-            {items.map((item) => (
-              <RecommendationCard
-                key={item.providerId}
-                item={item}
-                inLibrarySeriesId={seriesIdFor(item)}
-                onOpen={onOpenItem}
-                savedFrom={expandSource}
-                // A browse rail's cards all share one reason ("popular"), so the line is noise.
-                // On the personalised rail it says which seed drove the pick, which is the point.
-                reasonOverride={personalised ? undefined : null}
-              />
-            ))}
-          </SimpleGrid>
+          {/* The personalised rails are recommender output, so they keep the engine card and its
+              reason footer, as on the rail and the Recommended tab. Catalogue and cohort rails
+              share the Add page's results. */}
+          {personalised ? (
+            prefs.viewMode === 'grid' ? (
+              <SimpleGrid cols={prefs.cols} spacing="md">
+                {items.map((item) => (
+                  <EngineCard
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    onOpen={onOpenItem}
+                    seedCoverUrl={seedCover(item)}
+                    savedFrom={expandSource}
+                  />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Stack gap="xs">
+                {items.map((item) => (
+                  <RecommendationRow
+                    key={item.providerId}
+                    item={item}
+                    inLibrarySeriesId={seriesIdFor(item)}
+                    density={prefs.density}
+                    onOpen={onOpenItem}
+                    savedFrom={expandSource}
+                    reasonOverride={engineReason(item)?.text}
+                  />
+                ))}
+              </Stack>
+            )
+          ) : (
+            <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={onOpenItem} savedFrom={expandSource} />
+          )}
           {personalised && recQuery.hasNextPage && (
             <Group justify="center" mt="md">
               <Button

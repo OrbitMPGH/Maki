@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   Button,
   Group,
@@ -43,7 +43,7 @@ import type { ShortlistSource } from '../../api/shortlist'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { SectionHeader } from '../ui/SectionHeader'
-import { useDensityPref } from '../ui/viewPrefs'
+import { DensityMenu, LIBRARY_POSTER_COLS_BY_DENSITY, useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
 import { DeleteRailDialog } from './DeleteRailDialog'
 
@@ -251,8 +251,10 @@ function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => 
   const { data, isLoading, isError, refetch } = useCustomRailItems(rail.id, 500)
   const byId = useSeriesById()
   const readTracking = useReadTracking()
-  const { cols } = useDensityPref('custom-rail-expand')
+  const { density, setDensity } = useDensityPref('custom-rail-expand')
+  const cols = LIBRARY_POSTER_COLS_BY_DENSITY[density]
   const series = (data?.seriesIds ?? []).map((id) => byId.get(id)).filter((s): s is SeriesDto => s != null)
+  const count = series.length
   return (
     <Modal opened onClose={onClose} fullScreen title={<ModalHeading title={rail.name} />}>
       {isError ? (
@@ -268,11 +270,19 @@ function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => 
           ))}
         </SimpleGrid>
       ) : (
-        <SimpleGrid cols={cols} spacing="md">
-          {series.map((s) => (
-            <CoverCard key={s.id} series={s} selectMode={false} selected={false} readTracking={readTracking} onToggle={noop} />
-          ))}
-        </SimpleGrid>
+        <>
+          <Group justify="space-between" mb="sm">
+            <Text c="var(--ink-3)" size="sm">
+              <Plural value={count} one="# series" other="# series" />
+            </Text>
+            <DensityMenu value={density} onChange={setDensity} />
+          </Group>
+          <SimpleGrid cols={cols} spacing="md">
+            {series.map((s) => (
+              <CoverCard key={s.id} series={s} selectMode={false} selected={false} readTracking={readTracking} onToggle={noop} />
+            ))}
+          </SimpleGrid>
+        </>
       )}
     </Modal>
   )
