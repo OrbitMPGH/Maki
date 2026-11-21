@@ -2096,7 +2096,8 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> LanePicks(
 /// replace the page's lowest picks outside every side taste and are spread evenly from
 /// <c>lanes2from</c> down. With <c>lanes2fame</c> (on by default) an inserted pick must not add a
 /// breach of the shipped fame cap (<see cref="ShelfFame"/>) judged on the whole shelf; one that would
-/// waits for a later slot or stays out. Not in the engine.
+/// waits for a later slot or stays out. <c>lanes2max</c> (3) caps the side tastes and <c>lanes2held</c>
+/// skips a side taste the page holds none of. Not in the engine.
 /// </summary>
 async Task<IReadOnlyList<MangaBakaRecommendation>> TopUpPicks(
     IReadOnlyList<MangaBakaRecommendation> whole, IReadOnlyList<long> seeds, IReadOnlyList<long> exclude,
@@ -2109,7 +2110,7 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> TopUpPicks(
         .OrderByDescending(g => g.Value.Weight)
         .Skip(1)
         .Where(g => g.Value.Ids.Count >= 3 && g.Value.Weight / total >= variant.Lanes2Min)
-        .Take(3)
+        .Take(variant.Lanes2Max)
         .ToList();
     if (sides.Count == 0 || whole.Count <= from)
     {
@@ -2126,7 +2127,7 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> TopUpPicks(
     {
         var have = page.Count(p => KeyOf(p) == side.Key);
         var target = (int)Math.Round(variant.Lanes2 * side.Value.Weight / total * page.Count);
-        if (target <= have)
+        if (target <= have || (variant.Lanes2Held && have == 0))
         {
             continue;
         }
@@ -4657,6 +4658,8 @@ file static class Variants
         var lanes2Min = 0.05;
         var lanes2From = 10;
         var lanes2Fame = true;
+        var lanes2Max = 3;
+        var lanes2Held = false;
         var noCrowd = lower == "nocrowd" || textOnly;
         var coGraph = !noCrowd && lower != "nograph";
         var coRead = !noCrowd && lower != "nocoread";
@@ -4764,6 +4767,14 @@ file static class Variants
             else if (key == "lanes2fame")
             {
                 lanes2Fame = value is "1" or "true";
+            }
+            else if (key == "lanes2max")
+            {
+                lanes2Max = int.Parse(value, CultureInfo.InvariantCulture);
+            }
+            else if (key == "lanes2held")
+            {
+                lanes2Held = value is "1" or "true";
             }
             else if (key == "calibrationjoint")
             {
@@ -5093,7 +5104,7 @@ file static class Variants
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
             taste, ease, easePath, obscurity, commonPath, airedWeight, airedMaxRank, airedRate, baseline,
-            priorPath, priorWeight, lanes, lanes2, lanes2Min, lanes2From, lanes2Fame);
+            priorPath, priorWeight, lanes, lanes2, lanes2Min, lanes2From, lanes2Fame, lanes2Max, lanes2Held);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -5165,7 +5176,9 @@ file sealed record Variant(
     double Lanes2 = 0,
     double Lanes2Min = 0.05,
     int Lanes2From = 10,
-    bool Lanes2Fame = true);
+    bool Lanes2Fame = true,
+    int Lanes2Max = 3,
+    bool Lanes2Held = false);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings
