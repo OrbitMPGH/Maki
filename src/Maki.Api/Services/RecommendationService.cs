@@ -524,6 +524,11 @@ public class RecommendationService(
     /// entirely of one franchise from stalling, and it is also why this cannot promote anything past
     /// a pick with no franchise: those are never held back.
     /// </para>
+    /// <para>
+    /// A pick the side-taste top-up inserted is never placed above its
+    /// <see cref="MangaBakaRecommendation.LaneFloor"/>, so the visible first picks are the ones the
+    /// page had without the top-up. Every other pick moves exactly as before.
+    /// </para>
     /// </summary>
     internal static IReadOnlyList<MangaBakaRecommendation> Spread(
         IReadOnlyList<MangaBakaRecommendation> ranked)
@@ -539,9 +544,16 @@ public class RecommendationService(
 
         while (remaining.First is { } head)
         {
-            var chosen = head;
+            LinkedListNode<MangaBakaRecommendation>? chosen = null;
+            LinkedListNode<MangaBakaRecommendation>? fallback = null;
             for (LinkedListNode<MangaBakaRecommendation>? node = head; node is not null; node = node.Next)
             {
+                if (node.Value.LaneFloor > ordered.Count)
+                {
+                    continue;
+                }
+
+                fallback ??= node;
                 if (node.Value.FranchiseId is not int franchise
                     || !placedAt.TryGetValue(franchise, out var last)
                     || ordered.Count - last >= FranchiseSpacing)
@@ -551,6 +563,7 @@ public class RecommendationService(
                 }
             }
 
+            chosen ??= fallback ?? head;
             if (chosen.Value.FranchiseId is int placed)
             {
                 placedAt[placed] = ordered.Count;

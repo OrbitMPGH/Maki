@@ -343,16 +343,13 @@ public class SemanticRecommender(
         IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
         CancellationToken ct = default)
     {
-        var whole = await RankAsync(
+        // One index for the whole build: a refresh between the scans would otherwise leave the merge
+        // unable to place lane picks the lanes found.
+        var (whole, index) = await RankAsync(
             seedIds, excludeIds, limit, filters, obscurity, seedWeights, avoidWeights, diversity, weights,
-            coGraph, coRead, taste, ease, features, graphWeight, demote, common, ct);
-        if (!lanes || _tuning.Lanes <= 0 || seedIds.Count < 2 || whole.Count <= _tuning.LanesFrom)
-        {
-            return whole;
-        }
-
-        var index = await cache.GetAsync(ct);
-        if (index is null || index.Count == 0)
+            coGraph, coRead, taste, ease, features, graphWeight, demote, common, null, ct);
+        if (!lanes || _tuning.Lanes <= 0 || seedIds.Count < 2 || whole.Count <= _tuning.LanesFrom
+            || index is null || index.Count == 0)
         {
             return whole;
         }
@@ -382,9 +379,9 @@ public class SemanticRecommender(
         var queues = new List<(List<MangaBakaRecommendation> Picks, int Need)>();
         foreach (var shortfall in ShelfLanes.Shortfalls(page, sides, KeyOf, _tuning.Lanes, _tuning.LanesHeldOnly))
         {
-            var lane = await RankAsync(
+            var (lane, _) = await RankAsync(
                 shortfall.Side.Ids, laneExclude, _tuning.LanesPage, filters, obscurity, seedWeights, avoidWeights,
-                diversity, weights, coGraph, coRead, taste, ease, null, graphWeight, demote, common, ct);
+                diversity, weights, coGraph, coRead, taste, ease, null, graphWeight, demote, common, index, ct);
             var candidates = lane
                 .Where(p => KeyOf(p) == shortfall.Side.Key && !onPage.Contains(p.ProviderId))
                 .ToList();
@@ -408,27 +405,25 @@ public class SemanticRecommender(
                 _tuning.FameCapPseudoSeeds)
             : null;
         var merged = ShelfLanes.Merge(
-            page, sides.Select(s => s.Key).ToHashSet(), queues, KeyOf, RankOf, _tuning.LanesFrom, limits);
-        var placed = merged.Select(p => p.ProviderId).ToHashSet();
-        var inserted = merged.Count(p => !onPage.Contains(p.ProviderId));
+                page, sides.Select(s => s.Key).ToHashSet(), queues, KeyOf, RankOf, _tuning.LanesFrom, limits)
+            .Select(p => onPage.Contains(p.ProviderId) ? p : p with { LaneFloor = _tuning.LanesFrom })
+            .ToList();
         logger.LogInformation(
             "Topped up {Inserted} picks from {Lanes} side taste(s) in {Elapsed:F0}ms",
-            inserted, queues.Count, (DateTime.UtcNow - started).TotalMilliseconds);
-        return merged
-            .Concat(page.Where(p => !placed.Contains(p.ProviderId)))
-            .Concat(whole.Skip(size).Where(p => !placed.Contains(p.ProviderId)))
-            .Take(limit)
-            .ToList();
+            merged.Count(p => p.LaneFloor > 0), queues.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+        return ShelfLanes.Assemble(merged, whole, size, p => p.ProviderId, limit);
     }
 
-    private async Task<IReadOnlyList<MangaBakaRecommendation>> RankAsync(
+    /// <param name="pinned">The index to rank on, so a lanes build reads one; null fetches it.</param>
+    /// <returns>The picks and the index they were ranked on, null when none was built.</returns>
+    private async Task<(IReadOnlyList<MangaBakaRecommendation> Picks, VectorIndex? Index)> RankAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters, double obscurity,
         IReadOnlyDictionary<long, double>? seedWeights,
         IReadOnlyDictionary<long, double>? avoidWeights, double diversity,
         EmbeddingMath.Weights? weights, bool coGraph, bool coRead,
         bool taste, bool ease, ICollection<EmbeddingMath.CandidateFeatures>? features, double? graphWeight,
-        IReadOnlyDictionary<long, double>? demote, bool common,
+        IReadOnlyDictionary<long, double>? demote, bool common, VectorIndex? pinned,
         CancellationToken ct)
     {
         filters ??= RecommendationFilters.None;
@@ -447,24 +442,24 @@ public class SemanticRecommender(
             && seedIds.Count >= _easeTuning.MinSeeds;
         Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
-        var index = await cache.GetAsync(ct);
+        var index = pinned ?? await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — the vector index isn't built yet");
-            return [];
+            return ([], index);
         }
 
         var plan = index.Plan(filters);
         if (plan.Impossible)
         {
-            return [];
+            return ([], index);
         }
 
         var seedVectors = store.GetVectors(seedIds);
         if (seedVectors.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");
-            return [];
+            return ([], index);
         }
 
         // Co-recommendation evidence, keyed by index row so the scan and the scoring loop can both
@@ -569,7 +564,7 @@ public class SemanticRecommender(
         var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
         if (queries.Count == 0)
         {
-            return [];
+            return ([], index);
         }
 
         // Live only when an artifact is actually loaded and the weight is positive, exactly like the
@@ -934,7 +929,7 @@ public class SemanticRecommender(
             "avoided tag)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
             injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided), tagAvoidRows);
-        return results;
+        return (results, index);
     }
 
     /// <summary>Which stage put pool row <paramref name="poolIndex"/> in: see <c>CandidateFeatures.Route</c>.</summary>
