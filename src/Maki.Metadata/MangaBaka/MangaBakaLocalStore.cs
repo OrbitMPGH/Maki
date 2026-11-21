@@ -73,6 +73,18 @@ public class MangaBakaLocalStore(
     public virtual Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         Task.FromResult(File.Exists(options.DatabasePath));
 
+    /// <summary>Write ticks and length of the dump file on disk, or empty when absent.</summary>
+    public virtual string DumpStamp()
+    {
+        if (string.IsNullOrEmpty(options.DatabasePath))
+        {
+            return string.Empty;
+        }
+
+        var info = new FileInfo(options.DatabasePath);
+        return info.Exists ? $"{info.LastWriteTimeUtc.Ticks}:{info.Length}" : string.Empty;
+    }
+
     /// <summary>
     /// Title search, reporting the spelling it fell back on when the query as typed found next to
     /// nothing.
@@ -744,6 +756,25 @@ public class MangaBakaLocalStore(
         }
 
         var ownedSet = owned.ToHashSet();
+        var reverseAlternatives = new Dictionary<long, List<long>>();
+        foreach (var other in ownedSet)
+        {
+            if (!rows.TryGetValue(other, out var mine) || mine.Alternatives.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var target in mine.Alternatives)
+            {
+                if (!reverseAlternatives.TryGetValue(target, out var list))
+                {
+                    reverseAlternatives[target] = list = [];
+                }
+
+                list.Add(other);
+            }
+        }
+
         foreach (var id in candidates)
         {
             if (ownedSet.Contains(id) || !rows.TryGetValue(id, out var pick) || pick.Native.Length < 2 || pick.Chapters is not double length)
@@ -751,21 +782,37 @@ public class MangaBakaLocalStore(
                 continue;
             }
 
-            foreach (var other in ownedSet)
+            if (MatchesAny(pick.Alternatives, id, pick, length, ownedSet, rows)
+                || (reverseAlternatives.TryGetValue(id, out var linked) && MatchesAny(linked, id, pick, length, ownedSet, rows)))
             {
-                if (rows.TryGetValue(other, out var mine)
-                    && (pick.Alternatives.Contains(other) || mine.Alternatives.Contains(id))
-                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
-                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
-                {
-                    found.Add(id);
-                    break;
-                }
+                found.Add(id);
             }
         }
 
         return found;
+
+        static bool MatchesAny(
+            List<long> others,
+            long id,
+            (string? Type, string Native, double? Chapters, List<long> Alternatives) pick,
+            double length,
+            HashSet<long> ownedSet,
+            Dictionary<long, (string? Type, string Native, double? Chapters, List<long> Alternatives)> rows)
+        {
+            foreach (var other in others)
+            {
+                if (ownedSet.Contains(other)
+                    && rows.TryGetValue(other, out var mine)
+                    && string.Equals(pick.Type, mine.Type, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(pick.Native, mine.Native, StringComparison.OrdinalIgnoreCase)
+                    && length <= (mine.Chapters ?? UnknownOwnedPilotChapters))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -1319,6 +1366,142 @@ public class MangaBakaLocalStore(
         }
 
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
+        IReadOnlyList<RankedRecommendationPick> picks,
+        IReadOnlyDictionary<long, ReasonSeed> seeds,
+        CancellationToken ct = default)
+    {
+        if (picks.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        return await HydratePicksAsync(conn, picks, seeds, ct);
+    }
+
+    internal static async Task<IReadOnlyList<MangaBakaRecommendation>> HydratePicksAsync(
+        SqliteConnection conn,
+        IReadOnlyList<RankedRecommendationPick> picks,
+        IReadOnlyDictionary<long, ReasonSeed> seeds,
+        CancellationToken ct = default)
+    {
+        if (picks.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = picks.Select(p => p.SeriesId).Distinct().Take(MaxInlineIds).ToList();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            $"SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, " +
+            "description, status, rating, total_chapters, cover_x250_x1, cover_x250_x2, tags_v2 " +
+            $"FROM series WHERE id IN ({string.Join(",", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)))})";
+        cmd.CommandTimeout = 600;
+
+        var rows = new Dictionary<long, (
+            string Title,
+            string? CoverUrl,
+            int? Year,
+            string? Description,
+            SeriesStatus Status,
+            double? Rating,
+            int? TotalChapters,
+            string? ThumbUrl,
+            string? ThumbUrlHiDpi,
+            string? TagsV2)>(ids.Count);
+        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                rows[id] = (
+                    GetString(reader, 1) ?? string.Empty,
+                    GetString(reader, 2),
+                    GetInt(reader, 3),
+                    GetString(reader, 4),
+                    MangaBakaProvider.MapStatus(GetString(reader, 5)),
+                    reader.IsDBNull(6) ? null : reader.GetDouble(6),
+                    ParseCount(GetString(reader, 7)),
+                    GetString(reader, 8),
+                    GetString(reader, 9),
+                    GetString(reader, 10));
+            }
+        }
+
+        var results = new List<MangaBakaRecommendation>(picks.Count);
+        foreach (var pick in picks)
+        {
+            if (!rows.TryGetValue(pick.SeriesId, out var row))
+            {
+                continue;
+            }
+
+            var feelSeeds = ResolveSeeds(pick.FeelSeedIds, seeds);
+            var coReadSeeds = ResolveSeeds(pick.CoReadSeedIds, seeds);
+            var feelSeed = ResolveChosen(pick.BalancedFeelSeedId ?? pick.PrimaryFeelSeedId, seeds);
+            var coReadSeed = pick.CoRead
+                ? ResolveChosen(pick.BalancedCoReadSeedId ?? pick.PrimaryCoReadSeedId, seeds)
+                : null;
+
+            results.Add(new MangaBakaRecommendation(
+                pick.SeriesId.ToString(CultureInfo.InvariantCulture),
+                row.Title,
+                row.CoverUrl,
+                row.Year,
+                row.Description,
+                row.Status,
+                row.Rating ?? pick.FallbackRating,
+                row.TotalChapters,
+                pick.MatchedGenres,
+                WithoutSpoilerTags(pick.CandidateTags, row.TagsV2).Take(4).ToList(),
+                pick.AuthorMatch,
+                RelationKind: null,
+                RelatedToTitle: null,
+                BecauseOfTitle: feelSeed?.Title,
+                ThumbUrl: row.ThumbUrl,
+                ThumbUrlHiDpi: row.ThumbUrlHiDpi,
+                CoRecommended: pick.CoRecommended,
+                CoRead: pick.CoRead,
+                TasteMatch: pick.TasteMatch,
+                FranchiseId: pick.FranchiseId,
+                CoReadWithTitle: coReadSeed?.Title,
+                BecauseOfId: feelSeed?.Id,
+                CoReadWithId: coReadSeed?.Id,
+                BecauseOfThumbUrl: feelSeed?.ThumbUrl,
+                CoReadWithThumbUrl: coReadSeed?.ThumbUrl,
+                FeelSeeds: feelSeeds,
+                CoReadSeeds: coReadSeeds)
+            {
+                LaneFloor = pick.LaneFloor,
+            });
+        }
+
+        return results;
+
+        static ReasonSeed? ResolveChosen(long? id, IReadOnlyDictionary<long, ReasonSeed> lookup) =>
+            id is { } seedId && lookup.TryGetValue(seedId, out var seed) ? seed : null;
+
+        static List<ReasonSeed>? ResolveSeeds(IReadOnlyList<long>? ids, IReadOnlyDictionary<long, ReasonSeed> lookup)
+        {
+            if (ids is not { Count: > 0 })
+            {
+                return null;
+            }
+
+            List<ReasonSeed>? list = null;
+            foreach (var id in ids)
+            {
+                if (lookup.TryGetValue(id, out var seed))
+                {
+                    (list ??= new List<ReasonSeed>(ids.Count)).Add(seed);
+                }
+            }
+
+            return list;
+        }
     }
 
     /// <summary>

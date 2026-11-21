@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
@@ -314,6 +315,7 @@ export interface RecommendationsResult {
   poolVersion?: string | null
   restartRequired?: boolean
   totalSimilar?: number
+  nextCursor?: number | null
 }
 
 export interface RecommendationFilters {
@@ -588,10 +590,15 @@ export function useRecommendations(
   /** Keeps the previous answer up while a changed request loads, for a request that follows live filters. */
   keepPrevious = false,
 ) {
+  const client = useQueryClient()
   const { refresh, ...identity } = request
   const identityKey = JSON.stringify(identity)
-  return useInfiniteQuery({
-    queryKey: ['recommendations', identity],
+  const queryKey = useMemo(
+    () => ['recommendations', JSON.parse(identityKey) as Omit<RecommendationRequest, 'refresh'>] as const,
+    [identityKey],
+  )
+  const query = useInfiniteQuery({
+    queryKey,
     // The signal lets a superseded live-apply request go: the server drops a queued pool build once
     // nobody waits on it.
     queryFn: ({ pageParam, signal }) => {
@@ -607,13 +614,22 @@ export function useRecommendations(
           ...identity,
           page: pageParam.page,
           poolVersion: pageParam.poolVersion,
+          cursor: pageParam.cursor,
           refresh: bust,
         }),
       })
     },
-    initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
+    initialPageParam: {
+      page: 0,
+      poolVersion: undefined as string | undefined,
+      cursor: undefined as number | undefined,
+    },
     getNextPageParam: (last) => (last?.hasMore
-      ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
+      ? {
+          page: last.page + 1,
+          poolVersion: last.poolVersion ?? undefined,
+          cursor: last.nextCursor ?? undefined,
+        }
       : undefined),
     // A restart page is the server saying the pool changed under us and handing back the new one
     // from the top. Everything loaded before it came from a pool that no longer exists, so keeping
@@ -630,6 +646,38 @@ export function useRecommendations(
     retry: false,
     placeholderData: keepPrevious ? keepPreviousData : undefined,
   })
+
+  // Prune superseded pre-restart pages from the raw cache as well (not only in `select`), so
+  // feedback mutations do not retain or decrement stale pages and a later refetch starts at page 0.
+  useEffect(() => {
+    const raw = client.getQueryData<
+      InfiniteData<RecommendationsResult, { page: number; poolVersion: string | undefined; cursor: number | undefined }>
+    >(queryKey)
+    if (!raw) return
+    const restart = raw.pages.findLastIndex((page) => page?.restartRequired)
+    if (restart <= 0) return
+    client.setQueryData(queryKey, {
+      pages: raw.pages.slice(restart),
+      pageParams: [{ page: 0, poolVersion: undefined, cursor: undefined }, ...raw.pageParams.slice(restart + 1)],
+    })
+  }, [client, queryKey, query.dataUpdatedAt])
+
+  // If this multi-page feed was invalidated lazily while mounted (e.g. after a hide/dismiss),
+  // trim it back to page 0 on unmount so returning to Discover refetches 1 page instead of up to 25.
+  useEffect(() => {
+    return () => {
+      const entry = client.getQueryCache().find({ queryKey })
+      if (!entry?.isStale()) return
+      const raw = entry.state.data as InfiniteData<RecommendationsResult, unknown> | undefined
+      if (!raw || !Array.isArray(raw.pages) || raw.pages.length <= 1) return
+      client.setQueryData(queryKey, {
+        pages: raw.pages.slice(0, 1),
+        pageParams: Array.isArray(raw.pageParams) ? raw.pageParams.slice(0, 1) : raw.pageParams,
+      })
+    }
+  }, [client, queryKey])
+
+  return query
 }
 
 /** One catalogue-browse rail on the Discover tab (Popular / New / Trending / …). */
@@ -1393,6 +1441,16 @@ export function useSaveHiddenContent() {
       }),
     onSuccess: (saved) => {
       queryClient.setQueryData(['discover-hidden'], saved)
+      // Changing the never-show list rebuilds the pool, so trim multi-page recommendation feeds
+      // back to page 0 before invalidating rather than refetching up to 25 pages in sequence.
+      for (const [key, data] of queryClient.getQueriesData<InfiniteData<unknown>>({ queryKey: ['recommendations'] })) {
+        if (data && Array.isArray(data.pages) && data.pages.length > 1) {
+          queryClient.setQueryData(key, {
+            pages: data.pages.slice(0, 1),
+            pageParams: Array.isArray(data.pageParams) ? data.pageParams.slice(0, 1) : data.pageParams,
+          })
+        }
+      }
       void queryClient.invalidateQueries({
         predicate: (q) => HIDDEN_SHAPED.has(String(q.queryKey[0])),
       })

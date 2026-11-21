@@ -1699,6 +1699,215 @@ public class SemanticRecommenderTests : IDisposable
             Ids(await Recommender(tuning: SmallLanes with { Lanes = 0 }).GetSimilarAsync(seeds, [], limit: 10, lanes: true)));
     }
 
+    [Fact]
+    public async Task GetSimilarPoolAsync_AtDeeperDepth_PreservesCalibratedFeaturesAndHead()
+    {
+        var vectors = new List<(long, string, float[])>
+        {
+            (501, "h", Axis(0)),
+            (502, "h", Axis(1)),
+        };
+        Add(501, "Seed One", genres: """["Action"]""");
+        Add(502, "Seed Two", genres: """["Adventure"]""");
+
+        for (var i = 1; i <= 30; i++)
+        {
+            // Ids 10..60 sit inside the famous band (popularity = id) and 2001..2024 sit outside,
+            // exercising ShelfFame.Defer alongside MMR diversity.
+            var id = i <= 6 ? i * 10 : 2000 + i;
+            Add(id, $"Pick {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((id, "h", Nudge(Blend(Axis(0), Axis(1)), 2 + (i % 8), 0.05f + (0.02f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+
+        var tuning = RecommenderTuning.Default with { CommonWeight = 0 };
+        var shallowFeatures = new List<EmbeddingMath.CandidateFeatures>();
+        var deepFeatures = new List<EmbeddingMath.CandidateFeatures>();
+        var recommender = Recommender(tuning: tuning);
+
+        var shallow = await recommender.GetSimilarPoolAsync(
+            [501, 502], [], limit: 6, depth: 6, diversity: 0.4, features: shallowFeatures);
+        var deep = await recommender.GetSimilarPoolAsync(
+            [501, 502], [], limit: 6, depth: 20, diversity: 0.4, features: deepFeatures);
+
+        // Fusion budget, injections, and hybrid scores must stay identical when only `depth` grows.
+        Assert.Equal(shallowFeatures, deepFeatures);
+        Assert.Equal(6, shallow.Picks.Count);
+        Assert.Equal(20, deep.Picks.Count);
+        Assert.Equal(
+            shallow.Picks.Select(p => p.SeriesId),
+            deep.Picks.Take(6).Select(p => p.SeriesId));
+        Assert.Equal(
+            shallow.Picks.Select(p => p.PrimaryFeelSeedId),
+            deep.Picks.Take(6).Select(p => p.PrimaryFeelSeedId));
+    }
+
+    [Fact]
+    public async Task HydratePicksAsync_WorksAfterVectorIndexUnload_AndStripsPerSeriesSpoilers()
+    {
+        Add(1, "Seed", genres: """["Fantasy"]""");
+        Add(2, "Candidate", genres: """["Fantasy","Drama"]""");
+        WriteDump();
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE series
+                SET tags_v2 = '[{"name":"Time Loop","is_spoiler":false},{"name":"Secret Twist","is_spoiler":true}]'
+                WHERE id = 2;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var embeddingStore = Store();
+        embeddingStore.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Nudge(Axis(0), 1, 0.1f))]);
+        embeddingStore.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Time Loop", 10, false),
+            [2] = new("Secret Twist", 5, false),
+        });
+        var tagBlob = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        embeddingStore.UpsertTagsBatch([(1L, tagBlob), (2L, tagBlob)]);
+
+        var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
+        var indexCache = new VectorIndexCache(Options(), dump, NullLogger<VectorIndexCache>.Instance);
+        var graph = new RecoGraphOptions(Path.Combine(_dir, "absent-reco-edges.db"), _dir);
+        var coRead = new CoReadOptions(Path.Combine(_dir, "absent-coread-edges.db"), _dir);
+        var recommender = new SemanticRecommender(
+            Options(), dump, embeddingStore, indexCache,
+            new RecoGraphCache(graph, NullLogger<RecoGraphCache>.Instance), RecoGraphTuning.Default,
+            new CoReadCache(coRead, NullLogger<CoReadCache>.Instance), CoReadTuning.Default,
+            NullLogger<SemanticRecommender>.Instance,
+            RecommenderTuning.Default with { CommonWeight = 0 });
+
+        var pool = await recommender.GetSimilarPoolAsync([1], [], limit: 10, depth: 10);
+        Assert.Single(pool.Picks);
+
+        // Simulate MAKI_VECTOR_IDLE_MINUTES unloading the vector index before a later page hydrates.
+        indexCache.Invalidate();
+        Assert.Null(indexCache.TryGetLoaded());
+
+        var localStore = new MangaBakaLocalStore(dump, NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        Assert.Null(indexCache.TryGetLoaded());
+        var pick = Assert.Single(hydrated);
+        Assert.Equal("Candidate", pick.Title);
+        Assert.Equal(["Fantasy"], pick.MatchedGenres);
+        Assert.Equal(["Time Loop"], pick.MatchedTags);
+    }
+
+    [Fact]
+    public async Task GetSimilarPoolAsync_CappedHeadStaysIdenticalWhenFameCapExhaustsWindow()
+    {
+        var vectors = new List<(long, string, float[])>
+        {
+            (5001, "h", Axis(0)),
+            (5002, "h", Axis(1)),
+        };
+        Add(5001, "Obscure Seed One", genres: """["Action"]""");
+        Add(5002, "Obscure Seed Two", genres: """["Adventure"]""");
+
+        // 18 famous candidates (ids 1..18 -> popularity rank 1..18) fill the entire `limit * 3`
+        // window (limit = 6), forcing ShelfFame.Defer to fall back to deferred famous picks inside
+        // the head. Obscure tail candidates (6001..6012) sit past rank 18 and must not displace
+        // the calibrated head when `depth` grows.
+        var centroid = Blend(Axis(0), Axis(1));
+        for (var i = 1; i <= 18; i++)
+        {
+            Add(i, $"Famous {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((i, "h", Nudge(centroid, 2 + (i % 6), 0.02f * i)));
+        }
+
+        for (var i = 1; i <= 12; i++)
+        {
+            var id = 6000 + i;
+            Add(id, $"Obscure Tail {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((id, "h", Nudge(centroid, 8 + (i % 6), 0.70f + (0.01f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+
+        var tuning = RecommenderTuning.Default with { CommonWeight = 0, FameCapPseudoSeeds = 0.01 };
+        var recommender = Recommender(tuning: tuning);
+
+        var shallow = await recommender.GetSimilarPoolAsync([5001, 5002], [], limit: 6, depth: 6);
+        var deep = await recommender.GetSimilarPoolAsync([5001, 5002], [], limit: 6, depth: 20);
+
+        Assert.Equal(6, shallow.Picks.Count);
+        Assert.Equal(20, deep.Picks.Count);
+        Assert.Equal(
+            shallow.Picks.Select(p => p.SeriesId),
+            deep.Picks.Take(6).Select(p => p.SeriesId));
+        Assert.Equal(
+            shallow.Picks.Select(p => p.PrimaryFeelSeedId),
+            deep.Picks.Take(6).Select(p => p.PrimaryFeelSeedId));
+    }
+
+    [Fact]
+    public async Task GetSimilarPoolAsync_WithLanesAndDeeperDepth_MergesLaneSeedsAndExtendsTail()
+    {
+        TwoTasteFixture();
+        long[] seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103];
+
+        var pool = await Recommender(tuning: SmallLanes).GetSimilarPoolAsync(
+            seeds, [], limit: 10, depth: 16, lanes: true);
+        var localStore = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_dumpPath, _dir), NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        Assert.Equal(16, hydrated.Count);
+        var inserted = hydrated.Take(10).Where(p => p.LaneFloor > 0).ToList();
+        Assert.NotEmpty(inserted);
+        Assert.All(inserted, p => Assert.StartsWith("200", p.ProviderId));
+        var named = inserted
+            .SelectMany(p => (p.FeelSeeds ?? []).Select(r => r.Id).Append(p.BecauseOfId))
+            .OfType<string>()
+            .ToList();
+        Assert.All(named, id => Assert.Contains(id, new[] { "101", "102", "103" }));
+    }
+
+    [Fact]
+    public async Task HydratePicksAsync_KeepsSafeTagPastSixteenPerSeriesSpoilers()
+    {
+        Add(1, "Seed", genres: """["Fantasy"]""");
+        Add(2, "Spoiler Heavy", genres: """["Fantasy"]""");
+        WriteDump();
+
+        var tagsV2 = "[" + string.Join(",",
+            Enumerable.Range(1, 17).Select(i => $$"""{"name":"Spoiler {{i}}","is_spoiler":true}""")
+                .Append("""{"name":"Safe Tag 18","is_spoiler":false}""")) + "]";
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE series SET tags_v2 = $tags WHERE id = 2;";
+            cmd.Parameters.AddWithValue("$tags", tagsV2);
+            cmd.ExecuteNonQuery();
+        }
+
+        var embeddingStore = Store();
+        embeddingStore.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Nudge(Axis(0), 1, 0.1f))]);
+        var vocab = Enumerable.Range(1, 17).ToDictionary(i => i, i => new TagInfo($"Spoiler {i}", 1, false));
+        vocab[18] = new TagInfo("Safe Tag 18", 500, false);
+        embeddingStore.UpsertVocab(vocab);
+        var blob = TagMath.Pack([.. Enumerable.Range(1, 18).Select(i => (i, TagMath.Core))]);
+        embeddingStore.UpsertTagsBatch([(1L, blob), (2L, blob)]);
+
+        var pool = await Recommender(tuning: RecommenderTuning.Default with { CommonWeight = 0 })
+            .GetSimilarPoolAsync([1], [], limit: 5, depth: 5);
+        var localStore = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_dumpPath, _dir), NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        var pick = Assert.Single(hydrated);
+        Assert.Equal(["Safe Tag 18"], pick.MatchedTags);
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,

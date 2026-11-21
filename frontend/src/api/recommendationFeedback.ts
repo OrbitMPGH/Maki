@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { ApiError, api } from './client'
 
 export interface FeedbackState {
@@ -124,27 +124,51 @@ const restoresTitle = (action: string) =>
 const pendingOptimistic = new Map<number, string>()
 
 function withoutTitle(value: unknown, id: number): unknown {
-  if (Array.isArray(value)) return value
-    .filter((item) => !(item && typeof item === 'object' &&
-      'providerId' in item && Number(item.providerId) === id))
-    .map((item) => withoutTitle(item, id))
+  if (Array.isArray(value)) {
+    let changed = false
+    const next: unknown[] = []
+    for (const item of value) {
+      if (item && typeof item === 'object' && 'providerId' in item && Number(item.providerId) === id) {
+        changed = true
+        continue
+      }
+      const updated = withoutTitle(item, id)
+      if (updated !== item) changed = true
+      next.push(updated)
+    }
+    return changed ? next : value
+  }
   if (value && typeof value === 'object') {
     const obj = value as Record<string, unknown>
     if (Array.isArray(obj.pages)) {
+      const restart = obj.pages.findLastIndex(
+        (page) => page && typeof page === 'object' && (page as Record<string, unknown>).restartRequired === true,
+      )
+      const activeStart = restart > 0 ? restart : 0
       let removedSimilar = 0
-      const pages = obj.pages.map((page) => {
+      let anyPageChanged = false
+      const pages = obj.pages.map((page, index) => {
+        if (index < activeStart) return page
         if (page && typeof page === 'object' && Array.isArray((page as Record<string, unknown>).similar)) {
           const before = ((page as Record<string, unknown>).similar as unknown[]).length
           const nextPage = withoutTitle(page, id) as Record<string, unknown>
+          if (nextPage === page) return page
+          anyPageChanged = true
           const after = (nextPage.similar as unknown[]).length
           removedSimilar += before - after
           return nextPage
         }
-        return withoutTitle(page, id)
+        const nextPage = withoutTitle(page, id)
+        if (nextPage !== page) anyPageChanged = true
+        return nextPage
       })
+      if (!anyPageChanged) return value
       const adjustedPages = removedSimilar > 0
-        ? pages.map((page) =>
-            page && typeof page === 'object' && typeof (page as Record<string, unknown>).totalSimilar === 'number'
+        ? pages.map((page, index) =>
+            index >= activeStart &&
+            page &&
+            typeof page === 'object' &&
+            typeof (page as Record<string, unknown>).totalSimilar === 'number'
               ? {
                   ...(page as Record<string, unknown>),
                   totalSimilar: Math.max(0, ((page as Record<string, unknown>).totalSimilar as number) - removedSimilar),
@@ -154,7 +178,14 @@ function withoutTitle(value: unknown, id: number): unknown {
         : pages
       return { ...obj, pages: adjustedPages }
     }
-    return Object.fromEntries(Object.entries(obj).map(([key, item]) => [key, withoutTitle(item, id)]))
+    let changed = false
+    const nextObj: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(obj)) {
+      const updated = withoutTitle(item, id)
+      if (updated !== item) changed = true
+      nextObj[key] = updated
+    }
+    return changed ? nextObj : value
   }
   return value
 }
@@ -221,6 +252,17 @@ export function useSignalOverrides() {
 function useRefreshRecommendations() {
   const client = useQueryClient()
   return (scope: 'full' | 'lazy' = 'full') => {
+    // Trim only inactive multi-page feeds so returning to Discover later refetches 1 page instead
+    // of up to 25, while an actively scrolled feed keeps its loaded pages on Undo or franchise hide.
+    for (const query of client.getQueryCache().findAll({ queryKey: ['recommendations'], type: 'inactive' })) {
+      const data = query.state.data as InfiniteData<unknown> | undefined
+      if (data && Array.isArray(data.pages) && data.pages.length > 1) {
+        client.setQueryData(query.queryKey, {
+          pages: data.pages.slice(0, 1),
+          pageParams: Array.isArray(data.pageParams) ? data.pageParams.slice(0, 1) : data.pageParams,
+        })
+      }
+    }
     for (const key of affectedKeys) {
       void client.invalidateQueries({
         queryKey: [key],
@@ -247,6 +289,7 @@ export function useMutateFeedback() {
         await client.cancelQueries({ queryKey: [key] })
         for (const [queryKey, value] of client.getQueriesData({ queryKey: [key] })) {
           const optimistic = withoutTitle(value, command.id)
+          if (optimistic === value) continue
           client.setQueryData(queryKey, optimistic)
           snapshots.push([queryKey, value, client.getQueryData(queryKey)])
         }
@@ -263,7 +306,7 @@ export function useMutateFeedback() {
           client.setQueryData(queryKey, restored)
         }
       }
-      refresh()
+      refresh('lazy')
     },
     onSuccess: (_result, command) => {
       if (pendingOptimistic.get(command.id) === command.clientMutationId) pendingOptimistic.delete(command.id)

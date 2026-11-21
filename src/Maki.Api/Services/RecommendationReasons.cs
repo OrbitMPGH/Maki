@@ -78,6 +78,89 @@ public static class RecommendationReasons
         return balanced;
     }
 
+    /// <summary>
+    /// Balances a compact ranked pool up to the end of the requested slice and returns only that
+    /// slice with its chosen seed ids populated. Strictly left-to-right causal over the
+    /// <see cref="Window"/> lookback, so picks past <paramref name="skip"/> + <paramref name="take"/>
+    /// never affect the slice and are not walked.
+    /// </summary>
+    public static IReadOnlyList<RankedRecommendationPick> BalanceSlice(
+        IReadOnlyList<RankedRecommendationPick> ranked, int skip, int take)
+    {
+        if (take <= 0 || skip >= ranked.Count)
+        {
+            return [];
+        }
+
+        var start = Math.Max(0, skip);
+        var end = Math.Min(ranked.Count, start + take);
+        if (end <= 1)
+        {
+            return start < end ? [ranked[start]] : [];
+        }
+
+        var named = new long?[end];
+        var counts = new Dictionary<long, int>();
+        var slice = new List<RankedRecommendationPick>(end - start);
+        for (var i = 0; i < end; i++)
+        {
+            if (i >= Window && named[i - Window] is { } leaving)
+            {
+                counts[leaving]--;
+            }
+
+            var pick = ranked[i];
+            var (feel, seeds) = CompactCandidates(pick);
+            if (seeds is null)
+            {
+                if (i >= start)
+                {
+                    slice.Add(pick);
+                }
+
+                continue;
+            }
+
+            var chosen = seeds[0];
+            for (var s = 0; s < seeds.Count; s++)
+            {
+                if (counts.GetValueOrDefault(seeds[s]) < MaxPerWindow)
+                {
+                    chosen = seeds[s];
+                    break;
+                }
+            }
+
+            named[i] = chosen;
+            counts[chosen] = counts.GetValueOrDefault(chosen) + 1;
+            if (i >= start)
+            {
+                slice.Add(feel
+                    ? pick with { BalancedFeelSeedId = chosen }
+                    : pick with { BalancedCoReadSeedId = chosen });
+            }
+        }
+
+        return slice;
+    }
+
+    private static (bool Feel, IReadOnlyList<long>? Seeds) CompactCandidates(RankedRecommendationPick pick)
+    {
+        if (pick.FeelSeedIds is { Count: > 0 } feel)
+        {
+            return (true, feel);
+        }
+
+        if (pick.AuthorMatch)
+        {
+            return (false, null);
+        }
+
+        return pick.CoRead && pick.CoReadSeedIds is { Count: > 0 } coRead
+            ? (false, coRead)
+            : (false, null);
+    }
+
     private static (bool Feel, IReadOnlyList<ReasonSeed>? Seeds) Candidates(MangaBakaRecommendation pick)
     {
         if (pick.RelationKind is not null && pick.RelatedToTitle is not null)
