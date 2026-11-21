@@ -119,7 +119,10 @@ def main():
     ap.add_argument("--dump", required=True)
     ap.add_argument("--depth", type=int, default=40)
     a = ap.parse_args()
-    path = lambda v: glob.glob(os.path.join(a.picks, f"picks-{v}-*.tsv"))[0]
+    def path(v):
+        prefix = f"picks-{v}-"
+        return next(p for p in glob.glob(os.path.join(a.picks, f"{prefix}*.tsv"))
+                    if "-" not in os.path.basename(p)[len(prefix):])
     rb, rv = read_picks(path(a.base)), read_picks(path(a.variant))
     ids = set()
     for rows in (rb, rv):
