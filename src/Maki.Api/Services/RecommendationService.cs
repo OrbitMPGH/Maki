@@ -154,6 +154,14 @@ public class RecommendationService(
     }
     private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
+    public int ReleaseIdlePools(TimeSpan idleFor)
+    {
+        lock (_poolsGate)
+        {
+            return _pools.ReleaseIdle(idleFor);
+        }
+    }
+
     /// <param name="scope">
     /// The caller's data scope, applied to the child scope this opens. A singleton creating its own
     /// scope gets a fresh unrestricted <see cref="DataScope"/>, which would seed recommendations from
@@ -277,7 +285,7 @@ public class RecommendationService(
         for (var attempt = 0; attempt < 2; attempt++)
         {
             var dumpStamp = store.DumpStamp();
-            var key = $"{baseKey}|dump:{dumpStamp}";
+            var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{baseKey}|dump:{dumpStamp}")));
             var pool = await GetOrBuildPoolAsync(
                 key, origin, request.Refresh && attempt == 0, seeds, libraryIds, filters, request,
                 seedWeight, snapshot.Avoided, coGraph, coRead, tasteVectors, ease, pageShare, lanes,
@@ -286,7 +294,7 @@ public class RecommendationService(
             // Keyed on inputs (including dump stamp), process instance, and this build's monotonic id,
             // never on feedbackRevision. Process restarts, refresh, cache eviction, TTL expiry or a
             // dump swap restart paging; hiding or dismissing a card keeps the same version.
-            var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{_instanceId}:{pool.BuildId}";
+            var version = $"{key[..16]}:{_instanceId}:{pool.BuildId}";
             var restart = forceRestart || (request.PoolVersion is { Length: > 0 } paging && paging != version);
             var page = restart ? 0 : Math.Max(0, request.Page);
             var cursor = restart ? null : request.Cursor;

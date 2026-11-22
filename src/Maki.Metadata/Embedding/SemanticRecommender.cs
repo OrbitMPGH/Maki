@@ -2708,6 +2708,7 @@ public class SemanticRecommender(
                     .Select(m => vocab.TryGetValue(m.Id, out var info) && !info.IsSpoiler ? info.Name : null)
                     .OfType<string>()
                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(12)
                     .ToList();
 
             var feelSeed = winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff

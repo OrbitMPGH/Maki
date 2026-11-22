@@ -233,4 +233,29 @@ public class SimilarSeriesService(
             _entries.TryRemove(key, out _);
         }
     }
+
+    public int ReleaseIdle(TimeSpan idleFor)
+    {
+        var now = DateTime.UtcNow;
+        var cutoff = (now - idleFor).Ticks;
+        var removed = 0;
+        foreach (var (key, entry) in _entries)
+        {
+            if (entry.Gate.CurrentCount == 0)
+            {
+                continue;
+            }
+
+            if ((entry.Results is not null && now - entry.ComputedAt >= Ttl)
+                || Volatile.Read(ref entry.LastUsedTicks) <= cutoff)
+            {
+                if (_entries.TryRemove(new KeyValuePair<string, Entry>(key, entry)))
+                {
+                    removed++;
+                }
+            }
+        }
+
+        return removed;
+    }
 }

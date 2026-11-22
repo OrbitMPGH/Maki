@@ -94,6 +94,21 @@ internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlot
         Trim(PoolOrigin.Rail, railSlots);
     }
 
+    public int ReleaseIdle(TimeSpan idleFor)
+    {
+        var now = Now;
+        var stale = _entries
+            .Where(kv => now - kv.Value.Pool.GeneratedAt >= ttl || now - kv.Value.LastUsed >= idleFor)
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var key in stale)
+        {
+            _entries.Remove(key);
+        }
+
+        return stale.Count;
+    }
+
     private void Trim(PoolOrigin origin, int slots)
     {
         var held = _entries.Where(kv => kv.Value.Origin == origin).ToList();
