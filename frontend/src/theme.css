@@ -15532,15 +15532,21 @@ a:focus-visible > .taste-cover {
   color: var(--ink-3);
   font-size: var(--type-body);
 }
+/* The chart takes whatever height the panel has beside the pace panel, so a reader with no
+   length comparison under it gets taller bars rather than an empty block. */
 .taste-stops {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   margin-top: 22px;
 }
 .taste-stops-bars {
   display: grid;
+  flex: 1 0 150px;
   grid-template-columns: repeat(10, minmax(0, 1fr));
   align-items: end;
   gap: 5px;
-  height: 150px;
+  max-height: 320px;
   padding-top: 24px;
 }
 .taste-stops-bar {
