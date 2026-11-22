@@ -461,7 +461,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 var secret = secretKey == null ? null : await settings.GetAsync(secretKey, ct);
                 if (string.IsNullOrWhiteSpace(url))
                 {
-                    Add(name, "connections", required || !string.IsNullOrWhiteSpace(secret) ? "warning" : "disabled",
+                    // Clearing the URL is how an optional service is switched off, so a key left behind is not a problem.
+                    Add(name, "connections", required ? "warning" : "disabled",
                         "health.check.notConfigured", new { service }, link);
                     return;
                 }
