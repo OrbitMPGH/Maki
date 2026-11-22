@@ -83,7 +83,37 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Dictionary<int, CreditRegion> _rows = [];
     private Dictionary<int, Notice>? _notices;
+    private long _lastUsedTicks;
     private int _generation;
+
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        if (!_gate.Wait(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (_notices is null && _rows.Count == 0)
+            {
+                return false;
+            }
+
+            if (DateTime.UtcNow.Ticks - Volatile.Read(ref _lastUsedTicks) < idleFor.Ticks)
+            {
+                return false;
+            }
+
+            _notices = null;
+            _rows.Clear();
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     /// <summary>
     /// Per notice, the <see cref="Generation"/> its verdict last changed at and the chapter whose own search
@@ -108,6 +138,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         await _gate.WaitAsync(ct);
         try
         {
+            Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             var notices = _notices ??= await LoadAsync(ct);
 
             // The same bytes were read before: their text, judged with this candidate's colour, is no new read.
@@ -307,6 +338,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         await _gate.WaitAsync(ct);
         try
         {
+            Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             var notices = _notices ??= await LoadAsync(ct);
             List<int> chapters;
             using (var scope = scopes.CreateScope())

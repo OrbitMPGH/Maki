@@ -424,11 +424,6 @@ msgstr "{0, plural, other {# 个仓库}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, other {# 个结果}}"
 
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-msgid "{0, plural, one {# row right now} other {# rows right now}}"
-msgstr ""
-
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -479,6 +474,11 @@ msgstr "{0, plural, other {已检查 # 个来源}}"
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, other {# 个剧透标签}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# theme right now} other {# themes right now}}"
+msgstr ""
+
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{0, plural, one {# thread, JPEG XL on} other {# threads, JPEG XL on}}"
@@ -490,8 +490,10 @@ msgid "{0, plural, one {# thread} other {# threads}}"
 msgstr ""
 
 #. placeholder {0}: active.items.length
+#. placeholder {0}: count.count
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -875,6 +877,13 @@ msgstr "已有 {0} 读取此站点。"
 msgid "{0} by {deletedBy}"
 msgstr "{0}，由 {deletedBy} 删除"
 
+#. placeholder {0}: item.totalChapters
+#: src/components/discover/DiscoverCohortColumns.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{0} ch."
+msgstr ""
+
 #. placeholder {0}: formatBytes(f.freeSpace)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -905,6 +914,19 @@ msgstr "{0} 个链接，从 {1} 开始"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "示例章节中有 {0} 页。"
+
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "{0}, in your library"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} and {b} readers"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} readers"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -2746,6 +2768,10 @@ msgstr "每次阅读 {perSitting} 章"
 msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 msgstr "{pieces, plural, other {将分成 # 页。每条虚线是一处切口。}}"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{places} places this month"
+msgstr ""
+
 #: src/components/layout/SectionSettings.tsx
 msgid "{position} of {total}"
 msgstr ""
@@ -4175,6 +4201,10 @@ msgstr ""
 msgid "75 / page"
 msgstr "每页 75 个"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "8.5 and up, not in your library"
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "90 days"
@@ -4195,6 +4225,10 @@ msgstr "评分为 10/10 的动画以 {topSeed} 作为基准值，而书架上未
 #, fuzzy
 msgid "A bulk move, rename or rescan is running."
 msgstr "批量移动、重命名或重新扫描正在进行。"
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A card for each smaller theme on your shelf."
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -4220,11 +4254,6 @@ msgstr "创作者页面"
 #, fuzzy
 msgid "A download is writing into this folder."
 msgstr "正在向此文件夹写入下载内容。"
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A few large picks at the top, from your recent reading or what is trending."
-msgstr "顶部会显示少量重点推荐，来自你最近阅读的作品或当前热门内容。"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -4335,11 +4364,6 @@ msgstr "刷新已在运行"
 #, fuzzy
 msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
 msgstr "根据各来源近期的下载速度粗略估算。已暂停和搁置的下载不计入。"
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A row for each smaller theme on your shelf."
-msgstr "每个较小主题在书架上单独占一行。"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4809,6 +4833,7 @@ msgstr "添加作品"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Add to library"
@@ -5238,11 +5263,6 @@ msgstr "同时删除磁盘上的文件"
 msgid "Also delete the downloaded files"
 msgstr "同时删除已下载的文件"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Also for you"
-msgstr "也适合你"
-
 #: src/components/pageconversion/recommendation.ts
 #, fuzzy
 msgid "Also in apps like Mihon"
@@ -5479,6 +5499,15 @@ msgstr "已有另一个文件对应此章节。保留任何一个之前，请分
 #, fuzzy
 msgid "Another reader"
 msgstr "其他读者"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of you: {theme}"
+msgstr ""
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of your library"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5911,7 +5940,6 @@ msgstr "作者"
 msgid "Author or artist"
 msgstr "作者或画师"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -6285,6 +6313,11 @@ msgstr "影响很小。你喜欢的动画仍会排在从未评分的书籍之后
 #, fuzzy
 msgid "Barely touched"
 msgstr "几乎未读"
+
+#. placeholder {0}: formatNumber(group.shared)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Based on {0} of your finished series"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -8062,6 +8095,14 @@ msgstr "与更大目录的比较需要嵌入索引。"
 #, fuzzy
 msgid "Complete"
 msgstr "完成"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, over 150 chapters"
+msgstr ""
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, up to 50 chapters"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ImportListsSection.tsx
@@ -11429,11 +11470,6 @@ msgstr "筛选资料库……"
 msgid "Filter saved"
 msgstr "筛选条件已保存"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Filter the catalogue"
-msgstr "筛选目录"
-
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -11565,10 +11601,18 @@ msgstr "完成设置"
 msgid "Finished"
 msgstr "已完成"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished by them far more than by most readers"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Finished in a rush"
 msgstr "快速读完"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished it"
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -11605,6 +11649,10 @@ msgstr "第一页"
 #, fuzzy
 msgid "First page image"
 msgstr "第一页图片"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "First released this year"
+msgstr ""
 
 #: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -11944,7 +11992,7 @@ msgstr "来自元数据提供方，而不是你自己的标签"
 msgid "From their names"
 msgstr "根据文件名"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/DiscoverThemeCards.tsx
 #, fuzzy
 msgid "From your library"
 msgstr "来自你的资料库"
@@ -11953,6 +12001,10 @@ msgstr "来自你的资料库"
 #, fuzzy
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "可在 MangaBaka 设置中找到。不需要 OAuth。"
+
+#: src/pages/DiscoverPage.tsx
+msgid "From your recent reading"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12007,17 +12059,20 @@ msgid "General"
 msgstr "常规"
 
 #: src/api/autoTagRules.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Genre"
 msgstr "类型"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
@@ -12304,6 +12359,10 @@ msgstr "组：{groupName}，由你设置"
 #, fuzzy
 msgid "Groups credited: {groupList}"
 msgstr "已署名的组：{groupList}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Groups of readers"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12640,6 +12699,10 @@ msgstr "数值越大，通知越频繁。"
 #, fuzzy
 msgid "Highest priority first. Grouped tiers rank the same."
 msgstr "优先级最高的排在前面。同组的层级排名相同。"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Highest share of readers like you"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14664,6 +14727,10 @@ msgstr "锁定、失败尝试、会话时长"
 msgid "login page, background, covers, mosaic, wallpaper"
 msgstr "登录页, 背景, 封面, 马赛克, 壁纸"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Long and finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -15850,6 +15917,10 @@ msgstr "缺失最多"
 msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 msgstr "页面的大部分向前翻。一侧的条带向后翻，顶部会打开进度条。"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Most of them finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -15860,6 +15931,10 @@ msgstr "你的大部分阅读发生在 <0>{start}</0> 至 <1>{end}</1>，其中 
 #, fuzzy
 msgid "Most popular"
 msgstr "最受欢迎"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Most popular first"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -16473,6 +16548,10 @@ msgstr "你关注的创作者有新系列"
 msgid "New tag…"
 msgstr "新标签……"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "New this year"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16953,6 +17032,7 @@ msgstr "未找到匹配项。"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/CreditPicker.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -18349,6 +18429,10 @@ msgstr "已加入资料库。正在后台匹配来源。"
 msgid "Number"
 msgstr "编号"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "Number 1"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Numbering clash"
@@ -18708,6 +18792,11 @@ msgstr "仅通知带有此标签的服务。"
 msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
 msgstr "同一时间只使用一个索引器。切换后，你之前忽略的发布版本建议将不再匹配，因为 Prowlarr 和 Jackett 对发布版本的编号方式不同。"
 
+#. placeholder {0}: s.displayTitle
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Only picks from {0}"
+msgstr ""
+
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "Only safe titles"
@@ -19066,11 +19155,6 @@ msgstr "其他组"
 #, fuzzy
 msgid "Other list"
 msgstr "其他列表"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Other picks for you"
-msgstr "为你推荐的其他内容"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -19505,11 +19589,6 @@ msgstr "暂停本轮"
 msgid "Pause Rewind"
 msgstr "暂停 Rewind"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Pause rotating picks"
-msgstr "暂停轮换推荐"
-
 #: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Pause the running pass?"
@@ -19521,7 +19600,6 @@ msgid "Pause this series"
 msgstr "暂停此系列"
 
 #: src/components/ActivityButton.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -19745,6 +19823,10 @@ msgstr "在系列的「质量配置」菜单中，可以为其固定一个配置
 msgid "Pin to page {pageNumber}"
 msgstr "固定到第 {pageNumber} 页"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Places climbed this month"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -19809,6 +19891,10 @@ msgstr "波兰语"
 #, fuzzy
 msgid "popular"
 msgstr "热门"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Popular in {genre}"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -20446,6 +20532,10 @@ msgstr "评分在 {ratingLabel} 及以上"
 msgid "Rated {score}"
 msgstr "评分 {score}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Rated highest"
+msgstr ""
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -20774,6 +20864,7 @@ msgid "Readers get it"
 msgstr "读者会收到"
 
 #: src/api/hooks.ts
+#: src/components/discover/discoverBrowse.ts
 #, fuzzy
 msgid "Readers like you"
 msgstr "和你相似的读者"
@@ -20787,6 +20878,10 @@ msgstr "像你一样的读者也读完了此内容"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Readers like you finished this"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -22455,11 +22550,6 @@ msgstr "恢复此系列的下载"
 msgid "Resume Rewind"
 msgstr "恢复 Rewind"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Resume rotating picks"
-msgstr "恢复轮换推荐"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Resume this series"
@@ -23402,6 +23492,10 @@ msgstr "分数 {score}"
 msgid "Score for {0}"
 msgstr "{0} 的评分"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Score from all readers"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "Score two to get a suggestion"
 msgstr ""
@@ -23793,6 +23887,19 @@ msgstr "此标签页上的分区"
 #, fuzzy
 msgid "Security settings saved. Restart Maki to apply them."
 msgstr "安全设置已保存。重启 Maki 以应用更改。"
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all"
+msgstr ""
+
+#. placeholder {0}: formatNumber(group.members.length)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "See all {0}"
+msgstr ""
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all in {theme}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -24493,6 +24600,10 @@ msgstr ""
 msgid "Shift-click for a range. Unticking a chapter unlinks it."
 msgstr "按住 Shift 点击可选择范围。取消勾选章节会解除其关联。"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Short and finished"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -24543,6 +24654,7 @@ msgstr "通知到达时显示弹窗"
 msgid "Show again"
 msgstr "再次显示"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -24625,6 +24737,10 @@ msgstr "仅显示：{label}"
 msgid "Show or hide keyboard shortcuts"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Show other picks"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -24635,6 +24751,10 @@ msgstr "显示页码"
 #, fuzzy
 msgid "Show passing"
 msgstr "显示正常项"
+
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Show picks from every series"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -24720,11 +24840,6 @@ msgstr "在服务器的页面准备好之前，以及服务器无法使用时，
 #, fuzzy
 msgid "Shown to whoever asked"
 msgstr "显示给提出请求的人"
-
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Side interests"
-msgstr "其他兴趣"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Side stories"
@@ -25449,11 +25564,6 @@ msgstr "剧透：{description}"
 msgid "Sports"
 msgstr "体育"
 
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Spotlight"
-msgstr "精选推荐"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Stacked height"
@@ -25511,6 +25621,11 @@ msgstr "开始阅读本章"
 #, fuzzy
 msgid "Start from a template"
 msgstr "从模板开始"
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Start here"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -27448,6 +27563,10 @@ msgstr "这些系列已经在匹配中。"
 msgid "Threads"
 msgstr "线程"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Thriller"
@@ -27775,9 +27894,14 @@ msgstr "页面顶部 {percent}%"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Top rated"
 msgstr "评分最高"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Top rated first"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -27886,6 +28010,7 @@ msgid "Trash: {trashSize} across {trashFilesText}"
 msgstr "回收站：{trashFilesText}，共 {trashSize}"
 
 #: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Trending now"
 msgstr "当前热门"
@@ -28146,6 +28271,10 @@ msgstr "低于最低值"
 
 #: src/components/home/homeSectionDefs.ts
 msgid "Under the hero"
+msgstr ""
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Under the radar"
 msgstr ""
 
 #: src/components/NamingTokenModal.tsx
@@ -29085,6 +29214,13 @@ msgstr "越南语"
 msgid "View"
 msgstr "视图"
 
+#. placeholder {0}: first.title
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "View {0}"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -29111,6 +29247,7 @@ msgstr "查看并添加 {title}"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #, fuzzy
 msgid "View in library"
 msgstr "在资料库中查看"
@@ -29482,9 +29619,8 @@ msgid "What it does"
 msgstr "功能说明"
 
 #: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "What readers who finished the same series as you went on to finish."
-msgstr "看完与你读过相同作品的读者，后来又看完了哪些作品。"
+msgid "What readers who finished the same series as you went on to finish, one column per group of readers."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -30125,11 +30261,6 @@ msgstr "你的资料库为空"
 #, fuzzy
 msgid "Your new API key"
 msgstr "你的新 API 密钥"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Your next read"
-msgstr "你的下一篇阅读"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/MintConfirmation.tsx

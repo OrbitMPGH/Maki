@@ -35,9 +35,9 @@ public static class UpscaleTiling
     public const int TileSize = 96;
 
     /// <summary>
-    /// The bundled Maki 2x file is cropped for this pad and returns only the interior, so change it
-    /// together with that file (<c>distribution/upscale-models/crop_maki_2x.py --pad</c>). A pad
-    /// smaller than a model's crop fails that model at load.
+    /// The bundled Maki 2x and Maki 2x HQ files are cropped for this pad and return only the interior,
+    /// so change it together with them (<c>distribution/upscale-models/crop_maki_2x.py --pad</c> and
+    /// <c>crop_maki_2x_hq.py --pad</c>). A pad smaller than a model's crop fails that model at load.
     /// </summary>
     public const int ContextPad = 12;
 

@@ -7,6 +7,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Core.Security;
@@ -1181,16 +1182,10 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         using var archive = new System.IO.Compression.ZipArchive(input, System.IO.Compression.ZipArchiveMode.Read, true);
         var entry = archive.GetEntry(page.Name);
         if (entry == null || entry.Length > ArchiveHealthAnalyzer.MaxEntryBytes) return NotFound();
-        using var output = new MemoryStream();
         await using var content = entry.Open();
-        var buffer = new byte[65536];
-        int read;
-        while ((read = await content.ReadAsync(buffer, ct)) > 0)
-        {
-            if (output.Length + read > ArchiveHealthAnalyzer.MaxEntryBytes) return BadRequest();
-            await output.WriteAsync(buffer.AsMemory(0, read), ct);
-        }
-        var bytes = output.ToArray();
+        var bytes = await PooledStreams.ReadAllBytesCappedAsync(
+            content, ArchiveHealthAnalyzer.MaxEntryBytes, "health-preview", ct, expectedLength: entry.Length);
+        if (bytes is null) return BadRequest();
         if (Convert.ToHexString(SHA256.HashData(bytes)) != page.RawHash) return Conflict();
         Response.Headers.CacheControl = "no-store";
         if (JpegXlPages.IsJpegXl(page.Name) && !JpegXlPages.Accepts(Request) &&

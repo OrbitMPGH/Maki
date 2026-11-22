@@ -461,7 +461,7 @@ export function LayoutEditSurface({
         exitHold.current = best
       } else for (const a of running) a.cancel()
       cleanup()
-      restHeights()
+      if (to.e !== 0) restHeights()
       done?.()
     }
     anim.current = {
@@ -499,7 +499,6 @@ export function LayoutEditSurface({
       if (!near(was.top - push, was.fh) && !near(now.top, now.fh)) return
       f.dataset.shrinking = 'true'
       shrinking.push(f)
-      const fd = was.top - push - now.top
       const { body, inner } = now
       const shift = was.lead != null && now.lead != null ? was.lead - (now.lead / to.sc) * from.sc : 0
       const heading = headings[i]
@@ -525,11 +524,18 @@ export function LayoutEditSurface({
         })
       }
       if (body && (was.capped || now.capped)) body.setAttribute('data-capped', '')
+      // Growing back out, each section is laid out at its old, wider width first, and a section whose
+      // height follows its width (a hero) would push the rest down. Its body keeps its final height
+      // meanwhile; that stops a margin collapsing through its foot, which the slide makes up below.
+      if (to.e === 0 && body) body.style.height = `${now.h}px`
       starts.push(() => {
-        if (Math.abs(fd) > 0.5 || lift)
+        const base = laid[i]
+        const fromY = was.top - push - base
+        const toY = now.top - base - lift
+        if (Math.abs(fromY) > 0.5 || Math.abs(toY) > 0.5)
           running.push(
             f.animate(
-              [{ transform: `translateY(${fd}px)` }, { transform: lift ? `translateY(${-lift}px)` : 'none' }],
+              [{ transform: `translateY(${fromY}px)` }, { transform: toY ? `translateY(${toY}px)` : 'none' }],
               timing,
             ),
           )
@@ -590,6 +596,8 @@ export function LayoutEditSurface({
         )
       })
     })
+    // Where each section sits while the animation runs, which is where its slide is measured from.
+    const laid = to.e === 0 ? frames.map((f) => f.getBoundingClientRect().top) : after.map((a) => a.top)
     // The heading copies' containing block, read once for all of them, in the layout they animate in.
     const origins = copies.map(({ copy }) => copy.getBoundingClientRect())
     copies.forEach(({ copy, x, y, at }, k) => {

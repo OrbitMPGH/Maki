@@ -4605,10 +4605,15 @@ button.site-chip:hover {
   padding-top: 28px;
   padding-bottom: 26px;
 }
-/* Keep the selector list wide enough for titles and metadata without taking over the feature. */
-.discover-hero .series-hero-content {
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 340px);
+/* The side panel is wide enough for two picks with a synopsis each without taking over the lead.
+   It keeps its share on a wide screen, where a fixed width left the two picks small beside a lead
+   with room to spare; past 460px its picks grow (see `.discover-hero-strip`). */
+.discover-hero.series-hero[data-compact] .series-hero-content {
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 30%, 600px);
   align-items: center;
+}
+.discover-hero.series-hero[data-compact]:not([data-side]) .series-hero-content {
+  grid-template-columns: minmax(0, 1fr);
 }
 .discover-hero-backdrop {
   position: absolute;
@@ -4669,8 +4674,8 @@ button.site-chip:hover {
   font-size: 0.58em;
   line-height: 1.07;
 }
-/* The modal's header rows, each held at one line even when empty: the meta, the score and the site
-   chips arrive with the detail request, and a row appearing from nothing moves the buttons. */
+/* The modal's header rows, each held at one line even when empty: the meta and the score arrive
+   with the detail request, and a row appearing from nothing moves the buttons. */
 .discover-hero .hero-kicker {
   display: flex;
   min-width: 0;
@@ -4762,171 +4767,798 @@ button.site-chip:hover {
     flex: 1 1 auto;
   }
 }
-.discover-hero-strip-label {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-3);
+/* The status disc and word inside a meta line: inline, so it shares the line with the facts. */
+.status-mark {
+  display: inline-flex;
+  vertical-align: -0.2em;
 }
-.discover-hero-strip-heading {
+/* --- Start here: the lead's synopsis and tags, and the two picks in the panel ------------------- */
+.discover-hero-facts {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
+  margin-top: 10px;
 }
-.discover-hero-strip-mode {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  color: var(--brand-fg, var(--brand));
+.discover-hero-facts .hero-meta {
+  min-height: 0;
 }
-.discover-hero-strip-controls {
+.discover-hero-synopsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 60ch;
+  margin: 14px 0 0;
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  line-height: 1.5;
+}
+.discover-hero-tags {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
 }
-/* The negative margins keep the heading at its text height so the list below never moves; the
-   ::before widens the tap target past the 26px button. */
-.discover-hero-pause {
-  position: relative;
-  overflow: visible;
-  margin-block: -5px;
-  margin-inline-end: -5px;
+.discover-hero-tags + .discover-hero-score,
+.discover-hero-synopsis + .discover-hero-score {
+  margin-top: 16px;
 }
-.discover-hero-pause::before {
-  content: '';
-  position: absolute;
-  inset: -7px -9px;
+.discover-hero .discover-hero-actions {
+  margin-top: 14px;
 }
-.discover-hero-strip-row {
+.discover-hero-strip {
+  container-type: inline-size;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.discover-start-pick {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease);
+}
+.discover-start-pick + .discover-start-pick {
+  border-top: 1px solid var(--line-soft);
+}
+.discover-start-pick:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.discover-start-pick:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+.discover-start-pick > img,
+.discover-start-pick-blank {
+  display: block;
+  width: 78px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-thumb);
+  box-shadow: 0 0 0 1px var(--cover-rim);
+  background: var(--surface);
+}
+.discover-start-pick-copy {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
-/* Row metrics are what the whole band's height is made of: the list is the tallest thing in the
-   grid, so a pixel of padding here costs five off the fold. */
-.discover-hero-strip-item {
-  position: relative;
+.discover-start-pick-reason {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--brand-fg, var(--brand));
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.discover-start-pick-reason > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-start-pick-reason > svg {
+  flex: none;
+}
+.discover-start-pick-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+}
+.discover-start-pick:hover .discover-start-pick-title {
+  color: var(--brand-fg, var(--brand));
+}
+.discover-start-pick-meta {
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+}
+.discover-start-pick-synopsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+}
+@container (min-width: 460px) {
+  .discover-start-pick {
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px;
+  }
+  .discover-start-pick > img,
+  .discover-start-pick-blank {
+    width: 108px;
+  }
+  .discover-start-pick-title {
+    font-size: var(--type-figure);
+  }
+  .discover-start-pick-synopsis {
+    color: var(--ink-2);
+    font-size: var(--type-body);
+  }
+}
+/* With no reading history Start here asks for a genre first. */
+.discover-sampler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--mantine-spacing-sm);
+}
+@media (max-width: 61.9375em) {
+  .discover-hero.series-hero[data-compact] .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 47.9375em) {
+  .discover-start-pick {
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: 12px;
+  }
+  .discover-start-pick > img,
+  .discover-start-pick-blank {
+    width: 56px;
+  }
+  .discover-start-pick-synopsis {
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* --- Another side of your library: a card per theme, side by side ------------------------------ */
+.discover-themes {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+.discover-theme {
+  container-type: inline-size;
+  min-width: 0;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.discover-theme-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.discover-theme-title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-strong);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-theme-count {
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.discover-theme-more {
+  margin-left: auto;
+}
+.discover-theme .discover-seeds {
+  margin-bottom: 12px;
+}
+/* One row of posters at about a rail card's size: a wider card shows more of the theme instead of
+   larger covers. */
+.discover-theme-grid {
+  --theme-posters: 4;
+  display: grid;
+  grid-template-columns: repeat(var(--theme-posters), minmax(0, 1fr));
+  gap: 12px;
+}
+@container (width < 1040px) {
+  .discover-theme-grid > :nth-child(n + 5) {
+    display: none;
+  }
+}
+@container (1040px <= width < 1250px) {
+  .discover-theme-grid {
+    --theme-posters: 5;
+  }
+  .discover-theme-grid > :nth-child(n + 6) {
+    display: none;
+  }
+}
+@container (1250px <= width < 1460px) {
+  .discover-theme-grid {
+    --theme-posters: 6;
+  }
+  .discover-theme-grid > :nth-child(n + 7) {
+    display: none;
+  }
+}
+@container (width >= 1460px) {
+  .discover-theme-grid {
+    --theme-posters: 7;
+  }
+}
+@media (max-width: 74.9375em) {
+  .discover-themes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 35.9375em) {
+  .discover-theme-grid {
+    --theme-posters: 3;
+  }
+  .discover-theme-grid > :nth-child(n + 4) {
+    display: none;
+  }
+}
+
+/* --- Readers like you also finished: a column per group of readers ----------------------------- */
+.discover-cohorts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+.discover-cohorts[data-columns='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.discover-cohorts[data-columns='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.discover-cohort {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 16px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.discover-cohort-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+.discover-cohort-yours {
+  display: flex;
+  flex: none;
+  align-self: center;
+  gap: 3px;
+}
+.discover-cohort-yours > img {
+  width: 24px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-2xs);
+  box-shadow: 0 0 0 1px var(--cover-rim);
+}
+.discover-cohort-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.discover-cohort-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-strong);
+  line-height: 1.15;
+}
+.discover-cohort-sub {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-cohort-label {
+  flex: none;
+  width: 84px;
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.discover-cohort-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 84px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 0;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.discover-cohort-row:hover .discover-cohort-row-title {
+  color: var(--brand-fg, var(--brand));
+}
+.discover-cohort-row:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
+.discover-cohort-row > img,
+.discover-cohort-blank {
+  display: block;
+  width: 44px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-2xs);
+  box-shadow: 0 0 0 1px var(--cover-rim);
+  background: var(--surface-2);
+}
+.discover-cohort-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.discover-cohort-row-title {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-cohort-meta {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.discover-cohort-share {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.discover-cohort-percent {
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-strong);
+  line-height: 1;
+}
+.discover-cohort-bar {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+.discover-cohort-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+}
+.discover-cohort-more {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: auto;
+  padding: 10px 0 8px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.discover-cohort-more:hover {
+  color: var(--ink-hi);
+}
+.discover-cohort-tabs {
+  margin-bottom: var(--mantine-spacing-md);
+}
+@media (max-width: 74.9375em) {
+  .discover-cohorts,
+  .discover-cohorts[data-columns='2'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Trending now: one chart, number one as its first and largest entry ------------------------- */
+.discover-chart {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, max(560px, 25%)) minmax(0, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.discover-chart-first {
+  display: grid;
+  grid-template-columns: 30px 150px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  padding: 18px;
+  border-right: 1px solid var(--line-soft);
+}
+.discover-chart-rank {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  font-weight: var(--fw-heavy);
+  line-height: 0.9;
+  text-align: right;
+}
+.discover-chart-poster {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-cover);
+  background: none;
+  cursor: pointer;
+}
+.discover-chart-poster > img,
+.discover-chart-poster > .discover-chart-blank {
+  display: block;
+  width: 150px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-cover);
+  box-shadow: var(--shadow-cover), 0 0 0 1px var(--cover-rim);
+  background: var(--surface-2);
+}
+.discover-chart-first-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+}
+.discover-chart-first-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-feature);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.discover-chart-first-title:hover {
+  color: var(--brand-fg, var(--brand));
+}
+.discover-chart-synopsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 2px 0 4px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+}
+.discover-chart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.discover-chart-facts {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.discover-chart-climb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+/* Three rows always; a wide chart adds columns (and ranks) rather than stretching three. */
+.discover-chart-rest {
+  --chart-columns: 3;
+  display: grid;
+  grid-template-columns: repeat(var(--chart-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  column-gap: 18px;
+  margin: 0;
+  padding: 8px 18px;
+  list-style: none;
+}
+.discover-chart-rest > li {
+  min-width: 0;
+  border-top: 1px solid var(--line-soft);
+}
+.discover-chart-rest > li:nth-child(3n + 1) {
+  border-top: 0;
+}
+@container (width < 2100px) {
+  .discover-chart-rest > li:nth-child(n + 10) {
+    display: none;
+  }
+}
+@container (2100px <= width < 2600px) {
+  .discover-chart-rest {
+    --chart-columns: 4;
+  }
+  .discover-chart-rest > li:nth-child(n + 13) {
+    display: none;
+  }
+}
+@container (width >= 2600px) {
+  .discover-chart-rest {
+    --chart-columns: 5;
+  }
+}
+.discover-chart-row {
+  display: grid;
+  grid-template-columns: 28px 48px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-width: 0;
-  padding: 4px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-thumb);
+  padding: 9px 0;
+  border: 0;
   background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.discover-chart-row:hover .discover-chart-row-title {
+  color: var(--brand-fg, var(--brand));
+}
+.discover-chart-row:focus-visible,
+.discover-chart-poster:focus-visible,
+.discover-chart-first-title:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
+.discover-chart-row-rank {
+  color: var(--ink-4);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: var(--fw-heavy);
+  line-height: 1;
+  text-align: right;
+}
+.discover-chart-rest > li:nth-child(-n + 2) .discover-chart-row-rank {
+  color: var(--ink-hi);
+}
+.discover-chart-row > img,
+.discover-chart-row > .discover-chart-blank {
+  display: block;
+  width: 48px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-2xs);
+  box-shadow: 0 0 0 1px var(--cover-rim);
+  background: var(--surface-2);
+}
+.discover-chart-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.discover-chart-row-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1.2;
+}
+@media (max-width: 74.9375em) {
+  .discover-chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .discover-chart-first {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+}
+@media (max-width: 47.9375em) {
+  .discover-chart-first {
+    grid-template-columns: 24px 96px minmax(0, 1fr);
+    padding: 14px;
+  }
+  .discover-chart-poster > img,
+  .discover-chart-poster > .discover-chart-blank {
+    width: 96px;
+  }
+  .discover-chart-rest {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-flow: row;
+  }
+  .discover-chart-rest > li:nth-child(3n + 1) {
+    border-top: 1px solid var(--line-soft);
+  }
+  .discover-chart-rest > li:first-child {
+    border-top: 0;
+  }
+}
+
+/* --- Browse the catalogue: four ways in and a row of genres -------------------------------------- */
+.discover-ways {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+.discover-way {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 124px;
+  padding: 12px 14px 12px 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
-.discover-hero-strip-item:hover {
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
+.discover-way:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
 }
-.discover-hero-strip-item[aria-selected='true'] {
+.discover-way[aria-pressed='true'] {
   border-color: var(--brand);
   background: color-mix(in srgb, var(--brand) 14%, transparent);
 }
-.discover-hero-strip-item img,
-.discover-hero-strip-fallback {
-  display: block;
-  width: 34px;
+.discover-way:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+/* Three covers fanned like a hand of cards. The tilt is fixed: nothing on a cover image animates. */
+.discover-way-fan {
+  position: relative;
+  height: 96px;
+}
+.discover-way-fan > img {
+  position: absolute;
+  top: 6px;
+  width: 58px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: var(--mantine-radius-xs);
+  border-radius: var(--radius-2xs);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--cover-rim);
 }
-.discover-hero-strip-fallback {
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  color: var(--ink-4);
-  font-weight: var(--fw-bold);
+.discover-way-fan > img:nth-child(1) {
+  left: 0;
+  transform: rotate(-7deg);
 }
-.discover-hero-strip-copy {
+.discover-way-fan > img:nth-child(2) {
+  top: 0;
+  left: 26px;
+  z-index: 1;
+}
+.discover-way-fan > img:nth-child(3) {
+  left: 52px;
+  transform: rotate(7deg);
+}
+.discover-way-copy {
   display: flex;
   flex-direction: column;
   gap: 3px;
   min-width: 0;
 }
-.discover-hero-strip-title {
-  overflow: hidden;
+.discover-way-title {
   color: var(--ink-hi);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-strong);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1.12;
 }
-.discover-hero-strip-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
+.discover-way-detail {
   color: var(--ink-3);
-  font-size: var(--type-label);
-  line-height: 1;
-  white-space: nowrap;
+  font-size: var(--type-meta);
+  line-height: 1.3;
 }
-.discover-hero-strip-meta > * + *::before {
-  content: '';
-  display: inline-block;
-  width: 1px;
-  height: 0.9em;
-  margin-inline-end: 6px;
-  vertical-align: -0.1em;
-  background: currentColor;
-  opacity: 0.35;
-}
-/* One line of whole tags: a tag that does not fit wraps below and the clip hides it. */
-.discover-hero-strip-match {
-  flex-wrap: wrap;
-  height: 1em;
-  row-gap: 1em;
-  clip-path: inset(-4px -4px -3px calc(0.6em + 1px));
-  color: var(--brand-fg, var(--brand));
-  font-size: var(--type-micro);
+.discover-way-count {
+  margin-top: 3px;
+  color: var(--ink-4);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  line-height: 1;
-  white-space: nowrap;
 }
-.discover-hero-strip-match > li {
-  max-width: 100%;
+.discover-way[aria-pressed='true'] .discover-way-count {
+  color: var(--brand-fg, var(--brand));
 }
-.discover-hero-strip-match > li > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.discover-genres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
 }
-.discover-hero-strip-progress {
-  position: absolute;
-  right: 5px;
-  bottom: 2px;
-  left: 5px;
-  height: 2px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
+.discover-genres-label {
+  margin-right: 2px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
-.discover-hero-strip-progress > span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--brand);
-  transform-origin: left;
-  animation: discover-hero-progress var(--hero-rotate-ms) linear forwards;
+@media (max-width: 74.9375em) {
+  .discover-ways {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-@keyframes discover-hero-progress {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-/* The hero does not rotate under reduced motion (DiscoverHero), and the global rule would leave this
-   snapped full, so it goes rather than claim a countdown. */
-@media (prefers-reduced-motion: reduce) {
-  .discover-hero-strip-progress {
+@media (max-width: 35.9375em) {
+  .discover-ways {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mantine-spacing-sm);
+  }
+  .discover-way {
+    grid-template-columns: 64px minmax(0, 1fr);
+    min-height: 0;
+  }
+  .discover-way-fan {
+    height: 84px;
+  }
+  .discover-way-fan > img:nth-child(n + 2) {
     display: none;
+  }
+  .discover-way-fan > img:nth-child(1) {
+    transform: none;
   }
 }
 
@@ -4985,6 +5617,33 @@ button.site-chip:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
 }
+/* On Discover's recent-activity rail a seed is a toggle that narrows the rail to it. */
+.discover-seed[data-selectable] {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.discover-seed[data-selectable][aria-pressed='true'] {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+}
+.discover-seed[aria-pressed='true'] .discover-seed-meta {
+  color: var(--ink-2);
+}
+.discover-seed-clear {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-hi) 14%, transparent);
+  color: var(--ink-hi);
+}
+.discover-seed:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
 .discover-seed img,
 .discover-seed-blank {
   display: block;
@@ -5021,38 +5680,6 @@ button.site-chip:hover {
 }
 .discover-seed-meta:empty {
   display: none;
-}
-
-/* --- Trending: a numbered rail -------------------------------------------- */
-/* The counter lives on this wrapper, not on .discover-rail-item, which five other surfaces use. */
-.discover-ranked .discover-rail {
-  counter-reset: discover-rank;
-}
-.discover-ranked .discover-rail-item {
-  counter-increment: discover-rank;
-  position: relative;
-}
-.discover-ranked .discover-rail-item::before {
-  content: counter(discover-rank, decimal-leading-zero);
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-chip);
-  background: var(--app-bg);
-  border: 1px solid var(--border-strong);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-2);
-}
-.discover-ranked .discover-rail-item:hover::before {
-  color: var(--brand);
-  border-color: var(--brand);
 }
 
 /* --- Density ---------------------------------------------------------------
@@ -5257,7 +5884,7 @@ button.site-chip:hover {
   .discover-loading-picks {
     display: none;
   }
-  .discover-hero .series-hero-content {
+  .discover-hero.series-hero[data-compact] .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
   .discover-hero-strip {
@@ -5283,19 +5910,14 @@ button.site-chip:hover {
     width: 104px;
     height: 156px;
   }
-  /* The rails below repeat these picks, and the list pushed the first rail two screens down. */
-  .discover-hero .discover-hero-strip {
-    display: none;
-  }
   .discover-hero .discover-hero-actions {
     margin-top: 16px;
   }
 }
 
 /* A laptop screen is ~640px of usable page. The band is an opening, not the page, so on a short
-   viewport the feature gives back what it can: a smaller poster, a smaller title and tighter
-   spacing. `DiscoverHero` drops the list to four picks at the same height, which is the other half
-   of this. */
+   viewport the feature gives back what it can: a smaller poster, a smaller title, tighter spacing
+   and two lines of synopsis. */
 @media (max-height: 860px) and (min-width: 51.3125em) {
   .discover-hero.series-hero[data-compact] .series-hero-poster {
     width: 146px;
@@ -5323,6 +5945,10 @@ button.site-chip:hover {
   }
   .discover-hero-actions {
     margin-top: 14px;
+  }
+  .discover-hero-synopsis,
+  .discover-start-pick-synopsis {
+    -webkit-line-clamp: 2;
   }
 }
 /* Beside the text, the poster takes the text column's height (that column is a fixed box, so the

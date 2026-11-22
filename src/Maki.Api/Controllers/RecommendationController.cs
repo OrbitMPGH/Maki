@@ -492,11 +492,12 @@ public class RecommendationController(
         }
 
         var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
-        var rail = await readerCohortRail.GetAsync(currentUser, filters, limit, ct);
+        var rail = await readerCohortRail.GetAsync(currentUser, filters, limit, ct, request?.Cohort);
         return Ok(rail is null ? null : LocalizeRail(rail));
     }
 
-    public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
+    /// <param name="Cohort">Draw from this one cohort of the reader's, for a group's "See all".</param>
+    public record CohortRailRequest(RecommendationFilters? Filters, int? Limit, int? Cohort = null);
 
     /// <summary>
     /// Refill headroom only for a caller who has something to filter out of the rails. The cached

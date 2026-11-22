@@ -954,6 +954,23 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     /// <summary>
+    /// Trending cards carry the month's climb, the figure the chart prints beside each rank; other
+    /// feeds carry none.
+    /// </summary>
+    [Fact]
+    public async Task Trending_cards_carry_the_months_climb()
+    {
+        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100,
+            popularityHistory1W: 300, popularityHistory1Mo: 900);
+
+        var trending = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+        var popular = await Store.GetBrowseAsync(BrowseFeed.Popular, 10);
+
+        Assert.Equal(800, Assert.Single(trending).Climb);
+        Assert.Null(Assert.Single(popular).Climb);
+    }
+
+    /// <summary>
     /// The ratio is taken over the week, not the month, because a month-wide ratio only asks
     /// whether a title climbed at some point in the last month. A title that spiked three weeks ago
     /// and has been sliding since still wins that comparison; it is not trending, it is decaying.

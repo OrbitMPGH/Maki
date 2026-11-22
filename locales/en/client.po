@@ -362,11 +362,6 @@ msgstr "{0, plural, one {# repository} other {# repositories}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, one {# result} other {# results}}"
 
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-msgid "{0, plural, one {# row right now} other {# rows right now}}"
-msgstr "{0, plural, one {# row right now} other {# rows right now}}"
-
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -409,6 +404,11 @@ msgstr "{0, plural, one {# source checked} other {# sources checked}}"
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# theme right now} other {# themes right now}}"
+msgstr "{0, plural, one {# theme right now} other {# themes right now}}"
+
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{0, plural, one {# thread, JPEG XL on} other {# threads, JPEG XL on}}"
@@ -420,8 +420,10 @@ msgid "{0, plural, one {# thread} other {# threads}}"
 msgstr "{0, plural, one {# thread} other {# threads}}"
 
 #. placeholder {0}: active.items.length
+#. placeholder {0}: count.count
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "{0, plural, one {# title} other {# titles}}"
@@ -745,6 +747,13 @@ msgstr "{0} already reads this site."
 msgid "{0} by {deletedBy}"
 msgstr "{0} by {deletedBy}"
 
+#. placeholder {0}: item.totalChapters
+#: src/components/discover/DiscoverCohortColumns.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{0} ch."
+msgstr "{0} ch."
+
 #. placeholder {0}: formatBytes(f.freeSpace)
 #: src/pages/settings/LibraryCards.tsx
 msgid "{0} free"
@@ -770,6 +779,19 @@ msgstr "{0} links, starting with {1}"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "{0} pages on the sample chapter."
 msgstr "{0} pages on the sample chapter."
+
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "{0}, in your library"
+msgstr "{0}, in your library"
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} and {b} readers"
+msgstr "{a} and {b} readers"
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} readers"
+msgstr "{a} readers"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "{abs} pt"
@@ -2272,6 +2294,10 @@ msgstr "{perSitting} ch. per sitting"
 msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 msgstr "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{places} places this month"
+msgstr "{places} places this month"
+
 #: src/components/layout/SectionSettings.tsx
 msgid "{position} of {total}"
 msgstr "{position} of {total}"
@@ -3435,6 +3461,10 @@ msgstr "50 to 200"
 msgid "75 / page"
 msgstr "75 / page"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "8.5 and up, not in your library"
+msgstr "8.5 and up, not in your library"
+
 #: src/pages/stats/StatsRange.ts
 msgid "90 days"
 msgstr "90 days"
@@ -3451,6 +3481,10 @@ msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on yo
 #: src/components/settings/RootFolderPathModal.tsx
 msgid "A bulk move, rename or rescan is running."
 msgstr "A bulk move, rename or rescan is running."
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A card for each smaller theme on your shelf."
+msgstr "A card for each smaller theme on your shelf."
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "A change reaches readers once Maki has searched its chapters again in the background."
@@ -3471,10 +3505,6 @@ msgstr "a creator page"
 #: src/components/settings/RootFolderPathModal.tsx
 msgid "A download is writing into this folder."
 msgstr "A download is writing into this folder."
-
-#: src/components/discover/discoverSectionDefs.ts
-msgid "A few large picks at the top, from your recent reading or what is trending."
-msgstr "A few large picks at the top, from your recent reading or what is trending."
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
@@ -3563,10 +3593,6 @@ msgstr "A refresh is already running"
 #: src/pages/ActivityPage.tsx
 msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
 msgstr "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
-
-#: src/components/discover/discoverSectionDefs.ts
-msgid "A row for each smaller theme on your shelf."
-msgstr "A row for each smaller theme on your shelf."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -3954,6 +3980,7 @@ msgstr "Add title"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Add to library"
 msgstr "Add to library"
@@ -4306,10 +4333,6 @@ msgstr "Also delete files on disk"
 msgid "Also delete the downloaded files"
 msgstr "Also delete the downloaded files"
 
-#: src/components/discover/DiscoverHero.tsx
-msgid "Also for you"
-msgstr "Also for you"
-
 #: src/components/pageconversion/recommendation.ts
 msgid "Also in apps like Mihon"
 msgstr "Also in apps like Mihon"
@@ -4503,6 +4526,15 @@ msgstr "Another file already backs the chapter. Open each one to compare the two
 #: src/components/notes/useAuthorLabel.ts
 msgid "Another reader"
 msgstr "Another reader"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of you: {theme}"
+msgstr "Another side of you: {theme}"
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of your library"
+msgstr "Another side of your library"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -4859,7 +4891,6 @@ msgstr "Author"
 msgid "Author or artist"
 msgstr "Author or artist"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -5174,6 +5205,11 @@ msgstr "Barely nudges. A show you loved stays below a book you never rated."
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Barely touched"
 msgstr "Barely touched"
+
+#. placeholder {0}: formatNumber(group.shared)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Based on {0} of your finished series"
+msgstr "Based on {0} of your finished series"
 
 #: src/api/hooks.ts
 msgid "Based on your recent activity"
@@ -6635,6 +6671,14 @@ msgstr "Comparisons against the wider catalogue need the embedding index."
 #: src/pages/HealthPage.tsx
 msgid "Complete"
 msgstr "Complete"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, over 150 chapters"
+msgstr "Complete, over 150 chapters"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, up to 50 chapters"
+msgstr "Complete, up to 50 chapters"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ImportListsSection.tsx
@@ -9405,10 +9449,6 @@ msgstr "Filter library…"
 msgid "Filter saved"
 msgstr "Filter saved"
 
-#: src/pages/DiscoverPage.tsx
-msgid "Filter the catalogue"
-msgstr "Filter the catalogue"
-
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -9516,9 +9556,17 @@ msgstr "Finish setup"
 msgid "Finished"
 msgstr "Finished"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished by them far more than by most readers"
+msgstr "Finished by them far more than by most readers"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Finished in a rush"
 msgstr "Finished in a rush"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished it"
+msgstr "Finished it"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Finished torrents"
@@ -9548,6 +9596,10 @@ msgstr "First page"
 #: src/pages/settings/CustomSourceReport.tsx
 msgid "First page image"
 msgstr "First page image"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "First released this year"
+msgstr "First released this year"
 
 #: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9827,13 +9879,17 @@ msgstr "From the metadata provider, not your own tags"
 msgid "From their names"
 msgstr "From their names"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/DiscoverThemeCards.tsx
 msgid "From your library"
 msgstr "From your library"
 
 #: src/pages/settings/IntegrationCards.tsx
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "From your MangaBaka settings. No OAuth needed."
+
+#: src/pages/DiscoverPage.tsx
+msgid "From your recent reading"
+msgstr "From your recent reading"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "From your shelf"
@@ -9878,16 +9934,19 @@ msgid "General"
 msgstr "General"
 
 #: src/api/autoTagRules.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 msgid "Genre"
 msgstr "Genre"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Genres"
 msgstr "Genres"
@@ -10120,6 +10179,10 @@ msgstr "Group: {groupName}, set by you"
 #: src/pages/settings/CustomSourceReport.tsx
 msgid "Groups credited: {groupList}"
 msgstr "Groups credited: {groupList}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Groups of readers"
+msgstr "Groups of readers"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Groups overlap on purpose, so one series can belong to several of them."
@@ -10395,6 +10458,10 @@ msgstr "Higher numbers are more intrusive."
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Highest priority first. Grouped tiers rank the same."
 msgstr "Highest priority first. Grouped tiers rank the same."
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Highest share of readers like you"
+msgstr "Highest share of readers like you"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Historical"
@@ -12052,6 +12119,10 @@ msgstr "lockout, failed attempts, session lifetime"
 msgid "login page, background, covers, mosaic, wallpaper"
 msgstr "login page, background, covers, mosaic, wallpaper"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Long and finished"
+msgstr "Long and finished"
+
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
@@ -13029,6 +13100,10 @@ msgstr "Most missing"
 msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 msgstr "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Most of them finished"
+msgstr "Most of them finished"
+
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
 msgstr "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -13037,6 +13112,10 @@ msgstr "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, an
 #: src/api/hooks.ts
 msgid "Most popular"
 msgstr "Most popular"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Most popular first"
+msgstr "Most popular first"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -13540,6 +13619,10 @@ msgstr "New series from creators you follow"
 msgid "New tag…"
 msgstr "New tag…"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "New this year"
+msgstr "New this year"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "new version, check for updates, release, github"
@@ -13930,6 +14013,7 @@ msgstr "No match found."
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/CreditPicker.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15067,6 +15151,10 @@ msgstr "Now in your library. Matching sources in the background."
 msgid "Number"
 msgstr "Number"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "Number 1"
+msgstr "Number 1"
+
 #: src/components/library/LibraryFilterPanel.tsx
 msgid "Numbering clash"
 msgstr "Numbering clash"
@@ -15365,6 +15453,11 @@ msgstr "Only notify services with this tag."
 msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
 msgstr "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
 
+#. placeholder {0}: s.displayTitle
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Only picks from {0}"
+msgstr "Only picks from {0}"
+
 #: src/components/ContentRatingCards.tsx
 msgid "Only safe titles"
 msgstr "Only safe titles"
@@ -15657,10 +15750,6 @@ msgstr "Other groups"
 #: src/components/ui/status.tsx
 msgid "Other list"
 msgstr "Other list"
-
-#: src/components/discover/DiscoverHero.tsx
-msgid "Other picks for you"
-msgstr "Other picks for you"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Other sessions signed out"
@@ -16018,10 +16107,6 @@ msgstr "Pause pass"
 msgid "Pause Rewind"
 msgstr "Pause Rewind"
 
-#: src/components/discover/DiscoverHero.tsx
-msgid "Pause rotating picks"
-msgstr "Pause rotating picks"
-
 #: src/components/pageconversion/SaveActions.tsx
 msgid "Pause the running pass?"
 msgstr "Pause the running pass?"
@@ -16031,7 +16116,6 @@ msgid "Pause this series"
 msgstr "Pause this series"
 
 #: src/components/ActivityButton.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -16212,6 +16296,10 @@ msgstr "Pin one to a series from its Quality profile menu."
 msgid "Pin to page {pageNumber}"
 msgstr "Pin to page {pageNumber}"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Places climbed this month"
+msgstr "Places climbed this month"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Plain title search. Matches from just two characters."
 msgstr "Plain title search. Matches from just two characters."
@@ -16263,6 +16351,10 @@ msgstr "Polish"
 #: src/components/discover/RecommenderDials.tsx
 msgid "popular"
 msgstr "popular"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Popular in {genre}"
+msgstr "Popular in {genre}"
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "Popular, new and top rated titles, with the catalogue filter."
@@ -16790,6 +16882,10 @@ msgstr "Rated {ratingLabel} or more"
 msgid "Rated {score}"
 msgstr "Rated {score}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Rated highest"
+msgstr "Rated highest"
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -17060,6 +17156,7 @@ msgid "Readers get it"
 msgstr "Readers get it"
 
 #: src/api/hooks.ts
+#: src/components/discover/discoverBrowse.ts
 msgid "Readers like you"
 msgstr "Readers like you"
 
@@ -17070,6 +17167,10 @@ msgstr "Readers like you also finished this"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Readers like you finished this"
+msgstr "Readers like you finished this"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Readers who finished {finished} also finished these"
@@ -18435,10 +18536,6 @@ msgstr "Resume downloads for this series"
 msgid "Resume Rewind"
 msgstr "Resume Rewind"
 
-#: src/components/discover/DiscoverHero.tsx
-msgid "Resume rotating picks"
-msgstr "Resume rotating picks"
-
 #: src/pages/ActivityPage.tsx
 msgid "Resume this series"
 msgstr "Resume this series"
@@ -19223,6 +19320,10 @@ msgstr "Score {score}"
 msgid "Score for {0}"
 msgstr "Score for {0}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Score from all readers"
+msgstr "Score from all readers"
+
 #: src/components/series/RatingPanel.tsx
 msgid "Score two to get a suggestion"
 msgstr "Score two to get a suggestion"
@@ -19542,6 +19643,19 @@ msgstr "Sections on this tab"
 #: src/components/settings/SecuritySection.tsx
 msgid "Security settings saved. Restart Maki to apply them."
 msgstr "Security settings saved. Restart Maki to apply them."
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all"
+msgstr "See all"
+
+#. placeholder {0}: formatNumber(group.members.length)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "See all {0}"
+msgstr "See all {0}"
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all in {theme}"
+msgstr "See all in {theme}"
 
 #: src/components/NotificationBell.tsx
 msgid "See all notifications"
@@ -20115,6 +20229,10 @@ msgstr "Shift"
 msgid "Shift-click for a range. Unticking a chapter unlinks it."
 msgstr "Shift-click for a range. Unticking a chapter unlinks it."
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Short and finished"
+msgstr "Short and finished"
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -20157,6 +20275,7 @@ msgstr "Show a popup when a notification arrives"
 msgid "Show again"
 msgstr "Show again"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/pages/HealthPage.tsx
 msgid "Show all"
 msgstr "Show all"
@@ -20226,6 +20345,10 @@ msgstr "Show only: {label}"
 msgid "Show or hide keyboard shortcuts"
 msgstr "Show or hide keyboard shortcuts"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Show other picks"
+msgstr "Show other picks"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Show page number"
@@ -20234,6 +20357,10 @@ msgstr "Show page number"
 #: src/pages/HealthPage.tsx
 msgid "Show passing"
 msgstr "Show passing"
+
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Show picks from every series"
+msgstr "Show picks from every series"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Show reading streaks"
@@ -20302,10 +20429,6 @@ msgstr "Shown on this device until the server's page is ready, and whenever the 
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
 msgstr "Shown to whoever asked"
-
-#: src/api/hooks.ts
-msgid "Side interests"
-msgstr "Side interests"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Side stories"
@@ -20899,10 +21022,6 @@ msgstr "Spoiler: {description}"
 msgid "Sports"
 msgstr "Sports"
 
-#: src/api/hooks.ts
-msgid "Spotlight"
-msgstr "Spotlight"
-
 #: src/pages/HealthPage.tsx
 msgid "Stacked height"
 msgstr "Stacked height"
@@ -20949,6 +21068,11 @@ msgstr "Start chapter"
 #: src/pages/PageConversionWizardPage.tsx
 msgid "Start from a template"
 msgstr "Start from a template"
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Start here"
+msgstr "Start here"
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "Start now"
@@ -22520,6 +22644,10 @@ msgstr "Those series are already being matched."
 msgid "Threads"
 msgstr "Threads"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick."
+msgstr "Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick."
+
 #: src/components/CatalogueFilters.tsx
 msgid "Thriller"
 msgstr "Thriller"
@@ -22787,8 +22915,13 @@ msgstr "Top {percent}% of a page"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 msgid "Top rated"
 msgstr "Top rated"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Top rated first"
+msgstr "Top rated first"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Top source is tried first when several carry the same series."
@@ -22878,6 +23011,7 @@ msgid "Trash: {trashSize} across {trashFilesText}"
 msgstr "Trash: {trashSize} across {trashFilesText}"
 
 #: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
 msgid "Trending now"
 msgstr "Trending now"
 
@@ -23096,6 +23230,10 @@ msgstr "Under minimum"
 #: src/components/home/homeSectionDefs.ts
 msgid "Under the hero"
 msgstr "Under the hero"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Under the radar"
+msgstr "Under the radar"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Underscore (_)"
@@ -23864,6 +24002,13 @@ msgstr "Vietnamese"
 msgid "View"
 msgstr "View"
 
+#. placeholder {0}: first.title
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "View {0}"
+msgstr "View {0}"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -23886,6 +24031,7 @@ msgstr "View and add {title}"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 msgid "View in library"
 msgstr "View in library"
 
@@ -24189,8 +24335,8 @@ msgid "What it does"
 msgstr "What it does"
 
 #: src/components/discover/discoverSectionDefs.ts
-msgid "What readers who finished the same series as you went on to finish."
-msgstr "What readers who finished the same series as you went on to finish."
+msgid "What readers who finished the same series as you went on to finish, one column per group of readers."
+msgstr "What readers who finished the same series as you went on to finish, one column per group of readers."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "What shapes your recommendations"
@@ -24712,10 +24858,6 @@ msgstr "Your library is empty"
 #: src/components/settings/AccountSection.tsx
 msgid "Your new API key"
 msgstr "Your new API key"
-
-#: src/components/discover/DiscoverHero.tsx
-msgid "Your next read"
-msgstr "Your next read"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/MintConfirmation.tsx

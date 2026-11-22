@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Core.Io;
 using Maki.Core.Sources;
 using Maki.Metadata.Catalogue;
@@ -54,7 +55,9 @@ public class ArtifactIdleUnloadJob(
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
     SourceChapterListCache chapterLists,
-    ILogger<ArtifactIdleUnloadJob> logger) : IJob
+    ILogger<ArtifactIdleUnloadJob> logger,
+    RecommendationService? recommendations = null,
+    SimilarSeriesService? similarSeries = null) : IJob
 {
     public static readonly JobKey Key = new("artifact-idle-unload");
 
@@ -65,6 +68,11 @@ public class ArtifactIdleUnloadJob(
     private const int DefaultIdleMinutes = 1;
 
     private const int DefaultVectorIdleMinutes = 1;
+
+    private static readonly TimeSpan PoolIdleWindow = TimeSpan.FromMinutes(15);
+
+    /// <summary>Above the client's one-hour staleTime, so a Discover feed is never reset under a reader.</summary>
+    private static readonly TimeSpan InteractivePoolIdleWindow = TimeSpan.FromHours(2);
 
     public Task Execute(IJobExecutionContext context)
     {
@@ -88,6 +96,10 @@ public class ArtifactIdleUnloadJob(
             released += ease.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += recoGraph.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += cohorts.ReleaseIfIdle(idleFor) ? 1 : 0;
+            var poolIdle = TimeSpan.FromMinutes(Math.Max(minutes, PoolIdleWindow.TotalMinutes));
+            var interactivePoolIdle = TimeSpan.FromMinutes(Math.Max(minutes, InteractivePoolIdleWindow.TotalMinutes));
+            released += (recommendations?.ReleaseIdlePools(poolIdle, interactivePoolIdle) ?? 0) > 0 ? 1 : 0;
+            released += (similarSeries?.ReleaseIdle(poolIdle) ?? 0) > 0 ? 1 : 0;
         }
 
         if (vectorMinutes > 0)

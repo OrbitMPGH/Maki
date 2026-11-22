@@ -99,10 +99,10 @@ public static partial class CreditNoticeLinks
             .Where(n => !string.IsNullOrWhiteSpace(n.Text))
             .OrderBy(n => n.Id)
             .DistinctBy(n => n.Id)
-            .Select(n => (n.Id, Counts: Grams(n.Text!, n.Titles)))
+            .Select(n => (n.Id, Counts: GramCodes(n.Text!, n.Titles)))
             .Where(n => n.Counts.Count > 0)
             .ToList();
-        var df = new Dictionary<string, int>(StringComparer.Ordinal);
+        var df = new Dictionary<int, int>();
         foreach (var (_, counts) in grams)
         {
             foreach (var g in counts.Keys)
@@ -113,7 +113,7 @@ public static partial class CreditNoticeLinks
 
         // Each notice becomes a row of (posting list, weight); a pair's cosine is summed row by row over shared pieces.
         var total = (double)grams.Count;
-        var postings = new Dictionary<string, List<(int Row, double Weight)>>(StringComparer.Ordinal);
+        var postings = new Dictionary<int, List<(int Row, double Weight)>>();
         var rows = new List<(int Id, List<(List<(int Row, double Weight)> Posting, double Weight)> Pieces)>();
         foreach (var (id, counts) in grams)
         {
@@ -304,6 +304,57 @@ public static partial class CreditNoticeLinks
                 for (var i = 0; i + GramLength <= piece.Length; i++)
                 {
                     var gram = piece.Substring(i, GramLength);
+                    if (!skip.Contains(gram))
+                    {
+                        counts[gram] = counts.GetValueOrDefault(gram) + 1;
+                    }
+                }
+            }
+        }
+
+        return counts;
+    }
+
+    // CreditGroupName.Key only emits '0'..'9' and 'a'..'z' (36 symbols), so 5 chars pack bijectively
+    // into 30 bits with zero collisions and zero substring allocations.
+    private static int PackGram(string s, int start)
+    {
+        var code = 0;
+        for (var k = 0; k < GramLength; k++)
+        {
+            var c = s[start + k];
+            code = (code << 6) | (c >= 'a' ? c - 'a' + 10 : c - '0');
+        }
+
+        return code;
+    }
+
+    private static Dictionary<int, int> GramCodes(string text, IEnumerable<string> titles)
+    {
+        var skip = new HashSet<int>();
+        foreach (var title in titles)
+        {
+            var key = CreditGroupName.Key(title);
+            for (var i = 0; i + GramLength <= key.Length; i++)
+            {
+                skip.Add(PackGram(key, i));
+            }
+        }
+
+        var counts = new Dictionary<int, int>();
+        foreach (var line in text.Split(" | "))
+        {
+            var key = CreditGroupName.Key(line);
+            if (IsOfficial(line) || IsOfficial(key))
+            {
+                continue;
+            }
+
+            foreach (var piece in Pieces(key))
+            {
+                for (var i = 0; i + GramLength <= piece.Length; i++)
+                {
+                    var gram = PackGram(piece, i);
                     if (!skip.Contains(gram))
                     {
                         counts[gram] = counts.GetValueOrDefault(gram) + 1;

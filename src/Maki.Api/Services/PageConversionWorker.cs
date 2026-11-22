@@ -208,17 +208,27 @@ public class PageConversionWorker(
     {
         ImageWorkGate.SetConversionLimit(
             PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, stoppingToken)));
+        using var collect = new DeferredCollect();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await RunQueueAsync(stoppingToken);
-                if (await StateAsync(stoppingToken) == PageConversionPassState.Running &&
-                    await RunPassAsync(stoppingToken))
+                collect.Busy();
+                if (await RunQueueAsync(stoppingToken) > 0)
                 {
-                    continue;
+                    collect.Worked();
                 }
 
+                if (await StateAsync(stoppingToken) == PageConversionPassState.Running)
+                {
+                    collect.Worked();
+                    if (await RunPassAsync(stoppingToken))
+                    {
+                        continue;
+                    }
+                }
+
+                collect.Idle();
                 await Wake.WaitAsync(IdleWait(DateTime.UtcNow), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

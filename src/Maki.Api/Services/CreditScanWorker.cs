@@ -167,22 +167,27 @@ public sealed class CreditScanWorker(
             return;
         }
 
+        using var collect = new DeferredCollect();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                collect.Busy();
                 if (_enabled && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
                 {
+                    collect.Worked();
                     await ScanSeriesAsync(next.SeriesId, next.Language, stoppingToken);
                     continue;
                 }
 
                 if (_enabled && !Paused && await RecheckBankAsync(stoppingToken) > 0)
                 {
+                    collect.Worked();
                     continue;
                 }
 
                 SetWorking(null);
+                collect.Idle();
                 await Wake.WaitAsync(IdleFallback, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
