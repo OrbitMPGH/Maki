@@ -1040,6 +1040,17 @@ body {
 .nav-collapsed .mantine-AppShell-main {
   --page-gutter-start: var(--page-gutter-end);
 }
+/* The series page sits on one 100rem column, centred in what the sidebar leaves, so its hero, tabs
+   and tables share both edges. Narrower windows keep the gutters above; the band still bleeds. The
+   start gutter is what the column leaves after the end one, so it only grows once the cap binds. */
+.mantine-AppShell-main.app-main-hero {
+  --series-room: calc(100vw - var(--app-shell-navbar-offset, 0rem) - 100rem);
+  --page-gutter-end: max(var(--app-shell-padding), min((100vw - 75rem) * 0.15, 10rem), var(--series-room) / 2);
+  --page-gutter-start: max(var(--app-shell-padding), var(--series-room) - var(--page-gutter-end));
+}
+.nav-collapsed .mantine-AppShell-main.app-main-hero {
+  --page-gutter-start: var(--page-gutter-end);
+}
 /* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
    sidebar and header, identical on both sides, perfectly still while the content swaps. */
 ::view-transition-group(root) {
@@ -6992,6 +7003,30 @@ button.site-chip:hover {
           color-mix(in srgb, var(--app-bg) 18%, transparent) 100%
   );
 }
+/* On the series page the light and the scrim follow the content column rather than the window, so
+   the title keeps its contrast and the art its light however wide the gutters are. Past the
+   column's right edge the art fades to the page over 24rem, so on a wide window both gutters end
+   in plain page and the band stays centred with the page. */
+.app-main-hero .series-hero-falloff {
+  background: radial-gradient(
+          min(120%, 150rem) 150% at calc(100% - var(--page-gutter-end) - 6rem) 10%,
+          rgba(0, 0, 0, 0) 0%,
+          color-mix(in srgb, var(--app-bg) 55%, transparent) 62%,
+          color-mix(in srgb, var(--app-bg) 90%, transparent) 100%
+  );
+}
+.app-main-hero .series-hero-scrim-x {
+  --band-column: calc(100% - var(--page-gutter-start) - var(--page-gutter-end));
+  background: linear-gradient(
+          90deg,
+          var(--app-bg) calc(var(--page-gutter-start) + var(--band-column) * 0.13),
+          color-mix(in srgb, var(--app-bg) 88%, transparent) calc(var(--page-gutter-start) + var(--band-column) * 0.34),
+          color-mix(in srgb, var(--app-bg) 46%, transparent) calc(var(--page-gutter-start) + var(--band-column) * 0.62),
+          color-mix(in srgb, var(--app-bg) 18%, transparent) calc(100% - var(--page-gutter-end)),
+          color-mix(in srgb, var(--app-bg) 72%, transparent) calc(100% - var(--page-gutter-end) + 13rem),
+          var(--app-bg) calc(100% - var(--page-gutter-end) + 24rem)
+  );
+}
 /* 4. Vertical scrim: dissolves the band into the page rather than ending it on an edge. */
 .series-hero-scrim-y {
   position: absolute;
@@ -7020,12 +7055,7 @@ button.site-chip:hover {
 }
 
 /* Once the page is wide enough, the band ends on its own tab row, a hairline across the page that
-   starts at the poster's edge on every tab. Details keeps the full width below it. Chapters and
-   Files stay on that left edge and stop where the Progress panel starts, so the space to their
-   right is the panel's column carrying on rather than leftover. That edge is the band's first grid
-   column (2fr of 2.6fr, after the Group's md gap) plus the gap. 98.5rem is where that width
-   reaches the 76rem the chapter table needs to keep its Released column; below it the tables take
-   the full width and the tabs stay beside the Progress panel. Past 120rem a table stops growing. */
+   starts at the poster's edge on every tab. Below 98.5rem the tabs stay beside the Progress panel. */
 .series-page {
   container: series-page / inline-size;
 }
@@ -7040,9 +7070,6 @@ button.site-chip:hover {
   }
   .series-tab-stage {
     padding-top: var(--mantine-spacing-xs);
-  }
-  .series-detail-surface:is([data-tab='chapters'], [data-tab='files']) .series-tab-stage {
-    max-width: min((100% - var(--mantine-spacing-md)) / 1.3 + var(--mantine-spacing-md), 120rem);
   }
   .series-page .series-hero[data-loading]:not([data-compact]) .series-hero-tabs {
     border-bottom: 1px solid var(--hairline);
@@ -9033,6 +9060,10 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   padding: 9px 0;
   border-top: 1px solid var(--hairline);
 }
+/* A long value (the folder path) takes a row of its own instead of wrapping in a narrow column. */
+.series-record[data-wide] {
+  grid-column: 1 / -1;
+}
 .series-split-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -9403,14 +9434,10 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   flex-shrink: 0;
   min-width: 3.75rem;
 }
-/* The list reads as a table of contents: the number in the display face, the date set flush
-   against the end of the title column. */
+/* The list reads as a table of contents: the number in the display face, the date beside it. */
 .chapter-table .chapter-number {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
-}
-.chapter-table .chapter-released {
-  text-align: end;
 }
 .chapter-table thead th {
   position: relative;
@@ -9681,15 +9708,15 @@ body.column-resizing * {
 /* A panel a little narrower than the default columns (a laptop with the sidebar open) drops the
    Released column before it falls back to list rows. By position, so folded span rows lose their
    matching empty cell. */
-.chapter-rows-compact .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(4) {
+.chapter-rows-compact .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(3) {
   display: none;
 }
 
 /* Columns the reader hid from the table's view menu. By position like the shed above, so span rows
    lose their matching cell, and in every layout including the list rows. Volume headings span
    columns instead, sized to what shows. */
-.chapter-hide-title .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(3),
-.chapter-hide-released .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(4),
+.chapter-hide-released .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(3),
+.chapter-hide-title .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(4),
 .chapter-hide-source .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(5),
 .chapter-hide-status .chapter-table :is(th, tr:not(.chapter-volume-row) > td):nth-child(6) {
   display: none !important;
@@ -9766,21 +9793,21 @@ body.column-resizing * {
 }
 /* The title gets a line of its own under the number: beside the switch, number and row actions it
    had about 70px on a phone and every title cut to its first word. */
-.chapter-rows-list .chapter-table tbody td:nth-child(3) {
+.chapter-rows-list .chapter-table tbody td:nth-child(4) {
   order: 2;
   flex: 1 1 100%;
 }
-.chapter-rows-list .chapter-table tbody td:nth-child(3):not(:has(*:not(:empty))) {
+.chapter-rows-list .chapter-table tbody td:nth-child(4):not(:has(*:not(:empty))) {
   display: none;
 }
-.chapter-rows-list .chapter-table tbody td:nth-child(3) .mantine-Text-root {
+.chapter-rows-list .chapter-table tbody td:nth-child(4) .mantine-Text-root {
   --text-line-clamp: 2 !important;
 }
 .chapter-rows-list .chapter-table tbody td:nth-child(7) {
   order: 1;
   margin-inline-start: auto;
 }
-.chapter-rows-list .chapter-table tbody td:nth-child(4),
+.chapter-rows-list .chapter-table tbody td:nth-child(3),
 .chapter-rows-list .chapter-table tbody td:nth-child(5),
 .chapter-rows-list .chapter-table tbody td:nth-child(6) {
   order: 3;
@@ -9798,7 +9825,7 @@ body.column-resizing * {
 .chapter-rows-list .chapter-table tbody tr.chapter-span-row td:empty {
   display: none;
 }
-.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(4),
 .chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
   order: 3;
   flex: 1 1 100%;
@@ -15808,6 +15835,25 @@ button.settings-row-head:hover,
 .chapter-filter-chips > .tag-chip {
   min-height: 1.875rem;
   padding-block: 0;
+}
+/* In the Chapters heading, left of Select. The heading's rule gives way first, then the search
+   shrinks, so a narrow panel or a long Select label never squeezes the title. */
+.series-detail-chapter-toolbar .section-header-end,
+.series-detail-chapter-toolbar .section-header-action,
+.series-detail-chapter-toolbar .section-header-action > .mantine-Group-root {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.series-detail-chapter-toolbar .chapter-search {
+  width: 20rem;
+  flex: 0 1 auto;
+  min-width: 9rem;
+}
+.series-detail-chapter-toolbar .section-header-action .mantine-Button-root {
+  flex-shrink: 0;
+}
+.series-detail-chapter-toolbar .section-header-lead {
+  flex-shrink: 0;
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
