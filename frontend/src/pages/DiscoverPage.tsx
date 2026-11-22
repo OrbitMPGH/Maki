@@ -180,7 +180,8 @@ const LIVE_APPLY_MS = 600
 
 /**
  * Picks at which the Recommended grid starts windowing. Lower than the library's threshold: the
- * feed auto-loads up to 1,000 cards and stays mounted in KeptPages, and nobody find-in-pages it.
+ * feed auto-loads up to 1,000 cards and stays mounted in KeptPages. Past it, find-in-page only
+ * sees the rows near the viewport.
  */
 const RECOMMENDED_WINDOW_MIN = 120
 
