@@ -2292,6 +2292,7 @@ public class SettingsController(
         {
             SourceProxyFailure.Unreachable => "error.settings.sourceProxyUnreachable",
             SourceProxyFailure.Rejected or SourceProxyFailure.Misconfigured => "error.settings.sourceProxyRejected",
+            null when result.RefusedHere => "error.settings.sourceProxyRefusedHere",
             null when result.TimedOut => "error.settings.sourceProxySiteTimeout",
             null when result.FlareSolverr is { Ok: false } => "error.settings.sourceProxyFlareSolverr",
             _ => null,

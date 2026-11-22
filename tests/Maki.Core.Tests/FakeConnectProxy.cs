@@ -6,7 +6,8 @@ namespace Maki.Core.Tests;
 
 /// <summary>
 /// A loopback HTTP proxy that records what it is asked for and answers every request itself with
-/// <see cref="Status"/>, so tests never reach the target and never need DNS.
+/// <see cref="Status"/>, so tests never reach the target and never need DNS. Status 0 hangs up
+/// without answering, the way Docker treats a stopped container's published port.
 /// </summary>
 internal sealed class FakeConnectProxy : IAsyncDisposable
 {
@@ -62,6 +63,11 @@ internal sealed class FakeConnectProxy : IAsyncDisposable
                 lock (Requests)
                 {
                     Requests.Add(head.Split("\r\n")[0]);
+                }
+
+                if (Status == 0)
+                {
+                    return;
                 }
 
                 var reason = Status == 407 ? "Proxy Authentication Required" : "Status";
