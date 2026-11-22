@@ -15,6 +15,8 @@ using Maki.Core.Ratings;
 using Maki.Core.Scrobbling;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
+using Maki.Sources.Suwayomi;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Core.Sources;
@@ -2204,6 +2206,60 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
+
+    /// <param name="Url">The proxy, <c>http://host:port</c>; blank when none is set.</param>
+    /// <param name="Sources">Names of the sources that go through it.</param>
+    public record SourceProxySettings(string? Url, IReadOnlyList<string>? Sources);
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("source-proxy")]
+    public async Task<IActionResult> GetSourceProxy(CancellationToken ct) =>
+        Ok(ToSettings(SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct))));
+
+    /// <summary>
+    /// Assignments for sources not registered right now (Suwayomi off, a custom source removed) are
+    /// kept, the way <see cref="SetSourcePriority"/> keeps them, so turning the source back on finds
+    /// its proxy where it left it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("source-proxy")]
+    public async Task<IActionResult> SetSourceProxy([FromBody] SourceProxySettings request, CancellationToken ct)
+    {
+        Uri? url = null;
+        if (!string.IsNullOrWhiteSpace(request.Url) && (url = SourceProxyUrl.Parse(request.Url, out var error)) is null)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        var requested = (request.Sources ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var unknown = requested
+            .Where(name => sourceRegistry.Find(name) is null || name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
+        }
+
+        var stored = SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct));
+        var kept = stored.Sources.Keys.Where(name => sourceRegistry.Find(name) is null);
+        var names = requested.Concat(kept).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (url is null && names.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.sourceProxyInUse");
+        }
+
+        var config = url is null
+            ? SourceProxyConfig.Empty
+            : new SourceProxyConfig(
+                [new SourceProxyConfig.Entry(SourceProxyConfig.DefaultId, url.GetLeftPart(UriPartial.Authority))],
+                names.ToDictionary(name => name, _ => SourceProxyConfig.DefaultId, StringComparer.OrdinalIgnoreCase));
+        await settings.SetAsync(SettingKeys.SourceProxy, config.Serialize(), ct);
+        return Ok(ToSettings(config));
+    }
+
+    private static SourceProxySettings ToSettings(SourceProxyConfig config) => new(
+        config.DefaultUrl,
+        config.Sources.Where(s => s.Value == SourceProxyConfig.DefaultId).Select(s => s.Key).Order(StringComparer.OrdinalIgnoreCase).ToList());
 
     /// <summary>The last Test result of each connection, only where the stored settings are still the ones tested.</summary>
     [Authorize(Policy = Policies.Admin)]
