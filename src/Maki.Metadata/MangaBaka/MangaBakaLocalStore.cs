@@ -1942,7 +1942,7 @@ public class MangaBakaLocalStore(
         {
             hydrate.CommandText = $"""
                 SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
-                       cover_x250_x1, cover_x250_x2
+                       cover_x250_x1, cover_x250_x2, popularity_global_current, popularity_global_history_1mo
                 FROM series
                 WHERE id IN (SELECT value FROM json_each($ids))
                 """;
@@ -1963,7 +1963,10 @@ public class MangaBakaLocalStore(
                     [], [], false,
                     null, null,
                     ThumbUrl: GetString(reader, 8),
-                    ThumbUrlHiDpi: GetString(reader, 9));
+                    ThumbUrlHiDpi: GetString(reader, 9))
+                {
+                    Climb = feed == BrowseFeed.Trending ? ClimbOf(GetInt(reader, 10), GetInt(reader, 11)) : null,
+                };
             }
         }
 
@@ -1985,6 +1988,10 @@ public class MangaBakaLocalStore(
 
         return results;
     }
+
+    /// <summary>Places climbed from a month ago to now; null when either rank is missing or it fell.</summary>
+    internal static int? ClimbOf(int? current, int? monthAgo) =>
+        current is { } now && monthAgo is { } then && then > now ? then - now : null;
 
     /// <summary>
     /// Rich detail for one series (full description, categorized tags, cross-links, per-source

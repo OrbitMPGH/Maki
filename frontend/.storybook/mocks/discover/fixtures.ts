@@ -148,11 +148,12 @@ const rail = (key: string, title: string, feed: string, list: RecommendationItem
   ...extra,
 })
 
-export const trendingRail = rail('trending', 'Trending this week', 'Trending', [
-  ...items(0, 5),
-  ownedItem(5),
-  ...items(5, 14),
-])
+export const trendingRail = rail(
+  'trending',
+  'Trending this week',
+  'Trending',
+  [...items(0, 5), ownedItem(5), ...items(5, 14)].map((item, i) => ({ ...item, climb: 420 - i * 23 })),
+)
 
 export const catalogueRails: DiscoverRail[] = [
   rail('popular', 'Most popular', 'Popular', [ownedItem(10), ...items(8, 16), ownedItem(2), ...items(0, 4)]),
@@ -195,12 +196,32 @@ export const sideInterestRails: DiscoverRail[] = [
   }),
 ]
 
+const cohortItems = [catalogueItem(10), catalogueItem(16), catalogueItem(24), catalogueItem(6), catalogueItem(25), catalogueItem(15)]
+
 export const cohortRail: DiscoverRail = rail(
   'cohort',
   'Readers like you also finished',
   READER_COHORT_FEED,
-  [catalogueItem(10), catalogueItem(16), catalogueItem(24), catalogueItem(6), catalogueItem(25), catalogueItem(15)],
-  { subtitle: 'Finished by readers whose libraries overlap yours' },
+  cohortItems,
+  {
+    subtitle: 'Finished by readers whose libraries overlap yours',
+    groups: [
+      {
+        key: 3,
+        weight: 0.6,
+        seedIds: [],
+        shared: 9,
+        members: [0, 2, 4].map((i, n) => ({ id: cohortItems[i].providerId, share: 0.42 - n * 0.06 })),
+      },
+      {
+        key: 7,
+        weight: 0.4,
+        seedIds: [],
+        shared: 5,
+        members: [1, 3, 5].map((i, n) => ({ id: cohortItems[i].providerId, share: 0.31 - n * 0.05 })),
+      },
+    ],
+  },
 )
 
 const GENRES = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Supernatural']

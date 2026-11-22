@@ -275,6 +275,8 @@ export interface RecommendationItem {
   relatedToThumbUrl?: string | null
   becauseOfThumbUrl?: string | null
   coReadWithThumbUrl?: string | null
+  /** Set on Trending picks only: places climbed up the popularity ranking over the last month. */
+  climb?: number | null
   /**
    * The same-work component this pick belongs to, or null when it is in no franchise, which is
    * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
@@ -712,6 +714,22 @@ export interface DiscoverRail {
   excludeInteracted?: boolean
   /** Set on the follow rail, so "Show more" keeps its release window. */
   releasedWithinMonths?: number
+  /** Set on the reader-cohort rail: its picks sorted into the groups of readers they came from, strongest first. */
+  groups?: DiscoverCohortGroup[] | null
+}
+
+/** One group of readers the reader was placed with, on the "Readers like you also finished" rail. */
+export interface DiscoverCohortGroup {
+  /** The group's id in the installed artifact; sent back to draw from it alone. */
+  key: number
+  /** Its share of the reader's placement, 0 to 1. */
+  weight: number
+  /** Up to three of the reader's own finished series that tie them to it (MangaBaka ids). */
+  seedIds: number[]
+  /** How many of the reader's finished series count towards it. */
+  shared: number
+  /** Its picks, by MangaBaka id as on the rail's items, with how many of the group finished each (0 to 1). */
+  members: { id: string; share: number }[]
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -824,7 +842,7 @@ export const READER_COHORT_FEED = 'ReaderCohorts'
  * reason as the recent-activity rail: it is an extra on a page that works without it.
  */
 export function useDiscoverCohort(
-  request: { filters?: RecommendationFilters; limit?: number } | null,
+  request: { filters?: RecommendationFilters; limit?: number; cohort?: number | null } | null,
   enabled = true,
 ) {
   return useQuery({
@@ -1188,10 +1206,10 @@ export const DISCOVER_SECTIONS = [
 export type DiscoverSectionKey = (typeof DISCOVER_SECTIONS)[number]
 
 export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescriptor> = {
-  hero: msg`Spotlight`,
+  hero: msg`Start here`,
   recent: msg`Based on your recent activity`,
   following: msg`New from creators you follow`,
-  sideinterests: msg`Side interests`,
+  sideinterests: msg`Another side of your library`,
   cohort: msg`Readers like you`,
   trending: msg`Trending now`,
   catalogue: msg`Browse the catalogue`,
