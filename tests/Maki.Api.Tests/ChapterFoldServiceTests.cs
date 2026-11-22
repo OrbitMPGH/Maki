@@ -328,7 +328,7 @@ public sealed class ChapterFoldServiceTests : IDisposable
     public void A_folded_link_stands_for_each_of_its_parts()
     {
         var parts = ChapterFoldPart.Format([new("a", 3.1m, "3.1", 13), new("b", 3.2m, "3.2", 26)]);
-        var link = new FoldLink(1, 1, "parts", "parts", "series", 1, "a", "3", 3, null, null, "en", null, null, 39, null, null, parts);
+        var link = new FoldLink(1, 1, "parts", "parts", "series", 1, "a", "3", 3, null, null, "en", null, null, 39, parts);
 
         Assert.Equal([("a", 3.1m), ("b", 3.2m)], link.ToSourceChapters().Select(c => (c.SourceChapterId, c.Number!.Value)));
         Assert.Equal("a", Assert.Single((link with { Parts = null }).ToSourceChapters()).SourceChapterId);

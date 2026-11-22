@@ -54,8 +54,6 @@ public sealed record FoldLink(
     DateTime? ReleaseDate,
     string? Url,
     int? PageCount,
-    string? PageHashes,
-    string? StripHashes,
     string? Parts = null)
 {
     public SourceChapter ToSourceChapter() =>
@@ -127,10 +125,39 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
     /// A link's stored hashes for the page check. An empty strip means none could be made, which is a
     /// strip comparison that cannot happen rather than one still to fetch: it stands as an empty strip.
     /// </summary>
-    private static PageEvidence? Evidence(FoldLink link) =>
-        ChapterPageMatch.Parse(link.PageHashes) is { } pages
-            ? new PageEvidence(pages, link.StripHashes is null ? null : ChapterPageMatch.ParseStrip(link.StripHashes) ?? [])
+    private static PageEvidence? Evidence(string? pageHashes, string? stripHashes) =>
+        ChapterPageMatch.Parse(pageHashes) is { } pages
+            ? new PageEvidence(pages, stripHashes is null ? null : ChapterPageMatch.ParseStrip(stripHashes) ?? [])
             : null;
+
+    /// <summary>
+    /// The stored hashes of only the links a merged floor's page check reads. Loading them for every
+    /// link held the whole library's hash text while most floors never look at it.
+    /// </summary>
+    private async Task<Dictionary<(int MappingId, int ChapterId), PageEvidence?>> EvidenceAsync(
+        HashSet<(int MappingId, int ChapterId)> wanted, CancellationToken ct)
+    {
+        var evidence = new Dictionary<(int MappingId, int ChapterId), PageEvidence?>();
+        if (wanted.Count == 0)
+        {
+            return evidence;
+        }
+
+        var chapterIds = wanted.Select(w => w.ChapterId).Distinct().ToList();
+        var rows = await db.ChapterSourceLinks.AsNoTracking()
+            .Where(l => chapterIds.Contains(l.ChapterId) && l.PageHashes != null)
+            .Select(l => new { l.SourceMappingId, l.ChapterId, l.PageHashes, l.StripHashes })
+            .ToListAsync(ct);
+        foreach (var row in rows)
+        {
+            if (wanted.Contains((row.SourceMappingId, row.ChapterId)))
+            {
+                evidence[(row.SourceMappingId, row.ChapterId)] = Evidence(row.PageHashes, row.StripHashes);
+            }
+        }
+
+        return evidence;
+    }
 
     /// <summary>Every floor that is not plain, per series and language, with the links each pending one waits on.</summary>
     public async Task<(IReadOnlyList<FoldFloor> Floors, int SeriesChecked)> DecideAsync(int? seriesId, CancellationToken ct)
@@ -147,12 +174,15 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             .Select(l => new
             {
                 l.SourceMappingId, l.ChapterId, l.SourceChapterId, l.NumberRaw, Number = l.Chapter!.Number!.Value,
-                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.PageHashes, l.StripHashes, l.Parts,
+                l.Volume, l.Title, l.Chapter.Language, l.ReleaseDate, l.Url, l.PageCount, l.Parts,
             })
             .ToListAsync(ct);
         var linksByMapping = links.ToLookup(l => l.SourceMappingId);
 
-        var floors = new List<FoldFloor>();
+        var decided = new List<(int SeriesId, string Title, string Language, FloorDecision Decision,
+            Dictionary<string, List<FoldLink>> ByMapping, List<ReconcileListing> Listings,
+            Dictionary<(string Mapping, decimal Number), FoldLink> ByKey, Dictionary<string, int> IdsByName)>();
+        var wanted = new HashSet<(int MappingId, int ChapterId)>();
         var seriesChecked = 0;
         foreach (var series in mappings.GroupBy(m => m.SeriesId).OrderBy(g => g.Key))
         {
@@ -175,27 +205,48 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
                         .OrderBy(l => l.Number)
                         .Select(l => new FoldLink(series.Key, m.Id, names[m.Id], m.SourceName, m.SourceSeriesId, l.ChapterId,
                             l.SourceChapterId, l.NumberRaw, l.Number, l.Volume, l.Title, language, l.ReleaseDate, l.Url, l.PageCount,
-                            l.PageHashes, l.StripHashes, l.Parts))
+                            l.Parts))
                         .ToList());
                 var listings = ordered
                     .Select(m => new ReconcileListing(names[m.Id],
                         [.. byMapping[names[m.Id]].Select(l => new ReconcileEntry(l.Number, l.Title, l.PageCount))]))
                     .Where(l => l.Entries.Count > 0)
                     .ToList();
-                var hashes = byMapping.SelectMany(m => m.Value)
-                    .ToDictionary(l => (l.MappingName, l.Number), l => Evidence(l));
+                var byKey = byMapping.SelectMany(m => m.Value).ToDictionary(l => (l.MappingName, l.Number));
                 foreach (var d in ChapterReconciler.Decide(listings, publisher).Values.Where(d => d.State != FoldState.Plain))
                 {
-                    ChapterReconciler.CheckPages(d, (mapping, number) => hashes.GetValueOrDefault((mapping, number)));
-                    var missing = ChapterReconciler.MissingCounts(d, listings)
-                        .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
-                        .ToList();
-                    var missingPages = d.MissingPages
-                        .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
-                        .ToList();
-                    floors.Add(new FoldFloor(series.Key, series.First().Title, language, d, missing, missingPages, idsByName));
+                    decided.Add((series.Key, series.First().Title, language, d, byMapping, listings, byKey, idsByName));
+                    if (d.State != FoldState.Merged)
+                    {
+                        continue;
+                    }
+
+                    // Exactly what CheckPages asks for: each part, and each whole at the floor.
+                    var asked = d.Parts.SelectMany(p => p.Value.Select(n => (p.Key, n))).Concat(d.Wholes.Select(w => (w, d.Floor)));
+                    foreach (var key in asked)
+                    {
+                        if (byKey.TryGetValue(key, out var link))
+                        {
+                            wanted.Add((link.MappingId, link.ChapterId));
+                        }
+                    }
                 }
             }
+        }
+
+        var evidence = await EvidenceAsync(wanted, ct);
+        var floors = new List<FoldFloor>(decided.Count);
+        foreach (var (seriesKey, title, language, d, byMapping, listings, byKey, idsByName) in decided)
+        {
+            ChapterReconciler.CheckPages(d, (mapping, number) =>
+                byKey.TryGetValue((mapping, number), out var link) ? evidence.GetValueOrDefault((link.MappingId, link.ChapterId)) : null);
+            var missing = ChapterReconciler.MissingCounts(d, listings)
+                .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
+                .ToList();
+            var missingPages = d.MissingPages
+                .Select(m => byMapping[m.Mapping].First(l => l.Number == m.Number))
+                .ToList();
+            floors.Add(new FoldFloor(seriesKey, title, language, d, missing, missingPages, idsByName));
         }
 
         return (floors, seriesChecked);
