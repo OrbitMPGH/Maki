@@ -130,6 +130,9 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             ? new PageEvidence(pages, stripHashes is null ? null : ChapterPageMatch.ParseStrip(stripHashes) ?? [])
             : null;
 
+    /// <summary>Wanted links per evidence query, which keeps each query's parameter list short.</summary>
+    private const int EvidenceChunk = 500;
+
     /// <summary>
     /// The stored hashes of only the links a merged floor's page check reads. Loading them for every
     /// link held the whole library's hash text while most floors never look at it.
@@ -143,16 +146,20 @@ public class ChapterFoldPreviewService(MakiDbContext db, SourceAvailability sour
             return evidence;
         }
 
-        var chapterIds = wanted.Select(w => w.ChapterId).Distinct().ToList();
-        var rows = await db.ChapterSourceLinks.AsNoTracking()
-            .Where(l => chapterIds.Contains(l.ChapterId) && l.PageHashes != null)
-            .Select(l => new { l.SourceMappingId, l.ChapterId, l.PageHashes, l.StripHashes })
-            .ToListAsync(ct);
-        foreach (var row in rows)
+        foreach (var chunk in wanted.OrderBy(w => w.ChapterId).Chunk(EvidenceChunk))
         {
-            if (wanted.Contains((row.SourceMappingId, row.ChapterId)))
+            var chapterIds = chunk.Select(w => w.ChapterId).Distinct().ToList();
+            var mappingIds = chunk.Select(w => w.MappingId).Distinct().ToList();
+            var rows = await db.ChapterSourceLinks.AsNoTracking()
+                .Where(l => chapterIds.Contains(l.ChapterId) && mappingIds.Contains(l.SourceMappingId) && l.PageHashes != null)
+                .Select(l => new { l.SourceMappingId, l.ChapterId, l.PageHashes, l.StripHashes })
+                .ToListAsync(ct);
+            foreach (var row in rows)
             {
-                evidence[(row.SourceMappingId, row.ChapterId)] = Evidence(row.PageHashes, row.StripHashes);
+                if (wanted.Contains((row.SourceMappingId, row.ChapterId)))
+                {
+                    evidence[(row.SourceMappingId, row.ChapterId)] = Evidence(row.PageHashes, row.StripHashes);
+                }
             }
         }
 
