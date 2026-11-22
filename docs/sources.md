@@ -24,6 +24,33 @@ signed API calls still need a built-in source. A site with no search can still b
 series to it by pasting the series URL. The format is described in
 [custom-sources-plan.md](custom-sources-plan.md).
 
+## Sending a source through a proxy
+
+Some sites block VPN and datacenter addresses. An admin can give those sources a proxy under
+**Settings → Downloads → Source proxy**: one plain HTTP proxy (`http://host:port`, no username or
+password yet), plus the sources that use it. Everything Maki does for those sources goes through it:
+the headless browser MangaFire and TopManhua need, FlareSolverr's challenge solves, chapter lists,
+page images and covers. Every other source keeps connecting the way it does now. Suwayomi sources
+are not listed, since Suwayomi does their fetching; set a proxy in Suwayomi for those.
+
+- **Maki never falls back to a direct connection.** When the proxy is down, the source fails with
+  "The source's proxy could not be reached or refused the request" until it is back.
+- **FlareSolverr connects to the proxy itself**, from its own network. Use an address both can reach,
+  usually the proxy's LAN IP: a Docker name such as `http://gluetun:8888` may resolve for Maki and not
+  for FlareSolverr.
+- **The proxy needs one fixed outgoing IP.** Cloudflare ties its clearance cookie to the IP that
+  earned it, so a proxy that rotates its address between requests breaks the browser sources.
+- **Make the proxy refuse private addresses.** A site picks the image addresses Maki fetches, and the
+  proxy looks those names up itself, so a proxy that will connect to its own network can be pointed
+  at it. tinyproxy and Squid both have rules for this. **Test** warns when the proxy accepts them.
+
+**Test** fetches the first chosen source's site through the proxy and, for a source that needs
+FlareSolverr, has FlareSolverr try the proxy too. A site behind Cloudflare answers that request with
+403 whether or not your address is blocked, so a pass means the proxy got through, not that the site
+will work.
+
+## Built-in sources
+
 | Source | Notes |
 |---|---|
 | MangaDex | Official API, language filter |
