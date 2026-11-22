@@ -631,6 +631,17 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task Counting_a_bank_hit_keeps_the_bank_loaded()
+    {
+        await _bank.EntriesAsync(default);
+        await Task.Delay(600);
+
+        await _bank.CountHitAsync(1, default);
+
+        Assert.False(_bank.ReleaseIfIdle(TimeSpan.FromMilliseconds(500)));
+    }
+
+    [Fact]
     public async Task Chapters_carrying_the_same_credit_page_read_it_once()
     {
         var reader = new CountingTextReader();

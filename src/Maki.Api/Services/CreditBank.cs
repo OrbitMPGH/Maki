@@ -42,6 +42,8 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     private IReadOnlyList<Entry>? _entries;
     private long _lastUsedTicks;
 
+    private void Touch() => Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+
     public bool ReleaseIfIdle(TimeSpan idleFor)
     {
         if (!_gate.Wait(0))
@@ -73,7 +75,7 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
 
     public async Task<IReadOnlyList<Entry>> EntriesAsync(CancellationToken ct)
     {
-        Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+        Touch();
         if (Volatile.Read(ref _entries) is { } loaded)
         {
             return loaded;
@@ -130,6 +132,7 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     public async Task<Match?> FindAsync(int pageCount, CreditDetector.Edges chapter, bool tail, IReadOnlyList<Entry> entries,
         Func<Entry, bool> eligible, int afterId, CancellationToken ct)
     {
+        Touch();
         await foreach (var match in MatchesAsync(pageCount, chapter, tail, entries, eligible, afterId, ct))
         {
             return match;
@@ -145,6 +148,7 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     /// </summary>
     public async Task SeedAsync(ReaderService.ChapterSlice slice, CreditDetector.Edges edges, bool tail, CancellationToken ct)
     {
+        Touch();
         var edge = tail ? edges.Tail : edges.Head;
         if (CreditDetector.SignatureOf(edge) is not { } signature)
         {
@@ -198,7 +202,11 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     }
 
     /// <summary>Counts a chapter an entry caught.</summary>
-    public Task CountHitAsync(int entryId, CancellationToken ct) => CountHitUnlockedAsync(entryId, ct);
+    public Task CountHitAsync(int entryId, CancellationToken ct)
+    {
+        Touch();
+        return CountHitUnlockedAsync(entryId, ct);
+    }
 
     private async Task CountHitUnlockedAsync(int entryId, CancellationToken ct)
     {
@@ -211,6 +219,7 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     /// <summary>An entry's strip, decoded; null when the entry is gone (its series was deleted) or unreadable.</summary>
     private async Task<CreditDetector.Edge?> StripAsync(int id, CancellationToken ct)
     {
+        Touch();
         if (_strips.TryGetValue(id, out var cached))
         {
             return cached;
