@@ -38,13 +38,16 @@ If you can't tell which one a request is, ask the owner before you start.
 
 **Every step below is required, in order.** Agents most often go wrong at three points: opening a PR without the owner's go-ahead (step 2), opening it after running only the tests (step 3), and reporting back right after opening it without running the reviewers (steps 4 and 5).
 
-1. **Create the branch and worktree from `dev`, by hand.**
-   ```
-   git checkout dev && git pull
-   git worktree add .claude/worktrees/<name> -b feature/<name> dev
-   cd .claude/worktrees/<name>/frontend && npm ci
-   ```
-   Do not use the `Agent` tool's `isolation: "worktree"`; it sometimes bases the worktree on `main`. Run a real `npm ci` in the worktree; never junction or copy `node_modules` from the main checkout. Every edit, build, and commit from here on happens inside the worktree path, not the main checkout.
+1. **Create the branch and worktree from `dev`.**
+   - **In T3 Code, use its worktree tool when it is available.** Call `t3_worktree_status` first, then `t3_worktree_handoff` with `branch: "feature/<name>"`, `baseRef: "dev"` and `startFromOrigin: true` (check `startedFromOrigin` in the result). It moves this thread into the new worktree and runs the project's setup script, so it must be the last call of the turn: pass a `continuationPrompt` to carry on there. To start a separate agent in its own worktree, use `t3_thread_launch` with `workspaceStrategy` instead.
+   - **Otherwise, by hand:**
+     ```
+     git checkout dev && git pull
+     git worktree add .claude/worktrees/<name> -b feature/<name> dev
+     cd .claude/worktrees/<name>/frontend && npm ci
+     ```
+
+   Do not use the `Agent` tool's `isolation: "worktree"`; it sometimes bases the worktree on `main`. Run a real `npm ci` in the worktree's `frontend/` if the setup script did not; never junction or copy `node_modules` from the main checkout. Every edit, build, and commit from here on happens inside the worktree path, not the main checkout.
 
 2. **Do the work with the owner. This step is a loop.** Build what was asked, then stop and report back. The owner looks at it and may ask for changes, so redo or adjust and stop again. Repeat for as many rounds as it takes. Commit to the feature branch as pieces land. For UI iteration, leave changes uncommitted until the owner has looked at them.
 
@@ -71,7 +74,7 @@ If you can't tell which one a request is, ask the owner before you start.
 6. **Merge only when the owner says so.** Then, in this order:
    1. Run `git status` in the worktree. Move research notes, plans, benchmark data, and scratch scripts worth keeping to `research/<topic>/<date>-<name>/` in the main checkout (git-ignored). Tell the owner what you moved.
    2. `gh pr merge <number> --merge`, then `git pull` on `dev` in the main checkout.
-   3. `git worktree remove .claude/worktrees/<name>`, then `git branch -D feature/<name>` and `git push origin --delete feature/<name>`. The branch cannot be deleted while the worktree still has it checked out, which is why `--delete-branch` is not used in step 2.
+   3. `git worktree remove <worktree path>` (`.claude/worktrees/<name>` by hand; `t3_worktree_status` reports a T3 one), then `git branch -D feature/<name>` and `git push origin --delete feature/<name>`. The branch cannot be deleted while the worktree still has it checked out, which is why `--delete-branch` is not used in step 2.
 
    If the work is **dropped** instead of merged, ask the owner before removing the worktree or the branch.
 
