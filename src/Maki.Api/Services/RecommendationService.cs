@@ -154,11 +154,11 @@ public class RecommendationService(
     }
     private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
-    public int ReleaseIdlePools(TimeSpan idleFor)
+    public int ReleaseIdlePools(TimeSpan railIdleFor, TimeSpan interactiveIdleFor)
     {
         lock (_poolsGate)
         {
-            return _pools.ReleaseIdle(idleFor);
+            return _pools.ReleaseIdle(railIdleFor, interactiveIdleFor);
         }
     }
 

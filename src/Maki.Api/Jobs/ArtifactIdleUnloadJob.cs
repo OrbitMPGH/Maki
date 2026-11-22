@@ -71,6 +71,9 @@ public class ArtifactIdleUnloadJob(
 
     private static readonly TimeSpan PoolIdleWindow = TimeSpan.FromMinutes(15);
 
+    /// <summary>Above the client's one-hour staleTime, so a Discover feed is never reset under a reader.</summary>
+    private static readonly TimeSpan InteractivePoolIdleWindow = TimeSpan.FromHours(2);
+
     public Task Execute(IJobExecutionContext context)
     {
         // Not an artifact, but the same kind of leftover: chapter lists the scout and measure
@@ -94,7 +97,8 @@ public class ArtifactIdleUnloadJob(
             released += recoGraph.ReleaseIfIdle(idleFor) ? 1 : 0;
             released += cohorts.ReleaseIfIdle(idleFor) ? 1 : 0;
             var poolIdle = TimeSpan.FromMinutes(Math.Max(minutes, PoolIdleWindow.TotalMinutes));
-            released += (recommendations?.ReleaseIdlePools(poolIdle) ?? 0) > 0 ? 1 : 0;
+            var interactivePoolIdle = TimeSpan.FromMinutes(Math.Max(minutes, InteractivePoolIdleWindow.TotalMinutes));
+            released += (recommendations?.ReleaseIdlePools(poolIdle, interactivePoolIdle) ?? 0) > 0 ? 1 : 0;
             released += (similarSeries?.ReleaseIdle(poolIdle) ?? 0) > 0 ? 1 : 0;
         }
 
