@@ -452,6 +452,13 @@ public class OnnxPageUpscalerTests : IDisposable
         }
     }
 
+    private sealed class FreeGate : IDisposable
+    {
+        public void Dispose()
+        {
+        }
+    }
+
     [JpegXlFact]
     public async Task Flat_rows_below_the_art_do_not_run_ahead_of_the_encoder()
     {
@@ -468,6 +475,9 @@ public class OnnxPageUpscalerTests : IDisposable
         var png = source.EncodePng();
         StreamedJpegXlPage? page = null;
         upscaler.StreamStarted = started => page = started;
+        // The bound lifts by design while the encoder waits for the gate, and the real gate is shared with
+        // every test running in parallel, so this page gets one nobody else holds.
+        upscaler.HoldGate = (_, _) => Task.FromResult<IDisposable>(new FreeGate());
 
         var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
 
