@@ -1,48 +1,10 @@
 import { errorText } from '../../api/errorText'
-import { useId, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import {
-  Anchor,
-  Box,
-  Button,
-  Collapse,
-  Group,
-  SegmentedControl,
-  SimpleGrid,
-  Skeleton,
-  Stack,
-  Text,
-  Tooltip,
-  UnstyledButton,
-} from '@mantine/core'
-import { BarChart, DonutChart } from '@mantine/charts'
-import {
-  IconAlertCircle,
-  IconArrowsShuffle,
-  IconChartPie,
-  IconChevronDown,
-  IconClock,
-  IconCompass,
-  IconFilter,
-  IconLock,
-  IconPencil,
-  IconRoute,
-  IconLightning,
-  IconTags,
-} from '../../lib/icons'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Group, Skeleton, Stack, Text } from '@mantine/core'
+import { IconAlertCircle, IconBooks, IconClock, IconCompass, IconLock, IconRoute, IconTarget } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
-import type { MessageDescriptor } from '@lingui/core'
-import type {
-  BehaviourSeries,
-  ReadingBehaviour,
-  TasteFacet,
-  TasteGroup,
-  TasteInsights,
-  TasteMember,
-  TasteView,
-  RecommendationItem,
-} from '../../api/hooks'
+import type { RecommendationFilters, RecommendationItem, TasteGroup, TasteView } from '../../api/hooks'
 import {
   useReadingBehaviour,
   useRootFolders,
@@ -51,583 +13,57 @@ import {
   useTasteProfile,
 } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
-import { DiscoverRailRow, type OpenItem } from '../../components/ui/DiscoverRail'
 import { sectionSource } from '../../api/shortlist'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { FigureStrip } from '../../components/ui/FigureStrip'
-import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
-import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
-import { PanelTitle } from '../../components/ui/PanelTitle'
-import { TagChip } from '../../components/ui/TagChip'
+import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { SignalsCard } from './FeedbackLab'
-import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
-import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
-import { useLabel } from '../../i18n-context'
 import { Callout } from '../../components/ui/Callout'
-
-const SLICE_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-  'var(--chart-6)',
-]
-
-/** How many of each composition facet the demoted row shows. */
-const HEAD = 6
-
-/**
- * Over-index badges only start here. Between roughly 1 and this a facet is proportional to the
- * shelf, and labelling that "1.1x" invites reading noise as a preference.
- */
-const NOTEWORTHY = 1.25
-
-function percent(share: number): string {
-  return formatPercent(share)
-}
-
-function ratio(value: number): string {
-  return `${value >= 10 ? formatNumber(Math.round(value)) : formatFixedDecimal(value, 1)}x`
-}
+import { TastePortrait } from './taste/TastePortrait'
+import { TasteThemes } from './taste/TasteThemes'
+import { StatsLink, TasteHabits } from './taste/TasteHabits'
+import { TasteDrift } from './taste/TasteDrift'
+import { TasteReach } from './taste/TasteReach'
+import { TasteShelf } from './taste/TasteShelf'
 
 function TasteSkeleton() {
-  const { t } = useLingui()
   return (
     <Stack gap="md" aria-hidden inert>
-      <SignalsCard />
-      <SectionHeader icon={IconClock} title={t`How you read`} />
-      <FigureStrip
-        loading
-        className="taste-figures"
-        figures={[t`You finish`, t`Typical chapter`, t`Where you usually stop`, t`Biggest day`].map((label) => ({
-          label,
-          value: 0,
-        }))}
-      />
-      <SectionHeader icon={IconCompass} title={t`Recurring themes`} />
-      {[0, 1, 2].map((i) => (
-        <Panel key={i} p="md">
-          <Group justify="space-between" mb="sm">
-            <Skeleton h={14} w={140 - i * 20} />
-            <Skeleton h={10} w={120} />
-          </Group>
-          <Group gap="md" mb="md">
-            {[120, 96, 140, 108].map((w) => (
-              <Group key={w} gap={6} wrap="nowrap">
-                <Skeleton w={24} h={34} radius="sm" />
-                <Skeleton h={10} w={w} />
-              </Group>
+      <Panel p="xl" className="taste-portrait">
+        <div className="taste-portrait-main">
+          <Skeleton h={26} w={200} />
+          <Stack gap={10} my="md">
+            <Skeleton h={44} w="70%" />
+            <Skeleton h={44} w="55%" />
+            <Skeleton h={44} w="62%" />
+          </Stack>
+          <Group gap={10}>
+            {[110, 96, 120, 88, 104].map((w) => (
+              <Skeleton key={w} h={30} w={w} radius="md" />
             ))}
           </Group>
-          <Skeleton h={8} w={72} mb={8} />
-          <div className="discover-rail">
-            {Array.from({ length: 8 }, (_, j) => (
-              <div key={j} className="discover-rail-item">
-                <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
-              </div>
-            ))}
-          </div>
-        </Panel>
-      ))}
+          <Group gap="sm" mt="md">
+            <Skeleton h={36} w={180} />
+            <Skeleton h={36} w={150} />
+          </Group>
+        </div>
+        <div className="taste-portrait-collage">
+          {Array.from({ length: 8 }, (_, i) => (
+            <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
+          ))}
+        </div>
+      </Panel>
     </Stack>
   )
 }
 
-function GroupRow({
-  group,
-  maxShare,
-  opened,
-  onToggle,
-  onOpen,
-  seriesIdFor,
-  onRecommend,
-}: {
-  group: TasteGroup
-  maxShare: number
-  opened: boolean
-  onToggle: () => void
-  onOpen: OpenItem
-  seriesIdFor: (item: RecommendationItem) => number | null
-  onRecommend: (group: TasteGroup) => void
-}) {
-  const { t } = useLingui()
-  const bodyId = useId()
-  const { size, share, coherence } = group
-  // Coherence in words. The raw cosine means nothing to a reader, and the useful distinction is
-  // only ever three-way: this group is one thing, a theme, or a loose pile.
-  //
-  // The bands sit higher than they did for the old k-means groups. A group defined by a tag its
-  // members all carry starts out tight - the simulated library's twelve run 0.74 to 0.87 - so the
-  // old 0.72 floor called every one of them "very tight" and said nothing.
-  const coherenceWord =
-    coherence >= 0.84 ? t`very alike` : coherence >= 0.76 ? t`fairly alike` : t`loosely related`
-  const seriesCount = plural(size, { one: '# series', other: '# series' })
-  const barWidth = maxShare > 0 ? Math.max(4, Math.min(100, (share / maxShare) * 100)) : 0
-
-  return (
-    <div className="settings-row taste-theme" data-open={opened || undefined}>
-      <UnstyledButton
-        className="settings-row-head taste-theme-head"
-        aria-expanded={opened}
-        aria-controls={bodyId}
-        onClick={onToggle}
-      >
-        <span className="settings-row-text">
-          <span className="settings-row-title">{group.label}</span>
-          <span className="settings-row-summary tnum">{seriesCount}</span>
-        </span>
-        <span className="taste-theme-covers" aria-hidden>
-          {group.examples.slice(0, 4).map((m: TasteMember) =>
-            m.coverUrl ? (
-              <img key={m.seriesId} src={m.coverUrl} alt="" loading="lazy" />
-            ) : (
-              <span key={m.seriesId} className="taste-theme-cover-empty" />
-            ),
-          )}
-        </span>
-        <span className="taste-theme-share">
-          <span className="taste-theme-bar" aria-hidden>
-            <b style={{ width: `${barWidth}%` }} />
-          </span>
-          <span className="tnum taste-theme-pct">{percent(share)}</span>
-        </span>
-        <span className="taste-theme-word">{coherenceWord}</span>
-        <IconChevronDown size={16} className="settings-row-chevron" aria-hidden />
-      </UnstyledButton>
-      <Collapse expanded={opened} id={bodyId}>
-        <div className="taste-theme-body">
-          <Group gap="md" wrap="wrap" mb={group.picks.length > 0 ? 'sm' : 0}>
-            {group.examples.map((m: TasteMember) => (
-              <Group key={m.seriesId} gap={6} wrap="nowrap" style={{ maxWidth: 220 }}>
-                <SeriesThumb url={m.coverUrl} alt={m.title} />
-                <Text size="sm" truncate style={{ minWidth: 0 }}>
-                  <SeriesLink id={m.seriesId} title={m.title} />
-                </Text>
-              </Group>
-            ))}
-          </Group>
-          {group.seedIds.length > 0 && (
-            <Button
-              size="compact-sm"
-              variant="subtle"
-              leftSection={<IconCompass size={14} />}
-              mb={group.picks.length > 0 ? 'sm' : 0}
-              onClick={() => onRecommend(group)}
-            >
-              <Trans>More like this</Trans>
-            </Button>
-          )}
-          {group.picks.length > 0 && (
-            <>
-              <Text size="xs" fw={600} mb={4}>
-                <Trans>More of this</Trans>
-              </Text>
-              <DiscoverRailRow
-                items={group.picks}
-                seriesIdFor={seriesIdFor}
-                onOpen={onOpen}
-                savedFrom={sectionSource('taste')}
-              />
-            </>
-          )}
-        </div>
-      </Collapse>
-    </div>
-  )
-}
-
-function ThemesPanel({
-  groups,
-  onOpen,
-  seriesIdFor,
-  onRecommend,
-}: {
-  groups: TasteGroup[]
-  onOpen: OpenItem
-  seriesIdFor: (item: RecommendationItem) => number | null
-  onRecommend: (group: TasteGroup) => void
-}) {
-  const [openLabel, setOpenLabel] = useState<string | null>(groups[0]?.label ?? null)
-  const maxShare = Math.max(0, ...groups.map((g) => g.share))
-  return (
-    <Panel p={0} className="taste-themes">
-      {groups.map((group) => (
-        <GroupRow
-          key={group.label}
-          group={group}
-          maxShare={maxShare}
-          opened={openLabel === group.label}
-          onToggle={() => setOpenLabel(openLabel === group.label ? null : group.label)}
-          onOpen={onOpen}
-          seriesIdFor={seriesIdFor}
-          onRecommend={onRecommend}
-        />
-      ))}
-    </Panel>
-  )
-}
-
-/** The three pace and abandonment lists, which all read the same way. */
-function BehaviourList({
-  icon: ListIcon,
-  title,
-  items,
-  emptyText,
-  format,
-}: {
-  icon: typeof IconClock
-  title: string
-  items: BehaviourSeries[]
-  emptyText: string
-  format: (item: BehaviourSeries) => string
-}) {
-  return (
-    <Panel p="md">
-      <Box mb="xs">
-        <PanelTitle icon={ListIcon}>{title}</PanelTitle>
-      </Box>
-      {items.length === 0 ? (
-        <Text c="var(--ink-3)" size="sm">
-          {emptyText}
-        </Text>
-      ) : (
-        <Stack gap={8}>
-          {items.map((item) => (
-            <Group key={item.seriesId} gap={8} wrap="nowrap">
-              <SeriesThumb url={item.coverUrl} alt={item.title} />
-              <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                <SeriesLink id={item.seriesId} title={item.title} />
-              </Text>
-              <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
-                {format(item)}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      )}
-    </Panel>
-  )
-}
-
-function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
-  const { t } = useLingui()
-  const pace = behaviour.medianSecondsPerChapter
-  const { seriesFinished, seriesStarted, timedChapters, biggestDayCount } = behaviour
-  const stopPercent = behaviour.medianStopPoint === null ? null : percent(behaviour.medianStopPoint)
-  const formattedTimed = formatNumber(timedChapters)
-
-  const readSummary = plural(seriesStarted, {
-    one: `${seriesFinished} of # series read to the end of what you hold.`,
-    other: `${seriesFinished} of # series read to the end of what you hold.`,
-  })
-  const paceSummary =
-    timedChapters > 0
-      ? plural(timedChapters, {
-          one: `Pace is from ${formattedTimed} timed chapter; only the built-in reader records time.`,
-          other: `Pace is from ${formattedTimed} timed chapters; only the built-in reader records time.`,
-        })
-      : null
-
-  return (
-    <>
-      <FigureStrip
-        className="taste-figures"
-        figures={[
-          {
-            label: t`You finish`,
-            value: behaviour.finishRate === null ? '-' : percent(behaviour.finishRate),
-            zero: behaviour.finishRate === null,
-          },
-          {
-            label: t`Typical chapter`,
-            value: pace === null ? '-' : formatReadingTime(pace),
-            zero: pace === null,
-          },
-          {
-            label: t`Where you usually stop`,
-            value: stopPercent === null ? '-' : stopPercent,
-            zero: stopPercent === null,
-            tip: t`How far into a series you get before you stop reading it, for the series you did not finish.`,
-          },
-          {
-            label: t`Biggest day`,
-            value:
-              biggestDayCount === null
-                ? '-'
-                : plural(biggestDayCount, { one: '# chapter', other: '# chapters' }),
-            zero: biggestDayCount === null,
-          },
-        ]}
-      />
-
-      <Text c="var(--ink-3)" size="xs" mt={6}>
-        {readSummary}{' '}
-        {paceSummary ?? (
-          <>
-            <Trans>No chapter here carries a reading time, so there is no pace to report.</Trans>{' '}
-            <Trans>Only the built-in reader records it.</Trans>
-          </>
-        )}
-      </Text>
-
-      <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="md" mt="md">
-        <BehaviourList
-          icon={IconClock}
-          title={t`You slow down for`}
-          items={behaviour.savoured}
-          emptyText={t`Not enough timed chapters yet.`}
-          format={(item) => formatReadingTime(item.measure)}
-        />
-        <BehaviourList
-          icon={IconLightning}
-          title={t`You tear through`}
-          items={behaviour.devoured}
-          emptyText={t`Not enough timed chapters yet.`}
-          format={(item) => formatReadingTime(item.measure)}
-        />
-        <BehaviourList
-          icon={IconArrowsShuffle}
-          title={t`You put down`}
-          items={behaviour.abandoned}
-          emptyText={t`You finish what you start.`}
-          format={(item) => t`${percent(item.measure)} in`}
-        />
-      </SimpleGrid>
-    </>
-  )
-}
-
-function DriftSection({ insights }: { insights: TasteInsights }) {
-  const { t } = useLingui()
-  const data = insights.drift.map((d) => ({ bucket: d.bucket, similarity: d.similarityToStart }))
-
-  return (
-    <Panel p="md">
-      <Text c="var(--ink-3)" size="xs" mb="md">
-        <Trans>How close each quarter sat to where you started.</Trans>{' '}
-        <Trans>Lower bars mean your taste moved.</Trans>
-      </Text>
-      <BarChart
-        h={180}
-        data={data}
-        dataKey="bucket"
-        series={[{ name: 'similarity', color: 'var(--brand)', label: t`Similarity to start` }]}
-        valueFormatter={(v) => formatFixedDecimal(v, 2)}
-        yAxisProps={{ domain: [0, 1] }}
-        withTooltip
-        gridAxis="y"
-      />
-      <Stack gap={8} mt="md">
-        {insights.drift.map((point) => (
-          <Group key={point.bucket} gap={8} wrap="nowrap">
-            <Text size="sm" fw={600} className="tnum" style={{ width: 72, flexShrink: 0 }}>
-              {point.bucket}
-            </Text>
-            <Group gap={4} style={{ flexShrink: 0 }}>
-              {point.distinctiveTags.slice(0, 2).map((tag) => (
-                <TagChip key={tag} dot="var(--neutral)" size="sm">
-                  {tag}
-                </TagChip>
-              ))}
-            </Group>
-            <Text c="var(--ink-3)" size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
-              {point.example ? point.example.title : ''}
-            </Text>
-            <Text c="var(--ink-3)" size="xs" className="tnum" style={{ flexShrink: 0 }}>
-              {point.seriesCount}
-            </Text>
-          </Group>
-        ))}
-      </Stack>
-    </Panel>
-  )
-}
-
-/** The over-index badge, or nothing when support is thin or the reader is simply proportional. */
-function OverIndex({ facet }: { facet: TasteFacet }) {
-  const { t } = useLingui()
-  if (facet.overIndexShelf === null || facet.overIndexShelf < NOTEWORTHY) return null
-  const { overIndexShelf, support } = facet
-  const ratioValue = ratio(overIndexShelf)
-  const seriesPhrase = plural(support, { one: '# series', other: '# series' })
-  const label = t`Reached for ${ratioValue} more than owning it would predict, across ${seriesPhrase}`
-  return (
-    <Tooltip label={label} multiline w={260}>
-      <TagChip dot="var(--brand)" size="sm" style={{ flexShrink: 0 }}>
-        {ratioValue}
-      </TagChip>
-    </Tooltip>
-  )
-}
-
-/** The catalogue badge, which measures something different and has to say so. */
-function AgainstCatalogue({ facet }: { facet: TasteFacet }) {
-  const { t } = useLingui()
-  if (facet.overIndexCatalogue === null || facet.overIndexCatalogue < NOTEWORTHY) return null
-  const ratioValue = ratio(facet.overIndexCatalogue)
-  const label = t`${ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read`
-  return (
-    <Tooltip label={label} multiline w={260}>
-      <TagChip dot="var(--neutral)" size="sm" style={{ flexShrink: 0 }}>
-        <Trans>cat {ratioValue}</Trans>
-      </TagChip>
-    </Tooltip>
-  )
-}
-
-function CompositionCard({
-  title,
-  facets,
-  labels,
-}: {
-  title: string
-  facets: TasteFacet[]
-  /** Genre and format facet names are wire values matched against `GENRE_LABELS`/`TYPE_LABELS`; a
-   * creator or tag facet has no such table and is rendered as-is. */
-  labels?: Record<string, MessageDescriptor>
-}) {
-  const renderLabel = useLabel()
-  const data = facets.slice(0, 6).map((f, i) => ({
-    name: f.name,
-    label: labels ? renderLabel(labels[f.name] ?? f.name) : f.name,
-    value: f.share,
-    color: SLICE_COLORS[i % SLICE_COLORS.length],
-  }))
-  const byName = new Map(facets.map((f) => [f.name, f]))
-
-  return (
-    <Panel p="md">
-      <Box mb="md">
-        <PanelTitle>{title}</PanelTitle>
-      </Box>
-      {data.length === 0 ? (
-        <Text c="var(--ink-3)" size="sm">
-          <Trans>Nothing to show yet.</Trans>
-        </Text>
-      ) : (
-        <Group align="center" gap="xl" wrap="nowrap">
-          <DonutChart data={data} size={140} thickness={20} withTooltip valueFormatter={percent} />
-          <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
-            {data.map((d) => (
-              <Group key={d.name} gap={8} wrap="nowrap">
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 'var(--mantine-radius-xs)',
-                    background: d.color,
-                    flexShrink: 0,
-                  }}
-                />
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  {d.label}
-                </Text>
-                {byName.get(d.name) && <OverIndex facet={byName.get(d.name)!} />}
-                <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
-                  {percent(d.value)}
-                </Text>
-              </Group>
-            ))}
-          </Stack>
-        </Group>
-      )}
-    </Panel>
-  )
-}
-
-function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
-  return (
-    <Panel p="md">
-      <Box mb="xs">
-        <PanelTitle icon={IconPencil}>
-          <Trans>Creators</Trans>
-        </PanelTitle>
-      </Box>
-      {facets.length === 0 ? (
-        <Text c="var(--ink-3)" size="sm">
-          <Trans>No creator shows up often enough yet.</Trans>
-        </Text>
-      ) : (
-        <Stack gap={8}>
-          {facets.slice(0, HEAD).map((f, i) => {
-            const { name, support } = f
-            const supportLabel = plural(support, { one: '# series', other: '# series' })
-            return (
-              <Group key={name} gap={8} wrap="nowrap">
-                <Text c="var(--ink-3)" fw={700} size="sm" className="tnum" style={{ width: 18 }}>
-                  {i + 1}
-                </Text>
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  <Anchor component={Link} to={`/creator/${encodeURIComponent(name)}`} inherit>
-                    {name}
-                  </Anchor>
-                </Text>
-                <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
-                  {supportLabel}
-                </Text>
-              </Group>
-            )
-          })}
-        </Stack>
-      )}
-    </Panel>
-  )
-}
-
-function TagsCard({
-  facets,
-  onExplore,
-}: {
-  facets: TasteFacet[]
-  onExplore: (tag: string) => void
-}) {
-  return (
-    <Panel p="md">
-      <Box mb="xs">
-        <PanelTitle icon={IconTags}>
-          <Trans>Tags</Trans>
-        </PanelTitle>
-      </Box>
-      {facets.length === 0 ? (
-        <Text c="var(--ink-3)" size="sm">
-          <Trans>No tags yet.</Trans>{' '}
-          <Trans>They come from the catalogue, so a library the dump does not cover has none.</Trans>
-        </Text>
-      ) : (
-        <Stack gap={8}>
-          {facets.slice(0, HEAD).map((f) => (
-            <Group key={f.name} gap={8} wrap="nowrap">
-              <TagChip
-                dot="var(--neutral)"
-                size="sm"
-                style={{ flexShrink: 0 }}
-                onClick={() => onExplore(f.name)}
-              >
-                {f.name}
-              </TagChip>
-              <div style={{ flex: 1 }} />
-              <OverIndex facet={f} />
-              <AgainstCatalogue facet={f} />
-              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
-                {f.support}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      )}
-    </Panel>
-  )
-}
-
 /**
- * The reader as the vectors see them.
+ * The reader as the vectors see them, leading somewhere.
  *
- * The sections lead with what only the embedding space can answer: which distinct things somebody
- * reads, which of their series is the odd one out, what sits next to them untouched, and how their
- * taste has moved. Genre and tag composition is a different question, already answered on the Stats
- * page, and sits at the bottom as reference rather than as the point.
+ * Opens on a portrait (the reader's biggest themes, their covers, and the two ways onward), then the
+ * themes themselves with what sits next to them, how the reader reads, how their taste has moved and
+ * what they reach for more than a baseline predicts. The plain counts live on the Stats page; the
+ * signals that steer the picks close the tab.
  *
  * Private by construction: every endpoint behind it answers only for whoever asked.
  */
@@ -644,7 +80,7 @@ export function TasteTab() {
 
   const filters = useMemo(() => (profile ? buildFiltersFromProfile(profile) : {}), [profile])
 
-  const apply = (payload = filters, seeds?: { id: number; title: string | null }[]) =>
+  const apply = (payload: RecommendationFilters = filters, seeds?: { id: number; title: string | null }[]) =>
     navigate('/discover/recommended', {
       state: { recommendationFilters: payload, seeds, source: 'taste-profile' },
     })
@@ -654,7 +90,7 @@ export function TasteTab() {
       {},
       group.seedIds.map((id) => ({
         id,
-        title: group.examples.find((m) => m.seriesId === id)?.title ?? null,
+        title: group.examples.find((m) => m.mangaBakaId === id)?.title ?? null,
       })),
     )
 
@@ -678,164 +114,112 @@ export function TasteTab() {
   if (nothingAtAll) {
     return (
       <Stack gap="md" className="discover-tab-body">
-      <Callout tone="neutral" role="alert" icon={IconAlertCircle} title={t`Nothing to profile yet`}>
-        <Trans>Read a few chapters and this fills in.</Trans>
-      </Callout>
-      <SignalsCard />
+        <Callout tone="neutral" role="alert" icon={IconAlertCircle} title={t`Nothing to profile yet`}>
+          <Trans>Read a few chapters and this fills in.</Trans>
+        </Callout>
+        <SignalsCard />
       </Stack>
     )
   }
 
-  // Hoisted, or Lingui numbers it and, worse, gives it a different number in each plural branch.
-  const readSeriesCount = profile?.seriesCount ?? 0
-  const summaryText = profile
-    ? view === 'read'
-      ? plural(profile.libraryCount, {
-          one: `From ${readSeriesCount} of your # series`,
-          other: `From ${readSeriesCount} of your # series`,
-        })
-      : plural(profile.seriesCount, {
-          one: 'From all # series, weighted by what you read',
-          other: 'From all # series, weighted by what you read',
-        })
-    : ''
+  const groupsNote = insights?.unavailable ?? insights?.groupsUnavailable
 
   return (
-    <Stack gap="md" className="discover-tab-body">
-      <SignalsCard />
-
-      {behaviour && behaviour.chaptersRead > 0 && (
-        <>
-          <SectionHeader icon={IconClock} title={t`How you read`} />
-          <BehaviourSection behaviour={behaviour} />
-        </>
-      )}
-
-      <SectionHeader
-        icon={IconCompass}
-        title={t`Recurring themes`}
-        count={insights?.groups.length ? insights.groups.length : undefined}
-        action={
-          <SegmentedControl
-            aria-label={t`View`}
-            size="xs"
-            value={view}
-            onChange={(v) => setView(v as TasteView)}
-            data={[
-              { value: 'read', label: t`What you've read` },
-              { value: 'shelf', label: t`Everything you own` },
-            ]}
-          />
-        }
+    <Stack gap="md" className="discover-tab-body taste-tab">
+      <TastePortrait
+        view={view}
+        onView={setView}
+        insights={insights}
+        profile={profile}
+        canRecommend={hasAnyFilter(filters)}
+        onRecommend={() => apply()}
       />
-      <Text c="var(--ink-3)" size="xs">
-        {summaryText}
-      </Text>
-      {insights?.unavailable || insights?.groupsUnavailable ? (
-        <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
-          {insights.unavailable ?? insights.groupsUnavailable}
-        </Callout>
-      ) : (
-        <>
-          <Text c="var(--ink-3)" size="xs">
-            <Trans>
-              The specific things that keep coming back in your library, each with more of the same
-              beside it.
-            </Trans>{' '}
-            <Trans>Groups overlap on purpose, so one series can belong to several of them.</Trans>
-          </Text>
-          {insights && insights.groups.length > 0 && (
-            <ThemesPanel
+
+      <section className="taste-section">
+        <SectionHeader
+          icon={IconCompass}
+          title={t`Recurring themes`}
+          count={insights?.groups.length ? insights.groups.length : undefined}
+        />
+        {groupsNote ? (
+          <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
+            {groupsNote}
+          </Callout>
+        ) : (
+          insights &&
+          insights.groups.length > 0 && (
+            <TasteThemes
               groups={insights.groups}
+              covered={insights.covered}
+              oddOneOut={insights.oddOneOut}
+              sideLanes={insights.sideLanes ?? []}
               onOpen={setDetailItem}
               seriesIdFor={seriesIdFor}
               onRecommend={recommendGroup}
+              onRecommendSeeds={(seeds) => apply({}, seeds)}
             />
-          )}
-          {insights?.oddOneOut && (
-            <Panel p="md">
-              <Group gap={8} wrap="nowrap">
-                <PanelTitle icon={IconArrowsShuffle}>
-                  <Trans>The odd one out</Trans>
-                </PanelTitle>
-                <SeriesThumb url={insights.oddOneOut.coverUrl} alt={insights.oddOneOut.title} />
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  <SeriesLink id={insights.oddOneOut.seriesId} title={insights.oddOneOut.title} />
-                </Text>
-                <Text c="var(--ink-3)" size="xs" style={{ flexShrink: 0 }}>
-                  <Trans>least like anything else you read</Trans>
-                </Text>
-              </Group>
-            </Panel>
-          )}
-        </>
+          )
+        )}
+      </section>
+
+      {insights?.shelfPicks && insights.shelfPicks.length > 0 && (
+        <section className="taste-section">
+          <SectionHeader icon={IconBooks} title={t`From your own shelf`} />
+          <TasteShelf picks={insights.shelfPicks} />
+        </section>
+      )}
+
+      {behaviour && behaviour.chaptersRead > 0 && (
+        <section className="taste-section">
+          <SectionHeader
+            icon={IconClock}
+            title={t`How you read`}
+            chevron
+            action={
+              <StatsLink section="habits">
+                <Trans>Habits in Stats</Trans>
+              </StatsLink>
+            }
+          />
+          <TasteHabits behaviour={behaviour} onFilters={(payload) => apply(payload)} />
+        </section>
       )}
 
       {insights && !insights.unavailable && (
-        <>
+        <section className="taste-section">
           <SectionHeader icon={IconRoute} title={t`Where your taste has moved`} />
           {insights.driftUnavailable ? (
             <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
               {insights.driftUnavailable}
             </Callout>
           ) : (
-            <DriftSection insights={insights} />
+            <TasteDrift drift={insights.drift} />
           )}
-        </>
+        </section>
       )}
 
-      {profile && (
-        <>
+      {profile && profile.seriesCount > 0 && (
+        <section className="taste-section">
           <SectionHeader
-            icon={IconChartPie}
-            title={t`Composition`}
+            icon={IconTarget}
+            title={t`What you reach for`}
+            chevron
             action={
-              <Button
-                leftSection={<IconFilter size={16} />}
-                variant="subtle"
-                size="compact-sm"
-                disabled={!hasAnyFilter(filters)}
-                onClick={() => apply()}
-              >
-                <Trans>Recommend from this</Trans>
-              </Button>
+              <StatsLink section="taste">
+                <Trans>Genre and tag counts in Stats</Trans>
+              </StatsLink>
             }
           />
-          <Text c="var(--ink-3)" size="xs">
-            <Trans>
-              The same counts the Stats page shows, kept here so the groups above have something to
-              sit against.
-            </Trans>
-          </Text>
-          {!profile.catalogueBaselineAvailable && (
-            <Text c="var(--ink-3)" size="xs">
-              <Trans>
-                Comparisons against the wider catalogue need the embedding index.
-              </Trans>{' '}
-              <Trans>Until it is built, the badges compare against your own library only.</Trans>
-            </Text>
-          )}
-          {profile.catalogueBaselineAvailable &&
-            profile.catalogueBaselineSource === 'popularity' && (
-              <Text c="var(--ink-3)" size="xs">
-                <Trans>
-                  The catalogue badges weight titles by popularity rank, standing in for how many
-                  people actually read them.
-                </Trans>{' '}
-                <Trans>Reader counts replace it once that data is installed.</Trans>
-              </Text>
-            )}
-          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-            <CompositionCard title={t`Genres`} facets={profile.genres} labels={GENRE_LABELS} />
-            <CompositionCard title={t`Formats`} facets={profile.types} labels={TYPE_LABELS} />
-            <CreatorsCard facets={profile.creators} />
-            <TagsCard facets={profile.tags} onExplore={(tag) => apply({ tags: [tag] })} />
-          </SimpleGrid>
-        </>
+          <TasteReach profile={profile} onFind={(payload) => apply(payload)} />
+        </section>
       )}
 
-      <Group gap="xs" mt="xs">
-        <IconLock size={16} style={{ color: 'var(--ink-3)' }} />
+      <section className="taste-section">
+        <SignalsCard layout="feed" />
+      </section>
+
+      <Group gap="xs" mt="xs" wrap="nowrap">
+        <IconLock size={16} style={{ color: 'var(--ink-3)', flexShrink: 0 }} />
         <Text c="var(--ink-3)" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
           <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>

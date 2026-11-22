@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('How you read', {}, { timeout: 8000 })).toBeVisible()
-    await expect(await canvas.findByText('Found Family + Travel')).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 3, name: 'Found Family + Travel' })).toBeVisible()
     await expect(await canvas.findByText('The odd one out')).toBeVisible()
   },
 }
@@ -32,7 +32,7 @@ export const Default: Story = {
 export const ShelfView: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByText('Everything you own'))
-    await expect(await canvas.findByText(/From all 10 series/)).toBeVisible()
+    await expect(await canvas.findByText(/across all 10 series you own/)).toBeVisible()
   },
 }
 

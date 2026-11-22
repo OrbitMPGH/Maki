@@ -12,7 +12,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>One of the reader's own series, as a group shows it.</summary>
-public record TasteMember(int SeriesId, string Title, string? CoverUrl);
+/// <param name="MangaBakaId">So the page can recommend from this one series.</param>
+public record TasteMember(int SeriesId, string Title, string? CoverUrl, long MangaBakaId);
 
 /// <summary>
 /// One of the specific, recurring things a reader reads.
@@ -48,7 +49,49 @@ public record TasteDriftPoint(
     double SimilarityToStart,
     double SimilarityToPrevious,
     IReadOnlyList<string> DistinctiveTags,
-    TasteMember? Example);
+    TasteMember? Example,
+    IReadOnlyList<TasteMember> Examples);
+
+/// <summary>An unread or paused series the reader already owns, and how well it fits what they read.</summary>
+/// <param name="Fit">
+/// Closeness to the centre of what the reader has read, rescaled over every candidate on the shelf
+/// so the best is 1 and the furthest 0. A cosine is not a percentage, so the page draws a bar, not a
+/// number.
+/// </param>
+/// <param name="Reason">
+/// The tag or genre on this series that the most of the reader's read series also carry, when at
+/// least three do; <paramref name="ReasonCount"/> is how many.
+/// </param>
+/// <param name="ResumeAt">For a paused series, the highest chapter number read.</param>
+/// <param name="Ready">A chapter is on disk, so the series can be opened now.</param>
+/// <param name="NextChapterId">The chapter "Start reading" opens, from <see cref="ContinueReadingService"/>.</param>
+public record TasteShelfPick(
+    int SeriesId,
+    string Title,
+    string? CoverUrl,
+    long MangaBakaId,
+    double Fit,
+    string? Reason,
+    int ReasonCount,
+    bool FromRecommendation,
+    bool OnHold,
+    double? ResumeAt,
+    bool Ready,
+    int? NextChapterId = null);
+
+/// <summary>
+/// A side taste: read series of one type and one of Action, Romance or neither, outside the
+/// heaviest such group. The recommender tops these up on the page (<see cref="ShelfLanes"/>), and the
+/// recurring themes, which rank by how common a facet is, rarely name them.
+/// </summary>
+/// <param name="Bucket"><c>action</c>, <c>romance</c> or <c>other</c>.</param>
+public record TasteSideLane(
+    string? Type,
+    string Bucket,
+    int Read,
+    int Owned,
+    IReadOnlyList<TasteMember> Examples,
+    IReadOnlyList<long> SeedIds);
 
 /// <summary>
 /// What the vectors say about a reader, as opposed to what counting their genres says.
@@ -78,7 +121,9 @@ public record TasteInsights(
     int Total,
     string? Unavailable,
     DateTime GeneratedAt,
-    [property: JsonIgnore] object? UnavailableArgs = null);
+    [property: JsonIgnore] object? UnavailableArgs = null,
+    IReadOnlyList<TasteShelfPick>? ShelfPicks = null,
+    IReadOnlyList<TasteSideLane>? SideLanes = null);
 
 /// <summary>
 /// The reader in the embedding space rather than in a tally.
@@ -106,7 +151,22 @@ public class TasteInsightsService(
     private const int MaxPoints = 1500;
 
     /// <summary>Members named per group. The medoid first, so the group has a face.</summary>
-    private const int ExamplesPerGroup = 4;
+    private const int ExamplesPerGroup = 10;
+
+    /// <summary>Members named per drift quarter, nearest its centre first.</summary>
+    private const int ExamplesPerQuarter = 5;
+
+    /// <summary>Shelf picks returned: one to lead with, and as many beside it as a wide screen fits.</summary>
+    private const int ShelfPicksShown = 12;
+
+    /// <summary>Read and unread series the shelf picks need before a fit means anything.</summary>
+    private const int MinShelfSide = 3;
+
+    /// <summary>Read series that must share a facet before it is offered as a pick's reason.</summary>
+    private const int MinReasonCount = 3;
+
+    /// <summary>Covers shown per side lane.</summary>
+    private const int LaneExamples = 3;
 
     /// <summary>Tags used to label a drift bucket or a blind spot.</summary>
     private const int LabelTags = 3;
@@ -308,12 +368,14 @@ public class TasteInsightsService(
         var readIds = snapshot.Signals.Keys.ToHashSet();
         List<LibraryRow> library;
         Dictionary<int, DateTime> firstReadAt;
+        ShelfState shelfState;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
             library = await LibraryRowsAsync(db, ct);
             firstReadAt = await FirstReadAtAsync(db, scope.UserId, ct);
+            shelfState = await ShelfStateAsync(db, scope.UserId, ct);
         }
 
         // The groups and the drift chart describe the shelf, so they keep ignored sources and drop
@@ -349,16 +411,22 @@ public class TasteInsightsService(
         }
 
         var total = wanted.Count;
+        var vocab = embeddings.GetVocab();
+
+        // Both views get the same picks and lanes: they set the shelf against what was read, which the
+        // view switch does not change.
+        var shelfPicks = await WithNextChapterAsync(scope, ShelfPicks(index, vocab, library, readIds, shelfState), ct);
+        var sideLanes = SideLanes(library, readIds, seeded.Weights);
+
         if (points.Count < TasteGroupMining.MinPoints)
         {
             return Nothing(
                 "discover.tasteInsights.notEnoughSeries",
                 new { min = TasteGroupMining.MinPoints, count = points.Count },
-                points.Count, total);
+                points.Count, total) with { ShelfPicks = shelfPicks, SideLanes = sideLanes };
         }
 
         var started = DateTime.UtcNow;
-        var vocab = embeddings.GetVocab();
 
         // Plain tag names per series, for the drift labels and the blind-spot ones. Same extraction
         // the facets use, minus the weight and category cuts: a label wants everything the series is
@@ -380,7 +448,8 @@ public class TasteInsightsService(
         {
             return new TasteInsights(
                 [], "discover.tasteInsights.noRecurringGroups", null, null,
-                drift, driftUnavailable, points.Count, total, null, DateTime.UtcNow);
+                drift, driftUnavailable, points.Count, total, null, DateTime.UtcNow,
+                ShelfPicks: shelfPicks, SideLanes: sideLanes);
         }
 
         var groups = await GroupsAsync(index, points, facets, mined, scope.MaxContentRating,
@@ -401,7 +470,190 @@ public class TasteInsightsService(
             points.Count,
             total,
             null,
-            DateTime.UtcNow);
+            DateTime.UtcNow,
+            ShelfPicks: shelfPicks,
+            SideLanes: sideLanes);
+    }
+
+    /// <summary>
+    /// The unread and paused series on the reader's own shelf, closest to the centre of what they
+    /// have read first, each with the facet it shares with the most of their read series.
+    /// <para>
+    /// Built from <see cref="Point"/>s like the groups, so a reason is a facet the themes could also
+    /// have named (story tags at defining weight and up, plus genres). Dropped and completed series
+    /// are not candidates: the reader already decided about those.
+    /// </para>
+    /// </summary>
+    private static IReadOnlyList<TasteShelfPick> ShelfPicks(
+        VectorIndex index, IReadOnlyDictionary<int, TagInfo> vocab, List<LibraryRow> library,
+        HashSet<long> readIds, ShelfState state)
+    {
+        var read = new List<Point>();
+        var candidates = new List<(Point Point, bool OnHold)>();
+        var seen = new HashSet<long>();
+        foreach (var row in library.OrderBy(r => r.SeriesId))
+        {
+            if (!seen.Add(row.MangaBakaId) || !index.TryGetRow(row.MangaBakaId, out var indexRow))
+            {
+                continue;
+            }
+
+            var point = new Point(
+                row.SeriesId, row.Title, SeriesDto.CoverUrlFor(row.SeriesId, row.CoverPath, row.LastMetadataRefresh),
+                row.MangaBakaId, indexRow, index.VectorAt(indexRow), null, row.Genres);
+            var status = state.Status.GetValueOrDefault(row.SeriesId);
+            var wasRead = readIds.Contains(row.MangaBakaId);
+            if (wasRead)
+            {
+                read.Add(point);
+            }
+
+            if (status == ReadingStatus.OnHold)
+            {
+                candidates.Add((point, true));
+            }
+            else if (!wasRead && status is ReadingStatus.PlanToRead or ReadingStatus.Reading)
+            {
+                candidates.Add((point, false));
+            }
+        }
+
+        if (read.Count < MinShelfSide || candidates.Count < MinShelfSide)
+        {
+            return [];
+        }
+
+        var centre = TasteClustering.Centroid([.. read.Select(p => p.Vector)]);
+        if (centre is null)
+        {
+            return [];
+        }
+
+        var all = read.Concat(candidates.Select(c => c.Point)).ToList();
+        var facets = FacetsOf(index, vocab, all);
+        var readCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < read.Count; i++)
+        {
+            foreach (var facet in facets.PerPoint[i])
+            {
+                readCounts[facet.Key] = readCounts.GetValueOrDefault(facet.Key) + 1;
+            }
+        }
+
+        var scored = candidates
+            .Select((c, i) => (c.Point, c.OnHold, Cosine: TasteClustering.Dot(c.Point.Vector, centre),
+                Facets: facets.PerPoint[read.Count + i]))
+            .ToList();
+        var top = scored.Max(x => x.Cosine);
+        var bottom = scored.Min(x => x.Cosine);
+        var span = top - bottom;
+
+        return scored
+            .OrderByDescending(x => x.Cosine)
+            .ThenBy(x => x.Point.SeriesId)
+            .Take(ShelfPicksShown)
+            .Select(x =>
+            {
+                // A tag before a genre, and among them how many read series share it weighed by how
+                // specific it is: "Drama, like 25 you've read" is true of most of a shelf and says
+                // nothing about this series.
+                var reason = x.Facets
+                    .Select(f => (Facet: f, Count: readCounts.GetValueOrDefault(f.Key)))
+                    .Where(f => f.Count >= MinReasonCount)
+                    .OrderByDescending(f => f.Facet.IsTag)
+                    .ThenByDescending(f => f.Count * f.Facet.Specificity)
+                    .ThenBy(f => f.Facet.Key, StringComparer.Ordinal)
+                    .FirstOrDefault();
+                return new TasteShelfPick(
+                    x.Point.SeriesId,
+                    x.Point.Title,
+                    x.Point.CoverUrl,
+                    x.Point.MangaBakaId,
+                    span > 0 ? (x.Cosine - bottom) / span : 1,
+                    reason.Facet?.Name,
+                    reason.Count,
+                    state.FromRecommendation.Contains(x.Point.SeriesId),
+                    x.OnHold,
+                    x.OnHold && state.ReadTo.TryGetValue(x.Point.SeriesId, out var to) ? to : null,
+                    state.WithFiles.Contains(x.Point.SeriesId));
+            })
+            .ToList();
+    }
+
+    /// <summary>The chapter each pick opens at, through the one "what's next" resolver.</summary>
+    private async Task<IReadOnlyList<TasteShelfPick>> WithNextChapterAsync(
+        ICurrentUser scope, IReadOnlyList<TasteShelfPick> picks, CancellationToken ct)
+    {
+        if (picks.Count == 0)
+        {
+            return picks;
+        }
+
+        using var dbScope = scopeFactory.CreateScope();
+        var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
+        var next = await new ContinueReadingService(db).NextForAsync([.. picks.Select(p => p.SeriesId)], ct);
+        return [.. picks.Select(p => p with { NextChapterId = next.TryGetValue(p.SeriesId, out var n) ? n.ChapterId : null })];
+    }
+
+    /// <summary>
+    /// The reader's side tastes, by the grouping the recommender tops up (<see cref="ShelfLanes"/>):
+    /// read series by type and by Action, Romance or neither, every group but the heaviest. Keyed off
+    /// the library's own type and genres, so it needs no index.
+    /// </summary>
+    private static IReadOnlyList<TasteSideLane> SideLanes(
+        List<LibraryRow> library, HashSet<long> readIds, IReadOnlyDictionary<long, double> weights)
+    {
+        var types = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var keyOf = new Dictionary<long, ShelfLanes.Key>();
+        foreach (var row in library)
+        {
+            var type = (row.Type ?? "").Trim();
+            if (!types.TryGetValue(type, out var typeId))
+            {
+                typeId = types[type] = types.Count;
+            }
+
+            keyOf.TryAdd(row.MangaBakaId, new ShelfLanes.Key(typeId, BucketOf(row.Genres)));
+        }
+
+        var tuning = RecommenderTuning.Default;
+        var sides = ShelfLanes.Sides(
+            readIds.Where(keyOf.ContainsKey)
+                .Order()
+                .Select(id => (id, (ShelfLanes.Key?)keyOf[id], weights.GetValueOrDefault(id, 1.0))),
+            tuning.LanesMinShare,
+            tuning.LanesMaxSides);
+
+        var typeNames = types.ToDictionary(kv => kv.Value, kv => kv.Key);
+        var byId = library.GroupBy(r => r.MangaBakaId).ToDictionary(g => g.Key, g => g.First());
+        return sides
+            .Select(side =>
+            {
+                var owned = keyOf.Count(kv => kv.Value == side.Key);
+                var examples = side.Ids
+                    .OrderByDescending(id => weights.GetValueOrDefault(id, 1.0))
+                    .ThenBy(id => id)
+                    .Take(LaneExamples)
+                    .Select(id => byId[id])
+                    .Select(r => new TasteMember(r.SeriesId, r.Title,
+                        SeriesDto.CoverUrlFor(r.SeriesId, r.CoverPath, r.LastMetadataRefresh), r.MangaBakaId))
+                    .ToList();
+                var type = typeNames[side.Key.Type];
+                return new TasteSideLane(
+                    type.Length == 0 ? null : type.ToLowerInvariant(),
+                    side.Key.Bucket switch { 1 => "action", 2 => "romance", _ => "other" },
+                    side.Ids.Count,
+                    owned,
+                    examples,
+                    side.Ids);
+            })
+            .ToList();
+
+        static int BucketOf(List<string> genres) =>
+            genres.Contains("Action", StringComparer.OrdinalIgnoreCase) ? 1
+            : genres.Contains("Romance", StringComparer.OrdinalIgnoreCase) ? 2
+            : 0;
     }
 
     /// <summary>Every facet the mining can see, and the integer keys it wants them under.</summary>
@@ -642,7 +894,7 @@ public class TasteInsightsService(
                 Share: (double)members.Count / points.Count,
                 Coherence: ranked.Average(x => x.Similarity),
                 Examples: [.. ranked.Take(ExamplesPerGroup)
-                    .Select(x => new TasteMember(x.Member.SeriesId, x.Member.Title, x.Member.CoverUrl))],
+                    .Select(x => new TasteMember(x.Member.SeriesId, x.Member.Title, x.Member.CoverUrl, x.Member.MangaBakaId))],
                 SeedIds: [.. members.Select(m => m.MangaBakaId)],
                 Picks: Claim(picks, index, hydrated, claimed)));
             centroids.Add(centroid);
@@ -735,7 +987,7 @@ public class TasteInsightsService(
             .First();
 
         var point = points[worst.Index];
-        return (new TasteMember(point.SeriesId, point.Title, point.CoverUrl), worst.Similarity);
+        return (new TasteMember(point.SeriesId, point.Title, point.CoverUrl, point.MangaBakaId), worst.Similarity);
     }
 
     /// <summary>
@@ -794,9 +1046,12 @@ public class TasteInsightsService(
         for (var i = 0; i < centres.Count; i++)
         {
             var (bucket, members, centre) = centres[i];
-            var medoid = members
+            var nearest = members
                 .OrderByDescending(m => TasteClustering.Dot(m.Vector, centre!))
-                .First();
+                .ThenBy(m => m.SeriesId)
+                .Take(ExamplesPerQuarter)
+                .Select(m => new TasteMember(m.SeriesId, m.Title, m.CoverUrl, m.MangaBakaId))
+                .ToList();
 
             drift.Add(new TasteDriftPoint(
                 Bucket: bucket,
@@ -811,7 +1066,8 @@ public class TasteInsightsService(
                         .Where((_, other) => other != i)
                         .SelectMany(x => x.Members)
                         .Select(p => tagsById[p.MangaBakaId])])),
-                Example: new TasteMember(medoid.SeriesId, medoid.Title, medoid.CoverUrl)));
+                Example: nearest[0],
+                Examples: nearest));
         }
 
         return (drift, null);
@@ -874,14 +1130,48 @@ public class TasteInsightsService(
         long MangaBakaId,
         string? CoverPath,
         DateTime? LastMetadataRefresh,
-        List<string> Genres);
+        List<string> Genres,
+        string? Type);
 
     private static async Task<List<LibraryRow>> LibraryRowsAsync(MakiDbContext db, CancellationToken ct) =>
         await db.Series
             .Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full)
             .Select(s => new LibraryRow(
-                s.Id, s.Title, (long)s.MangaBakaId!.Value, s.CoverPath, s.LastMetadataRefresh, s.Genres))
+                s.Id, s.Title, (long)s.MangaBakaId!.Value, s.CoverPath, s.LastMetadataRefresh, s.Genres, s.Type))
             .ToListAsync(ct);
+
+    /// <summary>What the shelf picks need to know about each series beyond its vector.</summary>
+    private sealed record ShelfState(
+        Dictionary<int, ReadingStatus> Status,
+        HashSet<int> FromRecommendation,
+        HashSet<int> WithFiles,
+        Dictionary<int, double> ReadTo);
+
+    private static async Task<ShelfState> ShelfStateAsync(MakiDbContext db, int userId, CancellationToken ct)
+    {
+        var states = await db.UserSeriesStates.IgnoreQueryFilters()
+            .Where(s => s.UserId == userId)
+            .Select(s => new { s.SeriesId, s.Status, s.AddedFrom })
+            .ToListAsync(ct);
+        var withFiles = await db.Chapters
+            .Where(c => c.ChapterFileId != null)
+            .Select(c => c.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        var readTo = await db.ChapterProgress.IgnoreQueryFilters()
+            .Where(p => p.UserId == userId && p.Completed)
+            .Join(db.Chapters.IgnoreQueryFilters().Where(c => c.Number != null),
+                p => p.ChapterId, c => c.Id, (p, c) => new { c.SeriesId, c.Number })
+            .GroupBy(x => x.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Max = g.Max(x => x.Number) })
+            .ToListAsync(ct);
+
+        return new ShelfState(
+            states.GroupBy(s => s.SeriesId).ToDictionary(g => g.Key, g => g.First().Status),
+            [.. states.Where(s => s.AddedFrom == "recommendation").Select(s => s.SeriesId)],
+            [.. withFiles],
+            readTo.Where(x => x.Max != null).ToDictionary(x => x.SeriesId, x => (double)x.Max!.Value));
+    }
 
     /// <summary>
     /// When each series was first read, for the drift buckets.

@@ -135,10 +135,15 @@ public class AnimeSignalsController(
             };
         }).ToList();
 
+        var pull = enabled
+            ? await PullAsync([.. entries.Where(x => x.role == "positive").Select(x => x.mangaBakaId!.Value)], ct)
+            : [];
+
         return Ok(new
         {
             enabled,
             instanceEnabled,
+            pull,
             lastSyncAtUtc = await signals.LastSyncAtAsync(user.UserId, ct),
             syncing = signals.IsRunning(user.UserId),
             progress = signals.Progress(user.UserId) is { } p ? new { looked = p.Looked, total = p.Total } : null,
@@ -167,6 +172,71 @@ public class AnimeSignalsController(
             },
             entries,
         });
+    }
+
+    /// <summary>Positive anime matches the pull needs before it compares anything.</summary>
+    private const int MinPullAnime = 10;
+
+    /// <summary>Read manga series the pull needs on the other side.</summary>
+    private const int MinPullRead = 5;
+
+    /// <summary>
+    /// Genres the shares never name, as on the Taste page's "rarely opened": an adult genre is not
+    /// a pull worth drawing.
+    /// </summary>
+    private static readonly HashSet<string> AdultGenres = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Erotica", "Hentai", "Smut", "Adult", "Pornographic",
+    };
+
+    /// <summary>
+    /// Which genres the anime the reader scored well carry more of than the manga they read: share
+    /// of each population carrying the genre, the three widest gaps where the anime side is higher.
+    /// What turning anime signals on adds to the profile, in one line.
+    /// </summary>
+    private async Task<object[]> PullAsync(IReadOnlyList<long> positive, CancellationToken ct)
+    {
+        if (positive.Count < MinPullAnime || !await store.IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        var read = await db.ChapterProgress.AsNoTracking()
+            .Where(p => p.UserId == user.UserId && p.Completed && !p.Watched)
+            .Join(db.Series.Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full),
+                p => p.SeriesId, s => s.Id, (p, s) => (long)s.MangaBakaId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        if (read.Count < MinPullRead)
+        {
+            return [];
+        }
+
+        var rows = await store.GetProfileRowsAsync([.. positive.Concat(read).Distinct()], ct);
+        var animeShares = Shares(positive);
+        var readShares = Shares(read);
+        return [.. animeShares
+            .Select(kv => (Genre: kv.Key, Anime: kv.Value, Read: readShares.GetValueOrDefault(kv.Key)))
+            .Where(x => x.Anime > x.Read)
+            .OrderByDescending(x => x.Anime - x.Read)
+            .ThenBy(x => x.Genre, StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .Select(x => (object)new { genre = x.Genre, anime = x.Anime, read = x.Read, animeCount = positive.Count })];
+
+        Dictionary<string, double> Shares(IReadOnlyList<long> ids)
+        {
+            var known = ids.Distinct().Where(rows.ContainsKey).ToList();
+            if (known.Count == 0)
+            {
+                return [];
+            }
+
+            return known
+                .SelectMany(id => rows[id].Genres.Distinct(StringComparer.OrdinalIgnoreCase))
+                .Where(g => !string.IsNullOrWhiteSpace(g) && !AdultGenres.Contains(g))
+                .GroupBy(g => g, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => (double)g.Count() / known.Count, StringComparer.OrdinalIgnoreCase);
+        }
     }
 
     [HttpPut("settings")]

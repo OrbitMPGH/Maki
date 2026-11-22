@@ -495,7 +495,12 @@ export function recommendationsPage(page: number): RecommendationsResult {
   }
 }
 
-const member = (id: number): TasteMember => ({ seriesId: id, title: catalogue[id - 1].title, coverUrl: cover(id) })
+const member = (id: number): TasteMember => ({
+  seriesId: id,
+  title: catalogue[id - 1].title,
+  coverUrl: cover(id),
+  mangaBakaId: 9000 + id,
+})
 
 const facet = (name: string, weight: number, share: number, support: number, shelf: number | null, cat: number | null): TasteFacet => ({
   name,
@@ -576,10 +581,10 @@ export const tasteInsights: TasteInsights = {
   oddOneOut: member(11),
   oddOneOutSimilarity: 0.31,
   drift: [
-    { bucket: '2025-Q1', seriesCount: 3, similarityToStart: 1, similarityToPrevious: 1, distinctiveTags: ['Found Family', 'Travel'], example: member(1) },
-    { bucket: '2025-Q3', seriesCount: 4, similarityToStart: 0.82, similarityToPrevious: 0.82, distinctiveTags: ['Workplace', 'Cooking'], example: member(2) },
-    { bucket: '2026-Q1', seriesCount: 5, similarityToStart: 0.64, similarityToPrevious: 0.77, distinctiveTags: ['Regression', 'Royalty'], example: member(6) },
-    { bucket: '2026-Q3', seriesCount: 3, similarityToStart: 0.51, similarityToPrevious: 0.8, distinctiveTags: ['Seaside', 'Coming of Age'], example: member(5) },
+    { bucket: '2025-Q1', seriesCount: 3, similarityToStart: 1, similarityToPrevious: 1, distinctiveTags: ['Found Family', 'Travel'], example: member(1), examples: [member(1), member(3), member(4)] },
+    { bucket: '2025-Q3', seriesCount: 4, similarityToStart: 0.82, similarityToPrevious: 0.82, distinctiveTags: ['Workplace', 'Cooking'], example: member(2), examples: [member(2), member(7), member(8), member(9)] },
+    { bucket: '2026-Q1', seriesCount: 5, similarityToStart: 0.64, similarityToPrevious: 0.77, distinctiveTags: ['Regression', 'Royalty'], example: member(6), examples: [member(6), member(10), member(12), member(1), member(2)] },
+    { bucket: '2026-Q3', seriesCount: 3, similarityToStart: 0.51, similarityToPrevious: 0.8, distinctiveTags: ['Seaside', 'Coming of Age'], example: member(5), examples: [member(5), member(11), member(4)] },
   ],
   driftUnavailable: null,
   covered: 10,

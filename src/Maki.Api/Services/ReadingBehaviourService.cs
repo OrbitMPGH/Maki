@@ -16,6 +16,31 @@ namespace Maki.Api.Services;
 public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, double Measure);
 
 /// <summary>
+/// How long the series a reader finishes are, against the ones they stall on. Length is the
+/// series' known chapter count where the catalogue has one, else what is on disk.
+/// </summary>
+public record LengthSweetSpot(double Finished, double Stalled, int FinishedCount, int StalledCount);
+
+/// <summary>One series' reading, by the days it was read on.</summary>
+/// <param name="PerDay">Chapters finished on each day the series was read, in order. Days without
+/// reading are left out, so a two-day binge is two entries however long ago it started.</param>
+public record BingeExample(
+    int SeriesId, string Title, string? CoverUrl, int Chapters, int ActiveDays, int SpanDays,
+    IReadOnlyList<int> PerDay);
+
+/// <summary>
+/// Whether a reader binges a series or follows it: of the series with enough dated chapters, how
+/// many were read in one or two days.
+/// </summary>
+public record BingeHabit(int Series, int Binged, IReadOnlyList<BingeExample> Examples);
+
+/// <summary>Pace within one reading format, with its own slow and fast series.</summary>
+/// <param name="Format"><c>paged</c> or <c>strip</c> (manhwa and manhua).</param>
+public record FormatPace(
+    string Format, double MedianSeconds, int TimedChapters,
+    IReadOnlyList<BehaviourSeries> Savoured, IReadOnlyList<BehaviourSeries> Devoured);
+
+/// <summary>
 /// How somebody reads, as opposed to what. Every field is null when there is not enough to say,
 /// rather than zero: "no answer" and "the answer is nothing" are different, and a reader with no
 /// timed chapters has not read infinitely fast.
@@ -59,7 +84,10 @@ public record ReadingBehaviour(
     IReadOnlyList<BehaviourSeries> Devoured,
     IReadOnlyList<BehaviourSeries> Abandoned,
     DateTime GeneratedAt,
-    IReadOnlyList<int> StopPointHistogram);
+    IReadOnlyList<int> StopPointHistogram,
+    LengthSweetSpot? Length = null,
+    BingeHabit? Binge = null,
+    IReadOnlyList<FormatPace>? PaceByFormat = null);
 
 /// <summary>
 /// The reading habits already implied by <c>ChapterProgress</c> and thrown away everywhere else.
@@ -97,6 +125,25 @@ public class ReadingBehaviourService(
     private const double MinProgressToAbandon = 0.1;
 
     private const int HistogramBuckets = 10;
+
+    /// <summary>Finished and stalled series each needed before the two lengths are compared.</summary>
+    private const int MinLengthSide = 2;
+
+    /// <summary>Dated chapters a series needs before how it was read says anything.</summary>
+    private const int MinBingeChapters = 5;
+
+    /// <summary>Series with enough dated chapters before binge-or-follow is offered.</summary>
+    private const int MinBingeSeries = 3;
+
+    /// <summary>Reading days at or under which a series counts as binged.</summary>
+    private const int BingeDays = 2;
+
+    /// <summary>Series drawn as day strips: the biggest binges and one series read over many days.</summary>
+    private const int BingeExamples = 6;
+
+
+    /// <summary>Timed chapters each format needs before the split is offered.</summary>
+    private const int MinTimedPerFormat = 10;
 
     private const int CacheSlots = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
@@ -167,6 +214,8 @@ public class ReadingBehaviourService(
 
     private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime FinishedAt, bool BulkMarked);
 
+    private sealed record SeriesInfo(string Title, string? CoverUrl, string? Type, int? TotalChapters);
+
     private async Task<ReadingBehaviour> BuildAsync(int userId, bool allRootFolders, CancellationToken ct)
     {
         var started = DateTime.UtcNow;
@@ -175,6 +224,7 @@ public class ReadingBehaviourService(
         List<ProgressRow> progress;
         Dictionary<int, int> downloaded;
         Dictionary<int, (string Title, string? CoverUrl)> titles;
+        Dictionary<int, SeriesInfo> info;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -184,12 +234,15 @@ public class ReadingBehaviourService(
             // visibility applies; the progress read below bypasses filters and intersects with this.
             var visible = await db.Series
                 .Where(s => s.Incognito != IncognitoMode.Full)
-                .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
+                .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh, s.Type, s.TotalChapters })
                 .ToListAsync(ct);
             var visibleIds = visible.Select(v => v.Id).ToHashSet();
             titles = visible.ToDictionary(
                 v => v.Id,
                 v => (v.Title, SeriesDto.CoverUrlFor(v.Id, v.CoverPath, v.LastMetadataRefresh)));
+            info = visible.ToDictionary(
+                v => v.Id,
+                v => new SeriesInfo(v.Title, titles[v.Id].CoverUrl, v.Type, v.TotalChapters));
 
             // Watched chapters are excluded on the same rule ReadCounts.ReadFor uses: ticking off an
             // anime season is not reading, and it carries no time and no page count to measure.
@@ -259,6 +312,7 @@ public class ReadingBehaviourService(
             .ToList();
         var biggest = days.Count == 0 ? default : days.MaxBy(d => d.Count);
 
+        var pooled = SlowAndFast(paceBySeries, titles);
         var behaviour = new ReadingBehaviour(
             SeriesStarted: seriesStarted,
             SeriesFinished: seriesFinished,
@@ -275,21 +329,149 @@ public class ReadingBehaviourService(
             MedianChaptersPerReadingDay: Median([.. days.Select(d => (double)d.Count)]),
             BiggestDayCount: days.Count == 0 ? null : biggest.Count,
             BiggestDay: days.Count == 0 ? null : biggest.Day,
-            Savoured: Name(paceBySeries.OrderByDescending(p => p.Median), titles),
-            Devoured: Name(paceBySeries.OrderBy(p => p.Median), titles),
+            Savoured: pooled.Slow,
+            Devoured: pooled.Fast,
             Abandoned: Name(
                 unfinished.Where(u => u.Fraction >= MinProgressToAbandon)
                     .OrderByDescending(u => u.Read)
                     .Select(u => (u.SeriesId, Median: u.Fraction)),
                 titles),
             GeneratedAt: DateTime.UtcNow,
-            StopPointHistogram: histogram);
+            StopPointHistogram: histogram,
+            Length: Length(completion, downloaded, info),
+            Binge: Binge(progress, timeZone, info),
+            PaceByFormat: PaceByFormat(timed, paceBySeries, info, titles));
 
         logger.LogInformation(
             "Built reading behaviour over {Chapters} chapter(s) in {Elapsed:F1}s",
             progress.Count, (DateTime.UtcNow - started).TotalSeconds);
 
         return behaviour;
+    }
+
+    /// <summary>
+    /// Median length of the finished series against the stalled ones (read at least
+    /// <see cref="MinProgressToAbandon"/> of). Finishing is judged against what is on disk, so the
+    /// length is the larger of that and the catalogue's count: a series with three chapters
+    /// downloaded of two hundred was not a short one.
+    /// </summary>
+    private static LengthSweetSpot? Length(
+        List<(int SeriesId, double Fraction, int Read)> completion,
+        Dictionary<int, int> downloaded,
+        Dictionary<int, SeriesInfo> info)
+    {
+        double LengthOf(int id) =>
+            Math.Max(downloaded.GetValueOrDefault(id), info.TryGetValue(id, out var i) ? i.TotalChapters ?? 0 : 0);
+
+        var finished = completion.Where(c => c.Fraction >= 1.0).Select(c => LengthOf(c.SeriesId)).ToList();
+        var stalled = completion.Where(c => c.Fraction >= MinProgressToAbandon && c.Fraction < 1.0)
+            .Select(c => LengthOf(c.SeriesId)).ToList();
+        if (finished.Count < MinLengthSide || stalled.Count < MinLengthSide)
+        {
+            return null;
+        }
+
+        return new LengthSweetSpot(Median(finished)!.Value, Median(stalled)!.Value, finished.Count, stalled.Count);
+    }
+
+    /// <summary>
+    /// How many series were read in one or two days, over the series with
+    /// <see cref="MinBingeChapters"/> dated chapters. Imports and bulk ticks carry no real date, so
+    /// they are left out as the reading days are. The examples are the three biggest binges and,
+    /// when there is one, the series read over the most days, so the strip shows both shapes.
+    /// </summary>
+    private static BingeHabit? Binge(List<ProgressRow> progress, TimeZoneInfo timeZone, Dictionary<int, SeriesInfo> info)
+    {
+        var series = progress
+            .Where(p => p.PageCount > 0 && !p.BulkMarked && info.ContainsKey(p.SeriesId))
+            .GroupBy(p => p.SeriesId)
+            .Where(g => g.Count() >= MinBingeChapters)
+            .Select(g =>
+            {
+                var days = g.Select(p => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(p.FinishedAt, timeZone)))
+                    .ToList();
+                var first = days.Min();
+                var span = days.Max().DayNumber - first.DayNumber + 1;
+                return (SeriesId: g.Key, Days: days, First: first, Span: span, Active: days.Distinct().Count());
+            })
+            .ToList();
+        if (series.Count < MinBingeSeries)
+        {
+            return null;
+        }
+
+        var binged = series.Where(x => x.Active <= BingeDays).ToList();
+        var picks = binged.OrderByDescending(x => x.Days.Count).ThenBy(x => x.SeriesId).Take(BingeExamples - 1).ToList();
+        var spread = series.Where(x => x.Active > BingeDays)
+            .OrderByDescending(x => x.Active).ThenBy(x => x.SeriesId).FirstOrDefault();
+        if (spread.Days is not null)
+        {
+            picks.Add(spread);
+        }
+
+        return new BingeHabit(
+            series.Count,
+            binged.Count,
+            [.. picks.Select(x =>
+            {
+                var perDay = x.Days.GroupBy(d => d).OrderBy(g => g.Key).Select(g => g.Count()).ToList();
+                var s = info[x.SeriesId];
+                return new BingeExample(x.SeriesId, s.Title, s.CoverUrl, x.Days.Count, x.Active, x.Span, perDay);
+            })]);
+    }
+
+    /// <summary>
+    /// Pace split into paged and long-strip reading, with each format's own slow and fast series.
+    /// A long-strip chapter is one tall page and takes longer than a twenty-page manga chapter, so
+    /// pooled lists name strips as "slow" and manga as "fast" whatever the reader's pace. Only
+    /// offered when both formats have <see cref="MinTimedPerFormat"/> timed chapters; the cut is the
+    /// one <see cref="ReadingTimeEstimateService"/> uses.
+    /// </summary>
+    private static IReadOnlyList<FormatPace>? PaceByFormat(
+        List<ProgressRow> timed,
+        List<(int SeriesId, double Median)> paceBySeries,
+        Dictionary<int, SeriesInfo> info,
+        Dictionary<int, (string Title, string? CoverUrl)> titles)
+    {
+        bool IsStrip(int seriesId) =>
+            info.TryGetValue(seriesId, out var i) && (i.Type == SeriesTypes.Manhwa || i.Type == SeriesTypes.Manhua);
+
+        var formats = new[] { ("paged", false), ("strip", true) }
+            .Select(f =>
+            {
+                var chapters = timed.Where(p => IsStrip(p.SeriesId) == f.Item2).Select(p => (double)p.ReadSeconds).ToList();
+                var series = paceBySeries.Where(p => IsStrip(p.SeriesId) == f.Item2).ToList();
+                return (Format: f.Item1, Chapters: chapters, Series: series);
+            })
+            .ToList();
+        if (formats.Any(f => f.Chapters.Count < MinTimedPerFormat))
+        {
+            return null;
+        }
+
+        return [.. formats.Select(f =>
+        {
+            var (slow, fast) = SlowAndFast(f.Series, titles);
+            return new FormatPace(f.Format, Median(f.Chapters)!.Value, f.Chapters.Count, slow, fast);
+        })];
+    }
+
+    /// <summary>
+    /// The series read slowest and fastest, never the same one in both. With fewer than twice
+    /// <see cref="Named"/> series the slower half goes to the first list and the rest to the second,
+    /// so a format with four timed series names two of each rather than one series twice.
+    /// </summary>
+    private static (IReadOnlyList<BehaviourSeries> Slow, IReadOnlyList<BehaviourSeries> Fast) SlowAndFast(
+        IEnumerable<(int SeriesId, double Median)> paced,
+        Dictionary<int, (string Title, string? CoverUrl)> titles)
+    {
+        var ranked = paced.Where(p => titles.ContainsKey(p.SeriesId))
+            .OrderByDescending(p => p.Median).ThenBy(p => p.SeriesId).ToList();
+        var slowCount = Math.Min(Named, (ranked.Count + 1) / 2);
+        var fastCount = Math.Min(Named, ranked.Count - slowCount);
+        var slow = Name(ranked.Take(slowCount), titles);
+        var fast = Name(Enumerable.Reverse(ranked).Take(fastCount), titles);
+        return (slow, fast);
     }
 
     private static IReadOnlyList<BehaviourSeries> Name(

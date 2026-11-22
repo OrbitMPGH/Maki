@@ -12,7 +12,10 @@ import type {
 } from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
-import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
+import { formatDateTime, formatDecimal, formatFixedDecimal, formatPercent } from '../../format'
+import type { AnimeGenrePull } from '../../api/animeSignals'
+import { GENRE_LABELS } from '../../components/CatalogueFilters'
+import { useLabel } from '../../i18n-context'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { Callout } from '../../components/ui/Callout'
 import { MetaList } from '../../components/ui/MetaList'
@@ -198,6 +201,8 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           </Group>
         )}
 
+        {data.enabled && !noTracker && data.pull && data.pull.length > 0 && <AnimePull pull={data.pull} />}
+
         {data.enabled && !noTracker && preview.length > 0 && (
           <Stack gap={0}>
             {preview.map((entry) => (
@@ -207,6 +212,62 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
         )}
       </Stack>
     </Panel>
+  )
+}
+
+/**
+ * What the anime list adds to the profile: the genres the well-scored anime carry more of than the
+ * manga read, as one sentence beside a dumbbell per genre (accent for the reading, the second chart
+ * colour for the anime).
+ */
+function AnimePull({ pull }: { pull: AnimeGenrePull[] }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const lead = pull[0]
+  const genre = renderLabel(GENRE_LABELS[lead.genre] ?? lead.genre)
+  const animePct = formatPercent(lead.anime)
+  const readPct = formatPercent(lead.read)
+  const count = lead.animeCount
+  return (
+    <div className="taste-pull">
+      <div className="taste-pull-lead">
+        <Text size="sm" fw={600}>
+          <Trans>
+            The anime you scored well lean toward {genre}: {animePct} of them, against {readPct} of what
+            you read.
+          </Trans>
+        </Text>
+        <div className="taste-pull-key">
+          <span>
+            <i data-kind="read" aria-hidden />
+            <Trans>What you read</Trans>
+          </span>
+          <span>
+            <i data-kind="anime" aria-hidden />
+            <Plural value={count} one="# anime you scored well" other="# anime you scored well" />
+          </span>
+        </div>
+      </div>
+      {pull.map((row) => {
+        const name = renderLabel(GENRE_LABELS[row.genre] ?? row.genre)
+        const read = formatPercent(row.read)
+        const anime = formatPercent(row.anime)
+        return (
+          <div key={row.genre} className="taste-pull-row" role="img" aria-label={t`${name}: ${read} of your reading, ${anime} of the anime`}>
+            <span className="taste-pull-name">{name}</span>
+            <span className="taste-pull-track">
+              <b style={{ left: `${row.read * 100}%`, width: `${(row.anime - row.read) * 100}%` }} />
+              <i data-kind="read" style={{ left: `${row.read * 100}%` }} />
+              <i data-kind="anime" style={{ left: `${row.anime * 100}%` }} />
+            </span>
+            <span className="taste-pull-values tnum">
+              <span data-kind="read">{read}</span>
+              <span data-kind="anime">{anime}</span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

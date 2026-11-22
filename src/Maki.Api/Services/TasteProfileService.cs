@@ -1,3 +1,6 @@
+using Maki.Api.Dtos;
+using Maki.Core.Entities;
+using Microsoft.EntityFrameworkCore;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
@@ -42,6 +45,38 @@ public record TasteFacet(
 /// <summary>One release year and how much of the view sits on it.</summary>
 public record TasteYearFacet(int Year, double Weight, double Share);
 
+/// <summary>One of the reader's own series, by library id, for a cover on the page.</summary>
+public record TasteSeriesRef(int SeriesId, string Title, string? CoverUrl);
+
+/// <summary>
+/// A genre or tag the shelf holds far more of than the reading does: collected, rarely opened.
+/// </summary>
+/// <param name="Ratio">The read share over the shelf share. Below 1 is under-read.</param>
+/// <param name="Unread">Owned series carrying it that have no reading history.</param>
+public record TasteUnderFacet(
+    string Name,
+    bool IsGenre,
+    int Owned,
+    int Read,
+    double Ratio,
+    int Unread,
+    IReadOnlyList<TasteSeriesRef> Examples);
+
+/// <summary>A read series far down the catalogue's popularity ranking.</summary>
+public record TasteDeepCut(int SeriesId, string Title, string? CoverUrl, int Rank);
+
+/// <summary>
+/// Where the reading and the shelf sit in catalogue popularity: four shares each, for the top 100,
+/// the top 1,000, the top 10,000 and deeper, over the series with a known rank. Catalogue popularity
+/// is MangaBaka's ranking, not anything about other readers of this instance.
+/// </summary>
+public record TastePopularity(
+    IReadOnlyList<double> Read,
+    IReadOnlyList<double> Shelf,
+    int ReadRanked,
+    int ShelfRanked,
+    IReadOnlyList<TasteDeepCut> DeepCuts);
+
 /// <summary>
 /// A reader's own aggregate taste. <paramref name="SeriesCount"/> is how many series the view is
 /// built from, which is the honest caveat on everything else in here.
@@ -62,7 +97,9 @@ public record TasteProfile(
     /// built while the cohort artifact is absent — so the boolean alone could not express it.
     /// </summary>
     string? CatalogueBaselineSource,
-    DateTime GeneratedAt);
+    DateTime GeneratedAt,
+    IReadOnlyList<TasteUnderFacet>? UnderRead = null,
+    TastePopularity? Popularity = null);
 
 /// <summary>
 /// The reader's own taste, aggregated from the same weights that steer their recommendations.
@@ -90,6 +127,31 @@ public class TasteProfileService(
 
     /// <summary>How many of each facet the response carries. The UI shows a shorter head.</summary>
     private const int TopN = 20;
+
+    /// <summary>Owned series a facet needs before "rarely opened" says anything about it.</summary>
+    private const int MinUnderOwned = 5;
+
+    /// <summary>Read share over shelf share at or below which a facet counts as rarely opened.</summary>
+    private const double UnderRatio = 0.65;
+
+    /// <summary>Read series the reader needs before an under-read facet is offered at all.</summary>
+    private const int MinUnderRead = 5;
+
+    private const int UnderShown = 3;
+    private const int UnderExamples = 5;
+    private const int DeepCutsShown = 6;
+
+    /// <summary>The popularity bands' upper ranks; the fourth band is everything deeper.</summary>
+    private static readonly int[] PopularityBands = [100, 1_000, 10_000];
+
+    /// <summary>
+    /// Genres "rarely opened" never names. A shelf of adult titles is the reader's own business, and
+    /// a panel inviting them to open more of it is not one the page should draw.
+    /// </summary>
+    private static readonly HashSet<string> AdultGenres = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Erotica", "Hentai", "Smut", "Adult", "Pornographic",
+    };
 
     /// <summary>
     /// Two per user, and an entry is a handful of small dictionaries rather than
@@ -149,7 +211,7 @@ public class TasteProfileService(
                 return hit.Profile;
             }
 
-            var profile = await BuildAsync(snapshot, view, ct);
+            var profile = await BuildAsync(scope, snapshot, view, ct);
             _cache[key] = (profile, DateTime.UtcNow);
             Evict();
             return profile;
@@ -176,7 +238,8 @@ public class TasteProfileService(
         }
     }
 
-    private async Task<TasteProfile> BuildAsync(SeedSnapshot snapshot, TasteView view, CancellationToken ct)
+    private async Task<TasteProfile> BuildAsync(
+        ICurrentUser scope, SeedSnapshot snapshot, TasteView view, CancellationToken ct)
     {
         // Observed, not effective: the charts describe the shelf. Excluding a source from
         // recommendations stops it steering picks, it does not rewrite the reading it came from.
@@ -204,6 +267,14 @@ public class TasteProfileService(
         var baseline = Aggregate(seeded.EligibleIds, rows, weights: null);
         var catalogue = await GetCatalogueBaselineAsync(ct);
 
+        // Both views get the same two: they set the shelf against the reading, which the view switch
+        // does not change.
+        var readEligible = seeded.EligibleIds.Where(readIds.Contains).ToList();
+        var under = UnderRead(seeded.EligibleIds, readEligible, rows);
+        var popularity = Popularity(await vectorIndex.GetAsync(ct), seeded.EligibleIds, readEligible);
+        var refs = await SeriesRefsAsync(scope,
+            [.. under.SelectMany(u => u.Examples), .. popularity?.DeepCuts.Select(d => d.Id) ?? []], ct);
+
         return new TasteProfile(
             // No catalogue baseline for creators: the index interns author names as ids, and
             // resolving the whole catalogue back to names buys a number that says less than "on N of
@@ -219,7 +290,156 @@ public class TasteProfileService(
             LibraryCount: seeded.EligibleIds.Count,
             CatalogueBaselineAvailable: catalogue is not null,
             CatalogueBaselineSource: catalogue?.Source,
-            GeneratedAt: DateTime.UtcNow);
+            GeneratedAt: DateTime.UtcNow,
+            UnderRead: [.. under.Select(u => new TasteUnderFacet(
+                u.Name, u.IsGenre, u.Owned, u.Read, u.Ratio, u.Unread,
+                [.. u.Examples.Where(refs.ContainsKey).Select(id => refs[id])]))],
+            Popularity: popularity is null ? null : new TastePopularity(
+                popularity.Read, popularity.Shelf, popularity.ReadRanked, popularity.ShelfRanked,
+                [.. popularity.DeepCuts.Where(d => refs.ContainsKey(d.Id))
+                    .Select(d => new TasteDeepCut(refs[d.Id].SeriesId, refs[d.Id].Title, refs[d.Id].CoverUrl, d.Rank))]));
+    }
+
+    private sealed record Under(
+        string Name, bool IsGenre, int Owned, int Read, double Ratio, int Unread, IReadOnlyList<long> Examples);
+
+    /// <summary>
+    /// Genres and story tags much more common on the shelf than in what was read, with a few unread
+    /// series carrying each. Counted flat, one per series: "you own 24, you read 2" is the claim, and
+    /// reading weights would blur it.
+    /// </summary>
+    private static IReadOnlyList<Under> UnderRead(
+        IReadOnlyList<long> shelf, IReadOnlyList<long> read, IReadOnlyDictionary<long, MangaBakaProfileRow> rows)
+    {
+        var readSet = read.ToHashSet();
+        var shelfRows = shelf.Distinct().Where(rows.ContainsKey).ToList();
+        var readCount = shelfRows.Count(readSet.Contains);
+        if (readCount < MinUnderRead || shelfRows.Count - readCount < MinUnderOwned)
+        {
+            return [];
+        }
+
+        var facets = new Dictionary<string, (string Name, bool IsGenre, List<long> Ids)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var id in shelfRows)
+        {
+            var row = rows[id];
+            var genres = row.Genres.Where(g => !string.IsNullOrWhiteSpace(g) && !AdultGenres.Contains(g))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var genre in genres)
+            {
+                Add(genre, true, id);
+            }
+
+            // Story-defining tags only: an incidental tag on an owned series says little about what
+            // the reader collected it for.
+            foreach (var tag in row.Tags.Where(t => !t.IsSpoiler && t.Weight is "core" or "defining")
+                         .Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (!genres.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                {
+                    Add(tag, false, id);
+                }
+            }
+        }
+
+        return facets.Values
+            .Select(f =>
+            {
+                var owned = f.Ids.Count;
+                var readHere = f.Ids.Count(readSet.Contains);
+                var ratio = (double)readHere / readCount / ((double)owned / shelfRows.Count);
+                var unread = f.Ids.Where(id => !readSet.Contains(id)).ToList();
+                return new Under(f.Name, f.IsGenre, owned, readHere, ratio, unread.Count, [.. unread.Take(UnderExamples)]);
+            })
+            .Where(u => u.Owned >= MinUnderOwned && u.Ratio <= UnderRatio && u.Unread > 0)
+            // Fewest read first, then the biggest pile: "6 owned, 0 read" before "50 owned, 11 read".
+            .OrderBy(u => u.Ratio)
+            .ThenByDescending(u => u.Owned)
+            .ThenBy(u => u.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(UnderShown)
+            .ToList();
+
+        void Add(string name, bool isGenre, long id)
+        {
+            var key = name.Trim();
+            if (!facets.TryGetValue(key, out var facet))
+            {
+                facet = facets[key] = (key, isGenre, []);
+            }
+
+            if (facet.Ids.Count == 0 || facet.Ids[^1] != id)
+            {
+                facet.Ids.Add(id);
+            }
+        }
+    }
+
+    private sealed record BandShares(
+        IReadOnlyList<double> Read, IReadOnlyList<double> Shelf, int ReadRanked, int ShelfRanked,
+        IReadOnlyList<(long Id, int Rank)> DeepCuts);
+
+    /// <summary>Band shares by catalogue popularity rank for the reading and the shelf.</summary>
+    private static BandShares? Popularity(VectorIndex? index, IReadOnlyList<long> shelf, IReadOnlyList<long> read)
+    {
+        if (index is null || index.Count == 0)
+        {
+            return null;
+        }
+
+        var ranks = shelf.Distinct()
+            .Select(id => (Id: id, Rank: index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown))
+            .Where(x => x.Rank > 0)
+            .ToDictionary(x => x.Id, x => x.Rank);
+        var readRanks = read.Distinct().Where(ranks.ContainsKey).Select(id => (Id: id, Rank: ranks[id])).ToList();
+        if (readRanks.Count < MinUnderRead)
+        {
+            return null;
+        }
+
+        return new BandShares(
+            Shares(readRanks.Select(x => x.Rank).ToList()),
+            Shares([.. ranks.Values]),
+            readRanks.Count,
+            ranks.Count,
+            [.. readRanks.Where(x => x.Rank > PopularityBands[^1] / 10)
+                .OrderByDescending(x => x.Rank).Take(DeepCutsShown)]);
+
+        static IReadOnlyList<double> Shares(List<int> ranks)
+        {
+            var counts = new double[PopularityBands.Length + 1];
+            foreach (var rank in ranks)
+            {
+                var band = Array.FindIndex(PopularityBands, limit => rank <= limit);
+                counts[band < 0 ? PopularityBands.Length : band]++;
+            }
+
+            return [.. counts.Select(c => ranks.Count == 0 ? 0 : c / ranks.Count)];
+        }
+    }
+
+    /// <summary>Library ids, titles and covers for MangaBaka ids, in the caller's own scope.</summary>
+    private async Task<Dictionary<long, TasteSeriesRef>> SeriesRefsAsync(
+        ICurrentUser scope, IReadOnlyCollection<long> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        using var dbScope = scopeFactory.CreateScope();
+        var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
+        var wanted = ids.Select(id => (int?)id).ToHashSet();
+        var rows = await db.Series
+            .Where(s => s.MangaBakaId != null && wanted.Contains(s.MangaBakaId) && s.Incognito != IncognitoMode.Full)
+            .Select(s => new { s.Id, s.Title, s.MangaBakaId, s.CoverPath, s.LastMetadataRefresh })
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(r => (long)r.MangaBakaId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderBy(r => r.Id).Select(r =>
+                    new TasteSeriesRef(r.Id, r.Title, SeriesDto.CoverUrlFor(r.Id, r.CoverPath, r.LastMetadataRefresh))).First());
     }
 
     private static IReadOnlyList<TasteFacet> Facets(
