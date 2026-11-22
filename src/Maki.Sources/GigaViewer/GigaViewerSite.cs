@@ -28,4 +28,7 @@ public static class GigaViewerSites
 
     public static readonly GigaViewerSite KurageBunch =
         new("kuragebunch", "Kurage Bunch", "https://kuragebunch.com");
+
+    public static readonly IReadOnlyList<GigaViewerSite> All =
+        [ShonenJumpPlus, ComicDays, SundayWebry, Magcomi, TonarinoYj, ComicZenon, KurageBunch];
 }

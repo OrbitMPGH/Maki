@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Maki.Core;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
@@ -28,6 +29,7 @@ public sealed class TopManhuaImageBrowser(
 {
     private const string BaseUrl = "https://www.topmanhua.fan";
     private const string Host = "www.topmanhua.fan";
+    private const string SourceName = "topmanhua";
     private const int NavTimeoutMs = 30_000;
     private const int CaptureTimeoutMs = 45_000;
     private const int MaxBodiesInFlight = 2;
@@ -36,6 +38,9 @@ public sealed class TopManhuaImageBrowser(
     private IBrowser? _browser;
     private IBrowserContext? _context;
     private BrowserProfile? _profile;
+
+    /// <summary>The route the current context was made with, and the clearance it holds was earned through.</summary>
+    private ProxyRoute _route = ProxyRoute.Direct;
     private readonly IdleStamp _idle = new();
 
     public string BrowserName => "TopManhua";
@@ -142,10 +147,14 @@ public sealed class TopManhuaImageBrowser(
                     return await CancellableBrowserCall.RunAsync(
                         () => BrowserSupport.CloseQuietlyAsync(page), () => CaptureAsync(page, chapterUrl, imageUrls, ct), ct);
                 }
+                catch (NavigationException ex) when (BrowserSupport.ProxyFailure(ex, _route, SourceName) is { } proxyFailure)
+                {
+                    throw proxyFailure;
+                }
                 catch (ChallengeException) when (attempt == 0)
                 {
                     logger.LogInformation("TopManhua browser hit a challenge; re-solving clearance and retrying");
-                    fetcher.InvalidateSession(Host);
+                    fetcher.InvalidateSession(Host, _route);
                     await ResetContextAsync();
                 }
                 finally
@@ -259,16 +268,24 @@ public sealed class TopManhuaImageBrowser(
             await ShutdownAsync();
         }
 
+        var route = await fetcher.RouteForAsync(SourceName, ct);
         if (_context != null && _profile != null)
         {
-            return (_context, _profile);
+            if (route.Equals(_route))
+            {
+                return (_context, _profile);
+            }
+
+            logger.LogInformation("TopManhua's proxy setting changed; starting a new browser context");
+            await ResetContextAsync();
         }
 
-        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/", ct);
+        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/", route, ct);
 
         _browser ??= await launcher.LaunchAsync(ct: ct);
 
-        var context = await _browser.CreateBrowserContextAsync();
+        var context = await _browser.CreateBrowserContextAsync(BrowserSupport.ContextOptions(route));
+        _route = route;
         await context.SetCookieAsync(BrowserSupport.SessionCookies(session.Cookies, Host));
 
         _profile = new BrowserProfile(

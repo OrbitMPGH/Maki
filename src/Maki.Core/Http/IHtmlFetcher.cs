@@ -1,3 +1,5 @@
+using Maki.Core.Http.Proxy;
+
 namespace Maki.Core.Http;
 
 /// <summary>
@@ -20,6 +22,13 @@ public interface IHtmlFetcher
     /// same way through either path.
     /// </summary>
     Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default);
+
+    /// <summary>
+    /// This fetcher bound to one source, so its fetches go out on that source's proxy route. Every
+    /// source takes its fetcher through this; a fetcher with no notion of routes (a test fake)
+    /// returns itself.
+    /// </summary>
+    IHtmlFetcher For(string sourceName) => this;
 }
 
 /// <summary>
@@ -27,13 +36,14 @@ public interface IHtmlFetcher
 /// with <c>application/x-www-form-urlencoded</c> content (the only body FlareSolverr accepts).
 /// <see cref="Cookies"/> are sent in addition to any solved clearance cookies and win on a name clash.
 /// <see cref="Headers"/> go on the direct request only: FlareSolverr accepts no custom headers, so
-/// they are dropped on that path.
+/// they are dropped on that path. <see cref="Route"/> is filled by a source-bound fetcher; null is direct.
 /// </summary>
 public record HtmlFetchRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Cookies = null,
     string? FormBody = null,
-    IReadOnlyDictionary<string, string>? Headers = null);
+    IReadOnlyDictionary<string, string>? Headers = null,
+    ProxyRoute? Route = null);
 
 /// <summary>A fetched body and whether FlareSolverr had to fetch it.</summary>
 public record HtmlFetchResult(string Html, bool ViaFlareSolverr);

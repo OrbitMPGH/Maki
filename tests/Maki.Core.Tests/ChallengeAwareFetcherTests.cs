@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Core.Tests;
@@ -298,7 +299,7 @@ public class ChallengeAwareFetcherTests
              {"name":"consent","value":"new","domain":".example.test"}]
             """;
 
-        var session = await fetcher.GetBrowserSessionAsync(Target);
+        var session = await fetcher.GetBrowserSessionAsync(Target, Maki.Core.Http.Proxy.ProxyRoute.Direct);
 
         Assert.Equal("right", session.Cookies["cf_clearance"]);
         Assert.Equal("new", session.Cookies["consent"]);
@@ -356,5 +357,92 @@ public class ChallengeAwareFetcherTests
 
         Assert.Equal(5, handler.FlarePayloads.Count);
         Assert.Equal(2, handler.MaxFlareInFlight);
+    }
+
+    private sealed class FixedRoutes(ProxyRoute route) : ISourceProxyResolver
+    {
+        public List<string> Asked { get; } = [];
+
+        public Task<ProxyRoute> ResolveAsync(string sourceName, CancellationToken ct = default)
+        {
+            Asked.Add(sourceName);
+            return Task.FromResult(route);
+        }
+    }
+
+    private static readonly ProxyRoute Lan = ProxyRoute.Via(new Uri("http://192.168.1.20:3128"));
+
+    private static (ChallengeAwareFetcher Fetcher, Handler Handler) BuildRouted(ProxyRoute route)
+    {
+        var handler = new Handler();
+        var factory = new Factory(handler);
+        var fetcher = new ChallengeAwareFetcher(
+            factory, new FlareSolverrClient(factory), new Settings("http://flare.test:8191"),
+            NullLogger<ChallengeAwareFetcher>.Instance, new FixedRoutes(route));
+        return (fetcher, handler);
+    }
+
+    private static HttpResponseMessage ChallengeUntilCookie(HttpRequestMessage request) =>
+        request.Headers.Contains("Cookie")
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("<html>direct</html>") }
+            : new HttpResponseMessage(HttpStatusCode.Forbidden) { Content = new StringContent("blocked") };
+
+    [Fact]
+    public async Task A_bound_fetcher_sends_its_route_to_the_site_and_to_flaresolverr()
+    {
+        var (fetcher, handler) = BuildRouted(Lan);
+        handler.OnTarget = ChallengeUntilCookie;
+        var bound = fetcher.For("mangafire");
+
+        Assert.Equal("<html>solved</html>", await bound.GetHtmlAsync(Target));
+        Assert.Equal("<html>direct</html>", await bound.GetHtmlAsync(Target));
+
+        Assert.All(handler.TargetRequests, request => Assert.Equal(Lan, ProxyRoute.Of(request)));
+        var payload = Assert.Single(handler.FlarePayloads).RootElement;
+        Assert.Equal("http://192.168.1.20:3128", payload.GetProperty("proxy").GetProperty("url").GetString());
+    }
+
+    [Fact]
+    public async Task An_unrouted_fetch_sends_no_proxy_to_flaresolverr()
+    {
+        var (fetcher, handler) = Build();
+        handler.OnTarget = ChallengeUntilCookie;
+
+        await fetcher.GetHtmlAsync(Target);
+
+        Assert.False(Assert.Single(handler.FlarePayloads).RootElement.TryGetProperty("proxy", out _));
+        Assert.All(handler.TargetRequests, request => Assert.True(ProxyRoute.Of(request).IsDirect));
+    }
+
+    [Fact]
+    public async Task Clearance_earned_through_one_route_is_never_sent_through_another()
+    {
+        var (fetcher, handler) = Build();
+        handler.OnTarget = ChallengeUntilCookie;
+
+        await fetcher.FetchAsync(new HtmlFetchRequest(Target, Route: Lan));
+        handler.TargetRequests.Clear();
+        await fetcher.FetchAsync(new HtmlFetchRequest(Target));
+
+        // The direct fetch starts without the proxy's cookie, so it is challenged and solves for itself.
+        Assert.False(handler.TargetRequests[0].Headers.Contains("Cookie"));
+        Assert.Equal(2, handler.FlarePayloads.Count);
+        Assert.DoesNotContain("Cookie", fetcher.SessionHeadersFor("example.test", "https://example.test/", Lan).Keys);
+        Assert.Contains("Cookie", fetcher.SessionHeadersFor("example.test", "https://example.test/", ProxyRoute.Direct).Keys);
+    }
+
+    [Fact]
+    public async Task Invalidating_a_routed_session_drops_exactly_that_session()
+    {
+        var (fetcher, handler) = Build();
+        handler.OnTarget = ChallengeUntilCookie;
+        await fetcher.GetBrowserSessionAsync(Target, Lan);
+        Assert.Contains("Cookie", fetcher.SessionHeadersFor("example.test", "r", Lan).Keys);
+
+        fetcher.InvalidateSession("example.test", Lan);
+
+        Assert.DoesNotContain("Cookie", fetcher.SessionHeadersFor("example.test", "r", Lan).Keys);
+        await fetcher.GetBrowserSessionAsync(Target, Lan);
+        Assert.Equal(2, handler.FlarePayloads.Count);
     }
 }

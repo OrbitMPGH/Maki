@@ -2,12 +2,14 @@ using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
+using Maki.Api.Http;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
@@ -160,12 +162,8 @@ try
         // each one. CoverService only ever fetches URLs a source produced, so losing auto-redirect
         // there is a non-event. The allowlist checks host names only, so connections are also held
         // to public addresses: a source domain that resolves to the LAN must not be readable.
-        .ConfigurePrimaryHttpMessageHandler(() =>
-        {
-            var handler = PublicAddressGuard.CreateHandler();
-            handler.AllowAutoRedirect = false;
-            return handler;
-        })
+        // A cover fetched for a proxied source carries that source's route (SearchController, CoverFetcher).
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
@@ -427,6 +425,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangadex")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -437,7 +436,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        // Shared by every source: PageDownloader tags each chapter's requests with that source's route.
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
         // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
@@ -446,26 +446,26 @@ try
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
     const string browserUa = BrowserUserAgent.Value;
-    foreach (var (name, baseUrl) in new[]
+    foreach (var (name, baseUrl, source) in new[]
              {
-                 (MangaPillSource.HttpClientName, "https://mangapill.com/"),
+                 (MangaPillSource.HttpClientName, "https://mangapill.com/", "mangapill"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/", "mangakatana"),
                  // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no
                  // challenge). Page images go through their own client below.
-                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/", GigaViewerSites.ShonenJumpPlus.Name),
+                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/", GigaViewerSites.ComicDays.Name),
+                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/", GigaViewerSites.SundayWebry.Name),
+                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/", GigaViewerSites.Magcomi.Name),
+                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/", GigaViewerSites.TonarinoYj.Name),
+                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/", GigaViewerSites.ComicZenon.Name),
+                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/", GigaViewerSites.KurageBunch.Name),
                  // Dynasty Scans — plain nginx, no Cloudflare.
-                 (DynastySource.HttpClientName, "https://dynasty-scans.com/"),
+                 (DynastySource.HttpClientName, "https://dynasty-scans.com/", "dynasty"),
                  // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
-                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/"),
-                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net"),
-                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/")
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/", "manhwaweb"),
+                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net", "mangadenizi"),
+                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/", "comicwalker")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -475,6 +475,7 @@ try
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
+            .ForSource(source)
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
@@ -487,23 +488,27 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("mangadenizi", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDeniziImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
-    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
+    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine. One client per
+    // site so each carries its site's proxy route; the limiter is still shared by all of them.
     var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
-    builder.Services.AddHttpClient(GigaViewerSource.ImageHttpClientName, client =>
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
-        .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
-        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    foreach (var site in GigaViewerSites.All)
+    {
+        builder.Services.AddHttpClient(GigaViewerSource.ImageClientNameFor(site), client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ForSource(site.Name, PublicAddressGuard.CreateManualRedirectHandler)
+            .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+            .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    }
 
     // Shinigami: the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
     // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the
@@ -519,6 +524,7 @@ try
             client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("shinigami")
         .AddHttpMessageHandler(() => new RateLimitingHandler(shinigamiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -530,6 +536,7 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
         client.Timeout = TimeSpan.FromSeconds(30);
     })
+    .ForSource("topmanhua")
     .AddHttpMessageHandler(() => new RateLimitingHandler(topManhuaLimiter))
     .AddHttpMessageHandler(() =>  new RateLimitDetectingHandler());
 
@@ -547,6 +554,7 @@ try
                 "Cookie", "needGDPR=false; needCCPA=false; needCOPPA=false; ageGatePass=true");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("webtoons")
         .AddHttpMessageHandler(() => new RateLimitingHandler(webtoonsLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -561,6 +569,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri(tcbBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("tcbscans")
         .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -574,6 +583,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://asurascans.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("asura")
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -586,6 +596,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://raw.senmanga.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("senmanga")
         .AddHttpMessageHandler(() => new RateLimitingHandler(senMangaLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -598,6 +609,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://cn.baozimh.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("baozimanhua")
         .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -610,6 +622,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://mangalivre.to/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangalivre")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -623,6 +636,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("naverwebtoon")
         .AddHttpMessageHandler(() => new RateLimitingHandler(naverWebtoonLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -636,6 +650,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://atsu.moe/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("atsumaru")
         .AddHttpMessageHandler(() => new RateLimitingHandler(atsumaruLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -654,6 +669,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://mangaplus.shueisha.co.jp/");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
+        .ForSource("mangaplus")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -671,6 +687,7 @@ try
             client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangalib")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLibLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -692,6 +709,7 @@ try
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("manhuagui")
         .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -707,9 +725,12 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        .ForSource("mangatube", proxy => new SocketsHttpHandler
         {
-            UseCookies = false, AutomaticDecompression = DecompressionMethods.All
+            UseCookies = false,
+            AutomaticDecompression = DecompressionMethods.All,
+            Proxy = proxy is null ? null : new WebProxy(proxy),
+            UseProxy = true,
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -720,6 +741,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        // The source-bound fetchers put their source's route on every request (IHtmlFetcher.For).
+        .RoutesByProxy()
         .AddHttpMessageHandler(() => new PerHostRateLimitingHandler(challengeLimiters))
         // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
         // see that itself to hand off to FlareSolverr.
@@ -734,7 +757,7 @@ try
             client.Timeout = TimeSpan.FromSeconds(30);
             client.MaxResponseContentBufferSize = CustomSourceFetcher.MaxDocumentBytes;
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new SameSiteRedirectHandler())
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
@@ -752,7 +775,7 @@ try
             client.Timeout = TimeSpan.FromMinutes(2);
             client.MaxResponseContentBufferSize = 64 * 1024 * 1024;
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
@@ -769,7 +792,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("cuutruyen", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -782,7 +805,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("taiyo", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -816,6 +839,8 @@ try
     builder.Services.AddScoped<InboxRenderer>();
 
     builder.Services.AddSingleton<KavitaUserResolver>();
+    builder.Services.AddSingleton<SourceProxyResolver>();
+    builder.Services.AddSingleton<ISourceProxyResolver>(sp => sp.GetRequiredService<SourceProxyResolver>());
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
     // Sources that only need "fetch this URL past Cloudflare" take the interface, so their parsers
@@ -897,6 +922,7 @@ try
     builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
     builder.Services.AddScoped<CustomSourceService>();
     builder.Services.AddSingleton<CustomSourceProbe>();
+    builder.Services.AddSingleton<SourceProxyTester>();
     builder.Services.AddSingleton<CustomRepositoryStore>();
     builder.Services.AddSingleton<CustomRepositoryClient>();
     builder.Services.AddScoped<CustomRepositoryService>();

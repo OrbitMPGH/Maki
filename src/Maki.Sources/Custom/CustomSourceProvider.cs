@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Sources;
 using Maki.Core.Sources.Custom;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace Maki.Sources.Custom;
 
 /// <summary>Builds a <see cref="CustomSource"/> from a definition with the shared fetcher, page client and throttle.</summary>
-public sealed class CustomSourceFactory(CustomSourceFetcher fetcher, IHttpClientFactory http, CustomSourceThrottle throttle)
+public sealed class CustomSourceFactory(
+    CustomSourceFetcher fetcher, IHttpClientFactory http, CustomSourceThrottle throttle, ISourceProxyResolver? proxies = null)
 {
     /// <summary>A source for the registry; its saved interval becomes the gate's.</summary>
     public CustomSource Create(CustomSourceDefinition definition) => Build(definition, throttle.For(definition.SourceName, definition.MinIntervalMs));
@@ -16,7 +18,7 @@ public sealed class CustomSourceFactory(CustomSourceFetcher fetcher, IHttpClient
     public CustomSource CreateDraft(CustomSourceDefinition definition) => Build(definition, throttle.Shared(definition.SourceName, definition.MinIntervalMs));
 
     private CustomSource Build(CustomSourceDefinition definition, SpacingGate gate) =>
-        new(definition, fetcher, http, gate, (host, referer) => fetcher.SessionHeadersFor(host, referer));
+        new(definition, fetcher, http, gate, fetcher.SessionHeadersFor, proxies);
 }
 
 /// <summary>

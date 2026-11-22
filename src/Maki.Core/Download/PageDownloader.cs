@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,8 @@ public class PageDownloader(
     IHttpClientFactory httpClientFactory,
     IDownloadCooldown cooldown,
     TimeProvider time,
-    ILogger<PageDownloader> logger)
+    ILogger<PageDownloader> logger,
+    ISourceProxyResolver? proxies = null)
 {
     public const string HttpClientName = "pages";
     private const int MaxParallelPerChapter = 4;
@@ -40,6 +42,8 @@ public class PageDownloader(
     {
         Directory.CreateDirectory(workingDir);
         var client = httpClientFactory.CreateClient(pageClient?.PageHttpClientName ?? HttpClientName);
+        // One route for the chapter, so every page leaves through the same egress.
+        var route = await (proxies ?? NoSourceProxies.Instance).ResolveAsync(sourceName, ct);
 
         var results = new string[pages.Pages.Count];
         var done = 0;
@@ -55,7 +59,7 @@ public class PageDownloader(
 
                 if (!File.Exists(target))
                 {
-                    await DownloadPageAsync(client, pageClient, page, sourceName, target, token);
+                    await DownloadPageAsync(client, pageClient, page, sourceName, route, target, token);
                 }
 
                 var current = Interlocked.Increment(ref done);
@@ -69,7 +73,7 @@ public class PageDownloader(
     }
 
     private async Task DownloadPageAsync(
-        HttpClient client, IPageClientSource? pageClient, PageRequest page, string sourceName, string target, CancellationToken ct)
+        HttpClient client, IPageClientSource? pageClient, PageRequest page, string sourceName, ProxyRoute route, string target, CancellationToken ct)
     {
         var temp = target + ".tmp";
 
@@ -93,6 +97,7 @@ public class PageDownloader(
 
             EnsureAllowed(pageClient, page.Url);
             using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
+            route.ApplyTo(request);
             if (page.Headers != null)
             {
                 foreach (var (key, value) in page.Headers)

@@ -278,14 +278,14 @@ export const ChapterRow = memo(function ChapterRow({
               </div>
           )}
         </Table.Td>
-        <Table.Td>
-          <LightText c="var(--ink-3)" lineClamp={1}>
-            {displayChapterTitle(c)}
-          </LightText>
-        </Table.Td>
         <Table.Td className="chapter-released">
           <LightText c="var(--ink-3)" className="tnum chapter-label">
             {c.releaseDate ? formatCalendarDate(c.releaseDate) : '-'}
+          </LightText>
+        </Table.Td>
+        <Table.Td>
+          <LightText c="var(--ink-3)" lineClamp={1}>
+            {displayChapterTitle(c)}
           </LightText>
         </Table.Td>
         <Table.Td>
@@ -773,6 +773,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             </Text>
           </Group>
         </Table.Td>
+        <Table.Td />
         <Table.Td>
           {/* Wanted is spelled out only when the range disagrees with itself: the switch alone can
             show that state but not its size, and hovering for a tooltip is a poor way to find out. */}
@@ -788,7 +789,6 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               ]}
           />
         </Table.Td>
-        <Table.Td />
         <Table.Td />
         <Table.Td>
           {downloaded.length > 0 && (
@@ -900,9 +900,9 @@ type ChapterVolumeRowProps = {
   /** The series' anime adaptations. The heading names each one that covers any of its chapters. */
   seasons: readonly AnimeRange[]
   readTracking: boolean
-  /** Whether the Title column shows, so the heading can take its room as well as the Chapter column's. */
-  titleShown: boolean
-  /** How many of Released, Source and Status show; the progress spans them. */
+  /** How many of Chapter, Released and Title show; the heading takes all their room. */
+  nameSpan: number
+  /** How many of Source and Status show; the progress spans them. */
   progressSpan: number
   /** Every column the table shows, for the gap row. */
   columnCount: number
@@ -929,7 +929,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
   queueStates,
   seasons,
   readTracking,
-  titleShown,
+  nameSpan,
   progressSpan,
   columnCount,
   gapBefore,
@@ -1049,7 +1049,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             />
           </Tooltip>
         </Table.Td>
-        <Table.Td colSpan={titleShown ? 2 : 1} className="chapter-volume-name">
+        <Table.Td colSpan={nameSpan} className="chapter-volume-name">
           <div className="chapter-volume-name-row">
             <div
                 className="chapter-volume-toggle"
@@ -1162,8 +1162,8 @@ export function ChapterRowSkeletons({ count }: { count: number }) {
       <Table.Tr key={i} aria-hidden>
         <Table.Td><Skeleton h={16} w={30} radius="xl" /></Table.Td>
         <Table.Td><Skeleton h={14} w={72} /></Table.Td>
+        <Table.Td className="chapter-released"><Skeleton h={14} w={78} /></Table.Td>
         <Table.Td><Skeleton h={14} w="60%" /></Table.Td>
-        <Table.Td className="chapter-released"><Skeleton h={14} w={78} ml="auto" /></Table.Td>
         <Table.Td><Skeleton h={18} w={64} radius="sm" /></Table.Td>
         <Table.Td><Skeleton h={18} w={92} radius="sm" /></Table.Td>
         <Table.Td><Skeleton h={18} w={52} ml="auto" /></Table.Td>

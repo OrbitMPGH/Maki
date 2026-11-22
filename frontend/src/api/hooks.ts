@@ -4089,8 +4089,8 @@ export function useDownloadClientKinds() {
 
 export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
-/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, or `indexer:{backend}`. */
-export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | `indexer:${IndexerBackend}`
+/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, `sourceproxy`, or `indexer:{backend}`. */
+export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | 'sourceproxy' | `indexer:${IndexerBackend}`
 
 /** The last Test of a connection, present only while the saved settings are the ones it tested. */
 export interface ConnectionTestStatus {
@@ -4149,6 +4149,53 @@ export function useTestConnectionSettings<T>(name: ConnectionName) {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    onSettled: () => invalidateConnectionTests(queryClient),
+  })
+}
+
+/** The one proxy chosen sources go through, and which sources those are. */
+export interface SourceProxySettings {
+  url: string | null
+  sources: string[]
+}
+
+export interface SourceProxyTestResult {
+  success: boolean
+  /** What the site answered through the proxy. */
+  status: number | null
+  /** True when the proxy also connects to private addresses; null when it could not be asked. */
+  allowsPrivate: boolean | null
+  /** FlareSolverr's own try through the proxy; null when the source does not need it. */
+  flareSolverr: boolean | null
+}
+
+const SOURCE_PROXY_KEY = ['settings', 'source-proxy'] as const
+
+export function useSourceProxy(enabled = true) {
+  return useQuery({
+    queryKey: SOURCE_PROXY_KEY,
+    queryFn: () => api<SourceProxySettings>('/settings/source-proxy'),
+    enabled,
+  })
+}
+
+export function useSaveSourceProxy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: SourceProxySettings) =>
+      api<SourceProxySettings>('/settings/source-proxy', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(SOURCE_PROXY_KEY, saved)
+      invalidateConnectionTests(queryClient)
+    },
+  })
+}
+
+export function useTestSourceProxy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { url: string | null; source: string }) =>
+      api<SourceProxyTestResult>('/settings/source-proxy/test', { method: 'POST', body: JSON.stringify(value) }),
     onSettled: () => invalidateConnectionTests(queryClient),
   })
 }

@@ -15,6 +15,8 @@ using Maki.Core.Ratings;
 using Maki.Core.Scrobbling;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
+using Maki.Sources.Suwayomi;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Core.Sources;
@@ -2204,6 +2206,116 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
+
+    /// <param name="Url">The proxy, <c>http://host:port</c>; blank when none is set.</param>
+    /// <param name="Sources">Names of the sources that go through it.</param>
+    public record SourceProxySettings(string? Url, IReadOnlyList<string>? Sources);
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("source-proxy")]
+    public async Task<IActionResult> GetSourceProxy(CancellationToken ct) =>
+        Ok(ToSettings(SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct))));
+
+    /// <summary>
+    /// Assignments for sources not registered right now (Suwayomi off, a custom source removed) are
+    /// kept, the way <see cref="SetSourcePriority"/> keeps them, so turning the source back on finds
+    /// its proxy where it left it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("source-proxy")]
+    public async Task<IActionResult> SetSourceProxy([FromBody] SourceProxySettings request, CancellationToken ct)
+    {
+        Uri? url = null;
+        if (!string.IsNullOrWhiteSpace(request.Url) && (url = SourceProxyUrl.Parse(request.Url, out var error)) is null)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        var requested = (request.Sources ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var unknown = requested
+            .Where(name => sourceRegistry.Find(name) is null || name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
+        }
+
+        // Clearing the URL also drops assignments of sources not registered now: the card cannot list
+        // them, so keeping them would leave a proxy nobody can turn off.
+        if (url is null && requested.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.sourceProxyInUse");
+        }
+
+        var stored = SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct));
+        var kept = stored.Sources.Keys.Where(name => sourceRegistry.Find(name) is null);
+        var names = requested.Concat(kept).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        var config = url is null
+            ? SourceProxyConfig.Empty
+            : new SourceProxyConfig(
+                [new SourceProxyConfig.Entry(SourceProxyConfig.DefaultId, SourceProxyUrl.Format(url))],
+                names.ToDictionary(name => name, _ => SourceProxyConfig.DefaultId, StringComparer.OrdinalIgnoreCase));
+        await settings.SetAsync(SettingKeys.SourceProxy, config.Serialize(), ct);
+        return Ok(ToSettings(config));
+    }
+
+    /// <param name="Source">The source whose site the proxy is tried against.</param>
+    public record SourceProxyTestRequest(string? Url, string? Source);
+
+    /// <summary>
+    /// Tries the proxy against one source's site, asks whether it refuses private destinations, and
+    /// for a source that needs FlareSolverr, has FlareSolverr try it too. A proxy that cannot be
+    /// reached or refuses the site fails the test; the other two only add to a passing one.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("source-proxy/test")]
+    public async Task<IActionResult> TestSourceProxy(
+        [FromBody] SourceProxyTestRequest request, [FromServices] SourceProxyTester tester, CancellationToken ct)
+    {
+        var raw = string.IsNullOrWhiteSpace(request.Url)
+            ? SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct)).DefaultUrl
+            : request.Url;
+        if (SourceProxyUrl.Parse(raw, out var error) is not { } url)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Source) || sourceRegistry.Find(request.Source) is not { } source ||
+            source.Name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = request.Source ?? "" });
+        }
+
+        var result = await tester.TestAsync(url, source, ct);
+        var failureKey = result.Failure switch
+        {
+            SourceProxyFailure.Unreachable => "error.settings.sourceProxyUnreachable",
+            SourceProxyFailure.Rejected or SourceProxyFailure.Misconfigured => "error.settings.sourceProxyRejected",
+            null when result.TimedOut => "error.settings.sourceProxySiteTimeout",
+            null when result.FlareSolverr is { Ok: false } => "error.settings.sourceProxyFlareSolverr",
+            _ => null,
+        };
+        var args = new { source = source.DisplayName };
+        await RecordTestAsync(ConnectionTestStore.SourceProxy, ConnectionTestStore.SourceProxyFingerprint(SourceProxyUrl.Format(url)),
+            failureKey is null, failureKey, args, ct);
+        if (failureKey is not null)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new
+            {
+                success = false,
+                code = failureKey,
+                error = localizer.Get(failureKey, args),
+                detail = result.FlareSolverr?.Detail,
+            });
+        }
+
+        return Ok(new { success = true, status = result.Status, allowsPrivate = result.AllowsPrivate, flareSolverr = result.FlareSolverr?.Ok });
+    }
+
+    private static SourceProxySettings ToSettings(SourceProxyConfig config) => new(
+        config.DefaultUrl,
+        config.Sources.Where(s => s.Value == SourceProxyConfig.DefaultId).Select(s => s.Key).Order(StringComparer.OrdinalIgnoreCase).ToList());
 
     /// <summary>The last Test result of each connection, only where the stored settings are still the ones tested.</summary>
     [Authorize(Policy = Policies.Admin)]

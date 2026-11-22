@@ -507,6 +507,8 @@ export const indexerList: IndexerEntry[] = [
 
 export const flaresolverr = { url: 'http://192.168.1.10:8191' }
 
+export const sourceProxy = { url: 'http://192.168.1.20:3128', sources: ['weebcentral'] }
+
 /** The download client was never tested; everything else has a result. */
 export const connectionTests: ConnectionTestStatus[] = [
   { key: 'flaresolverr', ok: false, message: 'FlareSolverr did not answer. Check the URL and that it is running.', testedAt: hoursAgo(5) },

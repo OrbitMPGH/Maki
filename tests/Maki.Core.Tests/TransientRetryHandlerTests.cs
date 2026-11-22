@@ -1,5 +1,6 @@
 using System.Net;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 
 namespace Maki.Core.Tests;
 
@@ -52,6 +53,19 @@ public class TransientRetryHandlerTests
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
         Assert.Equal(3, inner.Calls);
+    }
+
+    [Theory]
+    [InlineData(SourceProxyFailure.Rejected, 1)]
+    [InlineData(SourceProxyFailure.Misconfigured, 1)]
+    [InlineData(SourceProxyFailure.Unreachable, 3)]
+    public async Task Retries_a_proxy_failure_only_when_the_proxy_did_not_answer(SourceProxyFailure failure, int calls)
+    {
+        var (client, inner) = Build(() => throw new SourceProxyException("example", failure, null, "proxy"));
+
+        await Assert.ThrowsAsync<SourceProxyException>(() => client.GetAsync("https://example.test/x"));
+
+        Assert.Equal(calls, inner.Calls);
     }
 
     [Fact]

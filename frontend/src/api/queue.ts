@@ -131,6 +131,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.sourceError': msg`The source answered with an error`,
   'error.download.sourceNeedsPurchase': msg`The source wants a login or a purchase for this chapter`,
   'error.download.network': msg`Could not reach the source`,
+  'error.download.proxy': msg`The source's proxy could not be reached or refused the request`,
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
   'error.download.notListed': msg`No source has this chapter right now`,

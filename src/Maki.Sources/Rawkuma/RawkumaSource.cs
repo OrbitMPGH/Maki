@@ -17,8 +17,10 @@ namespace Maki.Sources.Rawkuma;
 /// numeric post id the chapter-list endpoint needs, since the slug alone does not carry it.
 /// Domain-rotating: <see cref="BaseUrl"/> honours <c>MAKI_SOURCE_RAWKUMA_BASEURL</c>.
 /// </summary>
-public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null) : ISource
+public class RawkumaSource(IHtmlFetcher htmlFetcher, string? baseUrlOverride = null) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("rawkuma");
+
     private const string DefaultBaseUrl = "https://rawkuma.net";
 
     private static readonly HtmlParser Parser = new();
@@ -56,7 +58,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
     {
         var url = $"{BaseUrl}/wp-json/wp/v2/manga?search={Uri.EscapeDataString(title)}" +
                   "&orderby=relevance&per_page=20&_fields=id,slug,title,link,meta,content";
-        var body = await fetcher.GetHtmlAsync(url, ct);
+        var body = await _fetcher.GetHtmlAsync(url, ct);
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {
@@ -110,7 +112,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         var item = await GetSeriesItemAsync(sourceSeriesId, ct);
         var mangaId = item.GetProperty("id").GetInt64();
 
-        var html = await fetcher.GetHtmlAsync(
+        var html = await _fetcher.GetHtmlAsync(
             $"{BaseUrl}/wp-admin/admin-ajax.php?manga_id={mangaId}&page=99&action=chapter_list", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
@@ -150,7 +152,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var url = Rebase(chapter.Url) ?? $"{BaseUrl}/manga/{chapter.SourceSeriesId}/{chapter.SourceChapterId}/";
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         // Page images live on kuma.kyut.dev, never on the rotating BaseUrl; leave their host alone.
@@ -174,7 +176,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
     private async Task<JsonElement> GetSeriesItemAsync(string slug, CancellationToken ct)
     {
         var url = $"{BaseUrl}/wp-json/wp/v2/manga?slug={Uri.EscapeDataString(slug)}&_fields=id,slug,title,link,meta,content";
-        var body = await fetcher.GetHtmlAsync(url, ct);
+        var body = await _fetcher.GetHtmlAsync(url, ct);
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {

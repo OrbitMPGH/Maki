@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using Maki.Core.Configuration;
+using Maki.Core.Http.Proxy;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Http;
@@ -19,19 +20,38 @@ public sealed class ChallengeNotSolvedException(string host, string message) : I
 /// HTML fetcher for anti-bot-protected sites. Tries a direct request with any
 /// cached clearance cookies first; when a challenge is detected it solves it via
 /// FlareSolverr, caches the cookies + user agent per host, and retries.
+/// <para>
+/// Clearance is bound to the egress IP, so sessions are kept per host and <see cref="ProxyRoute"/>:
+/// a cookie FlareSolverr earned through a source's proxy is only ever sent through that proxy, and
+/// changing the proxy starts a fresh solve. Sources fetch through <see cref="For"/>, which resolves
+/// their route once per fetch and carries it to the direct request and to FlareSolverr alike.
+/// </para>
 /// </summary>
 public class ChallengeAwareFetcher(
     IHttpClientFactory httpClientFactory,
     FlareSolverrClient flareSolverr,
     IAppSettings settings,
-    ILogger<ChallengeAwareFetcher> logger) : IHtmlFetcher
+    ILogger<ChallengeAwareFetcher> logger,
+    ISourceProxyResolver? proxies = null) : IHtmlFetcher
 {
     public const string HttpClientName = "challenge-fetcher";
 
     private record HostSession(string CookieHeader, string UserAgent);
 
-    private readonly ConcurrentDictionary<string, HostSession> _sessions = new();
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _solveGates = new();
+    private readonly ConcurrentDictionary<SessionKey, HostSession> _sessions = new();
+    private readonly ConcurrentDictionary<SessionKey, SemaphoreSlim> _solveGates = new();
+    private readonly ISourceProxyResolver _proxies = proxies ?? NoSourceProxies.Instance;
+
+    private readonly record struct SessionKey(string Host, string Route)
+    {
+        public static SessionKey Of(string host, ProxyRoute? route) => new(host.ToLowerInvariant(), (route ?? ProxyRoute.Direct).Fingerprint);
+    }
+
+    /// <summary>A fetcher whose every fetch takes <paramref name="sourceName"/>'s route, resolved at the start of that fetch.</summary>
+    public IHtmlFetcher For(string sourceName) => new SourceBoundHtmlFetcher(this, _proxies, sourceName);
+
+    /// <summary>The route <paramref name="sourceName"/> takes right now, for callers that hold it across several calls (a browser context).</summary>
+    public Task<ProxyRoute> RouteForAsync(string sourceName, CancellationToken ct = default) => _proxies.ResolveAsync(sourceName, ct);
 
     /// <summary>The named client direct requests go out on. A subclass with stricter rules swaps it.</summary>
     protected virtual string ClientName => HttpClientName;
@@ -56,32 +76,34 @@ public class ChallengeAwareFetcher(
     {
         var url = request.Url;
         var host = new Uri(url).Host;
+        var route = request.Route ?? ProxyRoute.Direct;
+        var key = SessionKey.Of(host, route);
 
-        _sessions.TryGetValue(host, out var session);
-        if (await TryDirectAsync(request, session, ct) is { } direct)
+        _sessions.TryGetValue(key, out var session);
+        if (await TryDirectAsync(request, route, session, ct) is { } direct)
         {
             return new HtmlFetchResult(direct, false);
         }
 
         if (session != null)
         {
-            _sessions.TryRemove(KeyValuePair.Create(host, session));
+            _sessions.TryRemove(KeyValuePair.Create(key, session));
         }
 
-        var gate = _solveGates.GetOrAdd(host, _ => new SemaphoreSlim(1, 1));
+        var gate = _solveGates.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(ct);
         try
         {
             // Another caller may have solved this host while this one queued; reuse its clearance
             // instead of starting a second solve.
-            if (_sessions.TryGetValue(host, out var solved) && !ReferenceEquals(solved, session))
+            if (_sessions.TryGetValue(key, out var solved) && !ReferenceEquals(solved, session))
             {
-                if (await TryDirectAsync(request, solved, ct) is { } retried)
+                if (await TryDirectAsync(request, route, solved, ct) is { } retried)
                 {
                     return new HtmlFetchResult(retried, false);
                 }
 
-                _sessions.TryRemove(KeyValuePair.Create(host, solved));
+                _sessions.TryRemove(KeyValuePair.Create(key, solved));
             }
 
             var flareUrl = await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
@@ -92,10 +114,10 @@ public class ChallengeAwareFetcher(
             }
 
             await BeforeFlareSolverrAsync(new Uri(url), ct);
-            logger.LogInformation("Solving challenge for {Host} via FlareSolverr", host);
-            var solution = await flareSolverr.SolveAsync(flareUrl, url, request.FormBody, request.Cookies, ct);
+            logger.LogInformation("Solving challenge for {Host} via FlareSolverr{Via}", host, ViaText(route));
+            var solution = await flareSolverr.SolveAsync(flareUrl, url, request.FormBody, request.Cookies, route, ct);
             await AfterFlareSolverrAsync(new Uri(url), Uri.TryCreate(solution.Url, UriKind.Absolute, out var landed) ? landed : null, ct);
-            StoreSession(host, solution);
+            StoreSession(key, solution);
 
             // FlareSolverr says "ok" for whatever the origin served, so a ban or 404 page would
             // otherwise reach the parser as content.
@@ -119,21 +141,23 @@ public class ChallengeAwareFetcher(
     /// <summary>
     /// Ensures an anti-bot challenge is solved for the host and returns the clearance cookies + UA,
     /// so a headless browser (MangaFire's vrf signer needs one) can start already past Cloudflare
-    /// instead of solving it again. Reuses a cached session when present.
+    /// instead of solving it again. Reuses a cached session when present. <paramref name="route"/>
+    /// is the one the browser will use, so the clearance is earned from the same egress.
     /// </summary>
-    public async Task<BrowserSession> GetBrowserSessionAsync(string url, CancellationToken ct = default)
+    public async Task<BrowserSession> GetBrowserSessionAsync(string url, ProxyRoute route, CancellationToken ct = default)
     {
         var host = new Uri(url).Host;
-        if (_sessions.TryGetValue(host, out var cached))
+        var key = SessionKey.Of(host, route);
+        if (_sessions.TryGetValue(key, out var cached))
         {
             return new BrowserSession(ParseCookieHeader(cached.CookieHeader), cached.UserAgent);
         }
 
-        var gate = _solveGates.GetOrAdd(host, _ => new SemaphoreSlim(1, 1));
+        var gate = _solveGates.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(ct);
         try
         {
-            if (_sessions.TryGetValue(host, out cached))
+            if (_sessions.TryGetValue(key, out cached))
             {
                 return new BrowserSession(ParseCookieHeader(cached.CookieHeader), cached.UserAgent);
             }
@@ -146,9 +170,9 @@ public class ChallengeAwareFetcher(
             }
 
             await BeforeFlareSolverrAsync(new Uri(url), ct);
-            logger.LogInformation("Solving challenge for {Host} via FlareSolverr (browser session)", host);
-            var solution = await flareSolverr.GetAsync(flareUrl, url, ct);
-            StoreSession(host, solution);
+            logger.LogInformation("Solving challenge for {Host} via FlareSolverr (browser session){Via}", host, ViaText(route));
+            var solution = await flareSolverr.GetAsync(flareUrl, url, route, ct);
+            StoreSession(key, solution);
             return new BrowserSession(solution.Cookies, solution.UserAgent);
         }
         finally
@@ -158,14 +182,24 @@ public class ChallengeAwareFetcher(
     }
 
     /// <summary>Drops a cached session so the next call re-solves (e.g. after a browser 403).</summary>
-    public void InvalidateSession(string host) => _sessions.TryRemove(host, out _);
+    public void InvalidateSession(string host, ProxyRoute route) => _sessions.TryRemove(SessionKey.Of(host, route), out _);
 
-    private void StoreSession(string host, FlareSolverrClient.FlareSolution solution)
+    private static string ViaText(ProxyRoute route) => route.IsDirect ? "" : $" through proxy {route.Fingerprint}";
+
+    /// <summary>
+    /// Keeps the new clearance and drops the host's sessions for any other route: once a source has
+    /// moved proxy the old cookie is useless, and nothing else would ever remove it.
+    /// </summary>
+    private void StoreSession(SessionKey key, FlareSolverrClient.FlareSolution solution)
     {
         if (solution.Cookies.Count > 0 && !string.IsNullOrEmpty(solution.UserAgent))
         {
             var cookieHeader = string.Join("; ", solution.Cookies.Select(c => $"{c.Key}={c.Value}"));
-            _sessions[host] = new HostSession(cookieHeader, solution.UserAgent);
+            _sessions[key] = new HostSession(cookieHeader, solution.UserAgent);
+            foreach (var stale in _sessions.Keys.Where(k => k.Host == key.Host && k.Route != key.Route))
+            {
+                _sessions.TryRemove(stale, out _);
+            }
         }
     }
 
@@ -184,11 +218,14 @@ public class ChallengeAwareFetcher(
         return cookies;
     }
 
-    /// <summary>Headers page downloads must send to reuse the solved session (Cookie + UA).</summary>
-    public IReadOnlyDictionary<string, string> SessionHeadersFor(string host, string referer)
+    /// <summary>
+    /// Headers page downloads must send to reuse the solved session (Cookie + UA). The request that
+    /// sends them must carry the same <paramref name="route"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> SessionHeadersFor(string host, string referer, ProxyRoute route)
     {
         var headers = new Dictionary<string, string> { ["Referer"] = referer };
-        if (_sessions.TryGetValue(host, out var session))
+        if (_sessions.TryGetValue(SessionKey.Of(host, route), out var session))
         {
             headers["Cookie"] = session.CookieHeader;
             headers["User-Agent"] = session.UserAgent;
@@ -202,11 +239,12 @@ public class ChallengeAwareFetcher(
     /// failure (404, 500, DNS, TLS) is thrown: FlareSolverr cannot fix it, and treating it as a
     /// challenge would throw away a good clearance for every other caller on the host.
     /// </summary>
-    private async Task<string?> TryDirectAsync(HtmlFetchRequest fetch, HostSession? session, CancellationToken ct)
+    private async Task<string?> TryDirectAsync(HtmlFetchRequest fetch, ProxyRoute route, HostSession? session, CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient(ClientName);
         using var request = new HttpRequestMessage(
             fetch.FormBody is null ? HttpMethod.Get : HttpMethod.Post, fetch.Url);
+        route.ApplyTo(request);
         if (fetch.FormBody is not null)
         {
             request.Content = new StringContent(fetch.FormBody, System.Text.Encoding.UTF8, "application/x-www-form-urlencoded");
@@ -279,4 +317,19 @@ public class ChallengeAwareFetcher(
             || html.Contains("__cf_chl_", StringComparison.OrdinalIgnoreCase)
             || html.Contains("document.write(\"<scr\"+\"ipt>", StringComparison.OrdinalIgnoreCase);
     }
+}
+
+/// <summary>
+/// <see cref="ChallengeAwareFetcher"/> bound to one source: each fetch resolves that source's
+/// <see cref="ProxyRoute"/> once and carries it through the direct request, the FlareSolverr solve
+/// and the retry that uses the clearance.
+/// </summary>
+internal sealed class SourceBoundHtmlFetcher(ChallengeAwareFetcher inner, ISourceProxyResolver proxies, string sourceName) : IHtmlFetcher
+{
+    public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) => FetchAsync(new HtmlFetchRequest(url), ct);
+
+    public async Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default) =>
+        await inner.FetchAsync(request.Route is null ? request with { Route = await proxies.ResolveAsync(sourceName, ct) } : request, ct);
+
+    public IHtmlFetcher For(string otherSource) => inner.For(otherSource);
 }

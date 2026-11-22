@@ -19,8 +19,10 @@ namespace Maki.Sources.Toonily;
 /// same cookie. Series id is the slug path segment (<c>secret-class-38c3e37a</c>); chapter id is
 /// the chapter slug (<c>chapter-242</c>).
 /// </summary>
-public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
+public partial class ToonilySource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("toonily");
+
     private static readonly HtmlParser Parser = new();
 
     /// <summary>Opts search into mature titles; series and chapter pages serve them without it.</summary>
@@ -83,7 +85,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
             ["vars[s]"] = title
         };
 
-        var html = await fetcher.FetchAsync(
+        var html = await _fetcher.FetchAsync(
             new HtmlFetchRequest($"{BaseUrl}/wp-admin/admin-ajax.php", MatureCookie, BuildFormBody(form)), ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         return ToResults(MadaraParser.ParseArchive(doc));
@@ -97,7 +99,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
             return [];
         }
 
-        var html = await fetcher.FetchAsync(new HtmlFetchRequest($"{BaseUrl}/search/{slug}", MatureCookie), ct);
+        var html = await _fetcher.FetchAsync(new HtmlFetchRequest($"{BaseUrl}/search/{slug}", MatureCookie), ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         return ToResults(MadaraParser.ParseArchive(doc));
     }
@@ -132,7 +134,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var seriesId = NormalizeSeriesId(sourceSeriesId);
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var info = MadaraParser.ParseSeries(doc);
@@ -177,7 +179,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
         // The chapter list is server-rendered into the same document as the series page (Toonily's
         // ajax chapter endpoint is a POST, which the fetcher cannot make), so no extra request.
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var chapters = new List<SourceChapter>();
@@ -252,7 +254,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var seriesId = NormalizeSeriesId(chapter.SourceSeriesId);
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/{chapter.SourceChapterId}/", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/{chapter.SourceChapterId}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         // The CDN 403s a page request with no Referer.

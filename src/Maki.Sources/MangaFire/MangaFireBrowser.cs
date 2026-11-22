@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Maki.Core;
 using Maki.Core.Configuration;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Http;
 using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,7 @@ public sealed class MangaFireBrowser(
 {
     private const string BaseUrl = "https://mangafire.to";
     private const string Host = "mangafire.to";
+    private const string SourceName = "mangafire";
     private const int NavTimeoutMs = 45_000;
     private const int ResponseTimeoutMs = 30_000;
     private const int PageResponseTimeoutMs = 12_000;
@@ -43,6 +45,9 @@ public sealed class MangaFireBrowser(
     private IBrowser? _browser;
     private IBrowserContext? _context;
     private BrowserProfile? _profile;
+
+    /// <summary>The route the current context was made with, and the clearance it holds was earned through.</summary>
+    private ProxyRoute _route = ProxyRoute.Direct;
     private readonly IdleStamp _idle = new();
 
     public string BrowserName => "MangaFire";
@@ -391,10 +396,14 @@ public sealed class MangaFireBrowser(
             {
                 return await CancellableBrowserCall.RunAsync(() => BrowserSupport.CloseQuietlyAsync(page), () => action(page), ct);
             }
+            catch (NavigationException ex) when (BrowserSupport.ProxyFailure(ex, _route, SourceName) is { } proxyFailure)
+            {
+                throw proxyFailure;
+            }
             catch (ChallengeException) when (attempt == 0)
             {
                 logger.LogInformation("MangaFire browser hit a challenge; re-solving clearance and retrying");
-                fetcher.InvalidateSession(Host);
+                fetcher.InvalidateSession(Host, _route);
                 await ResetContextAsync();
             }
             finally
@@ -413,12 +422,21 @@ public sealed class MangaFireBrowser(
             await ShutdownAsync();
         }
 
+        // Resolved once per context: the context's proxy, its clearance and every request it makes
+        // share one egress for as long as the context lives.
+        var route = await fetcher.RouteForAsync(SourceName, ct);
         if (_context != null && _profile != null)
         {
-            return (_context, _profile);
+            if (route.Equals(_route))
+            {
+                return (_context, _profile);
+            }
+
+            logger.LogInformation("MangaFire's proxy setting changed; starting a new browser context");
+            await ResetContextAsync();
         }
 
-        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", ct);
+        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", route, ct);
 
         if (_browser == null)
         {
@@ -434,7 +452,8 @@ public sealed class MangaFireBrowser(
             _browser = await launcher.LaunchAsync(args, ct);
         }
 
-        var context = await _browser.CreateBrowserContextAsync();
+        var context = await _browser.CreateBrowserContextAsync(BrowserSupport.ContextOptions(route));
+        _route = route;
         await context.SetCookieAsync(BrowserSupport.SessionCookies(session.Cookies, Host));
 
         _profile = new BrowserProfile(
@@ -789,7 +808,8 @@ public sealed class MangaFireBrowser(
                     throw new ChallengeException(
                         "MangaFire: the headless browser did not clear Cloudflare: the FlareSolverr clearance " +
                         "cookie was rejected. This usually means Maki's network egress IP differs from " +
-                        "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
+                        "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy. A proxy " +
+                        "whose outgoing IP rotates between requests breaks it the same way.");
                 case PageVerdict.Blocked:
                     throw new ChallengeException(
                         "MangaFire: Cloudflare served an 'Access denied' block page. This is a firewall/bot-score " +

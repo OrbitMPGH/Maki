@@ -29,8 +29,10 @@ namespace Maki.Sources.Manhwa18Net;
 /// with the chapter number, so it is never rebuilt from one).
 /// </para>
 /// </summary>
-public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
+public partial class Manhwa18NetSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("manhwa18net");
+
     private static readonly HtmlParser Parser = new();
 
     public string Name => "manhwa18net";
@@ -225,7 +227,7 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
     /// </summary>
     private async Task<JsonElement> GetPagePropsAsync(string url, CancellationToken ct)
     {
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         var raw = doc.QuerySelector("div#app")?.GetAttribute("data-page");
         if (string.IsNullOrEmpty(raw))

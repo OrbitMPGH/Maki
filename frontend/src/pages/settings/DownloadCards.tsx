@@ -3,7 +3,7 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { ActionIcon, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, Text, TextInput, Tooltip } from '@mantine/core'
 import {
   IconAdjustments,
   IconCircleCheck,
@@ -47,6 +47,9 @@ import {
   useSaveIndexerOptions,
   useSaveReadFileCleanupSettings,
   useSaveSourceLanguages,
+  useSaveSourceProxy,
+  useSourceProxy,
+  useTestSourceProxy,
   type SourceOrderMode,
   useSourceLanguages,
   useSourcePriority,
@@ -55,6 +58,7 @@ import {
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
 import { ConnectionStatus, ConnectionTestDetail } from '../../components/ConnectionSettingsCardStatus'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
+import { FieldAction } from '../../components/settings/FieldAction'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
 import { TorrentLifecycleFields } from '../../components/settings/TorrentLifecycleFields'
@@ -646,6 +650,120 @@ export function FlareSolverrCard() {
       description={t`Gets past Cloudflare for the sources that need it.`}
       fields={[{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }]}
     />
+  )
+}
+
+/** The one proxy chosen sources go through: their browser, FlareSolverr and Maki's own requests alike. */
+export function SourceProxyCard() {
+  const { t } = useLingui()
+  const { data: saved } = useSourceProxy()
+  const { data: sources } = useSources()
+  const save = useSaveSourceProxy()
+  const test = useTestSourceProxy()
+  const [url, setUrl] = useState('')
+  const [chosen, setChosen] = useState<string[]>([])
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+
+  useSliceSync(
+    saved,
+    (slice) => {
+      setUrl(slice.url ?? '')
+      setChosen(slice.sources)
+    },
+    discarded,
+  )
+
+  // Suwayomi sources fetch from the Suwayomi server; a proxy for them belongs there.
+  const options = (sources ?? [])
+    .filter((s) => s.provider !== 'suwayomi')
+    .map((s) => ({ value: s.name, label: s.displayName }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  const nameOf = (name: string) => options.find((o) => o.value === name)?.label ?? name
+  const visible = new Set(options.map((o) => o.value))
+  const shown = chosen.filter((name) => visible.has(name))
+
+  const dirty =
+    saved !== undefined &&
+    (url.trim() !== (saved.url ?? '') ||
+      shown.length !== saved.sources.filter((name) => visible.has(name)).length ||
+      shown.some((name) => !saved.sources.includes(name)))
+
+  const testSource = shown[0]
+  const runTest = () => {
+    if (!testSource) return
+    const name = nameOf(testSource)
+    test.mutate(
+      { url: url.trim() || null, source: testSource },
+      {
+        onSuccess: (result) => {
+          if (result.allowsPrivate) {
+            notifications.show({
+              message: now`The proxy reached ${name}, but it also connects to private addresses. Set it to refuse them.`,
+              color: 'var(--warn)',
+            })
+          } else if (result.allowsPrivate === null) {
+            notifications.show({
+              message: now`The proxy reached ${name}. Maki could not tell whether it refuses private addresses.`,
+              color: 'var(--ok)',
+            })
+          } else {
+            notifications.show({ message: now`The proxy reached ${name}`, color: 'var(--ok)' })
+          }
+        },
+      },
+    )
+  }
+
+  return (
+    <SettingsSection
+      id="source-proxy"
+      title={<Trans>Source proxy</Trans>}
+      description={<Trans>Sends the chosen sources through a proxy, for sites that block your connection.</Trans>}
+      status={saved && <ConnectionStatus testKey="sourceproxy" configured={Boolean(saved.url)} />}
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={discard}
+      onSave={() =>
+        save.mutate(
+          { url: url.trim() || null, sources: shown },
+          { onSuccess: savedToast },
+        )
+      }
+    >
+      <Stack gap="sm">
+        <Group align="flex-end" wrap="wrap" className="settings-field-row">
+          <TextInput
+            autoComplete="off"
+            label={t`URL`}
+            description={t`FlareSolverr must be able to reach this address too.`}
+            placeholder="http://192.168.1.20:3128"
+            value={url}
+            onChange={(e) => setUrl(e.currentTarget.value)}
+            style={{ flex: 1, minWidth: 180 }}
+          />
+          <FieldAction>
+            <Tooltip label={t`Pick a source to test against`} disabled={Boolean(testSource)} withArrow>
+              <span>
+                <Button variant="default" loading={test.isPending} disabled={!testSource || !url.trim()} onClick={runTest}>
+                  <Trans>Test</Trans>
+                </Button>
+              </span>
+            </Tooltip>
+          </FieldAction>
+        </Group>
+        <ConnectionTestDetail testKey="sourceproxy" mt={0} />
+        <MultiSelect
+          label={t`Sources`}
+          placeholder={shown.length === 0 ? t`None` : undefined}
+          data={options}
+          value={shown}
+          onChange={setChosen}
+          searchable
+          clearable
+          nothingFoundMessage={t`No matching source`}
+        />
+      </Stack>
+    </SettingsSection>
   )
 }
 

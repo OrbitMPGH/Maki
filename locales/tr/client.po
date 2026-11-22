@@ -11854,6 +11854,10 @@ msgstr "Kaydedildikten sonra düzeltilir."
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "FlareSolverr must be able to reach this address too."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Flash the chapter name on chapter change"
@@ -17228,6 +17232,10 @@ msgstr "Eşleşen sayfa yok"
 msgid "no matching series"
 msgstr "eşleşen seri yok"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "No matching source"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "No metadata match found."
@@ -19927,6 +19935,10 @@ msgstr "Bir kök klasör seçin."
 msgid "Pick a source by"
 msgstr "Kaynağı şuna göre seç"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Pick a source to test against"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
 msgid "Pick a tag to add."
@@ -20398,6 +20410,15 @@ msgstr "Sağlayıcı"
 #, fuzzy
 msgid "Prowlarr or Jackett, for torrent releases."
 msgstr "Torrent sürümleri için Prowlarr ya da Jackett."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Proxy"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "proxy, vpn, blocked, ip, http proxy, access denied"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -24340,6 +24361,10 @@ msgstr "Test gönder"
 msgid "Send them"
 msgstr "Gönder"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends the chosen sources through a proxy, for sites that block your connection."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Sent as <0>X-Api-Key</0>"
@@ -25613,6 +25638,11 @@ msgstr "Kaynak kapalı"
 msgid "Source priority updated"
 msgstr "Kaynak önceliği güncellendi"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Source proxy"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Source removed without cleanup"
@@ -26455,6 +26485,7 @@ msgstr "Varsayılanınız ne olursa olsun her yeni bölüm hakkında bilgi verir
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -27065,6 +27096,18 @@ msgstr "Profil kaldırılır. Bu geri alınamaz."
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 msgstr "Sağlayıcı bu bölümleri bu cilde atıyor. Genellikle doğrudur, derleme sınırları farklı olabilir."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}. Maki could not tell whether it refuses private addresses."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "The push service did not accept the test notification."
@@ -27276,6 +27319,10 @@ msgstr "Kaynak bu bölüm için giriş ya da satın alma istiyor"
 #, fuzzy
 msgid "The source you picked could not provide this chapter"
 msgstr "Seçtiğiniz kaynak bu bölümü sağlayamadı"
+
+#: src/api/queue.ts
+msgid "The source's proxy could not be reached or refused the request"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -30332,8 +30379,9 @@ msgid "You excluded this title from recommendations"
 msgstr "Bu başlığı önerilerden çıkardınız"
 
 #: src/pages/discover/taste/TasteHabits.tsx
+#, fuzzy
 msgid "You finish"
-msgstr ""
+msgstr "Bitirdiğiniz"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy

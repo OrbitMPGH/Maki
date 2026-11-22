@@ -142,7 +142,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/manga/tower-of-god", null)]
     public void Mangakakalot(string url, string? expected)
     {
-        ISource source = new MangakakalotSource(null!);
+        ISource source = new MangakakalotSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -174,7 +174,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/serie/secret-class-38c3e37a/", null)]
     public void Toonily(string url, string? expected)
     {
-        ISource source = new ToonilySource(null!);
+        ISource source = new ToonilySource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -222,7 +222,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/catalogue/one-piece/", null)]
     public void AnimeSama(string url, string? expected)
     {
-        ISource source = new AnimeSamaSource(null!);
+        ISource source = new AnimeSamaSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -359,7 +359,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/manga/secret-class", null)]
     public void Manhwa18Net(string url, string? expected)
     {
-        ISource source = new Manhwa18NetSource(null!);
+        ISource source = new Manhwa18NetSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -374,7 +374,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://cuutruyen.net/archive/mangas/2637", null)]
     public void CuuTruyen(string url, string? expected)
     {
-        ISource source = new CuuTruyenSource(null!, Factory);
+        ISource source = new CuuTruyenSource(new FakeHtmlFetcher([]), Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -389,7 +389,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/manga/1708/one-piece", null)]
     public void MangaWorld(string url, string? expected)
     {
-        ISource source = new MangaWorldSource(null!);
+        ISource source = new MangaWorldSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -487,7 +487,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/manga/one-piece/", null)]
     public void Rawkuma(string url, string? expected)
     {
-        ISource source = new RawkumaSource(null!);
+        ISource source = new RawkumaSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
@@ -504,7 +504,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/series/SL", null)]
     public void TeamX(string url, string? expected)
     {
-        ISource source = new TeamXSource(null!);
+        ISource source = new TeamXSource(new FakeHtmlFetcher([]));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
