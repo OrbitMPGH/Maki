@@ -1239,13 +1239,16 @@ function SeriesDetailBody() {
   const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
   const chapterRowsAsList = chapterLayout === 'list'
   const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
-  const volumeTitleShown = !hiddenChapterColumns.has('title')
+  // A volume heading's name takes Chapter, Released and Title, and its strip takes Source and Status.
   // List rows ignore column spans, so there the strip always gets its own cell and line.
+  const shownColumns = shownChapterColumns(chapterLayout, hiddenChapterColumns)
+  const volumeNameSpan =
+      1 + (hiddenChapterColumns.has('title') ? 0 : 1) + (shownColumns.includes('released') ? 1 : 0)
   const volumeProgressSpan = Math.max(
       chapterRowsAsList ? 1 : 0,
-      shownChapterColumns(chapterLayout, hiddenChapterColumns).filter((key) => key !== 'chapter').length,
+      shownColumns.filter((key) => key === 'source' || key === 'status').length,
   )
-  const chapterColumnCount = 3 + (volumeTitleShown ? 1 : 0) + volumeProgressSpan
+  const chapterColumnCount = 2 + volumeNameSpan + volumeProgressSpan
   useLayoutEffect(() => {
     chapterColumnRoom.current.layout = chapterLayout
     chapterColumnRoom.current.widths = chapterColumnWidths
@@ -1619,10 +1622,13 @@ function SeriesDetailBody() {
     }
   }, [chapterTable, animeSpans, foldedSpans, groupingActive, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
-  // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
-  // together cover a third of the screen.
+  // On a desktop the search sits in the Chapters heading beside Select. On a phone only the toolbar
+  // stays pinned and the search scrolls away with the page, or the two together cover a third of
+  // the screen.
   const chapterSearchInput = chapters && chapters.length > 0 && (
       <SearchInput
+          className="chapter-search"
+          size={isMobile ? undefined : 'xs'}
           mt={isMobile ? -8 : undefined}
           value={chapterSearch}
           onChange={(event) => setChapterSearch(event.currentTarget.value)}
@@ -3143,7 +3149,7 @@ function SeriesDetailBody() {
                         </RecordRow>
                     )}
                     {series.rootFolderPath && (
-                        <RecordRow label={t`Folder`}>
+                        <RecordRow label={t`Folder`} wide>
                           <MonoValue value={series.rootFolderPath} copy wrap c="var(--ink-3)" />
                         </RecordRow>
                     )}
@@ -3337,25 +3343,32 @@ function SeriesDetailBody() {
                     icon={IconBook}
                     title={t`Chapters`}
                     count={chapters ? chaptersCounted : undefined}
-                    action={chapters && chapters.length > 0 && !selectMode && (
+                    action={chapters && chapters.length > 0 && (
                       isMobile ? (
-                          <ActionIcon
-                              size="input-xs"
-                              variant="default"
-                              aria-label={t`Select`}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <IconListCheck size={16} />
-                          </ActionIcon>
+                          !selectMode && (
+                              <ActionIcon
+                                  size="input-xs"
+                                  variant="default"
+                                  aria-label={t`Select`}
+                                  onClick={() => setSelectMode(true)}
+                              >
+                                <IconListCheck size={16} />
+                              </ActionIcon>
+                          )
                       ) : (
-                          <Button
-                              size="xs"
-                              variant="default"
-                              leftSection={<IconListCheck size={16} />}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <Trans>Select</Trans>
-                          </Button>
+                          <Group gap="xs" wrap="nowrap">
+                            {chapterSearchInput}
+                            {!selectMode && (
+                                <Button
+                                    size="xs"
+                                    variant="default"
+                                    leftSection={<IconListCheck size={16} />}
+                                    onClick={() => setSelectMode(true)}
+                                >
+                                  <Trans>Select</Trans>
+                                </Button>
+                            )}
+                          </Group>
                       )
                     )}
                 />
@@ -3444,8 +3457,6 @@ function SeriesDetailBody() {
                     </Group>
                 )}
               </Stack>
-
-              {!isMobile && chapterSearchInput}
             </div>
             {isMobile && chapterSearchInput}
 
@@ -3684,16 +3695,16 @@ function SeriesDetailBody() {
                                     <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
                                 )}
                               </Table.Th>
+                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
+                                <Trans>Released</Trans>
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('released')} aria-label={t`Resize Released column`} />
+                                )}
+                              </Table.Th>
                               <Table.Th>
                                 {/* Less the cell's padding. The table's min-width alone doesn't stop the
                                     browser squeezing Title when the other columns grow. */}
                                 <Box miw={CHAPTER_TITLE_MIN_WIDTH - 32}><Trans>Title</Trans></Box>
-                              </Table.Th>
-                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
-                                <Trans>Released</Trans>
-                                {!chapterRowsAsList && (
-                                    <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
-                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.source}>
                                 <Trans>Source</Trans>
@@ -3726,7 +3737,7 @@ function SeriesDetailBody() {
                                             queueStates={volumeQueueStates}
                                             seasons={animeRanges}
                                             readTracking={readTracking}
-                                            titleShown={volumeTitleShown}
+                                            nameSpan={volumeNameSpan}
                                             progressSpan={volumeProgressSpan}
                                             columnCount={chapterColumnCount}
                                             gapBefore={index > 0}
@@ -4257,9 +4268,9 @@ function ListedChapters({ known, specials }: { known: number; specials: number }
 }
 
 /** One labelled line in the Metadata panel. Separated by a hairline, not boxed. */
-function RecordRow({ label, children }: { label: string; children: ReactNode }) {
+function RecordRow({ label, wide, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-      <div className="series-record">
+      <div className="series-record" data-wide={wide || undefined}>
         <Text size="xs" c="var(--ink-4)">
           {label}
         </Text>

@@ -365,8 +365,8 @@ const volumeStory = (
           queueStates={new Map()}
           seasons={[]}
           readTracking
-          titleShown
-          progressSpan={3}
+          nameSpan={3}
+          progressSpan={2}
           columnCount={7}
           gapBefore={false}
           canEditMetadata
