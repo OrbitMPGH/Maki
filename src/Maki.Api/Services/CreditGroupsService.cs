@@ -2,6 +2,7 @@ using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -681,9 +682,7 @@ public sealed class CreditGroupsService(
                     continue;
                 }
 
-                using var copy = new MemoryStream();
-                await source.CopyToAsync(copy, ct);
-                bytes = copy.ToArray();
+                bytes = await PooledStreams.ReadAllBytesAsync(source, "credit-image", ct);
             }
 
             var share = notice.Whole ? 1 : notice.Share;

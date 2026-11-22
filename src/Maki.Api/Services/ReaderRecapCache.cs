@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Reading;
 
 namespace Maki.Api.Services;
@@ -77,11 +78,10 @@ public sealed class ReaderRecapCache(ReaderArchiveCache archives, ILogger<Reader
                         return null;
                     }
 
-                    using var copy = new MemoryStream();
-                    await source.CopyToAsync(copy, token);
+                    var bytes = await PooledStreams.ReadAllBytesAsync(source, "recap-page", token);
                     try
                     {
-                        return RecapDetector.Shrink(copy.ToArray());
+                        return RecapDetector.Shrink(bytes);
                     }
                     catch (Exception e) when (e is not OperationCanceledException)
                     {

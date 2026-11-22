@@ -29,4 +29,59 @@ public static class PooledStreams
     /// <param name="capacity">Expected size, when known; reserves the blocks up front.</param>
     public static MemoryStream Get(string tag, long capacity = 0) =>
         capacity > 0 ? Manager.GetStream(tag, capacity) : Manager.GetStream(tag);
+
+    /// <summary>
+    /// Reads the rest of <paramref name="stream"/> into one exact-size array. Seekable streams skip
+    /// intermediate buffers altogether; unseekable ones buffer in pooled 64 KB blocks instead of a
+    /// doubling <see cref="MemoryStream"/> on the LOH.
+    /// </summary>
+    public static async Task<byte[]> ReadAllBytesAsync(Stream stream, string tag, CancellationToken ct)
+    {
+        if (stream.CanSeek && stream.Length - stream.Position is var left && left >= 0 && left <= Array.MaxLength)
+        {
+            var exact = new byte[left];
+            await stream.ReadExactlyAsync(exact, ct);
+            return exact;
+        }
+
+        using var copy = Get(tag);
+        await stream.CopyToAsync(copy, ct);
+        return copy.ToArray();
+    }
+
+    /// <summary>
+    /// Reads <paramref name="stream"/> up to <paramref name="maxBytes"/> using pooled 64 KB blocks,
+    /// returning null as soon as the stream exceeds the cap.
+    /// </summary>
+    public static async Task<byte[]?> ReadAllBytesCappedAsync(
+        Stream stream, long maxBytes, string tag, CancellationToken ct, long? expectedLength = null)
+    {
+        if (expectedLength is > 0 and var declared && declared > maxBytes)
+        {
+            return null;
+        }
+
+        var capacity = expectedLength is > 0 ? Math.Min(expectedLength.Value, maxBytes) : 0;
+        using var copy = Get(tag, capacity);
+        var chunk = System.Buffers.ArrayPool<byte>.Shared.Rent(64 * 1024);
+        try
+        {
+            int read;
+            while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+            {
+                if (copy.Length + read > maxBytes)
+                {
+                    return null;
+                }
+
+                copy.Write(chunk, 0, read);
+            }
+
+            return copy.ToArray();
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(chunk);
+        }
+    }
 }

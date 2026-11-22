@@ -6,6 +6,7 @@ using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -120,18 +121,21 @@ public class MediaCoverController(
             return this.Fail(localizer, "error.metadata.coverTooLarge", new { megabytes = CoverUploadLimit / (1024 * 1024) });
         }
 
-        await using var buffer = new MemoryStream((int)file.Length);
+        byte[] bytes;
         await using (var upload = file.OpenReadStream())
         {
-            await upload.CopyToAsync(buffer, ct);
+            bytes = await PooledStreams.ReadAllBytesAsync(upload, "cover-upload", ct);
         }
 
-        if (!IsAcceptableImage(buffer))
+        using (var probe = new MemoryStream(bytes, writable: false))
         {
-            return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+            if (!IsAcceptableImage(probe))
+            {
+                return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+            }
         }
 
-        return await StoreAsync(series, buffer.ToArray(), ct);
+        return await StoreAsync(series, bytes, ct);
     }
 
     public record PageCoverRequest(int ChapterId, int Page);

@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Core.Io;
 using Maki.Core.Reading;
 
 namespace Maki.Api.Services;
@@ -51,9 +52,7 @@ public static class ReaderPageCache
             return null;
         }
 
-        using var copy = new MemoryStream();
-        await stream.CopyToAsync(copy, ct);
-        return copy.ToArray();
+        return await PooledStreams.ReadAllBytesAsync(stream, "reader-page", ct);
     }
 
     /// <summary>
