@@ -107,6 +107,8 @@ msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, one {# CBZ oluşturuldu} other {# CBZ oluşturuldu}}"
 
 #. placeholder {0}: data.length
+#. placeholder {0}: draft.changes
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# change} other {# changes}}"
@@ -471,6 +473,11 @@ msgstr "{0, plural, one {# kaynak kontrol edildi} other {# kaynak kontrol edildi
 #, fuzzy
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, one {# spoiler etiketi} other {# spoiler etiketi}}"
+
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# theme right now} other {# themes right now}}"
+msgstr ""
 
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
@@ -907,12 +914,6 @@ msgstr "{0} bağlantı, {1} ile başlıyor"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "Örnek bölümde {0} sayfa."
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "Şu anda {0} satır var"
 
 #. placeholder {0}: item.title
 #: src/components/discover/DiscoverCohortColumns.tsx
@@ -2192,7 +2193,7 @@ msgstr "{label} zil bildiriminde"
 msgid "{label} mixes languages. Every chapter from it is filed under the one you pick."
 msgstr "{label} birden fazla dil içeriyor. Ondan gelen her bölüm, seçtiğiniz tek dilin altına kaydedilir."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{label} moved to position {position} of {total}"
 msgstr "{label}, {total} öğe içinde {position}. sıraya taşındı"
@@ -2717,7 +2718,7 @@ msgstr "{pages, plural, one {# sayfa, {name}} other {# sayfa, {name}}}"
 msgid "{pages, plural, one {# page} other {# pages}}"
 msgstr "{pages, plural, one {# sayfa} other {# sayfa}}"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsTotal} panelden {panelsOn} tanesi"
@@ -2769,6 +2770,10 @@ msgstr "{pieces, plural, one {# sayfa olur. Her kesik çizgi bir kesimdir.} othe
 
 #: src/components/discover/DiscoverTrendingChart.tsx
 msgid "{places} places this month"
+msgstr ""
+
+#: src/components/layout/SectionSettings.tsx
+msgid "{position} of {total}"
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
@@ -4722,11 +4727,15 @@ msgstr "Not ekle"
 msgid "Add a preferred group"
 msgstr "Tercih edilen bir grup ekle"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Add a rail"
 msgstr "Bölüm ekle"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Add a rail here"
+msgstr ""
 
 #: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
@@ -6385,6 +6394,10 @@ msgstr "zil, gelen kutusu, uyarılar, bildirim balonu, uygulama içi bildirimler
 msgid "Below the series' upgrade cutoff"
 msgstr "Serinin yükseltme eşiğinin altında"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Beside it"
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Beside the page"
@@ -6521,7 +6534,7 @@ msgstr "İkisi de"
 msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
 msgstr "İki kenar ileri, alt orta geri gider. Tek elle okumak için."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Bottom"
 msgstr "Alt"
@@ -6754,7 +6767,7 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/notes/NoteComposer.tsx
@@ -7858,6 +7871,7 @@ msgstr "İstemci gizli anahtarı"
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
@@ -9067,7 +9081,7 @@ msgstr "Şu anda popüler"
 msgid "Custom"
 msgstr "Özel"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Custom rail"
 msgstr "Özel bölüm"
@@ -9384,7 +9398,7 @@ msgstr "Kalıcı olarak sil"
 msgid "Delete profile"
 msgstr "Profili sil"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #, fuzzy
 msgid "Delete rail"
@@ -9840,7 +9854,7 @@ msgstr "İstemiyorum"
 #: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/LanguageAnnouncementModal.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9878,7 +9892,7 @@ msgstr "Çift sayfa"
 msgid "Doujinshi"
 msgstr "Doujinshi"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Down"
 msgstr "Aşağı"
@@ -10185,10 +10199,9 @@ msgstr "İndirmeler {time} tarihine kadar duraklatıldı"
 msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "İndirmeler önce en yüksek puanlı kaynağı dener. Öncelik yalnızca eşitliği bozar."
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-msgid "Drag to reorder. Click a section to change it."
-msgstr "Sıralamak için sürükleyin. Değiştirmek için bir bölüme tıklayın."
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Drag a section to move it. Select one to change it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10400,6 +10413,7 @@ msgstr "Meta veriyi düzenler"
 msgid "Edit note"
 msgstr "Notu düzenle"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Edit rail"
@@ -10451,7 +10465,7 @@ msgstr "Yerelde düzenlendi"
 msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
 msgstr "Yerelde düzenlendi, bu yüzden {repositoryName} deposundan gelen güncellemeler artık uygulanmaz. Yeniden takip etmek için depo panelinden değiştirin."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Editing layout"
 msgstr "Düzen düzenleniyor"
@@ -10997,7 +11011,7 @@ msgstr "Mevcut kitaplık"
 msgid "Existing series"
 msgstr "Mevcut seriler"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Exit editing"
 msgstr "Düzenlemeyi bitir"
@@ -12511,7 +12525,7 @@ msgstr "Kavita ve diğer okuyucuların bölümleri gruplamasına ve adlandırmas
 msgid "Helps Kavita group these files with later downloads."
 msgstr "Kavita'nın bu dosyaları sonraki indirmelerle gruplamasına yardımcı olur."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Hero"
 msgstr "Vitrin"
@@ -12528,7 +12542,7 @@ msgstr "Ara Verildi"
 msgid "Hid {seriesTitle}. It comes back when you finish a new season."
 msgstr "{seriesTitle} gizlendi. Yeni bir sezonu bitirdiğinizde geri gelir."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12576,10 +12590,15 @@ msgstr "Gizlenmiş veya kapatılmış"
 msgid "Hidden while progression is switched off."
 msgstr "İlerleme takibi kapalıyken gizlenir."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hide"
 msgstr "Gizle"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Hide {label}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14181,12 +14200,12 @@ msgstr "En son yıl"
 msgid "Layout"
 msgstr "Düzen"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Layout saved"
 msgstr "Düzen kaydedildi"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Lead with a hero"
 msgstr "Vitrinle başla"
@@ -15938,6 +15957,7 @@ msgstr "En çok okunmamış"
 msgid "Motion"
 msgstr "Hareket"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15946,7 +15966,7 @@ msgstr "Hareket"
 msgid "Move"
 msgstr "Taşı"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Move {label}"
 msgstr "{label} öğesini taşı"
@@ -15985,6 +16005,7 @@ msgstr "{tierLabel} aşağı taşı"
 msgid "Move {tierLabel} up"
 msgstr "{tierLabel} yukarı taşı"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16047,6 +16068,7 @@ msgstr "En üste taşı"
 msgid "Move to top of queue"
 msgstr "Kuyruğun en üstüne taşı"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16067,6 +16089,10 @@ msgstr "Taşınan dosyalar kaynak klasörden ayrılır. Dönüştürülmesi gere
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "bir cilde taşınıyor"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Moving {movingLabel}, {movingPosition} of {total}"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -16266,7 +16292,7 @@ msgstr "Anlamsal arama gerekiyor."
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "İndirme klasörünün ve kitaplığın aynı dosya sisteminde olması gerekir, yoksa Maki kopyalar."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Needs the hero."
 msgstr "Vitrin gerektirir."
@@ -16359,7 +16385,7 @@ msgstr "Asla yükseltmez"
 msgid "new"
 msgstr "yeni"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "New"
@@ -16606,15 +16632,11 @@ msgid "Next tier at {nextValue}"
 msgstr "Sonraki kademe: {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/homeSectionDefs.ts
 #: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "Next up"
 msgstr "Sırada"
-
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-msgid "Next up beside the hero"
-msgstr "Vitrinin yanında sırada"
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
@@ -18258,6 +18280,10 @@ msgstr "Rastgele seçilecek bir şey yok"
 msgid "Nothing to show"
 msgstr "Gösterilecek bir şey yok"
 
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Nothing to show right now"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19420,7 +19446,7 @@ msgstr "Genişliği ya da yüksekliği 16383 px'i aşan sayfalar olduğu gibi b�
 msgid "Pages with more than 8 bits per channel are kept as they are."
 msgstr "Kanal başına 8 bitten fazla olan sayfalar olduğu gibi bırakılır."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Panels"
 msgstr "Paneller"
@@ -19886,11 +19912,6 @@ msgstr "Pornografik"
 #, fuzzy
 msgid "Portuguese (Brazil)"
 msgstr "Portekizce (Brezilya)"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Position"
-msgstr "Sıra"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -20394,7 +20415,7 @@ msgstr "Sessiz dönem"
 msgid "Rail added"
 msgstr "Bölüm eklendi"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Rail changes save straight away. Done saves the layout."
 msgstr "Bölüm değişiklikleri hemen kaydedilir. Bitti düğmesi düzeni kaydeder."
@@ -24490,6 +24511,7 @@ msgstr "İzleyicileri kur"
 msgid "Sets the targets for files no rule covers."
 msgstr "Hiçbir kuralın kapsamadığı dosyalar için hedefleri belirler."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24501,6 +24523,10 @@ msgstr "Ayarlar"
 #, fuzzy
 msgid "Settings › {tabName}"
 msgstr "Ayarlar › {tabName}"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Settings for {label}"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -24606,12 +24632,17 @@ msgstr "Shoujo"
 msgid "Shounen"
 msgstr "Shounen"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show"
 msgstr "Göster"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -24775,7 +24806,7 @@ msgstr "En yeni başlıklarını Ana Sayfa ve Keşfet'te bir bölümde göster"
 msgid "Show them"
 msgstr "Bunları göster"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Show this section"
 msgstr "Bu bölümü göster"
@@ -26613,7 +26644,7 @@ msgstr "Son kontrol örnek seriyi listeleyemedi. Sitenin düzeni değişmiş ola
 msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
 msgstr "Son sağlık taraması bu dosyayı diskte bulamadı. Taşındıysa ya da yeniden adlandırıldıysa Dosyaları yeniden bağla onu bulur."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "Düzen yüklenemedi."
@@ -27820,7 +27851,7 @@ msgid "Tools you already run"
 msgstr "Zaten kullandığınız araçlar"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Top"
 msgstr "Üst"
@@ -28238,6 +28269,10 @@ msgstr ""
 msgid "Under minimum"
 msgstr "Minimumun altında"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Under the hero"
+msgstr ""
+
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "Under the radar"
 msgstr ""
@@ -28548,7 +28583,7 @@ msgid "Until: {end}"
 msgstr "Bitiş: {end}"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Up"
 msgstr "Yukarı"

@@ -107,6 +107,8 @@ msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, other {CBZ #개를 만듦}}"
 
 #. placeholder {0}: data.length
+#. placeholder {0}: draft.changes
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# change} other {# changes}}"
@@ -471,6 +473,11 @@ msgstr "{0, plural, other {확인한 소스 #개}}"
 #, fuzzy
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, other {스포일러 태그 #개}}"
+
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# theme right now} other {# themes right now}}"
+msgstr ""
 
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
@@ -907,12 +914,6 @@ msgstr "링크 {0}개, 첫 번째는 {1}"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "샘플 챕터에 페이지 {0}개가 있습니다."
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "현재 {0}개 행"
 
 #. placeholder {0}: item.title
 #: src/components/discover/DiscoverCohortColumns.tsx
@@ -2192,7 +2193,7 @@ msgstr "{label}을(를) 벨에 표시"
 msgid "{label} mixes languages. Every chapter from it is filed under the one you pick."
 msgstr "{label}에는 여러 언어가 섞여 있습니다. 이 소스의 모든 챕터는 선택한 하나의 언어로 분류됩니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{label} moved to position {position} of {total}"
 msgstr "{label}이(가) {total}개 중 {position}번째 위치로 이동했습니다"
@@ -2717,7 +2718,7 @@ msgstr "{pages, plural, other {페이지 #개, {name}}}"
 msgid "{pages, plural, one {# page} other {# pages}}"
 msgstr "{pages, plural, other {페이지 #개}}"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsTotal}개 패널 중 {panelsOn}개"
@@ -2769,6 +2770,10 @@ msgstr "{pieces, plural, other {페이지 #개가 됩니다. 점선은 자르는
 
 #: src/components/discover/DiscoverTrendingChart.tsx
 msgid "{places} places this month"
+msgstr ""
+
+#: src/components/layout/SectionSettings.tsx
+msgid "{position} of {total}"
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
@@ -4722,11 +4727,15 @@ msgstr "노트 추가"
 msgid "Add a preferred group"
 msgstr "우선 그룹 추가"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Add a rail"
 msgstr "섹션 추가"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Add a rail here"
+msgstr ""
 
 #: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
@@ -6385,6 +6394,10 @@ msgstr "알림 벨, 받은 편지함, 경고, 토스트, 앱 내 알림, 새 챕
 msgid "Below the series' upgrade cutoff"
 msgstr "시리즈의 업그레이드 컷오프 미만"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Beside it"
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Beside the page"
@@ -6521,7 +6534,7 @@ msgstr "둘 다"
 msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
 msgstr "양쪽 가장자리는 앞으로, 아래 가운데는 뒤로 갑니다. 한 손으로 읽을 때 쓰는 방식입니다."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Bottom"
 msgstr "아래"
@@ -6754,7 +6767,7 @@ msgstr "저장된 정보로는 로그인할 수 없습니다."
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/notes/NoteComposer.tsx
@@ -7858,6 +7871,7 @@ msgstr "클라이언트 시크릿"
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
@@ -9067,7 +9081,7 @@ msgstr "현재 인기"
 msgid "Custom"
 msgstr "사용자 지정"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Custom rail"
 msgstr "사용자 지정 섹션"
@@ -9384,7 +9398,7 @@ msgstr "영구 삭제"
 msgid "Delete profile"
 msgstr "프로필 삭제"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #, fuzzy
 msgid "Delete rail"
@@ -9840,7 +9854,7 @@ msgstr "원하지 않음"
 #: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/LanguageAnnouncementModal.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9878,7 +9892,7 @@ msgstr "두 페이지"
 msgid "Doujinshi"
 msgstr "동인지"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Down"
 msgstr "아래로"
@@ -10185,10 +10199,9 @@ msgstr "{time}까지 다운로드 일시 정지됨"
 msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "다운로드는 점수가 가장 높은 소스를 먼저 시도합니다. 우선순위는 동점일 때만 적용됩니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-msgid "Drag to reorder. Click a section to change it."
-msgstr "드래그하여 순서를 바꾸세요. 섹션을 클릭하면 변경할 수 있습니다."
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Drag a section to move it. Select one to change it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10400,6 +10413,7 @@ msgstr "메타데이터 편집"
 msgid "Edit note"
 msgstr "노트 편집"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Edit rail"
@@ -10451,7 +10465,7 @@ msgstr "로컬에서 수정됨"
 msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
 msgstr "로컬에서 수정되어 {repositoryName}의 업데이트가 더 이상 적용되지 않습니다. 저장소 패널에서 다시 교체하면 다시 따릅니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Editing layout"
 msgstr "레이아웃 편집 중"
@@ -10997,7 +11011,7 @@ msgstr "기존 라이브러리"
 msgid "Existing series"
 msgstr "기존 시리즈"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Exit editing"
 msgstr "편집 종료"
@@ -12511,7 +12525,7 @@ msgstr "Kavita 등 리더가 챕터를 묶고 이름을 붙이는 데 도움을 
 msgid "Helps Kavita group these files with later downloads."
 msgstr "Kavita가 이 파일을 나중 다운로드와 묶는 데 도움을 줍니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Hero"
 msgstr "히어로"
@@ -12528,7 +12542,7 @@ msgstr "휴재"
 msgid "Hid {seriesTitle}. It comes back when you finish a new season."
 msgstr "{seriesTitle}을(를) 숨겼습니다. 새 시즌을 다 보면 다시 나타납니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12576,10 +12590,15 @@ msgstr "숨김 또는 닫음"
 msgid "Hidden while progression is switched off."
 msgstr "진행 상황 추적이 꺼져 있으면 숨겨집니다."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hide"
 msgstr "숨기기"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Hide {label}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14181,12 +14200,12 @@ msgstr "가장 최근 연도"
 msgid "Layout"
 msgstr "레이아웃"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Layout saved"
 msgstr "레이아웃 저장됨"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Lead with a hero"
 msgstr "히어로로 시작"
@@ -15938,6 +15957,7 @@ msgstr "안 읽은 순"
 msgid "Motion"
 msgstr "모션"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15946,7 +15966,7 @@ msgstr "모션"
 msgid "Move"
 msgstr "이동"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Move {label}"
 msgstr "{label} 이동"
@@ -15985,6 +16005,7 @@ msgstr "{tierLabel} 아래로 이동"
 msgid "Move {tierLabel} up"
 msgstr "{tierLabel} 위로 이동"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16047,6 +16068,7 @@ msgstr "맨 위로 이동"
 msgid "Move to top of queue"
 msgstr "대기열 맨 위로 이동"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16067,6 +16089,10 @@ msgstr "옮긴 파일은 원본 폴더에서 사라집니다. 변환이 필요�
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "권 파일로 이동"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Moving {movingLabel}, {movingPosition} of {total}"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -16266,7 +16292,7 @@ msgstr "의미 기반 검색이 필요합니다."
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "다운로드 폴더와 라이브러리가 같은 파일 시스템에 있어야 합니다. 그렇지 않으면 Maki가 복사합니다."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Needs the hero."
 msgstr "히어로가 필요합니다."
@@ -16359,7 +16385,7 @@ msgstr "업그레이드하지 않음"
 msgid "new"
 msgstr "신규"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "New"
@@ -16606,15 +16632,11 @@ msgid "Next tier at {nextValue}"
 msgstr "{nextValue}에서 다음 등급"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/homeSectionDefs.ts
 #: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "Next up"
 msgstr "다음 항목"
-
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-msgid "Next up beside the hero"
-msgstr "히어로 옆에 다음 항목"
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
@@ -18258,6 +18280,10 @@ msgstr "뽑을 항목이 없습니다"
 msgid "Nothing to show"
 msgstr "표시할 항목 없음"
 
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Nothing to show right now"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19420,7 +19446,7 @@ msgstr "가로나 세로가 16383px을 넘는 페이지는 그대로 둡니다."
 msgid "Pages with more than 8 bits per channel are kept as they are."
 msgstr "채널당 8비트를 넘는 페이지는 그대로 둡니다."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Panels"
 msgstr "패널"
@@ -19886,11 +19912,6 @@ msgstr "음란물"
 #, fuzzy
 msgid "Portuguese (Brazil)"
 msgstr "포르투갈어 (브라질)"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Position"
-msgstr "위치"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -20394,7 +20415,7 @@ msgstr "조용한 기간"
 msgid "Rail added"
 msgstr "섹션 추가됨"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Rail changes save straight away. Done saves the layout."
 msgstr "섹션 변경 사항은 바로 저장됩니다. 완료를 누르면 레이아웃이 저장됩니다."
@@ -24490,6 +24511,7 @@ msgstr "트래커 설정"
 msgid "Sets the targets for files no rule covers."
 msgstr "어떤 규칙도 적용되지 않는 파일의 대상을 설정합니다."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24501,6 +24523,10 @@ msgstr "설정"
 #, fuzzy
 msgid "Settings › {tabName}"
 msgstr "설정 › {tabName}"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Settings for {label}"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -24606,12 +24632,17 @@ msgstr "소녀"
 msgid "Shounen"
 msgstr "소년"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show"
 msgstr "보기"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -24775,7 +24806,7 @@ msgstr "홈과 탐색의 레일에 이들의 최신 작품 표시"
 msgid "Show them"
 msgstr "모두 보기"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Show this section"
 msgstr "이 섹션 표시"
@@ -26613,7 +26644,7 @@ msgstr "마지막 확인에서 샘플 시리즈 목록을 가져오지 못했습
 msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
 msgstr "마지막 상태 검사에서 이 파일을 디스크에서 찾지 못했습니다. 파일이 옮겨졌거나 이름이 바뀌었다면 파일 다시 연결이 찾아냅니다."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "레이아웃을 불러오지 못했습니다."
@@ -27820,7 +27851,7 @@ msgid "Tools you already run"
 msgstr "이미 사용 중인 도구"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Top"
 msgstr "위"
@@ -28238,6 +28269,10 @@ msgstr ""
 msgid "Under minimum"
 msgstr "최소값 미만"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Under the hero"
+msgstr ""
+
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "Under the radar"
 msgstr ""
@@ -28548,7 +28583,7 @@ msgid "Until: {end}"
 msgstr "종료: {end}"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Up"
 msgstr "위로"

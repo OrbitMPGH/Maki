@@ -9,6 +9,10 @@ export interface SectionOptionDef {
   description?: MessageDescriptor
   /** Only does anything while the section leads with a hero, so the switch waits for that one. */
   hero?: boolean
+  /** The icon beside a two-way choice's name. */
+  icon?: Icon
+  /** Drawn as a two-way choice instead of a switch: the label for off, then for on. */
+  choices?: readonly [MessageDescriptor, MessageDescriptor]
 }
 
 /** What the layout editor knows about one built-in section. */
@@ -22,6 +26,8 @@ export interface SectionDef {
   panels?: readonly { key: string; label: MessageDescriptor }[]
   /** The section's own switches, in the order they are shown. */
   options?: readonly SectionOptionDef[]
+  /** Draws several headed rows, so editing keeps their headings instead of letting the frame name it. */
+  keepHeadings?: boolean
 }
 
 export type SectionRegistry = Record<string, SectionDef>
@@ -53,11 +59,7 @@ function railInsertAt(sections: PageSection[], anchor: string | null): number {
  * has already applied. Used so a layout being edited always shows exactly the sections and rails
  * that exist right now, including a rail created a moment ago.
  */
-export function reconcileLayout(
-  sections: PageSection[],
-  config: LayoutConfig,
-  railIds: number[],
-): PageSection[] {
+export function reconcileLayout(sections: PageSection[], config: LayoutConfig, railIds: number[]): PageSection[] {
   const seen = new Set<string>()
   const out: PageSection[] = []
   const normalize = (s: PageSection): PageSection => {
@@ -81,8 +83,7 @@ export function reconcileLayout(
   }
 
   for (const s of sections) {
-    const known =
-      config.canonical.includes(s.key) || (isRailKey(s.key) && railIds.includes(railIdOf(s.key)))
+    const known = config.canonical.includes(s.key) || (isRailKey(s.key) && railIds.includes(railIdOf(s.key)))
     if (known && !seen.has(s.key)) {
       seen.add(s.key)
       out.push(normalize(s))
@@ -118,4 +119,34 @@ export function sameLayout(a: PageSection[], b: PageSection[]): boolean {
 /** Whether a section shows anything at all: switched on, and for a panel section, some panel on. */
 export function sectionVisible(section: PageSection): boolean {
   return section.enabled && (section.panels == null || section.panels.some((p) => p.enabled))
+}
+
+/** How many sections the draft has moved or changed against where editing started. */
+export function countChanges(draft: PageSection[], baseline: PageSection[]): number {
+  const before = new Map(baseline.map((s, i) => [s.key, { i, json: JSON.stringify(s) }]))
+  let edited = 0
+  const order: number[] = []
+  for (const s of draft) {
+    const was = before.get(s.key)
+    if (!was) {
+      edited++
+      continue
+    }
+    if (was.json !== JSON.stringify(s)) edited++
+    order.push(was.i)
+  }
+  // Moves are the sections outside the longest run still in their old order, so dragging the last
+  // section to the top is one change, not one per section it passed.
+  const tails: number[] = []
+  for (const v of order) {
+    let lo = 0
+    let hi = tails.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (tails[mid] < v) lo = mid + 1
+      else hi = mid
+    }
+    tails[lo] = v
+  }
+  return edited + order.length - tails.length
 }

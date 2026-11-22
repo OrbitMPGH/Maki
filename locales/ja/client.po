@@ -107,6 +107,8 @@ msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, other {作成したCBZ #件}}"
 
 #. placeholder {0}: data.length
+#. placeholder {0}: draft.changes
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# change} other {# changes}}"
@@ -471,6 +473,11 @@ msgstr "{0, plural, other {#件のソースを確認}}"
 #, fuzzy
 msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgstr "{0, plural, other {#件のネタバレタグ}}"
+
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# theme right now} other {# themes right now}}"
+msgstr ""
 
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
@@ -907,12 +914,6 @@ msgstr "{0}件のリンク。最初は{1}"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "サンプルの章には{0}ページあります。"
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "現在{0}行表示中"
 
 #. placeholder {0}: item.title
 #: src/components/discover/DiscoverCohortColumns.tsx
@@ -2192,7 +2193,7 @@ msgstr "{label}（ベル）"
 msgid "{label} mixes languages. Every chapter from it is filed under the one you pick."
 msgstr "{label}には複数の言語が混在しています。そのすべての章は、選んだ言語のものとして扱われます。"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{label} moved to position {position} of {total}"
 msgstr "{label}を{total}個中{position}番目に移動しました"
@@ -2717,7 +2718,7 @@ msgstr "{pages, plural, other {#ページ、{name}}}"
 msgid "{pages, plural, one {# page} other {# pages}}"
 msgstr "{pages, plural, other {#ページ}}"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsTotal}個中{panelsOn}個のパネル"
@@ -2769,6 +2770,10 @@ msgstr "{pieces, plural, other {#ページに分割します。各点線が切�
 
 #: src/components/discover/DiscoverTrendingChart.tsx
 msgid "{places} places this month"
+msgstr ""
+
+#: src/components/layout/SectionSettings.tsx
+msgid "{position} of {total}"
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
@@ -4722,11 +4727,15 @@ msgstr "ノートを追加"
 msgid "Add a preferred group"
 msgstr "優先グループを追加"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Add a rail"
 msgstr "レールを追加"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Add a rail here"
+msgstr ""
 
 #: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
@@ -6385,6 +6394,10 @@ msgstr "ベル、受信トレイ、アラート、トースト、アプリ内通
 msgid "Below the series' upgrade cutoff"
 msgstr "シリーズのアップグレードカットオフ未満"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Beside it"
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Beside the page"
@@ -6521,7 +6534,7 @@ msgstr "両方"
 msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
 msgstr "両端で次へ、下中央で戻ります。片手で読むための配置です。"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Bottom"
 msgstr "下"
@@ -6754,7 +6767,7 @@ msgstr "保存された情報ではサインインできません。"
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/notes/NoteComposer.tsx
@@ -7858,6 +7871,7 @@ msgstr "クライアントシークレット"
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
@@ -9067,7 +9081,7 @@ msgstr "現在人気"
 msgid "Custom"
 msgstr "カスタム"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Custom rail"
 msgstr "カスタムレール"
@@ -9384,7 +9398,7 @@ msgstr "完全に削除"
 msgid "Delete profile"
 msgstr "プロファイルを削除"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #, fuzzy
 msgid "Delete rail"
@@ -9840,7 +9854,7 @@ msgstr "希望しない"
 #: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/LanguageAnnouncementModal.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9878,7 +9892,7 @@ msgstr "見開き"
 msgid "Doujinshi"
 msgstr "Doujinshi"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Down"
 msgstr "下へ"
@@ -10185,10 +10199,9 @@ msgstr "ダウンロードは{time}まで一時停止中"
 msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "ダウンロードはスコアの最も高いソースから試します。優先度は同点のときだけ使われます。"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-msgid "Drag to reorder. Click a section to change it."
-msgstr "ドラッグして順序を変更します。セクションをクリックして内容を変更します。"
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Drag a section to move it. Select one to change it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10400,6 +10413,7 @@ msgstr "メタデータを編集"
 msgid "Edit note"
 msgstr "ノートを編集"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Edit rail"
@@ -10451,7 +10465,7 @@ msgstr "ローカルで編集済み"
 msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
 msgstr "ローカルで編集されたため、{repositoryName}からの更新は適用されなくなりました。再び追従するには、リポジトリのパネルから置き換えてください。"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Editing layout"
 msgstr "レイアウトを編集"
@@ -10997,7 +11011,7 @@ msgstr "既存のライブラリ"
 msgid "Existing series"
 msgstr "既存のシリーズ"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Exit editing"
 msgstr "編集を終了"
@@ -12511,7 +12525,7 @@ msgstr "Kavitaなどのリーダーが、章をまとめて名前を付けやす
 msgid "Helps Kavita group these files with later downloads."
 msgstr "後からダウンロードするファイルも、Kavitaでこれらのファイルとまとめられるようになります。"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Hero"
 msgstr "ヒーロー"
@@ -12528,7 +12542,7 @@ msgstr "休載"
 msgid "Hid {seriesTitle}. It comes back when you finish a new season."
 msgstr "{seriesTitle}を非表示にしました。新しいシーズンを見終えると再び表示されます。"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12576,10 +12590,15 @@ msgstr "非表示または除外"
 msgid "Hidden while progression is switched off."
 msgstr "進捗の記録がオフの間は非表示です。"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hide"
 msgstr "非表示"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Hide {label}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14181,12 +14200,12 @@ msgstr "最新の年"
 msgid "Layout"
 msgstr "レイアウト"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Layout saved"
 msgstr "レイアウトを保存しました"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Lead with a hero"
 msgstr "ヒーローから始める"
@@ -15938,6 +15957,7 @@ msgstr "未読が多い順"
 msgid "Motion"
 msgstr "動き"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15946,7 +15966,7 @@ msgstr "動き"
 msgid "Move"
 msgstr "移動"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Move {label}"
 msgstr "{label}を移動"
@@ -15985,6 +16005,7 @@ msgstr "{tierLabel}を下へ移動"
 msgid "Move {tierLabel} up"
 msgstr "{tierLabel}を上へ移動"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16047,6 +16068,7 @@ msgstr "先頭へ移動"
 msgid "Move to top of queue"
 msgstr "キューの先頭へ移動"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16067,6 +16089,10 @@ msgstr "移動したファイルは元のフォルダーから消えます。変
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "巻ファイルに移動"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Moving {movingLabel}, {movingPosition} of {total}"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -16266,7 +16292,7 @@ msgstr "セマンティック検索が必要です。"
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "ダウンロードフォルダーとライブラリは同じファイルシステム上にある必要があります。そうでなければ、Makiはコピーします。"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Needs the hero."
 msgstr "ヒーローが必要です。"
@@ -16359,7 +16385,7 @@ msgstr "アップグレードしない"
 msgid "new"
 msgstr "新着"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "New"
@@ -16606,15 +16632,11 @@ msgid "Next tier at {nextValue}"
 msgstr "{nextValue}で次の段階"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/homeSectionDefs.ts
 #: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "Next up"
 msgstr "次に読む"
-
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-msgid "Next up beside the hero"
-msgstr "ヒーローの横に次に読む"
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
@@ -18258,6 +18280,10 @@ msgstr "抽選できる作品はありません"
 msgid "Nothing to show"
 msgstr "表示するものはありません"
 
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Nothing to show right now"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19420,7 +19446,7 @@ msgstr "幅または高さが16383pxを超えるページは、そのまま残�
 msgid "Pages with more than 8 bits per channel are kept as they are."
 msgstr "1チャンネルあたり8ビットを超えるページは、そのまま残します。"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Panels"
 msgstr "パネル"
@@ -19886,11 +19912,6 @@ msgstr "ポルノ"
 #, fuzzy
 msgid "Portuguese (Brazil)"
 msgstr "ポルトガル語（ブラジル）"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Position"
-msgstr "位置"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -20394,7 +20415,7 @@ msgstr "静かな時間"
 msgid "Rail added"
 msgstr "レールを追加しました"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Rail changes save straight away. Done saves the layout."
 msgstr "レールの変更はすぐに保存されます。「完了」でレイアウトを保存します。"
@@ -24490,6 +24511,7 @@ msgstr "トラッカーを設定"
 msgid "Sets the targets for files no rule covers."
 msgstr "どのルールにも当てはまらないファイルの変換先を設定します。"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24501,6 +24523,10 @@ msgstr "設定"
 #, fuzzy
 msgid "Settings › {tabName}"
 msgstr "Settings › {tabName}"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Settings for {label}"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -24606,12 +24632,17 @@ msgstr "少女向け"
 msgid "Shounen"
 msgstr "少年向け"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show"
 msgstr "表示"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -24775,7 +24806,7 @@ msgstr "最新作品を「ホーム」と「見つける」のレールに表示
 msgid "Show them"
 msgstr "表示"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Show this section"
 msgstr "このセクションを表示"
@@ -26613,7 +26644,7 @@ msgstr "前回の確認では、サンプルのシリーズを一覧表示でき
 msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
 msgstr "前回のヘルスチェックで、このファイルはディスク上に見つかりませんでした。移動または名前変更されている場合は、「ファイルを再リンク」で見つけられます。"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "レイアウトを読み込めませんでした。"
@@ -27820,7 +27851,7 @@ msgid "Tools you already run"
 msgstr "すでに使っているツール"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Top"
 msgstr "上"
@@ -28238,6 +28269,10 @@ msgstr ""
 msgid "Under minimum"
 msgstr "最小値未満"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Under the hero"
+msgstr ""
+
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "Under the radar"
 msgstr ""
@@ -28548,7 +28583,7 @@ msgid "Until: {end}"
 msgstr "終了：{end}"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Up"
 msgstr "上へ"

@@ -286,11 +286,13 @@ export function DrillSwitch({
   checked,
   onChange,
   size,
+  disabled,
 }: {
   label: ReactNode
   hint?: ReactNode
   checked: boolean
   onChange: (checked: boolean) => void
+  disabled?: boolean
   /** `xs` for a panel set in small type, like the reader's. */
   size?: 'xs' | 'sm' | 'md'
 }) {
@@ -303,6 +305,7 @@ export function DrillSwitch({
       label={label}
       description={hint}
       checked={checked}
+      disabled={disabled}
       onChange={(e) => onChange(e.currentTarget.checked)}
     />
   )

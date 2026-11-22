@@ -1,7 +1,7 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
-import { Fragment, Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -38,7 +38,7 @@ import {
 import { useIsFetching } from '@tanstack/react-query'
 import type { MessageDescriptor } from '@lingui/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
 import { formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { pageScroller } from '../lib/pageScroll'
@@ -119,7 +119,8 @@ import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons, Results }
 import { FilterMatchCount, useTermFilters } from '../components/CatalogueRules'
 import { PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
-import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
+import { LayoutEditLoading, LayoutEditSurface } from '../components/layout/LayoutEditSurface'
+import { useLayoutDraft } from '../components/layout/useLayoutDraft'
 import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
 import { reconcileLayout } from '../components/layout/pageLayout'
 import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
@@ -1395,7 +1396,7 @@ function DiscoverBrowseTab({
       page header. Every card below sizes from it: the rails through CSS variables on the wrapper,
       the catalogue grid through the shared column counts. */
   density: DensityPref
-  /** Layout edit mode: the sections become compact cards, and nothing below fetches. */
+  /** Layout edit mode: the sections stay on the page, framed and inert, in the draft's order. */
   editing: boolean
   onExitEditing: () => void
 }) {
@@ -1407,15 +1408,21 @@ function DiscoverBrowseTab({
     [customRails],
   )
 
-  // Shipping order while the setting loads, so the page doesn't reflow once it arrives.
-  const layout = useMemo(
-    () =>
-      ui?.discoverLayout?.sections ??
-      reconcileLayout([], DISCOVER_LAYOUT_CONFIG, (discoverRails ?? []).map((r) => r.id)),
-    [ui, discoverRails],
+  // Shipping order while the setting loads, so the page doesn't reflow once it arrives. While the
+  // layout is being edited the page draws the draft instead.
+  const railIds = useMemo(() => (discoverRails ?? []).map((r) => r.id), [discoverRails])
+  const saved = useMemo(
+    () => ui?.discoverLayout?.sections ?? reconcileLayout([], DISCOVER_LAYOUT_CONFIG, railIds),
+    [ui, railIds],
   )
-  const on = (key: DiscoverSectionKey) =>
-    !editing && (layout.find((s) => s.key === key)?.enabled ?? false)
+  const draft = useLayoutDraft({
+    editing,
+    saved: ui && discoverRails ? saved : undefined,
+    config: DISCOVER_LAYOUT_CONFIG,
+    railIds,
+  })
+  const layout = draft?.sections ?? saved
+  const on = (key: DiscoverSectionKey) => layout.find((s) => s.key === key)?.enabled ?? false
 
   // Every query is gated on the section that shows it, so a switched-off section costs nothing.
   // The hero is the exception that proves it: it borrows the recent-activity picks, and Trending
@@ -1629,45 +1636,6 @@ function DiscoverBrowseTab({
     () => (rails ?? []).filter((r) => r.feed !== 'Trending'),
     [rails],
   )
-
-  if (editing) {
-    return ui && customRails ? (
-      <PageLayoutEditor
-        page="discover"
-        placement="discover"
-        registry={DISCOVER_SECTION_DEFS}
-        config={DISCOVER_LAYOUT_CONFIG}
-        initial={layout}
-        rails={discoverRails}
-        railLimit={40}
-        summary={(key) =>
-          key === 'sideinterests' && sideInterests
-            ? t`${sideInterests.length} rows right now`
-            : null
-        }
-        preview={(key) => {
-          const items =
-            key === 'hero'
-              ? heroItems
-              : key === 'recent'
-                ? recentRail?.items
-                : key === 'cohort'
-                  ? cohortRail?.items
-                  : key === 'trending'
-                    ? trendingRail?.items
-                    : key === 'catalogue'
-                      ? catalogueRails[0]?.items
-                      : key === 'sideinterests'
-                        ? sideInterests?.[0]?.items
-                        : undefined
-          return (items ?? []).map((i) => i.thumbUrl ?? i.coverUrl)
-        }}
-        onExit={onExitEditing}
-      />
-    ) : (
-      <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={onExitEditing} />
-    )
-  }
 
   // The catalogue query's failure and loading states. They live with the catalogue section rather
   // than at the top of the page, since the hero and the personalised rows come from other endpoints
@@ -1912,15 +1880,55 @@ function DiscoverBrowseTab({
     ) : null
   }
 
+  // Asked for edit mode, but the saved layout or the rails are still loading.
+  if (editing && !(draft && discoverRails)) {
+    return <LayoutEditLoading failed={uiFailed || railsFailed} onExit={onExitEditing} />
+  }
+
+  // The sections are drawn in the same frames in and out of edit mode, so entering it never
+  // rebuilds them; edit mode only adds the frames' own chrome and shrinks the sections.
   const body = (
     <div className="discover-density" data-density={density.density}>
-      {layout.filter((s) => s.enabled).map((s) => (
-        <Fragment key={s.key}>{renderSection(s.key)}</Fragment>
-      ))}
+      <LayoutEditSurface
+        page="discover"
+        placement="discover"
+        registry={DISCOVER_SECTION_DEFS}
+        editing={editing}
+        draft={draft}
+        sections={saved.filter((s) => s.enabled)}
+        rails={discoverRails ?? []}
+        railLimit={40}
+        render={renderSection}
+        summary={(key) =>
+          key === 'sideinterests' && sideInterests
+            ? plural(sideInterests.length, { one: '# theme right now', other: '# themes right now' })
+            : null
+        }
+        preview={(key) => {
+          const items =
+            key === 'hero'
+              ? heroItems
+              : key === 'recent'
+                ? recentRail?.items
+                : key === 'cohort'
+                  ? cohortRail?.items
+                  : key === 'trending'
+                    ? trendingRail?.items
+                    : key === 'catalogue'
+                      ? catalogueRails[0]?.items
+                      : key === 'sideinterests'
+                        ? sideInterests?.[0]?.items
+                        : undefined
+          return (items ?? []).map((i) => i.thumbUrl ?? i.coverUrl)
+        }}
+        onExit={onExitEditing}
+      />
 
-      <Group justify="center" mt="xl">
-        <AddRailButton placement="discover" />
-      </Group>
+      {!editing && (
+        <Group justify="center" mt="xl">
+          <AddRailButton placement="discover" />
+        </Group>
+      )}
 
       {expandedRail && (
         <FeedExpandModal
