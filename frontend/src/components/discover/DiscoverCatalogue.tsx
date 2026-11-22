@@ -6,6 +6,7 @@ import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
 import { RecommendationCard, type OpenItem } from '../ui/DiscoverRail'
 import { sectionSource } from '../../api/shortlist'
+import { CATALOGUE_PAGE, useWholeRows } from '../../lib/wholeRows'
 
 /**
  * The catalogue rails as one grid with a chip row, instead of five stacked rails.
@@ -36,9 +37,9 @@ export function DiscoverCatalogue({
 }) {
   const { t } = useLingui()
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  if (rails.length === 0) return null
-
   const active = rails.find((r) => r.key === activeKey) ?? rails[0]
+  const shown = useWholeRows(active?.items ?? [], cols, CATALOGUE_PAGE)
+  if (!active) return null
 
   return (
     <>
@@ -61,7 +62,7 @@ export function DiscoverCatalogue({
 
       <Group justify="space-between" mt="md" mb="sm">
         <Text c="var(--ink-3)" size="sm">
-          <Plural value={active.items.length} one="# title" other="# titles" />
+          <Plural value={shown.length} one="# title" other="# titles" />
         </Text>
         <Button
           variant="subtle"
@@ -74,7 +75,7 @@ export function DiscoverCatalogue({
       </Group>
 
       <SimpleGrid cols={cols} spacing="md" className="discover-cat-grid">
-        {active.items.map((item) => (
+        {shown.map((item) => (
           <RecommendationCard
             key={item.providerId}
             item={item}
