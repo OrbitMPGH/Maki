@@ -154,6 +154,9 @@ interface Selection {
   /** Where the panel opens, relative to the section's frame. */
   x: number
   y: number
+  /** Set when it opens from the settings button: the button's box, which the panel hangs from. */
+  w?: number
+  h?: number
 }
 
 const IDLE_DRAFT: LayoutDraft = {
@@ -230,11 +233,18 @@ export function LayoutEditSurface({
   const dragRef = useRef<Drag | null>(null)
   const dragEndedAt = useRef(0)
   const clearAfterCommit = useRef(false)
-  const flip = useRef<{ before: Map<string, number>; keep: string } | null>(null)
+  const flip = useRef<{ before: Map<string, number>; keep: string; focus: boolean } | null>(null)
   /** Set once Done or Cancel starts growing the sections back, so nothing else starts meanwhile. */
   const leaving = useRef(false)
   /** Cancel puts the saved order back first, then grows back from it. */
   const leaveAfterRender = useRef(false)
+  /** Set from Done's click until its request settles, so a second click sends nothing. */
+  const saving = useRef(false)
+  /** Done or Cancel pressed while a dropped section is still settling: runs once it has. */
+  const afterDrop = useRef<'done' | 'cancel' | null>(null)
+  const dropTimer = useRef(0)
+  /** Removes the window listeners of the press in progress. */
+  const dragStop = useRef<(() => void) | null>(null)
   const editRef = useRef(editActive)
   editRef.current = editActive
   const barRef = useRef<HTMLDivElement>(null)
@@ -335,6 +345,8 @@ export function LayoutEditSurface({
 
   /** The last frame of growing back out, held until edit mode has ended and the edit bar is gone. */
   const held = useRef<Animation[]>([])
+  /** A section on screen as edit mode ends, and where it was, so the page holds it there. */
+  const exitHold = useRef<{ el: HTMLElement; top: number } | null>(null)
   const release = () => {
     for (const a of held.current) a.cancel()
     held.current = []
@@ -363,13 +375,13 @@ export function LayoutEditSurface({
       f.dataset.ownHeading == null
         ? null
         : (partsOf(f).inner?.querySelector<HTMLElement>(
-            ':scope > .section-header:first-child + *, :scope > :first-child > .section-header:first-child + *',
+            ':scope > .section-header:first-child + *, :scope > :first-child > .section-header:first-child + *, :scope > :first-child:not(.section-header) + .section-header + *',
           ) ?? null)
     const headingOf = (f: HTMLElement) =>
       f.dataset.ownHeading == null
         ? null
         : (partsOf(f).inner?.querySelector<HTMLElement>(
-            ':scope > .section-header:first-child, :scope > :first-child > .section-header:first-child',
+            ':scope > .section-header:first-child, :scope > :first-child > .section-header:first-child, :scope > :first-child:not(.section-header) + .section-header',
           ) ?? null)
     const measure = (f: HTMLElement) => {
       const { body, inner } = partsOf(f)
@@ -397,13 +409,25 @@ export function LayoutEditSurface({
       const el = to.e === 1 ? headingOf(f) : null
       return el ? { el, r: el.getBoundingClientRect() } : null
     })
-    if (c) c.toggleAttribute('data-trim', to.e === 1)
+    if (c) {
+      c.toggleAttribute('data-boxed', to.e === 1)
+      c.toggleAttribute('data-trim', to.e === 1)
+    }
     view.current = to
     setLayout(to, to.sc)
     restHeights()
     holdAnchor(anchor)
-    // Growing back out ends with the edit bar gone. What scrolling can't make up for of its height,
-    // the sections rise by on the way, so nothing jumps when it goes.
+    // Growing back out ends with the edit bar gone. How far that moves the page is measured here, in
+    // the layout the page ends in, since margins collapse differently around the bar than when it
+    // came in. What scrolling can't make up for, the sections rise by on the way, so nothing jumps.
+    const bar = barRef.current
+    if (to.e === 0 && bar && c) {
+      const first = c.querySelector('.layout-frame-inner')?.firstElementChild ?? c
+      const withBar = first.getBoundingClientRect().top
+      bar.style.display = 'none'
+      barSpace.current = withBar - first.getBoundingClientRect().top
+      bar.style.display = ''
+    }
     const lift = to.e === 0 ? Math.max(0, barSpace.current - pageScrollTop()) : 0
 
     let settled = false
@@ -419,8 +443,23 @@ export function LayoutEditSurface({
     const settle = () => {
       if (settled) return
       settled = true
-      if (to.e === 0) held.current = running
-      else for (const a of running) a.cancel()
+      if (to.e === 0) {
+        held.current = running
+        // The section nearest the screen's upper middle; out of edit mode there are gaps between them.
+        const refY = pageViewportHeight() * 0.4
+        let best: { el: HTMLElement; top: number } | null = null
+        let bestDist = Infinity
+        for (const f of frameEls()) {
+          const r = f.getBoundingClientRect()
+          const dist =
+            r.top <= refY && r.bottom >= refY ? 0 : Math.min(Math.abs(r.top - refY), Math.abs(r.bottom - refY))
+          if (dist < bestDist) {
+            bestDist = dist
+            best = { el: f, top: r.top }
+          }
+        }
+        exitHold.current = best
+      } else for (const a of running) a.cancel()
       cleanup()
       restHeights()
       done?.()
@@ -485,7 +524,6 @@ export function LayoutEditSurface({
           at: now,
         })
       }
-      if (to.e === 0 && body) body.style.height = `${now.h}px`
       if (body && (was.capped || now.capped)) body.setAttribute('data-capped', '')
       starts.push(() => {
         if (Math.abs(fd) > 0.5 || lift)
@@ -562,7 +600,6 @@ export function LayoutEditSurface({
         running.push(copy.animate([{ opacity: 1 }, { opacity: 0, offset: 0.55 }, { opacity: 0 }], timing)),
       )
     })
-    const bar = barRef.current
     if (bar) starts.push(() => running.push(bar.animate([{ opacity: 1 - to.e }, { opacity: to.e }], timing)))
     for (const start of starts) start()
     void Promise.all(running.map((a) => a.finished)).then(settle, () => {})
@@ -574,13 +611,16 @@ export function LayoutEditSurface({
   const wasEditing = useRef(false)
   useLayoutEffect(() => {
     if (editActive && !wasEditing.current) {
-      // How far the bar pushed the sections down, margins collapsed and all.
+      // How far the bar pushed the sections down, margins collapsed and all. Read off the first
+      // section's content: a margin collapsing through the frames can leave their own top edge apart
+      // from it.
       const bar = barRef.current
       const c = framesRef.current
       if (bar && c) {
-        const withBar = c.getBoundingClientRect().top
+        const first = c.querySelector('.layout-frame-inner')?.firstElementChild ?? c
+        const withBar = first.getBoundingClientRect().top
         bar.style.display = 'none'
-        barSpace.current = withBar - c.getBoundingClientRect().top
+        barSpace.current = withBar - first.getBoundingClientRect().top
         bar.style.display = ''
       }
       const scrolled = pageScrollTop()
@@ -594,22 +634,37 @@ export function LayoutEditSurface({
     } else if (!editActive && wasEditing.current) {
       anim.current?.cancel()
       release()
+      teardownDrag()
+      setMoving(null)
       view.current = FULL
       setLayout(FULL, 1)
+      framesRef.current?.removeAttribute('data-boxed')
       framesRef.current?.removeAttribute('data-trim')
+      framesRef.current?.removeAttribute('inert')
       restHeights()
-      if (pageScrollTop() > 0) scrollPageTo(pageScrollTop() - barSpace.current)
+      // The section that was at the middle of the screen stays there as the bar goes. Measured rather
+      // than worked out from the bar's height: margins collapse around the bar in ways that move the
+      // page, and the browser's scroll anchoring with it, after any earlier measurement.
+      const hold = exitHold.current
+      exitHold.current = null
+      if (hold && hold.el.isConnected) {
+        const d = hold.el.getBoundingClientRect().top - hold.top
+        if (Math.abs(d) > 0.5) scrollPageTo(pageScrollTop() + d)
+      } else if (pageScrollTop() > 0) scrollPageTo(pageScrollTop() - barSpace.current)
       setSelected(null)
     }
     wasEditing.current = editActive
     // Runs when edit mode starts or ends.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editActive])
+  // Also runs when a kept page is hidden, so a drag never outlives the page it started on.
   useLayoutEffect(
     () => () => {
       anim.current?.cancel()
       release()
+      teardownDrag()
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -619,6 +674,9 @@ export function LayoutEditSurface({
     if (leaving.current) return
     leaving.current = true
     setSelected(null)
+    // Nothing on the sections answers while they grow back; set here rather than through state so
+    // no section re-renders mid-animation.
+    framesRef.current?.setAttribute('inert', '')
     shrinkTo(FULL, onExit)
   }
   useLayoutEffect(() => {
@@ -647,9 +705,12 @@ export function LayoutEditSurface({
   const move = (from: number, to: number, animate = true) => {
     if (to < 0 || to >= sections.length || from === to) return
     if (animate) {
+      const els = frameEls()
       flip.current = {
-        before: new Map(frameEls().map((el) => [el.dataset.layoutKey ?? '', el.getBoundingClientRect().top])),
+        before: new Map(els.map((el) => [el.dataset.layoutKey ?? '', el.getBoundingClientRect().top])),
         keep: sections[from].key,
+        // Moving a focused element in the DOM blurs it; the grip gets focus back after the move.
+        focus: els[from]?.contains(document.activeElement) ?? false,
       }
     }
     draft.move(from, to)
@@ -678,11 +739,14 @@ export function LayoutEditSurface({
       clearAfterCommit.current = false
       clearDragStyles()
       restHeights()
+      runAfterDrop()
     }
     const f = flip.current
     if (!f) return
     flip.current = null
     const keep = frameEls().find((el) => el.dataset.layoutKey === f.keep)
+    if (f.focus && keep && !keep.contains(document.activeElement))
+      keep.querySelector<HTMLElement>('.layout-frame-grip')?.focus({ preventScroll: true })
     const was = f.before.get(f.keep)
     if (keep && was != null) scrollPageTo(pageScrollTop() + keep.getBoundingClientRect().top - was)
     if (reduceMotion) return
@@ -844,7 +908,7 @@ export function LayoutEditSurface({
     el.classList.remove('is-lifted')
     el.style.transform = `translate3d(0,${dest - d.me.top}px,0)`
     dragEndedAt.current = Date.now()
-    window.setTimeout(
+    dropTimer.current = window.setTimeout(
       () => {
         dragRef.current = null
         setMoving(null)
@@ -857,10 +921,30 @@ export function LayoutEditSurface({
         } else {
           clearDragStyles()
           restHeights()
+          runAfterDrop()
         }
       },
       Math.max(duration, 200) + 20,
     )
+  }
+  /** Ends a drag at once, wherever it is, with nothing committed. */
+  const teardownDrag = () => {
+    dragStop.current?.()
+    dragStop.current = null
+    window.clearTimeout(dropTimer.current)
+    afterDrop.current = null
+    const d = dragRef.current
+    if (d) cancelAnimationFrame(d.raf)
+    if (d || document.documentElement.dataset.layoutCarry != null) {
+      dragRef.current = null
+      clearDragStyles()
+    }
+  }
+  const runAfterDrop = () => {
+    const next = afterDrop.current
+    afterDrop.current = null
+    if (next === 'done') done()
+    else if (next === 'cancel') cancel()
   }
 
   const press = (key: string, event: ReactPointerEvent) => {
@@ -884,16 +968,21 @@ export function LayoutEditSurface({
       d.py = e.clientY
       updateDrag()
     }
-    const stop = (e: PointerEvent) => {
-      if (e.pointerId !== id) return
+    const detach = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', stop)
       window.removeEventListener('pointercancel', stop)
+      dragStop.current = null
+    }
+    const stop = (e: PointerEvent) => {
+      if (e.pointerId !== id) return
+      detach()
       if (started) endDrag(e.type === 'pointerup')
     }
     window.addEventListener('pointermove', onMove, { passive: false })
     window.addEventListener('pointerup', stop)
     window.addEventListener('pointercancel', stop)
+    dragStop.current = detach
   }
 
   useEffect(() => {
@@ -945,12 +1034,23 @@ export function LayoutEditSurface({
 
   // --- Leaving -----------------------------------------------------------------------------------
 
+  // A section dropped a moment ago is still settling into its slot; its move counts, so Done and
+  // Cancel wait for it.
+  const waitForDrop = (then: 'done' | 'cancel') => {
+    const d = dragRef.current
+    if (!d) return false
+    afterDrop.current = then
+    if (!d.dropping) endDrag(then === 'done')
+    return true
+  }
   const done = () => {
-    if (leaving.current) return
+    if (leaving.current || saving.current || waitForDrop('done')) return
     if (!dirty) {
       leave()
       return
     }
+    saving.current = true
+    setSelected(null)
     save.mutate(
       { page, sections },
       {
@@ -961,11 +1061,19 @@ export function LayoutEditSurface({
           })
           leave()
         },
+        onSettled: () => {
+          saving.current = false
+        },
       },
     )
   }
+  // Nothing changes the draft while it is being saved: a change made then would be dropped when the
+  // editor closes.
+  useLayoutEffect(() => {
+    if (!leaving.current) framesRef.current?.toggleAttribute('inert', save.isPending)
+  }, [save.isPending])
   const cancel = () => {
-    if (leaving.current) return
+    if (leaving.current || saving.current || waitForDrop('cancel')) return
     if (!dirty) {
       leave()
       return
@@ -989,8 +1097,14 @@ export function LayoutEditSurface({
       sheet={asSheet}
       onChange={(patch) => draft.update(section.key, patch)}
       onMove={(to) => move(index, to)}
-      onEditRail={() => setEditingRail(railOf(section.key) ?? null)}
-      onDeleteRail={() => setDeletingRail(railOf(section.key) ?? null)}
+      onEditRail={() => {
+        setSelected(null)
+        setEditingRail(railOf(section.key) ?? null)
+      }}
+      onDeleteRail={() => {
+        setSelected(null)
+        setDeletingRail(railOf(section.key) ?? null)
+      }}
     />
   )
 
@@ -1030,6 +1144,7 @@ export function LayoutEditSurface({
               size="xs"
               leftSection={<IconPlus size={16} />}
               onClick={() => setAdding({ at: null })}
+              disabled={save.isPending}
             >
               <Trans>Add a rail</Trans>
             </Button>
@@ -1068,9 +1183,9 @@ export function LayoutEditSurface({
                 unavailable={blocked ? renderLabel(blocked) : null}
                 anchor={open && !sheet ? selected : null}
                 settings={open && !sheet && selectedSection ? settingsFor(selectedSection, selectedIndex, false) : null}
-                onOpen={(x, y) => {
+                onOpen={(x, y, w, h) => {
                   if (Date.now() - dragEndedAt.current < 350) return
-                  setSelected({ key: section.key, x, y })
+                  setSelected({ key: section.key, x, y, w, h })
                 }}
                 onClose={() => setSelected(null)}
                 onToggle={() => draft.update(section.key, { enabled: !section.enabled })}
@@ -1084,7 +1199,12 @@ export function LayoutEditSurface({
         })}
       </div>
       {editActive && (
-        <button type="button" className="layout-edit-add" onClick={() => setAdding({ at: null })}>
+        <button
+          type="button"
+          className="layout-edit-add"
+          onClick={() => setAdding({ at: null })}
+          disabled={save.isPending}
+        >
           <IconPlus size={16} />
           <Trans>Add a rail</Trans>
         </button>
@@ -1099,6 +1219,7 @@ export function LayoutEditSurface({
         size="auto"
         title={selectedSection ? <ModalHeading title={labelOf(selectedSection.key)} /> : null}
         classNames={{ content: 'layout-settings-sheet' }}
+        closeButtonProps={{ 'aria-label': t`Close` }}
         styles={{
           content: { height: 'auto', maxHeight: '85dvh', flex: '0 0 auto' },
         }}
@@ -1226,7 +1347,7 @@ function LayoutFrame({
   unavailable: string | null
   anchor: Selection | null
   settings: ReactNode
-  onOpen: (x: number, y: number) => void
+  onOpen: (x: number, y: number, w?: number, h?: number) => void
   onClose: () => void
   onToggle: () => void
   onStep: (delta: -1 | 1) => void
@@ -1245,12 +1366,30 @@ function LayoutFrame({
     if (!box) return
     onOpen(clientX - box.left, clientY - box.top)
   }
+  // The panel hangs from the button itself, so it flips above the button rather than over it.
   const openFromButton = () => {
     const button = settingsRef.current?.getBoundingClientRect()
     const box = ref.current?.getBoundingClientRect()
     if (!button || !box) return
-    onOpen(button.right - box.left - 320, button.bottom - box.top)
+    onOpen(button.left - box.left, button.top - box.top, button.width, button.height)
   }
+  // Closing from inside the panel puts focus back on the settings button; a click elsewhere leaves
+  // focus where it went.
+  const closeToButton = () => {
+    onClose()
+    settingsRef.current?.focus({ preventScroll: true })
+  }
+  // Hiding swaps the hide button for a Show button; focus moves across with it.
+  const toggleFocus = useRef(false)
+  const toggle = () => {
+    toggleFocus.current = ref.current?.contains(document.activeElement) ?? false
+    onToggle()
+  }
+  useLayoutEffect(() => {
+    if (!toggleFocus.current) return
+    toggleFocus.current = false
+    ref.current?.querySelector<HTMLElement>('[data-layout-toggle]')?.focus({ preventScroll: true })
+  }, [visible])
 
   const onGripKey = (e: KeyboardEvent) => {
     if (e.key === 'ArrowUp' && index > 0) {
@@ -1311,12 +1450,25 @@ function LayoutFrame({
             {!visible && <Covers urls={covers} />}
             {visible ? (
               <Tooltip label={t`Hide`} withArrow>
-                <ActionIcon variant="subtle" color="var(--ink-2)" aria-label={t`Hide ${label}`} onClick={onToggle}>
+                <ActionIcon
+                  variant="subtle"
+                  color="var(--ink-2)"
+                  aria-label={t`Hide ${label}`}
+                  onClick={toggle}
+                  data-layout-toggle
+                >
                   <IconEyeOff size={16} />
                 </ActionIcon>
               </Tooltip>
             ) : (
-              <Button size="xs" variant="default" leftSection={<IconEye size={16} />} onClick={onToggle}>
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconEye size={16} />}
+                onClick={toggle}
+                aria-label={t`Show ${label}`}
+                data-layout-toggle
+              >
                 <Trans>Show</Trans>
               </Button>
             )}
@@ -1349,8 +1501,8 @@ function LayoutFrame({
           onChange={(opened) => {
             if (!opened) onClose()
           }}
-          onClose={() => settingsRef.current?.focus({ preventScroll: true })}
-          position="bottom-start"
+          closeOnEscape={false}
+          position={anchor.w != null ? 'bottom-end' : 'bottom-start'}
           offset={6}
           width={320}
           shadow="md"
@@ -1359,9 +1511,21 @@ function LayoutFrame({
           middlewares={{ flip: true, shift: { padding: 8 } }}
         >
           <Popover.Target>
-            <span className="layout-frame-anchor" style={{ left: Math.max(0, anchor.x), top: anchor.y }} />
+            <span
+              className="layout-frame-anchor"
+              style={{ left: Math.max(0, anchor.x), top: anchor.y, width: anchor.w, height: anchor.h }}
+            />
           </Popover.Target>
-          <Popover.Dropdown p={6} aria-labelledby={titleId} className="layout-settings-pop">
+          <Popover.Dropdown
+            p={6}
+            aria-labelledby={titleId}
+            className="layout-settings-pop"
+            onKeyDownCapture={(e) => {
+              if (e.key !== 'Escape') return
+              e.stopPropagation()
+              closeToButton()
+            }}
+          >
             <div className="layout-settings-head">
               {SectionIcon && (
                 <span className="layout-frame-icon" aria-hidden>
@@ -1371,7 +1535,7 @@ function LayoutFrame({
               <span id={titleId} className="layout-settings-title" tabIndex={-1} data-autofocus>
                 {label}
               </span>
-              <ActionIcon variant="subtle" color="var(--ink-2)" aria-label={t`Close`} onClick={onClose}>
+              <ActionIcon variant="subtle" color="var(--ink-2)" aria-label={t`Close`} onClick={closeToButton}>
                 <IconX size={16} />
               </ActionIcon>
             </div>

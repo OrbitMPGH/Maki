@@ -424,6 +424,11 @@ msgstr "{0, plural, one {# repozytorium} few {# repozytoria} many {# repozytori�
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, one {# wynik} few {# wyniki} many {# wyników} other {# wyniku}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# row right now} other {# rows right now}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -900,12 +905,6 @@ msgstr "Linków: {0}, zaczynając od {1}"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "Stron w rozdziale próbnym: {0}."
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "Liczba wierszy: {0}"
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -24529,6 +24528,10 @@ msgstr "Shounen"
 #, fuzzy
 msgid "Show"
 msgstr "Pokaż"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy

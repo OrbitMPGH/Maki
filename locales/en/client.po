@@ -362,6 +362,11 @@ msgstr "{0, plural, one {# repository} other {# repositories}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, one {# result} other {# results}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# row right now} other {# rows right now}}"
+msgstr "{0, plural, one {# row right now} other {# rows right now}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -765,11 +770,6 @@ msgstr "{0} links, starting with {1}"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "{0} pages on the sample chapter."
 msgstr "{0} pages on the sample chapter."
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-msgid "{0} rows right now"
-msgstr "{0} rows right now"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "{abs} pt"
@@ -20144,6 +20144,10 @@ msgstr "Shounen"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Show"
 msgstr "Show"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr "Show {label}"
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Show a popup when a notification arrives"

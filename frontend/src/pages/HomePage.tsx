@@ -208,7 +208,9 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   // A refetch that failed while the list is still in memory is not a failure to load: draw from it.
   const libraryMissing = !seriesLoading && seriesFailed && libraryKnown === undefined
 
-  if (libraryMissing && (isOfflineUnavailable(seriesError) || connectivity === 'offline')) {
+  // In edit mode the editor draws instead, with its own way out, so a link to it never lands on a
+  // page that cannot leave edit mode.
+  if (!editing && libraryMissing && (isOfflineUnavailable(seriesError) || connectivity === 'offline')) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}
@@ -222,7 +224,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     )
   }
 
-  if (libraryMissing) {
+  if (!editing && libraryMissing) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}
@@ -235,7 +237,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     )
   }
 
-  if (!seriesLoading && !hasLibrary) {
+  if (!editing && !seriesLoading && !hasLibrary) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         {homeTitle}

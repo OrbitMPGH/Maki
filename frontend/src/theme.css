@@ -18357,15 +18357,30 @@ button.series-title:hover {
   border-radius: var(--mantine-radius-md);
   background: var(--surface-2);
 }
+/* Outside edit mode the frames are plain blocks, so the sections' margins collapse as they would on
+   a page without them. data-boxed, set by the shrink once it has measured the page, makes each
+   frame its own box for edit mode. */
 .layout-frames {
   --el: 0;
   --e: 0;
   --sc: 1;
   --w: 1;
   position: relative;
+}
+.layout-frames[data-boxed] {
   display: flex;
   flex-direction: column;
+}
+.layout-frames[data-editing] {
   overflow-anchor: none;
+}
+/* Out of the flow until the frames are boxed: in flow, the empty strip would stop the margins
+   either side of it collapsing. */
+.layout-frames:not([data-boxed]) .layout-frame-head,
+.layout-frames:not([data-boxed]) .layout-insert {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
 }
 .layout-frame {
   position: relative;
@@ -18480,10 +18495,13 @@ button.series-title:hover {
 }
 /* The section itself, inert, laid out wider and scaled down so it still fills the frame, then cut
    at the row height with a fade. Its height is set from script. */
-.layout-frames[data-editing] .layout-frame-body {
-  position: relative;
+/* The clip waits for the boxes too: Chrome keeps a clipped box's margins from collapsing. */
+.layout-frames[data-boxed] .layout-frame-body {
   overflow: clip;
   contain: layout style;
+}
+.layout-frames[data-editing] .layout-frame-body {
+  position: relative;
   pointer-events: none;
   user-select: none;
 }
@@ -18499,7 +18517,7 @@ button.series-title:hover {
   height: 72px;
   background: linear-gradient(transparent, var(--app-bg));
 }
-.layout-frames[data-editing] .layout-frame-inner:empty::after {
+.layout-frames[data-boxed] .layout-frame-inner:empty::after {
   content: attr(data-empty);
   display: block;
   padding: 0 2px 4px;
@@ -18509,7 +18527,12 @@ button.series-title:hover {
 /* The frame's title strip names the section, so the section's own heading would say it twice.
    data-trim is set by the shrink at the moment the strip takes over. */
 .layout-frames[data-trim] .layout-frame[data-own-heading] .layout-frame-inner > .section-header:first-child,
-.layout-frames[data-trim] .layout-frame[data-own-heading] .layout-frame-inner > :first-child > .section-header:first-child {
+.layout-frames[data-trim] .layout-frame[data-own-heading] .layout-frame-inner > :first-child > .section-header:first-child,
+.layout-frames[data-trim]
+  .layout-frame[data-own-heading]
+  .layout-frame-inner
+  > :first-child:not(.section-header)
+  + .section-header {
   display: none;
 }
 /* While the views change, sections draw past their boxes and the animation clips them instead. */
@@ -18523,9 +18546,9 @@ button.series-title:hover {
   will-change: transform;
 }
 /* A section's width is laid out on every step of the shrink; its fixed height keeps that inside it.
-   Layout containment is on for the whole of edit mode, so a section's top margin sits in the same
-   place when the shrink measures it as while it runs. */
-.layout-frame[data-shrinking] > .layout-frame-body {
+   Only while boxed, so a section's top margin sits in the same place when the shrink measures it as
+   while it runs. */
+.layout-frames[data-boxed] .layout-frame[data-shrinking] > .layout-frame-body {
   contain: size layout style;
 }
 .layout-frame-anchor {

@@ -424,6 +424,11 @@ msgstr "{0, plural, other {#件のリポジトリ}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, other {#件の結果}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# row right now} other {# rows right now}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -900,12 +905,6 @@ msgstr "{0}件のリンク。最初は{1}"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "サンプルの章には{0}ページあります。"
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "現在{0}行表示中"
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -24529,6 +24528,10 @@ msgstr "少年向け"
 #, fuzzy
 msgid "Show"
 msgstr "表示"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy

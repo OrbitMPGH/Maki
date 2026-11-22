@@ -73,7 +73,7 @@ export const Default: Story = {
     await expect(await canvas.findByText('Editing layout')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Move Recently added' })).toBeVisible()
     await expect(await canvas.findByRole('region', { name: 'Unread favourites' })).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Show' })).toBeVisible()
+    await expect((await canvas.findAllByRole('button', { name: /^Show / }))[0]).toBeVisible()
     // A section with nothing to show says so through its frame's empty body.
     const popular = await canvas.findByRole('region', {
       name: 'Currently popular',
@@ -136,6 +136,10 @@ export const KeyboardReorder: Story = {
     grip.focus()
     await userEvent.keyboard('{ArrowDown}')
     await waitFor(() => expect(canvas.getByText('Recently added moved to position 3 of 9')).toBeInTheDocument())
+    // Moving down moves the section's own node, which blurs it; the grip keeps focus for the next step.
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Move Recently added' })).toHaveFocus())
+    await userEvent.keyboard('{ArrowDown}')
+    await waitFor(() => expect(canvas.getByText('Recently added moved to position 4 of 9')).toBeInTheDocument())
   },
 }
 
@@ -152,14 +156,35 @@ export const HideThenDone: Story = {
 export const DoneWithoutChanges: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Done' }))
-    await expect(args.onExit).toHaveBeenCalledOnce()
+    await waitFor(() => expect(args.onExit).toHaveBeenCalledOnce())
   },
 }
 
 export const Cancel: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Cancel' }))
-    await expect(args.onExit).toHaveBeenCalledOnce()
+    await waitFor(() => expect(args.onExit).toHaveBeenCalledOnce())
+  },
+}
+
+export const HideKeepsFocus: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const hide = await canvas.findByRole('button', { name: 'Hide Currently popular' })
+    hide.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Show Currently popular' })).toHaveFocus())
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Hide Currently popular' })).toHaveFocus())
+  },
+}
+
+export const EscapeReturnsFocus: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const button = await canvas.findByRole('button', { name: 'Settings for Recently added' })
+    await userEvent.click(button)
+    await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(button).toHaveFocus())
   },
 }
 

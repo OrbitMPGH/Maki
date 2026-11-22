@@ -424,6 +424,11 @@ msgstr "{0, plural, other {# 个仓库}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, other {# 个结果}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# row right now} other {# rows right now}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -900,12 +905,6 @@ msgstr "{0} 个链接，从 {1} 开始"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "示例章节中有 {0} 页。"
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "当前显示 {0} 行"
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -24529,6 +24528,10 @@ msgstr "少年向"
 #, fuzzy
 msgid "Show"
 msgstr "显示"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy

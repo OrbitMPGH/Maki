@@ -424,6 +424,11 @@ msgstr "{0, plural, other {저장소 #개}}"
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr "{0, plural, other {결과 #개}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# row right now} other {# rows right now}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -900,12 +905,6 @@ msgstr "링크 {0}개, 첫 번째는 {1}"
 #, fuzzy
 msgid "{0} pages on the sample chapter."
 msgstr "샘플 챕터에 페이지 {0}개가 있습니다."
-
-#. placeholder {0}: sideInterests.length
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "{0} rows right now"
-msgstr "현재 {0}개 행"
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -24529,6 +24528,10 @@ msgstr "소년"
 #, fuzzy
 msgid "Show"
 msgstr "보기"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Show {label}"
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy

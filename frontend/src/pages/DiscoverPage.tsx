@@ -35,7 +35,7 @@ import {
 import { useIsFetching } from '@tanstack/react-query'
 import type { MessageDescriptor } from '@lingui/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
 import { formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { pageScroller } from '../lib/pageScroll'
@@ -1730,7 +1730,9 @@ function DiscoverBrowseTab({
         railLimit={40}
         render={renderSection}
         summary={(key) =>
-          key === 'sideinterests' && sideInterests ? t`${sideInterests.length} rows right now` : null
+          key === 'sideinterests' && sideInterests
+            ? plural(sideInterests.length, { one: '# row right now', other: '# rows right now' })
+            : null
         }
         preview={(key) => {
           const items =
