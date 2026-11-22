@@ -49,6 +49,7 @@ import { DelayedLoader } from './components/ui/DelayedLoader'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, isInSection, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documentTitle'
@@ -505,18 +506,28 @@ function AppShellRoutes() {
       <AppShell.Header className="app-header" hiddenFrom={navCollapsed ? undefined : 'sm'}>
         <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap" className="app-header-lead">
-            <Burger
-              ref={burgerRef}
-              opened={opened}
-              onClick={toggle}
-              onPointerEnter={peekEnter}
-              onPointerMove={peeking ? undefined : peekEnter}
-              onPointerLeave={peekLeave}
-              size="sm"
-              aria-label={t`Menu`}
-              aria-expanded={opened}
-              aria-controls="app-navbar"
-            />
+            {/* The Health badge sits in the drawer, out of sight while it is shut. */}
+            <span className="burger-wrap">
+              <Burger
+                ref={burgerRef}
+                opened={opened}
+                onClick={toggle}
+                onPointerEnter={peekEnter}
+                onPointerMove={peeking ? undefined : peekEnter}
+                onPointerLeave={peekLeave}
+                size="sm"
+                aria-label={
+                  healthIssues > 0 && !opened
+                    ? plural(healthIssues, { one: 'Menu, # health problem', other: 'Menu, # health problems' })
+                    : t`Menu`
+                }
+                aria-expanded={opened}
+                aria-controls="app-navbar"
+              />
+              {healthIssues > 0 && !opened && (
+                <span className="burger-dot" data-tone={healthTone} aria-hidden />
+              )}
+            </span>
             {/* A phone has no sidebar to show where you are, so the bar names the page instead of
                 repeating the logo the drawer already carries. */}
             {phone && pageName && titleAway ? (

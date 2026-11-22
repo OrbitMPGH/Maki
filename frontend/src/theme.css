@@ -1157,6 +1157,30 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-hi);
 }
 
+.burger-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+/* Anchored to the middle like the header's count badges, so it stays on the glyph's corner at any
+   button size. The ring cuts it off the top line. */
+.burger-dot {
+  position: absolute;
+  top: calc(50% - 14px);
+  right: calc(50% - 15px);
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--app-bg);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.burger-dot[data-tone='warn'] {
+  background: var(--warn);
+}
+.burger-dot[data-tone='danger'] {
+  background: var(--danger);
+}
+
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
    which changes two things the desktop styles above get away with:
    - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and

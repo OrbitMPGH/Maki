@@ -1997,6 +1997,10 @@ msgstr "{haveCount} / {totalCount, plural, other {#章}}が一覧にあります
 msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, other {希望#件}}"
 
+#: src/App.tsx
+msgid "{healthIssues, plural, one {Menu, # health problem} other {Menu, # health problems}}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{hiddenCount, plural, one {# page and the end of the last page hidden in this chapter} other {# pages and the end of the last page hidden in this chapter}}"
