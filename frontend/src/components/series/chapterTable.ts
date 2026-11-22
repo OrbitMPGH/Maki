@@ -167,7 +167,7 @@ export function sortChapters(chapters: readonly ChapterDto[], sort: ChapterSort)
 }
 
 /** The columns the table lets the reader hide. The chapter number, the switch and the row actions always show. */
-export const HIDABLE_CHAPTER_COLUMNS = ['title', 'released', 'source', 'status'] as const
+export const HIDABLE_CHAPTER_COLUMNS = ['released', 'title', 'source', 'status'] as const
 export type HidableChapterColumn = (typeof HIDABLE_CHAPTER_COLUMNS)[number]
 
 export function parseHiddenColumns(raw: string | null): ReadonlySet<HidableChapterColumn> {
