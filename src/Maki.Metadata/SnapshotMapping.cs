@@ -23,6 +23,7 @@ internal sealed unsafe class SnapshotMapping
     private static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
     private static readonly ConcurrentQueue<(SafeMemoryMappedViewHandle View, string Path, long Due)> Retired = new();
     private static readonly Timer Sweeper = new(_ => Sweep(), null, Timeout.Infinite, Timeout.Infinite);
+    private static readonly ConcurrentDictionary<string, int> Mapped = new(StringComparer.Ordinal);
 
     private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _accessor;
@@ -88,6 +89,8 @@ internal sealed unsafe class SnapshotMapping
             // Held until release: an outstanding acquire is what stops the handle's own finalizer
             // from unmapping the view before the grace period is up.
             accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+            path = Path.GetFullPath(path);
+            Mapped.AddOrUpdate(path, 1, (_, n) => n + 1);
             return new SnapshotMapping(file, accessor, path, pointer + accessor.PointerOffset, length);
         }
         catch
@@ -110,6 +113,7 @@ internal sealed unsafe class SnapshotMapping
         {
             GC.SuppressFinalize(this);
             Unmap(_view);
+            Forget(_path);
             _accessor.Dispose();
             _file.Dispose();
         }
@@ -131,10 +135,12 @@ internal sealed unsafe class SnapshotMapping
         while (Retired.TryPeek(out var next) && next.Due <= now && Retired.TryDequeue(out next))
         {
             Unmap(next.View);
-            // Unmapped pages of a snapshot that was mapped twice promote to active_file and stick on
-            // docker stats forever. POSIX_FADV_DONTNEED ignores still-mapped pages if the artifact
-            // was reloaded during the grace period.
-            PageCache.DropAfterScan(next.Path);
+            // A snapshot mapped twice promotes to active_file and stays on docker stats after the
+            // unmap. Dropped only once no mapping of the path is left, so a reload is never evicted.
+            if (Forget(next.Path))
+            {
+                PageCache.DropAfterScan(next.Path);
+            }
         }
 
         if (Retired.TryPeek(out var pending))
@@ -145,6 +151,20 @@ internal sealed unsafe class SnapshotMapping
 
     /// <summary>How many retired views are still waiting out their grace, for tests.</summary>
     internal static int RetiredCount => Retired.Count;
+
+    /// <summary>Counts one mapping of the path gone; true when it was the last.</summary>
+    private static bool Forget(string path)
+    {
+        while (Mapped.TryGetValue(path, out var n))
+        {
+            if (n <= 1 ? Mapped.TryRemove(KeyValuePair.Create(path, n)) : Mapped.TryUpdate(path, n - 1, n))
+            {
+                return n <= 1;
+            }
+        }
+
+        return false;
+    }
 
     private static void Unmap(SafeMemoryMappedViewHandle view)
     {
