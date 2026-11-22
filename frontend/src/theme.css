@@ -4290,23 +4290,23 @@ button.site-chip:hover {
 .engine-card .cover-poster {
   height: auto;
 }
-/* One fixed height so a row of cards lines up: the reason on up to two lines over its chips, or the
+/* A minimum height so a row of cards lines up: the reason on up to two lines over its chips, or the
    chips alone in a shorter footer. */
 .engine-why {
   container-type: inline-size;
   display: flex;
-  flex: none;
+  flex: 1 0 auto;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  height: 76px;
+  min-height: 76px;
   padding: 8px 10px;
   border-top: 1px solid var(--hairline);
   background: var(--surface);
 }
 .engine-why:has(> .engine-why-chips:only-child),
 .engine-why:empty {
-  height: 42px;
+  min-height: 42px;
 }
 .engine-why-line {
   display: flex;
@@ -4391,8 +4391,10 @@ button.site-chip:hover {
 .engine-why-chips {
   display: flex;
   flex-wrap: wrap;
+  align-content: start;
   gap: 4px;
-  height: 26px;
+  font-size: var(--type-micro);
+  height: calc(1lh + 6px); /* The chip's text, vertical padding and borders. */
   overflow: hidden;
 }
 .engine-why-chips > .tag-chip {
