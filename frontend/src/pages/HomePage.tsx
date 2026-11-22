@@ -40,7 +40,8 @@ import {
 import { useCustomRails } from '../api/customRails'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import type { CatalogueSeed } from '../components/CatalogueBrowser'
-import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
+import { LayoutEditLoading, LayoutEditSurface } from '../components/layout/LayoutEditSurface'
+import { useLayoutDraft } from '../components/layout/useLayoutDraft'
 import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
 import { reconcileLayout, sectionVisible } from '../components/layout/pageLayout'
 import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSectionDefs'
@@ -57,7 +58,6 @@ import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow, type OpenItem } from '../components/ui/DiscoverRail'
 import { ANIME_SOURCE, OTHER_SOURCE, homeSectionSource, type ShortlistSource } from '../api/shortlist'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader, SectionTagContext } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -109,19 +109,25 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
 
   // Default to the shipping order while the setting loads, so the page doesn't reflow once it
   // arrives. `on` is what every query below gates on: a section the user turned off must not
-  // cost a request, which is most of the point of being able to turn one off. Nothing fetches
-  // while the layout is being edited either: the editor shows compact cards, not the sections.
-  const layout = useMemo(
-    () =>
-      ui?.homeLayout.sections ??
-      (reconcileLayout([], HOME_LAYOUT_CONFIG, (homeRails ?? []).map((r) => r.id)) as HomeSection[]),
-    [ui, homeRails],
+  // cost a request, which is most of the point of being able to turn one off. While the layout is
+  // being edited the page draws the draft, so a section switched on there fetches to show itself.
+  const railIds = useMemo(() => (homeRails ?? []).map((r) => r.id), [homeRails])
+  const saved = useMemo(
+    () => ui?.homeLayout.sections ?? (reconcileLayout([], HOME_LAYOUT_CONFIG, railIds) as HomeSection[]),
+    [ui, railIds],
   )
+  const draft = useLayoutDraft({
+    editing,
+    saved: ui && homeRails ? ui.homeLayout.sections : undefined,
+    config: HOME_LAYOUT_CONFIG,
+    railIds,
+  })
+  const layout = (draft?.sections as HomeSection[] | undefined) ?? saved
   const sectionOf = (key: HomeSectionKey) => layout.find((s) => s.key === key)
   // Before `ui` has loaded, `layout` is the reconciled fallback, which enables every canonical
   // section (see `reconcileLayout`). A disabled rail must not fetch just because the setting that
   // disables it has not arrived yet.
-  const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
+  const on = (key: HomeSectionKey) => Boolean(ui) && (sectionOf(key)?.enabled ?? false)
   const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
   const optionOn = (key: HomeSectionKey, option: string) =>
     sectionOf(key)?.options?.[option] ?? HOME_SECTION_OPTIONS[key]?.[option] ?? false
@@ -193,53 +199,12 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   )
 
   // Home has no visible title row: the sidebar says where you are and the hero says what you are
-  // reading. The h1 stays for screen readers. Editing the layout is a mode with its own exit, so
-  // that one keeps a visible title.
+  // reading. The h1 stays for screen readers, in edit mode too, where the edit bar says the rest.
   const homeTitle = (
     <VisuallyHidden>
       <Title order={1}>{t`Home`}</Title>
     </VisuallyHidden>
   )
-  const editingHeader = <PageHeader title={t`Home`} />
-
-  if (editing) {
-    return (
-      <SurfaceFrame width="full" pageStyle="editorial">
-        {editingHeader}
-        {ui && homeRails ? (
-          <PageLayoutEditor
-            page="home"
-            placement="home"
-            registry={HOME_SECTION_DEFS}
-            config={HOME_LAYOUT_CONFIG}
-            initial={ui.homeLayout.sections}
-            rails={homeRails}
-            railLimit={RAIL_SIZE}
-            unavailable={(key) =>
-              !discoverAvailable &&
-              (key === 'recommended' || key === 'popular' || key === 'following' ||
-                (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
-                ? msg`Needs the local MangaBaka database`
-                : null
-            }
-            optionHint={(key, option) =>
-              key === 'continue' && option === 'glance'
-                ? !readTracking
-                  ? msg`Needs read tracking: use the reader or connect Kavita.`
-                  : progress && !progress.enabled
-                    ? msg`Hidden while progression is switched off.`
-                    : null
-                : null
-            }
-            onExit={exitEditing}
-          />
-        ) : (
-          <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={exitEditing} />
-        )}
-      </SurfaceFrame>
-    )
-  }
-
   // A refetch that failed while the list is still in memory is not a failure to load: draw from it.
   const libraryMissing = !seriesLoading && seriesFailed && libraryKnown === undefined
 
@@ -302,7 +267,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     )
   }
 
-  const visible = layout.filter(sectionVisible)
+  const visible = saved.filter(sectionVisible)
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.
@@ -424,6 +389,66 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={openDetail} />
   }
 
+  // Asked for edit mode, but the saved layout or the rails are still loading.
+  if (editing && !(draft && homeRails)) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {homeTitle}
+        <LayoutEditLoading failed={uiFailed || railsFailed} onExit={exitEditing} />
+      </SurfaceFrame>
+    )
+  }
+
+  const covers = (items: { coverUrl?: string | null; thumbUrl?: string | null }[] | undefined) =>
+    (items ?? []).map((i) => i.thumbUrl ?? i.coverUrl ?? null)
+  // The sections are drawn in the same frames in and out of edit mode, so entering it never
+  // rebuilds them; edit mode only adds the frames' own chrome and shrinks the sections.
+  const surface = (
+    <LayoutEditSurface
+      page="home"
+      placement="home"
+      registry={HOME_SECTION_DEFS}
+      editing={editing}
+      draft={draft}
+      sections={visible}
+      rails={homeRails ?? []}
+      railLimit={RAIL_SIZE}
+      render={(key) => renderSection(key as HomeLayoutKey)}
+      preview={(key) =>
+        key === 'continue'
+          ? covers(continueReading)
+          : key === 'recent'
+            ? covers(recent)
+            : key === 'recommended'
+              ? covers(youMightLike)
+              : key === 'popular'
+                ? covers(popular)
+                : key === 'fromanime'
+                  ? covers(fromAnime?.items)
+                  : []
+      }
+      unavailable={(key) =>
+        !discoverAvailable &&
+        (key === 'recommended' ||
+          key === 'popular' ||
+          key === 'following' ||
+          (isRailKey(key) && homeRails?.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
+          ? msg`Needs the local MangaBaka database`
+          : null
+      }
+      optionHint={(key, option) =>
+        key === 'continue' && option === 'glance'
+          ? !readTracking
+            ? msg`Needs read tracking: use the reader or connect Kavita.`
+            : progress && !progress.enabled
+              ? msg`Hidden while progression is switched off.`
+              : null
+          : null
+      }
+      onExit={exitEditing}
+    />
+  )
+
   const inLibraryZone = (key: HomeLayoutKey) =>
     isRailKey(key)
       ? homeRails?.find((r) => r.id === railIdOf(key))?.spec.source === 'library'
@@ -461,28 +486,32 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       {homeTitle}
-      {visible.length === 0 ? (
+      {visible.length === 0 && !editing ? (
         <EmptyState
           title={t`Every section is switched off`}
           description={t`Turn sections back on in the layout editor, or switch Home off in Settings.`}
           actionLabel={t`Edit layout`}
           onAction={enterEditing}
         />
+      ) : separation === 'none' || editing ? (
+        surface
       ) : (
         body
       )}
 
-      <Group justify="center" gap="xs" mt="xl">
-        <AddRailButton placement="home" />
-        <Button
-          variant="subtle"
-          color="var(--neutral)"
-          leftSection={<IconLayoutDashboard size={16} />}
-          onClick={enterEditing}
-        >
-          <Trans>Edit layout</Trans>
-        </Button>
-      </Group>
+      {!editing && (
+        <Group justify="center" gap="xs" mt="xl">
+          <AddRailButton placement="home" />
+          <Button
+            variant="subtle"
+            color="var(--neutral)"
+            leftSection={<IconLayoutDashboard size={16} />}
+            onClick={enterEditing}
+          >
+            <Trans>Edit layout</Trans>
+          </Button>
+        </Group>
+      )}
 
       <DiscoverDetailModal
         item={detailItem}

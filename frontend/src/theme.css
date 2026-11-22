@@ -18337,11 +18337,15 @@ button.series-title:hover {
   }
 }
 
-/* Page layout editor (Home, Discover): compact section cards dragged by a grip. */
+/* Page layout editing (Home, Discover): the page stays, every section shrinks a little and is cut
+   shorter, each sits in a frame with a title strip, and a section is dragged as itself
+   (components/layout/LayoutEditSurface). --el lays the edit chrome out (0 or 1), --e is its
+   opacity, --sc the sections' scale and --w the width they are laid out at. Script sets them; the
+   shrink between views is a set of transform and clip animations, never a layout per frame. */
 .layout-edit-bar {
   position: sticky;
   top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm));
-  z-index: 5;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -18353,97 +18357,265 @@ button.series-title:hover {
   border-radius: var(--mantine-radius-md);
   background: var(--surface-2);
 }
-.layout-edit-list {
+.layout-frames {
+  --el: 0;
+  --e: 0;
+  --sc: 1;
+  --w: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-xs);
+  overflow-anchor: none;
 }
-.layout-edit-card {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-md);
-  background: var(--surface);
+.layout-frame {
   position: relative;
+  padding: 0 calc(12px * var(--el)) calc(12px * var(--el));
+  border-radius: var(--radius-hero);
+  scroll-margin-block: 96px;
 }
-.layout-edit-card[data-hidden] {
-  opacity: 0.55;
+.layout-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: inherit;
+  opacity: var(--e);
+  pointer-events: none;
+  transition:
+    border-color var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease);
 }
-.layout-edit-grip {
-  flex: 0 0 auto;
+@media (hover: hover) {
+  .layout-frames[data-editing] .layout-frame {
+    cursor: grab;
+  }
+  html:not([data-layout-carry]) .layout-frames[data-editing] .layout-frame:hover::before {
+    border-color: color-mix(in srgb, var(--brand) 65%, transparent);
+  }
+}
+.layout-frame[data-selected]::before,
+.layout-frame.is-moved::before {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.layout-frame[data-hidden] {
+  padding-bottom: 0;
+}
+.layout-frame[data-hidden]::before {
+  border-style: dashed;
+}
+.layout-frame-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: calc(48px * var(--el));
+  overflow: hidden;
+  opacity: var(--e);
+}
+.layout-frame-grip {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
-  width: 36px;
+  width: 28px;
+  height: 36px;
+  margin-inline-start: -6px;
   border: 0;
-  border-inline-end: 1px solid var(--border);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink-3);
   cursor: grab;
   touch-action: none;
-  border-start-start-radius: var(--mantine-radius-md);
-  border-end-start-radius: var(--mantine-radius-md);
 }
-.layout-edit-grip:active {
-  cursor: grabbing;
-}
-.layout-edit-grip:focus-visible,
-.layout-edit-body:focus-visible,
-.layout-edit-add:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-.layout-edit-body {
-  flex: 1;
-  min-width: 0;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  cursor: pointer;
-}
-.layout-edit-body:hover {
+.layout-frame-grip:hover {
   background: var(--surface-hover);
+  color: var(--ink);
 }
-.layout-edit-icon {
+.layout-frame-grip:focus-visible,
+.layout-edit-add:focus-visible,
+.layout-insert-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.layout-frame-icon {
   display: grid;
-  place-items: center;
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--mantine-radius-md);
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
 }
+.layout-frame-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.layout-frame[data-hidden] .layout-frame-name {
+  color: var(--ink-3);
+}
+.layout-frame[data-hidden] .layout-frame-icon {
+  opacity: 0.55;
+}
+.layout-frame-summary {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.layout-frame-end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+/* The section itself, inert, laid out wider and scaled down so it still fills the frame, then cut
+   at the row height with a fade. Its height is set from script. */
+.layout-frames[data-editing] .layout-frame-body {
+  position: relative;
+  overflow: clip;
+  contain: layout style;
+  pointer-events: none;
+  user-select: none;
+}
+.layout-frames[data-editing] .layout-frame-inner {
+  width: calc(100% / var(--w));
+  transform: scale(var(--sc));
+  transform-origin: 0 0;
+}
+.layout-frame-body[data-capped]::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 72px;
+  background: linear-gradient(transparent, var(--app-bg));
+}
+.layout-frames[data-editing] .layout-frame-inner:empty::after {
+  content: attr(data-empty);
+  display: block;
+  padding: 0 2px 4px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+/* The frame's title strip names the section, so the section's own heading would say it twice.
+   data-trim is set by the shrink at the moment the strip takes over. */
+.layout-frames[data-trim] .layout-frame[data-own-heading] .layout-frame-inner > .section-header:first-child,
+.layout-frames[data-trim] .layout-frame[data-own-heading] .layout-frame-inner > :first-child > .section-header:first-child {
+  display: none;
+}
+/* While the views change, sections draw past their boxes and the animation clips them instead. */
+.layout-frame[data-shrinking] > .layout-frame-body,
+.layout-frame[data-shrinking] > .layout-frame-head {
+  overflow: visible;
+}
+.layout-frame[data-shrinking],
+.layout-frame[data-shrinking] > .layout-frame-body,
+.layout-frame[data-shrinking] > .layout-frame-body > .layout-frame-inner {
+  will-change: transform;
+}
+/* A section's width is laid out on every step of the shrink; its fixed height keeps that inside it.
+   Layout containment is on for the whole of edit mode, so a section's top margin sits in the same
+   place when the shrink measures it as while it runs. */
+.layout-frame[data-shrinking] > .layout-frame-body {
+  contain: size layout style;
+}
+.layout-frame-anchor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
 .layout-edit-badge {
-  font-size: var(--type-badge);
-  line-height: 1;
+  flex: 0 0 auto;
   padding: 3px 6px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--ink-3);
-  border: 1px solid var(--border);
+  font-size: var(--type-badge);
+  line-height: 1;
+  white-space: nowrap;
 }
 .layout-edit-badge[data-tone='brand'] {
-  color: var(--brand-fg);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+  color: var(--brand-fg);
 }
 .layout-edit-badge[data-tone='warn'] {
-  color: var(--warn);
   border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  color: var(--warn);
 }
-.layout-edit-covers {
+.layout-covers {
   display: flex;
-  gap: 4px;
   flex: 0 1 auto;
+  gap: 4px;
   overflow: hidden;
+  opacity: 0.4;
 }
-.layout-edit-covers img {
+.layout-covers img {
+  flex: 0 0 auto;
   width: 24px;
   height: 36px;
   object-fit: cover;
   border-radius: var(--mantine-radius-xs);
-  flex: 0 0 auto;
 }
 @media (max-width: 36em) {
-  .layout-edit-covers {
+  .layout-covers,
+  .layout-frame-summary {
     display: none;
+  }
+}
+/* The gap between two frames. "Add a rail here" shows while the pointer is in it. */
+.layout-insert {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: calc(14px * var(--el));
+}
+.layout-insert-button {
+  display: none;
+}
+@media (hover: hover) {
+  html:not([data-layout-carry]) .layout-insert-button {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 10px;
+    border: 1px solid color-mix(in srgb, var(--brand) 55%, transparent);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--brand-fg);
+    font: inherit;
+    font-size: var(--type-meta);
+    font-weight: 600;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease);
+  }
+  html:not([data-layout-carry]) .layout-insert::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    border-top: 1px solid color-mix(in srgb, var(--brand) 50%, transparent);
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease);
+  }
+  .layout-insert:hover .layout-insert-button,
+  .layout-insert:hover::before,
+  .layout-insert:focus-within .layout-insert-button,
+  .layout-insert:focus-within::before {
+    opacity: 1;
   }
 }
 .layout-edit-add {
@@ -18452,10 +18624,10 @@ button.series-title:hover {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  margin-top: var(--mantine-spacing-xs);
+  margin-top: 14px;
   padding: var(--mantine-spacing-sm);
   border: 1px dashed var(--border-strong);
-  border-radius: var(--mantine-radius-md);
+  border-radius: var(--radius-hero);
   background: transparent;
   color: var(--ink-3);
   font: inherit;
@@ -18463,8 +18635,107 @@ button.series-title:hover {
   cursor: pointer;
 }
 .layout-edit-add:hover {
-  color: var(--brand-fg);
   border-color: var(--brand);
+  color: var(--brand-fg);
+}
+/* Moving: the section itself lifts and follows the pointer, the others slide out of its way, and a
+   dashed slot shows where it will land. */
+html[data-layout-carry],
+html[data-layout-carry] * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+html[data-layout-carry] .layout-frame {
+  will-change: transform;
+}
+html[data-layout-carry] .layout-frame:not(.is-lifted):not(.is-dropping) {
+  transition: transform 260ms var(--ease);
+}
+.layout-frame.is-lifted,
+.layout-frame.is-dropping,
+.layout-frame.is-moved {
+  z-index: 30;
+  background: var(--app-bg);
+}
+.layout-frame.is-lifted {
+  scale: 1.012;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.45),
+    0 44px 80px -24px rgba(0, 0, 0, 0.9);
+  transition:
+    scale 180ms var(--ease),
+    box-shadow 180ms var(--ease);
+}
+.layout-frame.is-lifted::before,
+.layout-frame.is-dropping::before {
+  border-color: var(--brand);
+}
+.layout-frame.is-dropping {
+  transition:
+    transform var(--drop, 200ms) var(--ease),
+    scale var(--drop, 200ms) var(--ease),
+    box-shadow var(--drop, 200ms) var(--ease);
+}
+html[data-layout-no-anim] .layout-frame,
+html[data-layout-no-anim] .layout-drop-slot {
+  transition: none !important;
+}
+.layout-drop-slot {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  pointer-events: none;
+  border: 1.5px dashed var(--brand);
+  border-radius: var(--radius-hero);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  transition: transform 260ms var(--ease);
+}
+.layout-drop-slot[hidden] {
+  display: none;
+}
+/* A section's settings: a drill panel where the pointer was, or a bottom sheet on a phone. */
+.layout-settings-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 4px 4px 8px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.layout-settings-title {
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-body);
+  font-weight: 650;
+}
+.layout-settings-about {
+  padding: 4px 10px 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+}
+.layout-settings-heading {
+  padding: 8px 10px 2px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.layout-settings-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+.layout-settings-moves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 0 max(4px, env(safe-area-inset-bottom));
+}
+.layout-settings-sheet {
+  border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
 }
 
 /* ==========================================================================

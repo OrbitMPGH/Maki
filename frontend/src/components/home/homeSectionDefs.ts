@@ -5,6 +5,7 @@ import {
   IconDeviceTv,
   IconFlame,
   IconPlayerPlay,
+  IconPlayerTrackNext,
   IconCompass,
 } from '../../lib/icons'
 import {
@@ -36,7 +37,13 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
         label: msg`Your last five weeks`,
         description: msg`The days you read, your streak, chapters and time read, as a card in the hero.`,
       },
-      { key: 'nextUpBeside', label: msg`Next up beside the hero`, hero: true },
+      {
+        key: 'nextUpBeside',
+        label: msg`Next up`,
+        hero: true,
+        icon: IconPlayerTrackNext,
+        choices: [msg`Under the hero`, msg`Beside it`],
+      },
     ],
   },
   fromanime: {

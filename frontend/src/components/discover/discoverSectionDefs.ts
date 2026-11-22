@@ -41,6 +41,7 @@ export const DISCOVER_SECTION_DEFS: SectionRegistry = {
     icon: IconWand,
     label: DISCOVER_SECTION_LABELS.sideinterests,
     description: msg`A row for each smaller theme on your shelf.`,
+    keepHeadings: true,
   },
   cohort: {
     icon: IconUsers,

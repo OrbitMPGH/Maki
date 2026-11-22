@@ -107,6 +107,8 @@ msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, one {# CBZ generado} many {# CBZ generados} other {# CBZ generados}}"
 
 #. placeholder {0}: data.length
+#. placeholder {0}: draft.changes
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# change} other {# changes}}"
@@ -2170,7 +2172,7 @@ msgstr "{label} en la campana"
 msgid "{label} mixes languages. Every chapter from it is filed under the one you pick."
 msgstr "{label} mezcla idiomas. Todos sus capítulos se guardan con el idioma que elijas."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{label} moved to position {position} of {total}"
 msgstr "{label} se movió a la posición {position} de {total}"
@@ -2695,7 +2697,7 @@ msgstr "{pages, plural, one {# página, {name}} many {# páginas, {name}} other 
 msgid "{pages, plural, one {# page} other {# pages}}"
 msgstr "{pages, plural, one {# página} many {# páginas} other {# páginas}}"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} de {panelsTotal} paneles"
@@ -2744,6 +2746,10 @@ msgstr "{perSitting} cap. por sesión"
 #, fuzzy
 msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 msgstr "{pieces, plural, one {Se convierte en # página.} many {Se convierte en # páginas. Cada línea discontinua es un corte.} other {Se convierte en # páginas. Cada línea discontinua es un corte.}}"
+
+#: src/components/layout/SectionSettings.tsx
+msgid "{position} of {total}"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
@@ -4698,11 +4704,15 @@ msgstr "Añadir una nota"
 msgid "Add a preferred group"
 msgstr "Añadir un grupo preferido"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Add a rail"
 msgstr "Añadir una fila"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Add a rail here"
+msgstr ""
 
 #: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
@@ -6352,6 +6362,10 @@ msgstr "campana, bandeja de entrada, alertas, aviso, notificaciones en la aplica
 msgid "Below the series' upgrade cutoff"
 msgstr "Por debajo del umbral de mejora de la serie"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Beside it"
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Beside the page"
@@ -6488,7 +6502,7 @@ msgstr "Ambos"
 msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
 msgstr "Ambos bordes avanzan y el centro inferior retrocede, para leer con una mano."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Bottom"
 msgstr "Inferior"
@@ -6721,7 +6735,7 @@ msgstr "No se puede iniciar sesión con los datos guardados."
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/notes/NoteComposer.tsx
@@ -7825,6 +7839,7 @@ msgstr "Secreto de cliente"
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
@@ -9026,7 +9041,7 @@ msgstr "Popular actualmente"
 msgid "Custom"
 msgstr "Personalizado"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Custom rail"
 msgstr "Fila personalizada"
@@ -9343,7 +9358,7 @@ msgstr "Eliminar permanentemente"
 msgid "Delete profile"
 msgstr "Eliminar perfil"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #, fuzzy
 msgid "Delete rail"
@@ -9799,7 +9814,7 @@ msgstr "No quiero"
 #: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/LanguageAnnouncementModal.tsx
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9837,7 +9852,7 @@ msgstr "Doble página"
 msgid "Doujinshi"
 msgstr "Doujinshi"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Down"
 msgstr "Abajo"
@@ -10144,10 +10159,9 @@ msgstr "Descargas en pausa hasta {time}"
 msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "Las descargas prueban primero la fuente con mejor puntuación. La prioridad solo desempata."
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-msgid "Drag to reorder. Click a section to change it."
-msgstr "Arrastra para reordenar. Haz clic en una sección para cambiarla."
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Drag a section to move it. Select one to change it."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10359,6 +10373,7 @@ msgstr "Editar metadatos"
 msgid "Edit note"
 msgstr "Editar nota"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Edit rail"
@@ -10410,7 +10425,7 @@ msgstr "Editada localmente"
 msgid "Edited locally, so updates from {repositoryName} no longer apply. Replace it from the repository panel to follow it again."
 msgstr "Editada localmente, así que ya no se aplican las actualizaciones de {repositoryName}. Sustitúyela desde el panel de repositorios para volver a seguirla."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Editing layout"
 msgstr "Editando diseño"
@@ -10956,7 +10971,7 @@ msgstr "Biblioteca existente"
 msgid "Existing series"
 msgstr "Series existentes"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Exit editing"
 msgstr "Salir del modo de edición"
@@ -12452,7 +12467,7 @@ msgstr "Ayuda a Kavita y a otros lectores a agrupar y nombrar los capítulos."
 msgid "Helps Kavita group these files with later downloads."
 msgstr "Ayuda a Kavita a agrupar estos archivos con las descargas posteriores."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Hero"
 msgstr "Destacado"
@@ -12469,7 +12484,7 @@ msgstr "Pausa"
 msgid "Hid {seriesTitle}. It comes back when you finish a new season."
 msgstr "Se ocultó {seriesTitle}. Volverá cuando termines una temporada nueva."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12517,10 +12532,15 @@ msgstr "Oculto o descartado"
 msgid "Hidden while progression is switched off."
 msgstr "Oculto mientras el seguimiento de lectura esté desactivado."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hide"
 msgstr "Ocultar"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Hide {label}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14118,12 +14138,12 @@ msgstr "Año más reciente"
 msgid "Layout"
 msgstr "Diseño"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Layout saved"
 msgstr "Diseño guardado"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Lead with a hero"
 msgstr "Empezar con un destacado"
@@ -15863,6 +15883,7 @@ msgstr "Más sin leer"
 msgid "Motion"
 msgstr "Movimiento"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15871,7 +15892,7 @@ msgstr "Movimiento"
 msgid "Move"
 msgstr "Mover"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "Move {label}"
 msgstr "Mover {label}"
@@ -15910,6 +15931,7 @@ msgstr "Bajar {tierLabel}"
 msgid "Move {tierLabel} up"
 msgstr "Subir {tierLabel}"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15972,6 +15994,7 @@ msgstr "Mover al principio"
 msgid "Move to top of queue"
 msgstr "Mover al principio de la cola"
 
+#: src/components/layout/SectionSettings.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15992,6 +16015,10 @@ msgstr "Los archivos movidos salen de la carpeta de origen. Los archivos que hay
 #, fuzzy
 msgid "moves onto a volume"
 msgstr "se mueve a un tomo"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Moving {movingLabel}, {movingPosition} of {total}"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -16191,7 +16218,7 @@ msgstr "Necesita búsqueda semántica."
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "Necesita que la carpeta de descargas y la biblioteca estén en el mismo sistema de archivos; si no, Maki copia."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Needs the hero."
 msgstr "Requiere el destacado."
@@ -16284,7 +16311,7 @@ msgstr "Nunca mejora"
 msgid "new"
 msgstr "nuevo"
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "New"
@@ -16527,15 +16554,11 @@ msgid "Next tier at {nextValue}"
 msgstr "Siguiente nivel en {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/home/homeSectionDefs.ts
 #: src/components/home/NextUpList.tsx
 #, fuzzy
 msgid "Next up"
 msgstr "A continuación"
-
-#: src/components/home/homeSectionDefs.ts
-#, fuzzy
-msgid "Next up beside the hero"
-msgstr "A continuación junto al destacado"
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
@@ -18178,6 +18201,10 @@ msgstr "No hay nada que sortear"
 msgid "Nothing to show"
 msgstr "Nada que mostrar"
 
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Nothing to show right now"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19336,7 +19363,7 @@ msgstr "Las páginas más anchas o más altas de 16383 px se mantienen tal cual.
 msgid "Pages with more than 8 bits per channel are kept as they are."
 msgstr "Las páginas con más de 8 bits por canal se mantienen tal cual."
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Panels"
 msgstr "Paneles"
@@ -19800,11 +19827,6 @@ msgstr "Pornográfico"
 #, fuzzy
 msgid "Portuguese (Brazil)"
 msgstr "Portugués (Brasil)"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Position"
-msgstr "Posición"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -20308,7 +20330,7 @@ msgstr "Periodo de silencio"
 msgid "Rail added"
 msgstr "Fila añadida"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Rail changes save straight away. Done saves the layout."
 msgstr "Los cambios de la fila se guardan de inmediato. «Listo» guarda el diseño."
@@ -24383,6 +24405,7 @@ msgstr "Configurar rastreadores"
 msgid "Sets the targets for files no rule covers."
 msgstr "Define los destinos de los archivos que ninguna regla cubre."
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -24394,6 +24417,10 @@ msgstr "Ajustes"
 #, fuzzy
 msgid "Settings › {tabName}"
 msgstr "Ajustes › {tabName}"
+
+#: src/components/layout/LayoutEditSurface.tsx
+msgid "Settings for {label}"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -24495,6 +24522,7 @@ msgstr "Shoujo"
 msgid "Shounen"
 msgstr "Shounen"
 
+#: src/components/layout/LayoutEditSurface.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -24655,7 +24683,7 @@ msgstr "Mostrar sus títulos más recientes en una fila en Inicio y Descubrir"
 msgid "Show them"
 msgstr "Mostrarlos"
 
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Show this section"
 msgstr "Mostrar esta sección"
@@ -26498,7 +26526,7 @@ msgstr "La última comprobación no pudo listar la serie de muestra. Puede que e
 msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
 msgstr "La última revisión de estado no encontró este archivo en el disco. Volver a vincular archivos lo encuentra si se movió o renombró."
 
-#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/LayoutEditSurface.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
 msgstr "No se pudo cargar el diseño."
@@ -27701,7 +27729,7 @@ msgid "Tools you already run"
 msgstr "Herramientas que ya usas"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Top"
 msgstr "Arriba"
@@ -28113,6 +28141,10 @@ msgstr ""
 msgid "Under minimum"
 msgstr "Por debajo del mínimo"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Under the hero"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Underscore (_)"
@@ -28419,7 +28451,7 @@ msgid "Until: {end}"
 msgstr "Hasta: {end}"
 
 #: src/components/import/ManualImport.tsx
-#: src/components/layout/SectionProperties.tsx
+#: src/components/layout/SectionSettings.tsx
 #, fuzzy
 msgid "Up"
 msgstr "Arriba"
