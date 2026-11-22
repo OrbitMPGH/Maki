@@ -1,7 +1,7 @@
 import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Group, Skeleton, Stack, Text } from '@mantine/core'
+import { Button, Group, Skeleton, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, IconBooks, IconClock, IconCompass, IconRoute, IconTarget } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { RecommendationFilters, RecommendationItem, TasteGroup, TasteView } from '../../api/hooks'
@@ -111,11 +111,26 @@ export function TasteTab() {
     (!profile || profile.seriesCount === 0) &&
     (!insights || insights.groups.length === 0)
 
+  // A query still on its first fetch is not "nothing": the fast one often lands first, and the
+  // empty state would flash until the slower two arrive.
+  const settled = !insightsLoading && !behaviourLoading && !profileLoading
+  if (nothingAtAll && !settled) {
+    return <TasteSkeleton />
+  }
+
   if (nothingAtAll) {
+    // Nothing read yet, but a shelf to describe: the portrait holding the view switch is hidden
+    // here, so the way to the shelf view is offered with the message.
+    const shelfToShow = view === 'read' && (profile?.libraryCount ?? 0) > 0
     return (
       <Stack gap="md" className="discover-tab-body">
         <Callout tone="neutral" role="alert" icon={IconAlertCircle} title={t`Nothing to profile yet`}>
           <Trans>Read a few chapters and this fills in.</Trans>
+          {shelfToShow && (
+            <Button variant="default" size="compact-sm" mt="sm" display="block" onClick={() => setView('shelf')}>
+              <Trans>Show everything you own</Trans>
+            </Button>
+          )}
         </Callout>
         <SignalsCard />
       </Stack>

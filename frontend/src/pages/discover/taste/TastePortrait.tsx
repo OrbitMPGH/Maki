@@ -86,7 +86,7 @@ export function TastePortrait({
   const { lines, fromThemes } = headline(insights, profile)
   const covers = collage(insights)
 
-  const readCount = profile?.seriesCount ?? 0
+  const readCount = formatNumber(profile?.seriesCount ?? 0)
   const shelfCount = profile?.libraryCount ?? 0
   const allCount = profile?.seriesCount ?? 0
   const lead = !profile

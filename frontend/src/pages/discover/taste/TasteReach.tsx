@@ -186,6 +186,9 @@ function ReachList({
   )
 }
 
+/** The server's popularity band limits (`TasteProfileService.PopularityBands`), for the labels. */
+const POPULARITY_BANDS = [100, 1000, 10000]
+
 /** A top-1,000 share gap below this is not worth a sentence. */
 const POPULARITY_GAP = 0.1
 
@@ -195,10 +198,11 @@ const POPULARITY_GAP = 0.1
  */
 function HowDeep({ popularity }: { popularity: TastePopularity }) {
   const { t } = useLingui()
-  const bands = [t`Top 100`, t`Top 1,000`, t`Top 10,000`, t`Deeper`]
-  const top1000 = (shares: number[]) => shares[0] + shares[1]
-  const shelfTop = top1000(popularity.shelf)
-  const readTop = top1000(popularity.read)
+  const [top100, top1000, top10000] = POPULARITY_BANDS.map((limit) => formatNumber(limit))
+  const bands = [t`Top ${top100}`, t`Top ${top1000}`, t`Top ${top10000}`, t`Deeper`]
+  const inTopThousand = (shares: number[]) => shares[0] + shares[1]
+  const shelfTop = inTopThousand(popularity.shelf)
+  const readTop = inTopThousand(popularity.read)
   const shelfPct = formatPercent(shelfTop)
   const readPct = formatPercent(readTop)
   const gap = Math.abs(shelfTop - readTop) >= POPULARITY_GAP
@@ -227,7 +231,7 @@ function HowDeep({ popularity }: { popularity: TastePopularity }) {
       {gap && (
         <Text size="sm" c="var(--ink-2)">
           <Trans>
-            {shelfPct} of your shelf is in the catalogue's top 1,000. Of what you read, {readPct}.
+            {shelfPct} of your shelf is in the catalogue's top {top1000}. Of what you read, {readPct}.
           </Trans>
         </Text>
       )}

@@ -15214,6 +15214,10 @@ a:focus-visible > .taste-cover {
   grid-template-columns: minmax(0, 1fr) minmax(0, 28rem);
   gap: 36px;
 }
+/* Too few covers for a collage: the text takes the whole card rather than leaving a blank column. */
+.taste-portrait:not(:has(.taste-portrait-collage)) {
+  grid-template-columns: minmax(0, 1fr);
+}
 .taste-portrait-main {
   display: flex;
   flex-direction: column;
@@ -15446,7 +15450,7 @@ a:focus-visible > .taste-cover {
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: 16px;
 }
-.taste-stage-foot:has(.taste-lane + .taste-lane) {
+.taste-stage-foot:has(.taste-odd):has(.taste-lane + .taste-lane) {
   grid-template-columns: minmax(16rem, 1fr) minmax(0, 2fr);
 }
 .taste-odd-text {
@@ -15647,8 +15651,10 @@ a:focus-visible > .taste-cover {
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
-.taste-read-panel > * + .taste-read-figures {
-  margin-top: max(20px, auto);
+/* The figures sit at the panel's foot (margin-top: auto); this keeps at least 20px above them when
+   the panel has no room to spare. */
+.taste-read-panel > :has(+ .taste-read-figures) {
+  margin-bottom: 20px;
 }
 .taste-read-figures span {
   display: flex;
@@ -16012,9 +16018,28 @@ a:focus-visible > .taste-cover {
   gap: 12px;
   min-width: 0;
 }
-.taste-lane + .taste-lane {
-  padding-left: 20px;
+/* Dividers sit in the column gap and the row clips anything left of its edge, so an item that
+   wraps to the start of a new row shows no stray rule, whatever the width. */
+.taste-lanes-row,
+.taste-under-row {
+  overflow: clip;
+  overflow-clip-margin: 4px;
+}
+.taste-lane,
+.taste-under-pocket {
+  position: relative;
+}
+.taste-lane::before,
+.taste-under-pocket::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
   border-left: 1px solid var(--line-soft);
+}
+.taste-under-pocket::before {
+  left: -14px;
 }
 .taste-lane-fan {
   display: flex;
@@ -16041,16 +16066,11 @@ a:focus-visible > .taste-cover {
   margin-left: -6px;
 }
 @media (max-width: 62em) {
-  .taste-stage-foot:has(.taste-lane + .taste-lane) {
+  .taste-stage-foot:has(.taste-odd):has(.taste-lane + .taste-lane) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 48em) {
-  .taste-lane + .taste-lane {
-    padding-left: 0;
-    border-left: 0;
-  }
-}
+
 
 /* The length you finish, inside the stop panel */
 .taste-length {
@@ -16104,13 +16124,10 @@ a:focus-visible > .taste-cover {
   opacity: 0.55;
 }
 .taste-length-value {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  white-space: nowrap;
-}
-.taste-length-value b {
   color: var(--ink-hi);
-  font-size: var(--type-body);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
 }
 @media (max-width: 36em) {
   .taste-length-row {
@@ -16397,10 +16414,7 @@ a:focus-visible > .taste-cover {
   gap: 10px;
   min-width: 0;
 }
-.taste-under-pocket + .taste-under-pocket {
-  padding-left: 28px;
-  border-left: 1px solid var(--line-soft);
-}
+
 .taste-under-title {
   display: flex;
   align-items: baseline;
@@ -16451,12 +16465,6 @@ a:focus-visible > .taste-cover {
   color: var(--ink-3);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-}
-@media (max-width: 62em) {
-  .taste-under-pocket + .taste-under-pocket {
-    padding-left: 0;
-    border-left: 0;
-  }
 }
 
 /* Recent feedback in two columns on the Taste tab, where it sits at the foot of a wide page */
@@ -16562,16 +16570,17 @@ a:focus-visible > .taste-cover {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* One grid for the three steps, so every bar is a share of the same track whatever its number and
+   label take up. */
 .taste-tookup-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px 10px;
   margin-top: 14px;
 }
 .taste-tookup-step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: contents;
 }
 .taste-tookup-bar {
   height: 22px;

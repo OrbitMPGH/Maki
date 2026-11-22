@@ -63,6 +63,11 @@ msgstr "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 msgstr "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 
+#. placeholder {0}: example.spanDays
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{0, plural, one {{chapters} ch. over # day} other {{chapters} ch. over # days}}"
+msgstr "{0, plural, one {{chapters} ch. over # day} other {{chapters} ch. over # days}}"
+
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
 msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
@@ -135,12 +140,13 @@ msgstr "{0, plural, one {# chapter removed} other {# chapters removed}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# chapter selected} other {# chapters selected}}"
 
+#. placeholder {0}: Math.round(row.value)
 #. placeholder {0}: chapters.length
 #. placeholder {0}: g.chapters
-#. placeholder {0}: goal.target
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #: src/pages/HealthPage.tsx
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, one {# chapter} other {# chapters}}"
@@ -2766,8 +2772,8 @@ msgid "{shelfCount, plural, one {Your most common tags, from {readCount} of your
 msgstr "{shelfCount, plural, one {Your most common tags, from {readCount} of your # series.} other {Your most common tags, from {readCount} of your # series.}}"
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "{shelfPct} of your shelf is in the catalogue's top 1,000. Of what you read, {readPct}."
-msgstr "{shelfPct} of your shelf is in the catalogue's top 1,000. Of what you read, {readPct}."
+msgid "{shelfPct} of your shelf is in the catalogue's top {top1000}. Of what you read, {readPct}."
+msgstr "{shelfPct} of your shelf is in the catalogue's top {top1000}. Of what you read, {readPct}."
 
 #: src/pages/HealthPage.tsx
 msgid "{shown, plural, one {Relink it} other {Relink all #}}"
@@ -3389,10 +3395,6 @@ msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {da
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
-
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "<0>{count}</0> chapters"
-msgstr "<0>{count}</0> chapters"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
@@ -20569,6 +20571,10 @@ msgstr "Show chapters"
 msgid "Show covers from the library"
 msgstr "Show covers from the library"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Show everything you own"
+msgstr "Show everything you own"
+
 #: src/pages/HealthPage.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
@@ -23229,16 +23235,16 @@ msgid "Top {percent}% of a page"
 msgstr "Top {percent}% of a page"
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 1,000"
-msgstr "Top 1,000"
+msgid "Top {top100}"
+msgstr "Top {top100}"
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 10,000"
-msgstr "Top 10,000"
+msgid "Top {top1000}"
+msgstr "Top {top1000}"
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 100"
-msgstr "Top 100"
+msgid "Top {top10000}"
+msgstr "Top {top10000}"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts

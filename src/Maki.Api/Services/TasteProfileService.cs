@@ -320,13 +320,20 @@ public class TasteProfileService(
             return [];
         }
 
+        // A name that is a genre on any owned series is that genre everywhere ("School Life" is
+        // both), so one facet never splits into two rows or takes its kind from whichever series
+        // came first. Adult names are left out on both sides.
+        var genreNames = shelfRows
+            .SelectMany(id => rows[id].Genres)
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .Select(g => g.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var facets = new Dictionary<string, (string Name, bool IsGenre, List<long> Ids)>(StringComparer.OrdinalIgnoreCase);
         foreach (var id in shelfRows)
         {
             var row = rows[id];
-            var genres = row.Genres.Where(g => !string.IsNullOrWhiteSpace(g) && !AdultGenres.Contains(g))
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            foreach (var genre in genres)
+            foreach (var genre in row.Genres.Where(g => !string.IsNullOrWhiteSpace(g) && !AdultGenres.Contains(g))
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 Add(genre, true, id);
             }
@@ -334,12 +341,11 @@ public class TasteProfileService(
             // Story-defining tags only: an incidental tag on an owned series says little about what
             // the reader collected it for.
             foreach (var tag in row.Tags.Where(t => !t.IsSpoiler && t.Weight is "core" or "defining")
-                         .Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase))
+                         .Select(t => t.Name)
+                         .Where(t => !string.IsNullOrWhiteSpace(t) && !AdultGenres.Contains(t) && !genreNames.Contains(t.Trim()))
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
             {
-                if (!genres.Contains(tag, StringComparer.OrdinalIgnoreCase))
-                {
-                    Add(tag, false, id);
-                }
+                Add(tag, false, id);
             }
         }
 

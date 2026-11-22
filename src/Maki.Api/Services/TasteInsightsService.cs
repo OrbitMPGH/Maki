@@ -426,7 +426,7 @@ public class TasteInsightsService(
 
         // Both views get the same picks and lanes: they set the shelf against what was read, which the
         // view switch does not change.
-        var shelfPicks = ShelfPicks(index, vocab, library, readIds, shelfState);
+        var shelfPicks = ShelfPicks(index, vocab, library, readIds, snapshot.Avoided, shelfState);
         var sideLanes = SideLanes(library, readIds, seeded.Weights);
 
         if (points.Count < TasteGroupMining.MinPoints)
@@ -497,7 +497,7 @@ public class TasteInsightsService(
     /// </summary>
     private static IReadOnlyList<TasteShelfPick> ShelfPicks(
         VectorIndex index, IReadOnlyDictionary<int, TagInfo> vocab, List<LibraryRow> library,
-        HashSet<long> readIds, ShelfState state)
+        HashSet<long> readIds, IReadOnlyDictionary<long, double> avoided, ShelfState state)
     {
         var read = new List<Point>();
         var candidates = new List<(Point Point, bool OnHold)>();
@@ -513,8 +513,10 @@ public class TasteInsightsService(
                 row.SeriesId, row.Title, SeriesDto.CoverUrlFor(row.SeriesId, row.CoverPath, row.LastMetadataRefresh),
                 row.MangaBakaId, indexRow, index.VectorAt(indexRow), null, row.Genres);
             var status = state.Status.GetValueOrDefault(row.SeriesId);
+            // A series the reader read and rated low or thumbed down is read, so it is no candidate,
+            // but it does not pull the centre or name a reason: what they disliked is not their taste.
             var wasRead = readIds.Contains(row.MangaBakaId);
-            if (wasRead)
+            if (wasRead && !avoided.ContainsKey(row.MangaBakaId))
             {
                 read.Add(point);
             }

@@ -72,6 +72,11 @@ msgstr "{0, plural, one {{1} из # файла} few {{2} из # файла} many
 msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 msgstr ""
 
+#. placeholder {0}: example.spanDays
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{0, plural, one {{chapters} ch. over # day} other {{chapters} ch. over # days}}"
+msgstr ""
+
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
 msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
@@ -155,12 +160,13 @@ msgstr "{0, plural, one {# глава удалена} few {# главы удал
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {Выбрана # глава} few {Выбраны # главы} many {Выбраны # глав} other {Выбраны # главы}}"
 
+#. placeholder {0}: Math.round(row.value)
 #. placeholder {0}: chapters.length
 #. placeholder {0}: g.chapters
-#. placeholder {0}: goal.target
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -3325,7 +3331,7 @@ msgid "{shelfCount, plural, one {Your most common tags, from {readCount} of your
 msgstr ""
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "{shelfPct} of your shelf is in the catalogue's top 1,000. Of what you read, {readPct}."
+msgid "{shelfPct} of your shelf is in the catalogue's top {top1000}. Of what you read, {readPct}."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -4088,10 +4094,6 @@ msgstr "<0>{chapters, plural, one {# глава} few {# главы} many {# гл
 #, fuzzy
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "<0>{chapters, plural, one {# глава} few {# главы} many {# глав} other {# главы}}</0> за {days, plural, one {# день чтения} few {# дня чтения} many {# дней чтения} other {# дня чтения}}<1>, в основном после <2>{hour}</2></1>. {trend}"
-
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "<0>{count}</0> chapters"
-msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -24930,6 +24932,10 @@ msgstr "Показать главы"
 msgid "Show covers from the library"
 msgstr "Показывать обложки из библиотеки"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Show everything you own"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -28181,15 +28187,15 @@ msgid "Top {percent}% of a page"
 msgstr "Верхние {percent}% страницы"
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 1,000"
+msgid "Top {top100}"
 msgstr ""
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 10,000"
+msgid "Top {top1000}"
 msgstr ""
 
 #: src/pages/discover/taste/TasteReach.tsx
-msgid "Top 100"
+msgid "Top {top10000}"
 msgstr ""
 
 #: src/api/customRails.ts

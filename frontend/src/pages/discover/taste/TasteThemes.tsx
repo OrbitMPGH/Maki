@@ -85,9 +85,12 @@ function ThemeStage({
     other: `${size} of your # series`,
   })
   return (
-    <Panel id={id} className="taste-stage" aria-live="polite">
+    <Panel id={id} className="taste-stage">
       <div className="taste-stage-head">
-        <h3 className="taste-stage-title">{group.label}</h3>
+        {/* Only the name is announced on a switch, not every cover title and pick under it. */}
+        <h3 className="taste-stage-title" aria-live="polite">
+          {group.label}
+        </h3>
         <Text span className="taste-stage-meta tnum">
           {ofYours}
         </Text>

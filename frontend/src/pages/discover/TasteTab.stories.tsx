@@ -26,6 +26,15 @@ export const Default: Story = {
     await expect(await canvas.findByText('How you read', {}, { timeout: 8000 })).toBeVisible()
     await expect(await canvas.findByRole('heading', { level: 3, name: 'Found Family + Travel' })).toBeVisible()
     await expect(await canvas.findByText('The odd one out')).toBeVisible()
+    await expect(await canvas.findByText('Outside your core')).toBeVisible()
+    await expect(await canvas.findByText('From your own shelf')).toBeVisible()
+    await expect(await canvas.findByText("More than you'd expect")).toBeVisible()
+    await expect(await canvas.findByText('How deep you go')).toBeVisible()
+    await expect(await canvas.findByText('You collect these, but rarely open them')).toBeVisible()
+    await expect(await canvas.findByText('The length you finish')).toBeVisible()
+    await expect(await canvas.findByText(/read in one or two days/)).toBeVisible()
+    await expect(await canvas.findByText('What steers your picks most')).toBeVisible()
+    await expect(await canvas.findByText('Recommendations you took up')).toBeVisible()
   },
 }
 

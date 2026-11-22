@@ -77,8 +77,9 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
             (await animeSources.ConnectedAsync(user.UserId, ct)).Count > 0;
         var likedIds = feedbackCounts.Where(x => x.Sentiment == RecommendationSentiment.Liked)
             .Select(x => x.ProviderId).ToHashSet();
-        var steering = Steering(snapshot, sources.Select(x => (Id: (long)x.MangaBakaId!.Value, x.Title, x.Rating, x.SoFar)),
-            likedIds, entries);
+        var steering = Steering(snapshot,
+            sources.Select(x => (Id: (long)x.MangaBakaId!.Value, x.Title, x.Rating, x.SoFar, x.AddedAtUtc)),
+            likedIds, entries, now);
         var recommendationAdds = await RecommendationAddsAsync(allowed, ct);
         return Ok(new
         {
@@ -136,14 +137,16 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     /// </summary>
     private static object[] Steering(
         SeedSnapshot snapshot,
-        IEnumerable<(long Id, string Title, double? Rating, double? SoFar)> shelf,
+        IEnumerable<(long Id, string Title, double? Rating, double? SoFar, DateTime? AddedAt)> shelf,
         HashSet<long> liked,
-        IReadOnlyDictionary<long, CatalogueEntry> entries)
+        IReadOnlyDictionary<long, CatalogueEntry> entries,
+        DateTime now)
     {
         var weights = snapshot.Effective.Weights;
+        // Two local copies of one MangaBaka id share a weight; the one carrying a rating explains it.
         var rows = shelf
             .GroupBy(x => x.Id)
-            .Select(g => g.First())
+            .Select(g => g.OrderBy(x => x.Rating is null).ThenBy(x => x.SoFar is null).First())
             .Where(x => weights.ContainsKey(x.Id))
             .Select(x =>
             {
@@ -152,11 +155,18 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 // the weight is the liked weight and not the rating's own, the thumbs up won and is
                 // what the card names. Otherwise the order SeedWeightService applies them in: a
                 // final rating, then a so-far rating, then the reading itself.
+                // An unrated recent add takes the larger of its add weight and its reading weight,
+                // so when the weight is the add's, the add is the reason.
                 var likedWon = liked.Contains(x.Id) &&
                     Math.Abs(weight - RecommendationFeedbackPolicy.LikedWeight) < 1e-9 &&
                     !(x.Rating is { } r && Math.Abs(r / 5.0 - weight) < 1e-9);
+                var addedWon = !likedWon && x.Rating is null && x.AddedAt is { } addedAt &&
+                    // The add weight decays by the second and the snapshot read its own clock, so
+                    // the two agree to about a millionth, not exactly.
+                    Math.Abs(RecommendationFeedbackPolicy.AddedWeight(addedAt, now) - weight) < 1e-6;
                 var (source, value) = likedWon ? ("liked", null)
                     : x.Rating is { } rating ? ("rating", (double?)rating)
+                    : addedWon ? ("added", null)
                     : x.SoFar is { } soFar ? ("sofar", soFar)
                     : liked.Contains(x.Id) ? ("liked", null)
                     : snapshot.Signals.TryGetValue(x.Id, out var signal) && signal.Completed > 0

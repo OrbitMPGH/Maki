@@ -41,8 +41,6 @@ const BINGE_SHARE = 0.5
 function LengthBars({ length, finishedCount }: { length: LengthSweetSpot; finishedCount: string }) {
   const { t } = useLingui()
   const scale = Math.max(length.finished, length.stalled) * 1.1
-  const finished = formatNumber(Math.round(length.finished))
-  const stalled = formatNumber(Math.round(length.stalled))
   return (
     <div className="taste-length">
       <div className="taste-length-head">
@@ -55,9 +53,9 @@ function LengthBars({ length, finishedCount }: { length: LengthSweetSpot; finish
         </Text>
       </div>
       {[
-        { key: 'finished', label: t`You finish`, value: length.finished, text: finished, icon: IconCircleCheck },
-        { key: 'stalled', label: t`You stall on`, value: length.stalled, text: stalled, icon: IconPlayerPause },
-      ].map(({ text: count, ...row }) => (
+        { key: 'finished', label: t`You finish`, value: length.finished, icon: IconCircleCheck },
+        { key: 'stalled', label: t`You stall on`, value: length.stalled, icon: IconPlayerPause },
+      ].map((row) => (
         <div key={row.key} className="taste-length-row" data-kind={row.key}>
           <span className="taste-length-label">
             <row.icon size={14} aria-hidden />
@@ -67,9 +65,7 @@ function LengthBars({ length, finishedCount }: { length: LengthSweetSpot; finish
             <b style={{ width: `${Math.max(2, (row.value / scale) * 100)}%` }} />
           </span>
           <span className="taste-length-value tnum">
-            <Trans>
-              <b>{count}</b> chapters
-            </Trans>
+            {plural(Math.round(row.value), { one: '# chapter', other: '# chapters' })}
           </span>
         </div>
       ))}
@@ -96,14 +92,16 @@ function StopCurve({
   const { ref: chart, width } = useElementSize()
   const gap = width > 0 ? (PIN_GAP / width) * 100 : 6
 
-  let last = -Infinity
+  // Spread left to right, then back from the right edge, so pins bunched near the end step left of
+  // each other instead of stacking at the clamp.
   const pins = [...abandoned]
     .sort((a, b) => a.measure - b.measure)
-    .map((item) => {
-      const at = Math.max(item.measure * 100, last + gap)
-      last = at
-      return { item, at: Math.min(at, 96) }
-    })
+    .map((item) => ({ item, at: item.measure * 100 }))
+  for (let i = 1; i < pins.length; i++) pins[i].at = Math.max(pins[i].at, pins[i - 1].at + gap)
+  for (let i = pins.length - 1; i >= 0; i--) {
+    const room = i === pins.length - 1 ? 96 : pins[i + 1].at - gap
+    pins[i].at = Math.max(4, Math.min(pins[i].at, room))
+  }
 
   return (
     <Panel className="taste-read-panel">
@@ -375,10 +373,13 @@ function BingeRow({ example, longest }: { example: BingeHabit['examples'][number
   const title = example.title
   const chapters = formatNumber(example.chapters)
   const weeks = Math.max(1, Math.round(example.spanDays / 7))
+  // Days under a week: "over 1 week" for a three-day run would round it up to twice its length.
   const summary =
     example.spanDays <= 2
       ? plural(example.spanDays, { one: `${chapters} ch. in # day`, other: `${chapters} ch. in # days` })
-      : plural(weeks, { one: `${chapters} ch. over # week`, other: `${chapters} ch. over # weeks` })
+      : example.spanDays < 7
+        ? plural(example.spanDays, { one: `${chapters} ch. over # day`, other: `${chapters} ch. over # days` })
+        : plural(weeks, { one: `${chapters} ch. over # week`, other: `${chapters} ch. over # weeks` })
   return (
     <Link to={`/series/${example.seriesId}`} className="taste-binge-row">
       <span className="taste-cover taste-binge-cover" aria-hidden>

@@ -137,7 +137,9 @@ public class AnimeSignalsController(
 
         // Only matches inside the reader's content ceiling count, the ones the panel can name:
         // mangaTitles was read under that ceiling.
-        var pull = enabled
+        // Skipped while a sync runs: the panel polls every two seconds then, and the pull reads the
+        // reader's whole progress and a dump row per title. It fills in on the poll after the sync.
+        var pull = enabled && !signals.IsRunning(user.UserId)
             ? await PullAsync(
                 [.. entries.Where(x => x.role == "positive" && mangaTitles.ContainsKey(x.mangaBakaId!.Value))
                     .Select(x => x.mangaBakaId!.Value)],
@@ -226,24 +228,28 @@ public class AnimeSignalsController(
         }
 
         var rows = await store.GetProfileRowsAsync([.. positive.Concat(read).Distinct()], ct);
-        var animeShares = Shares(positive);
-        var readShares = Shares(read);
+
+        // The minimums hold on the titles the dump could describe, which are the shares' own
+        // denominators, not on the ids asked for.
+        var knownAnime = positive.Distinct().Where(rows.ContainsKey).ToList();
+        var knownRead = read.Distinct().Where(rows.ContainsKey).ToList();
+        if (knownAnime.Count < MinPullAnime || knownRead.Count < MinPullRead)
+        {
+            return [];
+        }
+
+        var animeShares = Shares(knownAnime);
+        var readShares = Shares(knownRead);
         return [.. animeShares
             .Select(kv => (Genre: kv.Key, Anime: kv.Value, Read: readShares.GetValueOrDefault(kv.Key)))
             .Where(x => x.Anime > x.Read)
             .OrderByDescending(x => x.Anime - x.Read)
             .ThenBy(x => x.Genre, StringComparer.OrdinalIgnoreCase)
             .Take(3)
-            .Select(x => (object)new { genre = x.Genre, anime = x.Anime, read = x.Read, animeCount = positive.Count })];
+            .Select(x => (object)new { genre = x.Genre, anime = x.Anime, read = x.Read, animeCount = knownAnime.Count })];
 
-        Dictionary<string, double> Shares(IReadOnlyList<long> ids)
+        Dictionary<string, double> Shares(IReadOnlyList<long> known)
         {
-            var known = ids.Distinct().Where(rows.ContainsKey).ToList();
-            if (known.Count == 0)
-            {
-                return [];
-            }
-
             return known
                 .SelectMany(id => rows[id].Genres.Distinct(StringComparer.OrdinalIgnoreCase))
                 .Where(g => !string.IsNullOrWhiteSpace(g) && !AdultGenres.Contains(g))
