@@ -592,6 +592,44 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         public Task PrepareAsync() => Task.CompletedTask;
     }
 
+    /// <summary>A reader that holds every read until the test lets it go, as slow OCR would.</summary>
+    private sealed class HeldTextReader : IPageTextReader
+    {
+        public readonly TaskCompletionSource Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource Go = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Available => true;
+
+        public async Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
+        {
+            Entered.TrySetResult();
+            await Go.Task;
+            return "Join our Discord";
+        }
+
+        public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct) => ReadAsync(image, share, ct);
+
+        public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task The_idle_release_waits_for_a_search_reading_text()
+    {
+        var reader = new HeldTextReader();
+        _credits = Credits(reader);
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        var search = FoundAsync(chapters[1]);
+        await reader.Entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.False(_credits.ReleaseIfIdle(TimeSpan.Zero));
+
+        reader.Go.SetResult();
+        Assert.Equal(1, (await search).GetProperty("headPages").GetInt32());
+        Assert.True(_credits.ReleaseIfIdle(TimeSpan.Zero));
+    }
+
     [Fact]
     public async Task Chapters_carrying_the_same_credit_page_read_it_once()
     {

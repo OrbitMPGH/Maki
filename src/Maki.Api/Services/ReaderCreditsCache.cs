@@ -51,9 +51,14 @@ public sealed class ReaderCreditsCache(
     private int _peakDecoding;
     private long _lastUsedTicks;
 
+    /// <summary>Searches and probes under way, including time spent waiting on the gate, reading text or saving.</summary>
+    private int _active;
+
+    private void Touch() => Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+
     public bool ReleaseIfIdle(TimeSpan idleFor)
     {
-        if (Volatile.Read(ref _decoding) > 0 || (_results.IsEmpty && _strips.IsEmpty))
+        if (Volatile.Read(ref _active) > 0 || Volatile.Read(ref _decoding) > 0 || (_results.IsEmpty && _strips.IsEmpty))
         {
             return false;
         }
@@ -63,7 +68,15 @@ public sealed class ReaderCreditsCache(
             return false;
         }
 
-        _results.Clear();
+        // A shared run outlives the requests that cancelled out of it; keep it for whoever joins next.
+        foreach (var entry in _results)
+        {
+            if (!entry.Value.IsValueCreated || entry.Value.Value.IsCompleted)
+            {
+                _results.TryRemove(entry);
+            }
+        }
+
         _strips.Clear();
         while (_stripOrder.TryDequeue(out _))
         {
@@ -105,7 +118,23 @@ public sealed class ReaderCreditsCache(
             return (CreditPages.None, false);
         }
 
-        Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+        Interlocked.Increment(ref _active);
+        Touch();
+        try
+        {
+            return await SearchAppliedAsync(chapter, references, ct, parallelism);
+        }
+        finally
+        {
+            Touch();
+            Interlocked.Decrement(ref _active);
+        }
+    }
+
+    private async Task<(CreditPages Found, bool Failed)> SearchAppliedAsync(
+        ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references, CancellationToken ct,
+        int parallelism)
+    {
 
         // With no neighbours only the bank can find anything.
         var usable = references.Where(Usable).ToList();
@@ -130,8 +159,17 @@ public sealed class ReaderCreditsCache(
         var run = _results.GetOrAdd(key, _ =>
         {
             var pace = new Pace { Sequential = parallelism == 1 };
-            return new PacedRun(pace, () =>
-                RunAsync(chapter, usable, parallelism > 0 ? parallelism : ImageWorkGate.Parallelism, pace));
+            return new PacedRun(pace, async () =>
+            {
+                try
+                {
+                    return await RunAsync(chapter, usable, parallelism > 0 ? parallelism : ImageWorkGate.Parallelism, pace);
+                }
+                finally
+                {
+                    Touch();
+                }
+            });
         });
         // A reader that joins the scan's run is waiting on it, so the edges still to load go side by side.
         if (parallelism != 1 && run is PacedRun joined)
@@ -189,6 +227,21 @@ public sealed class ReaderCreditsCache(
     /// once they load); null when a page could not be read, so it cannot tell.
     /// </summary>
     public async Task<bool?> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
+    {
+        Interlocked.Increment(ref _active);
+        Touch();
+        try
+        {
+            return await ProbeTextAsync(slice, ct);
+        }
+        finally
+        {
+            Touch();
+            Interlocked.Decrement(ref _active);
+        }
+    }
+
+    private async Task<bool?> ProbeTextAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
     {
         if (!text.Available || ComicFile.IsPdf(slice.ArchivePath))
         {
