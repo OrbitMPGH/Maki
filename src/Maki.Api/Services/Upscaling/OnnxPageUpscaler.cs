@@ -102,15 +102,15 @@ public sealed class OnnxPageUpscaler(
         }
 
         var (source, skip) = await ImageWorkGate.RunAsync(
-            () => Task.FromResult(ImageCodec.DecodeForUpscale(page)), ImageWorkGate.Weigh(page), ct);
+            () => Task.FromResult(ImageCodec.DecodeForUpscale(page, preserveGrey: true)), ImageWorkGate.Weigh(page), ct);
         if (source is null)
         {
             logger.LogDebug("Skipped upscaling a page with {Model}: {Reason}", model, skip);
             return PendingUpscale.Done(UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable));
         }
 
-        var grey = UpscalePixels.IsGreyscale(source.Pixels);
-        var luma = grey && UpscalePixels.IsExactGrey(source.Pixels);
+        var grey = source.Bands == 1 || UpscalePixels.IsGreyscale(source.Pixels);
+        var luma = source.Bands == 1 || (grey && UpscalePixels.IsExactGrey(source.Pixels));
         var options = await UpscaleOptions.LoadAsync(settings, ct);
         var threads = options.Threads;
         if (!grey && options.JpegXl && ImageCodec.FitsJpegXl(source.Width * info.OutputScale, source.Height * info.OutputScale)
@@ -127,10 +127,10 @@ public sealed class OnnxPageUpscaler(
         Raster source, UpscaleModelInfo info, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
         UpscaleRun run, CancellationToken ct)
     {
-        StitchedPage stitched;
+        NativeStitchedPage stitched;
         try
         {
-            stitched = await Task.Run(() => Run(source, info, threads, luma, ct, run), ct);
+            stitched = await Task.Run(() => RunNative(source, info, threads, luma, ct, run), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -241,44 +241,51 @@ public sealed class OnnxPageUpscaler(
     }
 
     private async Task<UpscaleResult> FinishAsync(
-        Raster source, StitchedPage stitched, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
+        Raster source, NativeStitchedPage stitched, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
         UpscaleRun run, CancellationToken ct)
     {
-        if (run.NarrowNow)
-        {
-            threads = UpscaleRun.NarrowWorkers(threads);
-        }
-
-        // The slot a streamed page holds from its first strip to its last, taken before the colour pass so the next
-        // page's first strip never gets in first: its encode then starts after this one, as when every encode ran
-        // in its page's finish, and its tiles carry on meanwhile.
-        await _encoderSlot.WaitAsync(ct);
         try
         {
-            var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
-            if (luma)
+            if (run.NarrowNow)
             {
-                return UpscaleResult.Ready(await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(ImageCodec.EncodeUpscaledGrey(stitched.Pixels, stitched.Width, stitched.Height)),
-                    outputWeight, ct));
+                threads = UpscaleRun.NarrowWorkers(threads);
             }
 
-            UpscalePixels.TakeColourFrom(stitched.Pixels, stitched.Width, stitched.Height, source.Pixels, source.Width,
-                source.Height, threads);
-            jpegXl = jpegXl && (run.JpegXl?.Invoke() ?? true);
-            var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey, jpegXl)),
-                outputWeight, ct);
-            return UpscaleResult.Ready(encoded);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogInformation(ex, "Encoding an upscaled page from {Model} failed", model);
-            return UpscaleResult.Failed(UpscaleReasons.EncodeFailed);
+            // The slot a streamed page holds from its first strip to its last, taken before the colour pass so the next
+            // page's first strip never gets in first: its encode then starts after this one, as when every encode ran
+            // in its page's finish, and its tiles carry on meanwhile.
+            await _encoderSlot.WaitAsync(ct);
+            try
+            {
+                var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
+                if (luma)
+                {
+                    return UpscaleResult.Ready(await ImageWorkGate.RunAsync(
+                        () => Task.FromResult(ImageCodec.EncodeUpscaledGrey(stitched.Buffer, stitched.ByteLength, stitched.Width, stitched.Height)),
+                        outputWeight, ct));
+                }
+
+                UpscalePixels.TakeColourFrom(stitched.Buffer, stitched.ByteLength, stitched.Width, stitched.Height, source.Pixels,
+                    source.Width, source.Height, threads);
+                jpegXl = jpegXl && (run.JpegXl?.Invoke() ?? true);
+                var encoded = await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Buffer, stitched.ByteLength, stitched.Width, stitched.Height, grey, jpegXl)),
+                    outputWeight, ct);
+                return UpscaleResult.Ready(encoded);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogInformation(ex, "Encoding an upscaled page from {Model} failed", model);
+                return UpscaleResult.Failed(UpscaleReasons.EncodeFailed);
+            }
+            finally
+            {
+                _encoderSlot.Release();
+            }
         }
         finally
         {
-            _encoderSlot.Release();
+            stitched.Dispose();
         }
     }
 
@@ -362,6 +369,32 @@ public sealed class OnnxPageUpscaler(
         var page = new StitchedPage(new byte[width * height * bands], width, height, bands);
         RunInto(page, bands, source, info, threads, run ?? UpscaleRun.Default, ct);
         return page;
+    }
+
+    private NativeStitchedPage RunNative(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct,
+        UpscaleRun run)
+    {
+        var scale = info.OutputScale;
+        var width = source.Width * scale;
+        var height = source.Height * scale;
+        var bands = luma ? 1 : 3;
+        var byteLength = (long)width * height * bands;
+        if (byteLength > Array.MaxLength)
+        {
+            throw new InvalidDataException("The upscaled page does not fit in one buffer.");
+        }
+
+        var page = new NativeStitchedPage(width, height, bands);
+        try
+        {
+            RunInto(page, bands, source, info, threads, run, ct);
+            return page;
+        }
+        catch
+        {
+            page.Dispose();
+            throw;
+        }
     }
 
     private void RunInto(
@@ -559,8 +592,26 @@ public sealed class OnnxPageUpscaler(
     private static byte? FlatValue(Raster source, UpscaleTile tile)
     {
         var pixels = source.Pixels;
-        var first = tile.SourceY(0, source.Height) * source.Stride + tile.SourceX(0, source.Width) * 3;
+        var bands = source.Bands;
+        var first = tile.SourceY(0, source.Height) * source.Stride + tile.SourceX(0, source.Width) * bands;
         var value = pixels[first];
+        if (bands == 1)
+        {
+            for (var y = 0; y < tile.ContextHeight; y++)
+            {
+                var row = tile.SourceY(y, source.Height) * source.Stride;
+                for (var x = 0; x < tile.ContextWidth; x++)
+                {
+                    if (pixels[row + tile.SourceX(x, source.Width)] != value)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            return value;
+        }
+
         for (var y = 0; y < tile.ContextHeight; y++)
         {
             var row = tile.SourceY(y, source.Height) * source.Stride;
@@ -612,9 +663,27 @@ public sealed class OnnxPageUpscaler(
     private static byte? FlatAround(Raster source, int x, int y)
     {
         var pixels = source.Pixels;
-        var value = pixels[y * source.Stride + x * 3];
+        var bands = source.Bands;
+        var value = pixels[y * source.Stride + x * bands];
         var bottom = Math.Min(source.Height - 1, y + 1);
         var right = Math.Min(source.Width - 1, x + 1);
+        if (bands == 1)
+        {
+            for (var ny = Math.Max(0, y - 1); ny <= bottom; ny++)
+            {
+                var row = ny * source.Stride;
+                for (var nx = Math.Max(0, x - 1); nx <= right; nx++)
+                {
+                    if (pixels[row + nx] != value)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            return value;
+        }
+
         for (var ny = Math.Max(0, y - 1); ny <= bottom; ny++)
         {
             var row = ny * source.Stride;
@@ -731,15 +800,34 @@ public sealed class OnnxPageUpscaler(
             var w = tile.ContextWidth;
             var h = tile.ContextHeight;
             var plane = w * h;
+            var bands = source.Bands;
             for (var x = 0; x < w; x++)
             {
-                _columns[x] = tile.SourceX(x, source.Width) * 3;
+                _columns[x] = tile.SourceX(x, source.Width) * bands;
             }
 
             var pixels = source.Pixels;
             if (_halfInput is not null)
             {
                 var halves = MemoryMarshal.Cast<Float16, Half>(_halfInput.AsSpan(0, plane * 3));
+                if (bands == 1)
+                {
+                    for (var y = 0; y < h; y++)
+                    {
+                        var row = tile.SourceY(y, source.Height) * source.Stride;
+                        var o = y * w;
+                        for (var x = 0; x < w; x++)
+                        {
+                            var v = HalfLevels[pixels[row + _columns[x]]];
+                            halves[o + x] = v;
+                            halves[plane + o + x] = v;
+                            halves[2 * plane + o + x] = v;
+                        }
+                    }
+
+                    return;
+                }
+
                 for (var y = 0; y < h; y++)
                 {
                     var row = tile.SourceY(y, source.Height) * source.Stride;
@@ -757,6 +845,24 @@ public sealed class OnnxPageUpscaler(
             }
 
             var floats = _floatInput.AsSpan(0, plane * 3);
+            if (bands == 1)
+            {
+                for (var y = 0; y < h; y++)
+                {
+                    var row = tile.SourceY(y, source.Height) * source.Stride;
+                    var o = y * w;
+                    for (var x = 0; x < w; x++)
+                    {
+                        var v = FloatLevels[pixels[row + _columns[x]]];
+                        floats[o + x] = v;
+                        floats[plane + o + x] = v;
+                        floats[2 * plane + o + x] = v;
+                    }
+                }
+
+                return;
+            }
+
             for (var y = 0; y < h; y++)
             {
                 var row = tile.SourceY(y, source.Height) * source.Stride;
@@ -962,6 +1068,60 @@ public sealed class OnnxPageUpscaler(
 
         public void Stopped()
         {
+        }
+    }
+
+    private sealed unsafe class NativeStitchedPage : IStitchTarget, IDisposable
+    {
+        private IntPtr _buffer;
+
+        public NativeStitchedPage(int width, int height, int bands)
+        {
+            Width = width;
+            Height = height;
+            Bands = bands;
+            ByteLength = (long)width * height * bands;
+            _buffer = Marshal.AllocHGlobal((nint)ByteLength);
+        }
+
+        public IntPtr Buffer => _buffer;
+        public long ByteLength { get; }
+        public int Width { get; }
+        public int Height { get; }
+        public int Bands { get; }
+
+        public void Planned(IReadOnlyList<UpscaleTile> tiles)
+        {
+        }
+
+        public Span<byte> Row(int y) => new((byte*)_buffer + (long)y * Width * Bands, Width * Bands);
+
+        public void Stitched(UpscaleTile tile)
+        {
+        }
+
+        public void Stopped()
+        {
+        }
+
+        public void Dispose()
+        {
+            var ptr = Interlocked.Exchange(ref _buffer, IntPtr.Zero);
+            if (ptr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+
+            GC.SuppressFinalize(this);
+        }
+
+        ~NativeStitchedPage()
+        {
+            var ptr = Interlocked.Exchange(ref _buffer, IntPtr.Zero);
+            if (ptr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
     }
 

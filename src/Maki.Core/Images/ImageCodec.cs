@@ -433,7 +433,7 @@ public static class ImageCodec
     /// become sRGB, and the result always has 3 bands. The output is untagged sRGB, so a page in
     /// another profile (Adobe RGB colour pages) has to be converted here or it shows washed out.
     /// </summary>
-    public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source)
+    public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source, bool preserveGrey = false)
     {
         try
         {
@@ -463,6 +463,12 @@ public static class ImageCodec
             using var converted = Raster.ToSrgb(flat);
             // A grey profile converts to three bands a level apart, which would lose the one-band path.
             using var srgb = flat.Bands == 1 && converted.Bands > 1 ? converted.ExtractBand(1) : converted.Copy();
+            if (preserveGrey && srgb.Bands == 1)
+            {
+                using var greyBytes = srgb.Format == Enums.BandFormat.Uchar ? srgb.Copy() : srgb.Cast(Enums.BandFormat.Uchar);
+                return (Raster.Wrap(greyBytes.Width, greyBytes.Height, 1, greyBytes.WriteToMemory<byte>()), null);
+            }
+
             using var rgb = srgb.Bands switch
             {
                 1 => srgb.Bandjoin(srgb, srgb),
@@ -604,9 +610,48 @@ public static class ImageCodec
         return EncodeBands(pixels, width, height, bands);
     }
 
+    public static UpscaledImage EncodeUpscaled(IntPtr rgb, long byteLength, int width, int height, bool grey, bool jpegXl = false)
+    {
+        if (grey)
+        {
+            var pixels = (long)width * height;
+            UpscalePixels.FoldToSingleBandInPlace(rgb, pixels);
+            return EncodeBands(rgb, (ulong)pixels, width, height, 1);
+        }
+
+        if (jpegXl && FitsJpegXl(width, height))
+        {
+            try
+            {
+                return new UpscaledImage(JpegXl.Encode(rgb, byteLength, width, height, 3, UpscaledJpegXlDistance, UpscaledJpegXlEffort),
+                    "jxl", width, height, 3);
+            }
+            catch (JpegXlException)
+            {
+            }
+        }
+
+        return EncodeBands(rgb, (ulong)byteLength, width, height, 3);
+    }
+
+    public static UpscaledImage EncodeUpscaledGrey(IntPtr band, long byteLength, int width, int height) =>
+        EncodeBands(band, (ulong)byteLength, width, height, 1);
+
     /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool, bool)"/>.</summary>
     public static UpscaledImage EncodeUpscaledGrey(byte[] band, int width, int height) =>
         EncodeBands(band, width, height, 1);
+
+    private static UpscaledImage EncodeBands(IntPtr pixels, ulong byteLength, int width, int height, int bands)
+    {
+        var grey = bands == 1;
+        using var raw = VipsImage.NewFromMemory(pixels, byteLength, width, height, bands, Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: grey ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
+        return Math.Max(width, height) > MaxWebpEdge
+            ? new UpscaledImage(image.JpegsaveBuffer(q: 90, subsampleMode: Enums.ForeignSubsample.On,
+                keep: Enums.ForeignKeep.None), "jpg", width, height, bands)
+            : new UpscaledImage(image.WebpsaveBuffer(q: grey ? UpscaledGreyQuality : UpscaledColourQuality,
+                effort: UpscaledWebpEffort, smartSubsample: false, keep: Enums.ForeignKeep.None), "webp", width, height, bands);
+    }
 
     private static UpscaledImage EncodeBands(byte[] pixels, int width, int height, int bands)
     {

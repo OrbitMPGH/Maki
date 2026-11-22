@@ -74,6 +74,27 @@ public static class JpegXl
         }
     }
 
+    /// <inheritdoc cref="Encode(byte[], int, int, int, float, int)"/>
+    public static byte[] Encode(IntPtr pixels, long byteLength, int width, int height, int bands, float distance, int effort)
+    {
+        if (bands is not (1 or 3)) throw new ArgumentOutOfRangeException(nameof(bands), bands, "1 or 3");
+        if ((long)width * height * bands > byteLength) throw new ArgumentException("Fewer pixels than the size says.", nameof(pixels));
+        EnsureAvailable();
+
+        var encoder = CreateEncoder(width, height, bands, distance, effort, out var settings);
+        try
+        {
+            var format = new PixelFormat((uint)bands, TypeUint8, 0, 0);
+            Check(JxlEncoderAddImageFrame(settings, ref format, pixels, (nuint)((long)width * height * bands)), "JxlEncoderAddImageFrame");
+            JxlEncoderCloseInput(encoder);
+            return Drain(encoder, Math.Max(64 * 1024, width * height / 4));
+        }
+        finally
+        {
+            JxlEncoderDestroy(encoder);
+        }
+    }
+
     /// <summary>
     /// <see cref="Encode"/> with the pixels pulled from <paramref name="rows"/> as libjxl needs them, so the
     /// whole image never sits in one buffer, and libjxl keeps no copy of it either. libjxl asks on the
@@ -661,6 +682,7 @@ public static class JpegXl
     [DllImport(Library)] private static extern int JxlEncoderSetFrameDistance(IntPtr settings, float distance);
     [DllImport(Library)] private static extern int JxlEncoderFrameSettingsSetOption(IntPtr settings, int option, long value);
     [DllImport(Library)] private static extern int JxlEncoderAddImageFrame(IntPtr settings, ref PixelFormat format, [In] byte[] buffer, nuint size);
+    [DllImport(Library)] private static extern int JxlEncoderAddImageFrame(IntPtr settings, ref PixelFormat format, IntPtr buffer, nuint size);
     [DllImport(Library)] private static extern int JxlEncoderAddChunkedFrame(IntPtr settings, int isLastFrame, ChunkedSource source);
     [DllImport(Library)] private static extern int JxlEncoderSetOutputProcessor(IntPtr encoder, OutputProcessor processor);
     [DllImport(Library)] private static extern int JxlEncoderFlushInput(IntPtr encoder);

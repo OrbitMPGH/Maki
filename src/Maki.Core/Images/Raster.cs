@@ -61,12 +61,15 @@ public sealed class Raster
         get
         {
             var o = Offset(x, y);
-            return new Rgba(Pixels[o], Pixels[o + 1], Pixels[o + 2], Bands == 4 ? Pixels[o + 3] : (byte)255);
+            return Bands == 1
+                ? new Rgba(Pixels[o], Pixels[o], Pixels[o], 255)
+                : new Rgba(Pixels[o], Pixels[o + 1], Pixels[o + 2], Bands == 4 ? Pixels[o + 3] : (byte)255);
         }
         set
         {
             var o = Offset(x, y);
             Pixels[o] = value.R;
+            if (Bands == 1) return;
             Pixels[o + 1] = value.G;
             Pixels[o + 2] = value.B;
             if (Bands == 4) Pixels[o + 3] = value.A;
