@@ -56,7 +56,16 @@ public class SearchController(
             return BadRequest();
         }
 
-        var results = await source.SearchAsync(query, ct);
+        IReadOnlyList<SourceSeriesResult> results;
+        try
+        {
+            results = await source.SearchAsync(query, ct);
+        }
+        catch (SourceProxyException ex)
+        {
+            logger.LogWarning("Search on {Source} failed at its proxy: {Message}", source.Name, ex.Message);
+            return this.BadGateway(localizer, "error.search.sourceProxyFailed", new { source = source.DisplayName });
+        }
 
         // Source CDNs often block hotlinking (e.g. MangaPill requires its own Referer,
         // which a browser <img> can't send), so covers are rewritten through our proxy.

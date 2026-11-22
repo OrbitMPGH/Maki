@@ -2581,6 +2581,11 @@ msgstr "Proxies that need a username and password are not supported yet"
 msgid "error.settings.sourceProxyInUse"
 msgstr "Turn the proxy off for every source before removing its address"
 
+#. {source} is a site's name and is never translated.
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.sourceProxyFailed"
+msgstr "{source} goes through a proxy that could not be reached or refused the request"
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.sourceProxyUnreachable"
 msgstr "Nothing answered at the proxy's address"

@@ -3712,6 +3712,12 @@ msgstr ""
 msgid "error.settings.sourceProxyInUse"
 msgstr ""
 
+#. {source} is a site's name and is never translated.
+#. English: {source} goes through a proxy that could not be reached or refused the request
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.sourceProxyFailed"
+msgstr ""
+
 #. English: Nothing answered at the proxy's address
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.sourceProxyUnreachable"
