@@ -44,7 +44,8 @@ public sealed class OnnxPageUpscaler(
 
     /// <summary>
     /// Model metadata: the output is already cropped by this many source px per side of the context
-    /// tile (Maki 2x, built by <c>distribution/upscale-models/crop_maki_2x.py</c>). Absent means 0.
+    /// tile (Maki 2x and Maki 2x HQ, built by <c>distribution/upscale-models/crop_maki_2x.py</c> and
+    /// <c>crop_maki_2x_hq.py</c>). Absent means 0.
     /// The crop is baked into the file for one pad, so it may not exceed <see cref="UpscaleTiling.ContextPad"/>.
     /// </summary>
     internal const string ContextCropKey = "maki.context_crop";
