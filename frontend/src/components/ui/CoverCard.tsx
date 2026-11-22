@@ -7,7 +7,7 @@ import {
 } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { readingStatusVisual, seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { coverSrcSet, COVER_CARD_SIZES } from '../../lib/coverSrcSet'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
@@ -74,7 +74,7 @@ export const CoverCard = memo(function CoverCard({
   )
   // The "Series cards" setting moves reading from the ring round the disc onto the bar. With nothing
   // tracking reading the bar has nothing to add, so it stays a download bar.
-  const readsOnBar = progressMode === 'reading' && read !== null
+  const readsOnBar = progressMode === 'reading' && total > 0 && read !== null
   const { readChapterCount, newChapterCount = 0 } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
@@ -110,12 +110,16 @@ export const CoverCard = memo(function CoverCard({
   const showsRead = readPct !== null && readPct > 0
   const readThrough = showsRead && unread === 0
   // On the bar, reading is drawn as a share of the whole series, so it can pass what is downloaded.
-  const readOfTotal = readsOnBar && total > 0 && read > 0 ? Math.min(100, (read / total) * 100) : 0
-  const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
+  const readOfTotal = readsOnBar ? Math.min(100, (read / total) * 100) : 0
+  const readTip = progressMode === 'reading' && series.readingStatus
+    ? renderLabel(readingStatusVisual(series.readingStatus).label)
+    : showsRead
+      ? unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
+      : null
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
   const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
-  const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
+  const statusTip = readTip ? t`${statusOnly}. ${readTip}` : statusOnly
 
   // The bar's numbers on hover, read included whenever reading is tracked.
   const barTip =

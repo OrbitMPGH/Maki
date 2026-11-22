@@ -2476,17 +2476,20 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-bar-fill[data-complete] {
   background: var(--ok);
 }
-/* Reading on the bar (the "Series cards" setting set to Bar, with reading tracked): faint accent is
-   downloaded and unread, solid accent is read, and the whole bar turns green once every chapter is
-   read. Otherwise the bar stays downloads: accent, then green when all are on disk. */
-.cover-bar-read {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: var(--radius-pill);
-  background: var(--brand);
+/* Bar mode keeps both fills visible even when they reach the same point. */
+.cover-bar[data-reading] {
+  height: 7px;
 }
 .cover-bar[data-reading] .cover-bar-fill {
-  background: color-mix(in srgb, var(--brand) 42%, transparent);
+  height: 3px;
+  background: color-mix(in srgb, var(--brand) 65%, transparent);
+}
+.cover-bar-read {
+  position: absolute;
+  inset: auto auto 0 0;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
 }
 .cover-bar[data-finished] .cover-bar-read {
   background: var(--ok);
