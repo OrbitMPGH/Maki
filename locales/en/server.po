@@ -2595,6 +2595,10 @@ msgstr "Nothing answered at the proxy's address"
 msgid "error.settings.sourceProxyRejected"
 msgstr "The proxy answered but could not reach {source}"
 
+#. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.
+msgid "error.settings.sourceProxySiteTimeout"
+msgstr "Nothing came back from {source} through the proxy within 20 seconds"
+
 #. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.sourceProxyFlareSolverr"

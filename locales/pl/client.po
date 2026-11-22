@@ -26850,6 +26850,10 @@ msgstr ""
 msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
 msgstr ""
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}. Maki could not tell whether it refuses private addresses."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "The push service did not accept the test notification."

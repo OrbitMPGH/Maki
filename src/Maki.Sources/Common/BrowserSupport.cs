@@ -326,9 +326,13 @@ internal static class BrowserSupport
     /// <summary>
     /// The options for a context on <paramref name="route"/>: a proxied route sets the context's
     /// proxy (no relaunch, and the launch flags stay as they are); a direct one sets nothing.
+    /// <c>&lt;-loopback&gt;</c> drops Chromium's implicit bypass, which would otherwise send loopback
+    /// and link-local destinations straight from Maki's network instead of through the proxy.
     /// </summary>
     public static BrowserContextOptions? ContextOptions(ProxyRoute route) =>
-        route.Proxy is { } proxy ? new BrowserContextOptions { ProxyServer = proxy.GetLeftPart(UriPartial.Authority) } : null;
+        route.Proxy is { } proxy
+            ? new BrowserContextOptions { ProxyServer = proxy.GetLeftPart(UriPartial.Authority), ProxyBypassList = ["<-loopback>"] }
+            : null;
 
     /// <summary>
     /// A navigation that failed at the proxy, as the same exception Maki's own clients throw, or
@@ -341,15 +345,7 @@ internal static class BrowserSupport
             return null;
         }
 
-        SourceProxyFailure? failure = ex.Message switch
-        {
-            var m when m.Contains("ERR_PROXY_CONNECTION_FAILED", StringComparison.Ordinal) => SourceProxyFailure.Unreachable,
-            var m when m.Contains("ERR_TUNNEL_CONNECTION_FAILED", StringComparison.Ordinal) ||
-                       m.Contains("ERR_PROXY_AUTH", StringComparison.Ordinal) ||
-                       m.Contains("ERR_NO_SUPPORTED_PROXIES", StringComparison.Ordinal) => SourceProxyFailure.Rejected,
-            _ => null,
-        };
-        return failure is { } kind
+        return SourceProxyException.FromChromiumError(ex.Message) is { } kind
             ? new SourceProxyException(sourceName, kind, ex, $"{sourceName}: the browser could not go through the proxy {route.Fingerprint}: {ex.Message}")
             : null;
     }

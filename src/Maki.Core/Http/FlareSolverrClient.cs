@@ -90,6 +90,7 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
                 // FlareSolverr answers its own failures (a proxy it cannot reach, a timeout) with 500
                 // and the reason in the JSON envelope; keep the reason rather than just the status.
                 var failure = await ReadFailureAsync(response, ct);
+                ThrowIfProxyFailure(route, failure);
                 throw new HttpRequestException(
                     $"FlareSolverr failed: HTTP {(int)response.StatusCode}{(failure is null ? "" : $" ({failure})")}",
                     null, response.StatusCode);
@@ -105,6 +106,7 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 
         if (body.Status != "ok" || body.Solution is null)
         {
+            ThrowIfProxyFailure(route, body.Message);
             throw new InvalidOperationException($"FlareSolverr failed: {body.Message ?? body.Status}");
         }
 
@@ -114,6 +116,19 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             body.Solution.UserAgent ?? string.Empty,
             CookieMap(body.Solution.Cookies, new Uri(targetUrl).Host),
             body.Solution.Url);
+    }
+
+    /// <summary>
+    /// FlareSolverr's own browser failing at the source's proxy is a proxy failure like any other, so
+    /// search and the download queue name it as one instead of a generic FlareSolverr error.
+    /// </summary>
+    private static void ThrowIfProxyFailure(ProxyRoute? route, string? message)
+    {
+        if (route?.Proxy is not null && SourceProxyException.FromChromiumError(message) is { } failure)
+        {
+            throw new SourceProxyException(null, failure, null,
+                $"FlareSolverr could not go through the proxy {route.Fingerprint}: {message}");
+        }
     }
 
     private static async Task<string?> ReadFailureAsync(HttpResponseMessage response, CancellationToken ct)

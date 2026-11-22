@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Sources;
 using Maki.Core.Sources.Custom;
 using Maki.Sources.Common;
@@ -97,6 +98,62 @@ public class CustomSourceTests
 
         Assert.Equal(2, entries.Count);
         Assert.All(entries, e => Assert.Equal(e.ItemHref, e.Chapter.Url));
+    }
+
+    private sealed class BindingRecorder() : FakeHtmlFetcher(new()
+    {
+        ["/thus-the-seasons-learn-of-blue-chapter-2/"] = FakeHttpClientFactory.Fixture("silentquill-chapter.html"),
+    })
+    {
+        public List<string> Bound { get; } = [];
+
+        public override IHtmlFetcher For(string sourceName)
+        {
+            Bound.Add(sourceName);
+            return this;
+        }
+    }
+
+    // Answers a new proxy on every call, the way a save between two lookups would.
+    private sealed class ChangingProxies : ISourceProxyResolver
+    {
+        private int _calls;
+
+        public Task<ProxyRoute> ResolveAsync(string sourceName, CancellationToken ct = default) =>
+            Task.FromResult(ProxyRoute.Via(new Uri($"http://192.0.2.{Interlocked.Increment(ref _calls)}:3128")));
+    }
+
+    [Fact]
+    public void The_fetcher_is_bound_to_the_definitions_source_name()
+    {
+        var recorder = new BindingRecorder();
+
+        _ = Source(fetcher: recorder);
+
+        Assert.Equal(["custom-silentquill"], recorder.Bound);
+    }
+
+    [Fact]
+    public async Task A_chapter_page_and_its_images_share_one_route()
+    {
+        var fetcher = new BindingRecorder();
+        var routes = new List<ProxyRoute>();
+        var source = new CustomSource(SilentQuill(), fetcher, new FakeHttpClientFactory([]), new SpacingGate(TimeSpan.Zero),
+            (_, _, route) =>
+            {
+                routes.Add(route);
+                return new Dictionary<string, string>();
+            },
+            new ChangingProxies());
+        var chapter = new SourceChapter("custom-silentquill", SeriesId, "thus-the-seasons-learn-of-blue-chapter-2",
+            "Ch. 2", 2, null, null, "en", null);
+
+        await source.GetPagesAsync(chapter);
+
+        var pageRoute = Assert.Single(fetcher.Requests).Route;
+        Assert.NotNull(pageRoute);
+        Assert.NotEmpty(routes);
+        Assert.All(routes, route => Assert.Equal(pageRoute, route));
     }
 
     [Fact]

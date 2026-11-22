@@ -1,4 +1,5 @@
 using System.Net;
+using Maki.Core.Http.Proxy;
 
 namespace Maki.Core.Http;
 
@@ -75,6 +76,9 @@ public class TransientRetryHandler(int maxAttempts = 3, TimeSpan? baseDelay = nu
         OperationCanceledException when ct.IsCancellationRequested => false,
         RateLimitException => false,
         HttpRequestException when IsBlockedDestination(ex) => false,
+        // A proxy that refused the request or is not configured says the same on a second try; one
+        // that did not answer may be back in a moment.
+        SourceProxyException { Failure: not SourceProxyFailure.Unreachable } => false,
         HttpRequestException => true,
         // A per-attempt timeout surfaces as a cancellation that isn't the caller's token.
         TaskCanceledException or OperationCanceledException => true,

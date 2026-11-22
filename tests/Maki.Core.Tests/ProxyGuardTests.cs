@@ -56,6 +56,32 @@ public class ProxyGuardTests
     }
 
     [Fact]
+    public async Task A_name_that_does_not_resolve_here_is_left_to_the_proxy()
+    {
+        await using var proxy = new FakeConnectProxy(status: 403);
+        using var client = new HttpClient(PublicAddressGuard.CreateHandler(proxy.Url));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("https://maki-test.invalid/"));
+
+        Assert.Equal(HttpRequestError.ProxyTunnelError, ex.HttpRequestError);
+        Assert.Equal(["CONNECT maki-test.invalid:443 HTTP/1.1"], proxy.Requests);
+    }
+
+    [Fact]
+    public async Task A_connect_to_an_address_that_is_not_the_proxy_gets_the_public_address_check()
+    {
+        await using var proxy = new FakeConnectProxy(status: 200);
+        using var client = new HttpClient(PublicAddressGuard.CreateHandler());
+        using var request = new HttpRequestMessage(HttpMethod.Connect, proxy.Url);
+        request.Headers.Host = "8.8.8.8:443";
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+
+        Assert.IsType<BlockedDestinationException>(ex.InnerException);
+        Assert.Empty(proxy.Requests);
+    }
+
+    [Fact]
     public async Task Plain_http_through_an_explicit_proxy_checks_the_target()
     {
         await using var proxy = new FakeConnectProxy(status: 204);

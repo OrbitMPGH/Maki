@@ -25,6 +25,11 @@ public sealed partial class CustomSource : ISource
     public const int MaxPages = 1000;
 
     private readonly IHtmlFetcher _fetcher;
+
+    // The route GetPagesAsync resolved, seen by every FetchAsync it awaits (the engine helpers
+    // included), so the chapter page and its images share one route. An async method's changes to an
+    // AsyncLocal never flow back to its caller, so it needs no reset.
+    private readonly AsyncLocal<ProxyRoute?> _pagesRoute = new();
     private readonly IHttpClientFactory _http;
     private readonly SpacingGate _gate;
     private readonly Func<string, string, ProxyRoute, IReadOnlyDictionary<string, string>>? _sessionHeaders;
@@ -287,6 +292,7 @@ public sealed partial class CustomSource : ISource
         // One route for the whole chapter: the clearance headers below were earned through it, and
         // every image request goes out on it.
         var route = await _proxies.ResolveAsync(Definition.SourceName, ct);
+        _pagesRoute.Value = route;
         var chapterUrl = ChapterUrl(chapter.SourceSeriesId, chapter.SourceChapterId);
         switch (Definition.Engine)
         {
@@ -416,7 +422,8 @@ public sealed partial class CustomSource : ISource
             headers.TryAdd("X-Requested-With", "XMLHttpRequest");
         }
 
-        var body = await _fetcher.FetchAsync(new HtmlFetchRequest(url.AbsoluteUri, FormBody: formBody, Headers: headers), ct);
+        var body = await _fetcher.FetchAsync(
+            new HtmlFetchRequest(url.AbsoluteUri, FormBody: formBody, Headers: headers, Route: _pagesRoute.Value), ct);
         return new CustomPage(body, url);
     }
 

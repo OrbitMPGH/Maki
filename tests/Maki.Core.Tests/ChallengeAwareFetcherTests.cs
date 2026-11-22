@@ -427,7 +427,7 @@ public class ChallengeAwareFetcherTests
         // The direct fetch starts without the proxy's cookie, so it is challenged and solves for itself.
         Assert.False(handler.TargetRequests[0].Headers.Contains("Cookie"));
         Assert.Equal(2, handler.FlarePayloads.Count);
-        Assert.Empty(fetcher.SessionHeadersFor("example.test", "https://example.test/", Lan).Keys.Where(k => k == "Cookie"));
+        Assert.DoesNotContain("Cookie", fetcher.SessionHeadersFor("example.test", "https://example.test/", Lan).Keys);
         Assert.Contains("Cookie", fetcher.SessionHeadersFor("example.test", "https://example.test/", ProxyRoute.Direct).Keys);
     }
 

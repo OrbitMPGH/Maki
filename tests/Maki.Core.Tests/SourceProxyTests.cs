@@ -309,4 +309,48 @@ public class SourceProxyTests
         Assert.Equal(5, seen.Count);
         Assert.All(seen, route => Assert.Equal("http://192.168.1.20:3128", route.Fingerprint));
     }
+
+    [Theory]
+    [InlineData("net::ERR_PROXY_CONNECTION_FAILED at https://example.test", SourceProxyFailure.Unreachable)]
+    [InlineData("net::ERR_TUNNEL_CONNECTION_FAILED at https://example.test", SourceProxyFailure.Rejected)]
+    [InlineData("net::ERR_PROXY_AUTH_UNSUPPORTED", SourceProxyFailure.Rejected)]
+    [InlineData("net::ERR_NO_SUPPORTED_PROXIES", SourceProxyFailure.Rejected)]
+    [InlineData("net::ERR_NAME_NOT_RESOLVED", null)]
+    [InlineData(null, null)]
+    public void Chromium_errors_name_proxy_failures_only(string? message, SourceProxyFailure? expected) =>
+        Assert.Equal(expected, SourceProxyException.FromChromiumError(message));
+
+    private sealed class FlareAnswer(HttpStatusCode status, string body) : HttpMessageHandler, IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(this, disposeHandler: false);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+            Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") });
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.OK)]
+    public async Task FlareSolverr_failing_at_the_proxy_is_a_proxy_failure(HttpStatusCode status)
+    {
+        var client = new FlareSolverrClient(new FlareAnswer(status,
+            """{"status":"error","message":"Error: Error solving the challenge. Message: unknown error: net::ERR_PROXY_CONNECTION_FAILED"}"""));
+
+        var ex = await Assert.ThrowsAsync<SourceProxyException>(() =>
+            client.GetAsync("http://flaresolverr.test:8191", "https://example.test/", ProxyRoute.Via(new Uri("http://192.0.2.1:3128"))));
+
+        Assert.Equal(SourceProxyFailure.Unreachable, ex.Failure);
+    }
+
+    [Fact]
+    public async Task FlareSolverr_failing_without_a_proxy_stays_a_flaresolverr_failure()
+    {
+        var client = new FlareSolverrClient(new FlareAnswer(HttpStatusCode.InternalServerError,
+            """{"status":"error","message":"net::ERR_PROXY_CONNECTION_FAILED"}"""));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
+            client.GetAsync("http://flaresolverr.test:8191", "https://example.test/", ProxyRoute.Direct));
+
+        Assert.IsNotType<SourceProxyException>(ex);
+    }
 }

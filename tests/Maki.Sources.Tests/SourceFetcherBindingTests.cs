@@ -1,5 +1,6 @@
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Custom;
 using Maki.Sources.AnimeSama;
 using Maki.Sources.CuuTruyen;
 using Maki.Sources.FlameComics;
@@ -31,11 +32,13 @@ public class SourceFetcherBindingTests
         }
     }
 
-    public static TheoryData<string> Sources() =>
+    private static readonly string[] Names =
     [
         "animesama", "cuutruyen", "flamecomics", "mangakakalot", "mangaworld", "manhwa18net", "olympus",
         "rawkuma", "teamx", "toonily", "weebcentral",
     ];
+
+    public static TheoryData<string> Sources() => new(Names);
 
     private static ISource Create(string name, IHtmlFetcher fetcher) => name switch
     {
@@ -61,5 +64,21 @@ public class SourceFetcherBindingTests
         var source = Create(name, recorder);
 
         Assert.Equal([source.Name], recorder.Bound);
+    }
+
+    // A new source that takes IHtmlFetcher has to be added above, or a forgotten For(Name) passes.
+    // CustomSource binds to its definition's name instead; CustomSourceTests checks that.
+    [Fact]
+    public void Every_source_that_takes_a_fetcher_is_checked()
+    {
+        var takesFetcher = typeof(OlympusSource).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(ISource).IsAssignableFrom(t) && t != typeof(CustomSource))
+            .Where(t => t.GetConstructors().Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(IHtmlFetcher))))
+            .Select(t => t.FullName)
+            .Order()
+            .ToList();
+        var checkedTypes = Names.Select(name => Create(name, new BindingRecorder()).GetType().FullName).Order().ToList();
+
+        Assert.Equal(takesFetcher, checkedTypes);
     }
 }

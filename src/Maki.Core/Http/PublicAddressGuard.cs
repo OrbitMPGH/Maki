@@ -159,15 +159,14 @@ public static class PublicAddressGuard
     public static SocketsHttpHandler CreateHandler(Uri? proxy = null)
     {
         var handler = new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All };
-        IWebProxy? explicitProxy = null;
         if (proxy is not null)
         {
-            explicitProxy = new WebProxy(proxy);
-            handler.Proxy = explicitProxy;
+            handler.Proxy = new WebProxy(proxy);
             handler.UseProxy = true;
         }
 
-        handler.ConnectCallback = (context, ct) => ConnectAsync(context, explicitProxy ?? HttpClient.DefaultProxy, ct);
+        // Read at connect time, so a proxy assigned to the handler after this returns is the one checked.
+        handler.ConnectCallback = (context, ct) => ConnectAsync(context, handler.Proxy ?? HttpClient.DefaultProxy, ct);
         return handler;
     }
 
@@ -192,7 +191,7 @@ public static class PublicAddressGuard
             ? [literal]
             : await Dns.GetHostAddressesAsync(endpoint.Host, ct);
 
-        if (TunnelTarget(context) is { } tunnelTarget)
+        if (TunnelTarget(context, proxy) is { } tunnelTarget)
         {
             // An HTTPS request through a proxy: the runtime opens this connection itself to send
             // CONNECT, and its request names the proxy, not the destination (that is in the Host
@@ -234,23 +233,33 @@ public static class PublicAddressGuard
     /// <summary>
     /// The destination of the runtime's own CONNECT request to a proxy, or null when this connection
     /// is not one. Such a request is addressed to the proxy (whose endpoint this connection is) and
-    /// names the destination in its Host header. No caller of these clients sends CONNECT itself.
+    /// names the destination in its Host header. It counts only when <paramref name="proxy"/> would
+    /// send that destination to this very endpoint, so a CONNECT addressed anywhere else gets the
+    /// ordinary public-address check.
     /// </summary>
-    private static Uri? TunnelTarget(SocketsHttpConnectionContext context)
+    private static Uri? TunnelTarget(SocketsHttpConnectionContext context, IWebProxy proxy)
     {
         var request = context.InitialRequestMessage;
         if (request.Method != HttpMethod.Connect || request.RequestUri is not { } proxyUri ||
-            proxyUri.Port != context.DnsEndPoint.Port ||
-            !proxyUri.IdnHost.Equals(context.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase))
+            !SameEndpoint(proxyUri, context.DnsEndPoint))
         {
             return null;
         }
 
         var authority = request.Headers.Host;
-        return !string.IsNullOrEmpty(authority) && Uri.TryCreate($"https://{authority}/", UriKind.Absolute, out var target)
+        if (string.IsNullOrEmpty(authority) || !Uri.TryCreate($"https://{authority}/", UriKind.Absolute, out var target) ||
+            target.UserInfo.Length > 0 || target.AbsolutePath != "/" || target.Query.Length > 0 || target.Fragment.Length > 0)
+        {
+            throw new BlockedDestinationException("Refusing a proxy tunnel with no valid destination");
+        }
+
+        return !proxy.IsBypassed(target) && proxy.GetProxy(target) is { } via && SameEndpoint(via, context.DnsEndPoint)
             ? target
-            : throw new BlockedDestinationException("Refusing a proxy tunnel with no destination");
+            : null;
     }
+
+    private static bool SameEndpoint(Uri uri, DnsEndPoint endpoint) =>
+        uri.Port == endpoint.Port && uri.IdnHost.Equals(endpoint.Host, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The destination of a plain-http request that goes through a proxy, or null when it does not.</summary>
     internal static Uri? ProxiedPlainHttpTarget(HttpRequestMessage request, IWebProxy proxy)
@@ -277,6 +286,9 @@ public static class PublicAddressGuard
             return;
         }
 
+        // The proxy resolves the name itself, so a name this process cannot resolve (blocked by the
+        // local resolver, or no DNS but the proxy's) is left to the proxy. A name that does resolve
+        // here to a private address is still refused.
         IPAddress[] addresses;
         try
         {
@@ -284,10 +296,10 @@ public static class PublicAddressGuard
         }
         catch (SocketException)
         {
-            throw new BlockedDestinationException($"Refusing to proxy to '{target}': host does not resolve");
+            return;
         }
 
-        if (addresses.Length == 0 || !addresses.All(IsPublic))
+        if (!addresses.All(IsPublic))
         {
             throw new BlockedDestinationException(
                 $"Refusing to proxy to '{target}': it does not resolve to a public address");
@@ -303,9 +315,7 @@ public static class PublicAddressGuard
         }
 
         var via = proxy.GetProxy(target);
-        return via != null && via != target &&
-               via.Port == context.DnsEndPoint.Port &&
-               via.IdnHost.Equals(context.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase);
+        return via != null && via != target && SameEndpoint(via, context.DnsEndPoint);
     }
 }
 

@@ -42,7 +42,12 @@ are not listed, since Suwayomi does their fetching; set a proxy in Suwayomi for 
   earned it, so a proxy that rotates its address between requests breaks the browser sources.
 - **Make the proxy refuse private addresses.** A site picks the image addresses Maki fetches, and the
   proxy looks those names up itself, so a proxy that will connect to its own network can be pointed
-  at it. tinyproxy and Squid both have rules for this. **Test** warns when the proxy accepts them.
+  at it. tinyproxy and Squid both have rules for this. **Test** asks the proxy for its own loopback
+  address and warns when it agrees. A refusal there does not prove it refuses the rest of your network.
+- **Maki still looks up the site's name itself** before sending a page or cover request through the
+  proxy, and refuses one that resolves to a private address. A name it cannot look up at all is left
+  to the proxy, so a site blocked by your DNS still works through it, but the lookup itself does not
+  go through the proxy.
 
 **Test** fetches the first chosen source's site through the proxy and, for a source that needs
 FlareSolverr, has FlareSolverr try the proxy too. A site behind Cloudflare answers that request with

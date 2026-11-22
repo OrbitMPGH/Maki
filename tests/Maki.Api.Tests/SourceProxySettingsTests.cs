@@ -99,4 +99,28 @@ public sealed class SourceProxySettingsTests : IDisposable
         Assert.Null(Saved(await controller.SetSourceProxy(new("", []), default)).Url);
         Assert.Null(await _settings.GetAsync(SettingKeys.SourceProxy));
     }
+
+    [Fact]
+    public async Task A_proxy_on_port_80_keeps_its_port_and_resolves()
+    {
+        var controller = Controller("mangafire");
+
+        var saved = Saved(await controller.SetSourceProxy(new("http://10.0.0.2:80", ["mangafire"]), default));
+
+        Assert.Equal("http://10.0.0.2:80", saved.Url);
+        Assert.Equal("http://10.0.0.2", (await new SourceProxyResolver(_settings).ResolveAsync("mangafire")).Fingerprint);
+        Assert.Equal("http://10.0.0.2:80", Saved(await controller.SetSourceProxy(new(saved.Url, saved.Sources), default)).Url);
+    }
+
+    [Fact]
+    public async Task Clearing_the_address_drops_a_removed_sources_assignment()
+    {
+        await Controller("mangafire", "custom-gone").SetSourceProxy(new("http://10.0.0.2:8888", ["mangafire", "custom-gone"]), default);
+
+        // The card lists only registered sources, so after the removal it can send nothing for custom-gone.
+        var cleared = Saved(await Controller("mangafire").SetSourceProxy(new("", []), default));
+
+        Assert.Null(cleared.Url);
+        Assert.Null(await _settings.GetAsync(SettingKeys.SourceProxy));
+    }
 }

@@ -701,6 +701,11 @@ export function SourceProxyCard() {
               message: now`The proxy reached ${name}, but it also connects to private addresses. Set it to refuse them.`,
               color: 'var(--warn)',
             })
+          } else if (result.allowsPrivate === null) {
+            notifications.show({
+              message: now`The proxy reached ${name}. Maki could not tell whether it refuses private addresses.`,
+              color: 'var(--ok)',
+            })
           } else {
             notifications.show({ message: now`The proxy reached ${name}`, color: 'var(--ok)' })
           }
@@ -720,7 +725,7 @@ export function SourceProxyCard() {
       onDiscard={discard}
       onSave={() =>
         save.mutate(
-          { url: url.trim() || null, sources: [...shown, ...chosen.filter((name) => !visible.has(name))] },
+          { url: url.trim() || null, sources: shown },
           { onSuccess: savedToast },
         )
       }

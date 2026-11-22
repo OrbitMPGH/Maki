@@ -3729,6 +3729,11 @@ msgstr ""
 msgid "error.settings.sourceProxyRejected"
 msgstr ""
 
+#. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.
+#. English: Nothing came back from {source} through the proxy within 20 seconds
+msgid "error.settings.sourceProxySiteTimeout"
+msgstr ""
+
 #. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
 #. English: The proxy works, but FlareSolverr could not go through it
 #: src/Maki.Api/Controllers/SettingsController.cs

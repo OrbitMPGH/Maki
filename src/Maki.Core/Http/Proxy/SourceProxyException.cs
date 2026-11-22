@@ -23,4 +23,18 @@ public sealed class SourceProxyException(string? sourceName, SourceProxyFailure 
     public string? SourceName { get; } = sourceName;
 
     public SourceProxyFailure Failure { get; } = failure;
+
+    /// <summary>
+    /// What a Chromium network error says about the proxy, or null when it is about something else.
+    /// Both the headless browser and FlareSolverr (also Chromium) report proxy failures this way.
+    /// </summary>
+    public static SourceProxyFailure? FromChromiumError(string? message) => message switch
+    {
+        null => null,
+        var m when m.Contains("ERR_PROXY_CONNECTION_FAILED", StringComparison.Ordinal) => SourceProxyFailure.Unreachable,
+        var m when m.Contains("ERR_TUNNEL_CONNECTION_FAILED", StringComparison.Ordinal) ||
+                   m.Contains("ERR_PROXY_AUTH", StringComparison.Ordinal) ||
+                   m.Contains("ERR_NO_SUPPORTED_PROXIES", StringComparison.Ordinal) => SourceProxyFailure.Rejected,
+        _ => null,
+    };
 }

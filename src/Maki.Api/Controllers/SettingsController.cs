@@ -2240,18 +2240,21 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
         }
 
-        var stored = SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct));
-        var kept = stored.Sources.Keys.Where(name => sourceRegistry.Find(name) is null);
-        var names = requested.Concat(kept).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        if (url is null && names.Count > 0)
+        // Clearing the URL also drops assignments of sources not registered now: the card cannot list
+        // them, so keeping them would leave a proxy nobody can turn off.
+        if (url is null && requested.Count > 0)
         {
             return this.Fail(localizer, "error.settings.sourceProxyInUse");
         }
 
+        var stored = SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct));
+        var kept = stored.Sources.Keys.Where(name => sourceRegistry.Find(name) is null);
+        var names = requested.Concat(kept).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
         var config = url is null
             ? SourceProxyConfig.Empty
             : new SourceProxyConfig(
-                [new SourceProxyConfig.Entry(SourceProxyConfig.DefaultId, url.GetLeftPart(UriPartial.Authority))],
+                [new SourceProxyConfig.Entry(SourceProxyConfig.DefaultId, SourceProxyUrl.Format(url))],
                 names.ToDictionary(name => name, _ => SourceProxyConfig.DefaultId, StringComparer.OrdinalIgnoreCase));
         await settings.SetAsync(SettingKeys.SourceProxy, config.Serialize(), ct);
         return Ok(ToSettings(config));
@@ -2289,11 +2292,12 @@ public class SettingsController(
         {
             SourceProxyFailure.Unreachable => "error.settings.sourceProxyUnreachable",
             SourceProxyFailure.Rejected or SourceProxyFailure.Misconfigured => "error.settings.sourceProxyRejected",
+            null when result.TimedOut => "error.settings.sourceProxySiteTimeout",
             null when result.FlareSolverr is { Ok: false } => "error.settings.sourceProxyFlareSolverr",
             _ => null,
         };
         var args = new { source = source.DisplayName };
-        await RecordTestAsync(ConnectionTestStore.SourceProxy, ConnectionTestStore.SourceProxyFingerprint(url.GetLeftPart(UriPartial.Authority)),
+        await RecordTestAsync(ConnectionTestStore.SourceProxy, ConnectionTestStore.SourceProxyFingerprint(SourceProxyUrl.Format(url)),
             failureKey is null, failureKey, args, ct);
         if (failureKey is not null)
         {

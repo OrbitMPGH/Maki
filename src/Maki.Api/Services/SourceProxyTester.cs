@@ -17,7 +17,12 @@ namespace Maki.Api.Services;
 /// the proxy's network.
 /// </param>
 /// <param name="FlareSolverr">FlareSolverr's own try through the proxy; null when the source does not need it or none is set.</param>
-public record SourceProxyTestResult(int? Status, SourceProxyFailure? Failure, bool? AllowsPrivate, FlareSolverrProxyResult? FlareSolverr);
+/// <param name="TimedOut">
+/// Nothing came back from the site within the test's time limit. That says nothing about whether
+/// the proxy is reachable, so it is not reported as <see cref="SourceProxyFailure.Unreachable"/>.
+/// </param>
+public record SourceProxyTestResult(
+    int? Status, SourceProxyFailure? Failure, bool? AllowsPrivate, FlareSolverrProxyResult? FlareSolverr, bool TimedOut = false);
 
 /// <param name="Detail">What FlareSolverr said when it failed, as it said it.</param>
 public record FlareSolverrProxyResult(bool Ok, string? Detail);
@@ -36,20 +41,20 @@ public sealed class SourceProxyTester(FlareSolverrClient flareSolverr, IAppSetti
     public async Task<SourceProxyTestResult> TestAsync(Uri proxy, ISource source, CancellationToken ct)
     {
         var route = ProxyRoute.Via(proxy);
-        var (status, failure) = await ReachSiteAsync(route, source, ct);
+        var (status, failure, timedOut) = await ReachSiteAsync(route, source, ct);
         var allowsPrivate = failure is SourceProxyFailure.Unreachable ? null : await AllowsPrivateAsync(proxy, ct);
 
         FlareSolverrProxyResult? flare = null;
         var flareUrl = await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
-        if (failure is null && source.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr) && !string.IsNullOrWhiteSpace(flareUrl))
+        if (failure is null && !timedOut && source.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr) && !string.IsNullOrWhiteSpace(flareUrl))
         {
             flare = await TryFlareSolverrAsync(flareUrl, source, route, ct);
         }
 
-        return new SourceProxyTestResult(status, failure, allowsPrivate, flare);
+        return new SourceProxyTestResult(status, failure, allowsPrivate, flare, timedOut);
     }
 
-    private async Task<(int? Status, SourceProxyFailure? Failure)> ReachSiteAsync(ProxyRoute route, ISource source, CancellationToken ct)
+    private async Task<(int? Status, SourceProxyFailure? Failure, bool TimedOut)> ReachSiteAsync(ProxyRoute route, ISource source, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(SiteTimeout);
@@ -63,22 +68,24 @@ public sealed class SourceProxyTester(FlareSolverrClient flareSolverr, IAppSetti
         try
         {
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-            return ((int)response.StatusCode, null);
+            return ((int)response.StatusCode, null, false);
         }
         catch (SourceProxyException ex)
         {
             logger.LogInformation("Source proxy test for {Source}: {Message}", source.Name, ex.Message);
-            return (null, ex.Failure);
+            return (null, ex.Failure, false);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return (null, SourceProxyFailure.Unreachable);
+            // A proxy that is not there fails fast with a connection error; a timeout means something
+            // accepted the connection and then the site, or the proxy, went quiet.
+            return (null, null, true);
         }
         catch (HttpRequestException ex)
         {
             // Through the proxy but not to the site (TLS, a refused destination): the proxy answered.
             logger.LogInformation("Source proxy test for {Source} reached the proxy but not the site: {Message}", source.Name, ex.Message);
-            return (null, SourceProxyFailure.Rejected);
+            return (null, SourceProxyFailure.Rejected, false);
         }
     }
 

@@ -94,6 +94,13 @@ public static class SourceProxyUrl
         return new Uri(uri.GetLeftPart(UriPartial.Authority));
     }
 
+    /// <summary>
+    /// <paramref name="proxy"/> as stored: <c>http://host:port</c> with the port always written out,
+    /// since <see cref="Uri"/> drops a default port and <see cref="Parse"/> refuses a URL without one.
+    /// </summary>
+    public static string Format(Uri proxy) =>
+        $"{proxy.Scheme}://{(proxy.HostNameType == UriHostNameType.IPv6 ? proxy.Host : proxy.IdnHost)}:{proxy.Port}";
+
     // Uri fills in 80 for a bare host, but a proxy on port 80 is rare enough that a missing port is
     // far more likely a mistake.
     private static bool HasExplicitPort(string value)

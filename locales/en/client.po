@@ -22078,6 +22078,10 @@ msgstr "The proxy reached {name}"
 msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
 msgstr "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}. Maki could not tell whether it refuses private addresses."
+msgstr "The proxy reached {name}. Maki could not tell whether it refuses private addresses."
+
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "The push service did not accept the test notification."
 msgstr "The push service did not accept the test notification."

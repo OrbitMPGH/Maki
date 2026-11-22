@@ -19,7 +19,8 @@ public interface ISourceProxyResolver
 /// </summary>
 public sealed class SourceProxyResolver(IAppSettings settings) : ISourceProxyResolver
 {
-    private (string? Raw, SourceProxyConfig Config) _parsed = (null, SourceProxyConfig.Empty);
+    // One reference, swapped whole, so a reader never pairs a new raw value with the old config.
+    private Parsed _parsed = new(null, SourceProxyConfig.Empty);
 
     public async Task<ProxyRoute> ResolveAsync(string sourceName, CancellationToken ct = default)
     {
@@ -40,16 +41,18 @@ public sealed class SourceProxyResolver(IAppSettings settings) : ISourceProxyRes
     public async Task<SourceProxyConfig> CurrentAsync(CancellationToken ct = default)
     {
         var raw = await settings.GetAsync(SettingKeys.SourceProxy, ct);
-        var parsed = _parsed;
+        var parsed = Volatile.Read(ref _parsed);
         if (parsed.Raw == raw)
         {
             return parsed.Config;
         }
 
         var config = SourceProxyConfig.Parse(raw);
-        _parsed = (raw, config);
+        Volatile.Write(ref _parsed, new Parsed(raw, config));
         return config;
     }
+
+    private sealed record Parsed(string? Raw, SourceProxyConfig Config);
 }
 
 /// <summary>A route that resolves to direct for every source, for tests and tools without settings.</summary>
