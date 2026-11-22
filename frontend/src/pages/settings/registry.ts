@@ -652,6 +652,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'source-proxy',
+    tab: 'downloads',
+    since: 'next',
+    title: msg`Source proxy`,
+    admin: true,
+    keywords: msg({
+      message: `proxy, vpn, blocked, ip, http proxy, access denied`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'indexer',
     tab: 'downloads',
     title: msg`Indexer`,

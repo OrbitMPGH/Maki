@@ -66,6 +66,7 @@ import { UpscalingSection } from './settings/UpscalingSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
+  SourceProxyCard,
   IndexerSection,
   DownloadClientCard,
   ReadFileCleanupSection,
@@ -136,6 +137,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,
       flaresolverr: <FlareSolverrCard />,
+      'source-proxy': <SourceProxyCard />,
       indexer: <IndexerSection />,
       downloadclient: <DownloadClientCard />,
       profiles: <UpgradeProfilesSection />,

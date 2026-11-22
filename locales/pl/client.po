@@ -11709,6 +11709,10 @@ msgstr "Po zapisaniu zostaje na stałe."
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "FlareSolverr must be able to reach this address too."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Flash the chapter name on chapter change"
@@ -17061,6 +17065,10 @@ msgstr "Brak pasującej strony"
 msgid "no matching series"
 msgstr "brak pasującej serii"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "No matching source"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "No metadata match found."
@@ -19735,6 +19743,10 @@ msgstr "Wybierz folder główny."
 msgid "Pick a source by"
 msgstr "Wybieraj źródło według"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Pick a source to test against"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
 msgid "Pick a tag to add."
@@ -20202,6 +20214,15 @@ msgstr "Dostawca"
 #, fuzzy
 msgid "Prowlarr or Jackett, for torrent releases."
 msgstr "Prowlarr lub Jackett, dla wydań torrent."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Proxy"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "proxy, vpn, blocked, ip, http proxy, access denied"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -24109,6 +24130,10 @@ msgstr "Wyślij test"
 msgid "Send them"
 msgstr "Wyślij je"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends the chosen sources through a proxy, for sites that block your connection."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Sent as <0>X-Api-Key</0>"
@@ -25382,6 +25407,11 @@ msgstr "Źródło wyłączone"
 msgid "Source priority updated"
 msgstr "Zaktualizowano priorytet źródeł"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Source proxy"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Source removed without cleanup"
@@ -26216,6 +26246,7 @@ msgstr "Informuje o każdym nowym rozdziale, niezależnie od domyślnego ustawie
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -26811,6 +26842,14 @@ msgstr "Profil zostanie usunięty. Tej operacji nie można cofnąć."
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 msgstr "Dostawca przypisuje te rozdziały do tego tomu. Zwykle to poprawne, ale granice wydań zbiorczych mogą się różnić."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "The push service did not accept the test notification."
@@ -27023,6 +27062,10 @@ msgstr "Źródło wymaga logowania lub zakupu tego rozdziału"
 #, fuzzy
 msgid "The source you picked could not provide this chapter"
 msgstr "Wybrane źródło nie mogło dostarczyć tego rozdziału"
+
+#: src/api/queue.ts
+msgid "The source's proxy could not be reached or refused the request"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

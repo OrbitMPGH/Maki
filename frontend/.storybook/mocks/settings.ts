@@ -209,6 +209,10 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/flaresolverr'), () => HttpResponse.json(d.flaresolverr)),
   putEcho('/settings/flaresolverr'),
   http.post(api('/settings/flaresolverr/test'), success),
+  http.get(api('/settings/source-proxy'), () => HttpResponse.json(d.sourceProxy)),
+  putEcho('/settings/source-proxy'),
+  http.post(api('/settings/source-proxy/test'), () =>
+    HttpResponse.json({ success: true, status: 403, allowsPrivate: false, flareSolverr: true })),
   http.get(api('/settings/downloadclient/kinds'), () => HttpResponse.json(d.downloadClientKinds)),
   http.get(api('/settings/downloadclient'), () => HttpResponse.json(d.downloadClient)),
   putEcho('/settings/downloadclient'),

@@ -9646,6 +9646,10 @@ msgstr "Fixed once saved."
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "FlareSolverr must be able to reach this address too."
+msgstr "FlareSolverr must be able to reach this address too."
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Flash the chapter name on chapter change"
 msgstr "Flash the chapter name on chapter change"
@@ -14037,6 +14041,10 @@ msgstr "No matching page"
 msgid "no matching series"
 msgstr "no matching series"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "No matching source"
+msgstr "No matching source"
+
 #: src/pages/ImportPage.tsx
 msgid "No metadata match found."
 msgstr "No metadata match found."
@@ -16225,6 +16233,10 @@ msgstr "Pick a root folder."
 msgid "Pick a source by"
 msgstr "Pick a source by"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Pick a source to test against"
+msgstr "Pick a source to test against"
+
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Pick a tag to add."
 msgstr "Pick a tag to add."
@@ -16609,6 +16621,15 @@ msgstr "Provider"
 #: src/components/SetupWizard.tsx
 msgid "Prowlarr or Jackett, for torrent releases."
 msgstr "Prowlarr or Jackett, for torrent releases."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Proxy"
+msgstr "Proxy"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "proxy, vpn, blocked, ip, http proxy, access denied"
+msgstr "proxy, vpn, blocked, ip, http proxy, access denied"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Psychological"
@@ -19826,6 +19847,10 @@ msgstr "Send test"
 msgid "Send them"
 msgstr "Send them"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends the chosen sources through a proxy, for sites that block your connection."
+msgstr "Sends the chosen sources through a proxy, for sites that block your connection."
+
 #: src/components/settings/AccountSection.tsx
 msgid "Sent as <0>X-Api-Key</0>"
 msgstr "Sent as <0>X-Api-Key</0>"
@@ -20873,6 +20898,11 @@ msgstr "Source off"
 msgid "Source priority updated"
 msgstr "Source priority updated"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Source proxy"
+msgstr "Source proxy"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Source removed without cleanup"
 msgstr "Source removed without cleanup"
@@ -21558,6 +21588,7 @@ msgstr "Tells you about every new chapter, whatever your default is."
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Test"
@@ -22039,6 +22070,14 @@ msgstr "The profile is removed. This can't be undone."
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 msgstr "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}"
+msgstr "The proxy reached {name}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
+msgstr "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
+
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "The push service did not accept the test notification."
 msgstr "The push service did not accept the test notification."
@@ -22210,6 +22249,10 @@ msgstr "The source wants a login or a purchase for this chapter"
 #: src/api/queue.ts
 msgid "The source you picked could not provide this chapter"
 msgstr "The source you picked could not provide this chapter"
+
+#: src/api/queue.ts
+msgid "The source's proxy could not be reached or refused the request"
+msgstr "The source's proxy could not be reached or refused the request"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
