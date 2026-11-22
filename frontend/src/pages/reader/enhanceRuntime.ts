@@ -15,6 +15,11 @@ const OFF: EngineState = { status: 'off' }
 let state: EngineState = OFF
 const listeners = new Set<() => void>()
 
+/** How long the engine outlives the last reader view, so a quick reopen keeps its worker and cache. */
+const IDLE_DISPOSE_MS = 15_000
+let consumers = 0
+let idleTimer: ReturnType<typeof setTimeout> | undefined
+
 function set(next: EngineState) {
   state = next
   for (const listener of listeners) listener()
@@ -38,6 +43,31 @@ function start() {
     )
 }
 
+function retain() {
+  consumers++
+  clearTimeout(idleTimer)
+  idleTimer = undefined
+}
+
+function release() {
+  consumers--
+  if (consumers === 0) idleTimer = setTimeout(stop, IDLE_DISPOSE_MS)
+}
+
+// Frees the worker, its GPU context and the cached results once no reader view uses them.
+// A broken engine stays broken; only its resources go.
+function stop() {
+  idleTimer = undefined
+  if (consumers > 0) return
+  if (state.status === 'loading') {
+    idleTimer = setTimeout(stop, IDLE_DISPOSE_MS)
+    return
+  }
+  if (state.status !== 'ready' && state.status !== 'broken') return
+  if (state.status === 'ready') set(OFF)
+  void import('../../lib/enhance').then((module) => module.disposeEnhanceEngine())
+}
+
 /** The engine failed mid-session: every page falls back to the plain image until a reload. */
 export function markEnhanceBroken() {
   if (state.status === 'ready') set({ status: 'broken' })
@@ -47,7 +77,10 @@ export function markEnhanceBroken() {
 export function useEnhanceEngine(active: boolean): EngineState {
   const current = useSyncExternalStore(subscribe, () => state)
   useEffect(() => {
-    if (active) start()
+    if (!active) return
+    retain()
+    start()
+    return release
   }, [active])
   return active ? current : OFF
 }

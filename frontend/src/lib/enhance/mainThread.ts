@@ -27,5 +27,11 @@ export function createMainThreadBackend(): Backend | null {
     onLost(cb) {
       lost = cb
     },
+    dispose() {
+      lost = null
+      if (isLost) return
+      isLost = true
+      renderer.dispose()
+    },
   }
 }

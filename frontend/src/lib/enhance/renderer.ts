@@ -151,5 +151,8 @@ export class EnhanceRenderer {
     this.runner.dispose()
     this.gl.deleteTexture(this.src.tex)
     this.gl.deleteFramebuffer(this.src.fb)
+    this.gl.getExtension('WEBGL_lose_context')?.loseContext()
+    this.canvas.width = 1
+    this.canvas.height = 1
   }
 }
