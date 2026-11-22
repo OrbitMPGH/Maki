@@ -72,9 +72,8 @@ public static class ChapterPageMatch
     /// <summary>
     /// Matching window pairs the sparse alignment keeps at most (8 bytes each). Strips of repetitive
     /// texture (screentone) can match almost everywhere; past this the answer is Unsure, never a match.
-    /// The 53 real strip pairs in <c>chapter-strip-audit.json</c> peak at 5,352 (median 675).
     /// </summary>
-    private const int MaxSparseNodes = 250_000;
+    private const int MaxSparseNodes = 4_000_000;
 
     /// <summary>
     /// Strip verdicts by their inputs' content. Every pass decides every floor again and two long strips
