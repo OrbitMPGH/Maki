@@ -40,9 +40,40 @@ public sealed class CreditBank(IServiceScopeFactory scopes, ILogger<CreditBank> 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly ConcurrentDictionary<int, CreditDetector.Edge> _strips = new();
     private IReadOnlyList<Entry>? _entries;
+    private long _lastUsedTicks;
+
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        if (!_gate.Wait(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (_entries is null && _strips.IsEmpty)
+            {
+                return false;
+            }
+
+            if (DateTime.UtcNow.Ticks - Volatile.Read(ref _lastUsedTicks) < idleFor.Ticks)
+            {
+                return false;
+            }
+
+            _entries = null;
+            _strips.Clear();
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     public async Task<IReadOnlyList<Entry>> EntriesAsync(CancellationToken ct)
     {
+        Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
         if (Volatile.Read(ref _entries) is { } loaded)
         {
             return loaded;

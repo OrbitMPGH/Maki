@@ -49,6 +49,28 @@ public sealed class ReaderCreditsCache(
 
     private int _decoding;
     private int _peakDecoding;
+    private long _lastUsedTicks;
+
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        if (Volatile.Read(ref _decoding) > 0 || (_results.IsEmpty && _strips.IsEmpty))
+        {
+            return false;
+        }
+
+        if (DateTime.UtcNow.Ticks - Volatile.Read(ref _lastUsedTicks) < idleFor.Ticks)
+        {
+            return false;
+        }
+
+        _results.Clear();
+        _strips.Clear();
+        while (_stripOrder.TryDequeue(out _))
+        {
+        }
+
+        return true;
+    }
 
     /// <summary>The most edge pages decoded at once so far. For tests.</summary>
     internal int PeakDecoding => Volatile.Read(ref _peakDecoding);
@@ -82,6 +104,8 @@ public sealed class ReaderCreditsCache(
         {
             return (CreditPages.None, false);
         }
+
+        Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
 
         // With no neighbours only the bank can find anything.
         var usable = references.Where(Usable).ToList();

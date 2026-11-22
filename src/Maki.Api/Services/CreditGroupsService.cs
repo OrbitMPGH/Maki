@@ -214,7 +214,21 @@ public sealed class CreditGroupsService(
     }
 
     private static readonly Lock MeasureGate = new();
-    private static (List<CreditLinkText> Input, CreditNoticeLinks.Similarities Result)? _lastMeasure;
+    private static (List<CreditLinkText> Input, CreditNoticeLinks.Similarities Result, DateTime LastUsedUtc)? _lastMeasure;
+
+    public static bool ReleaseMeasureIfIdle(TimeSpan idleFor)
+    {
+        lock (MeasureGate)
+        {
+            if (_lastMeasure is not { } last || DateTime.UtcNow - last.LastUsedUtc < idleFor)
+            {
+                return false;
+            }
+
+            _lastMeasure = null;
+            return true;
+        }
+    }
 
     /// <summary>
     /// <see cref="CreditNoticeLinks.Measure"/>, kept for the last input: the modal lists again after every confirm,
@@ -228,6 +242,7 @@ public sealed class CreditGroupsService(
                     p.First.Id == p.Second.Id && string.Equals(p.First.Text, p.Second.Text, StringComparison.Ordinal) &&
                     p.First.Titles.SequenceEqual(p.Second.Titles, StringComparer.Ordinal)))
             {
+                _lastMeasure = (last.Input, last.Result, DateTime.UtcNow);
                 return last.Result;
             }
         }
@@ -235,7 +250,7 @@ public sealed class CreditGroupsService(
         var result = CreditNoticeLinks.Measure(input);
         lock (MeasureGate)
         {
-            _lastMeasure = (input, result);
+            _lastMeasure = (input, result, DateTime.UtcNow);
         }
 
         return result;
