@@ -18,9 +18,21 @@ internal static class ScanPools
     private const int MaxLength = 1 << 20;
     private const int PerBucket = 4;
 
-    public static readonly ArrayPool<float> Floats = ArrayPool<float>.Create(MaxLength, PerBucket);
+    private static volatile ArrayPool<float> _floats = ArrayPool<float>.Create(MaxLength, PerBucket);
+    private static volatile ArrayPool<int> _ints = ArrayPool<int>.Create(MaxLength, PerBucket);
+    private static volatile ArrayPool<double> _doubles = ArrayPool<double>.Create(MaxLength, PerBucket);
 
-    public static readonly ArrayPool<int> Ints = ArrayPool<int>.Create(MaxLength, PerBucket);
+    public static ArrayPool<float> Floats => _floats;
 
-    public static readonly ArrayPool<double> Doubles = ArrayPool<double>.Create(MaxLength, PerBucket);
+    public static ArrayPool<int> Ints => _ints;
+
+    public static ArrayPool<double> Doubles => _doubles;
+
+    /// <summary>Replaces the pools so idle LOH scan buffers are freed on the next collect.</summary>
+    public static void Reset()
+    {
+        _floats = ArrayPool<float>.Create(MaxLength, PerBucket);
+        _ints = ArrayPool<int>.Create(MaxLength, PerBucket);
+        _doubles = ArrayPool<double>.Create(MaxLength, PerBucket);
+    }
 }

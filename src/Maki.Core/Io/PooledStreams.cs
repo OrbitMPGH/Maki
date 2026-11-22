@@ -3,13 +3,13 @@ using Microsoft.IO;
 namespace Maki.Core.Io;
 
 /// <summary>
-/// Memory streams for page-sized buffers, built from pooled 128 KB blocks.
+/// Memory streams for page-sized buffers, built from pooled 64 KB blocks.
 ///
 /// <para>
 /// A page served from an archive used to be copied into a <see cref="MemoryStream"/> sized to the
 /// entry, which for nearly every page is over 85 KB and so a Large Object Heap allocation per page
 /// view. The LOH is not compacted by default, so a reading session left the heap fragmented. Blocks
-/// stay under the LOH threshold and go back to the pool when the stream is disposed, which every
+/// stay under the 85 KB LOH threshold and go back to the pool when the stream is disposed, which every
 /// caller does (an ASP.NET file result disposes its stream after writing it).
 /// </para>
 /// </summary>
@@ -17,11 +17,11 @@ public static class PooledStreams
 {
     private static readonly RecyclableMemoryStreamManager Manager = new(new RecyclableMemoryStreamManager.Options
     {
-        BlockSize = 128 * 1024,
+        BlockSize = 64 * 1024,
         LargeBufferMultiple = 1024 * 1024,
         MaximumBufferSize = 64 * 1024 * 1024,
-        MaximumSmallPoolFreeBytes = 16 * 1024 * 1024,
-        MaximumLargePoolFreeBytes = 16 * 1024 * 1024,
+        MaximumSmallPoolFreeBytes = 4 * 1024 * 1024,
+        MaximumLargePoolFreeBytes = 4 * 1024 * 1024,
         AggressiveBufferReturn = true,
     });
 

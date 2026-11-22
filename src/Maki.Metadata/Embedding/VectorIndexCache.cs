@@ -203,6 +203,7 @@ public sealed class VectorIndexCache(
         }
 
         _loaded = null;
+        ScanPools.Reset();
         logger.LogInformation(
             "Unloaded the search vectors after {Minutes:F0} idle minute(s); they rebuild on next use",
             idle.TotalMinutes);
