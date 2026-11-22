@@ -2257,6 +2257,58 @@ public class SettingsController(
         return Ok(ToSettings(config));
     }
 
+    /// <param name="Source">The source whose site the proxy is tried against.</param>
+    public record SourceProxyTestRequest(string? Url, string? Source);
+
+    /// <summary>
+    /// Tries the proxy against one source's site, asks whether it refuses private destinations, and
+    /// for a source that needs FlareSolverr, has FlareSolverr try it too. A proxy that cannot be
+    /// reached or refuses the site fails the test; the other two only add to a passing one.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("source-proxy/test")]
+    public async Task<IActionResult> TestSourceProxy(
+        [FromBody] SourceProxyTestRequest request, [FromServices] SourceProxyTester tester, CancellationToken ct)
+    {
+        var raw = string.IsNullOrWhiteSpace(request.Url)
+            ? SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct)).DefaultUrl
+            : request.Url;
+        if (SourceProxyUrl.Parse(raw, out var error) is not { } url)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Source) || sourceRegistry.Find(request.Source) is not { } source ||
+            source.Name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = request.Source ?? "" });
+        }
+
+        var result = await tester.TestAsync(url, source, ct);
+        var failureKey = result.Failure switch
+        {
+            SourceProxyFailure.Unreachable => "error.settings.sourceProxyUnreachable",
+            SourceProxyFailure.Rejected or SourceProxyFailure.Misconfigured => "error.settings.sourceProxyRejected",
+            null when result.FlareSolverr is { Ok: false } => "error.settings.sourceProxyFlareSolverr",
+            _ => null,
+        };
+        var args = new { source = source.DisplayName };
+        await RecordTestAsync(ConnectionTestStore.SourceProxy, ConnectionTestStore.SourceProxyFingerprint(url.GetLeftPart(UriPartial.Authority)),
+            failureKey is null, failureKey, args, ct);
+        if (failureKey is not null)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new
+            {
+                success = false,
+                code = failureKey,
+                error = localizer.Get(failureKey, args),
+                detail = result.FlareSolverr?.Detail,
+            });
+        }
+
+        return Ok(new { success = true, status = result.Status, allowsPrivate = result.AllowsPrivate, flareSolverr = result.FlareSolverr?.Ok });
+    }
+
     private static SourceProxySettings ToSettings(SourceProxyConfig config) => new(
         config.DefaultUrl,
         config.Sources.Where(s => s.Value == SourceProxyConfig.DefaultId).Select(s => s.Key).Order(StringComparer.OrdinalIgnoreCase).ToList());

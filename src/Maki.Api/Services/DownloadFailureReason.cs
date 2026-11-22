@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Sources;
 
 namespace Maki.Api.Services;
@@ -20,6 +21,9 @@ public static class DownloadFailureReason
     public const string Unexpected = "error.download.unexpected";
     public const string ChallengeNotSolved = "error.download.challengeNotSolved";
 
+    /// <summary>The source's proxy could not be reached or refused the request; the proxy and what it said are the detail.</summary>
+    public const string Proxy = "error.download.proxy";
+
     /// <summary>The source lists the chapter but wants a login or a purchase for its pages.</summary>
     public const string NeedsPurchase = "error.download.sourceNeedsPurchase";
 
@@ -29,6 +33,10 @@ public static class DownloadFailureReason
     {
         switch (ex)
         {
+            // First: it is an HttpRequestException, and the network branch below would word it as the
+            // site being unreachable when it is the proxy.
+            case SourceProxyException proxy:
+                return (Proxy, Trim(proxy.Message));
             case HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden } http:
                 return (SourceRejected, $"HTTP {(int)http.StatusCode!}");
             case HttpRequestException { StatusCode: { } status }:

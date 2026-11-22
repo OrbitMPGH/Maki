@@ -2582,6 +2582,20 @@ msgid "error.settings.sourceProxyInUse"
 msgstr "Turn the proxy off for every source before removing its address"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyUnreachable"
+msgstr "Nothing answered at the proxy's address"
+
+#. {source} is a site's name and is never translated.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyRejected"
+msgstr "The proxy answered but could not reach {source}"
+
+#. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyFlareSolverr"
+msgstr "The proxy works, but FlareSolverr could not go through it"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.flaresolverrNoResponse"
 msgstr "FlareSolverr did not respond"
 
@@ -3702,6 +3716,11 @@ msgstr "The source wants a login or a purchase for this chapter"
 #: src/Maki.Api/Services/DownloadFailureReason.cs
 msgid "error.download.network"
 msgstr "Could not reach the source"
+
+#. The source is set to go through a proxy, and the proxy could not be reached or refused the request. Maki never falls back to a direct connection.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+msgid "error.download.proxy"
+msgstr "The source's proxy could not be reached or refused the request"
 
 #. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
 #: src/Maki.Api/Services/DownloadFailureReason.cs

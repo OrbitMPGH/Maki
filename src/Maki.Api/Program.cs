@@ -922,6 +922,7 @@ try
     builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
     builder.Services.AddScoped<CustomSourceService>();
     builder.Services.AddSingleton<CustomSourceProbe>();
+    builder.Services.AddSingleton<SourceProxyTester>();
     builder.Services.AddSingleton<CustomRepositoryStore>();
     builder.Services.AddSingleton<CustomRepositoryClient>();
     builder.Services.AddScoped<CustomRepositoryService>();
