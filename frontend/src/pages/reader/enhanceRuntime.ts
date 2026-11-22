@@ -65,7 +65,13 @@ function stop() {
   }
   if (state.status !== 'ready' && state.status !== 'broken') return
   if (state.status === 'ready') set(OFF)
-  void import('../../lib/enhance').then((module) => module.disposeEnhanceEngine())
+  void import('../../lib/enhance')
+    .then((module) => {
+      // A reader view that came back meanwhile is loading or using the same cached engine.
+      if (consumers > 0 || (state.status !== 'off' && state.status !== 'broken')) return
+      module.disposeEnhanceEngine()
+    })
+    .catch(() => {})
 }
 
 /** The engine failed mid-session: every page falls back to the plain image until a reload. */

@@ -336,5 +336,5 @@ export function loadEnhanceEngine(): Promise<EnhanceEngine> {
 export function disposeEnhanceEngine() {
   const current = engine
   engine = null
-  void current?.then((e) => e.dispose())
+  void current?.then((e) => e.dispose()).catch(() => {})
 }
