@@ -401,7 +401,21 @@ public static class ImageCodec
             : grey ? srgb.ExtractBand(1)
             : srgb.ExtractBand(0, n: 3);
         using var bytes = shaped.Format == Enums.BandFormat.Uchar ? shaped.Copy() : shaped.Cast(Enums.BandFormat.Uchar);
-        return JpegXl.Encode(bytes.WriteToMemory<byte>(), bytes.Width, bytes.Height, bands, distance, PageJpegXlEffort);
+        return JpegXl.EncodeRows(new VipsJpegXlRows(bytes, bands), bytes.Width, bytes.Height, bands, distance, PageJpegXlEffort);
+    }
+
+    private sealed class VipsJpegXlRows(VipsImage image, int bands) : IJpegXlRows
+    {
+        private readonly int _stride = image.Width * bands;
+
+        public IntPtr Acquire(int top, int count, out int stride)
+        {
+            stride = _stride;
+            using var strip = image.Crop(0, top, image.Width, count);
+            return strip.WriteToMemory(out _);
+        }
+
+        public void Release(IntPtr rows) => global::NetVips.NetVips.Free(rows);
     }
 
     /// <summary>
