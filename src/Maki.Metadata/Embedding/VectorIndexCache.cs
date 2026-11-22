@@ -889,6 +889,7 @@ public sealed class VectorIndexCache(
         var franchise = new int[ids.Length];
         Array.Fill(franchise, VectorIndex.Unknown);
 
+        var scannedSeries = false;
         try
         {
             var clock = System.Diagnostics.Stopwatch.StartNew();
@@ -904,7 +905,9 @@ public sealed class VectorIndexCache(
 
             // Stored when the dump was installed; building it here parses every relation blob in
             // the file, 3 to 7 s cold. Same components and ids either way.
-            var componentOf = FranchiseGraph.Read(conn) ?? FranchiseGraph.Build(conn);
+            var stored = FranchiseGraph.Read(conn);
+            scannedSeries = stored is null;
+            var componentOf = stored ?? FranchiseGraph.Build(conn);
             var covered = 0;
             for (var row = 0; row < ids.Length; row++)
             {
@@ -927,9 +930,13 @@ public sealed class VectorIndexCache(
         }
         finally
         {
-            // A pass over the series table, a large share of the dump. Only covered before when the
-            // index load came from Discover, whose rail batches drop the file afterwards.
-            PageCache.DropAfterScan(dumpOptions.DatabasePath);
+            // Only the fallback series-table pass pulls a large share of the dump into the page
+            // cache. Dropping the file after reading the small prebuilt maki_franchise table
+            // evicts hot FTS5 and browse pages that searches need.
+            if (scannedSeries)
+            {
+                PageCache.DropAfterScan(dumpOptions.DatabasePath);
+            }
         }
 
         return franchise;
