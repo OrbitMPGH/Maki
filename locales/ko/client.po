@@ -11709,6 +11709,10 @@ msgstr "저장하면 고정됩니다."
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "FlareSolverr must be able to reach this address too."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Flash the chapter name on chapter change"
@@ -17061,6 +17065,10 @@ msgstr "일치하는 페이지 없음"
 msgid "no matching series"
 msgstr "일치하는 시리즈 없음"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "No matching source"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "No metadata match found."
@@ -19735,6 +19743,10 @@ msgstr "루트 폴더를 고르세요."
 msgid "Pick a source by"
 msgstr "소스 선택 기준"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Pick a source to test against"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
 msgid "Pick a tag to add."
@@ -20202,6 +20214,15 @@ msgstr "제공자"
 #, fuzzy
 msgid "Prowlarr or Jackett, for torrent releases."
 msgstr "토렌트 릴리스가 필요하면 Prowlarr 또는 Jackett."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Proxy"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "proxy, vpn, blocked, ip, http proxy, access denied"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -24109,6 +24130,10 @@ msgstr "테스트 보내기"
 msgid "Send them"
 msgstr "보내기"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends the chosen sources through a proxy, for sites that block your connection."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Sent as <0>X-Api-Key</0>"
@@ -25382,6 +25407,11 @@ msgstr "소스 끄기"
 msgid "Source priority updated"
 msgstr "소스 우선순위 업데이트됨"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Source proxy"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Source removed without cleanup"
@@ -26216,6 +26246,7 @@ msgstr "기본값과 관계없이 모든 새 챕터를 알려줍니다."
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -26811,6 +26842,18 @@ msgstr "프로필이 제거됩니다. 되돌릴 수 없습니다."
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 msgstr "제공자가 이 챕터들을 이 권에 배정했습니다. 대체로 맞지만 합본의 경계는 다를 수 있습니다."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}, but it also connects to private addresses. Set it to refuse them."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "The proxy reached {name}. Maki could not tell whether it refuses private addresses."
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "The push service did not accept the test notification."
@@ -27023,6 +27066,10 @@ msgstr "소스가 이 챕터에 로그인이나 구매를 요구합니다."
 #, fuzzy
 msgid "The source you picked could not provide this chapter"
 msgstr "선택한 소스에서 이 챕터를 제공할 수 없습니다"
+
+#: src/api/queue.ts
+msgid "The source's proxy could not be reached or refused the request"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

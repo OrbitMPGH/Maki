@@ -19,6 +19,7 @@ import {
   ReadFileCleanupSection,
   SourceLanguageSection,
   SourcePrioritySection,
+  SourceProxyCard,
   UpgradeScanSection,
   VolumeReleasesSection,
 } from './DownloadCards'
@@ -275,6 +276,71 @@ export const FlareSolverrUnreachable: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeEnabled())
     await expect(within(document.body).queryByText('FlareSolverr is reachable')).toBeNull()
+  },
+}
+
+const savedSourceProxy = fn()
+
+export const SourceProxy: Story = {
+  render: () => <SourceProxyCard />,
+  play: async ({ canvas }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await expect(await canvas.findByText('Weeb Central')).toBeVisible()
+  },
+}
+
+export const SourceProxyNotSetUp: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/source-proxy'), () => HttpResponse.json({ url: null, sources: [] }))),
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled())
+  },
+}
+
+export const SourceProxyTest: Story = {
+  render: () => <SourceProxyCard />,
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
+    await expect(await within(document.body).findByText('The proxy reached Weeb Central')).toBeVisible()
+  },
+}
+
+export const SourceProxyAllowsPrivate: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.post(api('/settings/source-proxy/test'), () =>
+      HttpResponse.json({ success: true, status: 200, allowsPrivate: true, flareSolverr: null }))),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
+    await expect(await within(document.body).findByText(/also connects to private addresses/)).toBeVisible()
+  },
+}
+
+export const SourceProxySave: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.put(api('/settings/source-proxy'), async ({ request }) => {
+      const body = await request.json()
+      savedSourceProxy(body)
+      return HttpResponse.json(body)
+    })),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.clear(url)
+    await userEvent.type(url, 'http://10.0.0.9:8888')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(savedSourceProxy).toHaveBeenCalledWith({ url: 'http://10.0.0.9:8888', sources: ['weebcentral'] }))
   },
 }
 

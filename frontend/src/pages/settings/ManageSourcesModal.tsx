@@ -33,7 +33,7 @@ import { FilterMenuButton, FilterMultiMenuButton } from '../../components/ListCo
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
-  useSaveSourcePriority, useSourcePriority, useSources,
+  useSaveSourcePriority, useSourcePriority, useSourceProxy, useSources,
   type SourceContent, type SourceInfo, type SourceQualitySummary,
 } from '../../api/hooks'
 import { languageName } from '../../api/titles'
@@ -135,10 +135,12 @@ function QualityTag({ quality }: { quality: SourceQualitySummary }) {
   )
 }
 
-function SourceTags({ source, contentLabels, nameOfLanguage }: {
+function SourceTags({ source, contentLabels, nameOfLanguage, proxied = false }: {
   source: SourceInfo
   contentLabels: Record<SourceContent, string>
   nameOfLanguage: (code: string) => string
+  /** Goes through the source proxy; only admins are told. */
+  proxied?: boolean
 }) {
   const languages = source.supportedLanguages ?? []
   const languageCount = new Set(languages.map(baseLanguage)).size
@@ -240,6 +242,9 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       )}
       {source.supportsLanguageFilter && (
         <span className="source-tag" data-tone="filter"><Trans>Language filter</Trans></span>
+      )}
+      {proxied && (
+        <span className="source-tag" data-tone="kind"><Trans>Proxy</Trans></span>
       )}
     </div>
   )
@@ -601,6 +606,8 @@ export function ManageSourcesModal({
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const { data: customSources } = useCustomSources(opened && isAdmin)
+  const { data: sourceProxy } = useSourceProxy(opened && isAdmin)
+  const proxied = new Set(sourceProxy?.url ? sourceProxy.sources.map((name) => name.toLowerCase()) : [])
   const deleteCustom = useDeleteCustomSource()
   const [wizard, setWizard] = useState<{
     mode: WizardMode
@@ -962,7 +969,12 @@ export function ManageSourcesModal({
               : <span className="source-row-host">{sourceHost(source.baseUrl)}</span>}
             {source.provider === 'custom' && <CustomBadge />}
           </div>
-          <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
+          <SourceTags
+            source={source}
+            contentLabels={contentLabels}
+            nameOfLanguage={nameOfLanguage}
+            proxied={proxied.has(source.name.toLowerCase())}
+          />
         </div>
         <Group gap={8} wrap="nowrap">
           {source.scanlationGroups && isAdmin && (

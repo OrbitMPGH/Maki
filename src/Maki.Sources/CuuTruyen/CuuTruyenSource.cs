@@ -28,8 +28,10 @@ namespace Maki.Sources.CuuTruyen;
 /// request for the downloader.
 /// </para>
 /// </summary>
-public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClientFactory) : ISource
+public class CuuTruyenSource(IHtmlFetcher htmlFetcher, IHttpClientFactory httpClientFactory) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("cuutruyen");
+
     public const string HttpClientName = "source-cuutruyen";
 
     /// <summary>The key CuuTruyen's frontend XORs drm_data with, byte for byte (ASCII digits of pi).</summary>
@@ -399,7 +401,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
 
     private async Task<JsonDocument> FetchJsonAsync(string url, CancellationToken ct)
     {
-        var body = await fetcher.GetHtmlAsync(url, ct);
+        var body = await _fetcher.GetHtmlAsync(url, ct);
         var unwrapped = await PreUnwrap.UnwrapAsync(body, url, ct);
         return JsonDocument.Parse(unwrapped);
     }

@@ -1,6 +1,7 @@
 using System.Net;
 using Maki.Api.Controllers;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Sources.Common;
 
 namespace Maki.Api.Services;
@@ -30,8 +31,9 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
     public static bool IsWebAddress(Uri uri) =>
         uri.IsAbsoluteUri && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
+    /// <param name="route">The source's proxy route, for a cover a source serves; direct otherwise.</param>
     public async Task<Result> FetchAsync(
-        Uri target, Func<Uri, bool> allowHop, int maxBytes, Uri? referer, CancellationToken ct)
+        Uri target, Func<Uri, bool> allowHop, int maxBytes, Uri? referer, CancellationToken ct, ProxyRoute? route = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(Timeout);
@@ -46,6 +48,7 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
+            route?.ApplyTo(request);
             if (referer is not null)
             {
                 request.Headers.Referrer = referer;

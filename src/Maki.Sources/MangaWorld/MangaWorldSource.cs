@@ -14,8 +14,10 @@ namespace Maki.Sources.MangaWorld;
 /// <see cref="IHtmlFetcher"/> so a future challenge falls back to FlareSolverr. Series id is
 /// "{numericId}/{slug}" so URLs rebuild without a lookup; chapter id is the 24-hex id after "/read/".
 /// </summary>
-public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
+public partial class MangaWorldSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("mangaworld");
+
     private static readonly HtmlParser Parser = new();
     private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
 
@@ -41,7 +43,7 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/archive?keyword={Uri.EscapeDataString(title)}", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/archive?keyword={Uri.EscapeDataString(title)}", ct);
         EnsureNotCookieShell(html);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
@@ -82,7 +84,7 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/manga/{sourceSeriesId}", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/manga/{sourceSeriesId}", ct);
         EnsureNotCookieShell(html);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
@@ -116,7 +118,7 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/manga/{sourceSeriesId}", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/manga/{sourceSeriesId}", ct);
         EnsureNotCookieShell(html);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
@@ -245,7 +247,7 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
     {
         // The default paged reader renders zero images; only the list style renders all of them.
         var url = $"{BaseUrl}/manga/{chapter.SourceSeriesId}/read/{chapter.SourceChapterId}?style=list";
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         EnsureNotCookieShell(html);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 

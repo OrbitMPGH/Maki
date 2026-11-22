@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -16,11 +17,11 @@ namespace Maki.Sources.MangaTube;
 /// state and reads as zero chapters. A mapping that already has chapter links then fails its
 /// sync with the generic "listed no chapters" error and keeps its previous list.
 /// </summary>
-public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
+public class MangaTubeSource(IHttpClientFactory httpClientFactory, ISourceProxyResolver? proxies = null) : ISource
 {
     public const string HttpClientName = "source-mangatube";
 
-    private readonly MangaTubeSession _session = new(httpClientFactory, HttpClientName);
+    private readonly MangaTubeSession _session = new(httpClientFactory, HttpClientName, "mangatube", proxies);
 
     public string Name => "mangatube";
     public string DisplayName => "Manga-Tube";

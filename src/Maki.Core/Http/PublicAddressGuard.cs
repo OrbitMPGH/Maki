@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using Maki.Core.Http.Proxy;
 
 namespace Maki.Core.Http;
 
@@ -150,34 +151,55 @@ public static class PublicAddressGuard
         b[0] >= 224);                                 // multicast, reserved, broadcast
 
     /// <summary>
-    /// A primary handler whose connections may only reach public addresses. A connection to the
-    /// configured HTTP proxy is let through, since the proxy (not this process) makes the real one.
+    /// A primary handler whose connections may only reach public addresses. A connection to a proxy
+    /// is let through (the proxy, not this process, makes the real one) after the destination it is
+    /// asked for has been checked. With <paramref name="proxy"/> the handler goes through that proxy;
+    /// without it, through <see cref="HttpClient.DefaultProxy"/> as configured by the environment.
     /// </summary>
-    public static SocketsHttpHandler CreateHandler() => new()
+    public static SocketsHttpHandler CreateHandler(Uri? proxy = null)
     {
-        ConnectCallback = ConnectAsync,
-        AutomaticDecompression = DecompressionMethods.All,
-    };
+        var handler = new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All };
+        if (proxy is not null)
+        {
+            handler.Proxy = new WebProxy(proxy);
+            handler.UseProxy = true;
+        }
+
+        // Read at connect time, so a proxy assigned to the handler after this returns is the one checked.
+        handler.ConnectCallback = (context, ct) => ConnectAsync(context, handler.Proxy ?? HttpClient.DefaultProxy, ct);
+        return handler;
+    }
 
     /// <summary>
     /// <see cref="CreateHandler"/> with automatic redirects off, for clients whose
     /// <see cref="ProxiedTargetGuardHandler"/> follows and re-checks them.
     /// </summary>
-    public static SocketsHttpHandler CreateManualRedirectHandler()
+    public static SocketsHttpHandler CreateManualRedirectHandler(Uri? proxy = null)
     {
-        var handler = CreateHandler();
+        var handler = CreateHandler(proxy);
         handler.AllowAutoRedirect = false;
         return handler;
     }
 
-    private static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken ct)
+    /// <summary>Overload for <c>ConfigurePrimaryHttpMessageHandler</c>, which wants a parameterless factory.</summary>
+    public static SocketsHttpHandler CreateManualRedirectHandler() => CreateManualRedirectHandler(null);
+
+    private static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, IWebProxy proxy, CancellationToken ct)
     {
         var endpoint = context.DnsEndPoint;
         var addresses = IPAddress.TryParse(endpoint.Host, out var literal)
             ? [literal]
             : await Dns.GetHostAddressesAsync(endpoint.Host, ct);
 
-        if (IsConfiguredProxy(context))
+        if (TunnelTarget(context, proxy) is { } tunnelTarget)
+        {
+            // An HTTPS request through a proxy: the runtime opens this connection itself to send
+            // CONNECT, and its request names the proxy, not the destination (that is in the Host
+            // header). Each tunnel is its own connection, so checking the destination here covers
+            // every HTTPS request through the proxy.
+            await EnsureTargetPublicAsync(tunnelTarget, ct);
+        }
+        else if (IsConfiguredProxy(context, proxy))
         {
             // The connect-time addresses above are the proxy's, not the real destination's, so they
             // tell us nothing here. The proxy makes the real connection, but redirects and hostnames
@@ -208,6 +230,37 @@ public static class PublicAddressGuard
         }
     }
 
+    /// <summary>
+    /// The destination of the runtime's own CONNECT request to a proxy, or null when this connection
+    /// is not one. Such a request is addressed to the proxy (whose endpoint this connection is) and
+    /// names the destination in its Host header. It counts only when <paramref name="proxy"/> would
+    /// send that destination to this very endpoint, so a CONNECT addressed anywhere else gets the
+    /// ordinary public-address check.
+    /// </summary>
+    private static Uri? TunnelTarget(SocketsHttpConnectionContext context, IWebProxy proxy)
+    {
+        var request = context.InitialRequestMessage;
+        if (request.Method != HttpMethod.Connect || request.RequestUri is not { } proxyUri ||
+            !SameEndpoint(proxyUri, context.DnsEndPoint))
+        {
+            return null;
+        }
+
+        var authority = request.Headers.Host;
+        if (string.IsNullOrEmpty(authority) || !Uri.TryCreate($"https://{authority}/", UriKind.Absolute, out var target) ||
+            target.UserInfo.Length > 0 || target.AbsolutePath != "/" || target.Query.Length > 0 || target.Fragment.Length > 0)
+        {
+            throw new BlockedDestinationException("Refusing a proxy tunnel with no valid destination");
+        }
+
+        return !proxy.IsBypassed(target) && proxy.GetProxy(target) is { } via && SameEndpoint(via, context.DnsEndPoint)
+            ? target
+            : null;
+    }
+
+    private static bool SameEndpoint(Uri uri, DnsEndPoint endpoint) =>
+        uri.Port == endpoint.Port && uri.IdnHost.Equals(endpoint.Host, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>The destination of a plain-http request that goes through a proxy, or null when it does not.</summary>
     internal static Uri? ProxiedPlainHttpTarget(HttpRequestMessage request, IWebProxy proxy)
     {
@@ -233,6 +286,9 @@ public static class PublicAddressGuard
             return;
         }
 
+        // The proxy resolves the name itself, so a name this process cannot resolve (blocked by the
+        // local resolver, or no DNS but the proxy's) is left to the proxy. A name that does resolve
+        // here to a private address is still refused.
         IPAddress[] addresses;
         try
         {
@@ -240,17 +296,17 @@ public static class PublicAddressGuard
         }
         catch (SocketException)
         {
-            throw new BlockedDestinationException($"Refusing to proxy to '{target}': host does not resolve");
+            return;
         }
 
-        if (addresses.Length == 0 || !addresses.All(IsPublic))
+        if (!addresses.All(IsPublic))
         {
             throw new BlockedDestinationException(
                 $"Refusing to proxy to '{target}': it does not resolve to a public address");
         }
     }
 
-    private static bool IsConfiguredProxy(SocketsHttpConnectionContext context)
+    private static bool IsConfiguredProxy(SocketsHttpConnectionContext context, IWebProxy proxy)
     {
         var target = context.InitialRequestMessage.RequestUri;
         if (target == null)
@@ -258,10 +314,8 @@ public static class PublicAddressGuard
             return false;
         }
 
-        var proxy = HttpClient.DefaultProxy.GetProxy(target);
-        return proxy != null && proxy != target &&
-               proxy.Port == context.DnsEndPoint.Port &&
-               proxy.IdnHost.Equals(context.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase);
+        var via = proxy.GetProxy(target);
+        return via != null && via != target && SameEndpoint(via, context.DnsEndPoint);
     }
 }
 
@@ -313,7 +367,9 @@ public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null, bool foll
 
     private async ValueTask CheckAsync(HttpRequestMessage request, CancellationToken ct)
     {
-        if (PublicAddressGuard.ProxiedPlainHttpTarget(request, proxy ?? HttpClient.DefaultProxy) is { } target)
+        var route = ProxyRoute.Of(request);
+        var via = route.Proxy is { } assigned ? new WebProxy(assigned) : proxy ?? HttpClient.DefaultProxy;
+        if (PublicAddressGuard.ProxiedPlainHttpTarget(request, via) is { } target)
         {
             await PublicAddressGuard.EnsureTargetPublicAsync(target, ct);
         }
@@ -327,6 +383,12 @@ public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null, bool foll
     {
         var method = keepsMethod || previous.Method == HttpMethod.Head ? previous.Method : HttpMethod.Get;
         var request = new HttpRequestMessage(method, next) { Version = previous.Version, VersionPolicy = previous.VersionPolicy };
+        // Options carry the hop's ProxyRoute: without them a redirect would leave the source's proxy.
+        foreach (var (key, value) in previous.Options)
+        {
+            ((IDictionary<string, object?>)request.Options)[key] = value;
+        }
+
         var sameHost = string.Equals(previous.RequestUri?.IdnHost, next.IdnHost, StringComparison.OrdinalIgnoreCase);
         foreach (var header in previous.Headers)
         {

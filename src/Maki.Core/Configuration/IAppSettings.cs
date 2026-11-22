@@ -14,6 +14,13 @@ public static class SettingKeys
     public const string FlareSolverrUrl = "flaresolverr.url";
 
     /// <summary>
+    /// JSON <c>{"proxies": [{"id", "url"}], "sources": {name: proxyId}}</c>: the proxy chosen sources
+    /// go through (browser, FlareSolverr and Maki's own requests alike). Read through
+    /// <c>SourceProxyResolver</c>, never parsed at the call site.
+    /// </summary>
+    public const string SourceProxy = "sources.proxy";
+
+    /// <summary>
     /// Optional Chromium <c>--host-resolver-rules</c> for the MangaFire headless browser, e.g.
     /// "MAP mangafire.to 188.114.96.1". Only needed where the Maki host can't resolve the site's
     /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.

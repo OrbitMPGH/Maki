@@ -125,7 +125,7 @@ public class CoverPickTests : IDisposable
         await using var db = _db.NewContext();
 
         var result = await Controller(db).FromSource(
-            id, new(mappingId), Registry(source), Availability(source), Fetcher(web), CancellationToken.None);
+            id, new(mappingId), Registry(source), Availability(source), Fetcher(web), Maki.Core.Http.Proxy.NoSourceProxies.Instance, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
         Assert.True((await Reload(id)).IsLocked(SeriesMetadataField.Cover));
@@ -143,7 +143,7 @@ public class CoverPickTests : IDisposable
         await using var db = _db.NewContext();
 
         var result = await Controller(db).FromSource(
-            id, new(mappingId), Registry(source), Availability(source), Fetcher(web), CancellationToken.None);
+            id, new(mappingId), Registry(source), Availability(source), Fetcher(web), Maki.Core.Http.Proxy.NoSourceProxies.Instance, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.DoesNotContain(web.Requested, u => u.Contains("elsewhere") || u.Contains("169.254"));
@@ -158,7 +158,7 @@ public class CoverPickTests : IDisposable
         await using var db = _db.NewContext();
 
         var result = await Controller(db).FromSource(
-            id, new(mappingId), Registry(source), Availability(source), Fetcher(new Web()), CancellationToken.None);
+            id, new(mappingId), Registry(source), Availability(source), Fetcher(new Web()), Maki.Core.Http.Proxy.NoSourceProxies.Instance, CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(result);
     }

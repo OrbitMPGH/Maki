@@ -3694,6 +3694,54 @@ msgstr "O Kavita não respondeu (verifique a URL/chave da API)"
 msgid "error.settings.flaresolverrNotConfigured"
 msgstr "Nenhuma URL do FlareSolverr configurada"
 
+#. English: Enter the proxy as http://host:port
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyInvalidUrl"
+msgstr ""
+
+#. English: Only HTTP proxies are supported, so the address has to start with http://
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyHttpOnly"
+msgstr ""
+
+#. English: Proxies that need a username and password are not supported yet
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyNoCredentials"
+msgstr ""
+
+#. English: Turn the proxy off for every source before removing its address
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyInUse"
+msgstr ""
+
+#. {source} is a site's name and is never translated.
+#. English: {source} goes through a proxy that could not be reached or refused the request
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.sourceProxyFailed"
+msgstr ""
+
+#. English: Nothing answered at the proxy's address
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyUnreachable"
+msgstr ""
+
+#. {source} is a site's name and is never translated.
+#. English: The proxy answered but could not reach {source}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyRejected"
+msgstr ""
+
+#. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.
+#. English: Nothing came back from {source} through the proxy within 20 seconds
+msgid "error.settings.sourceProxySiteTimeout"
+msgstr ""
+
+#. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
+#. English: The proxy works, but FlareSolverr could not go through it
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyFlareSolverr"
+msgstr ""
+
 #. English: FlareSolverr did not respond
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy
@@ -5243,6 +5291,12 @@ msgstr "A fonte exige login ou compra para este capítulo"
 #, fuzzy
 msgid "error.download.network"
 msgstr "Não foi possível acessar a fonte"
+
+#. The source is set to go through a proxy, and the proxy could not be reached or refused the request. Maki never falls back to a direct connection.
+#. English: The source's proxy could not be reached or refused the request
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+msgid "error.download.proxy"
+msgstr ""
 
 #. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
 #. English: Could not write the chapter to disk

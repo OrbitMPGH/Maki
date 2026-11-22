@@ -5,6 +5,7 @@ using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Indexers;
 using Maki.Data;
 using Maki.Sources.Suwayomi;
@@ -26,12 +27,15 @@ public sealed class ConnectionTestStore(MakiDbContext db, IAppSettings settings,
     public const string FlareSolverr = "flaresolverr";
     public const string DownloadClient = "downloadclient";
     public const string Suwayomi = "suwayomi";
+    public const string SourceProxy = "sourceproxy";
 
     public static string IndexerKey(IndexerBackend backend) => "indexer:" + backend.Key();
 
     public static string KavitaFingerprint(string? url, string? apiKey) => Hash(Url(url), apiKey);
 
     public static string FlareSolverrFingerprint(string? url) => Hash(Url(url));
+
+    public static string SourceProxyFingerprint(string? url) => Hash(Url(url));
 
     public static string IndexerFingerprint(IndexerSettings s) => Hash(s.Backend.Key(), Url(s.Url), s.ApiKey);
 
@@ -103,6 +107,7 @@ public sealed class ConnectionTestStore(MakiDbContext db, IAppSettings settings,
             [Kavita] = KavitaFingerprint(await settings.GetAsync(SettingKeys.KavitaUrl, ct), await settings.GetAsync(SettingKeys.KavitaApiKey, ct)),
             [FlareSolverr] = FlareSolverrFingerprint(await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct)),
             [DownloadClient] = DownloadClientFingerprint(await DownloadClientSettingsStore.LoadAsync(settings, ct)),
+            [SourceProxy] = SourceProxyFingerprint(SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct)).DefaultUrl),
         };
         foreach (var backend in Enum.GetValues<IndexerBackend>())
         {

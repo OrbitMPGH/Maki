@@ -86,4 +86,18 @@ public class DownloadFailureReasonTests
         Assert.Equal(DownloadFailureReason.Unexpected, key);
         Assert.Equal(303, detail!.Length);
     }
+
+    [Theory]
+    [InlineData(Maki.Core.Http.Proxy.SourceProxyFailure.Unreachable)]
+    [InlineData(Maki.Core.Http.Proxy.SourceProxyFailure.Rejected)]
+    public void A_proxy_failure_is_the_proxy_not_the_site(Maki.Core.Http.Proxy.SourceProxyFailure failure)
+    {
+        var inner = new HttpRequestException("Connection refused", null, HttpStatusCode.BadGateway);
+        var (key, detail) = DownloadFailureReason.Classify(
+            new Maki.Core.Http.Proxy.SourceProxyException("mangafire", failure, inner, "Could not go through the proxy http://192.168.1.20:3128"));
+
+        Assert.Equal(DownloadFailureReason.Proxy, key);
+        Assert.Contains("192.168.1.20:3128", detail);
+        Assert.True(SourceFailover.CountsAgainstSource(key));
+    }
 }

@@ -1,5 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Sources.Custom;
@@ -15,7 +16,8 @@ public sealed class CustomSourceFetcher(
     IHttpClientFactory httpClientFactory,
     FlareSolverrClient flareSolverr,
     IAppSettings settings,
-    ILogger<ChallengeAwareFetcher> logger) : ChallengeAwareFetcher(httpClientFactory, flareSolverr, settings, logger)
+    ILogger<ChallengeAwareFetcher> logger,
+    ISourceProxyResolver? proxies = null) : ChallengeAwareFetcher(httpClientFactory, flareSolverr, settings, logger, proxies)
 {
     public new const string HttpClientName = "custom-sources";
 

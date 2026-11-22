@@ -310,7 +310,7 @@ public class TeamXSourceTests
     [Fact]
     public void ResolveSeriesIdFromUrl_accepts_series_and_rejects_chapter_and_query_urls()
     {
-        var source = new TeamXSource(null!);
+        var source = new TeamXSource(new FakeHtmlFetcher([]));
 
         Assert.Equal("SL", source.ResolveSeriesIdFromUrl(new Uri("https://olympustaff.com/series/SL")));
         Assert.Null(source.ResolveSeriesIdFromUrl(new Uri("https://olympustaff.com/series/SL/200")));

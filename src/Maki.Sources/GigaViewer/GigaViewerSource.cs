@@ -20,10 +20,10 @@ namespace Maki.Sources.GigaViewer;
 /// </summary>
 public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, GigaViewerSite site) : ISource
 {
-    /// <summary>Shared, rate-limited client for the descrambled page-image CDN, registered once
-    /// in Program.cs for every GigaViewer site (the images live on a `cdn-*-img.{host}` subdomain
-    /// of whichever site is asking, not one fixed host).</summary>
-    public const string ImageHttpClientName = "source-gigaviewer-img";
+    /// <summary>The client for a site's descrambled page-image CDN (a `cdn-*-img.{host}` subdomain
+    /// of that site). One per site so it carries the site's proxy route; Program.cs gives them a
+    /// shared rate limit.</summary>
+    public static string ImageClientNameFor(GigaViewerSite site) => $"source-{site.Name}-img";
 
     private static readonly HtmlParser Parser = new();
 
@@ -41,7 +41,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
     public string HttpClientName => $"source-{site.Name}";
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
-    private HttpClient ImageClient => httpClientFactory.CreateClient(ImageHttpClientName);
+    private HttpClient ImageClient => httpClientFactory.CreateClient(ImageClientNameFor(site));
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
