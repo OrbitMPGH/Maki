@@ -1,57 +1,67 @@
-<!-- @dsCard group="Library" height=320 -->
+<!-- @dsCard group="Library" height=306 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>CoverCard preview</title></head>
 <body>
-<div class="mk-preview" style="gap:16px">
-  <a class="cover-card" href="#">
-    <div class="cover-poster" style="background:linear-gradient(160deg, var(--indigo-7), var(--dark-8))">
-      <div class="cover-placeholder" style="align-items:start;padding-top:40%;color:var(--indigo-2)">Cover art</div>
-      <div class="cover-scrim"></div>
-      <div class="cover-corners">
-        <div class="cover-corner"><span class="cover-ring" style="--ring-pct:60%"></span></div>
-        <div class="cover-corner cover-corner-right">
-          <span class="cover-state" data-tone="status" style="--tone:var(--info);--tone-on:var(--info-on)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 4v16l13 -8z" /></svg></span>
+<div class="mk-preview cover-preview">
+  <div class="reading-card library-card">
+    <a class="cover-card" href="#" style="--series-accent:var(--teal-7)">
+      <div class="cover-poster" style="background:linear-gradient(160deg,var(--teal-5),var(--dark-8))">
+        <div class="cover-scrim"></div>
+        <div class="cover-meta">
+          <span class="cover-title">Frieren: Beyond Journey's End</span>
+          <div class="cover-row"><span>98<span class="cover-count-total">/136</span></span><span class="cover-new">4 new</span></div>
+          <div class="cover-bar-hit"><div class="cover-bar"><div class="cover-bar-fill" style="width:72%"></div></div></div>
+        </div>
+        <div class="cover-corners">
+          <div class="cover-corner cover-corner-left">
+            <span class="cover-state" data-tone="info" role="img" aria-label="Downloading"><svg data-icon="IconDownload" data-size="13"></svg></span>
+          </div>
+          <div class="cover-corner cover-corner-right">
+            <span class="cover-state" data-tone="status" data-read="part" style="--tone:var(--info);--tone-on:var(--info-on);--ring-pct:60%" role="img" aria-label="Ongoing. 59 of 98 downloaded read"><svg data-icon="IconPlayerPlay" data-size="13"></svg></span>
+          </div>
         </div>
       </div>
-      <div class="cover-meta">
-        <span class="cover-title">Frieren: Beyond Journey's End</span>
-        <div class="cover-bar"><div class="cover-bar-fill" style="width:72%"></div></div>
-        <div class="cover-row"><span>98 of 136</span><span class="cover-new">4 new</span></div>
-      </div>
-    </div>
-  </a>
-  <a class="cover-card" href="#" data-selected="true">
-    <div class="cover-poster" style="background:linear-gradient(160deg, var(--emerald-8), var(--dark-8))">
-      <div class="cover-placeholder" style="align-items:start;padding-top:40%;color:var(--emerald-2)">Cover art</div>
+    </a>
+    <button class="reading-card-menu cover-card-menu" type="button" aria-label="More options for Frieren"><svg data-icon="IconDots"></svg></button>
+  </div>
+
+  <a class="cover-card" href="#" role="checkbox" aria-checked="true" data-selected="true" style="--series-accent:var(--amber-8)">
+    <div class="cover-poster" style="background:linear-gradient(160deg,var(--amber-5),var(--dark-8))">
       <div class="cover-scrim"></div>
-      <div class="cover-corners">
-        <div class="cover-corner"><span class="cover-ring" data-complete style="--ring-pct:100%"></span></div>
-        <div class="cover-corner cover-corner-right">
-          <span class="cover-state" data-tone="status" style="--tone:var(--ok);--tone-on:var(--ok-on)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l5 5l10 -10" /></svg></span>
-        </div>
-      </div>
-      <div class="cover-meta">
-        <span class="cover-title">Yotsuba&amp;!</span>
-        <div class="cover-bar"><div class="cover-bar-fill" data-complete style="width:100%"></div></div>
-        <div class="cover-row"><span>112 of 112</span></div>
-      </div>
-    </div>
-  </a>
-  <a class="cover-card" href="#">
-    <div class="cover-poster" style="background:linear-gradient(160deg, var(--dark-6), var(--dark-8))">
-      <div class="cover-placeholder" style="align-items:start;padding-top:40%;color:var(--dark-2)">Cover art</div>
-      <div class="cover-scrim"></div>
-      <div class="cover-corners">
-        <div class="cover-corner"></div>
-        <div class="cover-corner cover-corner-right">
-          <span class="cover-state" data-tone="status" data-unmonitored style="--tone:var(--warn);--tone-on:var(--warn-on)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mk-icon" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" /><path d="M14 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" /></svg></span>
-        </div>
-      </div>
+      <span class="cover-check" data-checked aria-hidden="true"></span>
       <div class="cover-meta">
         <span class="cover-title">Dungeon Meshi</span>
-        <div class="cover-bar"><div class="cover-bar-fill" style="width:40%"></div></div>
-        <div class="cover-row"><span>28 of 70</span></div>
+        <div class="cover-row"><span>97 of 97</span></div>
+        <div class="cover-bar-hit">
+          <div class="cover-bar" data-reading>
+            <div class="cover-bar-fill" data-complete style="width:100%"></div>
+            <div class="cover-bar-read" style="width:70%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="cover-corners">
+        <div class="cover-corner cover-corner-right">
+          <span class="cover-state" data-tone="status" style="--tone:var(--ok);--tone-on:var(--ok-on)" role="img" aria-label="Completed"><svg data-icon="IconCheck" data-size="13"></svg></span>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  <a class="cover-card" href="#">
+    <div class="cover-poster">
+      <div class="cover-placeholder" aria-hidden="true">An unlisted series</div>
+      <div class="cover-scrim"></div>
+      <div class="cover-meta">
+        <span class="cover-title">An unlisted series</span>
+        <div class="cover-row"><span>No chapters</span></div>
+        <div class="cover-bar-hit"><div class="cover-bar" data-empty></div></div>
+      </div>
+      <div class="cover-corners">
+        <div class="cover-corner cover-corner-right">
+          <span class="cover-badge cover-badge-circle" role="img" aria-label="Not monitored"><svg data-icon="IconEyeOff"></svg></span>
+          <span class="cover-state" data-tone="status" data-unmonitored style="--tone:var(--warn);--tone-on:var(--warn-on)" role="img" aria-label="Hiatus, not monitored"><svg data-icon="IconPlayerPause" data-size="13"></svg></span>
+        </div>
       </div>
     </div>
   </a>

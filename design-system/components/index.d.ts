@@ -1,7 +1,7 @@
 // Prop types of Maki's shared UI primitives (frontend/src/components/ui), as documentation.
 // Button and Badge are Mantine components with theme defaults and are not re-declared here.
-import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef, ComponentType, SVGProps } from 'react'
-import type { PaperProps } from '@mantine/core'
+import type { ReactNode, CSSProperties, MouseEventHandler, ComponentPropsWithRef, ComponentType, HTMLAttributes, JSX, SVGProps } from 'react'
+import type { ActionIconProps, PaperProps, TextInputProps } from '@mantine/core'
 
 /** An icon from frontend/src/lib/icons.tsx (Phosphor, Regular; Bold below 14px). */
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
@@ -11,7 +11,7 @@ export declare function PageHeader(props: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
-  /** Smaller title for operational pages. */
+  /** Smaller description for operational pages. */
   compact?: boolean
   className?: string
 }): JSX.Element
@@ -137,22 +137,28 @@ export declare function EmptyState(props: {
 }): JSX.Element
 
 /** Poster card for the library grid. `series` is the API's SeriesDto. */
+export type OfflineAvailability = 'saved' | 'unavailable'
 export declare const CoverCard: (props: {
   series: unknown
   selectMode: boolean
   selected: boolean
   readTracking: boolean
-  onToggle: (id: number) => void
+  offline?: OfflineAvailability
+  menu?: boolean
+  onToggle: (id: number, shiftKey?: boolean) => void
 }) => JSX.Element
 
 /** A catalogue item from MangaBaka (RecommendationItem in api/hooks). */
 export type RecommendationItem = unknown
+export type ShortlistSource = unknown
+export type OpenItem = (item: RecommendationItem, source?: ShortlistSource) => void
 
 /** One horizontal rail of catalogue poster cards. */
 export declare function DiscoverRailRow(props: {
   items: RecommendationItem[]
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
   /** Show each card's reason line. Off by default: the rail heading already says why. */
   showReason?: boolean
 }): JSX.Element
@@ -162,7 +168,8 @@ export declare const RecommendationCard: (props: {
   item: RecommendationItem
   /** Library series id if already owned; null otherwise. */
   inLibrarySeriesId: number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
   /** A string replaces the reason line, null hides it. */
   reasonOverride?: string | null
 }) => JSX.Element
@@ -172,7 +179,8 @@ export declare const RecommendationRow: (props: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
   density: 'compact' | 'default' | 'comfortable'
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
   reasonOverride?: string | null
 }) => JSX.Element
 
@@ -180,16 +188,19 @@ export declare const RecommendationRow: (props: {
 export declare function EngineRailRow(props: {
   items: RecommendationItem[]
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
 }): JSX.Element
 
 /** Wider poster card with a footer naming why the pick is here. */
 export declare const EngineCard: (props: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
   /** Cover of the library series this pick was seeded from. */
   seedCoverUrl?: string | null
+  reasonInRail?: boolean
 }) => JSX.Element
 
 /** List-view card for an owned series. */
@@ -199,7 +210,8 @@ export declare const SeriesRow: (props: {
   selected: boolean
   readTracking: boolean
   density: 'compact' | 'default' | 'comfortable'
-  onToggle: (id: number) => void
+  offline?: OfflineAvailability
+  onToggle: (id: number, shiftKey?: boolean) => void
 }) => JSX.Element
 
 /** The confirmation before an irreversible action. */
@@ -220,8 +232,8 @@ export declare function ModalHeading(props: { title: ReactNode; description?: Re
 /** The pinned bar at a utility modal's foot: a status line left, the actions right. The body's last child. */
 export declare function ModalFooter(props: { status?: ReactNode; children?: ReactNode }): JSX.Element
 
-/** One line inside a dialog that needs attention: a tone icon, then the words. */
-export declare function ModalNote(props: { tone?: 'warn' | 'info'; children: ReactNode }): JSX.Element
+/** The shared Note inside a dialog. */
+export { Note as ModalNote }
 
 /** The app-wide delegated tooltip. Mount once; any element with data-tip gets one. */
 export declare function TipLayer(): JSX.Element
@@ -364,6 +376,72 @@ export declare function DrillFooter(props: { onReset: () => void; resetDisabled?
 
 /** Slides between a drill panel's pages and eases its height. Keyed on `page`; `depth` picks the direction. */
 export declare function DrillPanes(props: { page: string; depth: number; bleed?: number; easeHeight?: boolean; children: ReactNode }): JSX.Element
+
+export declare function Rail(props: HTMLAttributes<HTMLDivElement> & { engine?: boolean }): JSX.Element
+export declare function RailSkeleton(props: {
+  count?: number
+  engine?: boolean
+  title?: boolean
+  titleWidth?: number
+  flush?: boolean
+}): JSX.Element
+export declare function PendingLabel(props: { pending: ReactNode; children: ReactNode }): JSX.Element
+export declare function DelayedLoader(props: { py?: number }): JSX.Element
+
+export type CalloutTone = 'info' | 'warn' | 'danger' | 'ok' | 'neutral' | 'brand' | 'anime'
+export declare function Callout(props: {
+  tone?: CalloutTone
+  title?: ReactNode
+  icon?: Icon
+  actions?: ReactNode
+  children: ReactNode
+}): JSX.Element
+
+export type NoteTone = 'warn' | 'info' | 'danger' | 'ok' | 'neutral'
+export declare function Note(props: {
+  tone?: NoteTone
+  icon?: Icon
+  action?: ReactNode
+  closeLabel?: string
+  onClose?: () => void
+  role?: 'alert' | 'status'
+  mt?: boolean
+  mb?: boolean
+  children: ReactNode
+}): JSX.Element
+
+export declare function SearchInput(props: Omit<TextInputProps, 'value' | 'type' | 'leftSection'> & {
+  value: string
+  onClear: () => void
+  idleSection?: ReactNode
+  ref?: ComponentPropsWithRef<'input'>['ref']
+}): JSX.Element
+export declare function OverflowButton(props: ActionIconProps & ComponentPropsWithRef<'button'>): JSX.Element
+export declare function TimeAgo(props: { value: string | null | undefined; className?: string }): JSX.Element | null
+export declare function Thumb(props: HTMLAttributes<HTMLSpanElement> & {
+  src?: string | null
+  alt?: string
+  size?: 'sm' | 'md' | 'lg'
+  width?: number
+}): JSX.Element
+
+export interface Step {
+  label: string
+  hint?: string
+  state: 'todo' | 'current' | 'done'
+  tone?: 'warn'
+  disabled?: boolean
+}
+export declare function StepStrip(props: {
+  steps: Step[]
+  label: string
+  layout?: 'strip' | 'rail'
+  onSelect?: (index: number) => void
+}): JSX.Element
+
+type ScoreProps = Omit<HTMLAttributes<HTMLSpanElement>, 'children'> & { size?: 'sm' | 'md' }
+export declare function ScoreInline(props: ScoreProps & { score: number; tone?: 'community' | 'yours' }): JSX.Element
+export declare function YourScoreInline(props: ScoreProps & { rating: number }): JSX.Element
 
 /** The current page, its depth, `open`/`back`, and the refs that put focus back where it was. */
 export declare function useDrillPages<P extends string>(

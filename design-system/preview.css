@@ -16,13 +16,15 @@ body {
 * { box-sizing: border-box; }
 /* Mantine's global reset. */
 button, input, select, textarea { font: inherit; }
+:where(a, button, [tabindex]):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+[data-theme='paper'] body { background-image: var(--paper-grain); }
 .mk-preview { padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
 .mk-preview[data-stack] { display: grid; align-items: start; }
 .mk-icon { width: 1em; height: 1em; flex-shrink: 0; }
 
 /* --- Brand lockup ---------------------------------------------------------- */
-.brand-mark img, .brand-mark svg { width: 42px; height: 42px; }
-.brand-wordmark { font-size: 1.125rem; line-height: 1; color: var(--ink-hi); }
+.brand-mark img { width: 32px; height: 32px; }
+.brand-wordmark { font-size: var(--type-section); line-height: 1; color: var(--ink-hi); }
 
 /* --- Button (Mantine, radius md) ------------------------------------------ */
 .mk-button {
@@ -40,10 +42,10 @@ button, input, select, textarea { font: inherit; }
   line-height: 1;
   cursor: pointer;
   background: var(--primary);
-  color: var(--primary-on);
+  color: var(--brand-on);
 }
 .mk-button:hover { background: var(--primary-hover); }
-.mk-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mk-button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .mk-button[data-variant='default'] { background: var(--surface-2); color: var(--ink); border-color: var(--border-strong); }
 .mk-button[data-variant='default']:hover { background: var(--surface-hover); }
 .mk-button[data-variant='light'] { background: color-mix(in srgb, var(--brand) 15%, transparent); color: var(--brand-fg); }
@@ -59,16 +61,17 @@ button, input, select, textarea { font: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 1.25rem;
+  height: 18px;
   padding: 0 0.625rem;
   border-radius: var(--radius-sm);
-  font-size: var(--type-label);
+  font-size: var(--type-badge);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
-  color: var(--tone, var(--brand-fg));
-  background: var(--tone-soft, color-mix(in srgb, var(--brand) 15%, transparent));
+  color: var(--tone-fg, var(--tone, var(--brand-fg)));
+  background: color-mix(in srgb, var(--tone, var(--primary)) 10%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
 }
-.mk-badge[data-variant='filled'] { color: var(--primary-on); background: var(--tone, var(--primary)); }
+.mk-badge[data-variant='filled'] { color: var(--tone-on, var(--brand-on)); background: var(--tone, var(--primary)); border-color: transparent; }
 
 /* --- CountIndicator (Mantine Indicator in the app) ---------------------------- */
 .mk-count-host {
@@ -104,20 +107,22 @@ button, input, select, textarea { font: inherit; }
 .mk-count[data-tone='danger'] { color: var(--danger-on); background: var(--danger); }
 
 /* --- PageHeader (Mantine Group, Title and Text in the app) ----------------- */
-.page-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.page-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--spacing-sm); }
 .page-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .page-header-title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   margin: 0;
   color: var(--ink-hi);
   font-family: var(--font-display);
-  font-size: 1.9rem;
+  font-size: var(--type-page-title);
   font-weight: var(--fw-bold);
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -0.025em;
 }
-.page-header-description { margin: 0; max-width: 620px; color: var(--ink-3); font-size: var(--type-body); }
-.page-header-actions { display: flex; gap: 10px; }
-.page-header[data-compact] .page-header-title { font-size: var(--type-feature); line-height: 1.2; }
+.page-header-description { margin: calc((var(--type-page-title) * 1.15 - 44px) / 2) 0 0; max-width: 620px; color: var(--ink-3); font-size: var(--type-body); }
+.page-header-actions { display: flex; align-items: center; gap: var(--spacing-xs); }
 .page-header[data-compact] .page-header-description { font-size: var(--type-meta); }
 
 /* --- Panel (Mantine Paper withBorder, radius lg, p lg) --------------------- */
@@ -146,14 +151,32 @@ button, input, select, textarea { font: inherit; }
 .empty-state-text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 
 /* --- Cards: the grid sets their width in the app, the preview does here ---- */
-.mk-preview > .cover-card { width: 180px; }
+.cover-preview { display: grid; grid-template-columns: repeat(3, minmax(0, 180px)); }
 .cover-badge .mk-icon { width: 11px; height: 11px; }
 .cover-badge-circle .mk-icon { width: 12px; height: 12px; }
+.cover-corner .cover-badge-circle .mk-icon { width: 16px; height: 16px; }
+.cover-state .mk-icon { width: 13px; height: 13px; }
 .discover-corner .mk-icon { width: 16px; height: 16px; }
 /* The add corner only shows on hover in the app; data-shown pins it open in a preview. */
 .discover-corner[data-add='true'][data-shown] { opacity: 1; transform: scale(1); }
-.discover-rating .mk-icon { width: 10px; height: 10px; color: var(--rating); }
+.discover-rating .mk-icon { width: 12px; height: 12px; color: var(--rating); }
 .engine-why-line .mk-icon { width: 13px; height: 13px; }
+.series-row .mk-badge { flex-shrink: 0; }
+
+/* Mantine's subtle ActionIcon in the catalogue filter toolbar. */
+.filter-bar-menu {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.filter-bar-menu:hover { background: color-mix(in srgb, var(--ink-2) 12%, transparent); }
 
 /* --- Table (Mantine Table, verticalSpacing sm, horizontalSpacing md) ------- */
 .mk-table { width: 100%; border-collapse: collapse; color: var(--ink); font-size: var(--type-body); }
@@ -162,7 +185,7 @@ button, input, select, textarea { font: inherit; }
 
 /* --- Skeleton (Mantine Skeleton) ------------------------------------------- */
 .mk-skeleton { display: block; border-radius: var(--radius-md); background: var(--dark-4); animation: mk-skeleton-fade 1.5s linear infinite; }
-[data-theme='light'] .mk-skeleton { background: #dee2e6; }
+:is([data-theme='light'], [data-theme='paper']) .mk-skeleton { background: #dee2e6; }
 @keyframes mk-skeleton-fade { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mk-skeleton { animation: none; } }
 

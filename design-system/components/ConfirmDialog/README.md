@@ -8,4 +8,4 @@ It is an ordinary utility modal (centred, `surface-raised`, `radius-lg`, a secti
 
 Use `danger-fill`, not `danger`, for the filled button: white on `danger-fill` is 5.6:1 in every theme, while white on dark `danger` is only 3.4:1.
 
-**The consumer provides:** `opened`, `onClose`, `title`, `children` (the consequence), `confirmLabel`, `onConfirm`, and `loading` while the request runs (the confirm button spins, the dialog stays open until it succeeds).
+Pass `opened`, `onClose`, `title`, the consequence as `children`, `confirmLabel` and `onConfirm`. Set `loading` while the request runs to show the button's loading dots.
