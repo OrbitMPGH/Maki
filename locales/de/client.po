@@ -483,8 +483,10 @@ msgid "{0, plural, one {# thread} other {# threads}}"
 msgstr ""
 
 #. placeholder {0}: active.items.length
+#. placeholder {0}: count.count
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -868,6 +870,13 @@ msgstr "{0} liest diese Seite schon."
 msgid "{0} by {deletedBy}"
 msgstr "{0} von {deletedBy}"
 
+#. placeholder {0}: item.totalChapters
+#: src/components/discover/DiscoverCohortColumns.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{0} ch."
+msgstr ""
+
 #. placeholder {0}: formatBytes(f.freeSpace)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -904,6 +913,19 @@ msgstr "{0} Seiten im Beispielkapitel."
 #, fuzzy
 msgid "{0} rows right now"
 msgstr "{0} Reihen aktuell"
+
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "{0}, in your library"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} and {b} readers"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} readers"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -2745,6 +2767,10 @@ msgstr "{perSitting} Kap. pro Sitzung"
 msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 msgstr "{pieces, plural, one {Ergibt # Seite.} other {Ergibt # Seiten. Jede gestrichelte Linie ist ein Schnitt.}}"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{places} places this month"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -4170,6 +4196,10 @@ msgstr ""
 msgid "75 / page"
 msgstr "75 / Seite"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "8.5 and up, not in your library"
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "90 days"
@@ -4190,6 +4220,10 @@ msgstr "Ein Anime mit 10/10 startet bei {topSeed}, gegenüber 1,00 für ein unbe
 #, fuzzy
 msgid "A bulk move, rename or rescan is running."
 msgstr "Ein Massenverschieben, Umbenennen oder Neuscannen läuft."
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A card for each smaller theme on your shelf."
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -4215,11 +4249,6 @@ msgstr "eine Creator-Seite"
 #, fuzzy
 msgid "A download is writing into this folder."
 msgstr "Ein Download schreibt in diesen Ordner."
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A few large picks at the top, from your recent reading or what is trending."
-msgstr "Oben einige große Empfehlungen, basierend auf deiner letzten Lektüre oder aktuellen Trends."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -4330,11 +4359,6 @@ msgstr "Eine Aktualisierung läuft bereits"
 #, fuzzy
 msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
 msgstr "Eine grobe Schätzung anhand des aktuellen Tempos jeder Quelle. Pausierte und zurückgehaltene Downloads fehlen."
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A row for each smaller theme on your shelf."
-msgstr "Eine Reihe für jedes kleinere Thema in deiner Bibliothek."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4800,6 +4824,7 @@ msgstr "Titel hinzufügen"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Add to library"
@@ -5229,11 +5254,6 @@ msgstr "Auch Dateien auf der Festplatte löschen"
 msgid "Also delete the downloaded files"
 msgstr "Auch die heruntergeladenen Dateien löschen"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Also for you"
-msgstr "Auch für dich"
-
 #: src/components/pageconversion/recommendation.ts
 #, fuzzy
 msgid "Also in apps like Mihon"
@@ -5470,6 +5490,15 @@ msgstr "Eine andere Datei belegt das Kapitel bereits. Öffne beide, um sie vor d
 #, fuzzy
 msgid "Another reader"
 msgstr "Anderer Leser"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of you: {theme}"
+msgstr ""
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of your library"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5902,7 +5931,6 @@ msgstr "Autor"
 msgid "Author or artist"
 msgstr "Autor oder Zeichner"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -6276,6 +6304,11 @@ msgstr "Kaum ein Einfluss. Eine geliebte Serie bleibt unter einem nie bewerteten
 #, fuzzy
 msgid "Barely touched"
 msgstr "Kaum benutzt"
+
+#. placeholder {0}: formatNumber(group.shared)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Based on {0} of your finished series"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -8048,6 +8081,14 @@ msgstr "Vergleiche mit dem gesamten Katalog benötigen den Embedding-Index."
 #, fuzzy
 msgid "Complete"
 msgstr "Vollständig"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, over 150 chapters"
+msgstr ""
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, up to 50 chapters"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ImportListsSection.tsx
@@ -11415,11 +11456,6 @@ msgstr "Bibliothek filtern…"
 msgid "Filter saved"
 msgstr "Filter gespeichert"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Filter the catalogue"
-msgstr "Katalog filtern"
-
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -11551,10 +11587,18 @@ msgstr "Einrichtung abschließen"
 msgid "Finished"
 msgstr "Abgeschlossen"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished by them far more than by most readers"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Finished in a rush"
 msgstr "Im Eiltempo beendet"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished it"
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -11591,6 +11635,10 @@ msgstr "Erste Seite"
 #, fuzzy
 msgid "First page image"
 msgstr "Bild der ersten Seite"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "First released this year"
+msgstr ""
 
 #: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -11930,7 +11978,7 @@ msgstr "Vom Metadatenanbieter, nicht deine eigenen Tags"
 msgid "From their names"
 msgstr "Anhand ihrer Namen"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/DiscoverThemeCards.tsx
 #, fuzzy
 msgid "From your library"
 msgstr "Aus deiner Bibliothek"
@@ -11939,6 +11987,10 @@ msgstr "Aus deiner Bibliothek"
 #, fuzzy
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "In deinen MangaBaka-Einstellungen. Kein OAuth erforderlich."
+
+#: src/pages/DiscoverPage.tsx
+msgid "From your recent reading"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11993,17 +12045,20 @@ msgid "General"
 msgstr "Allgemein"
 
 #: src/api/autoTagRules.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Genre"
 msgstr "Genre"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
@@ -12290,6 +12345,10 @@ msgstr "Gruppe: {groupName}, von dir gesetzt"
 #, fuzzy
 msgid "Groups credited: {groupList}"
 msgstr "Genannte Gruppen: {groupList}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Groups of readers"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12621,6 +12680,10 @@ msgstr "Höhere Zahlen bedeuten aufdringlichere Benachrichtigungen."
 #, fuzzy
 msgid "Highest priority first. Grouped tiers rank the same."
 msgstr "Höchste Priorität zuerst. Gruppierte Stufen stehen gleichauf."
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Highest share of readers like you"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14645,6 +14708,10 @@ msgstr "Sperre, fehlgeschlagene Versuche, Sitzungsdauer"
 msgid "login page, background, covers, mosaic, wallpaper"
 msgstr "anmeldeseite, hintergrund, cover, mosaik, wallpaper"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Long and finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -15831,6 +15898,10 @@ msgstr "Am häufigsten fehlend"
 msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 msgstr "Der größte Teil der Seite geht vor. Ein Streifen an einer Seite geht zurück, oben öffnen sich die Leisten."
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Most of them finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -15841,6 +15912,10 @@ msgstr "Du liest meistens zwischen <0>{start}</0> und <1>{end}</1>; <2>{weekendS
 #, fuzzy
 msgid "Most popular"
 msgstr "Am beliebtesten"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Most popular first"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -16447,6 +16522,10 @@ msgstr "Neue Serien von Creators, denen du folgst"
 msgid "New tag…"
 msgstr "Neuer Tag…"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "New this year"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16931,6 +17010,7 @@ msgstr "Keine Zuordnung gefunden."
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/CreditPicker.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -18323,6 +18403,10 @@ msgstr "Jetzt in deiner Bibliothek. Passende Quellen werden im Hintergrund gesuc
 msgid "Number"
 msgstr "Nummer"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "Number 1"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Numbering clash"
@@ -18682,6 +18766,11 @@ msgstr "Nur Dienste mit diesem Tag benachrichtigen."
 msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
 msgstr "Es wird immer nur ein Indexer verwendet. Beim Wechseln passen Release-Vorschläge, die du früher verworfen hast, nicht mehr, weil Prowlarr und Jackett Releases unterschiedlich nummerieren."
 
+#. placeholder {0}: s.displayTitle
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Only picks from {0}"
+msgstr ""
+
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "Only safe titles"
@@ -19040,11 +19129,6 @@ msgstr "Andere Gruppen"
 #, fuzzy
 msgid "Other list"
 msgstr "Andere Liste"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Other picks for you"
-msgstr "Andere Tipps für dich"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -19479,11 +19563,6 @@ msgstr "Durchlauf pausieren"
 msgid "Pause Rewind"
 msgstr "Rewind pausieren"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Pause rotating picks"
-msgstr "Wechselnde Empfehlungen pausieren"
-
 #: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Pause the running pass?"
@@ -19495,7 +19574,6 @@ msgid "Pause this series"
 msgstr "Diese Serie pausieren"
 
 #: src/components/ActivityButton.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -19719,6 +19797,10 @@ msgstr "Fixiere eine davon für eine Serie im Menü ihres Qualitätsprofils."
 msgid "Pin to page {pageNumber}"
 msgstr "Auf Seite {pageNumber} anheften"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Places climbed this month"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -19783,6 +19865,10 @@ msgstr "Polnisch"
 #, fuzzy
 msgid "popular"
 msgstr "beliebt"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Popular in {genre}"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -20425,6 +20511,10 @@ msgstr "Bewertet mit {ratingLabel} oder mehr"
 msgid "Rated {score}"
 msgstr "Bewertet {score}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Rated highest"
+msgstr ""
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -20753,6 +20843,7 @@ msgid "Readers get it"
 msgstr "Leser bekommen es"
 
 #: src/api/hooks.ts
+#: src/components/discover/discoverBrowse.ts
 #, fuzzy
 msgid "Readers like you"
 msgstr "Leser wie du"
@@ -20766,6 +20857,10 @@ msgstr "Leser wie du haben dies ebenfalls abgeschlossen"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Leser wie du haben dies ebenfalls empfohlen"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Readers like you finished this"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -22434,11 +22529,6 @@ msgstr "Downloads für diese Serie fortsetzen"
 msgid "Resume Rewind"
 msgstr "Rewind fortsetzen"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Resume rotating picks"
-msgstr "Wechselnde Empfehlungen fortsetzen"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Resume this series"
@@ -23381,6 +23471,10 @@ msgstr "Punktzahl {score}"
 msgid "Score for {0}"
 msgstr "Wertung für {0}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Score from all readers"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "Score two to get a suggestion"
 msgstr ""
@@ -23772,6 +23866,19 @@ msgstr "Abschnitte auf diesem Tab"
 #, fuzzy
 msgid "Security settings saved. Restart Maki to apply them."
 msgstr "Sicherheitseinstellungen gespeichert. Maki neu starten, um sie anzuwenden."
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all"
+msgstr ""
+
+#. placeholder {0}: formatNumber(group.members.length)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "See all {0}"
+msgstr ""
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all in {theme}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -24467,6 +24574,10 @@ msgstr ""
 msgid "Shift-click for a range. Unticking a chapter unlinks it."
 msgstr "Shift-Klick für einen Bereich. Das Abwählen eines Kapitels löst die Verknüpfung."
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Short and finished"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -24512,6 +24623,7 @@ msgstr "Beim Eintreffen einer Benachrichtigung ein Popup anzeigen"
 msgid "Show again"
 msgstr "Erneut anzeigen"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -24594,6 +24706,10 @@ msgstr "Nur anzeigen: {label}"
 msgid "Show or hide keyboard shortcuts"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Show other picks"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -24604,6 +24720,10 @@ msgstr "Seitenzahl anzeigen"
 #, fuzzy
 msgid "Show passing"
 msgstr "Bestandene anzeigen"
+
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Show picks from every series"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -24689,11 +24809,6 @@ msgstr "Wird auf diesem Gerät gezeigt, bis die Seite des Servers bereit ist, un
 #, fuzzy
 msgid "Shown to whoever asked"
 msgstr "Dem Anfragenden angezeigt"
-
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Side interests"
-msgstr "Nebeninteressen"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Side stories"
@@ -25418,11 +25533,6 @@ msgstr "Spoiler: {description}"
 msgid "Sports"
 msgstr "Sport"
 
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Spotlight"
-msgstr "Im Fokus"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Stacked height"
@@ -25480,6 +25590,11 @@ msgstr "Kapitel starten"
 #, fuzzy
 msgid "Start from a template"
 msgstr "Aus einer Vorlage starten"
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Start here"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -27417,6 +27532,10 @@ msgstr "Diese Serien werden bereits zugeordnet."
 msgid "Threads"
 msgstr "Threads"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Thriller"
@@ -27744,9 +27863,14 @@ msgstr "Oberstes {percent}% einer Seite"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Top rated"
 msgstr "Am besten bewertet"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Top rated first"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -27855,6 +27979,7 @@ msgid "Trash: {trashSize} across {trashFilesText}"
 msgstr "Papierkorb: {trashSize} in {trashFilesText}"
 
 #: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Trending now"
 msgstr "Gerade im Trend"
@@ -28112,6 +28237,10 @@ msgstr ""
 #, fuzzy
 msgid "Under minimum"
 msgstr "Unter dem Minimum"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Under the radar"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -29050,6 +29179,13 @@ msgstr "Vietnamesisch"
 msgid "View"
 msgstr "Ansehen"
 
+#. placeholder {0}: first.title
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "View {0}"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -29076,6 +29212,7 @@ msgstr "{title} anzeigen und hinzufügen"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #, fuzzy
 msgid "View in library"
 msgstr "In Bibliothek anzeigen"
@@ -29447,9 +29584,8 @@ msgid "What it does"
 msgstr "Was es tut"
 
 #: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "What readers who finished the same series as you went on to finish."
-msgstr "Was Leser, die dieselbe Serie wie du abgeschlossen haben, danach ebenfalls abgeschlossen haben."
+msgid "What readers who finished the same series as you went on to finish, one column per group of readers."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -30090,11 +30226,6 @@ msgstr "Deine Bibliothek ist leer"
 #, fuzzy
 msgid "Your new API key"
 msgstr "Dein neuer API-Schlüssel"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Your next read"
-msgstr "Deine nächste Lektüre"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/MintConfirmation.tsx

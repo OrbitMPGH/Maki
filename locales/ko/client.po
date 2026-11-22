@@ -483,8 +483,10 @@ msgid "{0, plural, one {# thread} other {# threads}}"
 msgstr ""
 
 #. placeholder {0}: active.items.length
+#. placeholder {0}: count.count
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -868,6 +870,13 @@ msgstr "{0}이(가) 이미 이 사이트를 읽고 있습니다."
 msgid "{0} by {deletedBy}"
 msgstr "{0} ({deletedBy})"
 
+#. placeholder {0}: item.totalChapters
+#: src/components/discover/DiscoverCohortColumns.tsx
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{0} ch."
+msgstr ""
+
 #. placeholder {0}: formatBytes(f.freeSpace)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -904,6 +913,19 @@ msgstr "샘플 챕터에 페이지 {0}개가 있습니다."
 #, fuzzy
 msgid "{0} rows right now"
 msgstr "현재 {0}개 행"
+
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "{0}, in your library"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} and {b} readers"
+msgstr ""
+
+#: src/components/discover/discoverBrowse.ts
+msgid "{a} readers"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -2745,6 +2767,10 @@ msgstr "한 번에 {perSitting}화"
 msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 msgstr "{pieces, plural, other {페이지 #개가 됩니다. 점선은 자르는 위치를 나타냅니다.}}"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "{places} places this month"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 #, fuzzy
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -4170,6 +4196,10 @@ msgstr ""
 msgid "75 / page"
 msgstr "페이지당 75개"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "8.5 and up, not in your library"
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "90 days"
@@ -4190,6 +4220,10 @@ msgstr "10점 만점 애니메이션은 {topSeed}로 반영되며, 라이브러�
 #, fuzzy
 msgid "A bulk move, rename or rescan is running."
 msgstr "일괄 이동, 이름 바꾸기 또는 다시 검색이 실행 중입니다."
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A card for each smaller theme on your shelf."
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -4215,11 +4249,6 @@ msgstr "크리에이터 페이지"
 #, fuzzy
 msgid "A download is writing into this folder."
 msgstr "다운로드가 이 폴더에 쓰는 중입니다."
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A few large picks at the top, from your recent reading or what is trending."
-msgstr "상단에 크게 표시되는 추천 작품입니다. 최근 읽은 작품이나 인기 작품에서 선택합니다."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -4330,11 +4359,6 @@ msgstr "새로 고침이 이미 실행 중입니다"
 #, fuzzy
 msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
 msgstr "최근 각 소스의 다운로드 속도로 대략 추정한 값입니다. 일시 정지되거나 보류된 다운로드는 제외합니다."
-
-#: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "A row for each smaller theme on your shelf."
-msgstr "서재의 세부 주제마다 한 행씩 표시합니다."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4800,6 +4824,7 @@ msgstr "제목 추가"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Add to library"
@@ -5229,11 +5254,6 @@ msgstr "디스크의 파일도 삭제"
 msgid "Also delete the downloaded files"
 msgstr "다운로드한 파일도 함께 삭제"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Also for you"
-msgstr "나에게도 적용"
-
 #: src/components/pageconversion/recommendation.ts
 #, fuzzy
 msgid "Also in apps like Mihon"
@@ -5470,6 +5490,15 @@ msgstr "이 챕터는 이미 다른 파일로 뒷받침되고 있습니다. 둘 
 #, fuzzy
 msgid "Another reader"
 msgstr "다른 독자"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of you: {theme}"
+msgstr ""
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Another side of your library"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5902,7 +5931,6 @@ msgstr "작가"
 msgid "Author or artist"
 msgstr "작가 또는 작화가"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -6276,6 +6304,11 @@ msgstr "거의 영향을 주지 않습니다. 좋아한 작품도 평가하지 �
 #, fuzzy
 msgid "Barely touched"
 msgstr "거의 사용하지 않음"
+
+#. placeholder {0}: formatNumber(group.shared)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Based on {0} of your finished series"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -8048,6 +8081,14 @@ msgstr "더 넓은 카탈로그와 비교하려면 임베딩 인덱스가 필요
 #, fuzzy
 msgid "Complete"
 msgstr "완료"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, over 150 chapters"
+msgstr ""
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Complete, up to 50 chapters"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ImportListsSection.tsx
@@ -11415,11 +11456,6 @@ msgstr "라이브러리 필터 중…"
 msgid "Filter saved"
 msgstr "필터 저장됨"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Filter the catalogue"
-msgstr "카탈로그 필터링"
-
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -11551,10 +11587,18 @@ msgstr "설정 완료"
 msgid "Finished"
 msgstr "완료됨"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished by them far more than by most readers"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Finished in a rush"
 msgstr "빠르게 완독함"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Finished it"
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
@@ -11591,6 +11635,10 @@ msgstr "첫 페이지"
 #, fuzzy
 msgid "First page image"
 msgstr "첫 페이지 이미지"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "First released this year"
+msgstr ""
 
 #: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -11930,7 +11978,7 @@ msgstr "메타데이터 제공자에서 가져온 태그, 내 태그 아님"
 msgid "From their names"
 msgstr "파일 이름에서"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/DiscoverThemeCards.tsx
 #, fuzzy
 msgid "From your library"
 msgstr "내 라이브러리에서"
@@ -11939,6 +11987,10 @@ msgstr "내 라이브러리에서"
 #, fuzzy
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "MangaBaka 설정에서 가져옵니다. OAuth는 필요하지 않습니다."
+
+#: src/pages/DiscoverPage.tsx
+msgid "From your recent reading"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11993,17 +12045,20 @@ msgid "General"
 msgstr "일반"
 
 #: src/api/autoTagRules.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Genre"
 msgstr "장르"
 
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
+#: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
@@ -12290,6 +12345,10 @@ msgstr "그룹: {groupName}, 직접 설정함"
 #, fuzzy
 msgid "Groups credited: {groupList}"
 msgstr "표기된 그룹: {groupList}"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Groups of readers"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12621,6 +12680,10 @@ msgstr "숫자가 높을수록 더 눈에 띕니다."
 #, fuzzy
 msgid "Highest priority first. Grouped tiers rank the same."
 msgstr "우선순위가 가장 높은 것부터 적용합니다. 같은 등급으로 묶인 항목은 순위가 같습니다."
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Highest share of readers like you"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14645,6 +14708,10 @@ msgstr "계정 잠금, 실패 횟수, 세션 수명"
 msgid "login page, background, covers, mosaic, wallpaper"
 msgstr "로그인 페이지, 배경, 표지, 커버, 모자이크, 벽지, login page, background, covers, mosaic, wallpaper"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Long and finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -15831,6 +15898,10 @@ msgstr "가장 많이 누락됨"
 msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 msgstr "페이지 대부분은 앞으로 갑니다. 한쪽 가장자리의 띠는 뒤로 가고, 위쪽은 막대를 엽니다."
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Most of them finished"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -15841,6 +15912,10 @@ msgstr "독서 대부분은 <0>{start}</0>~<1>{end}</1> 사이에 이루어지�
 #, fuzzy
 msgid "Most popular"
 msgstr "가장 인기 있는"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Most popular first"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -16447,6 +16522,10 @@ msgstr "팔로우 중인 창작자의 새 시리즈"
 msgid "New tag…"
 msgstr "새 태그…"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "New this year"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16931,6 +17010,7 @@ msgstr "일치하는 항목을 찾지 못했습니다."
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/CreditPicker.tsx
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/library/LibraryFilterPanel.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
@@ -18323,6 +18403,10 @@ msgstr "라이브러리에 추가되었습니다. 백그라운드에서 소스�
 msgid "Number"
 msgstr "번호"
 
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "Number 1"
+msgstr ""
+
 #: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Numbering clash"
@@ -18682,6 +18766,11 @@ msgstr "이 태그가 있는 서비스에만 알립니다."
 msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
 msgstr "한 번에 하나의 인덱서만 사용합니다. Prowlarr와 Jackett은 릴리스 번호를 다르게 매기기 때문에 인덱서를 바꾸면 이전에 숨긴 릴리스 제안이 더 이상 일치하지 않게 됩니다."
 
+#. placeholder {0}: s.displayTitle
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Only picks from {0}"
+msgstr ""
+
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "Only safe titles"
@@ -19040,11 +19129,6 @@ msgstr "다른 그룹"
 #, fuzzy
 msgid "Other list"
 msgstr "다른 목록"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Other picks for you"
-msgstr "나를 위한 다른 추천"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -19479,11 +19563,6 @@ msgstr "작업 일시 정지"
 msgid "Pause Rewind"
 msgstr "Rewind 일시 정지"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Pause rotating picks"
-msgstr "추천 순환 일시 정지"
-
 #: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Pause the running pass?"
@@ -19495,7 +19574,6 @@ msgid "Pause this series"
 msgstr "이 시리즈 일시 정지"
 
 #: src/components/ActivityButton.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -19719,6 +19797,10 @@ msgstr "시리즈의 품질 프로필 메뉴에서 하나를 고정하세요."
 msgid "Pin to page {pageNumber}"
 msgstr "{pageNumber}페이지에 고정"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Places climbed this month"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -19783,6 +19865,10 @@ msgstr "폴란드어"
 #, fuzzy
 msgid "popular"
 msgstr "인기"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Popular in {genre}"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -20425,6 +20511,10 @@ msgstr "{ratingLabel} 이상 평가"
 msgid "Rated {score}"
 msgstr "평점 {score}"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Rated highest"
+msgstr ""
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -20753,6 +20843,7 @@ msgid "Readers get it"
 msgstr "독자에게 적용됨"
 
 #: src/api/hooks.ts
+#: src/components/discover/discoverBrowse.ts
 #, fuzzy
 msgid "Readers like you"
 msgstr "나와 비슷한 독자"
@@ -20766,6 +20857,10 @@ msgstr "나와 비슷한 독자도 이 항목을 완료함"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Readers like you finished this"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -22434,11 +22529,6 @@ msgstr "이 시리즈의 다운로드 재개"
 msgid "Resume Rewind"
 msgstr "Rewind 재개"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Resume rotating picks"
-msgstr "추천 순환 재개"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Resume this series"
@@ -23381,6 +23471,10 @@ msgstr "점수 {score}"
 msgid "Score for {0}"
 msgstr "{0}의 점수"
 
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Score from all readers"
+msgstr ""
+
 #: src/components/series/RatingPanel.tsx
 msgid "Score two to get a suggestion"
 msgstr ""
@@ -23772,6 +23866,19 @@ msgstr "이 탭의 섹션"
 #, fuzzy
 msgid "Security settings saved. Restart Maki to apply them."
 msgstr "보안 설정이 저장되었습니다. 적용하려면 Maki를 다시 시작하세요."
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all"
+msgstr ""
+
+#. placeholder {0}: formatNumber(group.members.length)
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "See all {0}"
+msgstr ""
+
+#: src/components/discover/DiscoverThemeCards.tsx
+msgid "See all in {theme}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -24467,6 +24574,10 @@ msgstr ""
 msgid "Shift-click for a range. Unticking a chapter unlinks it."
 msgstr "Shift-클릭으로 범위를 고릅니다. 챕터 선택을 해제하면 연결이 끊깁니다."
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Short and finished"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -24512,6 +24623,7 @@ msgstr "알림 도착 시 팝업 표시"
 msgid "Show again"
 msgstr "다시 표시"
 
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -24594,6 +24706,10 @@ msgstr "{label}만 보기"
 msgid "Show or hide keyboard shortcuts"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Show other picks"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -24604,6 +24720,10 @@ msgstr "페이지 번호 표시"
 #, fuzzy
 msgid "Show passing"
 msgstr "통과 항목 표시"
+
+#: src/components/discover/DiscoverSeedStrip.tsx
+msgid "Show picks from every series"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -24689,11 +24809,6 @@ msgstr "서버 페이지가 준비되기 전과 서버를 쓸 수 없을 때는 
 #, fuzzy
 msgid "Shown to whoever asked"
 msgstr "요청한 사람에게 표시됨"
-
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Side interests"
-msgstr "세부 관심사"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Side stories"
@@ -25418,11 +25533,6 @@ msgstr "스포일러: {description}"
 msgid "Sports"
 msgstr "스포츠"
 
-#: src/api/hooks.ts
-#, fuzzy
-msgid "Spotlight"
-msgstr "주목할 작품"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Stacked height"
@@ -25480,6 +25590,11 @@ msgstr "챕터 시작"
 #, fuzzy
 msgid "Start from a template"
 msgstr "템플릿에서 시작"
+
+#: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
+msgid "Start here"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -27417,6 +27532,10 @@ msgstr "해당 시리즈는 이미 일치 작업 중입니다."
 msgid "Threads"
 msgstr "스레드"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Thriller"
@@ -27744,9 +27863,14 @@ msgstr "페이지의 위 {percent}%"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts
+#: src/components/discover/DiscoverCatalogueWays.tsx
 #, fuzzy
 msgid "Top rated"
 msgstr "평점이 가장 높은"
+
+#: src/components/discover/DiscoverCatalogueWays.tsx
+msgid "Top rated first"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -27855,6 +27979,7 @@ msgid "Trash: {trashSize} across {trashFilesText}"
 msgstr "휴지통: {trashFilesText}, {trashSize}"
 
 #: src/api/hooks.ts
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Trending now"
 msgstr "지금 인기 급상승 중"
@@ -28112,6 +28237,10 @@ msgstr ""
 #, fuzzy
 msgid "Under minimum"
 msgstr "최소값 미만"
+
+#: src/components/discover/DiscoverCohortColumns.tsx
+msgid "Under the radar"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -29050,6 +29179,13 @@ msgstr "베트남어"
 msgid "View"
 msgstr "보기"
 
+#. placeholder {0}: first.title
+#. placeholder {0}: item.title
+#: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
+msgid "View {0}"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -29076,6 +29212,7 @@ msgstr "{title} 보고 추가"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/DiscoverTrendingChart.tsx
 #, fuzzy
 msgid "View in library"
 msgstr "라이브러리에서 보기"
@@ -29447,9 +29584,8 @@ msgid "What it does"
 msgstr "기능"
 
 #: src/components/discover/discoverSectionDefs.ts
-#, fuzzy
-msgid "What readers who finished the same series as you went on to finish."
-msgstr "같은 시리즈를 완독한 독자들이 이어서 완독한 작품입니다."
+msgid "What readers who finished the same series as you went on to finish, one column per group of readers."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -30090,11 +30226,6 @@ msgstr "라이브러리가 비어 있습니다"
 #, fuzzy
 msgid "Your new API key"
 msgstr "새 API 키"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Your next read"
-msgstr "다음 읽을 항목"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/MintConfirmation.tsx

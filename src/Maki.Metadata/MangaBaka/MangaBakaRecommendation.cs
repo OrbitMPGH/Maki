@@ -120,6 +120,13 @@ public record MangaBakaRecommendation(
     /// </summary>
     [JsonIgnore]
     public int LaneFloor { get; init; }
+
+    /// <summary>
+    /// Set on the Trending feed only: how many places up the global popularity ranking the series
+    /// moved over the last month. The feed orders on the week's ratio, so this is the figure shown,
+    /// not the one ranked on.
+    /// </summary>
+    public int? Climb { get; init; }
 }
 
 /// <summary>One of the reader's series a pick's reason can name.</summary>

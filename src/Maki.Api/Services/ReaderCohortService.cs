@@ -42,8 +42,11 @@ public class ReaderCohortService(
     private const int CacheSlots = 40;
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<int, (IReadOnlyDictionary<int, double> Weights, string InputKey, DateTime At)>
+    private readonly Dictionary<int, (Placement Placement, string InputKey, DateTime At)>
         _placements = [];
+
+    /// <summary>Where a reader sits, and the finished series that put them there.</summary>
+    private sealed record Placement(IReadOnlyDictionary<int, double> Weights, IReadOnlyCollection<long> ReadIds);
 
     /// <summary>
     /// The hint for one series, or null when there is nothing worth saying: the artifact is absent
@@ -74,7 +77,7 @@ public class ReaderCohortService(
             return null;
         }
 
-        var weights = await PlaceAsync(scope, index, ct);
+        var weights = (await PlaceAsync(scope, index, ct)).Weights;
         if (weights.Count == 0)
         {
             return null;
@@ -124,28 +127,113 @@ public class ReaderCohortService(
     /// </param>
     public virtual async Task<IReadOnlyList<long>> GetCandidatesAsync(
         ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit,
+        CancellationToken ct = default) =>
+        (await GetDrawAsync(scope, owned, accept, limit, onlyCohort: null, ct))?.Picks.Select(p => p.Id).ToList() ?? [];
+
+    /// <summary>
+    /// The rail's picks with the cohort each one was drawn from, plus each matched cohort's share
+    /// of the mix and the reader's own finished series that tie them to it. Null in the same cases
+    /// <see cref="GetCandidatesAsync"/> answers empty.
+    /// </summary>
+    /// <param name="onlyCohort">
+    /// Draw from this one cohort alone, for a "See all" on one group. A cohort the reader was not
+    /// placed in answers null rather than reaching into a group they do not belong to.
+    /// </param>
+    public virtual async Task<CohortDraw?> GetDrawAsync(
+        ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit, int? onlyCohort,
         CancellationToken ct = default)
     {
         if (!await EnabledAsync(ct))
         {
-            return [];
+            return null;
         }
 
         var index = await cohorts.GetAsync(ct);
         if (index is null)
         {
-            return [];
+            return null;
         }
 
-        var weights = await PlaceAsync(scope, index, ct);
-        if (weights.Count == 0)
+        var placement = await PlaceAsync(scope, index, ct);
+        if (placement.Weights.Count == 0)
         {
-            return [];
+            return null;
         }
 
-        return Rank(
+        var groups = Groups(index, placement.ReadIds, placement.Weights);
+        IReadOnlyDictionary<int, double> weights = placement.Weights;
+        if (onlyCohort is { } only)
+        {
+            if (!weights.ContainsKey(only))
+            {
+                return null;
+            }
+
+            weights = new Dictionary<int, double> { [only] = 1.0 };
+        }
+
+        var picks = RankPicks(
             index, weights, owned, accept, Math.Min(limit, tuning.MaxCandidates),
             tuning.PopularityDamping);
+        return new CohortDraw(picks, groups);
+    }
+
+    /// <summary>
+    /// Each matched cohort with the reader's finished series that count most towards it, strongest
+    /// first. A series goes to the one cohort it adds most to under <see cref="Place"/>'s own score,
+    /// so the lists never overlap and together they are the reader's whole placement.
+    /// </summary>
+    internal static IReadOnlyList<CohortGroup> Groups(
+        ReaderCohortIndex index, IReadOnlyCollection<long> readIds, IReadOnlyDictionary<int, double> weights)
+    {
+        var shared = weights.Keys.ToDictionary(c => c, _ => new List<(long Id, double Score)>());
+        var total = Math.Max(1, index.TotalReaders);
+        foreach (var id in readIds)
+        {
+            if (!index.TryGetSlot(id, out var slot))
+            {
+                continue;
+            }
+
+            var completions = index.GlobalCompletionsAt(slot);
+            if (completions <= 0)
+            {
+                continue;
+            }
+
+            var idf = Math.Log(Math.Max(1.0, total / (double)(1 + completions)));
+            var best = -1;
+            var bestScore = 0.0;
+            foreach (var entry in index.EntriesAt(slot))
+            {
+                var readers = index.CohortReaders[entry.Cohort];
+                if (readers <= 0 || !weights.ContainsKey(entry.Cohort))
+                {
+                    continue;
+                }
+
+                var score = idf * (entry.Completions / (double)readers);
+                if (score > bestScore || (score == bestScore && score > 0 && entry.Cohort < best))
+                {
+                    best = entry.Cohort;
+                    bestScore = score;
+                }
+            }
+
+            if (best >= 0 && bestScore > 0)
+            {
+                shared[best].Add((id, bestScore));
+            }
+        }
+
+        return weights
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => kv.Key)
+            .Select(kv => new CohortGroup(
+                kv.Key,
+                kv.Value,
+                shared[kv.Key].OrderByDescending(x => x.Score).ThenBy(x => x.Id).Select(x => x.Id).ToList()))
+            .ToList();
     }
 
     /// <summary>
@@ -176,6 +264,16 @@ public class ReaderCohortService(
         IReadOnlySet<long> owned,
         Func<long, bool>? accept,
         int limit,
+        double damping) =>
+        RankPicks(index, weights, owned, accept, limit, damping).Select(p => p.Id).ToList();
+
+    /// <summary><see cref="Rank"/>, keeping the cohort each pick came from and its completion rate there.</summary>
+    internal static IReadOnlyList<CohortPick> RankPicks(
+        ReaderCohortIndex index,
+        IReadOnlyDictionary<int, double> weights,
+        IReadOnlySet<long> owned,
+        Func<long, bool>? accept,
+        int limit,
         double damping)
     {
         if (limit <= 0 || weights.Count == 0)
@@ -183,7 +281,7 @@ public class ReaderCohortService(
             return [];
         }
 
-        var lists = new Dictionary<int, List<(long Id, double Value)>>(weights.Count);
+        var lists = new Dictionary<int, List<(long Id, double Value, double Share)>>(weights.Count);
         foreach (var cohort in weights.Keys)
         {
             lists[cohort] = [];
@@ -219,11 +317,11 @@ public class ReaderCohortService(
             }
 
             var rate = entry.Completions / (double)readers;
-            list.Add((id, damping <= 0 ? rate : rate / Math.Pow(globalRate, damping)));
+            list.Add((id, damping <= 0 ? rate : rate / Math.Pow(globalRate, damping), rate));
         });
 
         // Ordered by cohort id so the draw below breaks ties the same way on every request.
-        var draw = new List<(List<(long Id, double Value)> Items, double Weight)>(lists.Count);
+        var draw = new List<(int Cohort, List<(long Id, double Value, double Share)> Items, double Weight)>(lists.Count);
         foreach (var (cohort, list) in lists.OrderBy(kv => kv.Key))
         {
             if (list.Count == 0)
@@ -233,7 +331,7 @@ public class ReaderCohortService(
 
             list.Sort(static (a, b) =>
                 a.Value == b.Value ? a.Id.CompareTo(b.Id) : b.Value.CompareTo(a.Value));
-            draw.Add((list, weights[cohort]));
+            draw.Add((cohort, list, weights[cohort]));
         }
 
         return Draw(draw, accept, limit);
@@ -251,12 +349,12 @@ public class ReaderCohortService(
     /// draw and the rest fill the space.
     /// </para>
     /// </summary>
-    private static List<long> Draw(
-        List<(List<(long Id, double Value)> Items, double Weight)> draw,
+    private static List<CohortPick> Draw(
+        List<(int Cohort, List<(long Id, double Value, double Share)> Items, double Weight)> draw,
         Func<long, bool>? accept,
         int limit)
     {
-        var picked = new List<long>(limit);
+        var picked = new List<CohortPick>(limit);
         if (draw.Count == 0)
         {
             return picked;
@@ -293,13 +391,13 @@ public class ReaderCohortService(
             var items = draw[best].Items;
             while (cursors[best] < items.Count)
             {
-                var id = items[cursors[best]++].Id;
-                if (!seen.Add(id) || !(accept?.Invoke(id) ?? true))
+                var item = items[cursors[best]++];
+                if (!seen.Add(item.Id) || !(accept?.Invoke(item.Id) ?? true))
                 {
                     continue;
                 }
 
-                picked.Add(id);
+                picked.Add(new CohortPick(item.Id, draw[best].Cohort, item.Share));
                 break;
             }
         }
@@ -318,7 +416,7 @@ public class ReaderCohortService(
     /// The whole feature turns on this being computable from group aggregates: nothing read here
     /// describes a person other than the caller, and nothing about the caller leaves the instance.
     /// </summary>
-    private async Task<IReadOnlyDictionary<int, double>> PlaceAsync(
+    private async Task<Placement> PlaceAsync(
         ICurrentUser scope, ReaderCohortIndex index, CancellationToken ct)
     {
         var readIds = await ReadPopulationAsync(scope, ct);
@@ -334,11 +432,12 @@ public class ReaderCohortService(
                 && cached.InputKey == inputKey
                 && DateTime.UtcNow - cached.At < CacheFor)
             {
-                return cached.Weights;
+                return cached.Placement;
             }
 
             var weights = Place(index, readIds, tuning.TopCohorts);
-            _placements[scope.UserId] = (weights, inputKey, DateTime.UtcNow);
+            var placement = new Placement(weights, readIds);
+            _placements[scope.UserId] = (placement, inputKey, DateTime.UtcNow);
 
             while (_placements.Count > CacheSlots)
             {
@@ -348,7 +447,7 @@ public class ReaderCohortService(
             logger.LogDebug(
                 "Placed user {User} across {Cohorts} cohorts from {Read} finished series",
                 scope.UserId, weights.Count, readIds.Count);
-            return weights;
+            return placement;
         }
         finally
         {
@@ -451,3 +550,15 @@ public class ReaderCohortService(
         return weights;
     }
 }
+
+/// <summary>One pick of the reader-cohort rail: the cohort it was drawn from and that cohort's completion rate for it.</summary>
+public record CohortPick(long Id, int Cohort, double Share);
+
+/// <summary>
+/// One cohort the reader was placed in: its share of the mix, and the reader's finished series that
+/// tie them to it, strongest first (MangaBaka ids).
+/// </summary>
+public record CohortGroup(int Cohort, double Weight, IReadOnlyList<long> Shared);
+
+/// <summary>The rail's picks in draw order, with the cohorts they came from.</summary>
+public record CohortDraw(IReadOnlyList<CohortPick> Picks, IReadOnlyList<CohortGroup> Groups);
