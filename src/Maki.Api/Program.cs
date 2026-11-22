@@ -1551,7 +1551,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
             .WithIdentity("embedder-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
@@ -1562,15 +1562,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
-        // The same for the discovery artifacts, which are ~72 MB between them. Started well after
-        // the warm-up job so a fresh instance is not unloading what it is still building, and
-        // ticking every minute for the same reason as the embedder's.
+        // The same for the discovery artifacts, ticking every minute for the same reason as the
+        // embedder's. It used to start after the warm-up job, from when the window was 30 minutes
+        // and a reload a 9 s heap build; reloads now come from snapshots, and an unload never
+        // touches a build in progress, so a visit right after boot is released like any other.
         q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // And the headless browsers, whose processes are native memory the heap work never sees.

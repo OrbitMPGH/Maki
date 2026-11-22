@@ -112,6 +112,42 @@ public class SnapshotMappingTests : IDisposable
     }
 
     [Fact]
+    public void Only_the_last_retired_mapping_of_a_path_drops_its_pages()
+    {
+        var path = PathOf("e.snap");
+        Write(path, "k", [1, 2, 3], [4]);
+        var first = SnapshotMapping.Open(path)!;
+        var second = SnapshotMapping.Open(path)!;
+
+        Assert.False(first.ReleaseAsRetired());
+        Assert.True(second.ReleaseAsRetired());
+    }
+
+    [Fact]
+    public void A_reopen_before_the_retirement_keeps_the_pages()
+    {
+        var path = PathOf("f.snap");
+        Write(path, "k", [1, 2, 3], [4]);
+        var old = SnapshotMapping.Open(path)!;
+        var reopened = SnapshotMapping.Open(path)!;
+
+        Assert.False(old.ReleaseAsRetired());
+        reopened.Dispose();
+    }
+
+    [Fact]
+    public void A_replaced_file_is_not_dropped_by_the_old_mapping()
+    {
+        var path = PathOf("g.snap");
+        Write(path, "k", [1, 2, 3], [4]);
+        var old = SnapshotMapping.Open(path)!;
+
+        Write(path, "k", [9, 9, 9, 9, 9, 9], [9, 9]);
+
+        Assert.False(old.ReleaseAsRetired());
+    }
+
+    [Fact]
     public void A_heap_reader_still_gets_arrays()
     {
         using var stream = new MemoryStream();

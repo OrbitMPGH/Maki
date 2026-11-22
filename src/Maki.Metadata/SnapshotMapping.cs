@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO.MemoryMappedFiles;
+using Maki.Core.Io;
 using Microsoft.Win32.SafeHandles;
 
 namespace Maki.Metadata;
@@ -20,19 +21,25 @@ namespace Maki.Metadata;
 internal sealed unsafe class SnapshotMapping
 {
     private static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
-    private static readonly ConcurrentQueue<(SafeMemoryMappedViewHandle View, long Due)> Retired = new();
+    private static readonly ConcurrentQueue<(SafeMemoryMappedViewHandle View, string Path, FileStamp Stamp, long Due)> Retired = new();
     private static readonly Timer Sweeper = new(_ => Sweep(), null, Timeout.Infinite, Timeout.Infinite);
+    private static readonly ConcurrentDictionary<string, PathState> Paths = new(StringComparer.Ordinal);
 
     private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly SafeMemoryMappedViewHandle _view;
+    private readonly string _path;
+    private readonly FileStamp _stamp;
     private int _released;
 
-    private SnapshotMapping(MemoryMappedFile file, MemoryMappedViewAccessor accessor, byte* pointer, long length)
+    private SnapshotMapping(
+        MemoryMappedFile file, MemoryMappedViewAccessor accessor, string path, FileStamp stamp, byte* pointer, long length)
     {
         _file = file;
         _accessor = accessor;
         _view = accessor.SafeMemoryMappedViewHandle;
+        _path = path;
+        _stamp = stamp;
         Pointer = pointer;
         Length = length;
     }
@@ -43,6 +50,17 @@ internal sealed unsafe class SnapshotMapping
 
     /// <summary>The mapped file, or null when it does not exist or is empty.</summary>
     public static SnapshotMapping? Open(string path)
+    {
+        path = Path.GetFullPath(path);
+        // Opens of a path and its last-retirement drop are serialized, so a drop never lands on a fresh mapping.
+        var state = Paths.GetOrAdd(path, _ => new PathState());
+        lock (state)
+        {
+            return OpenLocked(path, state);
+        }
+    }
+
+    private static SnapshotMapping? OpenLocked(string path, PathState state)
     {
         FileStream stream;
         try
@@ -65,6 +83,17 @@ internal sealed unsafe class SnapshotMapping
         }
 
         var length = stream.Length;
+        FileStamp stamp;
+        try
+        {
+            stamp = new FileStamp(length, File.GetLastWriteTimeUtc(stream.SafeFileHandle));
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
+
         MemoryMappedFile file;
         try
         {
@@ -85,7 +114,8 @@ internal sealed unsafe class SnapshotMapping
             // Held until release: an outstanding acquire is what stops the handle's own finalizer
             // from unmapping the view before the grace period is up.
             accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-            return new SnapshotMapping(file, accessor, pointer + accessor.PointerOffset, length);
+            state.Live++;
+            return new SnapshotMapping(file, accessor, path, stamp, pointer + accessor.PointerOffset, length);
         }
         catch
         {
@@ -101,22 +131,31 @@ internal sealed unsafe class SnapshotMapping
     /// <summary>
     /// Unmaps now. Only for a mapping no column has escaped from: a load that came to nothing.
     /// </summary>
-    public void Dispose()
+    public void Dispose() => Release(drop: false);
+
+    /// <summary>Unmaps now as a swept retirement would, page cache drop included, for tests.</summary>
+    internal bool ReleaseAsRetired() => Release(drop: true);
+
+    private bool Release(bool drop)
     {
-        if (Interlocked.Exchange(ref _released, 1) == 0)
+        if (Interlocked.Exchange(ref _released, 1) != 0)
         {
-            GC.SuppressFinalize(this);
-            Unmap(_view);
-            _accessor.Dispose();
-            _file.Dispose();
+            return false;
         }
+
+        GC.SuppressFinalize(this);
+        Unmap(_view);
+        var dropped = Forget(_path, drop ? _stamp : null);
+        _accessor.Dispose();
+        _file.Dispose();
+        return dropped;
     }
 
     ~SnapshotMapping()
     {
         if (Interlocked.Exchange(ref _released, 1) == 0)
         {
-            Retired.Enqueue((_view, Environment.TickCount64 + (long)Grace.TotalMilliseconds));
+            Retired.Enqueue((_view, _path, _stamp, Environment.TickCount64 + (long)Grace.TotalMilliseconds));
             Sweeper.Change(Grace, Timeout.InfiniteTimeSpan);
         }
     }
@@ -128,6 +167,9 @@ internal sealed unsafe class SnapshotMapping
         while (Retired.TryPeek(out var next) && next.Due <= now && Retired.TryDequeue(out next))
         {
             Unmap(next.View);
+            // A snapshot mapped twice promotes to active_file and stays on docker stats after the
+            // unmap. Dropped only once no mapping of the path is left, so a reload is never evicted.
+            Forget(next.Path, next.Stamp);
         }
 
         if (Retired.TryPeek(out var pending))
@@ -138,6 +180,50 @@ internal sealed unsafe class SnapshotMapping
 
     /// <summary>How many retired views are still waiting out their grace, for tests.</summary>
     internal static int RetiredCount => Retired.Count;
+
+    /// <summary>
+    /// Counts one mapping of the path gone. With a stamp, drops the file's pages when it was the last
+    /// mapping and the file at the path is still the one that was mapped; true when it dropped.
+    /// </summary>
+    private static bool Forget(string path, FileStamp? stamp)
+    {
+        if (!Paths.TryGetValue(path, out var state))
+        {
+            return false;
+        }
+
+        lock (state)
+        {
+            state.Live--;
+            if (state.Live > 0 || stamp is not { } mapped || StampOf(path) != mapped)
+            {
+                return false;
+            }
+
+            PageCache.DropAfterScan(path);
+            return true;
+        }
+    }
+
+    private static FileStamp? StampOf(string path)
+    {
+        try
+        {
+            using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return new FileStamp(RandomAccess.GetLength(handle), File.GetLastWriteTimeUtc(handle));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private readonly record struct FileStamp(long Length, DateTime LastWriteUtc);
+
+    private sealed class PathState
+    {
+        public int Live;
+    }
 
     private static void Unmap(SafeMemoryMappedViewHandle view)
     {

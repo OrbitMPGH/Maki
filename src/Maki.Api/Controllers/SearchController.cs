@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Io;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -266,20 +267,8 @@ public class SearchController(
         }
 
         await using var stream = await content.ReadAsStreamAsync(ct);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[64 * 1024];
-        int read;
-        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
-        {
-            if (buffer.Length + read > max)
-            {
-                return null;
-            }
-
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
+        return await PooledStreams.ReadAllBytesCappedAsync(
+            stream, max, "cover-proxy", ct, expectedLength: content.Headers.ContentLength);
     }
 
     /// <summary>A source's own measurements count once there are this many samples from this many series.</summary>

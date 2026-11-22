@@ -135,7 +135,7 @@ public class SimilarSeriesService(
 
         var entry = _entries.GetOrAdd(
             $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}|g:{(votes ? 1 : 0)}",
-            _ => new Entry());
+            static _ => new Entry { LastUsedTicks = DateTime.UtcNow.Ticks });
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -224,13 +224,38 @@ public class SimilarSeriesService(
             return;
         }
 
-        foreach (var key in _entries
+        foreach (var oldest in _entries
                      .OrderBy(kv => Volatile.Read(ref kv.Value.LastUsedTicks))
                      .Take(_entries.Count - MaxEntries)
-                     .Select(kv => kv.Key)
                      .ToList())
         {
-            _entries.TryRemove(key, out _);
+            _entries.TryRemove(oldest);
         }
+    }
+
+    public int ReleaseIdle(TimeSpan idleFor)
+    {
+        var now = DateTime.UtcNow;
+        var cutoff = (now - idleFor).Ticks;
+        var removed = 0;
+        bool Stale(Entry entry) =>
+            entry.Gate.CurrentCount != 0
+            && ((entry.Results is not null && now - entry.ComputedAt >= Ttl) || Volatile.Read(ref entry.LastUsedTicks) <= cutoff);
+
+        foreach (var (key, entry) in _entries)
+        {
+            if (!Stale(entry) || !_entries.TryRemove(new KeyValuePair<string, Entry>(key, entry)))
+            {
+                continue;
+            }
+
+            // A caller that found the entry just before it went keeps it cached.
+            if (Stale(entry) || !_entries.TryAdd(key, entry))
+            {
+                removed++;
+            }
+        }
+
+        return removed;
     }
 }

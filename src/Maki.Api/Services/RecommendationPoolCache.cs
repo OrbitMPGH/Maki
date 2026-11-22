@@ -94,6 +94,26 @@ internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlot
         Trim(PoolOrigin.Rail, railSlots);
     }
 
+    /// <summary>
+    /// Drops expired pools and pools unread for their origin's window. Interactive pools get the longer
+    /// one: a rebuilt pool has a new version, which restarts a feed the reader already scrolled.
+    /// </summary>
+    public int ReleaseIdle(TimeSpan railIdleFor, TimeSpan interactiveIdleFor)
+    {
+        var now = Now;
+        var stale = _entries
+            .Where(kv => now - kv.Value.Pool.GeneratedAt >= ttl
+                || now - kv.Value.LastUsed >= (kv.Value.Origin == PoolOrigin.Rail ? railIdleFor : interactiveIdleFor))
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var key in stale)
+        {
+            _entries.Remove(key);
+        }
+
+        return stale.Count;
+    }
+
     private void Trim(PoolOrigin origin, int slots)
     {
         var held = _entries.Where(kv => kv.Value.Origin == origin).ToList();

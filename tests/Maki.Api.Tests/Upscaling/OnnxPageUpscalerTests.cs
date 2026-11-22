@@ -121,28 +121,22 @@ public class OnnxPageUpscalerTests : IDisposable
         Assert.False(upscaler.IsLoaded(UpscaleModelId.Maki2x));
     }
 
-    [Fact]
-    public void The_bundled_maki_2x_is_cropped_for_the_tile_pad()
+    [Theory]
+    [InlineData("maki-2x.onnx")]
+    [InlineData("maki-2x-hq.onnx")]
+    public void A_bundled_maki_model_is_a_2x_model_cropped_for_the_tile_pad(string file)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, "maki-2x.onnx");
-        using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(path);
-
-        Assert.Equal(UpscaleTiling.ContextPad.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            session.ModelMetadata.CustomMetadataMap[OnnxPageUpscaler.ContextCropKey]);
-    }
-
-    [Fact]
-    public void The_bundled_maki_2x_hq_is_an_uncropped_2x_model_on_the_catalogue_input()
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, "maki-2x-hq.onnx");
+        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, file);
         using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(path);
         var input = Assert.Single(session.InputMetadata);
-        using var tensor = Microsoft.ML.OnnxRuntime.OrtValue.CreateTensorValueFromMemory(new float[3 * 16 * 16], [1, 3, 16, 16]);
+        var side = 2 * UpscaleTiling.ContextPad + 16;
+        using var tensor = Microsoft.ML.OnnxRuntime.OrtValue.CreateTensorValueFromMemory(new float[3 * side * side], [1, 3, side, side]);
 
         using var outputs = session.Run(new Microsoft.ML.OnnxRuntime.RunOptions(), [input.Key], [tensor], session.OutputNames);
 
         Assert.Equal("input", input.Key);
-        Assert.False(session.ModelMetadata.CustomMetadataMap.ContainsKey(OnnxPageUpscaler.ContextCropKey));
+        Assert.Equal(UpscaleTiling.ContextPad.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            session.ModelMetadata.CustomMetadataMap[OnnxPageUpscaler.ContextCropKey]);
         Assert.Equal([1L, 3, 32, 32], outputs[0].GetTensorTypeAndShape().Shape);
     }
 
@@ -155,7 +149,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile, span));
         Assert.Equal(18, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2x)));
-        Assert.Equal(14, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2xHq)));
+        Assert.Equal(21, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2xHq)));
         Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }, span));
     }
 

@@ -118,6 +118,7 @@ import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '..
 import { FOLLOWING_RAIL_KEY } from '../api/following'
 import { OTHER_SOURCE, railSource, sectionSource, useShortlistCount, type ShortlistSource } from '../api/shortlist'
 import { CountIndicator } from '../components/ui/CountIndicator'
+import { WindowedItems } from '../components/library/LibraryGroupHeader'
 import { ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -176,6 +177,13 @@ const MEM = 'discover-recommended'
 
 /** Longer than the catalogue's 400 ms: a recommendation rebuild costs seconds on a whole library. */
 const LIVE_APPLY_MS = 600
+
+/**
+ * Picks at which the Recommended grid starts windowing. Lower than the library's threshold: the
+ * feed auto-loads up to 1,000 cards and stays mounted in KeptPages. Past it, find-in-page only
+ * sees the rows near the viewport.
+ */
+const RECOMMENDED_WINDOW_MIN = 120
 
 /** JSON with object keys sorted at every level, so two builds of one request compare equal. */
 function canonicalJson(value: unknown): string {
@@ -963,17 +971,21 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
         {activeSection === 'similar' && similarCount > 0 && (
           <>
             {viewMode === 'grid' ? (
-              <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-                {similar.map((item) => (
-                  <EngineCard
-                    key={item.providerId}
-                    item={item}
-                    inLibrarySeriesId={seriesIdFor(item)}
-                    onOpen={setDetailItem}
-                    seedCoverUrl={seedCover(item)}
-                  />
-                ))}
-              </SimpleGrid>
+              <WindowedItems items={similar} enabled={similar.length >= RECOMMENDED_WINDOW_MIN}>
+                {(slice, innerRef) => (
+                  <SimpleGrid ref={innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+                    {slice.map((item) => (
+                      <EngineCard
+                        key={item.providerId}
+                        item={item}
+                        inLibrarySeriesId={seriesIdFor(item)}
+                        onOpen={setDetailItem}
+                        seedCoverUrl={seedCover(item)}
+                      />
+                    ))}
+                  </SimpleGrid>
+                )}
+              </WindowedItems>
             ) : (
               <Stack gap="xs">
                 {similar.map((item) => (
@@ -1021,17 +1033,21 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
 
         {activeSection === 'related' && visibleRelated.length > 0 && (
           viewMode === 'grid' ? (
-            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-              {visibleRelated.map((item) => (
-                <EngineCard
-                  key={item.providerId}
-                  item={item}
-                  inLibrarySeriesId={seriesIdFor(item)}
-                  onOpen={setDetailItem}
-                  seedCoverUrl={seedCover(item)}
-                />
-              ))}
-            </SimpleGrid>
+            <WindowedItems items={visibleRelated} enabled={visibleRelated.length >= RECOMMENDED_WINDOW_MIN}>
+              {(slice, innerRef) => (
+                <SimpleGrid ref={innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+                  {slice.map((item) => (
+                    <EngineCard
+                      key={item.providerId}
+                      item={item}
+                      inLibrarySeriesId={seriesIdFor(item)}
+                      onOpen={setDetailItem}
+                      seedCoverUrl={seedCover(item)}
+                    />
+                  ))}
+                </SimpleGrid>
+              )}
+            </WindowedItems>
           ) : (
             <Stack gap="xs">
               {visibleRelated.map((item) => (

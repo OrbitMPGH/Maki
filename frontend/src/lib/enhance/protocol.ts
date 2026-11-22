@@ -21,4 +21,6 @@ export interface Backend {
   run(bitmap: ImageBitmap, preset: EnhancePreset, width: number, height: number): Promise<ImageBitmap>
   /** Called once if the GPU context goes away outside a job. */
   onLost(cb: (reason: string) => void): void
+  /** Frees the worker or GPU context. Pending runs reject; the backend is unusable after. */
+  dispose(): void
 }
