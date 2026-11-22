@@ -114,6 +114,7 @@ function Steering({ seeds }: { seeds: SteeringSeed[] }) {
 
   const weight = weightText(selected.weight)
   const why = sourceText(selected)
+  const selectedTitle = selected.title
   return (
     <Panel className="taste-steer">
       <div className="taste-steer-head">
@@ -165,7 +166,7 @@ function Steering({ seeds }: { seeds: SteeringSeed[] }) {
             leftSection={<IconEyeOff size={14} />}
             loading={exclude.isPending}
             onClick={() => void excludeSelected()}
-            aria-label={t`Exclude ${selected.title} from taste`}
+            aria-label={t`Exclude ${selectedTitle} from taste`}
           >
             <Trans>Exclude from taste</Trans>
           </Button>

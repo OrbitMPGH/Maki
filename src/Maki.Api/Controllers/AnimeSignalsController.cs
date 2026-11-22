@@ -135,8 +135,13 @@ public class AnimeSignalsController(
             };
         }).ToList();
 
+        // Only matches inside the reader's content ceiling count, the ones the panel can name:
+        // mangaTitles was read under that ceiling.
         var pull = enabled
-            ? await PullAsync([.. entries.Where(x => x.role == "positive").Select(x => x.mangaBakaId!.Value)], ct)
+            ? await PullAsync(
+                [.. entries.Where(x => x.role == "positive" && mangaTitles.ContainsKey(x.mangaBakaId!.Value))
+                    .Select(x => x.mangaBakaId!.Value)],
+                ct)
             : [];
 
         return Ok(new
@@ -207,6 +212,14 @@ public class AnimeSignalsController(
                 p => p.SeriesId, s => s.Id, (p, s) => (long)s.MangaBakaId!.Value)
             .Distinct()
             .ToListAsync(ct);
+
+        // The reading side keeps to the same ceiling, so a title the reader cannot be shown never
+        // moves a share. The minimum applies to what is left.
+        var allowed = ContentRating.Allowed(user.MaxContentRating);
+        read = [.. (await store.GetByIdsAsync(read, allowed, ct))
+            .Select(hit => long.TryParse(hit.ProviderId, out var id) ? id : (long?)null)
+            .OfType<long>()
+            .Distinct()];
         if (read.Count < MinPullRead)
         {
             return [];

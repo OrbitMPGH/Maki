@@ -57,7 +57,7 @@ function LengthBars({ length, finishedCount }: { length: LengthSweetSpot; finish
       {[
         { key: 'finished', label: t`You finish`, value: length.finished, text: finished, icon: IconCircleCheck },
         { key: 'stalled', label: t`You stall on`, value: length.stalled, text: stalled, icon: IconPlayerPause },
-      ].map((row) => (
+      ].map(({ text: count, ...row }) => (
         <div key={row.key} className="taste-length-row" data-kind={row.key}>
           <span className="taste-length-label">
             <row.icon size={14} aria-hidden />
@@ -68,7 +68,7 @@ function LengthBars({ length, finishedCount }: { length: LengthSweetSpot; finish
           </span>
           <span className="taste-length-value tnum">
             <Trans>
-              <b>{row.text}</b> chapters
+              <b>{count}</b> chapters
             </Trans>
           </span>
         </div>
@@ -165,21 +165,25 @@ function StopCurve({
             <span className="taste-stops-start">
               <Trans>Start</Trans>
             </span>
-            {pins.map(({ item, at }) => (
-              <Link
-                key={item.seriesId}
-                to={`/series/${item.seriesId}`}
-                className="taste-stops-pin"
-                style={{ left: `${at}%` }}
-                title={item.title}
-                aria-label={t`${item.title}, stopped ${formatPercent(item.measure)} in`}
-              >
-                <span className="taste-cover taste-stops-cover">
-                  {item.coverUrl && <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />}
-                </span>
-                <span className="tnum">{formatPercent(item.measure)}</span>
-              </Link>
-            ))}
+            {pins.map(({ item, at }) => {
+              const title = item.title
+              const stopped = formatPercent(item.measure)
+              return (
+                <Link
+                  key={item.seriesId}
+                  to={`/series/${item.seriesId}`}
+                  className="taste-stops-pin"
+                  style={{ left: `${at}%` }}
+                  title={title}
+                  aria-label={t`${title}, stopped ${stopped} in`}
+                >
+                  <span className="taste-cover taste-stops-cover">
+                    {item.coverUrl && <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />}
+                  </span>
+                  <span className="tnum">{stopped}</span>
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
@@ -344,13 +348,36 @@ function Pace({ behaviour }: { behaviour: ReadingBehaviour }) {
  * length is the chapters against the longest example, so a 28-chapter binge reads longer than a
  * 6-chapter one, and days without reading never show as empty space.
  */
+/** Blocks a full-length bar draws at most; a shorter bar gets its share of them. */
+const MAX_BLOCKS = 40
+
+/** How many blocks a row's bar has room for, by its length against the longest example. */
+function blockRoom(chapters: number, longest: number) {
+  return Math.max(4, Math.round(MAX_BLOCKS * (chapters / longest)))
+}
+
+/**
+ * The row's reading days as blocks. A run with more days than the bar has room for groups
+ * neighbouring days into one block, so no day is clipped off the end.
+ */
+function blocksOf(perDay: number[], room: number): number[] {
+  if (perDay.length <= room) return perDay
+  const size = Math.ceil(perDay.length / room)
+  const blocks: number[] = []
+  for (let i = 0; i < perDay.length; i += size) {
+    blocks.push(perDay.slice(i, i + size).reduce((sum, count) => sum + count, 0))
+  }
+  return blocks
+}
+
 function BingeRow({ example, longest }: { example: BingeHabit['examples'][number]; longest: number }) {
   const { t } = useLingui()
+  const title = example.title
   const chapters = formatNumber(example.chapters)
   const weeks = Math.max(1, Math.round(example.spanDays / 7))
   const summary =
-    example.activeDays <= 2
-      ? plural(example.activeDays, { one: `${chapters} ch. in # day`, other: `${chapters} ch. in # days` })
+    example.spanDays <= 2
+      ? plural(example.spanDays, { one: `${chapters} ch. in # day`, other: `${chapters} ch. in # days` })
       : plural(weeks, { one: `${chapters} ch. over # week`, other: `${chapters} ch. over # weeks` })
   return (
     <Link to={`/series/${example.seriesId}`} className="taste-binge-row">
@@ -359,9 +386,9 @@ function BingeRow({ example, longest }: { example: BingeHabit['examples'][number
       </span>
       <span className="taste-binge-title">{example.title}</span>
       <span className="taste-binge-summary tnum">{summary}</span>
-      <span className="taste-binge-days" role="img" aria-label={t`${example.title}: ${summary}`}>
+      <span className="taste-binge-days" role="img" aria-label={t`${title}: ${summary}`}>
         <span style={{ width: `${(example.chapters / longest) * 100}%` }}>
-          {example.perDay.map((count, i) => (
+          {blocksOf(example.perDay, blockRoom(example.chapters, longest)).map((count, i) => (
             <i key={i} style={{ flexGrow: count }} />
           ))}
         </span>
@@ -379,6 +406,7 @@ function Binge({ binge, onFilters }: { binge: BingeHabit; onFilters: (filters: R
   const binged = formatNumber(binge.binged)
   const total = formatNumber(binge.series)
   const longest = Math.max(1, ...binge.examples.map((e) => e.chapters))
+  const grouped = binge.examples.some((e) => e.perDay.length > blockRoom(e.chapters, longest))
   return (
     <Panel className="taste-binge">
       <div className="taste-binge-lead">
@@ -415,6 +443,12 @@ function Binge({ binge, onFilters }: { binge: BingeHabit; onFilters: (filters: R
         ))}
         <span className="taste-binge-axis">
           <Trans>Each block is a day you read it, sized by the chapters read that day.</Trans>
+          {grouped && (
+            <>
+              {' '}
+              <Trans>Long runs put a few days in each block.</Trans>
+            </>
+          )}
         </span>
       </div>
     </Panel>

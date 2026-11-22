@@ -67,7 +67,7 @@ msgstr "（无法撤销）"
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr "{0, plural, other {{1} / # 个文件{2, select, other {}}}}"
 
-#. placeholder {0}: example.activeDays
+#. placeholder {0}: example.spanDays
 #: src/pages/discover/taste/TasteHabits.tsx
 msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 msgstr ""
@@ -929,17 +929,6 @@ msgstr "示例章节中有 {0} 页。"
 #. placeholder {0}: item.title
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "{0}, in your library"
-msgstr ""
-
-#. placeholder {0}: item.title
-#. placeholder {1}: formatPercent(item.measure)
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}, stopped {1} in"
-msgstr ""
-
-#. placeholder {0}: example.title
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}: {summary}"
 msgstr ""
 
 #: src/components/discover/discoverBrowse.ts
@@ -3580,10 +3569,18 @@ msgstr "{title} 已从你的推荐中隐藏，并已移出待读清单。"
 msgid "{title} is reachable"
 msgstr "{title} 可访问"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}, stopped {stopped} in"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
 msgid "{title}: {reason}"
 msgstr "{title}：{reason}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}: {summary}"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -4082,11 +4079,6 @@ msgstr "+ 暗示性标题"
 msgid "+{abs} pt"
 msgstr "+{abs} 分"
 
-#. placeholder {0}: row.text
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "<0>{0}</0> chapters"
-msgstr ""
-
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}. {trend}"
@@ -4096,6 +4088,10 @@ msgstr "{days, plural, other {持续 # 天，阅读}}<0>{chapters, plural, other
 #, fuzzy
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "{days, plural, other {持续 # 天，阅读}}<0>{chapters, plural, other {# 章}}</0><1>，其中大多在 <2>{hour}</2> 之后</1>。{trend}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "<0>{count}</0> chapters"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -11103,15 +11099,14 @@ msgstr "出色"
 msgid "Exclude"
 msgstr "排除"
 
-#. placeholder {0}: selected.title
-#: src/pages/discover/taste/TasteSignalsTop.tsx
-msgid "Exclude {0} from taste"
-msgstr ""
-
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Exclude {label}"
 msgstr "排除 {label}"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Exclude {selectedTitle} from taste"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/taste/TasteSignalsTop.tsx
@@ -14889,6 +14884,10 @@ msgstr "登录页, 背景, 封面, 马赛克, 壁纸"
 
 #: src/components/discover/DiscoverCatalogueWays.tsx
 msgid "Long and finished"
+msgstr ""
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Long runs put a few days in each block."
 msgstr ""
 
 #: src/pages/discover/taste/TasteHabits.tsx
@@ -19055,11 +19054,6 @@ msgstr "仅你"
 #: src/pages/discover/taste/TastePortrait.tsx
 msgid "Only you can see this"
 msgstr ""
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Only you can see this."
-msgstr "只有你能看到此内容。"
 
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/registry.ts

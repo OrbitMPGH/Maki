@@ -124,6 +124,12 @@ public class ReadingBehaviourService(
     /// </summary>
     private const double MinProgressToAbandon = 0.1;
 
+    /// <summary>
+    /// Days without a read before a part-read series counts as stalled for the length comparison,
+    /// so a series somebody is in the middle of this week is not set against the ones they finish.
+    /// </summary>
+    private const int StalledAfterDays = 30;
+
     private const int HistogramBuckets = 10;
 
     /// <summary>Finished and stalled series each needed before the two lengths are compared.</summary>
@@ -338,7 +344,8 @@ public class ReadingBehaviourService(
                 titles),
             GeneratedAt: DateTime.UtcNow,
             StopPointHistogram: histogram,
-            Length: Length(completion, downloaded, info),
+            Length: Length(completion, downloaded, info,
+                bySeries.ToDictionary(g => g.Key, g => g.Max(p => p.FinishedAt)), DateTime.UtcNow),
             Binge: Binge(progress, timeZone, info),
             PaceByFormat: PaceByFormat(timed, paceBySeries, info, titles));
 
@@ -350,22 +357,33 @@ public class ReadingBehaviourService(
     }
 
     /// <summary>
-    /// Median length of the finished series against the stalled ones (read at least
-    /// <see cref="MinProgressToAbandon"/> of). Finishing is judged against what is on disk, so the
-    /// length is the larger of that and the catalogue's count: a series with three chapters
-    /// downloaded of two hundred was not a short one.
+    /// Median length of the finished series against the stalled ones. A series' length is the larger
+    /// of what is on disk and the catalogue's count, and both sides are judged against it, not
+    /// against the disk alone: three downloaded chapters of a two-hundred-chapter run, all read, are
+    /// a sample, not a finished long series. Stalled is read at least
+    /// <see cref="MinProgressToAbandon"/> of that length and untouched for
+    /// <see cref="StalledAfterDays"/>, so a series being read right now is on neither side.
     /// </summary>
     private static LengthSweetSpot? Length(
         List<(int SeriesId, double Fraction, int Read)> completion,
         Dictionary<int, int> downloaded,
-        Dictionary<int, SeriesInfo> info)
+        Dictionary<int, SeriesInfo> info,
+        Dictionary<int, DateTime> lastRead,
+        DateTime now)
     {
         double LengthOf(int id) =>
             Math.Max(downloaded.GetValueOrDefault(id), info.TryGetValue(id, out var i) ? i.TotalChapters ?? 0 : 0);
 
-        var finished = completion.Where(c => c.Fraction >= 1.0).Select(c => LengthOf(c.SeriesId)).ToList();
-        var stalled = completion.Where(c => c.Fraction >= MinProgressToAbandon && c.Fraction < 1.0)
-            .Select(c => LengthOf(c.SeriesId)).ToList();
+        var measured = completion
+            .Select(c => (c.SeriesId, c.Read, Length: LengthOf(c.SeriesId)))
+            .Where(c => c.Length > 0)
+            .Select(c => (c.SeriesId, c.Length, Share: c.Read / c.Length))
+            .ToList();
+        var finished = measured.Where(c => c.Share >= 1.0).Select(c => c.Length).ToList();
+        var stalled = measured
+            .Where(c => c.Share >= MinProgressToAbandon && c.Share < 1.0 &&
+                now - lastRead.GetValueOrDefault(c.SeriesId, now) >= TimeSpan.FromDays(StalledAfterDays))
+            .Select(c => c.Length).ToList();
         if (finished.Count < MinLengthSide || stalled.Count < MinLengthSide)
         {
             return null;
@@ -400,9 +418,11 @@ public class ReadingBehaviourService(
             return null;
         }
 
-        var binged = series.Where(x => x.Active <= BingeDays).ToList();
+        // By calendar span, not reading days: three chapters in January and three in June is two
+        // reading days and no binge.
+        var binged = series.Where(x => x.Span <= BingeDays).ToList();
         var picks = binged.OrderByDescending(x => x.Days.Count).ThenBy(x => x.SeriesId).Take(BingeExamples - 1).ToList();
-        var spread = series.Where(x => x.Active > BingeDays)
+        var spread = series.Where(x => x.Span > BingeDays)
             .OrderByDescending(x => x.Active).ThenBy(x => x.SeriesId).FirstOrDefault();
         if (spread.Days is not null)
         {

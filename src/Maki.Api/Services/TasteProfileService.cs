@@ -271,7 +271,8 @@ public class TasteProfileService(
         // does not change.
         var readEligible = seeded.EligibleIds.Where(readIds.Contains).ToList();
         var under = UnderRead(seeded.EligibleIds, readEligible, rows);
-        var popularity = Popularity(await vectorIndex.GetAsync(ct), seeded.EligibleIds, readEligible);
+        var popularity = Popularity(
+            await store.GetPopularityRanksAsync(seeded.EligibleIds, ct), seeded.EligibleIds, readEligible);
         var refs = await SeriesRefsAsync(scope,
             [.. under.SelectMany(u => u.Examples), .. popularity?.DeepCuts.Select(d => d.Id) ?? []], ct);
 
@@ -378,18 +379,17 @@ public class TasteProfileService(
         IReadOnlyList<double> Read, IReadOnlyList<double> Shelf, int ReadRanked, int ShelfRanked,
         IReadOnlyList<(long Id, int Rank)> DeepCuts);
 
-    /// <summary>Band shares by catalogue popularity rank for the reading and the shelf.</summary>
-    private static BandShares? Popularity(VectorIndex? index, IReadOnlyList<long> shelf, IReadOnlyList<long> read)
+    /// <summary>
+    /// Band shares by catalogue popularity rank for the reading and the shelf. The ranks come from
+    /// the dump's browse table, not the vector index, which leaves out unrated, inactive and novel
+    /// rows that still carry a rank.
+    /// </summary>
+    private static BandShares? Popularity(
+        IReadOnlyDictionary<long, int> stored, IReadOnlyList<long> shelf, IReadOnlyList<long> read)
     {
-        if (index is null || index.Count == 0)
-        {
-            return null;
-        }
-
         var ranks = shelf.Distinct()
-            .Select(id => (Id: id, Rank: index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown))
-            .Where(x => x.Rank > 0)
-            .ToDictionary(x => x.Id, x => x.Rank);
+            .Where(stored.ContainsKey)
+            .ToDictionary(id => id, id => stored[id]);
         var readRanks = read.Distinct().Where(ranks.ContainsKey).Select(id => (Id: id, Rank: ranks[id])).ToList();
         if (readRanks.Count < MinUnderRead)
         {

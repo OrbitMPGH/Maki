@@ -58,7 +58,7 @@ msgstr "(cannot be undone)"
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr "{0, plural, one {{1} of # file} other {{2} of # files}}"
 
-#. placeholder {0}: example.activeDays
+#. placeholder {0}: example.spanDays
 #: src/pages/discover/taste/TasteHabits.tsx
 msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 msgstr "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
@@ -798,17 +798,6 @@ msgstr "{0} pages on the sample chapter."
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "{0}, in your library"
 msgstr "{0}, in your library"
-
-#. placeholder {0}: item.title
-#. placeholder {1}: formatPercent(item.measure)
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}, stopped {1} in"
-msgstr "{0}, stopped {1} in"
-
-#. placeholder {0}: example.title
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}: {summary}"
-msgstr "{0}: {summary}"
 
 #: src/components/discover/discoverBrowse.ts
 msgid "{a} and {b} readers"
@@ -2977,9 +2966,17 @@ msgstr "{title} is hidden from your recommendations and left your shortlist."
 msgid "{title} is reachable"
 msgstr "{title} is reachable"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}, stopped {stopped} in"
+msgstr "{title}, stopped {stopped} in"
+
 #: src/components/import/MihonSummary.tsx
 msgid "{title}: {reason}"
 msgstr "{title}: {reason}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}: {summary}"
+msgstr "{title}: {summary}"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{togglesOn} of {togglesTotal} on"
@@ -3385,11 +3382,6 @@ msgstr "+ suggestive titles"
 msgid "+{abs} pt"
 msgstr "+{abs} pt"
 
-#. placeholder {0}: row.text
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "<0>{0}</0> chapters"
-msgstr "<0>{0}</0> chapters"
-
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}. {trend}"
 msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}. {trend}"
@@ -3397,6 +3389,10 @@ msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {da
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "<0>{count}</0> chapters"
+msgstr "<0>{count}</0> chapters"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
@@ -9183,14 +9179,13 @@ msgstr "Exceptional"
 msgid "Exclude"
 msgstr "Exclude"
 
-#. placeholder {0}: selected.title
-#: src/pages/discover/taste/TasteSignalsTop.tsx
-msgid "Exclude {0} from taste"
-msgstr "Exclude {0} from taste"
-
 #: src/components/TagBrowserModal.tsx
 msgid "Exclude {label}"
 msgstr "Exclude {label}"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Exclude {selectedTitle} from taste"
+msgstr "Exclude {selectedTitle} from taste"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/taste/TasteSignalsTop.tsx
@@ -12298,6 +12293,10 @@ msgstr "login page, background, covers, mosaic, wallpaper"
 #: src/components/discover/DiscoverCatalogueWays.tsx
 msgid "Long and finished"
 msgstr "Long and finished"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Long runs put a few days in each block."
+msgstr "Long runs put a few days in each block."
 
 #: src/pages/discover/taste/TasteHabits.tsx
 msgid "Long strip"
@@ -15722,10 +15721,6 @@ msgstr "Only you"
 #: src/pages/discover/taste/TastePortrait.tsx
 msgid "Only you can see this"
 msgstr "Only you can see this"
-
-#: src/pages/discover/TasteTab.tsx
-msgid "Only you can see this."
-msgstr "Only you can see this."
 
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/registry.ts

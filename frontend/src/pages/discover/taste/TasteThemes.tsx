@@ -160,7 +160,7 @@ function useLaneName() {
  * The reader's side tastes, which the themes above rarely name because they rank by how common a
  * facet is. Sits in the stage column, where the theme list leaves empty room.
  */
-function SideLanes({ lanes, onRecommendSeeds }: { lanes: TasteSideLane[]; onRecommendSeeds: (seeds: Seed[]) => void }) {
+export function SideLanes({ lanes, onRecommendSeeds }: { lanes: TasteSideLane[]; onRecommendSeeds: (seeds: Seed[]) => void }) {
   const nameOf = useLaneName()
   return (
     <Panel p="md" className="taste-lanes">

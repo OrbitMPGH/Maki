@@ -67,7 +67,7 @@ msgstr "(되돌릴 수 없음)"
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr "{0, plural, other {{1} / #개 파일{2, select, other {}}}}"
 
-#. placeholder {0}: example.activeDays
+#. placeholder {0}: example.spanDays
 #: src/pages/discover/taste/TasteHabits.tsx
 msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
 msgstr ""
@@ -929,17 +929,6 @@ msgstr "샘플 챕터에 페이지 {0}개가 있습니다."
 #. placeholder {0}: item.title
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "{0}, in your library"
-msgstr ""
-
-#. placeholder {0}: item.title
-#. placeholder {1}: formatPercent(item.measure)
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}, stopped {1} in"
-msgstr ""
-
-#. placeholder {0}: example.title
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "{0}: {summary}"
 msgstr ""
 
 #: src/components/discover/discoverBrowse.ts
@@ -3580,10 +3569,18 @@ msgstr "{title}은(는) 추천에서 숨겨졌고 찜 목록에서도 빠졌습�
 msgid "{title} is reachable"
 msgstr "{title}에 연결할 수 있음"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}, stopped {stopped} in"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
 msgid "{title}: {reason}"
 msgstr "{title}: {reason}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}: {summary}"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -4082,11 +4079,6 @@ msgstr "+ 선정적 제목"
 msgid "+{abs} pt"
 msgstr "+{abs}점"
 
-#. placeholder {0}: row.text
-#: src/pages/discover/taste/TasteHabits.tsx
-msgid "<0>{0}</0> chapters"
-msgstr ""
-
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}. {trend}"
@@ -4096,6 +4088,10 @@ msgstr "<0>{chapters, plural, other {챕터 #개}}</0>, 읽은 날 {days, plural
 #, fuzzy
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "<0>{chapters, plural, other {챕터 #개}}</0>, 읽은 날 {days, plural, other {#일}}<1>, 대부분 <2>{hour}</2> 이후입니다</1>. {trend}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "<0>{count}</0> chapters"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -11103,15 +11099,14 @@ msgstr "뛰어남"
 msgid "Exclude"
 msgstr "제외"
 
-#. placeholder {0}: selected.title
-#: src/pages/discover/taste/TasteSignalsTop.tsx
-msgid "Exclude {0} from taste"
-msgstr ""
-
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Exclude {label}"
 msgstr "{label} 제외"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Exclude {selectedTitle} from taste"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/taste/TasteSignalsTop.tsx
@@ -14889,6 +14884,10 @@ msgstr "로그인 페이지, 배경, 표지, 커버, 모자이크, 벽지, login
 
 #: src/components/discover/DiscoverCatalogueWays.tsx
 msgid "Long and finished"
+msgstr ""
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Long runs put a few days in each block."
 msgstr ""
 
 #: src/pages/discover/taste/TasteHabits.tsx
@@ -19055,11 +19054,6 @@ msgstr "나만"
 #: src/pages/discover/taste/TastePortrait.tsx
 msgid "Only you can see this"
 msgstr ""
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Only you can see this."
-msgstr "나만 볼 수 있습니다."
 
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/registry.ts

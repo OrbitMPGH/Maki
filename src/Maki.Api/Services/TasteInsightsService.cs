@@ -159,6 +159,12 @@ public class TasteInsightsService(
     /// <summary>Shelf picks returned: one to lead with, and as many beside it as a wide screen fits.</summary>
     private const int ShelfPicksShown = 12;
 
+    /// <summary>
+    /// Shelf picks the cached build ranks, a few past <see cref="ShelfPicksShown"/>, so a pick the
+    /// reader has since dropped or finished leaves the row without leaving it short.
+    /// </summary>
+    private const int ShelfPicksRanked = 16;
+
     /// <summary>Read and unread series the shelf picks need before a fit means anything.</summary>
     private const int MinShelfSide = 3;
 
@@ -316,6 +322,7 @@ public class TasteInsightsService(
         var key = $"{scope.UserId}:{view}:{feedbackRevision}:{signalRevision}:{nextDismissalExpiry}:{scope.MaxContentRating}:" +
             $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}:" +
             CatalogueRules.TermsKey(hidden);
+        TasteInsights insights;
         await _lock.WaitAsync(ct);
         try
         {
@@ -323,31 +330,35 @@ public class TasteInsightsService(
                 _cache.TryGetValue(key, out var hit) &&
                 DateTime.UtcNow - hit.GeneratedAt < CacheFor)
             {
-                return hit.Insights;
+                insights = hit.Insights;
             }
-
-            var insights = await BuildAsync(scope, snapshot, suppressed, view, hidden, ct);
-            _cache[key] = (insights, DateTime.UtcNow);
-
-            foreach (var stale in _cache
-                         .Where(kv => DateTime.UtcNow - kv.Value.GeneratedAt >= CacheFor)
-                         .Select(kv => kv.Key)
-                         .ToList())
+            else
             {
-                _cache.Remove(stale);
-            }
+                insights = await BuildAsync(scope, snapshot, suppressed, view, hidden, ct);
+                _cache[key] = (insights, DateTime.UtcNow);
 
-            while (_cache.Count > CacheSlots)
-            {
-                _cache.Remove(_cache.MinBy(kv => kv.Value.GeneratedAt).Key);
-            }
+                foreach (var stale in _cache
+                             .Where(kv => DateTime.UtcNow - kv.Value.GeneratedAt >= CacheFor)
+                             .Select(kv => kv.Key)
+                             .ToList())
+                {
+                    _cache.Remove(stale);
+                }
 
-            return insights;
+                while (_cache.Count > CacheSlots)
+                {
+                    _cache.Remove(_cache.MinBy(kv => kv.Value.GeneratedAt).Key);
+                }
+            }
         }
         finally
         {
             _lock.Release();
         }
+
+        // A pick's status, whether it has a chapter on disk and where it opens all change without
+        // touching the cache key, so they are read fresh for the few picks on every call.
+        return await WithShelfStateAsync(scope, insights, ct);
     }
 
     /// <summary>Nothing at all: no index, or nothing of this reader's the index knows about.</summary>
@@ -415,7 +426,7 @@ public class TasteInsightsService(
 
         // Both views get the same picks and lanes: they set the shelf against what was read, which the
         // view switch does not change.
-        var shelfPicks = await WithNextChapterAsync(scope, ShelfPicks(index, vocab, library, readIds, shelfState), ct);
+        var shelfPicks = ShelfPicks(index, vocab, library, readIds, shelfState);
         var sideLanes = SideLanes(library, readIds, seeded.Weights);
 
         if (points.Count < TasteGroupMining.MinPoints)
@@ -551,7 +562,7 @@ public class TasteInsightsService(
         return scored
             .OrderByDescending(x => x.Cosine)
             .ThenBy(x => x.Point.SeriesId)
-            .Take(ShelfPicksShown)
+            .Take(ShelfPicksRanked)
             .Select(x =>
             {
                 // A tag before a genre, and among them how many read series share it weighed by how
@@ -574,26 +585,78 @@ public class TasteInsightsService(
                     reason.Count,
                     state.FromRecommendation.Contains(x.Point.SeriesId),
                     x.OnHold,
-                    x.OnHold && state.ReadTo.TryGetValue(x.Point.SeriesId, out var to) ? to : null,
-                    state.WithFiles.Contains(x.Point.SeriesId));
+                    ResumeAt: null,
+                    Ready: false);
             })
             .ToList();
     }
 
-    /// <summary>The chapter each pick opens at, through the one "what's next" resolver.</summary>
-    private async Task<IReadOnlyList<TasteShelfPick>> WithNextChapterAsync(
-        ICurrentUser scope, IReadOnlyList<TasteShelfPick> picks, CancellationToken ct)
+    /// <summary>
+    /// The shelf picks as they stand now: a pick the reader has since finished or dropped leaves,
+    /// the rest get their current hold state, whether a chapter is on disk, where an on-hold pick
+    /// stopped, and the chapter it opens at through the one "what's next" resolver. Small queries
+    /// over at most <see cref="ShelfPicksRanked"/> series, never the whole library.
+    /// </summary>
+    private async Task<TasteInsights> WithShelfStateAsync(
+        ICurrentUser scope, TasteInsights insights, CancellationToken ct)
     {
-        if (picks.Count == 0)
+        if (insights.ShelfPicks is not { Count: > 0 } picks)
         {
-            return picks;
+            return insights;
         }
 
+        var ids = picks.Select(p => p.SeriesId).ToList();
         using var dbScope = scopeFactory.CreateScope();
         var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
         db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
-        var next = await new ContinueReadingService(db).NextForAsync([.. picks.Select(p => p.SeriesId)], ct);
-        return [.. picks.Select(p => p with { NextChapterId = next.TryGetValue(p.SeriesId, out var n) ? n.ChapterId : null })];
+        var status = (await db.UserSeriesStates.IgnoreQueryFilters()
+                .Where(s => s.UserId == scope.UserId && ids.Contains(s.SeriesId))
+                .Select(s => new { s.SeriesId, s.Status })
+                .ToListAsync(ct))
+            .GroupBy(s => s.SeriesId)
+            .ToDictionary(g => g.Key, g => g.First().Status);
+        var withFiles = (await db.Chapters
+                .Where(c => ids.Contains(c.SeriesId) && c.ChapterFileId != null)
+                .Select(c => c.SeriesId)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+        var readTo = await db.ChapterProgress.IgnoreQueryFilters()
+            .Where(p => p.UserId == scope.UserId && p.Completed && ids.Contains(p.SeriesId))
+            .Join(db.Chapters.IgnoreQueryFilters().Where(c => c.Number != null),
+                p => p.ChapterId, c => c.Id, (p, c) => new { c.SeriesId, c.Number })
+            .GroupBy(x => x.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Max = g.Max(x => x.Number) })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Max, ct);
+        var next = await new ContinueReadingService(db).NextForAsync(ids, ct);
+
+        var fresh = new List<TasteShelfPick>(ShelfPicksShown);
+        foreach (var pick in picks)
+        {
+            // The rule the build ranked by: on hold, or planned or reading and not started. A pick
+            // that left those since, or came off hold, was decided about and leaves the row.
+            var now = status.GetValueOrDefault(pick.SeriesId);
+            if (now is not (ReadingStatus.OnHold or ReadingStatus.PlanToRead or ReadingStatus.Reading) ||
+                (pick.OnHold && now != ReadingStatus.OnHold))
+            {
+                continue;
+            }
+
+            var onHold = now == ReadingStatus.OnHold;
+            fresh.Add(pick with
+            {
+                OnHold = onHold,
+                ResumeAt = onHold && readTo.GetValueOrDefault(pick.SeriesId) is { } to ? (double)to : null,
+                Ready = withFiles.Contains(pick.SeriesId),
+                NextChapterId = next.TryGetValue(pick.SeriesId, out var n) ? n.ChapterId : null,
+            });
+            if (fresh.Count == ShelfPicksShown)
+            {
+                break;
+            }
+        }
+
+        return insights with { ShelfPicks = fresh };
     }
 
     /// <summary>
@@ -1143,9 +1206,7 @@ public class TasteInsightsService(
     /// <summary>What the shelf picks need to know about each series beyond its vector.</summary>
     private sealed record ShelfState(
         Dictionary<int, ReadingStatus> Status,
-        HashSet<int> FromRecommendation,
-        HashSet<int> WithFiles,
-        Dictionary<int, double> ReadTo);
+        HashSet<int> FromRecommendation);
 
     private static async Task<ShelfState> ShelfStateAsync(MakiDbContext db, int userId, CancellationToken ct)
     {
@@ -1153,24 +1214,10 @@ public class TasteInsightsService(
             .Where(s => s.UserId == userId)
             .Select(s => new { s.SeriesId, s.Status, s.AddedFrom })
             .ToListAsync(ct);
-        var withFiles = await db.Chapters
-            .Where(c => c.ChapterFileId != null)
-            .Select(c => c.SeriesId)
-            .Distinct()
-            .ToListAsync(ct);
-        var readTo = await db.ChapterProgress.IgnoreQueryFilters()
-            .Where(p => p.UserId == userId && p.Completed)
-            .Join(db.Chapters.IgnoreQueryFilters().Where(c => c.Number != null),
-                p => p.ChapterId, c => c.Id, (p, c) => new { c.SeriesId, c.Number })
-            .GroupBy(x => x.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Max = g.Max(x => x.Number) })
-            .ToListAsync(ct);
 
         return new ShelfState(
             states.GroupBy(s => s.SeriesId).ToDictionary(g => g.Key, g => g.First().Status),
-            [.. states.Where(s => s.AddedFrom == "recommendation").Select(s => s.SeriesId)],
-            [.. withFiles],
-            readTo.Where(x => x.Max != null).ToDictionary(x => x.SeriesId, x => (double)x.Max!.Value));
+            [.. states.Where(s => s.AddedFrom == "recommendation").Select(s => s.SeriesId)]);
     }
 
     /// <summary>

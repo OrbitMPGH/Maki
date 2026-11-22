@@ -2,7 +2,7 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Group, Skeleton, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconBooks, IconClock, IconCompass, IconLock, IconRoute, IconTarget } from '../../lib/icons'
+import { IconAlertCircle, IconBooks, IconClock, IconCompass, IconRoute, IconTarget } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { RecommendationFilters, RecommendationItem, TasteGroup, TasteView } from '../../api/hooks'
 import {
@@ -20,7 +20,7 @@ import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { SignalsCard } from './FeedbackLab'
 import { Callout } from '../../components/ui/Callout'
 import { TastePortrait } from './taste/TastePortrait'
-import { TasteThemes } from './taste/TasteThemes'
+import { SideLanes, TasteThemes } from './taste/TasteThemes'
 import { StatsLink, TasteHabits } from './taste/TasteHabits'
 import { TasteDrift } from './taste/TasteDrift'
 import { TasteReach } from './taste/TasteReach'
@@ -160,6 +160,11 @@ export function TasteTab() {
             />
           )
         )}
+        {/* Side lanes come from the shelf's types and genres, not from theme mining, so a shelf
+            with no recurring theme can still have them. */}
+        {(groupsNote || !insights?.groups.length) && insights?.sideLanes && insights.sideLanes.length > 0 && (
+          <SideLanes lanes={insights.sideLanes} onRecommendSeeds={(seeds) => apply({}, seeds)} />
+        )}
       </section>
 
       {insights?.shelfPicks && insights.shelfPicks.length > 0 && (
@@ -218,13 +223,9 @@ export function TasteTab() {
         <SignalsCard layout="feed" />
       </section>
 
-      <Group gap="xs" mt="xs" wrap="nowrap">
-        <IconLock size={16} style={{ color: 'var(--ink-3)', flexShrink: 0 }} />
-        <Text c="var(--ink-3)" size="xs">
-          <Trans>Only you can see this.</Trans>{' '}
-          <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
-        </Text>
-      </Group>
+      <Text c="var(--ink-3)" size="xs" mt="xs">
+        <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
+      </Text>
 
       <DiscoverDetailModal
         item={detailItem}

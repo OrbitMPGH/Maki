@@ -20,13 +20,15 @@ public class TasteProfileServiceTests : IDisposable
 
     private readonly TestDb _db = new();
     private readonly Dictionary<long, MangaBakaProfileRow> _rows = [];
+    private readonly Dictionary<long, int> _ranks = [];
 
     public void Dispose() => _db.Dispose();
 
     /// <summary>
     /// A store with no dump on disk, answering only the profile query, from what the test seeded.
     /// </summary>
-    private sealed class FakeStore(IReadOnlyDictionary<long, MangaBakaProfileRow> rows) : MangaBakaLocalStore(
+    private sealed class FakeStore(
+        IReadOnlyDictionary<long, MangaBakaProfileRow> rows, IReadOnlyDictionary<long, int>? ranks = null) : MangaBakaLocalStore(
         new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
@@ -35,6 +37,11 @@ public class TasteProfileServiceTests : IDisposable
             IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyDictionary<long, MangaBakaProfileRow>>(
                 ids.Where(rows.ContainsKey).ToDictionary(id => id, id => rows[id]));
+
+        public override Task<IReadOnlyDictionary<long, int>> GetPopularityRanksAsync(
+            IReadOnlyList<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, int>>(
+                ids.Where(id => ranks?.ContainsKey(id) == true).Distinct().ToDictionary(id => id, id => ranks![id]));
     }
 
     /// <summary>
@@ -54,7 +61,7 @@ public class TasteProfileServiceTests : IDisposable
         return new TasteProfileService(
             _db.ScopeFactory(),
             new SeedWeightService(behavioural, effective, settings),
-            new FakeStore(_rows),
+            new FakeStore(_rows, _ranks),
             index ?? NoIndex(),
             // Same reasoning as NoIndex(): pointed at nothing, so GetAsync hands back null and the
             // catalogue baseline falls through to the popularity proxy, which is what an install
@@ -137,6 +144,29 @@ public class TasteProfileServiceTests : IDisposable
         Assert.Equal(1, profile.SeriesCount);
         Assert.Equal(2, profile.LibraryCount);
         Assert.Equal("Action", Assert.Single(profile.Genres).Name);
+    }
+
+    [Fact]
+    public async Task Popularity_bands_read_the_dump_ranks_and_name_the_deepest_cuts()
+    {
+        // No vector index at all: the ranks come from the dump, so the panel still appears.
+        var readRanks = new[] { (101, 50), (102, 500), (103, 1500), (104, 5000), (105, 20000) };
+        foreach (var (id, rank) in readRanks)
+        {
+            SeedFinished(SeedSeries(id, genres: ["Action"]));
+            _ranks[id] = rank;
+        }
+
+        SeedSeries(201, genres: ["Romance"]);
+        _ranks[201] = 80;
+
+        var popularity = (await ProfileAsync(TasteView.Read)).Popularity;
+
+        Assert.NotNull(popularity);
+        Assert.Equal(5, popularity.ReadRanked);
+        Assert.Equal(6, popularity.ShelfRanked);
+        Assert.Equal([0.2, 0.2, 0.4, 0.2], popularity.Read);
+        Assert.Equal([20000, 5000, 1500], popularity.DeepCuts.Select(d => d.Rank));
     }
 
     [Fact]

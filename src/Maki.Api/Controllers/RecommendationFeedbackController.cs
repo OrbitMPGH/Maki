@@ -79,7 +79,7 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
             .Select(x => x.ProviderId).ToHashSet();
         var steering = Steering(snapshot, sources.Select(x => (Id: (long)x.MangaBakaId!.Value, x.Title, x.Rating, x.SoFar)),
             likedIds, entries);
-        var recommendationAdds = await RecommendationAddsAsync(readIds, ct);
+        var recommendationAdds = await RecommendationAddsAsync(allowed, ct);
         return Ok(new
         {
             capabilities = new { feedback = true, signalOverrides = true, labUi = labUiEnabled,
@@ -148,9 +148,15 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
             .Select(x =>
             {
                 var weight = weights[x.Id];
-                // The same order SeedWeightService applies them in: a final rating, then a so-far
-                // rating, then a thumbs up, then the reading itself.
-                var (source, value) = x.Rating is { } rating ? ("rating", (double?)rating)
+                // A thumbs up takes the larger of its own weight and what the rating gave, so when
+                // the weight is the liked weight and not the rating's own, the thumbs up won and is
+                // what the card names. Otherwise the order SeedWeightService applies them in: a
+                // final rating, then a so-far rating, then the reading itself.
+                var likedWon = liked.Contains(x.Id) &&
+                    Math.Abs(weight - RecommendationFeedbackPolicy.LikedWeight) < 1e-9 &&
+                    !(x.Rating is { } r && Math.Abs(r / 5.0 - weight) < 1e-9);
+                var (source, value) = likedWon ? ("liked", null)
+                    : x.Rating is { } rating ? ("rating", (double?)rating)
                     : x.SoFar is { } soFar ? ("sofar", soFar)
                     : liked.Contains(x.Id) ? ("liked", null)
                     : snapshot.Signals.TryGetValue(x.Id, out var signal) && signal.Completed > 0
@@ -180,17 +186,22 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     /// <summary>
     /// What became of the series the reader added from a recommendation: how many they started and
     /// finished, and a few still unstarted with a chapter on disk. Null under three such adds.
+    /// Started is the reader's own progress on that exact series, a page into chapter 1 included,
+    /// so another copy under the same MangaBaka id never counts for it; finished is a subset of it.
     /// </summary>
-    private async Task<object?> RecommendationAddsAsync(HashSet<long> readIds, CancellationToken ct)
+    private async Task<object?> RecommendationAddsAsync(IReadOnlyList<string> allowed, CancellationToken ct)
     {
         var adds = await db.UserSeriesStates.AsNoTracking()
             .Where(x => x.UserId == user.UserId && x.AddedFrom == "recommendation")
-            .Join(db.Series.Where(s => s.Incognito != IncognitoMode.Full && s.ArchivedAt == null),
+            .Join(db.Series.Where(s => s.Incognito != IncognitoMode.Full && s.ArchivedAt == null &&
+                    (s.ContentRating == null || allowed.Contains(s.ContentRating))),
                 x => x.SeriesId, s => s.Id,
                 (x, s) => new
                 {
-                    s.Id, s.Title, s.MangaBakaId, s.CoverPath, s.LastMetadataRefresh, x.Status, x.AddedToLibraryAtUtc,
+                    s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh, x.Status, x.AddedToLibraryAtUtc,
                     HasFile = db.Chapters.Any(c => c.SeriesId == s.Id && c.ChapterFileId != null),
+                    Started = db.ChapterProgress.Any(p => p.UserId == user.UserId && p.SeriesId == s.Id &&
+                        p.UnreadAt == null && !p.Watched && (p.Completed || p.PageIndex > 0)),
                 })
             .ToListAsync(ct);
         if (adds.Count < 3)
@@ -198,14 +209,13 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
             return null;
         }
 
-        var started = adds.Where(a => a.MangaBakaId is { } id && readIds.Contains(id)).ToList();
         return new
         {
             added = adds.Count,
-            started = started.Count,
-            finished = adds.Count(a => a.Status == ReadingStatus.Completed),
+            started = adds.Count(a => a.Started),
+            finished = adds.Count(a => a.Started && a.Status == ReadingStatus.Completed),
             waiting = adds
-                .Where(a => a.HasFile && !(a.MangaBakaId is { } id && readIds.Contains(id)) &&
+                .Where(a => a.HasFile && !a.Started &&
                     a.Status is ReadingStatus.PlanToRead or ReadingStatus.Reading)
                 .OrderByDescending(a => a.AddedToLibraryAtUtc)
                 .ThenBy(a => a.Id)
