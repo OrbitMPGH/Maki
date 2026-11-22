@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Maki.Core.Configuration;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Core.Sources.Custom;
 using Maki.Sources.Common;
@@ -270,7 +271,10 @@ public class CustomSourceTests
         var store = new CustomSourceStore(settings);
         var provider = new CustomSourceProvider(
             store,
-            new CustomSourceFactory(null!, new FakeHttpClientFactory([]), new CustomSourceThrottle()),
+            new CustomSourceFactory(
+                new CustomSourceFetcher(new FakeHttpClientFactory([]), new FlareSolverrClient(new FakeHttpClientFactory([])), settings,
+                    NullLogger<ChallengeAwareFetcher>.Instance),
+                new FakeHttpClientFactory([]), new CustomSourceThrottle()),
             NullLogger<CustomSourceProvider>.Instance);
 
         await provider.ReloadAsync();

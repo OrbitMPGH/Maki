@@ -24,8 +24,10 @@ namespace Maki.Sources.FlameComics;
 /// <c>/series/{seriesId}/{token}</c> needs.
 /// </para>
 /// </summary>
-public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
+public class FlameComicsSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("flamecomics");
+
     /// <summary>Images and covers live on a separate host that needs no Referer.</summary>
     private const string CdnUrl = "https://cdn.flamecomics.xyz";
 
@@ -176,7 +178,7 @@ public class FlameComicsSource(IHtmlFetcher fetcher) : ISource
     /// </summary>
     private async Task<JsonElement> GetPagePropsAsync(string path, CancellationToken ct)
     {
-        var doc = await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
+        var doc = await Parser.ParseDocumentAsync(await _fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
         var payload = doc.QuerySelector("script#__NEXT_DATA__")?.TextContent;
         if (string.IsNullOrWhiteSpace(payload))
         {

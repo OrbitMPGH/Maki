@@ -13,8 +13,10 @@ namespace Maki.Sources.WeebCentral;
 /// endpoints directly (search/data, full-chapter-list, chapter images).
 /// Series id is stored as "{ULID}/{slug}".
 /// </summary>
-public partial class WeebCentralSource(IHtmlFetcher fetcher) : ISource
+public partial class WeebCentralSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("weebcentral");
+
     private static readonly HtmlParser Parser = new();
 
     public string Name => "weebcentral";
@@ -25,7 +27,7 @@ public partial class WeebCentralSource(IHtmlFetcher fetcher) : ISource
     public IReadOnlyList<string> CoverHosts => ["temp.compsci88.com"];
 
     private async Task<AngleSharp.Dom.IDocument> GetDocumentAsync(string path, CancellationToken ct) =>
-        await Parser.ParseDocumentAsync(await fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
+        await Parser.ParseDocumentAsync(await _fetcher.GetContentHtmlAsync($"{BaseUrl}/{path}", ct), ct);
 
     // The site renders every numbered entry as "<word> <number>", and the word is picked per series:
     // "Chapter 12", "Episode 12", "Plot 49", "Mischief 225". Nothing else in the listing carries the

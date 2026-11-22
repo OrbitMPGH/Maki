@@ -494,17 +494,21 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
-    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
+    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine. One client per
+    // site so each carries its site's proxy route; the limiter is still shared by all of them.
     var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
-    builder.Services.AddHttpClient(GigaViewerSource.ImageHttpClientName, client =>
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
-        .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
-        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    foreach (var site in GigaViewerSites.All)
+    {
+        builder.Services.AddHttpClient(GigaViewerSource.ImageClientNameFor(site), client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ForSource(site.Name, PublicAddressGuard.CreateManualRedirectHandler)
+            .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+            .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    }
 
     // Shinigami: the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
     // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the

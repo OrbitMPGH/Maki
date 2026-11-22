@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using Maki.Core.Sources.Custom;
@@ -26,7 +27,8 @@ public sealed partial class CustomSource : ISource
     private readonly IHtmlFetcher _fetcher;
     private readonly IHttpClientFactory _http;
     private readonly SpacingGate _gate;
-    private readonly Func<string, string, IReadOnlyDictionary<string, string>>? _sessionHeaders;
+    private readonly Func<string, string, ProxyRoute, IReadOnlyDictionary<string, string>>? _sessionHeaders;
+    private readonly ISourceProxyResolver _proxies;
     private readonly Uri _base;
     private readonly SourceCatalog _catalogue = new(TimeSpan.FromHours(6));
     private readonly CustomEngineOptions? _engine;
@@ -35,21 +37,24 @@ public sealed partial class CustomSource : ISource
     private readonly Uri? _api;
 
     /// <param name="sessionHeaders">
-    /// Clearance cookies and UA for a host the fetcher solved a challenge for
+    /// Clearance cookies and UA for a host the fetcher solved a challenge for through a route
     /// (<see cref="ChallengeAwareFetcher.SessionHeadersFor"/>), so page images reuse them.
     /// </param>
+    /// <param name="proxies">Where this source's route comes from; none means always direct.</param>
     public CustomSource(
         CustomSourceDefinition definition,
         IHtmlFetcher fetcher,
         IHttpClientFactory http,
         SpacingGate gate,
-        Func<string, string, IReadOnlyDictionary<string, string>>? sessionHeaders = null)
+        Func<string, string, ProxyRoute, IReadOnlyDictionary<string, string>>? sessionHeaders = null,
+        ISourceProxyResolver? proxies = null)
     {
         Definition = definition;
-        _fetcher = fetcher;
+        _fetcher = fetcher.For(definition.SourceName);
         _http = http;
         _gate = gate;
         _sessionHeaders = sessionHeaders;
+        _proxies = proxies ?? NoSourceProxies.Instance;
         _base = new Uri(definition.BaseUrl.TrimEnd('/') + "/");
 
         if (definition.Engine is { } engine)
@@ -279,13 +284,16 @@ public sealed partial class CustomSource : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
+        // One route for the whole chapter: the clearance headers below were earned through it, and
+        // every image request goes out on it.
+        var route = await _proxies.ResolveAsync(Definition.SourceName, ct);
         var chapterUrl = ChapterUrl(chapter.SourceSeriesId, chapter.SourceChapterId);
         switch (Definition.Engine)
         {
-            case CustomEngines.Madara: return Pages(await MadaraPagesAsync(chapterUrl, ct));
-            case CustomEngines.MangaThemesia: return Pages(await ThemesiaPagesAsync(chapterUrl, ct));
-            case CustomEngines.Keyoapp: return Pages(await KeyoappPagesAsync(chapterUrl, ct));
-            case CustomEngines.HeanCms: return Pages(await HeanPagesAsync(chapter, ct));
+            case CustomEngines.Madara: return Pages(await MadaraPagesAsync(chapterUrl, ct), route);
+            case CustomEngines.MangaThemesia: return Pages(await ThemesiaPagesAsync(chapterUrl, ct), route);
+            case CustomEngines.Keyoapp: return Pages(await KeyoappPagesAsync(chapterUrl, ct), route);
+            case CustomEngines.HeanCms: return Pages(await HeanPagesAsync(chapter, ct), route);
         }
 
         var pages = Definition.Pages;
@@ -303,7 +311,7 @@ public sealed partial class CustomSource : ISource
             throw new SourceErrorException($"{DisplayName}: no page images matched {Describe(pages.List)}");
         }
 
-        return Pages(urls);
+        return Pages(urls, route);
     }
 
     private static List<string> ImageUrls(CustomPage page, IEnumerable<string?> raw) => raw
@@ -314,18 +322,18 @@ public sealed partial class CustomSource : ISource
         .Take(MaxPages)
         .ToList();
 
-    private ChapterPages Pages(List<string> urls)
+    private ChapterPages Pages(List<string> urls, ProxyRoute route)
     {
         return new ChapterPages(urls
             .Select(url =>
             {
-                var headers = ImageHeaders(new Uri(url));
-                return new PageRequest(url, headers, Fetch: token => FetchImageAsync(url, headers, token));
+                var headers = ImageHeaders(new Uri(url), route);
+                return new PageRequest(url, headers, Fetch: token => FetchImageAsync(url, headers, route, token));
             })
             .ToList());
     }
 
-    private IReadOnlyDictionary<string, string> ImageHeaders(Uri image)
+    private IReadOnlyDictionary<string, string> ImageHeaders(Uri image, ProxyRoute route)
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -335,7 +343,7 @@ public sealed partial class CustomSource : ISource
 
         if (_sessionHeaders is not null && CustomHost.Same(image.Host, _base.Host))
         {
-            foreach (var (key, value) in _sessionHeaders(image.Host, _base.AbsoluteUri))
+            foreach (var (key, value) in _sessionHeaders(image.Host, _base.AbsoluteUri, route))
             {
                 headers[key] = value;
             }
@@ -354,14 +362,22 @@ public sealed partial class CustomSource : ISource
     }
 
     /// <summary>One image with the headers a download would send, for the wizard's image check.</summary>
-    public Task<byte[]> FetchImageAsync(string url, CancellationToken ct) => FetchImageAsync(url, ImageHeaders(new Uri(url)), ct);
+    public async Task<byte[]> FetchImageAsync(string url, CancellationToken ct)
+    {
+        var route = await _proxies.ResolveAsync(Definition.SourceName, ct);
+        return await FetchImageAsync(url, ImageHeaders(new Uri(url), route), route, ct);
+    }
 
-    public async Task<byte[]> FetchImageAsync(string url, IReadOnlyDictionary<string, string> headers, CancellationToken ct)
+    public async Task<byte[]> FetchImageAsync(string url, IReadOnlyDictionary<string, string> headers, CancellationToken ct) =>
+        await FetchImageAsync(url, headers, await _proxies.ResolveAsync(Definition.SourceName, ct), ct);
+
+    private async Task<byte[]> FetchImageAsync(string url, IReadOnlyDictionary<string, string> headers, ProxyRoute route, CancellationToken ct)
     {
         PublicAddressGuard.EnsureAllowed(url);
         await _gate.WaitAsync(ct);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        route.ApplyTo(request);
         foreach (var (key, value) in headers)
         {
             request.Headers.TryAddWithoutValidation(key, value);

@@ -265,4 +265,48 @@ public class SourceProxyTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("") });
         }
     }
+
+    private sealed class NoCooldown : Maki.Core.Http.IDownloadCooldown
+    {
+        public TimeSpan Remaining(string sourceName) => TimeSpan.Zero;
+        public Task WaitAsync(string sourceName, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class SingleClientFactory(HttpMessageHandler handler) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
+    }
+
+    [Fact]
+    public async Task Every_page_of_a_chapter_goes_out_on_the_source_route()
+    {
+        var settings = new MemorySettings();
+        settings.Values[SettingKeys.SourceProxy] = """{"proxies":[{"id":"default","url":"http://192.168.1.20:3128"}],"sources":{"mangafire":"default"}}""";
+        var seen = new List<ProxyRoute>();
+        var handler = new CallbackHandler(request =>
+        {
+            lock (seen)
+            {
+                seen.Add(ProxyRoute.Of(request));
+            }
+        });
+        var downloader = new Maki.Core.Download.PageDownloader(
+            new SingleClientFactory(handler), new NoCooldown(), TimeProvider.System,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<Maki.Core.Download.PageDownloader>.Instance,
+            new SourceProxyResolver(settings));
+        var pages = new Maki.Core.Sources.ChapterPages(
+            [.. Enumerable.Range(1, 5).Select(i => new Maki.Core.Sources.PageRequest($"https://8.8.8.8/{i}.jpg"))]);
+        var dir = Path.Combine(Path.GetTempPath(), "maki-proxy-pages-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await downloader.DownloadAsync(pages, "mangafire", dir);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+
+        Assert.Equal(5, seen.Count);
+        Assert.All(seen, route => Assert.Equal("http://192.168.1.20:3128", route.Fingerprint));
+    }
 }

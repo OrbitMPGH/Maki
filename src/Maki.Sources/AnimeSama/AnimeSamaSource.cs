@@ -19,8 +19,10 @@ namespace Maki.Sources.AnimeSama;
 /// newSPF/finirListe</c>), read in <see cref="BuildLabels"/>; positions from that list are
 /// what the page-count JSON and the image URLs are keyed by, not the chapter number.
 /// </summary>
-public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
+public class AnimeSamaSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("animesama");
+
     private static readonly HtmlParser Parser = new();
 
     private static readonly Regex PanneauScanPattern =
@@ -69,7 +71,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         var url = $"{BaseUrl}/catalogue/?type[]=Scans&search={Uri.EscapeDataString(title)}&page=1";
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var results = new List<SourceSeriesResult>();
@@ -93,7 +95,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var slug = Slug(sourceSeriesId);
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/catalogue/{slug}/", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/catalogue/{slug}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var title = doc.QuerySelector("div.my-2 h1")?.TextContent.Trim();
@@ -195,7 +197,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         }
 
         var slug = segments[0];
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/catalogue/{slug}/", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/catalogue/{slug}/", ct);
         var panel = FirstScanPanel(html) ??
             throw new InvalidOperationException($"animesama: no scan panel found for '{slug}'");
 
@@ -208,7 +210,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         LoadOeuvreAsync(string resolvedId, CancellationToken ct)
     {
         var scanUrl = $"{BaseUrl}/catalogue/{resolvedId}/";
-        var html = await fetcher.GetHtmlAsync(scanUrl, ct);
+        var html = await _fetcher.GetHtmlAsync(scanUrl, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var oeuvre = doc.QuerySelector("#titreOeuvre")?.TextContent.Trim();
@@ -271,7 +273,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
     private async Task<Dictionary<int, int>?> TryFetchCountsAsync(string oeuvre, CancellationToken ct)
     {
         var countUrl = $"{BaseUrl}/s2/scans/get_nb_chap_et_img.php?oeuvre={Uri.EscapeDataString(oeuvre)}";
-        var countBody = PreUnwrap.Unwrap(await fetcher.GetHtmlAsync(countUrl, ct), countUrl);
+        var countBody = PreUnwrap.Unwrap(await _fetcher.GetHtmlAsync(countUrl, ct), countUrl);
 
         using var countsJson = System.Text.Json.JsonDocument.Parse(countBody);
         if (countsJson.RootElement.TryGetProperty("error", out _))

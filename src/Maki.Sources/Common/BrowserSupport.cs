@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Maki.Core.Http.Proxy;
 using PuppeteerSharp;
 
 namespace Maki.Sources.Common;
@@ -321,6 +322,37 @@ internal static class BrowserSupport
 
     public static Task<byte[]> ReadBytesAsync(IResponse response, CancellationToken ct) =>
         response.BufferAsync().AsTask().WaitAsync(BodyTimeout, ct);
+
+    /// <summary>
+    /// The options for a context on <paramref name="route"/>: a proxied route sets the context's
+    /// proxy (no relaunch, and the launch flags stay as they are); a direct one sets nothing.
+    /// </summary>
+    public static BrowserContextOptions? ContextOptions(ProxyRoute route) =>
+        route.Proxy is { } proxy ? new BrowserContextOptions { ProxyServer = proxy.GetLeftPart(UriPartial.Authority) } : null;
+
+    /// <summary>
+    /// A navigation that failed at the proxy, as the same exception Maki's own clients throw, or
+    /// null for any other failure (or a direct route).
+    /// </summary>
+    public static SourceProxyException? ProxyFailure(NavigationException ex, ProxyRoute route, string sourceName)
+    {
+        if (route.IsDirect)
+        {
+            return null;
+        }
+
+        SourceProxyFailure? failure = ex.Message switch
+        {
+            var m when m.Contains("ERR_PROXY_CONNECTION_FAILED", StringComparison.Ordinal) => SourceProxyFailure.Unreachable,
+            var m when m.Contains("ERR_TUNNEL_CONNECTION_FAILED", StringComparison.Ordinal) ||
+                       m.Contains("ERR_PROXY_AUTH", StringComparison.Ordinal) ||
+                       m.Contains("ERR_NO_SUPPORTED_PROXIES", StringComparison.Ordinal) => SourceProxyFailure.Rejected,
+            _ => null,
+        };
+        return failure is { } kind
+            ? new SourceProxyException(sourceName, kind, ex, $"{sourceName}: the browser could not go through the proxy {route.Fingerprint}: {ex.Message}")
+            : null;
+    }
 
     /// <summary>The cookies a FlareSolverr session earned, for a whole browser context.</summary>
     public static CookieData[] SessionCookies(IReadOnlyDictionary<string, string> cookies, string host) =>

@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Io;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
@@ -30,7 +31,8 @@ public class SearchController(
     ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
-    ILogger<SearchController> logger) : ControllerBase
+    ILogger<SearchController> logger,
+    ISourceProxyResolver? proxies = null) : ControllerBase
 {
     /// <summary>Search a specific site source, for manually linking a series.</summary>
     [HttpGet("source")]
@@ -146,6 +148,19 @@ public class SearchController(
         var client = httpClientFactory.CreateClient("covers");
         var referer = new Uri($"{source.BaseUrl}/");
 
+        // A source behind a proxy often has its cover host blocked the same way, so covers go
+        // through the source's proxy too, every redirect hop included.
+        ProxyRoute route;
+        try
+        {
+            route = await (proxies ?? NoSourceProxies.Instance).ResolveAsync(source.Name, ct);
+        }
+        catch (SourceProxyException ex)
+        {
+            logger.LogDebug(ex, "No proxy route for covers of {Source}", sourceName);
+            return this.BadGateway(localizer, "error.search.coverUnavailable");
+        }
+
         // Redirects are followed by hand so the allowlist can be re-checked at every hop. Letting
         // HttpClient follow them automatically would make the check above decorative: any open
         // redirect on an allowed CDN would bounce the request to an arbitrary host — including one on
@@ -154,6 +169,7 @@ public class SearchController(
         for (var hop = 0; hop <= MaxCoverRedirects; hop++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
+            route.ApplyTo(request);
             request.Headers.Referrer = referer;
             // This stands in for the browser's <img> request, and some CDNs (cdn.atsu.moe) 403 the Maki UA.
             request.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent.Value);

@@ -159,7 +159,7 @@ public class HostStartupTests : IDisposable
     [Fact]
     public void Every_http_client_is_classified_for_source_proxies()
     {
-        string[] callerTagged = ["pages", "covers", "challenge-fetcher", "custom-sources", "custom-source-pages", "source-gigaviewer-img"];
+        string[] callerTagged = ["pages", "covers", "challenge-fetcher", "custom-sources", "custom-source-pages"];
         string[] notSources =
         [
             "anilist-reviews", "coread-graph", "custom-source-repositories", "ease-table", "embedding-model", "flaresolverr",

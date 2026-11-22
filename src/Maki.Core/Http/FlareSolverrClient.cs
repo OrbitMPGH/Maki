@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Maki.Core.Http.Proxy;
 
 namespace Maki.Core.Http;
 
@@ -23,19 +24,36 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
         string? Url = null);
 
     public Task<FlareSolution> GetAsync(string flareSolverrUrl, string targetUrl, CancellationToken ct = default) =>
-        SolveAsync(flareSolverrUrl, targetUrl, postData: null, cookies: null, ct);
+        SolveAsync(flareSolverrUrl, targetUrl, postData: null, cookies: null, route: null, ct);
+
+    public Task<FlareSolution> GetAsync(string flareSolverrUrl, string targetUrl, ProxyRoute? route, CancellationToken ct = default) =>
+        SolveAsync(flareSolverrUrl, targetUrl, postData: null, cookies: null, route, ct);
 
     /// <summary>
     /// Solves <paramref name="targetUrl"/>. A non-null <paramref name="postData"/> switches the command
     /// to <c>request.post</c> (form-urlencoded string, the only body FlareSolverr takes), and
     /// <paramref name="cookies"/> are set in the browser before navigation. FlareSolverr v3 dropped
     /// custom request headers, so cookies are the only per-request state it still accepts.
+    /// <para>
+    /// A proxied <paramref name="route"/> goes in the request's own <c>proxy</c> field, which
+    /// FlareSolverr honours only without a <c>session</c>; this client never sends one. FlareSolverr
+    /// connects to that proxy from its own network.
+    /// </para>
     /// </summary>
+    public Task<FlareSolution> SolveAsync(
+        string flareSolverrUrl,
+        string targetUrl,
+        string? postData,
+        IReadOnlyDictionary<string, string>? cookies,
+        CancellationToken ct = default) =>
+        SolveAsync(flareSolverrUrl, targetUrl, postData, cookies, route: null, ct);
+
     public async Task<FlareSolution> SolveAsync(
         string flareSolverrUrl,
         string targetUrl,
         string? postData,
         IReadOnlyDictionary<string, string>? cookies,
+        ProxyRoute? route,
         CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
@@ -57,12 +75,25 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             payload["cookies"] = cookies.Select(c => new { name = c.Key, value = c.Value }).ToArray();
         }
 
+        if (route?.Proxy is { } proxy)
+        {
+            payload["proxy"] = new { url = proxy.GetLeftPart(UriPartial.Authority) };
+        }
+
         FlareResponse body;
         await _solves.WaitAsync(ct);
         try
         {
             using var response = await client.PostAsJsonAsync(endpoint, payload, ct);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                // FlareSolverr answers its own failures (a proxy it cannot reach, a timeout) with 500
+                // and the reason in the JSON envelope; keep the reason rather than just the status.
+                var failure = await ReadFailureAsync(response, ct);
+                throw new HttpRequestException(
+                    $"FlareSolverr failed: HTTP {(int)response.StatusCode}{(failure is null ? "" : $" ({failure})")}",
+                    null, response.StatusCode);
+            }
 
             body = await response.Content.ReadFromJsonAsync<FlareResponse>(ct)
                 ?? throw new InvalidOperationException("FlareSolverr returned an empty response");
@@ -83,6 +114,20 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             body.Solution.UserAgent ?? string.Empty,
             CookieMap(body.Solution.Cookies, new Uri(targetUrl).Host),
             body.Solution.Url);
+    }
+
+    private static async Task<string?> ReadFailureAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            var envelope = await response.Content.ReadFromJsonAsync<FlareResponse>(ct);
+            var message = envelope?.Message;
+            return string.IsNullOrWhiteSpace(message) ? null : message.Length > 300 ? message[..300] : message;
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or NotSupportedException or HttpRequestException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

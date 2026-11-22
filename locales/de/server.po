@@ -3694,6 +3694,26 @@ msgstr "Kavita hat nicht geantwortet (URL/API-Schlüssel prüfen)"
 msgid "error.settings.flaresolverrNotConfigured"
 msgstr "Keine FlareSolverr-URL konfiguriert"
 
+#. English: Enter the proxy as http://host:port
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyInvalidUrl"
+msgstr ""
+
+#. English: Only HTTP proxies are supported, so the address has to start with http://
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyHttpOnly"
+msgstr ""
+
+#. English: Proxies that need a username and password are not supported yet
+#: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+msgid "error.settings.sourceProxyNoCredentials"
+msgstr ""
+
+#. English: Turn the proxy off for every source before removing its address
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sourceProxyInUse"
+msgstr ""
+
 #. English: FlareSolverr did not respond
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

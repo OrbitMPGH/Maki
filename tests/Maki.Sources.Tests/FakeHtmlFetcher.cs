@@ -33,4 +33,6 @@ public class FakeHtmlFetcher(Dictionary<string, string> responsesByUrlSubstring)
 
         throw new HttpRequestException($"No fixture for {request.Url}");
     }
+
+    public virtual IHtmlFetcher For(string sourceName) => this;
 }
