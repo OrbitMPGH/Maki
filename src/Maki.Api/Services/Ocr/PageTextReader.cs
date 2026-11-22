@@ -54,7 +54,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     public const string DetectionFile = "ch_PP-OCRv3_det_infer.onnx";
     public const string RecognitionFile = "ch_PP-OCRv3_rec_infer.onnx";
 
-    public static readonly TimeSpan IdleWindow = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan IdleWindow = TimeSpan.FromMinutes(1);
 
     private const int ShortSide = 736;
     private const int LongSide = 1600;

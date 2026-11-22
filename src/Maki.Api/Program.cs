@@ -1551,7 +1551,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
             .WithIdentity("embedder-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
@@ -1570,7 +1570,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // And the headless browsers, whose processes are native memory the heap work never sees.

@@ -2,6 +2,7 @@ using Maki.Api.Services.Ocr;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -167,22 +168,31 @@ public sealed class CreditScanWorker(
             return;
         }
 
+        var didWork = false;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 if (_enabled && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
                 {
+                    didWork = true;
                     await ScanSeriesAsync(next.SeriesId, next.Language, stoppingToken);
                     continue;
                 }
 
                 if (_enabled && !Paused && await RecheckBankAsync(stoppingToken) > 0)
                 {
+                    didWork = true;
                     continue;
                 }
 
                 SetWorking(null);
+                if (didWork)
+                {
+                    didWork = false;
+                    NativeHeap.CollectAndTrim();
+                }
+
                 await Wake.WaitAsync(IdleFallback, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

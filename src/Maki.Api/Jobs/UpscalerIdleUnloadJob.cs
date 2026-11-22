@@ -15,7 +15,7 @@ public class UpscalerIdleUnloadJob(OnnxPageUpscaler upscaler, PageTextReader ocr
 {
     public static readonly JobKey Key = new("upscaler-idle-unload");
 
-    public static readonly TimeSpan IdleWindow = TimeSpan.FromMinutes(10);
+    public static readonly TimeSpan IdleWindow = TimeSpan.FromMinutes(3);
 
     public Task Execute(IJobExecutionContext context)
     {
@@ -23,7 +23,8 @@ public class UpscalerIdleUnloadJob(OnnxPageUpscaler upscaler, PageTextReader ocr
         released |= ocr.ReleaseIfIdle(PageTextReader.IdleWindow);
         if (released)
         {
-            NativeHeap.Trim();
+            // CollectAndTrim compacts LOH left by upscale/OCR bursts and hands freed glibc arenas back.
+            NativeHeap.CollectAndTrim();
         }
 
         return Task.CompletedTask;

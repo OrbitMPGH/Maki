@@ -3,6 +3,7 @@ using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -208,15 +209,29 @@ public class PageConversionWorker(
     {
         ImageWorkGate.SetConversionLimit(
             PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, stoppingToken)));
+        var didWork = false;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await RunQueueAsync(stoppingToken);
-                if (await StateAsync(stoppingToken) == PageConversionPassState.Running &&
-                    await RunPassAsync(stoppingToken))
+                if (await RunQueueAsync(stoppingToken) > 0)
                 {
-                    continue;
+                    didWork = true;
+                }
+
+                if (await StateAsync(stoppingToken) == PageConversionPassState.Running)
+                {
+                    didWork = true;
+                    if (await RunPassAsync(stoppingToken))
+                    {
+                        continue;
+                    }
+                }
+
+                if (didWork)
+                {
+                    didWork = false;
+                    NativeHeap.CollectAndTrim();
                 }
 
                 await Wake.WaitAsync(IdleWait(DateTime.UtcNow), stoppingToken);
