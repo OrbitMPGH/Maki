@@ -514,9 +514,9 @@ msgstr ""
 msgid "{0, plural, one {# timed chapter} other {# timed chapters}}"
 msgstr ""
 
-#. placeholder {0}: active.items.length
 #. placeholder {0}: count.count
 #. placeholder {0}: items.length
+#. placeholder {0}: shown.length
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverCatalogueWays.tsx
 #: src/components/home/AnimeResumeRail.tsx
