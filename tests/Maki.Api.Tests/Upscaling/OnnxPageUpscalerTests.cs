@@ -149,7 +149,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile, span));
         Assert.Equal(18, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2x)));
-        Assert.Equal(14, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2xHq)));
+        Assert.Equal(21, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2xHq)));
         Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }, span));
     }
 

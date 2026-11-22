@@ -34,12 +34,12 @@ public sealed class OnnxPageUpscaler(
 
     /// <summary>
     /// A worker's peak per context pixel: SPAN-S measured 22 MB on 120 px contexts (fp32 activations
-    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB. Maki 2x HQ is
-    /// Real-ESRGAN's graph at 48 of its 64 channels, so 3/4 of its cost (estimated, not measured).
+    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB. A Maki 2x HQ
+    /// worker measured about 0.77 of a Maki 2x one.
     /// </summary>
     private static int WorkerBytesPerPixel(UpscaleModelInfo info) =>
         info.Id == UpscaleModelId.Maki2x ? 960
-        : info.Id == UpscaleModelId.Maki2xHq ? 1200
+        : info.Id == UpscaleModelId.Maki2xHq ? 800
         : 1600;
 
     /// <summary>
