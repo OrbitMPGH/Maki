@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO.MemoryMappedFiles;
+using Maki.Core.Io;
 using Microsoft.Win32.SafeHandles;
 
 namespace Maki.Metadata;
@@ -20,19 +21,21 @@ namespace Maki.Metadata;
 internal sealed unsafe class SnapshotMapping
 {
     private static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
-    private static readonly ConcurrentQueue<(SafeMemoryMappedViewHandle View, long Due)> Retired = new();
+    private static readonly ConcurrentQueue<(SafeMemoryMappedViewHandle View, string Path, long Due)> Retired = new();
     private static readonly Timer Sweeper = new(_ => Sweep(), null, Timeout.Infinite, Timeout.Infinite);
 
     private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly SafeMemoryMappedViewHandle _view;
+    private readonly string _path;
     private int _released;
 
-    private SnapshotMapping(MemoryMappedFile file, MemoryMappedViewAccessor accessor, byte* pointer, long length)
+    private SnapshotMapping(MemoryMappedFile file, MemoryMappedViewAccessor accessor, string path, byte* pointer, long length)
     {
         _file = file;
         _accessor = accessor;
         _view = accessor.SafeMemoryMappedViewHandle;
+        _path = path;
         Pointer = pointer;
         Length = length;
     }
@@ -85,7 +88,7 @@ internal sealed unsafe class SnapshotMapping
             // Held until release: an outstanding acquire is what stops the handle's own finalizer
             // from unmapping the view before the grace period is up.
             accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-            return new SnapshotMapping(file, accessor, pointer + accessor.PointerOffset, length);
+            return new SnapshotMapping(file, accessor, path, pointer + accessor.PointerOffset, length);
         }
         catch
         {
@@ -116,7 +119,7 @@ internal sealed unsafe class SnapshotMapping
     {
         if (Interlocked.Exchange(ref _released, 1) == 0)
         {
-            Retired.Enqueue((_view, Environment.TickCount64 + (long)Grace.TotalMilliseconds));
+            Retired.Enqueue((_view, _path, Environment.TickCount64 + (long)Grace.TotalMilliseconds));
             Sweeper.Change(Grace, Timeout.InfiniteTimeSpan);
         }
     }
@@ -128,6 +131,10 @@ internal sealed unsafe class SnapshotMapping
         while (Retired.TryPeek(out var next) && next.Due <= now && Retired.TryDequeue(out next))
         {
             Unmap(next.View);
+            // Unmapped pages of a snapshot that was mapped twice promote to active_file and stick on
+            // docker stats forever. POSIX_FADV_DONTNEED ignores still-mapped pages if the artifact
+            // was reloaded during the grace period.
+            PageCache.DropAfterScan(next.Path);
         }
 
         if (Retired.TryPeek(out var pending))
