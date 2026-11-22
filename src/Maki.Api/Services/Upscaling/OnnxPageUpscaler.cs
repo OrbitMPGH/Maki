@@ -515,17 +515,31 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        StartHelpers(workers);
-        var widen = workers < full ? run.Widen.Register(() => StartHelpers(full)) : default;
-        Work();
-        widen.Dispose();
-        Task[] started;
-        lock (helpers)
+        // Every helper that started is joined before the caller frees the model or the stitched page.
+        var widen = default(CancellationTokenRegistration);
+        try
         {
-            started = [.. helpers];
+            StartHelpers(workers);
+            widen = workers < full ? run.Widen.Register(() => StartHelpers(full)) : default;
+            Work();
+        }
+        catch
+        {
+            stop.Cancel();
+            throw;
+        }
+        finally
+        {
+            widen.Dispose();
+            Task[] started;
+            lock (helpers)
+            {
+                started = [.. helpers];
+            }
+
+            Task.WaitAll(started);
         }
 
-        Task.WaitAll(started);
         ct.ThrowIfCancellationRequested();
         if (failure is not null)
         {
