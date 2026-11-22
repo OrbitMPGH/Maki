@@ -73,8 +73,8 @@ export const ReadingBar: Story = {
     return () => setCardProgress('downloads')
   },
   play: async ({ canvas }) => {
-    const disc = await canvas.findByRole('img', { name: 'Hiatus. On hold' })
-    await expect(disc).toHaveAttribute('data-tip', 'Hiatus. On hold')
+    const disc = await canvas.findByRole('img', { name: /^Hiatus$/ })
+    await expect(disc).toHaveAttribute('data-tip', 'Hiatus')
     await expect(disc).not.toHaveAttribute('data-read')
     const card = await canvas.findByRole('link')
     const bar = card.querySelector('.cover-bar-hit')

@@ -7,7 +7,7 @@ import {
 } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { readingStatusVisual, seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { coverSrcSet, COVER_CARD_SIZES } from '../../lib/coverSrcSet'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
@@ -107,19 +107,15 @@ export const CoverCard = memo(function CoverCard({
   const downloadTip = downloading && download ? renderLabel(download.label) : null
   // Read progress wraps the status disc, so a cover carries one mark for both. Read through closes
   // the ring; the disc keeps its status glyph.
-  const showsRead = readPct !== null && readPct > 0
-  const readThrough = showsRead && unread === 0
+  const showsReadRing = !readsOnBar && readPct !== null && readPct > 0
+  const readThrough = showsReadRing && unread === 0
   // On the bar, reading is drawn as a share of the whole series, so it can pass what is downloaded.
   const readOfTotal = readsOnBar ? Math.min(100, (read / total) * 100) : 0
-  const readTip = progressMode === 'reading' && series.readingStatus
-    ? renderLabel(readingStatusVisual(series.readingStatus).label)
-    : showsRead
-      ? unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
-      : null
+  const readTip = readThrough ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
   const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
-  const statusTip = readTip ? t`${statusOnly}. ${readTip}` : statusOnly
+  const statusTip = showsReadRing ? t`${statusOnly}. ${readTip}` : statusOnly
 
   // The bar's numbers on hover, read included whenever reading is tracked.
   const barTip =
@@ -255,7 +251,7 @@ export const CoverCard = memo(function CoverCard({
               className="cover-state"
               data-tone="status"
               data-unmonitored={!series.monitored || undefined}
-              data-read={readsOnBar ? undefined : readThrough ? 'all' : showsRead ? 'part' : undefined}
+              data-read={readThrough ? 'all' : showsReadRing ? 'part' : undefined}
               data-tip={statusTip}
               role="img"
               aria-label={statusTip}
@@ -263,7 +259,7 @@ export const CoverCard = memo(function CoverCard({
                 {
                   '--tone': statusColor(status.color),
                   '--tone-on': statusOnColor(status.color),
-                  '--ring-pct': showsRead ? `${readThrough ? 100 : readPct}%` : undefined,
+                  '--ring-pct': showsReadRing ? `${readThrough ? 100 : readPct}%` : undefined,
                 } as React.CSSProperties
               }
             >
