@@ -335,24 +335,25 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             }
         }
 
-        float[] prob;
-        int mapW, mapH;
-        using (var results = models.Detection.Run(
-            [NamedOnnxValue.CreateFromTensor(models.DetectionInput, input)], models.Detection.OutputNames, ShrinkAfterRun))
-        {
-            var output = results[0].AsTensor<float>();
-            mapH = output.Dimensions[2];
-            mapW = output.Dimensions[3];
-            prob = output.ToArray();
-        }
+        // The map is read where ORT wrote it, so the results stay alive to the end: a copy was 5 MB of LOH a page.
+        using var results = models.Detection.Run(
+            [NamedOnnxValue.CreateFromTensor(models.DetectionInput, input)], models.Detection.OutputNames, ShrinkAfterRun);
+        var output = results[0].AsTensor<float>();
+        var mapH = output.Dimensions[2];
+        var mapW = output.Dimensions[3];
+        ReadOnlySpan<float> prob = output is DenseTensor<float> dense ? dense.Buffer.Span : output.ToArray();
 
         var mask = new bool[mapW * mapH];
         for (var y = 0; y < mapH; y++)
         {
             for (var x = 0; x < mapW; x++)
             {
-                bool At(int yy, int xx) => yy >= 0 && xx >= 0 && prob[yy * mapW + xx] > Threshold;
-                mask[y * mapW + x] = At(y, x) || At(y, x - 1) || At(y - 1, x) || At(y - 1, x - 1);
+                var row = y * mapW;
+                var above = row - mapW;
+                mask[row + x] = prob[row + x] > Threshold ||
+                                (x > 0 && prob[row + x - 1] > Threshold) ||
+                                (y > 0 && prob[above + x] > Threshold) ||
+                                (y > 0 && x > 0 && prob[above + x - 1] > Threshold);
             }
         }
 
@@ -399,7 +400,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         return [.. boxes.OrderBy(b => b.Cy - b.Thickness / 2).ThenBy(b => b.Cx)];
     }
 
-    private static Box? Component(List<int> pixels, float[] prob, int mapW, double fx, double fy)
+    private static Box? Component(List<int> pixels, ReadOnlySpan<float> prob, int mapW, double fx, double fy)
     {
         int x0 = int.MaxValue, y0 = int.MaxValue, x1 = int.MinValue, y1 = int.MinValue;
         double score = 0, mx = 0, my = 0;
@@ -546,10 +547,10 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             var probs = output[0].AsTensor<float>();
             var steps = probs.Dimensions[1];
             var classes = probs.Dimensions[2];
-            var flat = probs.ToArray();
+            ReadOnlySpan<float> flat = probs is DenseTensor<float> dense ? dense.Buffer.Span : probs.ToArray();
             for (var j = 0; j < batch.Length; j++)
             {
-                results[batch[j]] = Decode(flat.AsSpan(j * steps * classes, steps * classes), steps, classes, models.Characters);
+                results[batch[j]] = Decode(flat.Slice(j * steps * classes, steps * classes), steps, classes, models.Characters);
             }
         }
 
