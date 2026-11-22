@@ -30,7 +30,7 @@ Detailed procedures referenced from [AGENTS.md](../../AGENTS.md) for medium/larg
 
    Push the branch and open the PR into `dev` as described under [Pull requests](#pull-requests).
 
-4. **Get an agent review.** Spawn a fresh reviewer with the `Agent` tool, `model: opus`, `effort: medium`. If T3's `orchestrator_capabilities` lists them, also launch a GPT 6.2 Sol reviewer (`codex`, `reasoningEffort: medium`) and a Gemini 4 Neon reviewer (`antigravity`, `gemini-4-neon`, `thought_level: medium`) with `delegate_task`, all at the same time and with the same brief. Give each reviewer the PR number, the base branch, and the rule files that apply. Do not give them your own opinion of the change.
+4. **Get an agent review.** Spawn a fresh reviewer with the `Agent` tool, `model: opus`, `effort: medium`. If T3's `orchestrator_capabilities` lists them, also launch a GPT 6.2 Sol reviewer (`codex`, `reasoningEffort: medium`) and a Gemini 4 Argon reviewer (`antigravity`, `gemini-4-argon`, `thought_level: medium`) with `delegate_task`, all at the same time and with the same brief. Give each reviewer the PR number, the base branch, and the rule files that apply. Do not give them your own opinion of the change.
 
 5. **Fix the findings, then hand over to the owner.** Fix every finding from every reviewer, commit, push. If you believe a finding is wrong, do not skip it quietly: say which one and why in the handover. The handover has the PR link, a short summary, and what you did not check. If the review fixes changed the UI, include fresh screenshots or restart the running instance, as in step 2.
 
