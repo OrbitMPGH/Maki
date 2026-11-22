@@ -343,8 +343,9 @@ public sealed class StatsStandingServiceTests : IDisposable
         // The aggregates are the target's own; the named series are only the caller's.
         Assert.Equal(8, behaviour.ChaptersRead);
         Assert.Equal("Granted", Assert.Single(behaviour.Abandoned).Title);
-        Assert.Equal("Granted", Assert.Single(behaviour.Savoured).Title);
-        Assert.Equal("Granted", Assert.Single(behaviour.Devoured).Title);
+        // A series is named as slow or as fast, never both, so the one the caller may see is in one.
+        var paced = behaviour.Savoured.Concat(behaviour.Devoured).ToList();
+        Assert.Equal("Granted", Assert.Single(paced).Title);
     }
 
     private sealed class RestrictedUser(int userId) : ICurrentUser
