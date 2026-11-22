@@ -8,6 +8,6 @@ The 2:3 poster uses `radius-cover`, a translucent `cover-rim` edge and `shadow-c
 
 The Library menu is a sibling of the card link. It shows at the top left on pointer hover or keyboard focus and stays at the right end of the count row on touch. Bulk and offline modes hide it.
 
-**Footer.** The two-line display title sits above the count row and progress bar. A neutral “N new” pill counts new chapters to read and takes priority over the download count on narrow cards. The download fill turns from `brand` to `ok` when complete. In Bar mode the two fills show downloads and reading against the series total, with green reading progress when the entire series is read. With no chapters or total, the card says “No chapters” and reserves space for the hidden bar.
+**Footer.** The two-line display title sits above the count row and progress bar. A neutral “N new” pill counts new chapters to read and takes priority over the download count on narrow cards. The download fill turns from `brand` to `ok` when complete. In Bar mode reading progress is drawn over the downloaded fill against the series total, turning `ok` once the entire series is read. With no chapters or total, the card says “No chapters” and reserves space for the hidden bar.
 
 Pass `series`, `selectMode`, `selected`, `readTracking` and `onToggle(id, shiftKey?)`. Optional `menu` enables the Library menu, and `offline` marks saved or unavailable titles. The grid uses plain markup and the shared tooltip layer so hundreds of cards can mount cheaply.

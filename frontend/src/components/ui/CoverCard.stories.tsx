@@ -83,7 +83,8 @@ export const ReadingBar: Story = {
     await expect(bar).toHaveAttribute('data-tip', '24 of 48 downloaded, 24 read')
     await expect(downloads?.style.width).toBe('50%')
     await expect(reading?.style.width).toBe('50%')
-    await expect(downloads?.getBoundingClientRect().bottom).toBeLessThan(reading!.getBoundingClientRect().top)
+    await expect(downloads?.getBoundingClientRect().top).toBe(reading!.getBoundingClientRect().top)
+    await expect(downloads?.getBoundingClientRect().bottom).toBe(reading!.getBoundingClientRect().bottom)
   },
 }
 
