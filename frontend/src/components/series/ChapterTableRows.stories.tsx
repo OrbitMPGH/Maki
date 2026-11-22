@@ -103,8 +103,8 @@ const meta = {
         <Table.Tr>
           <Table.Th>Want</Table.Th>
           <Table.Th>Chapter</Table.Th>
-          <Table.Th>Title</Table.Th>
           <Table.Th>Released</Table.Th>
+          <Table.Th>Title</Table.Th>
           <Table.Th>Source</Table.Th>
           <Table.Th>Status</Table.Th>
           <Table.Th><VisuallyHidden>Actions</VisuallyHidden></Table.Th>

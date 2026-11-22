@@ -1041,11 +1041,12 @@ body {
   --page-gutter-start: var(--page-gutter-end);
 }
 /* The series page sits on one 100rem column, centred in what the sidebar leaves, so its hero, tabs
-   and tables share both edges. Narrower windows keep the gutters above; the band still bleeds. */
+   and tables share both edges. Narrower windows keep the gutters above; the band still bleeds. The
+   start gutter is what the column leaves after the end one, so it only grows once the cap binds. */
 .mantine-AppShell-main.app-main-hero {
-  --series-side: calc((100vw - var(--app-shell-navbar-offset, 0rem) - 100rem) / 2);
-  --page-gutter-start: max(var(--app-shell-padding), var(--series-side));
-  --page-gutter-end: max(var(--app-shell-padding), min((100vw - 75rem) * 0.15, 10rem), var(--series-side));
+  --series-room: calc(100vw - var(--app-shell-navbar-offset, 0rem) - 100rem);
+  --page-gutter-end: max(var(--app-shell-padding), min((100vw - 75rem) * 0.15, 10rem), var(--series-room) / 2);
+  --page-gutter-start: max(var(--app-shell-padding), var(--series-room) - var(--page-gutter-end));
 }
 .nav-collapsed .mantine-AppShell-main.app-main-hero {
   --page-gutter-start: var(--page-gutter-end);
@@ -15838,10 +15839,24 @@ button.settings-row-head:hover,
   min-height: 1.875rem;
   padding-block: 0;
 }
-/* In the Chapters heading, left of Select. The heading's rule gives way before the search does. */
+/* In the Chapters heading, left of Select. The heading's rule gives way first, then the search
+   shrinks, so a narrow panel or a long Select label never squeezes the title. */
+.series-detail-chapter-toolbar .section-header-end,
+.series-detail-chapter-toolbar .section-header-action,
+.series-detail-chapter-toolbar .section-header-action > .mantine-Group-root {
+  flex-shrink: 1;
+  min-width: 0;
+}
 .series-detail-chapter-toolbar .chapter-search {
   width: 20rem;
-  max-width: 32vw;
+  flex: 0 1 auto;
+  min-width: 9rem;
+}
+.series-detail-chapter-toolbar .section-header-action .mantine-Button-root {
+  flex-shrink: 0;
+}
+.series-detail-chapter-toolbar .section-header-lead {
+  flex-shrink: 0;
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
