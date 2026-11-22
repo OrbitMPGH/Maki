@@ -3720,7 +3720,7 @@ msgstr ""
 msgid "error.search.sourceProxyFailed"
 msgstr ""
 
-#. English: Nothing answered at the proxy's address
+#. English: No proxy answered at that address
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.sourceProxyUnreachable"
 msgstr ""
@@ -3729,6 +3729,11 @@ msgstr ""
 #. English: The proxy answered but could not reach {source}
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.sourceProxyRejected"
+msgstr ""
+
+#. {source} is a site's name and is never translated. Maki refuses to fetch private addresses, and the site's name resolved to one where Maki runs (often a DNS blocklist), so the proxy was never asked.
+#. English: Maki did not send {source} to the proxy: its address looks up to a private address on Maki's network
+msgid "error.settings.sourceProxyRefusedHere"
 msgstr ""
 
 #. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.

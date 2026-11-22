@@ -19,6 +19,7 @@ import { RecommendationCard, type OpenItem } from '../ui/DiscoverRail'
 import { TagChip } from '../ui/TagChip'
 import { GENRE_LABELS, normalizeFilters, useCatalogueFilters, useLiveApply } from '../CatalogueFilters'
 import { CatalogueFilterBar, useCatalogueFilterSlots } from '../CatalogueFilterBar'
+import { CATALOGUE_PAGE, useWholeRows } from '../../lib/wholeRows'
 import { FilterMatchCount, normalizeTerms } from '../CatalogueRules'
 import type { CatalogueSeed } from '../CatalogueBrowser'
 
@@ -68,9 +69,6 @@ const WAYS: Way[] = [
 
 /** The genres offered as chips; the rest are one click away in the filter bar. */
 const GENRES = ['Romance', 'Action', 'Fantasy', 'Comedy', 'Mystery', 'Horror', 'Slice of Life', 'Sci-Fi', 'Sports', 'Historical']
-
-/** How many picks the filtered grid shows before "Show all". */
-const SHOWN = 24
 
 /** A filter as the bar rebuilds it (genres folded into rules), so a chosen way still matches once live apply runs. */
 const normal = (f: RecommendationFilters) => normalizeTerms(normalizeFilters(f))
@@ -139,10 +137,11 @@ export function DiscoverCatalogueWays({
   }
 
   const request = useMemo(
-    () => (filtered ? { feed: 'Popular', filters: applied, limit: SHOWN, sort, excludeOwned } : null),
+    () => (filtered ? { feed: 'Popular', filters: applied, limit: CATALOGUE_PAGE, sort, excludeOwned } : null),
     [filtered, applied, sort, excludeOwned],
   )
   const results = useDiscoverFeed(request, true, true)
+  const shown = useWholeRows(results.data ?? [], cols, CATALOGUE_PAGE)
   const seed: CatalogueSeed = { sort, filters: applied }
 
   return (
@@ -207,7 +206,7 @@ export function DiscoverCatalogueWays({
             </Text>
           ) : (
             <SimpleGrid cols={cols} spacing="md" className="discover-cat-grid" style={{ opacity: results.isFetching ? 0.6 : 1 }}>
-              {(results.data ?? []).map((item) => (
+              {shown.map((item) => (
                 <RecommendationCard
                   key={item.providerId}
                   item={item}

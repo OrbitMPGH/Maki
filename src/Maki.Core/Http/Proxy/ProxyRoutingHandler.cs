@@ -79,9 +79,13 @@ public sealed class ProxyRoutingHandler(Func<Uri?, HttpMessageHandler> build) : 
             }
         }
 
+        // A connection that is accepted and then closed or answered with something that is not HTTP
+        // ends the CONNECT exchange early. Docker does this for a stopped container's published
+        // port, and so does a port that serves something other than an HTTP proxy.
         return ex.HttpRequestError switch
         {
-            HttpRequestError.ConnectionError or HttpRequestError.NameResolutionError => SourceProxyFailure.Unreachable,
+            HttpRequestError.ConnectionError or HttpRequestError.NameResolutionError or
+                HttpRequestError.ResponseEnded or HttpRequestError.InvalidResponse => SourceProxyFailure.Unreachable,
             HttpRequestError.ProxyTunnelError => SourceProxyFailure.Rejected,
             _ => null,
         };

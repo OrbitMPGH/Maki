@@ -167,6 +167,16 @@ public class SourceProxyTests
         Assert.Equal(SourceProxyFailure.Unreachable, ex.Failure);
     }
 
+    [Fact]
+    public async Task A_port_that_hangs_up_without_answering_is_reported_as_unreachable()
+    {
+        await using var proxy = new FakeConnectProxy(status: 0);
+        using var invoker = new HttpMessageInvoker(new ProxyRoutingHandler(PublicAddressGuard.CreateManualRedirectHandler));
+
+        var ex = await Assert.ThrowsAsync<SourceProxyException>(() => SendAsync(invoker, ProxyRoute.Via(proxy.Url)));
+        Assert.Equal(SourceProxyFailure.Unreachable, ex.Failure);
+    }
+
     [Theory]
     [InlineData(403)]
     [InlineData(502)]
