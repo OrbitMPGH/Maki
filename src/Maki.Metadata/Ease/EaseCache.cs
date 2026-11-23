@@ -36,6 +36,10 @@ public sealed class EaseCache(EaseOptions options, ILogger<EaseCache> logger)
     private readonly LoadFailureMemo _failed = new();
     private readonly SharedBuild<EaseTable> _loads = new();
     private volatile TaskCompletionSource? _published;
+    private int _generation;
+
+    /// <summary>Moves on every swap or invalidation, so a recommendation pool built on the old table is not served.</summary>
+    public int Generation => Volatile.Read(ref _generation);
 
     private const ulong SnapshotMagic = 0x3145534145434B4D; // "MKCEASE1"
 
@@ -62,6 +66,7 @@ public sealed class EaseCache(EaseOptions options, ILogger<EaseCache> logger)
         _table = null;
         _failed.Clear();
         SnapshotFile.TryDelete(SnapshotPath);
+        Interlocked.Increment(ref _generation);
         logger.LogDebug("Readers-also-finished table invalidated");
     }
 
@@ -89,6 +94,7 @@ public sealed class EaseCache(EaseOptions options, ILogger<EaseCache> logger)
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
             _failed.Clear();
+            Interlocked.Increment(ref _generation);
             logger.LogInformation("Swapped in a new readers-also-finished table at {Path}", options.DatabasePath);
         }
         finally

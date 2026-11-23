@@ -28,24 +28,31 @@ function useBreakdownDraft(seriesId: number, initial: Record<string, number> | n
   const [scores, setScores] = useState<Record<string, number>>(initial ?? {})
   const pending = useRef<Record<string, number> | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { mutate } = save
+  const { mutateAsync } = save
 
-  const flush = useCallback(() => {
+  /** Saves what is waiting now; resolves once it is stored (or failed), so a rating can follow it. */
+  const flush = useCallback(async () => {
     if (timer.current) clearTimeout(timer.current)
     timer.current = null
-    if (pending.current) mutate({ seriesId, scores: pending.current })
+    const scores = pending.current
     pending.current = null
-  }, [mutate, seriesId])
+    if (scores) await mutateAsync({ seriesId, scores }).catch(() => undefined)
+  }, [mutateAsync, seriesId])
 
-  useEffect(() => flush, [flush])
+  useEffect(
+    () => () => {
+      void flush()
+    },
+    [flush],
+  )
 
   const update = (next: Record<string, number>) => {
     setScores(next)
     pending.current = next
     if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(flush, BREAKDOWN_SAVE_DELAY_MS)
+    timer.current = setTimeout(() => void flush(), BREAKDOWN_SAVE_DELAY_MS)
   }
-  return { scores, update }
+  return { scores, update, flush }
 }
 
 /**
@@ -144,7 +151,7 @@ export function RatingPanel({
   const { precision, format } = useRatingFormat()
   const label = useCategoryLabel()
   const pages = useDrillPages<Page>('main', PARENTS)
-  const { scores, update } = useBreakdownDraft(seriesId, breakdown)
+  const { scores, update, flush } = useBreakdownDraft(seriesId, breakdown)
   const { draft, change, commit, forget } = useRatingDraft(value, onChange, immediate)
   const [cleared, setCleared] = useState(false)
   const [typing, setTyping] = useState<string | null>(null)
@@ -367,8 +374,10 @@ export function RatingPanel({
           ) : (
             <Button
               size="compact-sm"
-              onClick={() => {
+              onClick={async () => {
                 setCleared(false)
+                // The rating's history entry records the breakdown, so the scores are saved first.
+                await flush()
                 commit(offered)
               }}
             >

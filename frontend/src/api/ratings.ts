@@ -100,6 +100,9 @@ export function useCategoryLabel() {
 export function useSetRatingBreakdown() {
   const queryClient = useQueryClient()
   return useMutation({
+    // One at a time, in order: each save replaces the whole map, so an older save landing after a
+    // newer one would put the older scores back.
+    scope: { id: 'rating-breakdown' },
     mutationFn: ({ seriesId, scores }: { seriesId: number; scores: Record<string, number> }) =>
       api<{ ratingBreakdown: Record<string, number> | null }>(`/series/${seriesId}/rating/breakdown`, {
         method: 'PUT',

@@ -97,6 +97,8 @@ internal static class BrowserSupport
         "--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4",
         "--no-sandbox",
         "--no-startup-window",
+        // WebRTC may otherwise send UDP straight out of the server, past a source's proxy.
+        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
         .. LaunchArgs,
     ];
 
@@ -364,8 +366,14 @@ internal static class BrowserSupport
     public static Task CloseQuietlyAsync(IBrowserContext? context) =>
         CloseQuietlyAsync(context is null ? null : () => context.CloseAsync());
 
+    /// <summary>
+    /// Bounded, because Chromium can acknowledge a close and never report the target gone, and the
+    /// protocol timeout would then hold the source's browser gate for minutes.
+    /// </summary>
     public static Task CloseQuietlyAsync(IPage? page) =>
-        CloseQuietlyAsync(page is null ? null : () => page.CloseAsync());
+        CloseQuietlyAsync(page is null ? null : () => page.CloseAsync().WaitAsync(PageCloseLimit));
+
+    private static readonly TimeSpan PageCloseLimit = TimeSpan.FromSeconds(10);
 
     private static async Task CloseQuietlyAsync(Func<Task>? close)
     {

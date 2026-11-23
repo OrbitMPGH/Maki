@@ -261,6 +261,8 @@ public sealed class ChapterFoldServiceTests : IDisposable
             ChapterFile File(string name, int pages) =>
                 db.Add(new ChapterFile { SeriesId = rows[3m].SeriesId, RelativePath = $"Test Series/{name}.cbz", PageCount = 10, SplitPageCount = pages }).Entity;
             var whole = File("3", 100);
+            Directory.CreateDirectory(Path.Combine(root, "Test Series"));
+            System.IO.File.WriteAllBytes(Path.Combine(root, "Test Series", "3.cbz"), []);
             var first = File("3.1", 50);
             var second = File("3.2", 50);
             db.SaveChanges();
@@ -332,6 +334,118 @@ public sealed class ChapterFoldServiceTests : IDisposable
 
         Assert.Equal([("a", 3.1m), ("b", 3.2m)], link.ToSourceChapters().Select(c => (c.SourceChapterId, c.Number!.Value)));
         Assert.Equal("a", Assert.Single((link with { Parts = null }).ToSourceChapters()).SourceChapterId);
+    }
+
+    [Theory]
+    [InlineData(ReadingStatus.Completed)]
+    [InlineData(ReadingStatus.Dropped)]
+    public async Task Moving_reads_leaves_the_reading_status_alone(ReadingStatus status)
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) => db.Add(new ChapterProgress
+        {
+            UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 5, PageCount = 26,
+            StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        }));
+        // Set after the seed, whose own progress write counts as a read.
+        using (var db = _db.NewContext())
+        {
+            db.UserSeriesStates.IgnoreQueryFilters().Where(s => s.SeriesId == seriesId)
+                .ExecuteUpdate(set => set.SetProperty(s => s.Status, status));
+        }
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.Equal(13 + 5, check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId).PageIndex);
+        Assert.Equal(status, check.UserSeriesStates.IgnoreQueryFilters().Single(s => s.SeriesId == seriesId).Status);
+    }
+
+    [Fact]
+    public async Task Imported_reads_keep_their_imported_page_count()
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            foreach (var part in new[] { 3.1m, 3.2m })
+            {
+                db.Add(new ChapterProgress
+                {
+                    UserId = reader, SeriesId = rows[part].SeriesId, ChapterId = rows[part].Id, PageCount = 0,
+                    Completed = true, CompletedAt = DateTime.UtcNow, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+                });
+            }
+        });
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.True(progress.Completed);
+        Assert.Equal(0, progress.PageCount);
+    }
+
+    [Fact]
+    public async Task Finishing_every_part_finishes_a_whole_left_open_on_its_last_page()
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            var now = DateTime.UtcNow;
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3m].SeriesId, ChapterId = rows[3m].Id, PageIndex = 38, PageCount = 39,
+                StartedAt = now, UpdatedAt = now,
+            });
+            foreach (var part in new[] { 3.1m, 3.2m })
+            {
+                db.Add(new ChapterProgress
+                {
+                    UserId = reader, SeriesId = rows[part].SeriesId, ChapterId = rows[part].Id, PageIndex = 10, PageCount = 13,
+                    Completed = true, CompletedAt = now, StartedAt = now, UpdatedAt = now,
+                });
+            }
+        });
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.True(progress.Completed);
+        Assert.Equal(38, progress.PageIndex);
+    }
+
+    [Fact]
+    public async Task A_source_listing_part_one_under_the_whole_number_is_not_folded()
+    {
+        // "parts" lists chapter 3 (really part 1, 13 pages) and 3.2; "whole" lists 3 with all 39 pages.
+        var seriesId = _db.SeedSeries(mappings: [Mapping("parts"), Mapping("whole")]);
+        using (var db = _db.NewContext())
+        {
+            var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToDictionary(m => m.SourceName);
+            var three = db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3, Language = "en", Wanted = true }).Entity;
+            var threeTwo = db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3.2m, Language = "en", Wanted = true }).Entity;
+            void Link(Chapter chapter, FakeSource source, decimal number, int pages, IEnumerable<ulong> hashes)
+            {
+                var sc = source.Chapter(number);
+                db.ChapterSourceLinks.Add(new ChapterSourceLink
+                {
+                    Chapter = chapter, SourceMappingId = mappings[source.Name].Id, SourceChapterId = sc.SourceChapterId,
+                    NumberRaw = sc.NumberRaw, PageCount = pages, PageHashes = ChapterPageMatch.Format(hashes),
+                });
+            }
+
+            Link(three, _parts, 3, 13, Whole[..13]);
+            Link(threeTwo, _parts, 3.2m, 26, Whole[13..]);
+            Link(three, _whole, 3, 39, Whole);
+            db.SaveChanges();
+        }
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        var chapters = Chapters(seriesId);
+        Assert.Equal([3m, 3.2m], chapters.Select(c => c.Number!.Value));
+        Assert.Contains(chapters[0].SourceLinks, l => l.SourceMapping!.SourceName == "parts" && l.Parts is null);
     }
 
     private sealed class PagesOf(IReadOnlyDictionary<string, List<ulong>> pages) : IChapterPageHasher

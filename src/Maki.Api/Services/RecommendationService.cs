@@ -59,7 +59,8 @@ public class RecommendationService(
     IAppSettings settings,
     ILogger<RecommendationService> logger,
     KnownTitleTuning? knownTitles = null,
-    Maki.Metadata.PageShare.PageShareCache? pageShareCache = null)
+    Maki.Metadata.PageShare.PageShareCache? pageShareCache = null,
+    Maki.Metadata.Ease.EaseCache? easeCache = null)
 {
     private readonly KnownTitleTuning _known = knownTitles ?? KnownTitleTuning.Default;
 
@@ -278,7 +279,7 @@ public class RecommendationService(
         var baseKey = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                       $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                       $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
-                      $"|e:{(ease ? 1 : 0)}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}" +
+                      $"|e:{(ease ? $"1.{easeCache?.Generation ?? 0}" : "0")}|p:{pageShareKey}|a:{avoidKey}|k:{demoteKey}|x:{knownKey}" +
                       $"|l:{(lanes ? 1 : 0)}";
 
         var forceRestart = false;

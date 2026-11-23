@@ -223,6 +223,8 @@ export function LayoutEditSurface({
   const deleteRail = useDeleteCustomRail()
   /** Cancel was pressed: the rails added in this session go once the page has grown back. */
   const discardCreated = useRef(false)
+  /** The rest of Done or Cancel, while the page is still growing back. */
+  const leaveDone = useRef<(() => void) | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [scrollKey, setScrollKey] = useState<string | null>(null)
   const [moving, setMoving] = useState<{
@@ -671,12 +673,21 @@ export function LayoutEditSurface({
     // Runs when edit mode starts or ends.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editActive])
-  // Also runs when a kept page is hidden, so a drag never outlives the page it started on.
+  // Also runs when a kept page is hidden, so a drag never outlives the page it started on. A page hidden
+  // while Done or Cancel grew it back finishes leaving when it is shown again: a hidden page answers to
+  // its own last location, so leaving there would change the URL of the page on screen.
   useLayoutEffect(
-    () => () => {
-      anim.current?.cancel()
-      release()
-      teardownDrag()
+    () => {
+      const pending = leaveDone.current
+      if (pending) {
+        leaveDone.current = null
+        pending()
+      }
+      return () => {
+        anim.current?.cancel()
+        release()
+        teardownDrag()
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -691,9 +702,14 @@ export function LayoutEditSurface({
     // Nothing on the sections answers while they grow back; set here rather than through state so
     // no section re-renders mid-animation.
     framesRef.current?.setAttribute('inert', '')
-    shrinkTo(FULL, () => {
+    const finish = () => {
       if (discardCreated.current) for (const id of created) deleteRail.mutate(id)
       onExit()
+    }
+    leaveDone.current = finish
+    shrinkTo(FULL, () => {
+      leaveDone.current = null
+      finish()
     })
   }
   useLayoutEffect(() => {
@@ -1542,7 +1558,8 @@ function LayoutFrame({
             p={6}
             aria-labelledby={titleId}
             className="layout-settings-pop"
-            onKeyDownCapture={(e) => {
+            // Bubbling, so a settings page stepping back on Escape (SectionSettings) gets it first.
+            onKeyDown={(e) => {
               if (e.key !== 'Escape') return
               e.stopPropagation()
               closeToButton()
