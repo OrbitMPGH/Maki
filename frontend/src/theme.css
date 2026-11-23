@@ -3775,8 +3775,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   padding: 2px 6px 3px;
   font-size: var(--mantine-font-size-xs);
 }
-.rating-pill:hover,
-.rating-pill[data-open] {
+.rating-pill:not(.rating-pill-quick):hover,
+.rating-pill:not(.rating-pill-quick)[data-open] {
   background: var(--surface-hover);
 }
 .rating-pill:focus-visible {
@@ -3804,22 +3804,257 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: 500;
   color: var(--ink-4);
 }
-.rating-pill-bar,
 .rating-mini {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
 }
+.rating-pill-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 7px;
+}
 .rating-pill-bar > span {
+  position: relative;
+  flex: 1;
+  min-width: 6px;
   height: 3px;
   border-radius: 2px;
   background: var(--border-strong);
+  overflow: hidden;
 }
-.rating-pill-bar > span[data-filled] {
+.rating-pill-bar > span:nth-child(6) {
+  margin-inline-start: 3px;
+}
+.rating-pill-bar > span > i {
+  position: absolute;
+  inset: 0 auto 0 0;
   background: var(--rating);
 }
-.rating-pill[data-state='so-far'] .rating-pill-bar > span[data-filled] {
+.rating-pill[data-state='so-far'] .rating-pill-bar > span > i {
   background: var(--ink-4);
+}
+
+/* With quick rating the pill is two buttons: the word opens the panel, the dashes open ten
+   buttons. The pill keeps its single-button look, so only the part under the pointer lights. */
+.rating-pill.rating-pill-quick {
+  position: relative;
+  gap: 0;
+  padding: 0;
+}
+.rating-pill-quick .rating-pill-word {
+  display: block;
+  padding: 4px 10px 1px;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  color: inherit;
+  font: inherit;
+}
+.rating-pill-quick .rating-pill-word:hover,
+.rating-pill-quick[data-open] .rating-pill-word {
+  background: var(--surface-hover);
+}
+.rating-pill-quick .rating-pill-dashes {
+  display: block;
+  padding: 2px 10px 5px;
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+  cursor: pointer;
+}
+.rating-pill-quick .rating-pill-word:focus-visible,
+.rating-pill-quick .rating-pill-dashes:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+/* Eager: the pointer is on the dashes and the buttons are about to open. --grow (0 at rest, 1 the
+   moment the buttons pop) is driven from RatingPill: a quick first grow, a slow creep, then a rush
+   into the expansion. Registered so it can animate. */
+@property --grow {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+/* Transforms and colour only, so the growth is smooth to the sub-pixel: the dashes stretch up,
+   spread out from the middle toward where the buttons will stand, and brighten as --grow rises. */
+.rating-pill-quick .rating-pill-bar {
+  height: 9px;
+}
+.rating-pill-quick .rating-pill-bar > span {
+  transform-origin: center bottom;
+  transform:
+    translateX(calc((var(--i) - 4.5) * var(--grow) * 1.4px))
+    scale(calc(1 + var(--grow) * 0.3), calc(1 + var(--grow) * 1.9));
+  background: color-mix(in srgb, var(--ink-4) calc(var(--grow) * 55%), var(--border-strong));
+}
+
+/* The ten buttons, on a layer over the row that starts as the pill itself: its top left corner and
+   its label sit exactly on the pill's, and the buttons grow out of the dashes. */
+.rating-quick {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  z-index: var(--z-float);
+  display: grid;
+  gap: 3px;
+  padding: 0 8px 8px 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-chip);
+  white-space: nowrap;
+  animation: rating-quick-open 0.2s var(--ease) both;
+}
+.rating-quick[data-state='closing'] {
+  pointer-events: none;
+  animation: rating-quick-close 0.18s ease-in both;
+}
+@keyframes rating-quick-open {
+  from {
+    clip-path: inset(0 calc(100% - var(--pill-w, 120px)) calc(100% - var(--pill-h, 32px)) 0 round var(--radius-control));
+    background-color: transparent;
+    box-shadow: none;
+  }
+  to {
+    clip-path: inset(-20px -20px -30px -20px round var(--radius-control));
+  }
+}
+/* The card folds back to the pill while the buttons travel into their dashes; it only fades at
+   the very end, so the buttons are seen landing. */
+@keyframes rating-quick-close {
+  from {
+    clip-path: inset(-20px -20px -30px -20px round var(--radius-control));
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    clip-path: inset(0 calc(100% - var(--pill-w, 120px)) calc(100% - var(--pill-h, 32px)) 0 round var(--radius-control));
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    opacity: 0;
+  }
+}
+.rating-quick-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.rating-quick .rating-pill-word {
+  border-radius: var(--radius-control) 0 var(--radius-control) 0;
+}
+.rating-quick-now {
+  margin-inline-start: auto;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  color: var(--ink-4);
+}
+.rating-quick-scores {
+  display: flex;
+  gap: 3px;
+  padding-inline-start: 8px;
+}
+.rating-quick-score {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 28px;
+  border: 0;
+  border-radius: 5px;
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--rating) 26%, transparent) var(--fill), transparent var(--fill)),
+    var(--surface-hover);
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  /* RatingPill moves each button in from its dash; the origin keeps that transform exact. */
+  transform-origin: 0 0;
+}
+.rating-quick-score:nth-child(6) {
+  margin-inline-start: 4px;
+}
+.rating-quick[data-so-far] .rating-quick-score {
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--ink-4) 40%, transparent) var(--fill), transparent var(--fill)),
+    var(--surface-hover);
+}
+.rating-quick-score[data-full] {
+  color: color-mix(in srgb, var(--rating) 75%, var(--ink-hi));
+}
+.rating-quick[data-so-far] .rating-quick-score[data-full] {
+  color: var(--ink-hi);
+}
+/* Scoped to the layer so it outranks the so-far fill above. */
+.rating-quick .rating-quick-score[data-on] {
+  background: var(--rating);
+  color: var(--rating-on);
+}
+.rating-quick-score:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rating-quick {
+    animation: none;
+  }
+}
+/* Ten score buttons where a prompt asks for a rating. */
+.rating-scores {
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+}
+.rating-scores-row {
+  display: flex;
+  gap: 4px;
+}
+.rating-scores-button {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--rating) 26%, transparent) var(--fill), transparent var(--fill)),
+    var(--surface-hover);
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+.rating-scores-button:nth-child(6) {
+  margin-inline-start: 4px;
+}
+.rating-scores-button[data-full] {
+  color: color-mix(in srgb, var(--rating) 75%, var(--ink-hi));
+}
+.rating-scores[data-so-far] .rating-scores-button {
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--ink-4) 40%, transparent) var(--fill), transparent var(--fill)),
+    var(--surface-hover);
+}
+.rating-scores[data-so-far] .rating-scores-button[data-full] {
+  color: var(--ink-hi);
+}
+.rating-scores .rating-scores-button[data-on] {
+  background: var(--rating);
+  color: var(--rating-on);
+}
+.rating-scores-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.rating-scores-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.rating-scores-caption {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--ink-2);
 }
 /* SeriesHint: a Note at body size whose actions follow the text instead of sitting at the far end. */
 .series-hint {
@@ -3841,27 +4076,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .series-hint > .note .note-action {
   margin-inline-start: 0;
 }
-.series-hint .rating-words {
+.series-hint .rating-scores {
   padding-inline-start: calc(16px + var(--mantine-spacing-xs));
 }
-.rating-words[data-layout='grid'] {
+.rating-words {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 5px;
 }
-.rating-words[data-layout='grid'] .rating-word:nth-child(-n + 4) {
+.rating-words .rating-word:nth-child(-n + 4) {
   grid-column: span 3;
 }
-.rating-words[data-layout='grid'] .rating-word:nth-child(n + 5) {
+.rating-words .rating-word:nth-child(n + 5) {
   grid-column: span 4;
-}
-.rating-words[data-layout='row'] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.rating-words[data-layout='row'] .rating-word {
-  flex: 1 1 auto;
 }
 .rating-word {
   padding: 7px 8px;
@@ -3897,13 +4124,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--rating-on);
   box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 3.5px var(--brand);
 }
-.rating-word[data-so-far] {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
-  color: var(--brand-fg);
-}
-.reader-end .rating-word:not([data-filled]):not([data-on]) {
-  background: rgba(255, 255, 255, 0.08);
+.reader-end .rating-scores {
+  --surface-hover: rgba(255, 255, 255, 0.08);
 }
 .rating-verdict {
   display: flex;

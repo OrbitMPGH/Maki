@@ -754,6 +754,7 @@ function SeriesDetailBody() {
   const setPrepareAhead = useSetSeriesPrepareAhead()
   const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
+  const ratingToast = useRef<string | null>(null)
   const { format: formatRating } = useRatingFormat()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
@@ -1997,13 +1998,40 @@ function SeriesDetailBody() {
 
   const submitRating = (value: number | null) => {
     if (!series) return
-    rateSeries.rate(series, value, (soFar) => {
+    rateSeries.rate(series, value, (soFar, undo) => {
       const rating = value === null ? null : formatRating(value)
-      notify.ok(
+      const message =
           rating === null
               ? staticT`Rating cleared`
-              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
-      )
+              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`
+      // One rating toast at a time: an older one's Undo would put back a score from before the newer pick.
+      if (ratingToast.current) notifications.hide(ratingToast.current)
+      if (!undo) {
+        ratingToast.current = null
+        notify.ok(message)
+        return
+      }
+      const id = notifications.show({
+        color: 'var(--ok)',
+        message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">{message}</Text>
+              <Button
+                  size="xs"
+                  variant="subtle"
+                  style={{ flexShrink: 0 }}
+                  onClick={() => {
+                    notifications.hide(id)
+                    ratingToast.current = null
+                    undo()
+                  }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
+        ),
+      })
+      ratingToast.current = id
     })
   }
 

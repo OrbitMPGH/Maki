@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -3365,16 +3365,39 @@ export function useFinalizeRating() {
 export function useRateSeries() {
   const final = useSetRating()
   const provisional = useSetProvisionalRating()
+  // What each endpoint last saved per series, so Undo after two quick picks goes back one step
+  // rather than to the score the page loaded with.
+  const saved = useRef(new Map<string, number | null>())
   return {
     isPending: final.isPending || provisional.isPending,
     rate: (
       series: Pick<SeriesDto, 'id' | 'rating' | 'provisionalRating' | 'finished' | 'readChapterCount'>,
       rating: number | null,
-      onSuccess?: (soFar: boolean) => void,
+      /**
+       * `undo` puts back the score this replaced, through the same endpoint. It is null when that
+       * score cannot come back: a final rating clears the "so far" one, and a finished series
+       * refuses a new "so far" score.
+       */
+      onSuccess?: (soFar: boolean, undo: (() => void) | null) => void,
     ) => {
       const soFar = rating === null ? isProvisional(series) : ratesProvisionally(series)
       const mutation = soFar ? provisional : final
-      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar) })
+      const key = `${series.id}:${soFar ? 'so-far' : 'final'}`
+      const before = saved.current.has(key)
+        ? (saved.current.get(key) ?? null)
+        : ((soFar ? series.provisionalRating : series.rating) ?? null)
+      const replacesSoFar = !soFar && rating !== null && before === null && series.provisionalRating != null
+      const send = (value: number | null, after?: () => void) =>
+        mutation.mutate(
+          { seriesId: series.id, rating: value },
+          {
+            onSuccess: () => {
+              saved.current.set(key, value)
+              after?.()
+            },
+          },
+        )
+      send(rating, () => onSuccess?.(soFar, replacesSoFar ? null : () => send(before)))
     },
   }
 }
