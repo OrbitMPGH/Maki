@@ -33,6 +33,7 @@ import { isRailKey, railIdOf, useSavePageLayout, type PageSection } from '../../
 import {
   RAIL_SOURCE_LABELS,
   useCustomRailItems,
+  useDeleteCustomRail,
   type CustomRail,
   type CustomRailPlacement,
 } from '../../api/customRails'
@@ -219,6 +220,9 @@ export function LayoutEditSurface({
   const [editingRail, setEditingRail] = useState<CustomRail | null>(null)
   const [deletingRail, setDeletingRail] = useState<CustomRail | null>(null)
   const [created, setCreated] = useState<Set<number>>(() => new Set())
+  const deleteRail = useDeleteCustomRail()
+  /** Cancel was pressed: the rails added in this session go once the page has grown back. */
+  const discardCreated = useRef(false)
   const [announcement, setAnnouncement] = useState('')
   const [scrollKey, setScrollKey] = useState<string | null>(null)
   const [moving, setMoving] = useState<{
@@ -634,6 +638,8 @@ export function LayoutEditSurface({
       const scrolled = pageScrollTop()
       if (scrolled > 0) scrollPageTo(scrolled + barSpace.current)
       leaving.current = false
+      discardCreated.current = false
+      setCreated(new Set())
       view.current = FULL
       setLayout(FULL, 1)
       restHeights()
@@ -685,7 +691,10 @@ export function LayoutEditSurface({
     // Nothing on the sections answers while they grow back; set here rather than through state so
     // no section re-renders mid-animation.
     framesRef.current?.setAttribute('inert', '')
-    shrinkTo(FULL, onExit)
+    shrinkTo(FULL, () => {
+      if (discardCreated.current) for (const id of created) deleteRail.mutate(id)
+      onExit()
+    })
   }
   useLayoutEffect(() => {
     if (!leaveAfterRender.current) return
@@ -1082,6 +1091,7 @@ export function LayoutEditSurface({
   }, [save.isPending])
   const cancel = () => {
     if (leaving.current || saving.current || waitForDrop('cancel')) return
+    discardCreated.current = true
     if (!dirty) {
       leave()
       return
@@ -1242,7 +1252,11 @@ export function LayoutEditSurface({
         onClose={() => setDeletingRail(null)}
         railId={deletingRail?.id}
         railName={deletingRail?.name ?? ''}
-        onDeleted={() => setSelected(null)}
+        onDeleted={() => {
+          const id = deletingRail?.id
+          if (id != null) setCreated((prev) => new Set([...prev].filter((c) => c !== id)))
+          setSelected(null)
+        }}
       />
     </>
   )
