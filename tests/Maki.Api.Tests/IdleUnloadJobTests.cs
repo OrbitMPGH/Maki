@@ -20,6 +20,7 @@ public class IdleUnloadJobTests
         { "embedder", EmbedderIdleUnloadJob.Resolve },
         { "vector", ArtifactIdleUnloadJob.ResolveVector },
         { "browser", BrowserIdleShutdownJob.Resolve },
+        { "ef-query-cache", Maki.Data.EfQueryCache.ResolveMinutes },
     };
 
     /// <summary>

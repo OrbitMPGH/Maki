@@ -3,6 +3,7 @@ using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Maki.Data;
@@ -291,9 +292,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     }
 
     // Here rather than at the AddDbContext call so the design-time factory and every test that
-    // builds its own options get the same connection pragmas as the app.
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+    // builds its own options get the same connection pragmas and query cache as the app.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
         optionsBuilder.AddInterceptors(SqlitePragmaInterceptor.Instance);
+        if (optionsBuilder.Options.FindExtension<CoreOptionsExtension>()?.MemoryCache is null)
+        {
+            optionsBuilder.UseMemoryCache(EfQueryCache.Shared);
+        }
+    }
 
     private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
         v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,
