@@ -201,7 +201,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'preferences',
     title: msg`Full-width series page`,
     within: 'series-page',
-    since: 'next',
+    since: '0.38.0',
     keywords: msg({
       message: `layout, page width, gutters, margins, wide screen`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
