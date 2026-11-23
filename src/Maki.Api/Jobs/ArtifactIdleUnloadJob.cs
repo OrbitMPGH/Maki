@@ -5,6 +5,7 @@ using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.MangaBaka;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Quartz;
@@ -57,7 +58,8 @@ public class ArtifactIdleUnloadJob(
     SourceChapterListCache chapterLists,
     ILogger<ArtifactIdleUnloadJob> logger,
     RecommendationService? recommendations = null,
-    SimilarSeriesService? similarSeries = null) : IJob
+    SimilarSeriesService? similarSeries = null,
+    MangaBakaLocalStore? dump = null) : IJob
 {
     public static readonly JobKey Key = new("artifact-idle-unload");
 
@@ -73,6 +75,9 @@ public class ArtifactIdleUnloadJob(
 
     /// <summary>Above the client's one-hour staleTime, so a Discover feed is never reset under a reader.</summary>
     private static readonly TimeSpan InteractivePoolIdleWindow = TimeSpan.FromHours(2);
+
+    /// <summary>Quiet period before dropping OS page cache accumulated on <c>mangabaka.db</c> by searches and lookups.</summary>
+    internal static readonly TimeSpan DumpPageCacheIdleWindow = TimeSpan.FromMinutes(30);
 
     public Task Execute(IJobExecutionContext context)
     {
@@ -100,6 +105,11 @@ public class ArtifactIdleUnloadJob(
             var interactivePoolIdle = TimeSpan.FromMinutes(Math.Max(minutes, InteractivePoolIdleWindow.TotalMinutes));
             released += (recommendations?.ReleaseIdlePools(poolIdle, interactivePoolIdle) ?? 0) > 0 ? 1 : 0;
             released += (similarSeries?.ReleaseIdle(poolIdle) ?? 0) > 0 ? 1 : 0;
+            var dumpIdle = TimeSpan.FromMinutes(Math.Max(minutes, DumpPageCacheIdleWindow.TotalMinutes));
+            if (dump?.DropScanCacheIfIdle(dumpIdle) == true)
+            {
+                logger.LogDebug("Dropped idle MangaBaka dump page cache after {Minutes:F0} minute(s)", dumpIdle.TotalMinutes);
+            }
         }
 
         if (vectorMinutes > 0)

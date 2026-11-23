@@ -1294,4 +1294,37 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal([13L], found.Order());
     }
+
+    [Fact]
+    public async Task DropScanCacheIfIdle_drops_once_after_a_read_and_skips_when_already_dropped()
+    {
+        _db.AddSeries(1, "Berserk");
+        var dropped = new List<string>();
+        var store = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_db.Path, Path.GetTempPath()),
+            NullLogger<MangaBakaLocalStore>.Instance)
+        {
+            DropCache = dropped.Add,
+        };
+
+        Assert.False(store.DropScanCacheIfIdle(TimeSpan.Zero));
+        Assert.Empty(dropped);
+
+        Assert.NotNull(await store.GetDetailAsync(1));
+        Assert.False(store.DropScanCacheIfIdle(TimeSpan.FromHours(1)));
+        Assert.Empty(dropped);
+
+        Assert.True(store.DropScanCacheIfIdle(TimeSpan.Zero));
+        Assert.Equal([_db.Path], dropped);
+
+        Assert.False(store.DropScanCacheIfIdle(TimeSpan.Zero));
+        Assert.Single(dropped);
+
+        // An explicit DropScanCache clears the dirty flag so the idle drop does not fire a second time.
+        Assert.NotNull(await store.GetDetailAsync(1));
+        store.DropScanCache();
+        Assert.Equal(2, dropped.Count);
+        Assert.False(store.DropScanCacheIfIdle(TimeSpan.Zero));
+        Assert.Equal(2, dropped.Count);
+    }
 }

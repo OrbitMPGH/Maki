@@ -4,8 +4,10 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Io;
 using Maki.Core.Notifications;
 using Maki.Data;
+using Maki.Sources.Common;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -38,7 +40,8 @@ public class RefreshMonitoredSeriesJob(
     IMessageCatalog localizer,
     IUserLocaleResolver locales,
     ILogger<RefreshMonitoredSeriesJob> logger,
-    VolumeFirstDeferrals? deferrals = null) : IJob
+    VolumeFirstDeferrals? deferrals = null,
+    IEnumerable<IIdleBrowser>? browsers = null) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
     {
@@ -79,6 +82,49 @@ public class RefreshMonitoredSeriesJob(
         {
             // Shutdown, not a broken series: end the pass rather than walking the rest of the library.
             logger.LogInformation("Refresh cancelled after {Done} of {Total} series", done, seriesIds.Count);
+        }
+        finally
+        {
+            if (seriesIds.Count > 0)
+            {
+                await ReleaseBrowsersIfIdleAsync();
+            }
+        }
+    }
+
+    internal async Task ReleaseBrowsersIfIdleAsync()
+    {
+        if (browsers is null || queue.Busy)
+        {
+            return;
+        }
+
+        if (BrowserIdleShutdownJob.Resolve(Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable)) <= 0)
+        {
+            return;
+        }
+
+        var closed = false;
+        foreach (var browser in browsers)
+        {
+            if (!browser.IsRunning)
+            {
+                continue;
+            }
+
+            try
+            {
+                closed |= await browser.ReleaseIfIdleAsync(TimeSpan.Zero);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not close the {Browser} browser after monitored refresh", browser.BrowserName);
+            }
+        }
+
+        if (closed)
+        {
+            NativeHeap.Trim();
         }
     }
 
