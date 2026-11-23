@@ -3334,7 +3334,7 @@ function SeriesDetailBody() {
           <Stack className="series-detail-chapters" gap="lg">
             <div
                 className="series-detail-chapter-head"
-                data-sticky={selectMode ? undefined : true}
+                data-sticky
                 data-grouped={groupingActive || undefined}
                 ref={setChapterHead}
             >
@@ -3455,6 +3455,167 @@ function SeriesDetailBody() {
                           style={{ '--label-ch': Math.max(...chapterPageSizeOptions.map((o) => o.label.length)) }}
                       />
                     </Group>
+                )}
+                {selectMode && (
+                    <div className="series-detail-chapter-selection" role="toolbar" aria-label={t`Selected chapters`}>
+                      <Group justify="space-between" wrap="wrap" gap="xs">
+                        <Group gap="xs">
+                          <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
+                            <IconX size={16} />
+                          </ActionIcon>
+                          <Text size="sm" fw={600} c="var(--ink-hi)" className="tnum">
+                            <Trans>{selectedCount} selected</Trans>
+                          </Text>
+                          <Menu shadow="md" position="bottom-start" withinPortal>
+                            <Menu.Target>
+                              <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
+                                <Trans>Select all</Trans>
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              {/* Every item works over the rows the filter is showing, same as a shift-range,
+                            so "Specials" under the Missing filter means the specials you can see. */}
+                              <Menu.Item
+                                  className="tnum"
+                                  onClick={() => selectAll(() => true)}
+                              >
+                                <Trans>All ({visibleAllCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Item
+                                  className="tnum"
+                                  disabled={visibleMain.length === 0}
+                                  onClick={() => selectAll((c) => !isSpecial(c))}
+                              >
+                                <Trans>Main ({visibleMainCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Item
+                                  className="tnum"
+                                  disabled={visibleSpecials.length === 0}
+                                  onClick={() => selectAll(isSpecial)}
+                              >
+                                <Trans>Specials ({visibleSpecialsCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Divider />
+                              <Menu.Item
+                                  disabled={selected.size === 0}
+                                  onClick={() => {
+                                    selectAnchor.current = null
+                                    setSelected(new Set())
+                                  }}
+                              >
+                                <Trans>Clear</Trans>
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                          <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
+                            <Trans>Click a row to select, shift-click for a range</Trans>
+                          </Text>
+                        </Group>
+                        <Group gap="xs">
+                          {chapterPrimaryActions.map((a) => {
+                            const button = (
+                              <Button
+                                  key={a.key}
+                                  visibleFrom="sm"
+                                  size="xs"
+                                  variant={a.key === 'download' ? 'filled' : 'default'}
+                                  leftSection={a.icon}
+                                  disabled={selected.size === 0}
+                                  data-disabled={a.disabled || undefined}
+                                  aria-disabled={a.disabled || undefined}
+                                  loading={a.loading}
+                                  onClick={a.run}
+                              >
+                                {a.label}
+                              </Button>
+                            )
+                            return a.key === 'download' ? (
+                                <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                                  {button}
+                                </Tooltip>
+                            ) : (
+                                button
+                            )
+                          })}
+                          {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
+                              <Menu position="bottom-end" withinPortal>
+                                <Menu.Target>
+                                  <Button
+                                      size="xs"
+                                      variant="default"
+                                      rightSection={<IconChevronDown size={16} />}
+                                      disabled={selected.size === 0}
+                                      loading={chapterMoreBusy}
+                                      className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
+                                  >
+                                    <Text span inherit visibleFrom="sm">
+                                      <Trans>More</Trans>
+                                    </Text>
+                                    <Text span inherit hiddenFrom="sm">
+                                      <Trans>Actions</Trans>
+                                    </Text>
+                                  </Button>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  {chapterPrimaryActions.map((a) => (
+                                      <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
+                                        {a.label}
+                                      </Menu.Item>
+                                  ))}
+                                  {chapterMoreGroups.map((group, i) => (
+                                      <Fragment key={group[0].key}>
+                                        {(i > 0 || chapterPrimaryActions.length > 0) && (
+                                            <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
+                                        )}
+                                        {group.map((a) => (
+                                            <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                                              {a.label}
+                                            </Menu.Item>
+                                        ))}
+                                      </Fragment>
+                                  ))}
+                                </Menu.Dropdown>
+                              </Menu>
+                          )}
+                          {canDelete && (
+                              <>
+                                <Divider orientation="vertical" className="library-bulk-divider" />
+                                <Menu position="bottom-end" withinPortal>
+                                  <Menu.Target>
+                                    <Button
+                                        size="xs"
+                                        variant="light"
+                                        color="var(--danger)"
+                                        leftSection={<IconTrash size={16} />}
+                                        rightSection={<IconChevronDown size={16} />}
+                                        disabled={selected.size === 0}
+                                    >
+                                      <Trans>Delete</Trans>
+                                    </Button>
+                                  </Menu.Target>
+                                  <Menu.Dropdown>
+                                    <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
+                                      <Trans>Delete files</Trans>
+                                    </Menu.Item>
+                                    <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
+                                      <Trans>Remove chapters</Trans>
+                                    </Menu.Item>
+                                  </Menu.Dropdown>
+                                </Menu>
+                              </>
+                          )}
+                          <Button
+                              visibleFrom="sm"
+                              size="xs"
+                              variant="default"
+                              leftSection={<IconX size={16} />}
+                              onClick={exitSelectMode}
+                          >
+                            <Trans>Done</Trans>
+                          </Button>
+                        </Group>
+                      </Group>
+                    </div>
                 )}
               </Stack>
             </div>
@@ -3661,7 +3822,7 @@ function SeriesDetailBody() {
                       // and the volume headings could then never stick to the page.
                       style={{
                         overflow: 'clip',
-                        '--chapter-sticky-top': `calc(var(--app-shell-header-offset, 0px) + ${selectMode ? 0 : chapterHeadHeight}px)`,
+                        '--chapter-sticky-top': `calc(var(--app-shell-header-offset, 0px) + ${chapterHeadHeight}px)`,
                       } as React.CSSProperties}
                   >
                     <Box
@@ -3863,167 +4024,6 @@ function SeriesDetailBody() {
                         />
                       </Group>
                   )}
-              {selectMode && (
-                  <div className="series-detail-chapter-selection" role="toolbar" aria-label={t`Selected chapters`}>
-                    <Group justify="space-between" wrap="wrap" gap="xs">
-                      <Group gap="xs">
-                        <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
-                          <IconX size={16} />
-                        </ActionIcon>
-                        <Text size="sm" fw={600} c="var(--ink-hi)" className="tnum">
-                          <Trans>{selectedCount} selected</Trans>
-                        </Text>
-                        <Menu shadow="md" position="bottom-start" withinPortal>
-                          <Menu.Target>
-                            <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
-                              <Trans>Select all</Trans>
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            {/* Every item works over the rows the filter is showing, same as a shift-range,
-                          so "Specials" under the Missing filter means the specials you can see. */}
-                            <Menu.Item
-                                className="tnum"
-                                onClick={() => selectAll(() => true)}
-                            >
-                              <Trans>All ({visibleAllCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Item
-                                className="tnum"
-                                disabled={visibleMain.length === 0}
-                                onClick={() => selectAll((c) => !isSpecial(c))}
-                            >
-                              <Trans>Main ({visibleMainCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Item
-                                className="tnum"
-                                disabled={visibleSpecials.length === 0}
-                                onClick={() => selectAll(isSpecial)}
-                            >
-                              <Trans>Specials ({visibleSpecialsCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item
-                                disabled={selected.size === 0}
-                                onClick={() => {
-                                  selectAnchor.current = null
-                                  setSelected(new Set())
-                                }}
-                            >
-                              <Trans>Clear</Trans>
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                        <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
-                          <Trans>Click a row to select, shift-click for a range</Trans>
-                        </Text>
-                      </Group>
-                      <Group gap="xs">
-                        {chapterPrimaryActions.map((a) => {
-                          const button = (
-                            <Button
-                                key={a.key}
-                                visibleFrom="sm"
-                                size="xs"
-                                variant={a.key === 'download' ? 'filled' : 'default'}
-                                leftSection={a.icon}
-                                disabled={selected.size === 0}
-                                data-disabled={a.disabled || undefined}
-                                aria-disabled={a.disabled || undefined}
-                                loading={a.loading}
-                                onClick={a.run}
-                            >
-                              {a.label}
-                            </Button>
-                          )
-                          return a.key === 'download' ? (
-                              <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
-                                {button}
-                              </Tooltip>
-                          ) : (
-                              button
-                          )
-                        })}
-                        {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
-                            <Menu position="bottom-end" withinPortal>
-                              <Menu.Target>
-                                <Button
-                                    size="xs"
-                                    variant="default"
-                                    rightSection={<IconChevronDown size={16} />}
-                                    disabled={selected.size === 0}
-                                    loading={chapterMoreBusy}
-                                    className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
-                                >
-                                  <Text span inherit visibleFrom="sm">
-                                    <Trans>More</Trans>
-                                  </Text>
-                                  <Text span inherit hiddenFrom="sm">
-                                    <Trans>Actions</Trans>
-                                  </Text>
-                                </Button>
-                              </Menu.Target>
-                              <Menu.Dropdown>
-                                {chapterPrimaryActions.map((a) => (
-                                    <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
-                                      {a.label}
-                                    </Menu.Item>
-                                ))}
-                                {chapterMoreGroups.map((group, i) => (
-                                    <Fragment key={group[0].key}>
-                                      {(i > 0 || chapterPrimaryActions.length > 0) && (
-                                          <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
-                                      )}
-                                      {group.map((a) => (
-                                          <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
-                                            {a.label}
-                                          </Menu.Item>
-                                      ))}
-                                    </Fragment>
-                                ))}
-                              </Menu.Dropdown>
-                            </Menu>
-                        )}
-                        {canDelete && (
-                            <>
-                              <Divider orientation="vertical" className="library-bulk-divider" />
-                              <Menu position="bottom-end" withinPortal>
-                                <Menu.Target>
-                                  <Button
-                                      size="xs"
-                                      variant="light"
-                                      color="var(--danger)"
-                                      leftSection={<IconTrash size={16} />}
-                                      rightSection={<IconChevronDown size={16} />}
-                                      disabled={selected.size === 0}
-                                  >
-                                    <Trans>Delete</Trans>
-                                  </Button>
-                                </Menu.Target>
-                                <Menu.Dropdown>
-                                  <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
-                                    <Trans>Delete files</Trans>
-                                  </Menu.Item>
-                                  <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
-                                    <Trans>Remove chapters</Trans>
-                                  </Menu.Item>
-                                </Menu.Dropdown>
-                              </Menu>
-                            </>
-                        )}
-                        <Button
-                            visibleFrom="sm"
-                            size="xs"
-                            variant="default"
-                            leftSection={<IconX size={16} />}
-                            onClick={exitSelectMode}
-                        >
-                          <Trans>Done</Trans>
-                        </Button>
-                      </Group>
-                    </Group>
-                  </div>
-              )}
                 </Stack>
             )}
           </Stack>

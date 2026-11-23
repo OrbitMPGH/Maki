@@ -17565,9 +17565,9 @@ button.settings-row-head:hover,
     font-size: 1rem;
   }
 }
-/* Long chapter lists: the toolbar and search (and then the selection actions) stay pinned to the
-   top so picking rows far down never means scrolling back up. Only one of the two is sticky at a
-   time. The app header is only there on phones; everywhere else the variable is 0. */
+/* Long chapter lists: the toolbar, search and, in select mode, the selection actions stay pinned to
+   the top so filtering and picking rows far down never means scrolling back up. The app header is
+   only there on phones; everywhere else the variable is 0. */
 .series-detail-chapter-head[data-sticky] {
   position: sticky;
   top: var(--app-shell-header-offset, 0px);
@@ -17576,17 +17576,11 @@ button.settings-row-head:hover,
   margin-block: -12px;
   background: var(--app-bg);
 }
-/* The selection bar is a footer: it rides the bottom edge of the viewport while the list scrolls
-   and settles under the list at the end. Opaque, so rows never show through. */
 .series-detail-chapter-selection {
-  position: sticky;
-  bottom: 0;
-  z-index: var(--z-sticky);
-  padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+  padding: 8px 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-surface);
   background: var(--surface-raised);
-  box-shadow: 0 -8px 18px -14px rgba(0, 0, 0, 0.7);
 }
 /* Wrapped, the actions stack four rows deep on a phone and the pinned bar eats a third of the
    screen. One line that scrolls sideways instead, like the library's selection bar. */
