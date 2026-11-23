@@ -284,7 +284,7 @@ export function SeriesHero({
                                             canEditCategories: true,
                                         }}
                                         target={(toggle, opened) => (
-                                            <RatingPill value={rating} soFar={soFar} opened={opened} onClick={toggle} />
+                                            <RatingPill value={rating} soFar={soFar} opened={opened} onClick={toggle} onRate={onRate} />
                                         )}
                                     />
                                     {rating ? (

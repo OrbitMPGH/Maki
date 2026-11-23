@@ -1997,13 +1997,31 @@ function SeriesDetailBody() {
 
   const submitRating = (value: number | null) => {
     if (!series) return
-    rateSeries.rate(series, value, (soFar) => {
+    rateSeries.rate(series, value, (soFar, undo) => {
       const rating = value === null ? null : formatRating(value)
-      notify.ok(
+      const message =
           rating === null
               ? staticT`Rating cleared`
-              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
-      )
+              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`
+      const id = notifications.show({
+        color: 'var(--ok)',
+        message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">{message}</Text>
+              <Button
+                  size="xs"
+                  variant="subtle"
+                  style={{ flexShrink: 0 }}
+                  onClick={() => {
+                    notifications.hide(id)
+                    undo()
+                  }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
+        ),
+      })
     })
   }
 

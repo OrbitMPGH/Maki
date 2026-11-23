@@ -18585,6 +18585,10 @@ msgstr "Notificar"
 msgid "Notify this device"
 msgstr "Notificar este dispositivo"
 
+#: src/components/series/RatingPill.tsx
+msgid "Now {nowText}"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Now {range}"
@@ -20677,6 +20681,10 @@ msgstr ""
 #, fuzzy
 msgid "Rate a few series to compare yourself with the crowd."
 msgstr "Avalie algumas séries para se comparar com outros leitores."
+
+#: src/components/series/RatingPill.tsx
+msgid "Rate from 1 to 10"
+msgstr ""
 
 #: src/api/queue.ts
 #: src/components/ui/status.tsx

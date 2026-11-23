@@ -15330,6 +15330,10 @@ msgstr "Notify"
 msgid "Notify this device"
 msgstr "Notify this device"
 
+#: src/components/series/RatingPill.tsx
+msgid "Now {nowText}"
+msgstr "Now {nowText}"
+
 #: src/pages/RequestsPage.tsx
 msgid "Now {range}"
 msgstr "Now {range}"
@@ -17059,6 +17063,10 @@ msgstr "Rate"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Rate a few series to compare yourself with the crowd."
 msgstr "Rate a few series to compare yourself with the crowd."
+
+#: src/components/series/RatingPill.tsx
+msgid "Rate from 1 to 10"
+msgstr "Rate from 1 to 10"
 
 #: src/api/queue.ts
 #: src/components/ui/status.tsx

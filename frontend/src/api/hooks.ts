@@ -3370,11 +3370,14 @@ export function useRateSeries() {
     rate: (
       series: Pick<SeriesDto, 'id' | 'rating' | 'provisionalRating' | 'finished' | 'readChapterCount'>,
       rating: number | null,
-      onSuccess?: (soFar: boolean) => void,
+      /** `undo` puts back the score this replaced, through the same endpoint. */
+      onSuccess?: (soFar: boolean, undo: () => void) => void,
     ) => {
       const soFar = rating === null ? isProvisional(series) : ratesProvisionally(series)
       const mutation = soFar ? provisional : final
-      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar) })
+      const before = (soFar ? series.provisionalRating : series.rating) ?? null
+      const undo = () => mutation.mutate({ seriesId: series.id, rating: before })
+      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar, undo) })
     },
   }
 }

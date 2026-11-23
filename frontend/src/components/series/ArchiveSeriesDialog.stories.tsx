@@ -42,7 +42,7 @@ export const RateBeforeLeaving: Story = {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByText('Want to rate it before it goes? You had it at 6 so far.')).toBeVisible()
     const words = await within(dialog).findByRole('group', { name: 'Your rating for Lanterns Over Kasumi' })
-    await userEvent.click(within(words).getByRole('button', { name: 'Excellent' }))
+    await userEvent.click(within(words).getByRole('button', { name: 'Excellent 9' }))
     await waitFor(() => expect(args.leavingRating!.onChange).toHaveBeenCalledWith(9))
   },
 }

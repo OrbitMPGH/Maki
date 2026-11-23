@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core'
-import { RatingWordGrid } from './RatingWordGrid'
+import { RatingScoreButtons } from './RatingScoreButtons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { IconStar } from '../../lib/icons'
 import type { RatingCheckpoint } from '../../api/hooks'
@@ -38,13 +38,7 @@ export function RatingCheckpointPrompt({
         )
       }
       below={
-        <RatingWordGrid
-          layout="row"
-          label={t`Rate this series so far`}
-          soFar={soFarScore}
-          onPick={onRate}
-          onKeep={soFarScore != null ? () => onRate(soFarScore) : undefined}
-        />
+        <RatingScoreButtons label={t`Rate this series so far`} soFar={soFarScore} onPick={onRate} />
       }
     >
       {checkpoint === 'caughtUp' ? (

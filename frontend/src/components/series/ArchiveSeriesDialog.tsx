@@ -1,5 +1,5 @@
 import { Button, Checkbox, Group, Stack, Text } from '@mantine/core'
-import { RatingWordGrid } from './RatingWordGrid'
+import { RatingScoreButtons } from './RatingScoreButtons'
 import { useRatingFormat } from '../../api/ratings'
 import { IconAdjustmentsHorizontal } from '../../lib/icons'
 import { RatingPanelOpener } from './RatingPanelOpener'
@@ -110,17 +110,13 @@ export function ArchiveSeriesDialog({
                 <Trans>Want to rate it before it goes?</Trans>
               )}
             </Text>
-            <RatingWordGrid layout="row"
+            <RatingScoreButtons
               label={t`Your rating for ${title}`}
               value={leavingRating.value}
+              soFar={leavingRating.soFar}
               onPick={leavingRating.onChange}
             />
             <Group gap="xs">
-              {leavingRating.value != null && (
-                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                  {format(leavingRating.value)}/10
-                </Text>
-              )}
               {seriesId != null && leavingRating.breakdown !== undefined && (
                 <RatingPanelOpener
                   panel={{

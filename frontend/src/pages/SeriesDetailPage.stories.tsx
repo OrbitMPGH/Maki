@@ -98,7 +98,7 @@ export const FinishedRateHint: Story = {
     await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
     await expect(canvas.queryByText("You've finished this. Archive it?")).toBeNull()
     const words = canvas.getByRole('group', { name: 'Rate this series' })
-    await userEvent.click(within(words).getByRole('button', { name: 'Very good' }))
+    await userEvent.click(within(words).getByRole('button', { name: 'Very good 8' }))
     await waitFor(() => expect(rated).toBe(8))
     await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
   },

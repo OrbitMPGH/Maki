@@ -74,6 +74,28 @@ export const RatedSoFar: Story = {
   },
 }
 
+export const QuickRate: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Rate from 1 to 10' }))
+    const scores = await canvas.findByRole('group', { name: 'Rate from 1 to 10' })
+    await userEvent.click(within(scores).getByRole('button', { name: 'Excellent 9' }))
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(9))
+  },
+}
+
+export const QuickRateByKeyboard: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    ;(await canvas.findByRole('button', { name: 'Rate from 1 to 10' })).focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{ArrowRight}{Enter}')
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(8))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Rate from 1 to 10' })).toHaveFocus())
+  },
+}
+
 export const RatingHistory: Story = {
   args: { series: seriesDto(3, { rating: 9 }) },
   parameters: {

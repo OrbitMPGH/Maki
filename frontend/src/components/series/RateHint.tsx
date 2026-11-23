@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core'
-import { RatingWordGrid } from './RatingWordGrid'
+import { RatingScoreButtons } from './RatingScoreButtons'
 import { useRatingFormat } from '../../api/ratings'
 import { RatingPanelOpener } from './RatingPanelOpener'
 import type { RatingPanel } from './RatingPanel'
@@ -59,7 +59,7 @@ export function RateHint({
           </>
         )
       }
-      below={<RatingWordGrid layout="row" label={t`Rate this series`} soFar={soFarScore} onPick={onRate} onKeep={onKeep} />}
+      below={<RatingScoreButtons label={t`Rate this series`} soFar={soFarScore} onPick={onRate} />}
     >
       {soFar != null ? (
         <Trans>You had this at {soFar} so far. Keep it?</Trans>
