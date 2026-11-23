@@ -57,6 +57,7 @@ import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 import { KeptPages } from './components/layout/KeptPages'
 import { CardProgressSync } from './components/CardProgressSync'
+import { useFullWidthSeriesPage } from './lib/seriesPageWidth'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
@@ -302,6 +303,7 @@ function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
   const heroPage = /^\/series\/\d+(?:\/|$)/.test(location.pathname)
+  const [fullWidthSeriesPage] = useFullWidthSeriesPage()
   usePrefetchSeriesOnHover()
   useEffect(() => preloadRoutes(), [])
   const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
@@ -650,6 +652,7 @@ function AppShellRoutes() {
       {/* Zeroes the shell padding on the series page, whose hero band bleeds to the window edges. */}
       <AppShell.Main
         className={heroPage ? 'app-main-hero' : undefined}
+        data-series-full-width={heroPage && fullWidthSeriesPage ? '' : undefined}
         id="main"
         tabIndex={-1}
       >

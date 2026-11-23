@@ -1051,6 +1051,10 @@ body {
 .nav-collapsed .mantine-AppShell-main.app-main-hero {
   --page-gutter-start: var(--page-gutter-end);
 }
+.mantine-AppShell-main.app-main-hero[data-series-full-width] {
+  --page-gutter-start: var(--app-shell-padding);
+  --page-gutter-end: var(--app-shell-padding);
+}
 /* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
    sidebar and header, identical on both sides, perfectly still while the content swaps. */
 ::view-transition-group(root) {
