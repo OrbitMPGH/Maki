@@ -2446,8 +2446,9 @@ msgstr "La note doit être comprise entre 1 et 10, ou null pour l'effacer"
 
 #. English: Each category score must be a whole number from 1 to 10, for at most 16 categories
 #: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
 msgid "error.series.invalidRatingBreakdown"
-msgstr ""
+msgstr "Chaque note par catégorie doit être un nombre entier de 1 à 10, pour 16 catégories au maximum"
 
 #. English: There is no "so far" rating to keep
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2588,18 +2589,21 @@ msgstr "Le nombre de jours doit être compris entre 1 et {max}."
 
 #. English: Rating precision must be whole or decimal.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidRatingPrecision"
-msgstr ""
+msgstr "La précision de la note doit être entière ou décimale."
 
 #. English: Rating categories are invalid. Use at most 8 enabled and 8 custom categories, each custom one with a name of up to 40 characters and a weight of 0.5, 1 or 2.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidRatingCategories"
-msgstr ""
+msgstr "Les catégories de notation sont invalides. Utilisez au maximum 8 catégories activées et 8 catégories personnalisées, chaque catégorie personnalisée ayant un nom de 40 caractères au maximum et un poids de 0,5, 1 ou 2."
 
 #. English: Keyboard shortcuts are invalid.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidShortcuts"
-msgstr ""
+msgstr "Les raccourcis clavier sont invalides."
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin
@@ -3696,56 +3700,66 @@ msgstr "Aucune URL FlareSolverr configurée"
 
 #. English: Enter the proxy as http://host:port
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyInvalidUrl"
-msgstr ""
+msgstr "Saisissez le proxy au format http://hôte:port"
 
 #. English: Only HTTP proxies are supported, so the address has to start with http://
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyHttpOnly"
-msgstr ""
+msgstr "Seuls les proxys HTTP sont pris en charge, l'adresse doit donc commencer par http://"
 
 #. English: Proxies that need a username and password are not supported yet
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyNoCredentials"
-msgstr ""
+msgstr "Les proxys qui demandent un nom d'utilisateur et un mot de passe ne sont pas encore pris en charge"
 
 #. English: Turn the proxy off for every source before removing its address
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyInUse"
-msgstr ""
+msgstr "Désactivez le proxy pour toutes les sources avant de supprimer son adresse"
 
 #. {source} is a site's name and is never translated.
 #. English: {source} goes through a proxy that could not be reached or refused the request
 #: src/Maki.Api/Controllers/SearchController.cs
+#, fuzzy
 msgid "error.search.sourceProxyFailed"
-msgstr ""
+msgstr "{source} passe par un proxy qui est injoignable ou qui a refusé la requête"
 
 #. English: No proxy answered at that address
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyUnreachable"
-msgstr ""
+msgstr "Aucun proxy ne répond à cette adresse"
 
 #. {source} is a site's name and is never translated.
 #. English: The proxy answered but could not reach {source}
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyRejected"
-msgstr ""
+msgstr "Le proxy a répondu, mais n'a pas pu atteindre {source}"
 
 #. {source} is a site's name and is never translated. Maki refuses to fetch private addresses, and the site's name resolved to one where Maki runs (often a DNS blocklist), so the proxy was never asked.
 #. English: Maki did not send {source} to the proxy: its address looks up to a private address on Maki's network
+#, fuzzy
 msgid "error.settings.sourceProxyRefusedHere"
-msgstr ""
+msgstr "Maki n'a pas envoyé {source} au proxy : son adresse correspond à une adresse privée du réseau de Maki"
 
 #. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.
 #. English: Nothing came back from {source} through the proxy within 20 seconds
+#, fuzzy
 msgid "error.settings.sourceProxySiteTimeout"
-msgstr ""
+msgstr "Rien n'est revenu de {source} via le proxy dans les 20 secondes"
 
 #. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
 #. English: The proxy works, but FlareSolverr could not go through it
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyFlareSolverr"
-msgstr ""
+msgstr "Le proxy fonctionne, mais FlareSolverr n'a pas pu l'utiliser"
 
 #. English: FlareSolverr did not respond
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -5300,8 +5314,9 @@ msgstr "Impossible de joindre la source"
 #. The source is set to go through a proxy, and the proxy could not be reached or refused the request. Maki never falls back to a direct connection.
 #. English: The source's proxy could not be reached or refused the request
 #: src/Maki.Api/Services/DownloadFailureReason.cs
+#, fuzzy
 msgid "error.download.proxy"
-msgstr ""
+msgstr "La source passe par un proxy qui est injoignable ou qui a refusé la requête. Maki ne revient jamais à une connexion directe."
 
 #. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
 #. English: Could not write the chapter to disk
@@ -6484,8 +6499,9 @@ msgstr "Mesurer les fichiers de chapitres"
 
 #. English: Count chapter pages
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.chapterPageCounts"
-msgstr ""
+msgstr "Compter les pages des chapitres"
 
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
@@ -6525,13 +6541,15 @@ msgstr "Préparer Découvrir"
 
 #. English: Install the also-finished table
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.ease"
-msgstr ""
+msgstr "Installer la table « Lus aussi »"
 
 #. English: Install the page-share table
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.pageShare"
-msgstr ""
+msgstr "Installer la table de partage des pages"
 
 #. English: Check the drop folder
 #: src/Maki.Api/Services/JobLabels.cs
@@ -7430,85 +7448,101 @@ msgstr "Impossible de lire le manifeste du graphe de co-lecture."
 
 #. English: The local also-finished table is already current.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.current"
-msgstr ""
+msgstr "La table locale « Lus aussi » est déjà à jour."
 
 #. English: The also-finished channel is turned off.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.disabled"
-msgstr ""
+msgstr "Le canal « Lus aussi » est désactivé."
 
 #. English: The published also-finished table is an evaluation build.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.evaluationBuild"
-msgstr ""
+msgstr "La table publiée « Lus aussi » est une version d'évaluation."
 
 #. {weights} is the raw install count.
 #. English: Installed {weights, plural, one {# also-finished weight} other {# also-finished weights}}
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.installed"
-msgstr ""
+msgstr "Installé : {weights, plural, one {# poids « Lus aussi »} many {# poids « Lus aussi »} other {# poids « Lus aussi »}}"
 
 #. English: The also-finished table manifest is malformed.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.manifestMalformed"
-msgstr ""
+msgstr "Le manifeste de la table « Lus aussi » est mal formé."
 
 #. English: Could not read the also-finished table manifest.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.manifestUnavailable"
-msgstr ""
+msgstr "Impossible de lire le manifeste de la table « Lus aussi »."
 
 #. English: The published also-finished table uses a newer schema than this build reads.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.schemaNewer"
-msgstr ""
+msgstr "La table publiée « Lus aussi » utilise un schéma plus récent que celui que cette version sait lire."
 
 #. English: The published also-finished table looks truncated; ignoring it.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.truncated"
-msgstr ""
+msgstr "La table publiée « Lus aussi » semble tronquée, elle est ignorée."
 
 #. English: The local page-share table is already current.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.current"
-msgstr ""
+msgstr "La table locale de partage des pages est déjà à jour."
 
 #. English: The page-share penalty is turned off.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.disabled"
-msgstr ""
+msgstr "La pénalité de partage des pages est désactivée."
 
 #. English: The published page-share table is an evaluation build.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.evaluationBuild"
-msgstr ""
+msgstr "La table publiée de partage des pages est une version d'évaluation."
 
 #. {rows} is the raw install count.
 #. English: Installed {rows, plural, one {# page-share row} other {# page-share rows}}
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.installed"
-msgstr ""
+msgstr "Installé : {rows, plural, one {# ligne de partage des pages} many {# lignes de partage des pages} other {# lignes de partage des pages}}"
 
 #. English: The page-share table manifest is malformed.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.manifestMalformed"
-msgstr ""
+msgstr "Le manifeste de la table de partage des pages est mal formé."
 
 #. English: Could not read the page-share table manifest.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.manifestUnavailable"
-msgstr ""
+msgstr "Impossible de lire le manifeste de la table de partage des pages."
 
 #. English: The published page-share table uses a newer schema than this build reads.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.schemaNewer"
-msgstr ""
+msgstr "La table publiée de partage des pages utilise un schéma plus récent que celui que cette version sait lire."
 
 #. English: The published page-share table looks truncated; ignoring it.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.truncated"
-msgstr ""
+msgstr "La table publiée de partage des pages semble tronquée, elle est ignorée."
 
 #. English: The local index is already current.
 #: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
