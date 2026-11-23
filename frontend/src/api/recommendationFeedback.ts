@@ -67,6 +67,28 @@ export interface FeedbackLabData {
     coverUrl: string | null; genres: string[]; isRead: boolean; excluded: boolean
   }[]
   activity: FeedbackPage<FeedbackActivity>
+  /** The shelf series weighing most in the recommendations, then the ones below neutral. */
+  steering?: SteeringSeed[]
+  /** What became of series added from a recommendation. Null under three such adds. */
+  recommendationAdds?: RecommendationAdds | null
+}
+
+export interface SteeringSeed {
+  mangaBakaId: number
+  title: string
+  coverUrl: string | null
+  /** 1.0 is neutral. */
+  weight: number
+  source: 'rating' | 'sofar' | 'liked' | 'finished' | 'read' | 'added'
+  /** The rating, or the chapters read, behind the weight. */
+  value: number | null
+}
+
+export interface RecommendationAdds {
+  added: number
+  started: number
+  finished: number
+  waiting: { seriesId: number; title: string; coverUrl: string | null }[]
 }
 
 export interface FeedbackMutation {

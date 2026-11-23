@@ -77,6 +77,17 @@ export interface AnimeSignalsData {
   strengths: AnimeSignalStrengthInfo[]
   counts: AnimeSignalCounts
   entries: AnimeSignalEntry[]
+  /** Genres the well-scored anime carry more of than the manga read, widest gap first. */
+  pull?: AnimeGenrePull[]
+}
+
+export interface AnimeGenrePull {
+  genre: string
+  /** Share of the positive anime matches carrying it. */
+  anime: number
+  /** Share of the read manga carrying it. */
+  read: number
+  animeCount: number
 }
 
 /**

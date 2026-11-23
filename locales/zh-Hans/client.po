@@ -67,6 +67,16 @@ msgstr "（无法撤销）"
 msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr "{0, plural, other {{1} / # 个文件{2, select, other {}}}}"
 
+#. placeholder {0}: example.spanDays
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{0, plural, one {{chapters} ch. in # day} other {{chapters} ch. in # days}}"
+msgstr ""
+
+#. placeholder {0}: example.spanDays
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{0, plural, one {{chapters} ch. over # day} other {{chapters} ch. over # days}}"
+msgstr ""
+
 #. placeholder {0}: Number(proposalExpiryDays)
 #: src/pages/settings/DownloadCards.tsx
 msgid "{0, plural, one {{missingText} missing, {perRunText} a run, proposals kept # day} other {{missingText} missing, {perRunText} a run, proposals kept # days}}"
@@ -150,12 +160,13 @@ msgstr "{0, plural, other {已移除 # 个章节}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, other {# 个章节已选中}}"
 
+#. placeholder {0}: Math.round(row.value)
 #. placeholder {0}: chapters.length
 #. placeholder {0}: g.chapters
-#. placeholder {0}: goal.target
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -456,6 +467,15 @@ msgstr "{0, plural, other {# 个系列在应用标签或已读标记时出现问
 msgid "{0, plural, one {# series has its own setting in its menu.} other {# series have their own setting in their menus.}}"
 msgstr "{0, plural, other {# 个系列在其菜单中有自己的设置。}}"
 
+#. placeholder {0}: facet.support
+#. placeholder {0}: group.size
+#. placeholder {0}: point.seriesCount
+#: src/pages/discover/taste/TasteDrift.tsx
+#: src/pages/discover/taste/TasteReach.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "{0, plural, one {# series} other {# series}}"
+msgstr ""
+
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -487,6 +507,11 @@ msgstr ""
 #. placeholder {0}: current.threads
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{0, plural, one {# thread} other {# threads}}"
+msgstr ""
+
+#. placeholder {0}: f.timedChapters
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{0, plural, one {# timed chapter} other {# timed chapters}}"
 msgstr ""
 
 #. placeholder {0}: count.count
@@ -602,23 +627,16 @@ msgstr "{0, plural, other {已下载并嵌入 # 个系列}}"
 msgid "{0, plural, one {Fetch # chapter at {unreadLeft} unread} other {Fetch # chapters at {unreadLeft} unread}}"
 msgstr ""
 
+#. placeholder {0}: seed.value ?? 0
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "{0, plural, one {Finished # chapter} other {Finished # chapters}}"
+msgstr ""
+
 #. placeholder {0}: draft.lockoutMinutes
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "{0, plural, one {for # minute} other {for # minutes}}"
 msgstr "{0, plural, other {持续 # 分钟}}"
-
-#. placeholder {0}: profile.libraryCount
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{0, plural, one {From {readSeriesCount} of your # series} other {From {readSeriesCount} of your # series}}"
-msgstr "{0, plural, other {来自你拥有的 # 个系列中的 {readSeriesCount} 个}}"
-
-#. placeholder {0}: profile.seriesCount
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{0, plural, one {From all # series, weighted by what you read} other {From all # series, weighted by what you read}}"
-msgstr "{0, plural, other {来自全部 # 个系列，并根据你的阅读内容加权}}"
 
 #. placeholder {0}: imported.length
 #: src/components/import/ManualImport.tsx
@@ -731,6 +749,11 @@ msgstr "{0, plural, other {已将 # 个章节加入队列}}"
 #, fuzzy
 msgid "{0, plural, one {Queued # missing chapter} other {Queued # missing chapters}}"
 msgstr "{0, plural, other {已将 # 个缺失章节加入队列}}"
+
+#. placeholder {0}: seed.value ?? 0
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "{0, plural, one {Read # chapter} other {Read # chapters}}"
+msgstr ""
 
 #. placeholder {0}: r.newChapters
 #: src/pages/SeriesDetailPage.tsx
@@ -890,12 +913,6 @@ msgstr ""
 msgid "{0} free"
 msgstr "{0} 可用"
 
-#. placeholder {0}: percent(item.measure)
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{0} in"
-msgstr "位于 {0}"
-
 #. placeholder {0}: languageName(definition?.language) ?? definition?.language
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -1009,6 +1026,14 @@ msgstr "{affected, plural, other {已移除 # 个失败的下载}}"
 msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
 msgstr "{affected, plural, other {正在重试 # 个失败的下载}}"
 
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "{allCount, plural, one {Your biggest themes, across all # series you own.} other {Your biggest themes, across all # series you own.}}"
+msgstr ""
+
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "{allCount, plural, one {Your most common tags, across all # series you own.} other {Your most common tags, across all # series you own.}}"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "{alreadyMetCount} already at cutoff"
@@ -1087,11 +1112,6 @@ msgstr "{beforeLabel} 至 {afterLabel}"
 msgid "{bestName} is already tried first, so nothing needs to change."
 msgstr "{bestName} 已经是优先尝试的来源，无需更改。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
-msgstr "{biggestDayCount, plural, other {# 个章节}}"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{binDays, plural, one {Backing files go to the recycle bin for # day.} other {Backing files go to the recycle bin for # days.}}"
@@ -1113,6 +1133,10 @@ msgstr "{binDays, plural, other {可在设置中恢复，保留 # 天。}}"
 #, fuzzy
 msgid "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
 msgstr "{binDays, plural, other {文件会在回收站中保留 # 天，在此之前可在设置中恢复。}}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{binged} of {total}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -1346,6 +1370,10 @@ msgstr "{cores, plural, other {共 # 个核心}}"
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
 msgstr "{count, plural, =2 {两个跟踪器} other {全部 # 个跟踪器}}"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{count, plural, one {# anime you scored well} other {# anime you scored well}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# cancelled} other {# cancelled}}"
@@ -1450,6 +1478,10 @@ msgstr "{count, plural, other {# 个系列无法从其来源刷新}}"
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {# 个作品匹配}}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{count, plural, one {# series stopped between {from} and {to}} other {# series stopped between {from} and {to}}}"
+msgstr ""
 
 #: src/components/library/LibraryGroupHeader.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -1601,6 +1633,10 @@ msgstr "{count} 个结果"
 #, fuzzy
 msgid "{coverBytesLabel}, every series has one"
 msgstr "{coverBytesLabel}，每个系列都有一张"
+
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "{covered, plural, one {{size} of your # series} other {{size} of your # series}}"
+msgstr ""
 
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -2585,6 +2621,14 @@ msgstr "{name} 已暂停"
 msgid "{name} paused until {time}"
 msgstr "{name} 已暂停至 {time}"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "{name} turns up {catalogueValue} as often in what you read as in the MangaBaka catalogue"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "{name} turns up {shelfValue} as often in what you read as on your shelf, across {series}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
@@ -2594,6 +2638,10 @@ msgstr "{name}：{ok}/{total} 成功"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}：{ok}/{total} 个成功，首个错误：{firstError}"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{name}: {read} of your reading, {anime} of the anime"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/pages/ImportPage.tsx
@@ -2689,6 +2737,10 @@ msgstr "{other, plural, other {另有 # 个已完成}}"
 #, fuzzy
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
 msgstr "{otherReaders, plural, other {另有 # 位读者正在读这个系列。归档后，所有人都将停止接收新章节。}}"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "{owned} owned, {read} read"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -2802,6 +2854,7 @@ msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profi
 msgstr "{profileCount, plural, other {已在 # 个配置中计分}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
 #, fuzzy
 msgid "{pushingDown} pushing similar titles down"
 msgstr "{pushingDown}，会把相似标题往后排"
@@ -2861,10 +2914,9 @@ msgstr "{rating}/10，你的评分"
 msgid "{rating}/10, your rating at ch. {chapter}"
 msgstr "{rating}/10，你在第 {chapter} 章时的评分"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
-msgstr "比 MangaBaka 目录收录的多 {ratioValue}，偏向更多人阅读的标题"
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "{read} read of {owned} owned"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2943,6 +2995,10 @@ msgstr "{ready, plural, other {# 个文件夹已就绪}}，{failed} 个无法导
 #, fuzzy
 msgid "{reason}: {detail}"
 msgstr "{reason}：{detail}"
+
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "{reasonCount, plural, one {{reason}, like # series you've read.} other {{reason}, like # series you've read.}}"
+msgstr ""
 
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
@@ -3237,10 +3293,9 @@ msgstr "{seriesChapterCount, plural, other {已全部读完 # 章}}"
 msgid "{seriesCount, plural, one {# series} other {# series}}"
 msgstr "{seriesCount, plural, other {# 个系列}}"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
-msgstr "{seriesStarted, plural, other {你拥有的 # 个系列中有 {seriesFinished} 个已读完。}}"
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{seriesFinished, plural, one {# finished} other {# finished}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3266,6 +3321,18 @@ msgstr "{seriesWantedCount, plural, other {系列中有 # 个}}"
 #, fuzzy
 msgid "{sheetKind}, {sheetRow}"
 msgstr "{sheetKind}，{sheetRow}"
+
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "{shelfCount, plural, one {Your biggest themes, from {readCount} of your # series.} other {Your biggest themes, from {readCount} of your # series.}}"
+msgstr ""
+
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "{shelfCount, plural, one {Your most common tags, from {readCount} of your # series.} other {Your most common tags, from {readCount} of your # series.}}"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "{shelfPct} of your shelf is in the catalogue's top {top1000}. Of what you read, {readPct}."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3295,11 +3362,6 @@ msgstr ""
 #, fuzzy
 msgid "{siteName} languages"
 msgstr "{siteName}的语言"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{size, plural, one {# series} other {# series}}"
-msgstr "{size, plural, other {# 个系列}}"
 
 #: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
@@ -3431,6 +3493,10 @@ msgstr "{statusLabel}，未监控"
 msgid "{statusOnly}. {readTip}"
 msgstr "{statusOnly}。{readTip}"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{stop} in"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
@@ -3440,11 +3506,6 @@ msgstr "{stopKind, select, early {你通常会在系列前段停下，大约读�
 #, fuzzy
 msgid "{subtags, plural, one {# subtag} other {# subtags}}"
 msgstr "{subtags, plural, other {# 个子标签}}"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{support, plural, one {# series} other {# series}}"
-msgstr "{support, plural, other {# 个系列}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -3495,7 +3556,7 @@ msgstr "{tierLabel}，{medianWidth}px"
 msgid "{tierLabel}, {width}px"
 msgstr "{tierLabel}，{width}px"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
 msgstr "{timedChapters, plural, other {阅读速度基于 {formattedTimed} 个有计时章节；只有内置阅读器会记录时间。}}"
@@ -3514,10 +3575,18 @@ msgstr "{title} 已从你的推荐中隐藏，并已移出待读清单。"
 msgid "{title} is reachable"
 msgstr "{title} 可访问"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}, stopped {stopped} in"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
 msgid "{title}: {reason}"
 msgstr "{title}：{reason}"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{title}: {summary}"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -3690,6 +3759,10 @@ msgstr "{turnedOff, plural, other {已关闭 # 个}}"
 #, fuzzy
 msgid "{turnedOn, plural, one {# turned on} other {# turned on}}"
 msgstr "{turnedOn, plural, other {已开启 # 个}}"
+
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "{type} outside action and romance"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3924,6 +3997,10 @@ msgstr "{weekChapters, plural, other {本周 # 个章节}}"
 msgid "{weekday} {hourLabel}: {minutes} min"
 msgstr "{weekday} {hourLabel}：{minutes} 分钟"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "{weeks, plural, one {{chapters} ch. over # week} other {{chapters} ch. over # weeks}}"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "{weight} total"
@@ -3973,6 +4050,10 @@ msgstr "/downloads（可选）"
 #, fuzzy
 msgid "/manga (optional)"
 msgstr "/manga（可选）"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "#{rank}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4166,6 +4247,10 @@ msgstr "18+"
 #, fuzzy
 msgid "18+ only"
 msgstr "仅限 18+"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "1x is as expected"
+msgstr ""
 
 #: src/components/CatalogueFilterBar.tsx
 msgid "2000s"
@@ -4432,6 +4517,10 @@ msgstr "某个系列的令牌没有值时不会显示，周围的空格和空括
 msgid "A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of the client and declined, and the automatic search looks for another release. 0 turns this off."
 msgstr "种子在这段时间内没有进展，或没有连接任何做种者或节点，就会被判定为失败，从下载客户端中移除并拒绝，自动搜索会寻找另一个发布版本。0 表示关闭此功能。"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "a typical chapter"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
@@ -4620,6 +4709,10 @@ msgstr "已确认，已从顶部标记中隐藏"
 #, fuzzy
 msgid "Action"
 msgstr "动作"
+
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "Action {type}"
+msgstr ""
 
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
@@ -4864,6 +4957,10 @@ msgstr "添加用户"
 msgid "Add your details in Settings."
 msgstr "请在设置中添加你的信息。"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "added"
+msgstr ""
+
 #: src/components/library/libraryColumns.ts
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -4883,6 +4980,7 @@ msgstr "添加者"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/taste/TasteSignalsTop.tsx
 #, fuzzy
 msgid "Added by you"
 msgstr "由你添加"
@@ -4995,6 +5093,14 @@ msgstr "做种完成后"
 
 #: src/components/series/RatingPanel.tsx
 msgid "After the last chapter"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Against the catalogue"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Against your shelf"
 msgstr ""
 
 #: src/api/upgrades.ts
@@ -6433,10 +6539,9 @@ msgstr "最佳质量优先会先比较来源的层级，再比较其实测质量
 msgid "Between Light and Strong"
 msgstr "介于轻度和强之间"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Biggest day"
-msgstr "最忙的一天"
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Bigger covers pull harder."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -6856,11 +6961,6 @@ msgstr "候选页 {pageNumber}"
 #: src/pages/settings/registry.ts
 msgid "cards, covers, progress bar, downloads, reading progress, read ring"
 msgstr ""
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "cat {ratioValue}"
-msgstr "目录 {ratioValue}"
 
 #: src/api/customRails.ts
 #, fuzzy
@@ -7381,6 +7481,10 @@ msgstr "第 {ranges} 章"
 msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的文件也一样。"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "chapters a day"
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Chapters already downloading finish, and so do torrents already with the download client. Nothing leaves the queue."
@@ -7509,6 +7613,10 @@ msgstr "已开启「想要」的章节，无论是否已下载。"
 #, fuzzy
 msgid "Chapters you want that aren't on disk yet."
 msgstr "你想要但尚未在磁盘上的章节。"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "chapters, biggest day"
+msgstr ""
 
 #: src/api/ratings.ts
 msgid "Characters"
@@ -7913,6 +8021,10 @@ msgstr "关闭 Rewind"
 msgid "Close rule {number}"
 msgstr "关闭规则 {number}"
 
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "Close to what you read."
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Close to your taste"
@@ -8085,7 +8197,7 @@ msgstr "与此实例上的其他用户比较"
 msgid "Comparison divider"
 msgstr "对比分隔线"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteReach.tsx
 #, fuzzy
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "与更大目录的比较需要嵌入索引。"
@@ -8117,6 +8229,10 @@ msgstr ""
 msgid "Completed"
 msgstr "已完成"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Completed series to binge"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Completed since you saved it"
@@ -8127,7 +8243,6 @@ msgstr "自你保存后已完结"
 msgid "Completeness"
 msgstr "完整度"
 
-#: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Composition"
@@ -8852,6 +8967,10 @@ msgstr "正在统计要采样的文件"
 msgid "Counting the series this rule matches…"
 msgstr "正在统计此规则匹配的系列…"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "counts {weight}: {why}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -8946,7 +9065,6 @@ msgid "Creator"
 msgstr "创作者"
 
 #: src/components/CatalogueFilterBar.tsx
-#: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Creators"
 msgstr "创作者"
@@ -9234,6 +9352,10 @@ msgstr "已拒绝"
 #, fuzzy
 msgid "Declined releases"
 msgstr "已拒绝的发布"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Deeper"
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -10268,6 +10390,10 @@ msgstr "例如：连载中和落后"
 msgid "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 msgstr "每个条形覆盖章节可能更新的日期范围，绝非承诺。菱形标记来源公布的日期。"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Each block is a day you read it, sized by the chapters read that day."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10919,7 +11045,7 @@ msgstr "全部通过"
 msgid "Everything saves as you go."
 msgstr "所有内容会随你操作自动保存。"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
 #, fuzzy
 msgid "Everything you own"
 msgstr "你拥有的全部内容"
@@ -10980,7 +11106,12 @@ msgstr "排除"
 msgid "Exclude {label}"
 msgstr "排除 {label}"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Exclude {selectedTitle} from taste"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/taste/TasteSignalsTop.tsx
 #, fuzzy
 msgid "Exclude from taste"
 msgstr "从品味中排除"
@@ -11154,11 +11285,6 @@ msgstr "一般"
 #, fuzzy
 msgid "Fair quality"
 msgstr "质量一般"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "fairly alike"
-msgstr "比较相似"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -11424,6 +11550,10 @@ msgstr "已扫描文件"
 msgid "Files that hold chapters marked missing"
 msgstr "包含当前标记为缺失的章节的文件"
 
+#: src/pages/discover/taste/TasteDrift.tsx
+msgid "Fills in as you read."
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "Film / OVA"
@@ -11529,6 +11659,10 @@ msgstr "在后台查找署名页"
 msgid "Find match"
 msgstr "查找匹配"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Find more"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Find search"
@@ -11594,6 +11728,10 @@ msgstr "完读率"
 msgid "Finish setup"
 msgstr "完成设置"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "finished"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -11618,6 +11756,10 @@ msgstr ""
 #, fuzzy
 msgid "Finished torrents"
 msgstr "已完成的种子"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Finished, under {cutoffText} chapters"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -11882,11 +12024,6 @@ msgstr "格式分数"
 msgid "Format: {formatLabel}"
 msgstr "格式：{formatLabel}"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Formats"
-msgstr "格式"
-
 #: src/pages/reader/TapZoneOverlay.tsx
 #, fuzzy
 msgid "Forward"
@@ -12006,6 +12143,10 @@ msgstr "来自你的资料库"
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "可在 MangaBaka 设置中找到。不需要 OAuth。"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "From your own shelf"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 msgid "From your recent reading"
 msgstr ""
@@ -12068,6 +12209,10 @@ msgstr "常规"
 msgid "Genre"
 msgstr "类型"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Genre and tag counts in Stats"
+msgstr ""
+
 #: src/components/CatalogueFilterBar.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverCatalogueWays.tsx
@@ -12075,7 +12220,6 @@ msgstr "类型"
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
-#: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12368,11 +12512,6 @@ msgstr "已署名的组：{groupList}"
 msgid "Groups of readers"
 msgstr ""
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Groups overlap on purpose, so one series can belong to several of them."
-msgstr "分组有意重叠，因此一个系列可以属于多个分组。"
-
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Growth"
@@ -12392,6 +12531,10 @@ msgstr "习惯"
 #, fuzzy
 msgid "Habits in numbers"
 msgstr "阅读习惯数据"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Habits in Stats"
+msgstr ""
 
 #: src/components/settings/RatingCategoriesModal.tsx
 msgid "Half"
@@ -12583,6 +12726,10 @@ msgstr ""
 #, fuzzy
 msgid "Hidden list saved"
 msgstr "隐藏列表已保存"
+
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "hidden or dismissed"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12788,15 +12935,9 @@ msgstr "阅读器栏隐藏时，等待服务器的页面如何显示。"
 msgid "How a two-page spread shows in the Single layout."
 msgstr "双页跨页在单页布局中如何显示。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "How close each quarter sat to where you started."
-msgstr "每个季度与你开始时的位置有多接近。"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "How far into a series you get before you stop reading it, for the series you did not finish."
-msgstr "对于未读完的系列，你通常读到哪里会停下。"
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "How deep you go"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12822,6 +12963,10 @@ msgstr "添加方式"
 #, fuzzy
 msgid "How many"
 msgstr "数量"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "How many times more of what you read carries each one than your shelf or the catalogue would predict."
+msgstr ""
 
 #: src/components/settings/RatingCategoriesModal.tsx
 msgid "How much {text} counts"
@@ -12856,6 +13001,10 @@ msgstr "这些章节数量如何计算"
 #, fuzzy
 msgid "How to import"
 msgstr "如何导入"
+
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "How well it fits what you read"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13538,6 +13687,10 @@ msgstr "iPhone 和 iPad 只会向添加到主屏幕的应用推送通知。请�
 #, fuzzy
 msgid "Is this it?"
 msgstr "是这个吗？"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "is where you usually stop"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14224,10 +14377,9 @@ msgstr "排行榜"
 msgid "Lean"
 msgstr "偏好"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "least like anything else you read"
-msgstr "与你阅读过的其他内容最不像"
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "Least like anything else you read"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -14451,6 +14603,7 @@ msgstr "浅色"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/taste/TasteSignalsTop.tsx
 #, fuzzy
 msgid "Liked"
 msgstr "喜欢"
@@ -14733,6 +14886,14 @@ msgstr "登录页, 背景, 封面, 马赛克, 壁纸"
 msgid "Long and finished"
 msgstr ""
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Long runs put a few days in each block."
+msgstr ""
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Long strip"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "longest {longestSitting}"
@@ -14769,7 +14930,7 @@ msgstr "正在查找章节……"
 msgid "loose page images"
 msgstr "零散的页面图片"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #, fuzzy
 msgid "loosely related"
 msgstr "关联较松散"
@@ -14823,11 +14984,6 @@ msgstr "磁盘空间不足、磁盘空间、可用空间、磁盘已满、暂停
 #, fuzzy
 msgid "Low quality"
 msgstr "质量较低"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Lower bars mean your taste moved."
-msgstr "条形越低，表示你的口味变化越大。"
 
 #: src/components/series/RatingPanel.tsx
 #: src/pages/reader/ChapterEndRating.tsx
@@ -15139,6 +15295,7 @@ msgstr "管理规则"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
 #, fuzzy
 msgid "Manage signals"
 msgstr "管理信号"
@@ -15848,16 +16005,24 @@ msgstr ""
 msgid "More for {label}"
 msgstr "{label} 的更多选项"
 
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "More from these"
+msgstr ""
+
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "More like it"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "More like this"
 msgstr "更多类似内容"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #, fuzzy
 msgid "More of this"
 msgstr "更多此类内容"
@@ -15888,6 +16053,10 @@ msgstr "更多推荐反馈操作"
 #, fuzzy
 msgid "More source actions"
 msgstr "更多来源操作"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "More than you'd expect"
+msgstr ""
 
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
@@ -15921,6 +16090,10 @@ msgstr "页面的大部分向前翻。一侧的条带向后翻，顶部会打开
 
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "Most of them finished"
+msgstr ""
+
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "Most of what you read"
 msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
@@ -16714,7 +16887,7 @@ msgstr "尚未记录任何更改。"
 msgid "No changes yet"
 msgstr "尚无更改"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "这里没有章节记录阅读时间，因此无法报告阅读速度。"
@@ -16831,11 +17004,6 @@ msgstr "没有条件，因此此规则会匹配到达它的每个文件。"
 #, fuzzy
 msgid "No connections yet"
 msgstr "尚无连接"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "No creator shows up often enough yet."
-msgstr "还没有创作者出现得足够频繁。"
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -17399,11 +17567,6 @@ msgstr "没有标签"
 msgid "No tags yet"
 msgstr "尚无标签"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "No tags yet."
-msgstr "暂无标签。"
-
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "No target"
@@ -17674,7 +17837,7 @@ msgstr "更新记录还不够，暂时无法估算。"
 msgid "Not enough space on this device"
 msgstr "此设备空间不足"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "Not enough timed chapters yet."
 msgstr "有阅读时间记录的章节还不够多。"
@@ -17709,6 +17872,10 @@ msgstr "不在系列文件夹中"
 #, fuzzy
 msgid "Not in Continuous layout."
 msgstr "不在连续布局中。"
+
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "not in your library"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -18210,6 +18377,10 @@ msgstr "目前没有读到一半的系列。"
 msgid "Nothing slow enough to call savoured yet."
 msgstr "还没有读得足够慢、称得上慢慢品读的系列。"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Nothing stands out against your shelf or the catalogue yet."
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Nothing syncs"
@@ -18290,7 +18461,6 @@ msgstr "没有可显示的内容"
 msgid "Nothing to show right now"
 msgstr ""
 
-#: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Nothing to show yet."
@@ -18457,6 +18627,10 @@ msgstr "冷门"
 #, fuzzy
 msgid "Obscurity"
 msgstr "小众程度"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Obscurity dial in Recommended"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -18647,9 +18821,14 @@ msgstr "自你保存后已暂停连载"
 
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/taste/TasteShelf.tsx
 #, fuzzy
 msgid "On hold"
 msgstr "搁置中"
+
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "On hold at ch. {at}"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -18727,6 +18906,10 @@ msgstr "单话"
 #, fuzzy
 msgid "Ongoing"
 msgstr "连载中"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Ongoing series to follow"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -18823,7 +19006,7 @@ msgstr "只搜索尚未关联的来源。"
 msgid "Only strips at least two and a half times as tall as they are wide are split."
 msgstr "只有高度至少为宽度两倍半的条带会被切分。"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
 msgstr "只有内置阅读器会记录它。"
@@ -18868,10 +19051,9 @@ msgstr "仅在你阅读系列期间且尚未将其标记为完成时。"
 msgid "Only you"
 msgstr "仅你"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Only you can see this."
-msgstr "只有你能看到此内容。"
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "Only you can see this"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/registry.ts
@@ -18880,6 +19062,7 @@ msgid "OPDS catalogue"
 msgstr "OPDS 目录"
 
 #: src/components/series/ArchivedSeriesCard.tsx
+#: src/pages/discover/taste/TasteSignalsTop.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open"
@@ -19186,6 +19369,10 @@ msgstr "满分 10 分"
 msgid "Outside the reader"
 msgstr ""
 
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "Outside your core"
+msgstr ""
+
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
@@ -19366,6 +19553,7 @@ msgid "Page Up"
 msgstr "向上翻页"
 
 #: src/components/discover/SeriesPreviewReader.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "Paged"
 msgstr "分页"
@@ -19771,6 +19959,10 @@ msgstr "选择其他页面"
 #, fuzzy
 msgid "Pick at least one condition."
 msgstr "至少选择一个条件。"
+
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "Pick it back up"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -20367,6 +20559,10 @@ msgstr "质量配置：实例默认"
 msgid "Quality profiles"
 msgstr "质量配置"
 
+#: src/pages/discover/taste/TasteDrift.tsx
+msgid "Quarters"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Queue"
@@ -20516,6 +20712,10 @@ msgstr "为此系列评分"
 msgid "Rate this series so far"
 msgstr "为此系列目前的进度评分"
 
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "rated"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -20550,6 +20750,14 @@ msgstr "评分在 {ratingLabel} 及以上"
 #, fuzzy
 msgid "Rated {score}"
 msgstr "评分 {score}"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Rated {value}"
+msgstr ""
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Rated {value} so far"
+msgstr ""
 
 #: src/components/discover/DiscoverCohortColumns.tsx
 msgid "Rated highest"
@@ -20632,10 +20840,9 @@ msgstr "无论如何都会重新触发 Kavita 对两个位置的扫描。"
 msgid "Reachable"
 msgstr "可访问"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
-msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {ratioValue}"
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "read"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #: src/components/library/LibraryFilterPanel.tsx
@@ -20759,6 +20966,10 @@ msgstr "在 Kavita 中阅读"
 msgid "Read in Maki"
 msgstr "在 Maki 中阅读"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "read in one or two days"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Read manga elsewhere"
@@ -20851,11 +21062,6 @@ msgstr "阅读于（天内）"
 msgid "Reader"
 msgstr "阅读器"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Reader counts replace it once that data is installed."
-msgstr "安装该数据后，阅读器计数会取代它。"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -20945,6 +21151,10 @@ msgstr "阅读会计入你的统计，并同步到你的追踪器。"
 msgid "Reading counts in your stats but isn't sent to your trackers."
 msgstr "阅读会计入你的统计，但不会同步到追踪器。"
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "reading days"
+msgstr ""
+
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
 msgid "Reading days"
@@ -20955,6 +21165,10 @@ msgstr "阅读天数"
 #, fuzzy
 msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series"
 msgstr "阅读方向, 从右到左, rtl, ltr, webtoon, 纵向, 双页, 页面适配, 点击区域, 自动进入下一章, 阅读器默认设置, 阅读配置, 配置, manga, manhwa, manhua, oel, 作品类型, 自动选择, 每部作品单独设置"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Reading format"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -21062,6 +21276,10 @@ msgstr "就绪"
 #, fuzzy
 msgid "Ready to import"
 msgstr "准备导入"
+
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "Ready to read"
+msgstr ""
 
 #: src/pages/reader/enhanceMethods.ts
 #, fuzzy
@@ -21179,7 +21397,8 @@ msgstr "最近阅读"
 msgid "Recently saved"
 msgstr "最近保存"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
+#: src/pages/discover/taste/TasteSignalsTop.tsx
 #, fuzzy
 msgid "Recommend from this"
 msgstr "根据此内容推荐"
@@ -21207,6 +21426,10 @@ msgstr "推荐功能已关闭"
 #, fuzzy
 msgid "Recommendations on"
 msgstr "推荐功能已开启"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Recommendations you took up"
+msgstr ""
 
 #: src/components/pageconversion/TargetSheet.tsx
 #: src/pages/DiscoverPage.tsx
@@ -22822,6 +23045,10 @@ msgstr "再抽一次"
 msgid "Romance"
 msgstr "恋爱"
 
+#: src/pages/discover/taste/TasteThemes.tsx
+msgid "Romance {type}"
+msgstr ""
+
 #: src/api/titles.ts
 #, fuzzy
 msgid "Romanized"
@@ -24185,6 +24412,7 @@ msgstr ""
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
@@ -24627,6 +24855,10 @@ msgstr "按住 Shift 点击可选择范围。取消勾选章节会解除其关�
 msgid "Short and finished"
 msgstr ""
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Short, finished series"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -24697,6 +24929,10 @@ msgstr "显示章节"
 #, fuzzy
 msgid "Show covers from the library"
 msgstr "显示资料库中的封面"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Show everything you own"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24980,11 +25216,6 @@ msgstr ""
 #: src/components/ui/DiscoverRail.tsx
 msgid "Similar readers recommend it"
 msgstr ""
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Similarity to start"
-msgstr "与起点的相似度"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -25621,6 +25852,7 @@ msgstr "在 GitHub 上点星"
 
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "Start"
 msgstr "开始"
@@ -25676,10 +25908,18 @@ msgstr "起始页"
 msgid "Start page & Home"
 msgstr "起始页与首页"
 
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "Start reading"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "Start reading at ch. {startReadingAt}."
 msgstr "从第 {startReadingAt} 章开始阅读。"
+
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "started"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -26118,7 +26358,6 @@ msgstr "要添加的标签"
 #: src/components/discover/DiscoverTags.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -26349,6 +26588,10 @@ msgstr "{engineLabel} 预设会读取网站的这一部分。此处无需设置�
 msgid "The anime covers through ch. {covered}."
 msgstr "动画改编覆盖到第 {covered} 章。"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "The anime you scored well lean toward {genre}: {animePct} of them, against {readPct} of what you read."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
@@ -26380,6 +26623,10 @@ msgstr "归档已删除。"
 msgid "The automatic search skips these. Allow one again to let the next search take it."
 msgstr "自动搜索会跳过这些。重新允许其中一个，下一次搜索即可采用它。"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "The bar is your shelf. The tick is your reading."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
 msgid "The browser keeps saved chapters even when space runs low."
@@ -26395,15 +26642,18 @@ msgstr "设备存储空间不足时，浏览器可能会清除已保存的章节
 msgid "the catalogue"
 msgstr "目录"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "The catalogue badges weight titles by popularity rank, standing in for how many people actually read them."
-msgstr "目录徽章会按热门排名为标题加权，以此代表实际阅读这些标题的人数。"
-
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
 msgid "The catalogue has no synopsis for this one."
 msgstr "目录中没有此内容的简介。"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "The catalogue is weighted by popularity rank, so it stands for what most people read."
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "The catalogue is weighted toward titles more people read."
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -26682,6 +26932,10 @@ msgstr "无法加载布局。"
 msgid "The left and right arrows turn pages. Remove them from Next page and Previous page first."
 msgstr ""
 
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "The length you finish"
+msgstr ""
+
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
 msgid "The library"
@@ -26774,7 +27028,7 @@ msgstr "下次检查即将到期。"
 msgid "The notices of both groups take that name, set by you. Chapters that already carry a group keep it."
 msgstr "两个组的提示都会采用你设置的该名称。已带有组的章节保留原组。"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #, fuzzy
 msgid "The odd one out"
 msgstr "与众不同"
@@ -26896,10 +27150,9 @@ msgstr "请求 {removingTitle} 已删除。此操作无法撤销。"
 msgid "The requester doesn't choose this."
 msgstr "请求者无法选择此项。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
-msgstr "这里保留与统计页面相同的计数，让上面的分组有可供对照的内容。"
+#: src/pages/discover/taste/TasteDrift.tsx
+msgid "the same"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -27069,11 +27322,6 @@ msgstr "你选择的来源无法提供此章节"
 msgid "The source's proxy could not be reached or refused the request"
 msgstr ""
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "The specific things that keep coming back in your library, each with more of the same beside it."
-msgstr "资料库中反复出现的具体内容，每项旁边都有更多同类内容。"
-
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "The Suwayomi sources below are the ones it listed last time."
@@ -27230,11 +27478,6 @@ msgstr "这些规则需要使用规则视图。删除部分规则即可切回。
 #, fuzzy
 msgid "They are still on this device. Reload the page, or remove and save them again once you're back online."
 msgstr "它们仍在此设备上。请刷新页面，或在恢复联网后删除并重新保存。"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "They come from the catalogue, so a library the dump does not cover has none."
-msgstr "它们来自目录，因此转储未覆盖的资料库不会有这些内容。"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -27622,6 +27865,10 @@ msgstr "惊悚"
 msgid "Thumbnails"
 msgstr "缩略图"
 
+#: src/pages/discover/taste/TastePortrait.tsx
+msgid "thumbs"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Thumbs"
@@ -27937,6 +28184,18 @@ msgstr "热门系列中的前 {pct}"
 msgid "Top {percent}% of a page"
 msgstr "页面顶部 {percent}%"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Top {top100}"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Top {top1000}"
+msgstr ""
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Top {top10000}"
+msgstr ""
+
 #: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverCatalogueWays.tsx
@@ -27998,6 +28257,10 @@ msgstr "章节总数"
 #, fuzzy
 msgid "Total volumes"
 msgstr "卷总数"
+
+#: src/pages/discover/taste/TasteDrift.tsx
+msgid "toward {toward}"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -28253,11 +28516,6 @@ msgstr "类型分布"
 #, fuzzy
 msgid "Type to search…"
 msgstr "输入内容以搜索……"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Typical chapter"
-msgstr "典型章节"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -28611,11 +28869,6 @@ msgstr "直到我选择的时间"
 #, fuzzy
 msgid "Until I resume"
 msgstr "直到我恢复"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Until it is built, the badges compare against your own library only."
-msgstr "在建立之前，徽章只会与你自己的资料库进行比较。"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -29227,7 +29480,7 @@ msgstr "版本 {0} 可从 {repositoryName} 获取。"
 msgid "Version {0} to {1}. These parts of the definition change:"
 msgstr "版本 {0} 至 {1}。定义的以下部分将发生变化："
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteThemes.tsx
 #, fuzzy
 msgid "very alike"
 msgstr "非常相似"
@@ -29253,7 +29506,7 @@ msgid "Vietnamese"
 msgstr "越南语"
 
 #: src/components/ui/viewPrefs.tsx
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "View"
@@ -29515,6 +29768,10 @@ msgstr "等待你处理"
 msgid "Waiting in the drop folder"
 msgstr "在投放文件夹中等待"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "Waiting to be started"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Want"
@@ -29672,6 +29929,10 @@ msgstr ""
 msgid "What shapes your recommendations"
 msgstr "哪些因素影响你的推荐"
 
+#: src/pages/discover/taste/TasteSignalsTop.tsx
+msgid "What steers your picks most"
+msgstr ""
+
 #: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "What the pass would do"
@@ -29692,12 +29953,17 @@ msgstr "下载哪些内容"
 msgid "What to pause"
 msgstr "暂停什么"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "What you reach for"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "What you read"
 msgstr "你阅读的内容"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TastePortrait.tsx
 #, fuzzy
 msgid "What you've read"
 msgstr "你读过的内容"
@@ -29717,6 +29983,10 @@ msgstr "v{version} 版本更新内容"
 #, fuzzy
 msgid "When"
 msgstr "时间"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "When a series hooks you, you binge it."
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
@@ -29779,10 +30049,9 @@ msgstr "接下来前往哪里"
 msgid "Where you stop"
 msgstr "停下的位置"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Where you usually stop"
-msgstr "你通常停下的位置"
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Where you stop in series you did not finish"
+msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx
 #, fuzzy
@@ -30039,6 +30308,10 @@ msgstr "昨天"
 msgid "You"
 msgstr "你"
 
+#: src/pages/discover/taste/TasteShelf.tsx
+msgid "You added it from a recommendation."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "You are on this page from another device. After the restart, Maki only answers on the computer it runs on."
@@ -30094,12 +30367,16 @@ msgstr "你不能移除自己的管理员权限。请先提升另一个账户的
 msgid "You collect <0>{ownedGenreName}</0> but you read <1>{readGenreName}</1>."
 msgstr "你收藏 <0>{ownedGenreName}</0>，但阅读 <1>{readGenreName}</1>。"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "You collect these, but rarely open them"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "You excluded this title from recommendations"
 msgstr "你已将此标题从推荐中排除"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "You finish"
 msgstr "你读完"
@@ -30109,10 +30386,9 @@ msgstr "你读完"
 msgid "You finish <0>{finishRatePct}</0> of the series you start."
 msgstr "你开始阅读的系列中，有 <0>{finishRatePct}</0> 已读完。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "You finish what you start."
-msgstr "你开始的内容都会读完。"
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "You finish what you start"
+msgstr ""
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -30128,6 +30404,10 @@ msgstr "你已看完《{animeTitle}》。动画改编到第 {coveredTo} 章。�
 #, fuzzy
 msgid "You finished the series"
 msgstr "你已读完此系列"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "You follow series over weeks rather than in one go."
+msgstr ""
 
 #: src/components/series/RateHint.tsx
 #, fuzzy
@@ -30155,11 +30435,6 @@ msgstr "你还没有放弃任何系列。"
 msgid "You might like"
 msgstr "你可能喜欢"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "You put down"
-msgstr "你放下了"
-
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
@@ -30175,6 +30450,10 @@ msgstr "你的评分与大众一致"
 msgid "You rated this one yourself, so the anime is not counted again"
 msgstr "你已为此标题评分，因此不会再次计算动画"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "You read"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "You seem to avoid"
@@ -30185,12 +30464,16 @@ msgstr "你似乎会避开"
 msgid "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
 msgstr "你使用单点登录，因此此操作需要 10 分钟内的登录。"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "You slow down for"
 msgstr "你会放慢速度阅读"
 
-#: src/pages/discover/TasteTab.tsx
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "You stall on"
+msgstr ""
+
+#: src/pages/discover/taste/TasteHabits.tsx
 #, fuzzy
 msgid "You tear through"
 msgstr "你快速读完"
@@ -30262,6 +30545,10 @@ msgstr "你的 {label}"
 msgid "Your content rating limit doesn't cover this series, so you can't change its rating."
 msgstr "你的内容分级上限不涵盖此系列，因此无法更改其评分。"
 
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Your deepest cuts, by catalogue popularity"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Your device asks for reduced motion, so these stay off."
@@ -30301,6 +30588,10 @@ msgstr "你的资料库"
 #, fuzzy
 msgid "Your library is empty"
 msgstr "你的资料库为空"
+
+#: src/pages/discover/taste/TasteHabits.tsx
+msgid "Your median"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -30386,6 +30677,10 @@ msgstr "你的请求已拒绝"
 #, fuzzy
 msgid "Your requests"
 msgstr "你的申请"
+
+#: src/pages/discover/taste/TasteReach.tsx
+msgid "Your shelf"
+msgstr ""
 
 #: src/components/settings/KeyboardShortcutsSection.tsx
 msgid "Your shortcuts are back"

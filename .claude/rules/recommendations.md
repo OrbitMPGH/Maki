@@ -49,6 +49,8 @@ paths:
   - "frontend/src/components/TrackerSyncControls.tsx"
   - "frontend/src/pages/discover/FeedbackLab.tsx"
   - "frontend/src/pages/discover/ManageSignalsModal.tsx"
+  - "frontend/src/pages/discover/useManageSignals.tsx"
+  - "frontend/src/pages/discover/taste/TasteSignalsTop.tsx"
   - "frontend/src/components/discover/RecommendationFeedbackMenu.tsx"
   - "distribution/AGENTS.md"
   - "distribution/eval-reco*.cs"

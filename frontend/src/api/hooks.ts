@@ -400,6 +400,8 @@ export interface TasteMember {
   seriesId: number
   title: string
   coverUrl: string | null
+  /** So the page can recommend from this one series. */
+  mangaBakaId: number
 }
 
 /**
@@ -428,6 +430,39 @@ export interface TasteDriftPoint {
   similarityToPrevious: number
   distinctiveTags: string[]
   example: TasteMember | null
+  /** Up to five series of the quarter, nearest its centre first. */
+  examples: TasteMember[]
+}
+
+/** An unread or paused series the reader owns, and how well it fits what they read. */
+export interface TasteShelfPick {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  mangaBakaId: number
+  /** 0..1 over the shelf's candidates: the best fit is 1, the furthest 0. Not a percentage. */
+  fit: number
+  /** The tag or genre it shares with the most read series, when at least three do. */
+  reason: string | null
+  reasonCount: number
+  fromRecommendation: boolean
+  onHold: boolean
+  /** For a paused series, the highest chapter number read. */
+  resumeAt: number | null
+  /** A chapter is on disk. */
+  ready: boolean
+  /** The chapter "Start reading" opens. */
+  nextChapterId?: number | null
+}
+
+/** A side taste: read series of one type and one of Action, Romance or neither. */
+export interface TasteSideLane {
+  type: string | null
+  bucket: 'action' | 'romance' | 'other'
+  read: number
+  owned: number
+  examples: TasteMember[]
+  seedIds: number[]
 }
 
 export interface TasteInsights {
@@ -443,6 +478,9 @@ export interface TasteInsights {
   /** Why there is nothing to show. Null on success; every value is an ordinary state, not an error. */
   unavailable: string | null
   generatedAt: string
+  /** Absent with no index; empty under three read or three unread series. */
+  shelfPicks?: TasteShelfPick[] | null
+  sideLanes?: TasteSideLane[] | null
 }
 
 /**
@@ -495,6 +533,45 @@ export interface ReadingBehaviour {
   /** Ten buckets of where stalled series stopped, 0-10% through 90-100%. */
   stopPointHistogram: number[]
   generatedAt: string
+  /** Median length of finished against stalled series. Null under two of either. */
+  length?: LengthSweetSpot | null
+  binge?: BingeHabit | null
+  /** Paged against long-strip pace. Null unless both have ten timed chapters. */
+  paceByFormat?: FormatPace[] | null
+}
+
+export interface LengthSweetSpot {
+  finished: number
+  stalled: number
+  finishedCount: number
+  stalledCount: number
+}
+
+export interface BingeExample {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  chapters: number
+  activeDays: number
+  spanDays: number
+  /** Chapters finished on each day the series was read, in order; days without reading left out. */
+  perDay: number[]
+}
+
+export interface BingeHabit {
+  /** Series with five or more dated chapters. */
+  series: number
+  /** Of those, read in one or two days. */
+  binged: number
+  examples: BingeExample[]
+}
+
+export interface FormatPace {
+  format: 'paged' | 'strip'
+  medianSeconds: number
+  timedChapters: number
+  savoured: BehaviourSeries[]
+  devoured: BehaviourSeries[]
 }
 
 /** Needs no catalogue, so this one answers even on an install with no MangaBaka database. */
@@ -527,6 +604,40 @@ export interface TasteFacet {
   overIndexCatalogue: number | null
 }
 
+export interface TasteSeriesRef {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+}
+
+/** A genre or story tag the shelf holds far more of than the reading does. */
+export interface TasteUnderFacet {
+  name: string
+  isGenre: boolean
+  owned: number
+  read: number
+  /** Read share over shelf share, below 1. */
+  ratio: number
+  unread: number
+  examples: TasteSeriesRef[]
+}
+
+export interface TasteDeepCut extends TasteSeriesRef {
+  rank: number
+}
+
+/**
+ * Shares of the reading and the shelf in four catalogue popularity bands: top 100, top 1,000,
+ * top 10,000, deeper. MangaBaka's ranking, not other readers of this instance.
+ */
+export interface TastePopularity {
+  read: number[]
+  shelf: number[]
+  readRanked: number
+  shelfRanked: number
+  deepCuts: TasteDeepCut[]
+}
+
 export interface TasteYearFacet {
   year: number
   weight: number
@@ -551,6 +662,8 @@ export interface TasteProfile {
    */
   catalogueBaselineSource: 'readers' | 'popularity' | null
   generatedAt: string
+  underRead?: TasteUnderFacet[] | null
+  popularity?: TastePopularity | null
 }
 
 /** Which population a profile describes. Both weight a series the same way. */

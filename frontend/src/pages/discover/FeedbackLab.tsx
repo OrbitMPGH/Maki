@@ -16,7 +16,8 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../format'
-import { ManageSignalsModal } from './ManageSignalsModal'
+import { useManageSignals } from './useManageSignals'
+import { TasteSignalsTop } from './taste/TasteSignalsTop'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 import { PanelTitle } from '../../components/ui/PanelTitle'
 import { TagChip } from '../../components/ui/TagChip'
@@ -41,37 +42,37 @@ const AVOID_RATING_CEILING = 4
  *
  * Summary and recent feedback only. Anything that changes one title is in the Manage signals modal,
  * because the two answer different questions and mixing them made the panel a control surface
- * nobody read.
+ * nobody read. `feed` leaves out the strip, figures and avoid row, which the Taste portrait shows.
  */
-export function SignalsCard() {
+export function SignalsCard({ layout = 'full' }: { layout?: 'full' | 'feed' }) {
   const { t } = useLingui()
   const phrase = usePhrase()
   const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
-  const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
-  // The modal fetches its own data on mount, so it is only mounted once someone has opened it.
-  const [manageOpened, setManageOpened] = useState(false)
-  if (manage !== null && !manageOpened) setManageOpened(true)
+  const { open: setManage, modal: manageModal } = useManageSignals()
+  const full = layout === 'full'
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
   // Back-to-back events for one title on one day share a row, so "dismissed, then liked" reads as
   // one story instead of the same title twice.
+  // The Taste tab lays the feed out in two columns, so it holds twice the rows in the same height.
+  const feedRows = full ? 5 : 10
   const recent = useMemo(() => {
     const groups: FeedbackActivity[][] = []
     for (const item of lab?.activity.items ?? []) {
       const last = groups.at(-1)
       if (last && last[0].mangaBakaId === item.mangaBakaId && dayOf(last[0]) === dayOf(item)) last.push(item)
-      else if (groups.length < 5) groups.push([item])
+      else if (groups.length < feedRows) groups.push([item])
       else break
     }
     return groups
-  }, [lab])
+  }, [lab, feedRows])
   // A reader who has never thumbed anything still has a shelf: pad the card with those signals
   // so it isn't empty, ranked rated > read > added and never duplicating a real feedback event.
   const padded = useMemo(() => {
-    const need = 5 - recent.length
+    const need = feedRows - recent.length
     if (need <= 0) return []
     const seen = new Set(recent.map((group) => group[0].mangaBakaId))
     const sources = lab?.sources ?? []
@@ -103,7 +104,7 @@ export function SignalsCard() {
     }
 
     return chosen
-  }, [lab, recent])
+  }, [lab, recent, feedRows])
   // Only the newest event for a title can be undone; the endpoint rejects a stale revision anyway,
   // so showing the button on an older row would only ever produce an error.
   const newestPerTitle = useMemo(() => {
@@ -179,7 +180,7 @@ export function SignalsCard() {
         }
       />
       <Stack gap="md">
-        <DiscoverTasteStrip />
+        {full && <DiscoverTasteStrip />}
 
         <Collapse expanded={howItWorks}>
           <Panel p="md">
@@ -230,46 +231,48 @@ export function SignalsCard() {
           </Callout>
         )}
 
-        {isLoading && <SignalsSkeleton />}
+        {isLoading && <SignalsSkeleton figures={full} />}
 
         {lab && summary && (
           <>
-            <FigureStrip
-              className="taste-figures"
-              figures={[
-                {
-                  label: t`Titles on the shelf`,
-                  value: summary.visibleShelf,
-                  hint: t`${adds} added by you`,
-                  tip:
-                    incognito > 0
-                      ? t`${adds} added by you, ${excluded} excluded from taste, ${incognito} incognito not counted`
-                      : t`${adds} added by you, ${excluded} excluded from taste`,
-                },
-                { label: t`Read`, value: summary.readSources, hint: t`${rated} rated` },
-                {
-                  label: t`Thumbs up / down`,
-                  hint: t`${pushingDown} pushing similar titles down`,
-                  zero: summary.liked + summary.disliked === 0,
-                  value: (
-                    <>
-                      <Text span inherit c="var(--ok)" className="taste-thumb">
-                        <IconThumbUp size="0.85em" aria-hidden />
-                        {summary.liked}
-                      </Text>
-                      <Text span inherit c="var(--ink-3)" mx={8}>/</Text>
-                      <Text span inherit c="var(--danger)" className="taste-thumb">
-                        <IconThumbDown size="0.85em" aria-hidden />
-                        {summary.disliked}
-                      </Text>
-                    </>
-                  ),
-                },
-                { label: t`Hidden or dismissed`, value: suppressed, hint: t`${exposed} read or watched elsewhere` },
-              ]}
-            />
+            {full && (
+              <FigureStrip
+                className="taste-figures"
+                figures={[
+                  {
+                    label: t`Titles on the shelf`,
+                    value: summary.visibleShelf,
+                    hint: t`${adds} added by you`,
+                    tip:
+                      incognito > 0
+                        ? t`${adds} added by you, ${excluded} excluded from taste, ${incognito} incognito not counted`
+                        : t`${adds} added by you, ${excluded} excluded from taste`,
+                  },
+                  { label: t`Read`, value: summary.readSources, hint: t`${rated} rated` },
+                  {
+                    label: t`Thumbs up / down`,
+                    hint: t`${pushingDown} pushing similar titles down`,
+                    zero: summary.liked + summary.disliked === 0,
+                    value: (
+                      <>
+                        <Text span inherit c="var(--ok)" className="taste-thumb">
+                          <IconThumbUp size="0.85em" aria-hidden />
+                          {summary.liked}
+                        </Text>
+                        <Text span inherit c="var(--ink-3)" mx={8}>/</Text>
+                        <Text span inherit c="var(--danger)" className="taste-thumb">
+                          <IconThumbDown size="0.85em" aria-hidden />
+                          {summary.disliked}
+                        </Text>
+                      </>
+                    ),
+                  },
+                  { label: t`Hidden or dismissed`, value: suppressed, hint: t`${exposed} read or watched elsewhere` },
+                ]}
+              />
+            )}
 
-            {lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
+            {full && lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
 
             {lab.rankingMode === 'fallback' && (
               <Text size="sm" c="var(--ink-3)">
@@ -284,7 +287,9 @@ export function SignalsCard() {
               </Text>
             )}
 
-            <Panel className="signals-feed">
+            {!full && <TasteSignalsTop lab={lab} />}
+
+            <Panel className="signals-feed" data-columns={!full || undefined}>
               <Group justify="space-between" align="center" wrap="nowrap" className="signals-feed-head">
                 <PanelTitle>
                   <Trans>Recent feedback</Trans>
@@ -307,65 +312,67 @@ export function SignalsCard() {
                   description={t`Thumbs, hide or dismiss a recommendation and it shows up here.`}
                 />
               )}
-              {recent.map(([item, ...earlier], index) => (
-                <div key={item.id} className="signals-feed-group">
-                  {dayOf(item) !== dayOf(recent[index - 1]?.[0]) && (
-                    <Text className="signals-feed-day">
-                      <DayLabel value={item.occurredAtUtc} />
-                    </Text>
-                  )}
-                  <div className="signals-feed-row">
-                    <SeriesThumb url={item.coverUrl} alt="" large />
-                    <div className="signals-feed-main">
-                      <Text className="signals-feed-title" truncate>
-                        {item.title ?? untitled(item.mangaBakaId)}
+<div className="signals-feed-body">
+                {recent.map(([item, ...earlier], index) => (
+                  <div key={item.id} className="signals-feed-group">
+                    {dayOf(item) !== dayOf(recent[index - 1]?.[0]) && (
+                      <Text className="signals-feed-day">
+                        <DayLabel value={item.occurredAtUtc} />
                       </Text>
-                      {[item, ...earlier].map((event) => (
-                        <div key={event.id} className="signals-feed-line">
-                          <SignalStatus {...statusOf(event)} />
-                          <span className="signals-feed-phrase">{phrase(event)}</span>
-                          <span className="signals-feed-time tnum">{formatTime(event.occurredAtUtc)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
-                      <Button
-                        size="compact-sm" variant="subtle" color="var(--ink-2)"
-                        leftSection={<IconArrowBackUp size={16} />}
-                        className="signals-feed-undo"
-                        loading={undo.isPending && undo.variables?.eventId === item.id}
-                        onClick={() => void undoItem(item)}
-                      >
-                        <Trans>Undo</Trans>
-                      </Button>
                     )}
+                    <div className="signals-feed-row">
+                      <SeriesThumb url={item.coverUrl} alt="" large />
+                      <div className="signals-feed-main">
+                        <Text className="signals-feed-title" truncate>
+                          {item.title ?? untitled(item.mangaBakaId)}
+                        </Text>
+                        {[item, ...earlier].map((event) => (
+                          <div key={event.id} className="signals-feed-line">
+                            <SignalStatus {...statusOf(event)} />
+                            <span className="signals-feed-phrase">{phrase(event)}</span>
+                            <span className="signals-feed-time tnum">{formatTime(event.occurredAtUtc)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
+                        <Button
+                          size="compact-sm" variant="subtle" color="var(--ink-2)"
+                          leftSection={<IconArrowBackUp size={16} />}
+                          className="signals-feed-undo"
+                          loading={undo.isPending && undo.variables?.eventId === item.id}
+                          onClick={() => void undoItem(item)}
+                        >
+                          <Trans>Undo</Trans>
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {padded.length > 0 && (
-                <div className="signals-feed-group">
-                  <Text className="signals-feed-day">
-                    <Trans>From your shelf</Trans>
-                  </Text>
-                  {padded.map((item) => {
-                    const info = shelfInfo(item)
-                    return (
-                      <div key={item.mangaBakaId} className="signals-feed-row">
-                        <SeriesThumb url={item.coverUrl} alt="" large />
-                        <div className="signals-feed-main">
-                          <Text className="signals-feed-title" truncate>
-                            {item.title ?? untitled(item.mangaBakaId)}
-                          </Text>
-                          <div className="signals-feed-line">
-                            <SignalStatus {...info.status} />
-                            <span className="signals-feed-phrase">{info.phrase}</span>
+                ))}
+                {padded.length > 0 && (
+                  <div className="signals-feed-group">
+                    <Text className="signals-feed-day">
+                      <Trans>From your shelf</Trans>
+                    </Text>
+                    {padded.map((item) => {
+                      const info = shelfInfo(item)
+                      return (
+                        <div key={item.mangaBakaId} className="signals-feed-row">
+                          <SeriesThumb url={item.coverUrl} alt="" large />
+                          <div className="signals-feed-main">
+                            <Text className="signals-feed-title" truncate>
+                              {item.title ?? untitled(item.mangaBakaId)}
+                            </Text>
+                            <div className="signals-feed-line">
+                              <SignalStatus {...info.status} />
+                              <span className="signals-feed-phrase">{info.phrase}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </Panel>
 
             {lab.capabilities.animeSignals && (
@@ -374,30 +381,28 @@ export function SignalsCard() {
           </>
         )}
       </Stack>
-      {manageOpened && (
-        <ManageSignalsModal
-          opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
-        />
-      )}
+      {manageModal}
     </>
   )
 }
 
 /** The figures and feed with their labels in place, numbers and rows blanked until the lab answers. */
-function SignalsSkeleton() {
+function SignalsSkeleton({ figures }: { figures: boolean }) {
   const { t } = useLingui()
   return (
     <>
-      <FigureStrip
-        className="taste-figures"
-        loading
-        figures={[
-          { label: t`Titles on the shelf`, value: 0 },
-          { label: t`Read`, value: 0 },
-          { label: t`Thumbs up / down`, value: 0 },
-          { label: t`Hidden or dismissed`, value: 0 },
-        ]}
-      />
+      {figures && (
+        <FigureStrip
+          className="taste-figures"
+          loading
+          figures={[
+            { label: t`Titles on the shelf`, value: 0 },
+            { label: t`Read`, value: 0 },
+            { label: t`Thumbs up / down`, value: 0 },
+            { label: t`Hidden or dismissed`, value: 0 },
+          ]}
+        />
+      )}
       <Panel className="signals-feed" aria-hidden>
         <PanelTitle>
           <Trans>Recent feedback</Trans>
@@ -424,12 +429,15 @@ function SignalsSkeleton() {
  * down claiming a genre, and only when the facet covers far more of the pushed-down set than of the
  * shelf. The tooltip shows both counts so the claim can be checked rather than taken.
  */
-function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
-  return (
+export function AvoidRow({ avoids, stacked }: { avoids: AvoidanceLabel[]; stacked?: boolean }) {
+  const label = (
+    <Text size="sm" fw={600} className={stacked ? 'taste-portrait-label' : undefined}>
+      <Trans>You seem to avoid</Trans>
+    </Text>
+  )
+  const chips = (
     <Group gap={6} wrap="wrap" align="center">
-      <Text size="sm" fw={600}>
-        <Trans>You seem to avoid</Trans>
-      </Text>
+      {!stacked && label}
       {avoids.map((avoid) => {
         const titles = avoid.examples.map((example) => example.title).join(', ')
         const count = avoid.support
@@ -462,6 +470,13 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
         )
       })}
     </Group>
+  )
+  if (!stacked) return chips
+  return (
+    <div>
+      {label}
+      {chips}
+    </div>
   )
 }
 
