@@ -3775,8 +3775,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   padding: 2px 6px 3px;
   font-size: var(--mantine-font-size-xs);
 }
-.rating-pill:hover,
-.rating-pill[data-open] {
+.rating-pill:not(.rating-pill-quick):hover,
+.rating-pill:not(.rating-pill-quick)[data-open] {
   background: var(--surface-hover);
 }
 .rating-pill:focus-visible {
@@ -3825,7 +3825,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   overflow: hidden;
 }
 .rating-pill-bar > span:nth-child(6) {
-  margin-left: 3px;
+  margin-inline-start: 3px;
 }
 .rating-pill-bar > span > i {
   position: absolute;
@@ -3838,13 +3838,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 
 /* With quick rating the pill is two buttons: the word opens the panel, the dashes open ten
    buttons. The pill keeps its single-button look, so only the part under the pointer lights. */
-.rating-pill-quick {
+.rating-pill.rating-pill-quick {
   position: relative;
   gap: 0;
   padding: 0;
-}
-.rating-pill-quick:hover {
-  background: none;
 }
 .rating-pill-quick .rating-pill-word {
   display: block;
@@ -3907,6 +3904,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   animation: rating-quick-open 0.2s var(--ease) both;
 }
 .rating-quick[data-state='closing'] {
+  pointer-events: none;
   animation: rating-quick-close 0.18s ease-in both;
 }
 @keyframes rating-quick-open {
@@ -3945,7 +3943,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: var(--radius-control) 0 var(--radius-control) 0;
 }
 .rating-quick-now {
-  margin-left: auto;
+  margin-inline-start: auto;
   font-size: var(--mantine-font-size-xs);
   font-weight: 500;
   color: var(--ink-4);
@@ -3953,7 +3951,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .rating-quick-scores {
   display: flex;
   gap: 3px;
-  padding-left: 8px;
+  padding-inline-start: 8px;
 }
 .rating-quick-score {
   display: grid;
@@ -3974,7 +3972,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   transform-origin: 0 0;
 }
 .rating-quick-score:nth-child(6) {
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 .rating-quick[data-so-far] .rating-quick-score {
   background:
@@ -4028,7 +4026,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 .rating-scores-button:nth-child(6) {
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 .rating-scores-button[data-full] {
   color: color-mix(in srgb, var(--rating) 75%, var(--ink-hi));
@@ -4078,7 +4076,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .series-hint > .note .note-action {
   margin-inline-start: 0;
 }
-.series-hint .rating-words {
+.series-hint .rating-scores {
   padding-inline-start: calc(16px + var(--mantine-spacing-xs));
 }
 .rating-words {

@@ -94,13 +94,50 @@ export const FinishedRateHint: Story = {
       }),
     ),
   },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
     await expect(canvas.queryByText("You've finished this. Archive it?")).toBeNull()
     const words = canvas.getByRole('group', { name: 'Rate this series' })
     await userEvent.click(within(words).getByRole('button', { name: 'Very good 8' }))
     await waitFor(() => expect(rated).toBe(8))
     await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+    // Undo in the toast puts the empty rating back.
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'Undo' }))
+    await waitFor(() => expect(rated).toBeNull())
+  },
+}
+
+let soFarRated: number | null = null
+
+/** A final rating clears a finished series' "so far" score, which cannot come back, so its toast offers no Undo. */
+export const FinishedSoFarRatedWithoutUndo: Story = {
+  beforeEach: () => {
+    soFarRated = null
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({
+          ...hintedSeriesDto(2),
+          rating: soFarRated,
+          provisionalRating: soFarRated == null ? 6.5 : null,
+          rateHintEligible: soFarRated == null,
+        }),
+      ),
+      http.put(api('/series/:id/rating'), async ({ request }) => {
+        soFarRated = ((await request.json()) as { rating: number | null }).rating
+        return HttpResponse.json({ rating: soFarRated })
+      }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const scores = await canvas.findByRole('group', { name: 'Rate this series' })
+    await userEvent.click(within(scores).getByRole('button', { name: 'Very good 8' }))
+    await waitFor(() => expect(soFarRated).toBe(8))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Rated 8/10')).toBeVisible()
+    await expect(body.queryByRole('button', { name: 'Undo' })).toBeNull()
   },
 }
 

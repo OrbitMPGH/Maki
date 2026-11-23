@@ -7,7 +7,7 @@ import { useRatingFormat } from '../../api/ratings'
 import { SeriesHint } from './SeriesHint'
 
 /**
- * "How is it so far?", asked at a checkpoint while the reader is partway through. The stars set a
+ * "How is it so far?", asked at a checkpoint while the reader is partway through. A score sets a
  * "so far" score; with one already set, a single tap keeps it. Ignoring the line is not a dismissal,
  * only the X is.
  */

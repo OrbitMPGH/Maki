@@ -754,6 +754,7 @@ function SeriesDetailBody() {
   const setPrepareAhead = useSetSeriesPrepareAhead()
   const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
+  const ratingToast = useRef<string | null>(null)
   const { format: formatRating } = useRatingFormat()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
@@ -2003,6 +2004,13 @@ function SeriesDetailBody() {
           rating === null
               ? staticT`Rating cleared`
               : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`
+      // One rating toast at a time: an older one's Undo would put back a score from before the newer pick.
+      if (ratingToast.current) notifications.hide(ratingToast.current)
+      if (!undo) {
+        ratingToast.current = null
+        notify.ok(message)
+        return
+      }
       const id = notifications.show({
         color: 'var(--ok)',
         message: (
@@ -2014,6 +2022,7 @@ function SeriesDetailBody() {
                   style={{ flexShrink: 0 }}
                   onClick={() => {
                     notifications.hide(id)
+                    ratingToast.current = null
                     undo()
                   }}
               >
@@ -2022,6 +2031,7 @@ function SeriesDetailBody() {
             </Group>
         ),
       })
+      ratingToast.current = id
     })
   }
 

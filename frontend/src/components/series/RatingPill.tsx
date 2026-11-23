@@ -83,7 +83,7 @@ export function RatingPill({
   return (
     <QuickRatingPill
       {...rest}
-      ref={ref as Ref<HTMLButtonElement>}
+      ref={ref as Ref<HTMLDivElement>}
       value={value}
       soFar={soFar}
       opened={opened}
@@ -150,19 +150,28 @@ function QuickRatingPill({
   state: string
   label: string
   onRate: (score: number) => void
-} & Omit<ComponentPropsWithRef<'button'>, 'value' | 'children'>) {
+  /** On the whole pill, so a popover anchored to it treats the dashes as part of its target. */
+  ref?: Ref<HTMLDivElement>
+} & Omit<ComponentPropsWithRef<'button'>, 'value' | 'children' | 'ref'>) {
   const { t } = useLingui()
   const ratingText = useRatingText()
   const [quick, setQuick] = useState<Quick>('idle')
   const [preview, setPreview] = useState<number | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pointerType = useRef('mouse')
-  // After a pick the buttons stay shut until the pointer leaves, so a resting mouse does not reopen them.
+  // After a pointer pick the buttons stay shut until the pointer leaves, so a resting mouse does not reopen them.
   const locked = useRef(false)
   const root = useRef<HTMLDivElement | null>(null)
   const dashes = useRef<HTMLButtonElement | null>(null)
+  const layer = useRef<HTMLDivElement | null>(null)
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
+  const setRoot = (el: HTMLDivElement | null) => {
+    root.current = el
+    if (typeof ref === 'function') ref(el)
+    else if (ref) ref.current = el
+  }
 
   const growth = useRef<Animation | null>(null)
   const bar = () => dashes.current?.querySelector<HTMLElement>('.rating-pill-bar') ?? null
@@ -190,6 +199,7 @@ function QuickRatingPill({
     const to = button.getBoundingClientRect()
     return `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`
   }
+  const stopButtonAnimations = () => buttons.current.forEach((b) => b?.getAnimations().forEach((a) => a.cancel()))
   const morphFrom = useRef<DOMRect[] | null>(null)
 
   const clear = () => {
@@ -200,11 +210,15 @@ function QuickRatingPill({
     clear()
     timer.current = setTimeout(fn, ms)
   }
-  useEffect(() => () => {
-    clear()
-    growth.current?.cancel()
-  }, [])
-  // The saved value catches up with the pick once the request returns.
+  useEffect(
+    () => () => {
+      clear()
+      if (pickTimer.current) clearTimeout(pickTimer.current)
+      growth.current?.cancel()
+    },
+    [],
+  )
+  // A pick shows until the saved value catches up, or for a few seconds if the save never lands.
   useEffect(() => setPicked(null), [value])
   useLayoutEffect(() => {
     const from = morphFrom.current
@@ -225,7 +239,10 @@ function QuickRatingPill({
   }, [quick])
 
   const open = () => {
+    if (opened) return
     clear()
+    // Reopened mid-close: drop the fold-away, or it would hold the buttons on the dashes.
+    stopButtonAnimations()
     if (root.current) {
       const box = root.current.getBoundingClientRect()
       root.current.style.setProperty('--pill-w', `${box.width}px`)
@@ -236,8 +253,16 @@ function QuickRatingPill({
   }
   const close = (refocus = false) => {
     setPreview(null)
+    const hadFocus = layer.current?.contains(document.activeElement) ?? false
+    if (refocus || hadFocus) dashes.current?.focus()
+    if (reducedMotion()) {
+      clear()
+      settle()
+      setQuick('idle')
+      return
+    }
     // Each button shrinks back into its dash, then the dashes settle.
-    const rects = reducedMotion() ? [] : dashRects()
+    const rects = dashRects()
     buttons.current.forEach((b, i) => {
       if (!b || !rects[i]) return
       b.animate([{ transform: 'none' }, { transform: onto(rects[i], b), color: 'transparent' }], {
@@ -251,23 +276,40 @@ function QuickRatingPill({
       settle()
       setQuick('idle')
     })
-    if (refocus) dashes.current?.focus()
   }
+  // The panel and the buttons are two ways to rate; only one is out at a time.
+  useEffect(() => {
+    if (!opened || quick === 'idle') return
+    if (quick === 'eager') {
+      clear()
+      settle()
+      setQuick('idle')
+    } else if (quick === 'open') close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened])
+
   const focusScore = (n: number) => buttons.current[Math.max(1, Math.min(10, n)) - 1]?.focus()
   const current = picked ?? value
   const start = current != null ? Math.round(current) : 7
 
   const rate = (n: number, byKeyboard: boolean) => {
-    setPicked(n)
+    if (quick !== 'open') return
     setPreview(null)
+    if (n !== value) {
+      setPicked(n)
+      if (pickTimer.current) clearTimeout(pickTimer.current)
+      pickTimer.current = setTimeout(() => setPicked(null), 4000)
+    }
     onRate(n)
-    locked.current = true
     if (byKeyboard) close(true)
-    else after(SETTLE_MS, () => close())
+    else {
+      locked.current = true
+      after(SETTLE_MS, () => close())
+    }
   }
 
   const onDashesEnter = (e: PointerEvent) => {
-    if (e.pointerType !== 'mouse' || disabled || locked.current || quick === 'open') return
+    if (e.pointerType !== 'mouse' || disabled || opened || locked.current || quick === 'open') return
     setQuick('eager')
     grow()
     after(OPEN_DELAY_MS, open)
@@ -280,7 +322,8 @@ function QuickRatingPill({
     }
   }
   const onDashesClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (pointerType.current !== 'mouse' && e.detail > 0) {
+    // A touch screen, or the panel already out: the pill is one button for the panel.
+    if ((pointerType.current !== 'mouse' && e.detail > 0) || opened) {
       onClick?.(e)
       return
     }
@@ -288,10 +331,14 @@ function QuickRatingPill({
     if (e.detail === 0) requestAnimationFrame(() => focusScore(start))
   }
   const onDashesKey = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+    if (e.key === 'Escape' && quick === 'open') {
+      e.preventDefault()
+      close(true)
+    } else if (['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(e.key)) {
       e.preventDefault()
       open()
-      requestAnimationFrame(() => focusScore(start))
+      const to = e.key === 'Home' ? 1 : e.key === 'End' ? 10 : start
+      requestAnimationFrame(() => focusScore(to))
     }
   }
   const onScoreKey = (e: KeyboardEvent, n: number) => {
@@ -314,40 +361,45 @@ function QuickRatingPill({
 
   const layerOpen = quick === 'open' || quick === 'closing'
   const nowText = current != null ? ratingText(current) : ''
+  const saved = value != null && Number.isInteger(value) && !soFar ? value : null
 
   return (
     <div
-      ref={root}
+      ref={setRoot}
       className="rating-pill rating-pill-quick"
       data-state={state}
       data-size={size}
       data-open={opened || undefined}
       data-quick={quick}
       onPointerEnter={() => {
-        if (quick === 'open') clear()
+        // Back within the grace: stay open, unless a pick is folding it away anyway.
+        if (quick === 'open' && !locked.current) clear()
       }}
       onPointerLeave={() => {
+        const pickedHere = locked.current
         locked.current = false
         if (quick === 'eager') {
           clear()
           settle()
           setQuick('idle')
-        } else if (quick === 'open') after(CLOSE_GRACE_MS, () => close())
+        } else if (quick === 'open' && !pickedHere && !layer.current?.contains(document.activeElement)) {
+          // Kept open while a score has keyboard focus, so leaving with the mouse does not strand it.
+          after(CLOSE_GRACE_MS, () => close())
+        }
       }}
       onBlur={(e) => {
-        if (quick === 'open' && !root.current?.contains(e.relatedTarget as Node | null)) close()
+        if (quick === 'open' && !layer.current?.contains(e.relatedTarget as Node | null)) close()
       }}
     >
       <UnstyledButton
         {...rest}
-        ref={ref}
         className="rating-pill-word"
         disabled={disabled}
         aria-expanded={opened}
         aria-label={label}
         onClick={onClick}
       >
-        <PillText value={current} soFar={soFar && picked == null} />
+        <PillText value={current} soFar={soFar} />
       </UnstyledButton>
       <UnstyledButton
         ref={dashes}
@@ -364,7 +416,13 @@ function QuickRatingPill({
         <Dashes value={current} />
       </UnstyledButton>
       {layerOpen && (
-        <div className="rating-quick" data-state={quick} data-so-far={(soFar && picked == null) || undefined}>
+        <div
+          ref={layer}
+          className="rating-quick"
+          data-state={quick}
+          data-so-far={soFar || undefined}
+          inert={quick === 'closing'}
+        >
           <div className="rating-quick-head">
             <UnstyledButton
               className="rating-pill-word"
@@ -375,7 +433,7 @@ function QuickRatingPill({
                 onClick?.(e)
               }}
             >
-              <PillText value={current} soFar={soFar && picked == null} preview={preview} />
+              <PillText value={current} soFar={soFar} preview={preview} />
             </UnstyledButton>
             {preview != null && current != null && preview !== current && (
               <span className="rating-quick-now">
@@ -396,10 +454,10 @@ function QuickRatingPill({
                   }}
                   type="button"
                   className="rating-quick-score tnum"
-                  style={{ '--i': n - 1, '--fill': `${filled * 100}%` } as CSSProperties}
+                  style={{ '--fill': `${filled * 100}%` } as CSSProperties}
                   data-on={at || chosen || undefined}
-                  data-full={filled === 1 || undefined}
-                  aria-pressed={chosen}
+                  data-full={(filled === 1 && !at && !chosen) || undefined}
+                  aria-pressed={n === saved}
                   aria-label={ratingText(n)}
                   // Move, not enter: the layer opens under a resting pointer, which has not picked anything yet.
                   onPointerMove={() => preview !== n && setPreview(n)}

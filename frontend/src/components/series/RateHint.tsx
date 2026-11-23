@@ -8,7 +8,7 @@ import { IconAdjustmentsHorizontal, IconStar } from '../../lib/icons'
 import { SeriesHint } from './SeriesHint'
 
 /**
- * A quiet line for a series the reader has finished but not rated: the rating words to rate it in
+ * A quiet line for a series the reader has finished but not rated: the scores 1 to 10 to rate it in
  * place, and a way to wave it off for good. With a "so far" score it offers that score back, one tap
  * to keep.
  */
@@ -24,7 +24,7 @@ export function RateHint({
   onRate: (rating: number) => void
   onKeep?: () => void
   onDismiss: () => void
-  /** Offers the rating breakdown beside the stars. */
+  /** Offers the rating breakdown beside the scores. */
   panel?: Parameters<typeof RatingPanel>[0]
   panelZIndex?: number
 }) {

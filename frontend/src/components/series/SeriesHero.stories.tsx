@@ -96,6 +96,50 @@ export const QuickRateByKeyboard: Story = {
   },
 }
 
+/** Escape folds the buttons away and returns focus; reopening at once must not leave them stuck on the dashes. */
+export const QuickRateEscapeAndReopen: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    dashes.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dashes).toHaveFocus())
+    await userEvent.keyboard('{ArrowLeft}')
+    const seven = await canvas.findByRole('button', { name: 'Good 7' })
+    await waitFor(() => expect(seven).toHaveFocus())
+    await waitFor(() => expect(getComputedStyle(seven).transform).toBe('none'))
+  },
+}
+
+/** A keyboard pick does not lock out the mouse: hovering the dashes still opens the buttons. */
+export const QuickRateKeyboardThenHover: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    dashes.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(7))
+    await userEvent.hover(dashes)
+    await expect(await canvas.findByRole('group', { name: 'Rate from 1 to 10' })).toBeVisible()
+  },
+}
+
+/** A touch screen has no hover: a tap on the dashes opens the panel with the words. */
+export const QuickRateTouchOpensPanel: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    await userEvent.pointer({ keys: '[TouchA]', target: dashes })
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('button', { name: 'Masterpiece' })).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Rate from 1 to 10' })).toBeNull()
+  },
+}
+
 export const RatingHistory: Story = {
   args: { series: seriesDto(3, { rating: 9 }) },
   parameters: {

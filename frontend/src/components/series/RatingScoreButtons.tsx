@@ -43,7 +43,8 @@ export function RatingScoreButtons({
               aria-pressed={value != null && n === value}
               aria-label={ratingText(n)}
               disabled={disabled}
-              onPointerEnter={() => setPreview(n)}
+              // Mouse only: a tap gets no pointerleave, and its preview would stick.
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setPreview(n)}
               onFocus={() => setPreview(n)}
               onBlur={() => setPreview(null)}
               onClick={() => onPick(n)}
