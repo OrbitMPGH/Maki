@@ -7,7 +7,8 @@ namespace Maki.Api.Services;
 /// <para>
 /// <see cref="Wanted"/> is what the series page shows: On disk counts the chapters the reader wants,
 /// plus any they have or had a file for, so 43 wanted out of 45 listed reads 43 of 43 whatever
-/// MangaBaka says; Read counts the downloaded ones, as the reader does.
+/// MangaBaka says; Read counts the downloaded ones, as the reader does, less those switched off
+/// and not read (specials that came inside a volume the reader never meant to read).
 /// </para>
 /// <para>
 /// <see cref="Compute"/> is how long the series is, which only the automatic Completed needs
@@ -32,8 +33,10 @@ public static class SeriesProgressScope
 {
     /// <param name="Skipped">Chapters left out of <paramref name="Total"/> because they were switched off.</param>
     /// <param name="IncludedSpecials">Specials inside <paramref name="Total"/>; 0 when specials are not counted.</param>
+    /// <param name="Readable">What Read counts against: <paramref name="Have"/> minus downloaded chapters switched off and not read.</param>
     public sealed record Totals(
-        int Total, int Have, int? Read, bool SpecialsCounted, int ListedSpecials, int Skipped = 0, int IncludedSpecials = 0);
+        int Total, int Have, int? Read, bool SpecialsCounted, int ListedSpecials, int Skipped = 0, int IncludedSpecials = 0,
+        int? Readable = null);
 
     /// <summary>Chapters with Wanted off and no file, and the highest whole chapter that is not one.</summary>
     public sealed record SwitchedOff(int Chapters, int Specials, double? HighestKeptMain);
@@ -45,9 +48,10 @@ public static class SeriesProgressScope
     /// listed chapter instead.
     /// </summary>
     public static Totals Wanted(
-        int wanted, int had, int? read, int listedSpecials, int switchedOff, int switchedOffSpecials) =>
+        int wanted, int had, int? read, int listedSpecials, int switchedOff, int switchedOffSpecials,
+        int unwantedHad = 0) =>
         new(wanted, had, read is { } r ? Math.Clamp(r, 0, wanted) : null, true, listedSpecials,
-            switchedOff, Math.Max(0, listedSpecials - switchedOffSpecials));
+            switchedOff, Math.Max(0, listedSpecials - switchedOffSpecials), Math.Max(0, had - unwantedHad));
 
     public static bool CountsSpecials(NewChapterMonitorMode mode, bool unmonitorSpecials) =>
         !unmonitorSpecials && mode != NewChapterMonitorMode.MainOnly;

@@ -183,9 +183,10 @@ export function SeriesHero({
           ? 0
           : Math.max(0, series.knownChapterCount - totalCount)
     const readChapters = scoped && series.progressRead !== undefined ? series.progressRead : series.readChapterCount
-    // Reading counts what is downloaded, as the reader's own progress does; On disk below says how
-    // many are wanted, and the reader's tooltip how many are in the series.
-    const haveCount = progress.have
+    // Reading counts what is downloaded, as the reader's own progress does, less chapters switched
+    // off and not read; On disk below says how many are wanted, and the reader's tooltip how many
+    // are in the series.
+    const haveCount = progress.readable
     // A chapter read whose file has since gone is still read, but not among the downloaded ones.
     const readCount = Math.min(readChapters ?? 0, haveCount)
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}

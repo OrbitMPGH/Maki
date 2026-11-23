@@ -1012,6 +1012,7 @@ public class SeriesController(
             RemovedChapterCount = counts?.Removed ?? 0,
             ProgressTotal = progress.Total,
             ProgressHave = progress.Have,
+            ProgressReadable = progress.Readable,
             ProgressRead = progress.Read,
             ListedSpecials = progress.ListedSpecials,
             ProgressSkipped = progress.Skipped,

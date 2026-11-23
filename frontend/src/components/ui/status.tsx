@@ -162,6 +162,8 @@ export interface SeriesProgressVisual {
   nothingWanted: boolean
   /** Chapters actually on disk. */
   have: number
+  /** What the read ring counts against: `have` less chapters switched off and not read. */
+  readable: number
   /** Download bar width, 0–100. */
   pct: number
   complete: boolean
@@ -204,6 +206,7 @@ export function seriesProgressVisual(
     readChapterCount: number | null
     progressTotal?: number
     progressHave?: number
+    progressReadable?: number | null
     progressRead?: number | null
   },
   readTracking: boolean,
@@ -213,16 +216,19 @@ export function seriesProgressVisual(
   const total = scoped ? s.progressTotal! : wantedTotal || s.knownChapterCount || 0
   const nothingWanted = !scoped && wantedTotal === 0 && total > 0
   const have = scoped ? (s.progressHave ?? 0) : obtainedCount(s)
+  // Downloaded chapters switched off and not read (specials inside a volume) are not left to read.
+  const readable = scoped ? (s.progressReadable ?? have) : have
   const read = scoped && s.progressRead !== undefined ? s.progressRead : s.readChapterCount
-  const tracked = readTracking && read != null && have > 0
+  const tracked = readTracking && read != null && readable > 0
   return {
     total,
     nothingWanted,
     have,
+    readable,
     pct: !nothingWanted && total > 0 ? Math.min(100, (have / total) * 100) : 0,
     complete: !nothingWanted && total > 0 && have >= total,
-    readPct: tracked ? Math.min(100, (read / have) * 100) : null,
-    unread: tracked ? Math.max(0, have - read) : null,
+    readPct: tracked ? Math.min(100, (read / readable) * 100) : null,
+    unread: tracked ? Math.max(0, readable - read) : null,
     read: tracked ? read : null,
   }
 }

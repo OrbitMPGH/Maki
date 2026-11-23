@@ -361,6 +361,9 @@ public class ReaderController(
                 Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
             })
             .FirstOrDefaultAsync(ct);
+        // As the series page's Read total: downloaded chapters switched off and not read are left out.
+        var unwantedHad = await LibraryListRows.UnwantedHad(
+            db.Chapters.Where(c => c.SeriesId == seriesId), ReadCounts.Read(db)).CountAsync(ct);
 
         // Named on the end-of-chapter screen, and its number is how that screen tells a straight
         // continuation from a jump over chapters that were never downloaded.
@@ -371,7 +374,7 @@ public class ReaderController(
                 .FirstOrDefaultAsync(ct)
             : null;
         return new EndingState(
-            counts?.Downloaded ?? 0,
+            Math.Max(0, (counts?.Downloaded ?? 0) - unwantedHad),
             readCount,
             counts?.Wanted ?? 0,
             nextChapter is null
