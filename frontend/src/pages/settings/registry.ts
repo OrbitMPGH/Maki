@@ -141,7 +141,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'series-cards',
     tab: 'preferences',
-    since: 'next',
+    since: '0.38.0',
     title: msg`Series cards`,
     keywords: msg({
       message: `cards, covers, progress bar, downloads, reading progress, read ring`,
@@ -299,7 +299,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'keyboard-shortcuts',
     tab: 'reading',
-    since: 'next',
+    since: '0.38.0',
     title: msg`Keyboard shortcuts`,
     keywords: msg({
       message: `keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn`,
@@ -327,7 +327,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'ratings',
     tab: 'reading',
-    since: 'next',
+    since: '0.38.0',
     title: msg`Ratings`,
     keywords: msg({
       message: `rating, decimal, precision, breakdown, category, categories, story, art, characters, weight, score`,
@@ -505,7 +505,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'upscaling-maki-2x-hq',
     tab: 'library',
-    since: 'next',
+    since: '0.38.0',
     title: msg`Maki 2x HQ`,
     admin: true,
     within: 'upscaling',
@@ -654,7 +654,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'source-proxy',
     tab: 'downloads',
-    since: 'next',
+    since: '0.38.0',
     title: msg`Source proxy`,
     admin: true,
     keywords: msg({
