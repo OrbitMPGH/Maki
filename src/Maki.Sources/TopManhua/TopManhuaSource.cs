@@ -244,7 +244,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
                             TryDeleteFile(path);
                         }
                     }
-                })
+                }, SkipCooldown: true)
                 : new PageRequest(url, headers))
             .ToList();
 

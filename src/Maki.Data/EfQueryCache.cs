@@ -33,6 +33,14 @@ namespace Maki.Data;
 /// </para>
 ///
 /// <para>
+/// <see cref="Shared"/> is attached only to default SQLite <see cref="MakiDbContext"/> instances
+/// (no custom <c>MemoryCache</c> or <c>InternalServiceProvider</c>). Because EF Core's default
+/// <see cref="ModelCacheKey"/> keys only on the context type and design-time flag, a context with
+/// another database provider or custom model conventions must supply its own cache rather than
+/// sharing <see cref="Shared"/>.
+/// </para>
+///
+/// <para>
 /// Expiring an entry only drops references. <c>ArtifactIdleUnloadJob</c> sweeps expired entries
 /// every minute and runs the compacting collect once at least <see cref="MinEvictionsToCollect"/>
 /// have gone, so a few stray expiries never pay for a blocking collection.
@@ -127,6 +135,8 @@ public sealed class EfQueryCache : IMemoryCache
 
     private sealed class Entry(EfQueryCache owner, ICacheEntry inner, bool pinned) : ICacheEntry
     {
+        private bool _disposed;
+
         public object Key => inner.Key;
 
         public object? Value
@@ -171,6 +181,12 @@ public sealed class EfQueryCache : IMemoryCache
 
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
             if (pinned)
             {
                 inner.Priority = CacheItemPriority.NeverRemove;

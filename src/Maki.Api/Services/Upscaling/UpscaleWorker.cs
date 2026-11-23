@@ -31,12 +31,15 @@ public sealed class UpscaleWorker(
     EventBroadcaster broadcaster,
     ILogger<UpscaleWorker> logger,
     ArtifactBuildGate? buildGate = null,
-    HeadlessBrowserLauncher? browsers = null,
-    PageConversionWorker? conversion = null) : BackgroundService
+    HeadlessBrowserLauncher? browsers = null) : BackgroundService
 {
     private static readonly TimeSpan IdleWait = TimeSpan.FromMinutes(1);
 
     internal TimeSpan BackgroundYieldWait { get; set; } = TimeSpan.FromSeconds(2);
+
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
+        BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable));
 
     private Task _finishing = Task.CompletedTask;
     private UpscaleWorkKey? _finishingKey;
@@ -80,9 +83,19 @@ public sealed class UpscaleWorker(
                         ReleaseMemory();
                     }
 
-                    await queue.WaitAsync(
-                        ShouldYieldBackground() && queue.HasBackground ? BackgroundYieldWait : IdleWait,
-                        stoppingToken);
+                    if (queue.HasBackground)
+                    {
+                        if (!ShouldYieldBackground())
+                        {
+                            continue;
+                        }
+
+                        await queue.WaitAsync(BackgroundYieldWait, stoppingToken);
+                    }
+                    else
+                    {
+                        await queue.WaitAsync(IdleWait, stoppingToken);
+                    }
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -112,16 +125,13 @@ public sealed class UpscaleWorker(
     }
 
     /// <summary>
-    /// Prepare-ahead yields while another heavy subsystem is active so background upscaling never
-    /// stacks on top of an artifact build, headless browser, or file conversion. Foreground reader
-    /// requests never yield.
+    /// Prepare-ahead yields while an artifact build or headless browser is active so background
+    /// upscaling never stacks on top of them. Page conversion yields to prepare-ahead instead, so
+    /// a long conversion pass never starves whoever is reading. Foreground reader requests never yield.
     /// </summary>
     internal bool ShouldYieldBackground() =>
         buildGate is { IsIdle: false } ||
-        conversion is { Working: not null } ||
-        (browsers is { Running: > 0 } &&
-         BrowserIdleShutdownJob.Resolve(
-             Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable)) > 0);
+        (browsers is { Running: > 0 } && ResolveBrowserIdleMinutes() > 0);
 
     /// <summary>
     /// Runs the next job's tiles, waits for the previous page's finish, then starts this one's in the

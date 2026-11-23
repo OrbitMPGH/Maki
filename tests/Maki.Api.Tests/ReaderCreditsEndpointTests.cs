@@ -1050,4 +1050,27 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
             Assert.NotNull(await RowAsync(chapter));
         }
     }
+
+    [Fact]
+    public async Task The_scan_waits_while_upscaling_has_prepare_ahead_work()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.SetBackground([(new(1, slice.ArchiveVersion, 0, "span-s"), slice)]);
+
+        var scan = Worker(upscaleQueue: upscaleQueue).ScanSeriesAsync(_seriesId, "en", default);
+        await Task.Delay(150);
+
+        Assert.False(scan.IsCompleted);
+        Assert.Null(await RowAsync(chapters[0]));
+
+        upscaleQueue.Clear();
+        await scan.WaitAsync(TimeSpan.FromSeconds(30));
+        foreach (var chapter in chapters)
+        {
+            Assert.NotNull(await RowAsync(chapter));
+        }
+    }
 }

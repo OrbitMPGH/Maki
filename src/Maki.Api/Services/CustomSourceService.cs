@@ -278,8 +278,10 @@ public sealed class CustomSourceService(
             var newChapter = SampleChapter(@new, after, newList);
             if (oldChapter is not null && newChapter is not null)
             {
-                var oldHosts = (await old.GetPagesAsync(oldChapter, ct)).Pages.Select(p => new Uri(p.Url).Host).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var newHosts = (await @new.GetPagesAsync(newChapter, ct)).Pages.Select(p => new Uri(p.Url).Host).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                using var oldPages = await old.GetPagesAsync(oldChapter, ct);
+                using var newPages = await @new.GetPagesAsync(newChapter, ct);
+                var oldHosts = oldPages.Pages.Select(p => new Uri(p.Url).Host).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var newHosts = newPages.Pages.Select(p => new Uri(p.Url).Host).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 if (!oldHosts.SetEquals(newHosts))
                 {
                     reasons.Add("imageHosts");

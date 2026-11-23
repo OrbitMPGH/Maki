@@ -154,7 +154,29 @@ public sealed class EfQueryCacheTests : IDisposable
         Assert.Equal(20, EfQueryCache.ResolveMinutes(null));
         Assert.Equal(20, EfQueryCache.ResolveMinutes("nope"));
         Assert.Equal(0, EfQueryCache.ResolveMinutes("0"));
-        Assert.Equal(TimeSpan.FromMinutes(EfQueryCache.DefaultWindowMinutes), EfQueryCache.Shared.SlidingWindow);
+
+        var expectedMinutes = EfQueryCache.ResolveMinutes(Environment.GetEnvironmentVariable(EfQueryCache.WindowMinutesVariable));
+        Assert.Equal(
+            expectedMinutes > 0 ? TimeSpan.FromMinutes(expectedMinutes) : (TimeSpan?)null,
+            EfQueryCache.Shared.SlidingWindow);
+    }
+
+    [Fact]
+    public void Disposing_a_cache_entry_twice_counts_at_most_one_eviction()
+    {
+        using var cache = new EfQueryCache(Window, _clock);
+        var entry = cache.CreateEntry("dup");
+        entry.Value = new object();
+        entry.Size = 10;
+        entry.Dispose();
+        entry.Dispose();
+
+        _clock.Advance(Window + TimeSpan.FromMinutes(1));
+        cache.Sweep();
+        WaitFor(() => cache.PendingEvictions >= 1);
+        Thread.Sleep(50);
+
+        Assert.Equal(1, cache.PendingEvictions);
     }
 
     [Fact]
@@ -166,6 +188,21 @@ public sealed class EfQueryCacheTests : IDisposable
         var core = db.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>();
 
         Assert.Same(EfQueryCache.Shared, core?.MemoryCache);
+    }
+
+    [Fact]
+    public void Contexts_with_their_own_cache_do_not_share_the_process_cache()
+    {
+        using var isolated = new EfQueryCache(Window, _clock);
+        var options = new DbContextOptionsBuilder<MakiDbContext>()
+            .UseSqlite(_connection)
+            .UseMemoryCache(isolated)
+            .Options;
+        using var db = new MakiDbContext(options);
+
+        var core = db.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>();
+
+        Assert.Same(isolated, core?.MemoryCache);
     }
 
     [Fact]

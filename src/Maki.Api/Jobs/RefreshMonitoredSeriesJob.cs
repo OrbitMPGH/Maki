@@ -92,6 +92,10 @@ public class RefreshMonitoredSeriesJob(
         }
     }
 
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
+        BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable));
+
     internal async Task ReleaseBrowsersIfIdleAsync()
     {
         if (browsers is null || queue.Busy)
@@ -99,7 +103,7 @@ public class RefreshMonitoredSeriesJob(
             return;
         }
 
-        if (BrowserIdleShutdownJob.Resolve(Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable)) <= 0)
+        if (ResolveBrowserIdleMinutes() <= 0)
         {
             return;
         }

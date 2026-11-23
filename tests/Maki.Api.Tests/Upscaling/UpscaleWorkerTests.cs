@@ -40,10 +40,9 @@ public sealed class UpscaleWorkerTests : IDisposable
     private UpscaleWorker NewWorker(
         IPageUpscaler upscaler,
         Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
-        Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
-        PageConversionWorker? conversion = null) => new(
+        Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null) => new(
         _queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), _paths, _settings,
-        _broadcaster, NullLogger<UpscaleWorker>.Instance, buildGate, browsers, conversion);
+        _broadcaster, NullLogger<UpscaleWorker>.Instance, buildGate, browsers);
 
     private ReaderService.PageSlice Slice() =>
         new(7, 3, _cbz, new FileInfo(_cbz).Length, ["001.png", "002.png", "003.png", "004.png", "005.png"], 0, 5, 99);
@@ -228,6 +227,38 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.True(await RunJobAsync(worker));
         Assert.Equal(2, upscaler.Calls);
         Assert.NotNull(_cache.TryGet(Item(0).Key));
+    }
+
+    [Fact]
+    public async Task Background_prepare_ahead_resumes_promptly_when_build_gate_clears_during_the_loop()
+    {
+        var gate = new Maki.Api.Jobs.ArtifactBuildGate(NullLogger<Maki.Api.Jobs.ArtifactBuildGate>.Instance);
+        var upscaler = new FakeUpscaler();
+        var worker = NewWorker(upscaler, buildGate: gate);
+        worker.BackgroundYieldWait = TimeSpan.FromMilliseconds(30);
+
+        _queue.SetBackground([(Item(0).Key, Slice())]);
+        var lease = await gate.EnterAsync("test build", default);
+        await worker.StartAsync(default);
+        try
+        {
+            await Task.Delay(100);
+            Assert.Equal(0, upscaler.Calls);
+
+            lease.Dispose();
+            var deadline = DateTime.UtcNow + Wait;
+            while (_cache.TryGet(Item(0).Key) is null && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(15);
+            }
+
+            Assert.NotNull(_cache.TryGet(Item(0).Key));
+        }
+        finally
+        {
+            lease.Dispose();
+            await worker.StopAsync(default);
+        }
     }
 
     [Fact]

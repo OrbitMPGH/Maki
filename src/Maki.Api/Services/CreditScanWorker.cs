@@ -641,10 +641,12 @@ public sealed class CreditScanWorker(
             ? Task.CompletedTask
             : store.RestampAsync(row.ChapterId, slice.ChapterFileId, slice.ArchiveSize, ct);
 
-    private bool BrowserBlocking =>
-        browsers is { Running: > 0 } &&
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
         Maki.Api.Jobs.BrowserIdleShutdownJob.Resolve(
-            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable)) > 0;
+            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable));
+
+    private bool BrowserBlocking =>
+        browsers is { Running: > 0 } && ResolveBrowserIdleMinutes() > 0;
 
     /// <summary>
     /// Waits while a reader is being served pages, the scan is paused, or another heavy subsystem
@@ -655,7 +657,7 @@ public sealed class CreditScanWorker(
     {
         while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false } ||
                BrowserBlocking || conversion.Working is not null ||
-               upscaleQueue is { HasForegroundWork: true } or { IsWorking: true })
+               upscaleQueue is { HasForegroundWork: true } or { HasBackground: true } or { IsWorking: true })
         {
             if (buildGate is { IsIdle: false })
             {

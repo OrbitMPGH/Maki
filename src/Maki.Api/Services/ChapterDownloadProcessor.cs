@@ -252,7 +252,7 @@ public class ChapterDownloadProcessor(
                         item.Id);
                 }
 
-                // 2. Download pages (resumable — existing files are kept).
+                // 2. Download pages (resumable: existing files are kept).
                 // Pages finish on up to four threads at once, so the count only moves forward and the
                 // throttle is decided under a lock; the broadcast itself runs outside it.
                 var progressLock = new Lock();

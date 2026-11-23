@@ -427,30 +427,24 @@ public class RefreshSmartGateTests : IDisposable
             NullLogger<RefreshMonitoredSeriesJob>.Instance, _deferrals, [running, stopped]);
 
         // Queue starts Busy until the first empty claim runs.
-        var previous = Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable);
-        Environment.SetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable, "1");
-        try
-        {
-            Assert.True(queue.Busy);
-            await job.ReleaseBrowsersIfIdleAsync();
-            Assert.Empty(running.Asked);
+        var idleMinutes = 1;
+        job.ResolveBrowserIdleMinutes = () => idleMinutes;
 
-            Assert.Null(await queue.ClaimNextAsync(CancellationToken.None));
-            Assert.False(queue.Busy);
+        Assert.True(queue.Busy);
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Empty(running.Asked);
 
-            // Disabled via MAKI_BROWSER_IDLE_MINUTES=0 leaves browsers alive.
-            Environment.SetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable, "0");
-            await job.ReleaseBrowsersIfIdleAsync();
-            Assert.Empty(running.Asked);
+        Assert.Null(await queue.ClaimNextAsync(CancellationToken.None));
+        Assert.False(queue.Busy);
 
-            Environment.SetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable, "1");
-            await job.ReleaseBrowsersIfIdleAsync();
-            Assert.Equal([TimeSpan.Zero], running.Asked);
-            Assert.Empty(stopped.Asked);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable, previous);
-        }
+        // Disabled via MAKI_BROWSER_IDLE_MINUTES=0 leaves browsers alive.
+        idleMinutes = 0;
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Empty(running.Asked);
+
+        idleMinutes = 1;
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Equal([TimeSpan.Zero], running.Asked);
+        Assert.Empty(stopped.Asked);
     }
 }

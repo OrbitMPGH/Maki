@@ -856,7 +856,11 @@ try
     builder.Services.AddSingleton<BrowserInstaller>();
     builder.Services.AddSingleton<HeadlessBrowserLauncher>();
     builder.Services.AddSingleton<MangaFireBrowser>();
-    builder.Services.AddSingleton<TopManhuaImageBrowser>();
+    builder.Services.AddSingleton(sp => new TopManhuaImageBrowser(
+        sp.GetRequiredService<ChallengeAwareFetcher>(),
+        sp.GetRequiredService<HeadlessBrowserLauncher>(),
+        sp.GetRequiredService<ILogger<TopManhuaImageBrowser>>(),
+        Path.Combine(sp.GetRequiredService<AppPaths>().DownloadCacheDir, "topmanhua")));
     // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
     // from the concrete singletons rather than registered twice, or the job would be shutting down
     // a second browser nobody scrapes with.

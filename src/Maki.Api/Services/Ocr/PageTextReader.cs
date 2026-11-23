@@ -185,7 +185,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             }
             else
             {
-                _logger.LogInformation("Unloaded the OCR models");
+                _logger.LogDebug("Unloaded the OCR models");
             }
 
             return true;
@@ -220,11 +220,12 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         {
             // Two threads cost 20% less CPU than four for 12% longer reads (identical text); almost
             // every read is the background scan's, and a reader's cold search does at most a few.
-            // Keep EnableCpuMemArena = false (OnnxMemoryOptions default): on Linux, ORT's
-            // memory.enable_memory_arena_shrinkage fails to release the arena's mmap regions and
-            // retains ~56 MiB after reads until the session is disposed.
+            // Keep the CPU arena enabled: turning it off slows reads ~2.4x (471 ms vs 197 ms). The
+            // arena memory (~56 MiB) is returned when the sessions dispose, which CreditScanWorker
+            // now does as soon as a scan pass goes idle (and ArtifactIdleUnloadJob after 1 minute).
             using var options = OnnxMemoryOptions.Create(
                 intraOpThreads: Math.Clamp(Environment.ProcessorCount / 2, 1, 2), fixedShapes: false);
+            options.EnableCpuMemArena = true;
             det = new InferenceSession(detection, options);
             rec = new InferenceSession(recognition, options);
             if (!rec.ModelMetadata.CustomMetadataMap.TryGetValue("character", out var list))

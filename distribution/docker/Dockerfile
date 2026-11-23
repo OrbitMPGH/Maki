@@ -54,7 +54,7 @@ COPY locales/ locales/
 
 # src/ is copied above, so this layer reruns on every code change; the mount is what makes that cheap.
 # publish needs the same mount because it reads the packages from that folder.
-RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages,sharing=locked \
     case "$TARGETARCH" in \
       amd64) rid=linux-x64 ;; \
       arm64) rid=linux-arm64 ;; \
@@ -69,7 +69,7 @@ RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
 # these as late as possible in each stage.
 ARG VERSION
 ARG SOURCE_COMMIT
-RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages,sharing=locked \
     case "$TARGETARCH" in \
       amd64) rid=linux-x64 ;; \
       arm64) rid=linux-arm64 ;; \

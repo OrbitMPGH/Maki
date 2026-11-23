@@ -63,6 +63,34 @@ public class PageDownloaderCooldownTests
     }
 
     [Fact]
+    public async Task A_staged_local_fetch_skips_the_cooldown()
+    {
+        var cooldown = new FakeCooldown();
+        var downloader = new PageDownloader(
+            new StubFactory(new RecordingHandler(() => Assert.Fail("a local staged fetch must not go over HTTP"))),
+            cooldown,
+            TimeProvider.System,
+            NullLogger<PageDownloader>.Instance);
+        var page = new PageRequest(
+            "https://example.test/page/1.jpg",
+            Fetch: _ => Task.FromResult<byte[]>([0xFF, 0xD8, 0xFF, 0xD9]),
+            SkipCooldown: true);
+
+        var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var written = await downloader.DownloadAsync(new ChapterPages([page]), "fake", dir);
+
+            Assert.Equal(0, cooldown.Waits);
+            Assert.Equal([0xFF, 0xD8, 0xFF, 0xD9], await File.ReadAllBytesAsync(written[0]));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Waits_Out_The_Cooldown_Before_Every_Page()
     {
         var cooldown = new FakeCooldown();

@@ -1041,6 +1041,69 @@ public sealed partial class PageConversionTests : IDisposable
         Assert.Equal((1, 1), (snapshot.Pass!.Converted, snapshot.Pass.Failed));
     }
 
+    [Fact]
+    public async Task Pausing_while_foreground_upscaling_holds_the_pass_does_not_convert_when_upscaling_ends()
+    {
+        EnableConversion();
+        var (_, fileId, _) = JpegChapter(1);
+        var settings = new SettingsService(_world.Db.ScopeFactory());
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.Replace(1, 1, "span-s", [new(new(1, slice.ArchiveVersion, 0, "span-s"), new(1, 0), slice)]);
+
+        var services = new ServiceCollection();
+        services.AddScoped(_ => _world.Db.NewContext());
+        services.AddScoped(sp => Service(sp.GetRequiredService<MakiDbContext>()));
+        var worker = new PageConversionWorker(
+            services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            settings,
+            NullLogger<PageConversionWorker>.Instance,
+            upscaleQueue: upscaleQueue)
+        {
+            DelayBetweenFiles = TimeSpan.Zero,
+            QuietPoll = TimeSpan.FromMilliseconds(20),
+        };
+
+        await worker.StartPassAsync(CancellationToken.None);
+        var pass = worker.RunPassAsync(CancellationToken.None);
+        await Task.Delay(100);
+        Assert.False(pass.IsCompleted);
+        Assert.Null(Row(fileId).ConversionCheckedAtUtc);
+
+        await worker.PauseAsync(CancellationToken.None);
+        var interrupted = await pass.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(interrupted);
+
+        // Even after upscaling finishes, the paused pass must not have converted the file.
+        upscaleQueue.Cancel(1);
+        Assert.Null(Row(fileId).ConversionCheckedAtUtc);
+        Assert.Equal("jpg", Row(fileId).ImageFormat);
+    }
+
+    [Fact]
+    public async Task WaitForQuiet_yields_to_prepare_ahead_upscaling()
+    {
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.SetBackground([(new(1, slice.ArchiveVersion, 0, "span-s"), slice)]);
+
+        var worker = new PageConversionWorker(
+            _world.Db.ScopeFactory(),
+            new SettingsService(_world.Db.ScopeFactory()),
+            NullLogger<PageConversionWorker>.Instance,
+            upscaleQueue: upscaleQueue)
+        {
+            QuietPoll = TimeSpan.FromMilliseconds(20),
+        };
+
+        var wait = worker.WaitForQuietAsync(CancellationToken.None);
+        await Task.Delay(100);
+        Assert.False(wait.IsCompleted);
+
+        upscaleQueue.Clear();
+        Assert.True(await wait.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
     private sealed class FailingSave(int fileId) : SaveChangesInterceptor
     {
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
