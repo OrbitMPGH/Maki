@@ -12383,6 +12383,12 @@ msgstr "完整评论"
 msgid "Full screen"
 msgstr "全屏"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "Full-width series page"
+msgstr "系列详情页全宽显示"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Fully read owned"
@@ -14593,6 +14599,12 @@ msgstr "布局"
 #, fuzzy
 msgid "Layout saved"
 msgstr "布局已保存"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "layout, page width, gutters, margins, wide screen"
+msgstr "布局, 页面宽度, 间距, 边距, 宽屏"
 
 #: src/components/layout/SectionSettings.tsx
 #, fuzzy

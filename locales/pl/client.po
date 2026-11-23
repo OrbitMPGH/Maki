@@ -12383,6 +12383,12 @@ msgstr "Pełna recenzja"
 msgid "Full screen"
 msgstr "Pełny ekran"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "Full-width series page"
+msgstr "Strona serii na pełną szerokość"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Fully read owned"
@@ -14593,6 +14599,12 @@ msgstr "Układ"
 #, fuzzy
 msgid "Layout saved"
 msgstr "Układ został zapisany"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "layout, page width, gutters, margins, wide screen"
+msgstr "układ, szerokość strony, odstępy, marginesy, szeroki ekran"
 
 #: src/components/layout/SectionSettings.tsx
 #, fuzzy

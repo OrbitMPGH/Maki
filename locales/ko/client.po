@@ -12383,6 +12383,12 @@ msgstr "전체 검토"
 msgid "Full screen"
 msgstr "전체 화면"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "Full-width series page"
+msgstr "시리즈 상세 페이지를 전체 너비로 표시"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Fully read owned"
@@ -14594,6 +14600,12 @@ msgstr "레이아웃"
 #, fuzzy
 msgid "Layout saved"
 msgstr "레이아웃 저장됨"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+#, fuzzy
+msgid "layout, page width, gutters, margins, wide screen"
+msgstr "레이아웃, 페이지 너비, 간격, 여백, 와이드 화면"
 
 #: src/components/layout/SectionSettings.tsx
 #, fuzzy
