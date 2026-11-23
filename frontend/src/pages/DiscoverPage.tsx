@@ -16,7 +16,6 @@ import {
   Tabs,
   Text,
   Tooltip,
-  useMatches,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal,
@@ -115,7 +114,7 @@ import {
   RecommendationRow,
   type OpenItem,
 } from '../components/ui/DiscoverRail'
-import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { type CatalogueSeed, NextPageSkeleton, PosterSkeletons as SharedPosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { FilterMatchCount, useTermFilters } from '../components/CatalogueRules'
 import { PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -227,43 +226,6 @@ function PosterSkeletons({
   viewMode?: 'grid' | 'list'
 }) {
   return <SharedPosterSkeletons density={density} viewMode={viewMode} />
-}
-
-function NextPageSkeleton({
-  density,
-  viewMode,
-}: {
-  density: Density
-  viewMode: 'grid' | 'list'
-}) {
-  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
-  if (viewMode === 'list') {
-    const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
-    return (
-      <Stack gap="xs" className="recommended-next-skeleton" aria-hidden>
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className={`series-row ${density}`}>
-            <Skeleton
-              radius="var(--radius-thumb)"
-              style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
-            />
-            <div className="row-body">
-              <Skeleton h={14} w="42%" mb="sm" />
-              <Skeleton h={10} w="68%" mb="sm" />
-              <Skeleton h={10} w="24%" />
-            </div>
-          </div>
-        ))}
-      </Stack>
-    )
-  }
-  return (
-    <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md" className="recommended-next-skeleton" aria-hidden>
-      {Array.from({ length: columns }, (_, i) => (
-        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
-      ))}
-    </SimpleGrid>
-  )
 }
 
 function DiscoverHeroSkeleton() {

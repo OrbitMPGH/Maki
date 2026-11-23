@@ -71,6 +71,7 @@ import {
 } from './ui/viewPrefs'
 import { ErrorMessage } from './ErrorMessage'
 import { Callout } from './ui/Callout'
+import { pageScroller } from '../lib/pageScroll'
 
 /**
  * Smart matches on meaning and falls back to the title index; Title is the plain FTS5 title search.
@@ -81,10 +82,10 @@ export type SearchMode = 'smart' | 'title'
 
 const SEARCH_MODES: readonly SearchMode[] = ['smart', 'title']
 
-/** One page of browse results. Load more asks for this many again. */
+/** One page of browse results. Scrolling near the end asks for this many again. */
 const PAGE_SIZE = 60
 
-/** Ceiling on how far Load more will page, matching the server's own clamp. */
+/** Ceiling on how far scrolling will page, matching the server's own clamp. */
 const MAX_BROWSE = 600
 /** The most the search endpoint returns for one query. */
 const MAX_SEARCH = 200
@@ -295,16 +296,27 @@ export function CatalogueBrowser({
     })
   }
 
-  // `pages` has already advanced by the time the wider request is in flight, so the count check
-  // fails for as long as the previous page is what's on screen. Keep the button there while it
-  // fetches rather than letting it vanish and come back under the reader's cursor.
+  // `pages` advances before the wider request is in flight, so while the previous page is still on
+  // screen the shown count is short of `PAGE_SIZE * pages`: that gap is what "loading more" means.
   const feedLimit = searching ? MAX_SEARCH : MAX_BROWSE
   const fetching = searching ? search.isFetching : browse.isFetching
-  const canLoadMore =
-    (searching ? searchRequest != null : browseRequest != null) &&
-    items.length > 0 &&
-    items.length < feedLimit &&
-    (fetching || items.length >= PAGE_SIZE * pages)
+  const requested = searching ? searchRequest != null : browseRequest != null
+  const loadingMore = requested && fetching && items.length > 0 && items.length < PAGE_SIZE * pages
+  const hasMore =
+    requested && !error && items.length > 0 && items.length < feedLimit && items.length >= PAGE_SIZE * pages
+
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!sentinel || !hasMore || fetching) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPages((p) => p + 1)
+      },
+      { root: pageScroller(), rootMargin: '0px 0px 600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel, hasMore, fetching, setPages, items.length])
 
   return (
     <>
@@ -450,17 +462,8 @@ export function CatalogueBrowser({
 
           {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />}
 
-          {canLoadMore && (
-            <Group justify="center" mt="lg">
-              <Button
-                variant="default"
-                loading={fetching}
-                onClick={() => setPages((p) => p + 1)}
-              >
-                <Trans>Load more</Trans>
-              </Button>
-            </Group>
-          )}
+          {loadingMore && <NextPageSkeleton density={prefs.density} viewMode={prefs.viewMode} />}
+          {hasMore && !fetching && <div ref={setSentinel} className="recommended-stream-sentinel" aria-hidden />}
         </>
       )}
 
@@ -709,6 +712,44 @@ export function PosterSkeletons({
       aria-hidden
     >
       {Array.from({ length: visibleCount }, (_, i) => (
+        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
+      ))}
+    </SimpleGrid>
+  )
+}
+
+/** One row of placeholders under a stream while its next page loads. */
+export function NextPageSkeleton({
+  density,
+  viewMode,
+}: {
+  density: ViewPrefs['density']
+  viewMode: ViewMode
+}) {
+  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  if (viewMode === 'list') {
+    const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+    return (
+      <Stack gap="xs" className="recommended-next-skeleton" aria-hidden>
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className={`series-row ${density}`}>
+            <Skeleton
+              radius="var(--radius-thumb)"
+              style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
+            />
+            <div className="row-body">
+              <Skeleton h={14} w="42%" mb="sm" />
+              <Skeleton h={10} w="68%" mb="sm" />
+              <Skeleton h={10} w="24%" />
+            </div>
+          </div>
+        ))}
+      </Stack>
+    )
+  }
+  return (
+    <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md" className="recommended-next-skeleton" aria-hidden>
+      {Array.from({ length: columns }, (_, i) => (
         <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>

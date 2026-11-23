@@ -6,7 +6,7 @@ import {
   Text,
 } from '@mantine/core'
 import { IconArrowLeft, IconBell, IconBellCheck } from '../lib/icons'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import {
   useCreator,
@@ -26,7 +26,7 @@ import {
   useCatalogueFilters,
   useLiveApply,
 } from '../components/CatalogueFilters'
-import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { NextPageSkeleton, PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import type { ShortlistSource } from '../api/shortlist'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
 import { PresetMenu } from '../components/DiscoverPresets'
@@ -45,6 +45,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
 import { formatFixedDecimal } from '../format'
 import { Callout } from '../components/ui/Callout'
+import { pageScroller } from '../lib/pageScroll'
 
 const PAGE_SIZE = 60
 // Creator links come from Discover's detail card, so a page opened cold walks back there.
@@ -184,6 +185,21 @@ export default function CreatorPage() {
   const items = data?.items ?? []
   const canLoadMore =
     items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
+  const loadingMore = canLoadMore && isFetching && items.length < PAGE_SIZE * pages
+  const hasMore = canLoadMore && !isFetching && !isPlaceholderData
+
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!sentinel || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPages((p) => p + 1)
+      },
+      { root: pageScroller(), rootMargin: '0px 0px 600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel, hasMore, setPages, items.length])
 
   if (decoded.length === 0) {
     return (
@@ -312,13 +328,8 @@ export default function CreatorPage() {
       {items.length > 0 && (
         <>
           <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />
-          {canLoadMore && (
-            <Group justify="center" mt="lg">
-              <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
-                <Trans>Load more</Trans>
-              </Button>
-            </Group>
-          )}
+          {loadingMore && <NextPageSkeleton density={prefs.density} viewMode={prefs.viewMode} />}
+          {hasMore && <div ref={setSentinel} className="recommended-stream-sentinel" aria-hidden />}
         </>
       )}
 
