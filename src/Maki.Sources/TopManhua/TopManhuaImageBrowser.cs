@@ -31,8 +31,35 @@ public sealed class TopManhuaImageBrowser(
     private const string Host = "www.topmanhua.fan";
     private const string SourceName = "topmanhua";
     private const int NavTimeoutMs = 30_000;
+    private const int BatchTimeoutMs = 15_000;
     private const int CaptureTimeoutMs = 45_000;
+    private const int MaxCaptureTimeoutMs = 180_000;
+    private const int ImageBatchSize = 4;
     private const int MaxBodiesInFlight = 2;
+    private static readonly TimeSpan StaleStagingAge = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Captured chapter page images staged on disk instead of held in RAM across the chapter.
+    /// Dispose deletes the staging directory.
+    /// </summary>
+    public sealed class StagedImages(string directory, IReadOnlyDictionary<string, string> paths) : IDisposable
+    {
+        private int _disposed;
+
+        public IReadOnlyDictionary<string, string> Paths => paths;
+
+        public bool TryGetPath(string url, out string path) => paths.TryGetValue(url, out path!);
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            TryDeleteDirectory(directory);
+        }
+    }
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IBrowser? _browser;
@@ -114,14 +141,15 @@ public sealed class TopManhuaImageBrowser(
     }
 
     /// <summary>
-    /// Navigates to <paramref name="chapterUrl"/>, forces every lazy-loaded reading-content image
-    /// to load, and returns whatever page bytes were captured off the network keyed by URL. A URL
-    /// missing from the result simply never loaded in time; the caller falls back to a plain
-    /// fetch for those rather than failing the whole chapter.
+    /// Navigates to <paramref name="chapterUrl"/>, loads lazy-loaded reading-content images in small
+    /// batches (removing completed &lt;img&gt; nodes between batches so Chromium drops decoded bitmaps),
+    /// and stages captured bytes to temp files keyed by URL. A URL missing from the result simply never
+    /// loaded in time; the caller falls back to a plain fetch for those rather than failing the whole chapter.
     /// </summary>
-    public async Task<IReadOnlyDictionary<string, byte[]>> FetchImagesAsync(
+    public async Task<StagedImages> FetchImagesAsync(
         string chapterUrl, IReadOnlyList<string> imageUrls, CancellationToken ct)
     {
+        SweepStaleStagingDirs();
         await _gate.WaitAsync(ct);
         _idle.Touch();
         try
@@ -178,22 +206,35 @@ public sealed class TopManhuaImageBrowser(
         }
     }
 
-    private async Task<IReadOnlyDictionary<string, byte[]>> CaptureAsync(
+    private async Task<StagedImages> CaptureAsync(
         IPage page, string chapterUrl, IReadOnlyList<string> imageUrls, CancellationToken ct)
     {
         var wanted = new HashSet<string>(imageUrls, StringComparer.Ordinal);
-        var captured = new ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
+        var stagingDir = Path.Combine(StagingRoot(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stagingDir);
+        var captured = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        var failed = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
+        var activeCaptures = new ConcurrentDictionary<Task, byte>(ReferenceEqualityComparer.Instance);
+        var fileIndex = 0;
 
         // Each body travels from Chromium as base64 JSON, so a 1 MB page is several MB of transient
-        // garbage, and starting every capture of a 50-page chapter at once put all of it in flight
-        // together. Not disposed: a late response can still be waiting on it
-        // after the capture has returned.
+        // garbage; bounding in-flight reads and streaming each one to disk keeps managed heap flat.
         var inFlight = new SemaphoreSlim(MaxBodiesInFlight);
 
         async Task CaptureBodyAsync(IResponse response)
         {
-            if (!wanted.Contains(response.Url) || !response.Ok)
+            if (!wanted.Contains(response.Url) || captured.ContainsKey(response.Url))
             {
+                return;
+            }
+
+            if (!response.Ok)
+            {
+                if (!captured.ContainsKey(response.Url))
+                {
+                    failed[response.Url] = 0;
+                }
+
                 return;
             }
 
@@ -202,7 +243,16 @@ public sealed class TopManhuaImageBrowser(
                 await inFlight.WaitAsync(ct);
                 try
                 {
-                    captured[response.Url] = await BrowserSupport.ReadBytesAsync(response, ct);
+                    if (captured.ContainsKey(response.Url))
+                    {
+                        return;
+                    }
+
+                    var bytes = await BrowserSupport.ReadBytesAsync(response, ct);
+                    var path = Path.Combine(stagingDir, $"{Interlocked.Increment(ref fileIndex):0000}.bin");
+                    await File.WriteAllBytesAsync(path, bytes, ct);
+                    captured[response.Url] = path;
+                    failed.TryRemove(response.Url, out _);
                 }
                 finally
                 {
@@ -212,24 +262,73 @@ public sealed class TopManhuaImageBrowser(
             catch (Exception)
             {
                 // best-effort capture: the body may be gone (page closed or navigated away); skip it
+                if (!captured.ContainsKey(response.Url))
+                {
+                    failed[response.Url] = 0;
+                }
             }
         }
 
-        void OnResponse(object? sender, ResponseCreatedEventArgs e) => _ = CaptureBodyAsync(e.Response);
+        void OnResponse(object? sender, ResponseCreatedEventArgs e)
+        {
+            var task = CaptureBodyAsync(e.Response);
+            activeCaptures[task] = 0;
+            _ = task.ContinueWith(
+                static (t, state) => ((ConcurrentDictionary<Task, byte>)state!).TryRemove(t, out _),
+                activeCaptures, TaskScheduler.Default);
+        }
+
+        void OnRequestFailed(object? sender, RequestEventArgs e)
+        {
+            if (wanted.Contains(e.Request.Url) && !captured.ContainsKey(e.Request.Url))
+            {
+                failed[e.Request.Url] = 0;
+            }
+        }
 
         page.Response += OnResponse;
+        page.RequestFailed += OnRequestFailed;
+        var succeeded = false;
         try
         {
-            return await NavigateAndCaptureAsync(page, chapterUrl, wanted, captured, ct);
+            await NavigateAndCaptureAsync(page, chapterUrl, wanted, captured, failed, ct);
+            succeeded = true;
         }
         finally
         {
             page.Response -= OnResponse;
+            page.RequestFailed -= OnRequestFailed;
+            var pending = activeCaptures.Keys.ToArray();
+            if (pending.Length > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(pending).WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (!succeeded)
+            {
+                TryDeleteDirectory(stagingDir);
+            }
         }
+
+        if (captured.Count < wanted.Count)
+        {
+            logger.LogWarning(
+                "TopManhua browser captured {Captured}/{Wanted} images for {Chapter}; missing ones will fall back to a plain fetch",
+                captured.Count, wanted.Count, chapterUrl);
+        }
+
+        return new StagedImages(stagingDir, captured.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal));
     }
 
-    private async Task<IReadOnlyDictionary<string, byte[]>> NavigateAndCaptureAsync(
-        IPage page, string chapterUrl, HashSet<string> wanted, ConcurrentDictionary<string, byte[]> captured,
+    private static async Task NavigateAndCaptureAsync(
+        IPage page, string chapterUrl, HashSet<string> wanted,
+        ConcurrentDictionary<string, string> captured, ConcurrentDictionary<string, byte> failed,
         CancellationToken ct)
     {
         await page.GoToAsync(chapterUrl, new NavigationOptions
@@ -244,28 +343,121 @@ public sealed class TopManhuaImageBrowser(
             throw new ChallengeException();
         }
 
-        // The site lazy-loads reading images (data-src, swapped in on scroll/intersection). Force
-        // them all to load at once as native <img> fetches instead of scrolling through the page,
-        // which is what makes this a genuine browser-issued image request (Referer, Sec-Fetch-*,
-        // fingerprint) rather than a JS fetch() call.
-        await page.EvaluateExpressionAsync(
-            "document.querySelectorAll('.reading-content img[data-src]').forEach(img => { img.src = img.dataset.src; });");
+        var overallTimeoutMs = Math.Clamp(Math.Max(CaptureTimeoutMs, wanted.Count * 2_000), CaptureTimeoutMs, MaxCaptureTimeoutMs);
+        var overallDeadline = DateTime.UtcNow.AddMilliseconds(overallTimeoutMs);
 
-        var deadline = DateTime.UtcNow.AddMilliseconds(CaptureTimeoutMs);
-        while (captured.Count < wanted.Count && DateTime.UtcNow < deadline)
+        bool AllSettled() => wanted.All(u => captured.ContainsKey(u) || failed.ContainsKey(u));
+
+        // Activate lazy reading images in small batches as genuine native <img> fetches (preserving
+        // Referer, Sec-Fetch-*, and TLS fingerprint), then remove each batch's <img> nodes once
+        // captured so Chromium drops their decoded bitmaps instead of holding the whole chapter.
+        while (!AllSettled() && DateTime.UtcNow < overallDeadline)
         {
             ct.ThrowIfCancellationRequested();
-            await Task.Delay(250, ct);
+            var batchUrls = await page.EvaluateFunctionAsync<string[]>(
+                """
+                (batchSize) => {
+                    const imgs = Array.from(document.querySelectorAll('.reading-content img[data-src]')).slice(0, batchSize);
+                    const urls = [];
+                    for (const img of imgs) {
+                        const url = (img.dataset.src || '').trim();
+                        img.removeAttribute('data-src');
+                        if (!url) continue;
+                        img.dataset.makiBatch = '1';
+                        img.src = url;
+                        urls.push(url);
+                    }
+                    return urls;
+                }
+                """,
+                ImageBatchSize);
+
+            if (batchUrls is null || batchUrls.Length == 0)
+            {
+                break;
+            }
+
+            var batchWanted = batchUrls.Where(wanted.Contains).Distinct(StringComparer.Ordinal).ToList();
+            if (batchWanted.Count > 0)
+            {
+                var batchDeadline = DateTime.UtcNow.AddMilliseconds(BatchTimeoutMs);
+                if (batchDeadline > overallDeadline)
+                {
+                    batchDeadline = overallDeadline;
+                }
+
+                while (DateTime.UtcNow < batchDeadline &&
+                       batchWanted.Any(u => !captured.ContainsKey(u) && !failed.ContainsKey(u)))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    await Task.Delay(50, ct);
+                }
+            }
+
+            await page.EvaluateExpressionAsync(
+                """
+                (() => {
+                    for (const img of document.querySelectorAll('.reading-content img[data-maki-batch="1"]')) {
+                        img.removeAttribute('src');
+                        img.removeAttribute('srcset');
+                        img.remove();
+                    }
+                })()
+                """);
         }
 
-        if (captured.Count < wanted.Count)
+        // Wait briefly for any non-lazy images that were already in flight before the batch loop ended.
+        var tailDeadline = DateTime.UtcNow.AddMilliseconds(BatchTimeoutMs);
+        if (tailDeadline > overallDeadline)
         {
-            logger.LogWarning(
-                "TopManhua browser captured {Captured}/{Wanted} images for {Chapter}; missing ones will fall back to a plain fetch",
-                captured.Count, wanted.Count, chapterUrl);
+            tailDeadline = overallDeadline;
         }
 
-        return captured.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        while (!AllSettled() && DateTime.UtcNow < tailDeadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            await Task.Delay(50, ct);
+        }
+    }
+
+    private static string StagingRoot() => Path.Combine(Path.GetTempPath(), "maki-topmanhua");
+
+    private static void SweepStaleStagingDirs()
+    {
+        var root = StagingRoot();
+        if (!Directory.Exists(root))
+        {
+            return;
+        }
+
+        var cutoff = DateTime.UtcNow - StaleStagingAge;
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(root))
+            {
+                if (Directory.GetLastWriteTimeUtc(dir) < cutoff)
+                {
+                    TryDeleteDirectory(dir);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     private async Task<(IBrowserContext Context, BrowserProfile Profile)> EnsureContextAsync(CancellationToken ct)

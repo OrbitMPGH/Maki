@@ -36,9 +36,12 @@ public sealed class CreditScanWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ReaderCreditsCache credits, CreditStore store,
     ReaderArchiveCache archives, PageConversionWorker conversion, CreditBank bank, CreditStrips strips,
     ILogger<CreditScanWorker> logger, Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
-    PageTextReader? ocr = null) : BackgroundService
+    PageTextReader? ocr = null,
+    Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
+    Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null) : BackgroundService
 {
     internal Action<string> DropCache { get; init; } = PageCache.DropAfterScan;
+    internal TimeSpan QuietPoll { get; set; } = TimeSpan.FromSeconds(2);
     /// <summary>Chapters one bank recheck looks at before the worker looks for due series again.</summary>
     private const int BankBatch = 200;
 
@@ -638,14 +641,21 @@ public sealed class CreditScanWorker(
             ? Task.CompletedTask
             : store.RestampAsync(row.ChapterId, slice.ChapterFileId, slice.ArchiveSize, ct);
 
+    private bool BrowserBlocking =>
+        browsers is { Running: > 0 } &&
+        Maki.Api.Jobs.BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable)) > 0;
+
     /// <summary>
-    /// Waits while a reader is being served pages, the scan is paused, or an artifact build holds the
-    /// gate: the scan starts in the same minutes as the startup builds, and its decode and OCR bursts
-    /// would stack on whichever one is running.
+    /// Waits while a reader is being served pages, the scan is paused, or another heavy subsystem
+    /// (artifact build, headless browser, file conversion, or upscaling) is active so decode and
+    /// OCR bursts never stack on top of them.
     /// </summary>
     private async Task QuietAsync(CancellationToken ct)
     {
-        while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false })
+        while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false } ||
+               BrowserBlocking || conversion.Working is not null ||
+               upscaleQueue is { HasForegroundWork: true } or { IsWorking: true })
         {
             if (buildGate is { IsIdle: false })
             {
@@ -653,7 +663,7 @@ public sealed class CreditScanWorker(
             }
             else
             {
-                await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                await Task.Delay(QuietPoll, ct);
             }
         }
     }

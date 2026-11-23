@@ -37,9 +37,13 @@ public sealed class UpscaleWorkerTests : IDisposable
 
     public void Dispose() => UpscaleTestKit.TryDelete(_configDir);
 
-    private UpscaleWorker NewWorker(IPageUpscaler upscaler) => new(
+    private UpscaleWorker NewWorker(
+        IPageUpscaler upscaler,
+        Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
+        Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
+        PageConversionWorker? conversion = null) => new(
         _queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), _paths, _settings,
-        _broadcaster, NullLogger<UpscaleWorker>.Instance);
+        _broadcaster, NullLogger<UpscaleWorker>.Instance, buildGate, browsers, conversion);
 
     private ReaderService.PageSlice Slice() =>
         new(7, 3, _cbz, new FileInfo(_cbz).Length, ["001.png", "002.png", "003.png", "004.png", "005.png"], 0, 5, 99);
@@ -196,6 +200,34 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.Null(_cache.TryGet(Item(0).Key));
         Assert.Null(_queue.RecentOutcome(Item(0).Key));
         Assert.Equal([(1, 7, 0, "span-s", "working")], _broadcaster.Sent);
+    }
+
+    [Fact]
+    public async Task Background_prepare_ahead_yields_to_an_artifact_build_while_a_reader_still_runs()
+    {
+        var gate = new Maki.Api.Jobs.ArtifactBuildGate(NullLogger<Maki.Api.Jobs.ArtifactBuildGate>.Instance);
+        var upscaler = new FakeUpscaler();
+        var worker = NewWorker(upscaler, buildGate: gate);
+
+        _queue.SetBackground([(Item(0).Key, Slice())]);
+        using (await gate.EnterAsync("test build", default))
+        {
+            Assert.True(worker.ShouldYieldBackground());
+            Assert.False(await RunJobAsync(worker));
+            Assert.Equal(0, upscaler.Calls);
+
+            // Foreground reader work must not wait on the build gate.
+            _queue.Replace(1, 7, "span-s", [Item(1)]);
+            Assert.True(await RunJobAsync(worker));
+            Assert.Equal(1, upscaler.Calls);
+            Assert.NotNull(_cache.TryGet(Item(1).Key));
+        }
+
+        // Once the build finishes, background prepare-ahead resumes.
+        Assert.False(worker.ShouldYieldBackground());
+        Assert.True(await RunJobAsync(worker));
+        Assert.Equal(2, upscaler.Calls);
+        Assert.NotNull(_cache.TryGet(Item(0).Key));
     }
 
     [Fact]

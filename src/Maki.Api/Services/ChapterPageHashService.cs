@@ -20,7 +20,7 @@ public class ChapterPageHasher(PageDownloader pageDownloader, ILogger<ChapterPag
 {
     public async Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct)
     {
-        var pages = await source.GetPagesAsync(chapter, ct);
+        using var pages = await source.GetPagesAsync(chapter, ct);
         if (pages.Pages.Count == 0)
         {
             return null;

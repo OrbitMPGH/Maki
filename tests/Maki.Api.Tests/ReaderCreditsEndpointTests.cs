@@ -444,7 +444,8 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private CreditScanWorker Worker(
         Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
         PageTextReader? ocr = null,
-        Action<string>? dropCache = null)
+        Action<string>? dropCache = null,
+        Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null)
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
@@ -454,9 +455,10 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var settings = new FakeAppSettings();
         return new CreditScanWorker(scopes, settings, _credits, _store, _archives,
             new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance), _bank, _strips,
-            NullLogger<CreditScanWorker>.Instance, buildGate, ocr)
+            NullLogger<CreditScanWorker>.Instance, buildGate, ocr, upscaleQueue: upscaleQueue)
         {
             DropCache = dropCache ?? (_ => { }),
+            QuietPoll = TimeSpan.FromMilliseconds(25),
         };
     }
 
@@ -1024,5 +1026,28 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         }
 
         Assert.False(worker.ReleaseOcrIfIdle());
+    }
+
+    [Fact]
+    public async Task The_scan_waits_while_upscaling_has_foreground_work()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.Replace(1, 1, "span-s", [new(new(1, slice.ArchiveVersion, 0, "span-s"), new(1, 0), slice)]);
+
+        var scan = Worker(upscaleQueue: upscaleQueue).ScanSeriesAsync(_seriesId, "en", default);
+        await Task.Delay(150);
+
+        Assert.False(scan.IsCompleted);
+        Assert.Null(await RowAsync(chapters[0]));
+
+        upscaleQueue.Cancel(1);
+        await scan.WaitAsync(TimeSpan.FromSeconds(30));
+        foreach (var chapter in chapters)
+        {
+            Assert.NotNull(await RowAsync(chapter));
+        }
     }
 }

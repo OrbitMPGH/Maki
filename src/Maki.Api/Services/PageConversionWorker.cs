@@ -54,8 +54,11 @@ public sealed record PageConversionPassTotals(
 /// </summary>
 public class PageConversionWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger,
-    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
+    Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
+    Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null) : BackgroundService
 {
+    internal TimeSpan QuietPoll { get; set; } = TimeSpan.FromSeconds(2);
     /// <summary>Kept free on the library volume, on top of the file being converted.</summary>
     public const long DiskReserveBytes = 1L << 30;
 
@@ -366,7 +369,7 @@ public class PageConversionWorker(
                     FileConversion result;
                     try
                     {
-                        if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
+                        await WaitForQuietAsync(ct);
                         using var fileScope = scopes.CreateScope();
                         using var converting = Converting(file.Id, file.RelativePath);
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
@@ -488,7 +491,7 @@ public class PageConversionWorker(
                 FileConversion result;
                 try
                 {
-                    if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
+                    await WaitForQuietAsync(ct);
                     using var fileScope = scopes.CreateScope();
                     using var converting = Converting(file.Id, file.RelativePath);
                     result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
@@ -509,6 +512,26 @@ public class PageConversionWorker(
                 {
                     await Task.Delay(DelayBetweenFiles, ct);
                 }
+            }
+        }
+    }
+
+    private bool BrowserBlocking =>
+        browsers is { Running: > 0 } &&
+        Maki.Api.Jobs.BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable)) > 0;
+
+    internal async Task WaitForQuietAsync(CancellationToken ct)
+    {
+        while (buildGate is { IsIdle: false } || BrowserBlocking || upscaleQueue is { HasForegroundWork: true })
+        {
+            if (buildGate is { IsIdle: false })
+            {
+                await buildGate.WaitUntilIdleAsync(ct);
+            }
+            else
+            {
+                await Task.Delay(QuietPoll, ct);
             }
         }
     }

@@ -230,55 +230,64 @@ public class ChapterDownloadProcessor(
             ChapterPages? pages = parts.Count > 0
                 ? await PagesOfPartsAsync(source, mapping, chapter, parts, ct)
                 : await source.GetPagesAsync(sourceChapter, ct);
-            var pageCount = pages.Pages.Count;
-
-            if (pageCount == 0)
+            int pageCount;
+            List<string> pageFiles;
+            try
             {
-                await FailAsync(item, "error.download.noPages", ct);
-                return DownloadOutcome.Settled;
-            }
+                pageCount = pages.Pages.Count;
 
-            item.PagesTotal = pageCount;
-            await SetStatusAsync(item, QueueStatus.Downloading, ct);
-
-            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id,
-                    parts.Count > 0 ? string.Join("+", parts.Select(p => p.SourceChapterId)) : sourceChapterId, pageCount)))
-            {
-                logger.LogInformation("Discarded cached pages of queue item {Id}: they came from another source chapter",
-                    item.Id);
-            }
-
-            // 2. Download pages (resumable — existing files are kept).
-            // Pages finish on up to four threads at once, so the count only moves forward and the
-            // throttle is decided under a lock; the broadcast itself runs outside it.
-            var progressLock = new Lock();
-            var furthest = 0;
-            var lastBroadcast = DateTime.MinValue;
-            var pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
-            {
-                bool broadcast;
-                lock (progressLock)
+                if (pageCount == 0)
                 {
-                    if (done > furthest)
+                    await FailAsync(item, "error.download.noPages", ct);
+                    return DownloadOutcome.Settled;
+                }
+
+                item.PagesTotal = pageCount;
+                await SetStatusAsync(item, QueueStatus.Downloading, ct);
+
+                if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id,
+                        parts.Count > 0 ? string.Join("+", parts.Select(p => p.SourceChapterId)) : sourceChapterId, pageCount)))
+                {
+                    logger.LogInformation("Discarded cached pages of queue item {Id}: they came from another source chapter",
+                        item.Id);
+                }
+
+                // 2. Download pages (resumable — existing files are kept).
+                // Pages finish on up to four threads at once, so the count only moves forward and the
+                // throttle is decided under a lock; the broadcast itself runs outside it.
+                var progressLock = new Lock();
+                var furthest = 0;
+                var lastBroadcast = DateTime.MinValue;
+                pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
+                {
+                    bool broadcast;
+                    lock (progressLock)
                     {
-                        furthest = done;
-                        item.PagesDone = done;
+                        if (done > furthest)
+                        {
+                            furthest = done;
+                            item.PagesDone = done;
+                        }
+
+                        broadcast = DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1);
+                        if (broadcast)
+                        {
+                            lastBroadcast = DateTime.UtcNow;
+                        }
                     }
 
-                    broadcast = DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1);
                     if (broadcast)
                     {
-                        lastBroadcast = DateTime.UtcNow;
+                        await BroadcastAsync(item, chapter, series, mapping.SourceName);
                     }
-                }
+                }, ct, source as IPageClientSource);
+            }
+            finally
+            {
+                pages.Dispose();
+                pages = null;
+            }
 
-                if (broadcast)
-                {
-                    await BroadcastAsync(item, chapter, series, mapping.SourceName);
-                }
-            }, ct, source as IPageClientSource);
-
-            pages = null;
             item.PagesDone = pageCount;
 
             // 3. Validate images.
@@ -1249,20 +1258,45 @@ public class ChapterDownloadProcessor(
         ISource source, SourceMapping mapping, Chapter chapter, IReadOnlyList<ChapterFoldPart> parts, CancellationToken ct)
     {
         var pages = new List<PageRequest>();
-        foreach (var part in parts)
+        var pieces = new List<ChapterPages>();
+        try
         {
-            var piece = await source.GetPagesAsync(new SourceChapter(
-                mapping.SourceName, mapping.SourceSeriesId, part.SourceChapterId, part.NumberRaw, part.Number,
-                chapter.Volume, null, chapter.Language, chapter.ReleaseDate), ct);
-            if (piece.Pages.Count == 0)
+            foreach (var part in parts)
             {
-                return new ChapterPages([]);
+                var piece = await source.GetPagesAsync(new SourceChapter(
+                    mapping.SourceName, mapping.SourceSeriesId, part.SourceChapterId, part.NumberRaw, part.Number,
+                    chapter.Volume, null, chapter.Language, chapter.ReleaseDate), ct);
+                pieces.Add(piece);
+                if (piece.Pages.Count == 0)
+                {
+                    foreach (var p in pieces)
+                    {
+                        p.Dispose();
+                    }
+
+                    return new ChapterPages([]);
+                }
+
+                pages.AddRange(piece.Pages);
             }
 
-            pages.AddRange(piece.Pages);
+            return new ChapterPages(pages, () =>
+            {
+                foreach (var p in pieces)
+                {
+                    p.Dispose();
+                }
+            });
         }
+        catch
+        {
+            foreach (var p in pieces)
+            {
+                p.Dispose();
+            }
 
-        return new ChapterPages(pages);
+            throw;
+        }
     }
 
     /// <summary>Where a locked chapter waits and until when; see <c>ProcessAsync</c>'s <c>hold</c>.</summary>

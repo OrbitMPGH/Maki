@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
@@ -213,14 +214,54 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             }
         }
 
-        var captured = await imageBrowser.FetchImagesAsync(chapterUrl, capturable, ct);
+        var staged = await imageBrowser.FetchImagesAsync(chapterUrl, capturable, ct);
+        return BuildStagedPages(urls, headers, staged);
+    }
+
+    internal static ChapterPages BuildStagedPages(
+        IReadOnlyList<string> urls,
+        IReadOnlyDictionary<string, string> headers,
+        TopManhuaImageBrowser.StagedImages staged)
+    {
+        var remaining = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        foreach (var url in urls)
+        {
+            remaining.AddOrUpdate(url, 1, static (_, c) => c + 1);
+        }
 
         var pages = urls
-            .Select(url => captured.TryGetValue(url, out var data)
-                ? new PageRequest(url, headers, Data: data)
+            .Select(url => staged.TryGetPath(url, out var path)
+                ? new PageRequest(url, headers, Fetch: async token =>
+                {
+                    try
+                    {
+                        return await File.ReadAllBytesAsync(path, token);
+                    }
+                    finally
+                    {
+                        if (remaining.AddOrUpdate(url, 0, static (_, c) => c - 1) <= 0)
+                        {
+                            TryDeleteFile(path);
+                        }
+                    }
+                })
                 : new PageRequest(url, headers))
             .ToList();
 
-        return new ChapterPages(pages);
+        return new ChapterPages(pages, staged.Dispose);
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 }

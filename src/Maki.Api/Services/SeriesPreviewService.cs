@@ -367,7 +367,7 @@ public sealed class SeriesPreviewService(
         try
         {
             // Resolved now rather than at listing time: several sources hand back short-lived URLs.
-            var pages = await source.GetPagesAsync(chapter, ct);
+            using var pages = await source.GetPagesAsync(chapter, ct);
             if (pages.Pages.Count == 0)
             {
                 return "error.preview.noChapter";

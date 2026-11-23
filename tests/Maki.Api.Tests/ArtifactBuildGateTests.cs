@@ -125,4 +125,27 @@ public class ArtifactBuildGateTests
         lease.Dispose();
         await idle.WaitAsync(TimeSpan.FromSeconds(5));
     }
+
+    [Fact]
+    public async Task PageConversionWorker_waits_while_foreground_upscaling_is_active()
+    {
+        var queue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new Maki.Api.Services.ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        var key = new Maki.Api.Services.Upscaling.UpscaleWorkKey(1, slice.ArchiveVersion, 0, "span-s");
+        queue.Replace(1, 1, "span-s", [new(key, new(1, 0), slice)]);
+
+        var worker = new Maki.Api.Services.PageConversionWorker(
+            null!, null!, NullLogger<Maki.Api.Services.PageConversionWorker>.Instance,
+            upscaleQueue: queue)
+        {
+            QuietPoll = TimeSpan.FromMilliseconds(20),
+        };
+
+        var wait = worker.WaitForQuietAsync(CancellationToken.None);
+        await Task.Delay(80);
+        Assert.False(wait.IsCompleted);
+
+        queue.Cancel(1);
+        await wait.WaitAsync(TimeSpan.FromSeconds(5));
+    }
 }

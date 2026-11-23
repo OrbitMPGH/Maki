@@ -37,7 +37,7 @@ public sealed class SourceProbeService(
         var dir = Path.Combine(paths.DownloadCacheDir, "probe", Guid.NewGuid().ToString("N"));
         try
         {
-            var pages = await source.GetPagesAsync(chapter, ct);
+            using var pages = await source.GetPagesAsync(chapter, ct);
             if (pages.Pages.Count == 0)
             {
                 return null;
