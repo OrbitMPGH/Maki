@@ -1,6 +1,8 @@
+using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Core.Entities;
 using Maki.Data;
@@ -45,7 +47,9 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 AddedAtUtc = db.UserSeriesStates.Where(x => x.UserId == user.UserId && x.SeriesId == s.Id)
                     .Select(x => x.AddedToLibraryAtUtc).FirstOrDefault(),
                 Rating = db.UserSeriesStates.Where(x => x.UserId == user.UserId && x.SeriesId == s.Id)
-                    .Select(x => x.Rating).FirstOrDefault()
+                    .Select(x => x.Rating).FirstOrDefault(),
+                SoFar = db.UserSeriesStates.Where(x => x.UserId == user.UserId && x.SeriesId == s.Id)
+                    .Select(x => x.ProvisionalRating).FirstOrDefault()
             }).ToListAsync(ct);
         var shelfIds = sources.Select(x => (long)x.MangaBakaId!.Value).Distinct().ToList();
         // Named on the Lab so its shelf count can say why it is short of the library's.
@@ -71,6 +75,12 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         var animeSignalsAvailable =
             await settings.GetAsync(SettingKeys.RecommendationsAnimeSignals, ct) != "false" &&
             (await animeSources.ConnectedAsync(user.UserId, ct)).Count > 0;
+        var likedIds = feedbackCounts.Where(x => x.Sentiment == RecommendationSentiment.Liked)
+            .Select(x => x.ProviderId).ToHashSet();
+        var steering = Steering(snapshot,
+            sources.Select(x => (Id: (long)x.MangaBakaId!.Value, x.Title, x.Rating, x.SoFar, x.AddedAtUtc)),
+            likedIds, entries, now);
+        var recommendationAdds = await RecommendationAddsAsync(allowed, ct);
         return Ok(new
         {
             capabilities = new { feedback = true, signalOverrides = true, labUi = labUiEnabled,
@@ -108,8 +118,126 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                     isRead = readIds.Contains((long)g.Key!.Value),
                     excluded = excludedIds.Contains((long)g.Key!.Value)
                 }),
+            steering,
+            recommendationAdds,
             activity
         });
+    }
+
+    /// <summary>Shelf series named under "What steers your picks most"; the page shows as many as fit.</summary>
+    private const int SteeringHeavy = 14;
+
+    /// <summary>Damped series shown past the neutral mark.</summary>
+    private const int SteeringLight = 4;
+
+    /// <summary>
+    /// The shelf series that weigh most in the recommendations and the ones weighed below neutral,
+    /// off the same snapshot the recommender seeds with, each with what its weight came from. Anime
+    /// seeds are left out: they are not on the shelf and the anime panel names them.
+    /// </summary>
+    private static object[] Steering(
+        SeedSnapshot snapshot,
+        IEnumerable<(long Id, string Title, double? Rating, double? SoFar, DateTime? AddedAt)> shelf,
+        HashSet<long> liked,
+        IReadOnlyDictionary<long, CatalogueEntry> entries,
+        DateTime now)
+    {
+        var weights = snapshot.Effective.Weights;
+        // Two local copies of one MangaBaka id share a weight; the one carrying a rating explains it.
+        var rows = shelf
+            .GroupBy(x => x.Id)
+            .Select(g => g.OrderBy(x => x.Rating is null).ThenBy(x => x.SoFar is null).First())
+            .Where(x => weights.ContainsKey(x.Id))
+            .Select(x =>
+            {
+                var weight = weights[x.Id];
+                // A thumbs up takes the larger of its own weight and what the rating gave, so when
+                // the weight is the liked weight and not the rating's own, the thumbs up won and is
+                // what the card names. Otherwise the order SeedWeightService applies them in: a
+                // final rating, then a so-far rating, then the reading itself.
+                // An unrated recent add takes the larger of its add weight and its reading weight,
+                // so when the weight is the add's, the add is the reason.
+                var likedWon = liked.Contains(x.Id) &&
+                    Math.Abs(weight - RecommendationFeedbackPolicy.LikedWeight) < 1e-9 &&
+                    !(x.Rating is { } r && Math.Abs(r / 5.0 - weight) < 1e-9);
+                var addedWon = !likedWon && x.Rating is null && x.AddedAt is { } addedAt &&
+                    // The add weight decays by the second and the snapshot read its own clock, so
+                    // the two agree to about a millionth, not exactly.
+                    Math.Abs(RecommendationFeedbackPolicy.AddedWeight(addedAt, now) - weight) < 1e-6;
+                var (source, value) = likedWon ? ("liked", null)
+                    : x.Rating is { } rating ? ("rating", (double?)rating)
+                    : addedWon ? ("added", null)
+                    : x.SoFar is { } soFar ? ("sofar", soFar)
+                    : liked.Contains(x.Id) ? ("liked", null)
+                    : snapshot.Signals.TryGetValue(x.Id, out var signal) && signal.Completed > 0
+                        ? (signal.Downloaded > 0 && signal.Completed >= signal.Downloaded ? "finished" : "read",
+                            (double?)signal.Completed)
+                    : ("added", null);
+                return new { x.Id, x.Title, Weight = weight, Source = source, Value = value };
+            })
+            .ToList();
+
+        var heavy = rows.Where(r => r.Weight > 1.0).OrderByDescending(r => r.Weight).ThenBy(r => r.Id).Take(SteeringHeavy);
+        var light = rows.Where(r => r.Weight < 1.0).OrderBy(r => r.Weight).ThenBy(r => r.Id).Take(SteeringLight);
+        return [.. heavy.Concat(light).Select(r => (object)new
+        {
+            mangaBakaId = r.Id,
+            title = r.Title,
+            coverUrl = entries.GetValueOrDefault(r.Id)?.CoverUrl,
+            weight = r.Weight,
+            source = r.Source,
+            value = r.Value,
+        })];
+    }
+
+    /// <summary>Series named as waiting to be started.</summary>
+    private const int WaitingShown = 3;
+
+    /// <summary>
+    /// What became of the series the reader added from a recommendation: how many they started and
+    /// finished, and a few still unstarted with a chapter on disk. Null under three such adds.
+    /// Started is the reader's own progress on that exact series, a page into chapter 1 included,
+    /// so another copy under the same MangaBaka id never counts for it; finished is a subset of it.
+    /// </summary>
+    private async Task<object?> RecommendationAddsAsync(IReadOnlyList<string> allowed, CancellationToken ct)
+    {
+        var adds = await db.UserSeriesStates.AsNoTracking()
+            .Where(x => x.UserId == user.UserId && x.AddedFrom == "recommendation")
+            .Join(db.Series.Where(s => s.Incognito != IncognitoMode.Full && s.ArchivedAt == null &&
+                    (s.ContentRating == null || allowed.Contains(s.ContentRating))),
+                x => x.SeriesId, s => s.Id,
+                (x, s) => new
+                {
+                    s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh, x.Status, x.AddedToLibraryAtUtc,
+                    HasFile = db.Chapters.Any(c => c.SeriesId == s.Id && c.ChapterFileId != null),
+                    Started = db.ChapterProgress.Any(p => p.UserId == user.UserId && p.SeriesId == s.Id &&
+                        p.UnreadAt == null && !p.Watched && (p.Completed || p.PageIndex > 0)),
+                })
+            .ToListAsync(ct);
+        if (adds.Count < 3)
+        {
+            return null;
+        }
+
+        return new
+        {
+            added = adds.Count,
+            started = adds.Count(a => a.Started),
+            finished = adds.Count(a => a.Started && a.Status == ReadingStatus.Completed),
+            waiting = adds
+                .Where(a => a.HasFile && !a.Started &&
+                    a.Status is ReadingStatus.PlanToRead or ReadingStatus.Reading)
+                .OrderByDescending(a => a.AddedToLibraryAtUtc)
+                .ThenBy(a => a.Id)
+                .Take(WaitingShown)
+                .Select(a => new
+                {
+                    seriesId = a.Id,
+                    title = a.Title,
+                    coverUrl = SeriesDto.CoverUrlFor(a.Id, a.CoverPath, a.LastMetadataRefresh),
+                })
+                .ToList(),
+        };
     }
 
     [HttpGet("feedback")]

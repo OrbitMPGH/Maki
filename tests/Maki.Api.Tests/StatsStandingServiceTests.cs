@@ -343,8 +343,60 @@ public sealed class StatsStandingServiceTests : IDisposable
         // The aggregates are the target's own; the named series are only the caller's.
         Assert.Equal(8, behaviour.ChaptersRead);
         Assert.Equal("Granted", Assert.Single(behaviour.Abandoned).Title);
-        Assert.Equal("Granted", Assert.Single(behaviour.Savoured).Title);
-        Assert.Equal("Granted", Assert.Single(behaviour.Devoured).Title);
+        // A series is named as slow or as fast, never both, so the one the caller may see is in one.
+        var paced = behaviour.Savoured.Concat(behaviour.Devoured).ToList();
+        Assert.Equal("Granted", Assert.Single(paced).Title);
+    }
+
+    [Fact]
+    public async Task Binge_examples_and_format_pace_are_trimmed_to_the_callers_folders()
+    {
+        var admin = _db.SeedUser("folder-admin", MakiPermission.Admin, allRootFolders: false);
+        var target = _db.SeedUser("target", MakiPermission.None);
+        var hidden = SeedSeries("Hidden", s => s.Type = SeriesTypes.Manhwa);
+        var paged = SeedSeries("Granted paged", s => s.Type = SeriesTypes.Manga);
+        var strip = SeedSeries("Granted strip", s => s.Type = SeriesTypes.Manhwa);
+        using (var db = _db.NewContext())
+        {
+            foreach (var id in new[] { paged, strip })
+            {
+                db.UserRootFolders.Add(new UserRootFolder
+                {
+                    UserId = admin, RootFolderId = db.Series.Single(s => s.Id == id).RootFolderId
+                });
+            }
+
+            db.SaveChanges();
+        }
+
+        Seed(hidden, downloaded: 12, read: 12, readSeconds: 900, userId: target);
+        Seed(paged, downloaded: 12, read: 12, readSeconds: 200, userId: target);
+        Seed(strip, downloaded: 12, read: 12, readSeconds: 400, userId: target);
+
+        var settings = new NoSettings();
+        var clock = new StoppedClock(new DateTimeOffset(Now));
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var service = new StatsStandingService(
+            _db.NewContext(admin, allRootFolders: false),
+            new ReadingBehaviourService(_db.ScopeFactory(), settings, NullLogger<ReadingBehaviourService>.Instance),
+            new UserMetricsService(_db.NewContext(), settings, cache, clock),
+            new MangaBakaLocalStore(new MangaBakaDumpOptions("", ""),
+                NullLogger<MangaBakaLocalStore>.Instance),
+            new RestrictedUser(admin),
+            cache,
+            clock);
+
+        var behaviour = (await service.GetAsync(target, CancellationToken.None)).Behaviour;
+
+        // The target's own aggregates still count all three series.
+        Assert.NotNull(behaviour.Binge);
+        Assert.Equal(3, behaviour.Binge.Series);
+        Assert.NotNull(behaviour.PaceByFormat);
+        var named = behaviour.Binge.Examples.Select(e => e.SeriesId)
+            .Concat(behaviour.PaceByFormat.SelectMany(f => f.Savoured.Concat(f.Devoured)).Select(b => b.SeriesId))
+            .ToList();
+        Assert.NotEmpty(named);
+        Assert.DoesNotContain(hidden, named);
     }
 
     private sealed class RestrictedUser(int userId) : ICurrentUser

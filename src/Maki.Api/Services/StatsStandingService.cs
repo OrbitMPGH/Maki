@@ -85,11 +85,23 @@ public class StatsStandingService(
         if (userId != currentUser.UserId)
         {
             // The named lists come from the target's folders; the caller only sees titles in theirs.
+            // Every list that names a series is trimmed, the binge examples and per-format pace too.
+            bool Visible(int seriesId) => series.ContainsKey(seriesId);
             readingBehaviour = readingBehaviour with
             {
-                Savoured = [.. readingBehaviour.Savoured.Where(b => series.ContainsKey(b.SeriesId))],
-                Devoured = [.. readingBehaviour.Devoured.Where(b => series.ContainsKey(b.SeriesId))],
-                Abandoned = [.. readingBehaviour.Abandoned.Where(b => series.ContainsKey(b.SeriesId))]
+                Savoured = [.. readingBehaviour.Savoured.Where(b => Visible(b.SeriesId))],
+                Devoured = [.. readingBehaviour.Devoured.Where(b => Visible(b.SeriesId))],
+                Abandoned = [.. readingBehaviour.Abandoned.Where(b => Visible(b.SeriesId))],
+                Binge = readingBehaviour.Binge is { } binge
+                    ? binge with { Examples = [.. binge.Examples.Where(e => Visible(e.SeriesId))] }
+                    : null,
+                PaceByFormat = readingBehaviour.PaceByFormat?
+                    .Select(f => f with
+                    {
+                        Savoured = [.. f.Savoured.Where(b => Visible(b.SeriesId))],
+                        Devoured = [.. f.Devoured.Where(b => Visible(b.SeriesId))]
+                    })
+                    .ToList()
             };
         }
 

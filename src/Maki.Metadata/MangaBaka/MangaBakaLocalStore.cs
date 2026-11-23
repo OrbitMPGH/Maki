@@ -1750,6 +1750,38 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// MangaBaka's current global popularity rank (1 = most popular) for each id that has one, read
+    /// off the browse table, so unrated, inactive and novel rows the vector index leaves out still
+    /// get their rank. Ids without a rank are absent.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, int>> GetPopularityRanksAsync(
+        IReadOnlyList<long> ids, CancellationToken ct = default)
+    {
+        var ranks = new Dictionary<long, int>();
+        if (ids.Count == 0)
+        {
+            return ranks;
+        }
+
+        using var conn = Open();
+        var source = MangaBakaDumpService.BrowseSource(conn);
+        foreach (var chunk in ids.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT id, popularity_global_current FROM {source} " +
+                $"WHERE popularity_global_current >= 1 AND id IN ({string.Join(",", chunk)})";
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                ranks[reader.GetInt64(0)] = (int)Math.Min(int.MaxValue, reader.GetInt64(1));
+            }
+        }
+
+        return ranks;
+    }
+
+    /// <summary>
     /// Popularity rank of each series inside <paramref name="maxRank"/> whose anime has aired, read
     /// off <c>anime_start</c>: <c>has_anime</c> alone also marks announced shows nobody could have
     /// watched. The ranks come from the browse table's popularity index and the anime range from
