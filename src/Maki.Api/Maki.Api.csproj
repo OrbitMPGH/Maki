@@ -77,12 +77,14 @@
     with no request slower and no more CPU; the gain on the NAS is a few MB.
   -->
   <!--
-    TieredPGO off: the instrumented tier between tier0 and tier1 is extra JIT work and code that is
-    never freed. Measured in paired runs: about 20% less CPU over cold artifact builds, recommendation
-    pools and searches, no step slower beyond noise (the vector index build within 2%), the same
-    credit scan time, and 20 to 25 MB less anonymous memory after a scan.
+    TieredCompilation and TieredPGO off: tiered compilation allocates Tier0 code, call-counting
+    stubs, and a second Tier1 copy for hot methods, none of which is ever freed. Measured in paired
+    cold-cgroup Linux runs on a 230-request visit: turning off tiered compilation saved 16 MiB of
+    anonymous memory on IL builds, and paired with Docker's PublishReadyToRun=true saved 26 MiB
+    after a visit (32 MiB at boot) with 7% less total CPU and slightly faster startup.
   -->
   <PropertyGroup>
+    <TieredCompilation>false</TieredCompilation>
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
 
