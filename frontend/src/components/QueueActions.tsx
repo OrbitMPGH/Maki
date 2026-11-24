@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ActionIcon, Button, Checkbox, Group, Menu, Modal, Select, Stack, Text } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Menu, Modal, Select, Stack } from '@mantine/core'
 import { IconDots, IconRefresh, IconTrash } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -13,6 +13,7 @@ import { queueFailureKeyLabel } from '../api/queue'
 import type { QueueFailedAction, QueueFailureGroupDto } from '../api/types'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 
 type Mode = 'retry' | 'remove'
 
@@ -121,7 +122,16 @@ export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
       opened={mode !== null}
       onClose={close}
       centered
-      title={mode === 'retry' ? <Trans>Retry failed downloads</Trans> : <Trans>Remove failed downloads</Trans>}
+      title={
+        mode === 'retry' ? (
+          <ModalHeading
+            title={<Trans>Retry failed downloads</Trans>}
+            description={<Trans>Ignores the automatic retry limit.</Trans>}
+          />
+        ) : (
+          <ModalHeading title={<Trans>Remove failed downloads</Trans>} />
+        )
+      }
     >
       <Stack gap="sm">
         {showPickers && (
@@ -148,21 +158,6 @@ export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
             />
           </>
         )}
-        <Text size="sm">
-          {mode === 'retry' ? (
-            <Plural
-              value={matchingCount}
-              one="# failed download will be queued again, ignoring the automatic retry limit."
-              other="# failed downloads will be queued again, ignoring the automatic retry limit."
-            />
-          ) : (
-            <Plural
-              value={matchingCount}
-              one="# failed download will be removed from the queue."
-              other="# failed downloads will be removed from the queue."
-            />
-          )}
-        </Text>
         {mode === 'remove' && includesTorrents && (
           <Checkbox
             checked={blockReleases}
@@ -170,7 +165,9 @@ export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
             label={t`Don't grab removed torrent releases again`}
           />
         )}
-        <Group justify="flex-end">
+        <ModalFooter
+          status={<Plural value={matchingCount} one="# failed download matches" other="# failed downloads match" />}
+        >
           <Button variant="default" onClick={close}>
             <Trans>Cancel</Trans>
           </Button>
@@ -188,7 +185,7 @@ export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
               <Trans>Remove</Trans>
             </Button>
           )}
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

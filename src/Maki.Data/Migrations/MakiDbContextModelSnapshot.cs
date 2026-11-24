@@ -425,6 +425,42 @@ namespace Maki.Data.Migrations
                     b.ToTable("ChapterFiles");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterFold", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Floor")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("FoldedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PartsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SourceMappingId", "Language", "Floor")
+                        .IsUnique();
+
+                    b.ToTable("ChapterFolds");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ChapterNote", b =>
                 {
                     b.Property<int>("Id")
@@ -572,11 +608,23 @@ namespace Maki.Data.Migrations
                     b.Property<string>("NumberRaw")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("PageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PageHashes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Parts")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SourceChapterId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StripHashes")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
@@ -2909,6 +2957,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PublisherNumbers")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
 
@@ -3583,6 +3634,9 @@ namespace Maki.Data.Migrations
                     b.Property<double?>("AtChapter")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("BreakdownJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -3592,8 +3646,8 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Origin")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Rating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double>("Rating")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
@@ -3714,14 +3768,17 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("ProvisionalRatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProvisionalRating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("ProvisionalRating")
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("RateHintDismissedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("Rating")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("Rating")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("RatingBreakdownJson")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("RatingCheckpointsSeen")
                         .HasColumnType("INTEGER");
@@ -3932,6 +3989,21 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterFold", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.SourceMapping", null)
+                        .WithMany()
+                        .HasForeignKey("SourceMappingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

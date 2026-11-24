@@ -11,13 +11,17 @@ using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Indexers;
 using Maki.Core.Parsing;
+using Maki.Core.Ratings;
 using Maki.Core.Scrobbling;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
+using Maki.Sources.Suwayomi;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
@@ -65,6 +69,8 @@ public class SettingsController(
     RecoGraphCache recoGraphCache,
     CoReadInstaller coReadInstaller,
     CoReadCache coReadCache,
+    EaseInstaller easeInstaller,
+    EaseCache easeCache,
     ReaderCohortInstaller readerCohortInstaller,
     ReaderCohortCache readerCohortCache,
     TasteVectorInstaller tasteVectorInstaller,
@@ -259,9 +265,18 @@ public class SettingsController(
     /// means "leave what is stored": this field is saved from Discover's edit mode, and every other
     /// caller that PUTs this record (Settings, an older cached bundle) would otherwise reset it.
     /// </param>
+    /// <param name="CardProgress">
+    /// <see cref="SettingKeys.UiCardProgress"/>: "auto", "downloads" or "reading". Null on write leaves
+    /// the stored value, like <paramref name="DiscoverLayout"/>, so an older cached bundle cannot reset it.
+    /// </param>
+    /// <param name="CardProgressAuto">
+    /// Read-only. What "auto" resolves to for this user right now, so the cards draw the right bar
+    /// on first load. Ignored on write.
+    /// </param>
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
-        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null);
+        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null,
+        string? CardProgress = null, string? CardProgressAuto = null);
 
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
@@ -285,7 +300,7 @@ public class SettingsController(
 
     /// <param name="ClientSecret">
     /// Returned in plaintext, like every other secret this controller serves — which is why the
-    /// whole endpoint is admin-only. See the settings-secrets note in CLAUDE.md.
+    /// whole endpoint is admin-only. See the settings-secrets note in AGENTS.md.
     /// </param>
     /// <param name="RedirectPath">
     /// Read-only. The path to register with the provider as this client's redirect URI, shown so an
@@ -604,7 +619,8 @@ public class SettingsController(
         var rows = await userSettings.GetManyAsync(
             [
                 SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
-                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections,
+                SettingKeys.UiCardProgress
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var (homeRails, discoverRails) = await RailIdsAsync(ct);
@@ -618,8 +634,17 @@ public class SettingsController(
             StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
             rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
             SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage)),
-            discoverLayout));
+            discoverLayout,
+            Maki.Api.Services.CardProgress.Normalize(rows.GetValueOrDefault(SettingKeys.UiCardProgress)),
+            await CardProgressAutoAsync(ct)));
     }
+
+    /// <summary>What "auto" picks for the series cards right now, counted in the user's own days.</summary>
+    private async Task<string> CardProgressAutoAsync(CancellationToken ct) =>
+        await Maki.Api.Services.CardProgress.ResolveAutoAsync(
+            db, currentUser.UserId,
+            Maki.Api.Services.UserTimeZone.FromId(await userSettings.GetAsync(SettingKeys.UserTimeZone, ct)) ?? TimeZoneInfo.Utc,
+            DateTime.UtcNow, ct);
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
     [HttpPut("ui")]
@@ -676,10 +701,22 @@ public class SettingsController(
                 SettingKeys.UiDiscoverSections, DiscoverLayoutSpec.Serialize(discoverLayout, discoverRails), ct);
         }
 
+        var cardProgress = request.CardProgress is null
+            ? Maki.Api.Services.CardProgress.Normalize(await userSettings.GetAsync(SettingKeys.UiCardProgress, ct))
+            : Maki.Api.Services.CardProgress.Normalize(request.CardProgress);
+        if (request.CardProgress is not null)
+        {
+            // "auto" is the default, so it is stored as no row at all.
+            await userSettings.SetAsync(
+                SettingKeys.UiCardProgress, cardProgress == Maki.Api.Services.CardProgress.Auto ? "" : cardProgress, ct);
+        }
+
         // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
         // short cache, so without this a language change would not reach it for up to five minutes.
         userLocales.Forget(currentUser.UserId);
-        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language, discoverLayout));
+        return Ok(new UiSettings(
+            startPage, layout, seriesSections, titleLanguage, language, discoverLayout, cardProgress,
+            await CardProgressAutoAsync(ct)));
     }
 
     /// <summary>
@@ -744,6 +781,47 @@ public class SettingsController(
         return Ok(request);
     }
 
+    public record RatingCategoryRequest(string? Key, string? Name, bool Enabled, double Weight);
+
+    /// <param name="Precision">"whole" or "decimal".</param>
+    /// <param name="Categories">The breakdown categories in display order.</param>
+    public record RatingsSettingsRequest(string? Precision, List<RatingCategoryRequest?>? Categories);
+
+    public record RatingsSettings(string Precision, IReadOnlyList<RatingCategory> Categories);
+
+    /// <summary>How the caller rates: whole or one-decimal scores, and their breakdown categories.</summary>
+    [HttpGet("ratings")]
+    public async Task<IActionResult> GetRatings(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync([SettingKeys.RatingPrecision, SettingKeys.RatingCategories], ct);
+        return Ok(new RatingsSettings(
+            rows.GetValueOrDefault(SettingKeys.RatingPrecision) == "decimal" ? "decimal" : "whole",
+            RatingCategoryDefaults.Parse(rows.GetValueOrDefault(SettingKeys.RatingCategories))));
+    }
+
+    [HttpPut("ratings")]
+    public async Task<IActionResult> SetRatings([FromBody] RatingsSettingsRequest request, CancellationToken ct)
+    {
+        if (request.Precision is not ("whole" or "decimal"))
+        {
+            return this.Fail(localizer, "error.settings.invalidRatingPrecision");
+        }
+
+        var categories = request.Categories?
+            .Select(c => c?.Key is null ? null : new RatingCategory(c.Key, c.Name, c.Enabled, c.Weight))
+            .ToList();
+        if (RatingCategoryDefaults.Normalize(categories) is not { } normalized)
+        {
+            return this.Fail(localizer, "error.settings.invalidRatingCategories");
+        }
+
+        // Each default is the absence of a row, so going back to it deletes the row.
+        await userSettings.SetAsync(SettingKeys.RatingPrecision, request.Precision == "decimal" ? "decimal" : "", ct);
+        await userSettings.SetAsync(SettingKeys.RatingCategories,
+            normalized.SequenceEqual(RatingCategoryDefaults.Defaults) ? "" : RatingCategoryDefaults.Serialize(normalized), ct);
+        return Ok(new RatingsSettings(request.Precision, normalized));
+    }
+
     /// <summary>Days without reading before each auto rule moves a series; null = that rule is off.</summary>
     public record ReadingStatusSettings(int? AutoHoldDays, int? AutoDropDays);
 
@@ -773,6 +851,28 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.ReadingAutoDropDays,
             request.AutoDropDays?.ToString(CultureInfo.InvariantCulture) ?? "", ct);
         return Ok(request);
+    }
+
+    /// <param name="Bindings">Action id to its keys, for the actions changed from their defaults.</param>
+    public record ShortcutSettingsRequest(Dictionary<string, List<string>?>? Bindings);
+
+    public record ShortcutSettings(IReadOnlyDictionary<string, IReadOnlyList<string>> Bindings);
+
+    /// <summary>The caller's keyboard shortcut overrides. Theirs alone; unset = every default.</summary>
+    [HttpGet("shortcuts")]
+    public async Task<IActionResult> GetShortcuts(CancellationToken ct) =>
+        Ok(new ShortcutSettings(ShortcutBindings.Parse(await userSettings.GetAsync(SettingKeys.UiShortcuts, ct))));
+
+    [HttpPut("shortcuts")]
+    public async Task<IActionResult> SetShortcuts([FromBody] ShortcutSettingsRequest request, CancellationToken ct)
+    {
+        if (ShortcutBindings.Normalize(request.Bindings) is not { } normalized)
+        {
+            return this.Fail(localizer, "error.settings.invalidShortcuts");
+        }
+
+        await userSettings.SetAsync(SettingKeys.UiShortcuts, ShortcutBindings.Serialize(normalized), ct);
+        return Ok(new ShortcutSettings(normalized));
     }
 
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
@@ -2107,6 +2207,117 @@ public class SettingsController(
                 new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
 
+    /// <param name="Url">The proxy, <c>http://host:port</c>; blank when none is set.</param>
+    /// <param name="Sources">Names of the sources that go through it.</param>
+    public record SourceProxySettings(string? Url, IReadOnlyList<string>? Sources);
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("source-proxy")]
+    public async Task<IActionResult> GetSourceProxy(CancellationToken ct) =>
+        Ok(ToSettings(SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct))));
+
+    /// <summary>
+    /// Assignments for sources not registered right now (Suwayomi off, a custom source removed) are
+    /// kept, the way <see cref="SetSourcePriority"/> keeps them, so turning the source back on finds
+    /// its proxy where it left it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("source-proxy")]
+    public async Task<IActionResult> SetSourceProxy([FromBody] SourceProxySettings request, CancellationToken ct)
+    {
+        Uri? url = null;
+        if (!string.IsNullOrWhiteSpace(request.Url) && (url = SourceProxyUrl.Parse(request.Url, out var error)) is null)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        var requested = (request.Sources ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var unknown = requested
+            .Where(name => sourceRegistry.Find(name) is null || name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
+        }
+
+        // Clearing the URL also drops assignments of sources not registered now: the card cannot list
+        // them, so keeping them would leave a proxy nobody can turn off.
+        if (url is null && requested.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.sourceProxyInUse");
+        }
+
+        var stored = SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct));
+        var kept = stored.Sources.Keys.Where(name => sourceRegistry.Find(name) is null);
+        var names = requested.Concat(kept).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        var config = url is null
+            ? SourceProxyConfig.Empty
+            : new SourceProxyConfig(
+                [new SourceProxyConfig.Entry(SourceProxyConfig.DefaultId, SourceProxyUrl.Format(url))],
+                names.ToDictionary(name => name, _ => SourceProxyConfig.DefaultId, StringComparer.OrdinalIgnoreCase));
+        await settings.SetAsync(SettingKeys.SourceProxy, config.Serialize(), ct);
+        return Ok(ToSettings(config));
+    }
+
+    /// <param name="Source">The source whose site the proxy is tried against.</param>
+    public record SourceProxyTestRequest(string? Url, string? Source);
+
+    /// <summary>
+    /// Tries the proxy against one source's site, asks whether it refuses private destinations, and
+    /// for a source that needs FlareSolverr, has FlareSolverr try it too. A proxy that cannot be
+    /// reached or refuses the site fails the test; the other two only add to a passing one.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("source-proxy/test")]
+    public async Task<IActionResult> TestSourceProxy(
+        [FromBody] SourceProxyTestRequest request, [FromServices] SourceProxyTester tester, CancellationToken ct)
+    {
+        var raw = string.IsNullOrWhiteSpace(request.Url)
+            ? SourceProxyConfig.Parse(await settings.GetAsync(SettingKeys.SourceProxy, ct)).DefaultUrl
+            : request.Url;
+        if (SourceProxyUrl.Parse(raw, out var error) is not { } url)
+        {
+            return this.Fail(localizer, error!);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Source) || sourceRegistry.Find(request.Source) is not { } source ||
+            source.Name.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = request.Source ?? "" });
+        }
+
+        var result = await tester.TestAsync(url, source, ct);
+        var failureKey = result.Failure switch
+        {
+            SourceProxyFailure.Unreachable => "error.settings.sourceProxyUnreachable",
+            SourceProxyFailure.Rejected or SourceProxyFailure.Misconfigured => "error.settings.sourceProxyRejected",
+            null when result.RefusedHere => "error.settings.sourceProxyRefusedHere",
+            null when result.TimedOut => "error.settings.sourceProxySiteTimeout",
+            null when result.FlareSolverr is { Ok: false } => "error.settings.sourceProxyFlareSolverr",
+            _ => null,
+        };
+        var args = new { source = source.DisplayName };
+        await RecordTestAsync(ConnectionTestStore.SourceProxy, ConnectionTestStore.SourceProxyFingerprint(SourceProxyUrl.Format(url)),
+            failureKey is null, failureKey, args, ct);
+        if (failureKey is not null)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new
+            {
+                success = false,
+                code = failureKey,
+                error = localizer.Get(failureKey, args),
+                detail = result.FlareSolverr?.Detail,
+            });
+        }
+
+        return Ok(new { success = true, status = result.Status, allowsPrivate = result.AllowsPrivate, flareSolverr = result.FlareSolverr?.Ok });
+    }
+
+    private static SourceProxySettings ToSettings(SourceProxyConfig config) => new(
+        config.DefaultUrl,
+        config.Sources.Where(s => s.Value == SourceProxyConfig.DefaultId).Select(s => s.Key).Order(StringComparer.OrdinalIgnoreCase).ToList());
+
     /// <summary>The last Test result of each connection, only where the stored settings are still the ones tested.</summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("connection-tests")]
@@ -2359,6 +2570,58 @@ public class SettingsController(
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
+    }
+
+    public record EaseStatus(bool Enabled, bool Installed, int SeedCount, int WeightCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether personal recommendations may use the EASE table (what readers who finished one series
+    /// also finished, fitted on AniList reading lists) and whether the artifact is here. On by
+    /// default, own endpoint like co-read's, and no UI, same as the other crowd switches.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/ease")]
+    public async Task<IActionResult> GetEase(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsEase, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var table = enabled ? await easeCache.GetAsync(ct) : null;
+        return Ok(new EaseStatus(
+            enabled,
+            table is not null || (!enabled && System.IO.File.Exists(easeCache.DatabasePath)),
+            table?.Count ?? 0,
+            table?.WeightCount ?? 0,
+            table?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the EASE channel off, leaving every other channel alone. Takes effect on the next
+    /// uncached pool, since the flag is part of the cache key; off also stops the download and,
+    /// once the idle unload runs, frees the table.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/ease")]
+    public async Task<IActionResult> SetEase(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsEase, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the EASE table now, ignoring the freshness check but not the compatibility or
+    /// safety ones. Runs inline so the caller sees exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/ease/download")]
+    public async Task<IActionResult> DownloadEase(CancellationToken ct)
+    {
+        var result = await easeInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), weightCount = result.WeightCount });
     }
 
     public record ReaderCohortStatus(

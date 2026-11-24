@@ -344,6 +344,50 @@ public class ReaderCohortPlacementTests
         Assert.Equal([1L, 3L, 2L], ranked);
     }
 
+    /// <summary>
+    /// Each finished series is credited to the one cohort it counts most towards, so the groups the
+    /// Browse page shows never share a series and each names what put the reader there.
+    /// </summary>
+    [Fact]
+    public void EachFinishedSeriesBacksOneGroup()
+    {
+        var index = Index(
+            cohortReaders: [100, 300],
+            global: [(1L, 40), (2L, 40), (3L, 40), (4L, 40)],
+            cells:
+            [
+                (1L, 0, 60), (2L, 0, 55), (2L, 1, 20),
+                (3L, 1, 180), (4L, 1, 165),
+            ]);
+        var weights = ReaderCohortService.Place(index, [1L, 2L, 3L], topCohorts: 2);
+
+        var groups = ReaderCohortService.Groups(index, [1L, 2L, 3L], weights);
+
+        var romcom = Assert.Single(groups, g => g.Cohort == 0);
+        var action = Assert.Single(groups, g => g.Cohort == 1);
+        Assert.Equal([1L, 2L], romcom.Shared);
+        Assert.Equal([3L], action.Shared);
+    }
+
+    /// <summary>
+    /// The draw keeps where each pick came from and the cohort's own completion rate for it, which
+    /// is the figure the group column shows beside the pick.
+    /// </summary>
+    [Fact]
+    public void ThePicksKeepTheirCohortAndShare()
+    {
+        var index = Index(
+            cohortReaders: [100, 100],
+            global: [(1L, 40), (2L, 40)],
+            cells: [(1L, 0, 35), (2L, 1, 20)]);
+
+        var picks = ReaderCohortService.RankPicks(
+            index, new Dictionary<int, double> { [0] = 0.5, [1] = 0.5 }, new HashSet<long>(), null, 10, 0.5);
+
+        Assert.Contains(new CohortPick(1L, 0, 0.35), picks);
+        Assert.Contains(new CohortPick(2L, 1, 0.2), picks);
+    }
+
     private static ReaderCohortIndex Index(
         int[] cohortReaders,
         (long Id, int Completions)[] global,

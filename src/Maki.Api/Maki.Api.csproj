@@ -21,6 +21,8 @@
   <!-- Maki 2x ships with the app; UpscaleModelStore reads it from here and never downloads it. -->
   <ItemGroup>
     <None Update="UpscaleModels\maki-2x.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="UpscaleModels\maki-2x-hq.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="UpscaleModels\LICENSE-BSD-3-Clause-Real-ESRGAN.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- PP-OCRv3 text detection and recognition for telling credit pages apart (PageTextReader). -->
@@ -57,6 +59,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- StreamedJpegXlPage stitches upscaled rows straight into native memory libjxl reads. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!--

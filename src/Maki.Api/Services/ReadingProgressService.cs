@@ -248,6 +248,87 @@ public class ReadingProgressService(
         }, ct);
 
     /// <summary>
+    /// Per user, the highest numbered chapter among <paramref name="chapterIds"/> they finished. Read
+    /// before those rows are deleted, for <see cref="WithdrawMarksAsync"/> once they are gone.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<int, double>> FinishedAmongAsync(
+        IReadOnlyCollection<int> chapterIds, CancellationToken ct) =>
+        (await (
+                from p in db.ChapterProgress.IgnoreQueryFilters()
+                join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
+                where chapterIds.Contains(c.Id) && p.Completed && c.Number != null
+                select new { p.UserId, c.Number })
+            .ToListAsync(ct))
+        .GroupBy(r => r.UserId)
+        .ToDictionary(g => g.Key, g => g.Max(r => (double)r.Number!.Value));
+
+    /// <summary>
+    /// The one exception to the forward-only mark: finished chapters were deleted, and the mark sits no
+    /// higher than the furthest of them, so nothing left in the series backs it. It goes back to the
+    /// furthest chapter the reader still has finished. Smart Download starts after this mark, so a
+    /// removed bogus chapter numbered ahead of the real ones would otherwise hide every release up to
+    /// its number. A mark above the deleted chapters came from somewhere else (Kavita, a tracker, an
+    /// anime tick) and stays. Callers run it after the deletion is committed, so it logs a failure
+    /// instead of throwing.
+    /// </summary>
+    public async Task WithdrawMarksAsync(int seriesId, IReadOnlyDictionary<int, double> finishedDeleted,
+        CancellationToken ct)
+    {
+        if (finishedDeleted.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await WithdrawUnderGateAsync(seriesId, finishedDeleted, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Could not move the reading mark of series {SeriesId} back after a chapter removal", seriesId);
+        }
+    }
+
+    private Task<bool> WithdrawUnderGateAsync(int seriesId, IReadOnlyDictionary<int, double> finishedDeleted,
+        CancellationToken ct) =>
+        WithGateAsync(async () =>
+        {
+            var userIds = finishedDeleted.Keys.ToList();
+            var states = await db.ReadingStates.IgnoreQueryFilters()
+                .Where(r => r.SeriesId == seriesId && userIds.Contains(r.UserId))
+                .ToListAsync(ct);
+            if (states.Count == 0)
+            {
+                return true;
+            }
+
+            var kept = (await (
+                    from p in db.ChapterProgress.IgnoreQueryFilters()
+                    join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
+                    where p.SeriesId == seriesId && p.Completed && c.Number != null && userIds.Contains(p.UserId)
+                    select new { p.UserId, c.Number })
+                .ToListAsync(ct))
+                .GroupBy(r => r.UserId)
+                .ToDictionary(g => g.Key, g => g.Max(r => (double)r.Number!.Value));
+
+            foreach (var state in states)
+            {
+                var mark = kept.GetValueOrDefault(state.UserId);
+                if (state.MaxChapter <= finishedDeleted[state.UserId] && state.MaxChapter > mark)
+                {
+                    logger.LogInformation(
+                        "Reading mark of series {SeriesId} for user {UserId} moved back from {From} to {To}: the chapters behind it were removed",
+                        seriesId, state.UserId, state.MaxChapter, mark);
+                    state.MaxChapter = mark;
+                    state.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
+
+    /// <summary>
     /// Records a read of a chapter that carries no number (a one-shot), which cannot be
     /// expressed as a high-water mark. Callers must gate this on the sticky
     /// <see cref="ChapterProgress.Completed"/> transition — that flag is the idempotency token.

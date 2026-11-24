@@ -48,6 +48,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
         return scheduled ? ("warning", key) : ("disabled", "health.check.backupScheduleOff");
     }
 
+    /// <summary>Bytes a drive has to free before its disk row stops warning.</summary>
+    public static long Shortfall(long free, long total, HealthOptions options) =>
+        Math.Max(0, (long)Math.Ceiling(Math.Max(options.WarningGiB * Math.Pow(1024, 3), options.WarningPercent / 100.0 * total)) - free);
+
+    /// <summary>
+    /// The disk row already reports a low drive, so a bin only warns when emptying it alone would
+    /// lift a drive out of that warning.
+    /// </summary>
+    public static string ReclaimStatus(IReadOnlyDictionary<string, long> bytesByDrive, IReadOnlyDictionary<string, long> shortfallByDrive) =>
+        shortfallByDrive.Any(d => d.Value > 0 && bytesByDrive.TryGetValue(d.Key, out var bytes) && bytes >= d.Value) ? "warning" : "healthy";
+
     /// <summary>Runs the checks, or returns false at once when another run already holds the gate.</summary>
     public async Task<bool> RefreshAsync(CancellationToken ct)
     {
@@ -78,7 +89,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             catch { Add("library-check", "library", "unavailable", "health.check.libraryUnavailable"); }
             var roots = await db.RootFolders.ToListAsync(ct);
-            var rootDiskLow = false;
+            var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            var shortfalls = new Dictionary<string, long>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             var drives = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             foreach (var (id, directory) in roots.Select(r => ($"root:{r.Id}", r.Path)).Append(("config", paths.ConfigDir)))
             {
@@ -115,7 +127,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     var gib = drive.AvailableFreeSpace / Math.Pow(1024, 3);
                     var percent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
                     var status = gib < options.ErrorGiB || percent < options.ErrorPercent ? "error" : gib < options.WarningGiB || percent < options.WarningPercent ? "warning" : "healthy";
-                    if (id.StartsWith("root:", StringComparison.Ordinal) && status != "healthy") rootDiskLow = true;
+                    if (id.StartsWith("root:", StringComparison.Ordinal) && status != "healthy")
+                        shortfalls[drive.Name] = Shortfall(drive.AvailableFreeSpace, drive.TotalSize, options);
                     Add($"disk:{drive.Name}", "storage", status, "health.check.diskFree", new
                     {
                         drive = drive.Name,
@@ -217,13 +230,36 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             catch { }
             try
             {
-                // Replaced files count against the same disk as the library, so they only matter
-                // once a root folder's drive is already running low.
+                // Both live under their root folder, so they only matter once that drive runs low.
+                var mounts = shortfalls.Count > 0 ? DriveInfo.GetDrives().Select(d => d.Name).ToList() : [];
+                Dictionary<string, long> ByDrive(IEnumerable<(string RootPath, long Bytes)> sizes)
+                {
+                    var result = new Dictionary<string, long>(shortfalls.Comparer);
+                    foreach (var (rootPath, bytes) in sizes)
+                    {
+                        if (Maki.Core.Storage.DiskSpace.LongestMount(Path.GetFullPath(rootPath), mounts, pathComparison) is not { } mount) continue;
+                        result[mount] = result.GetValueOrDefault(mount) + bytes;
+                    }
+                    return result;
+                }
+
                 var (trashBytes, trashFiles) = await UpgradeTrashService.SizeAsync(db, ct);
                 if (trashFiles > 0)
                 {
                     var upgradeOptions = await UpgradeOptions.LoadAsync(settings, ct);
-                    Add(UpgradeTrashId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.upgradeTrash", new
+                    var trashStatus = "healthy";
+                    if (shortfalls.Count > 0)
+                    {
+                        var bySeries = await UpgradeTrashService.BytesBySeriesAsync(db, ct);
+                        var seriesIds = bySeries.Keys.ToList();
+                        var seriesRoots = await db.Series.IgnoreQueryFilters().AsNoTracking()
+                            .Where(s => seriesIds.Contains(s.Id)).Select(s => new { s.Id, s.RootFolderId }).ToListAsync(ct);
+                        var rootPaths = roots.ToDictionary(r => r.Id, r => r.Path);
+                        trashStatus = ReclaimStatus(ByDrive(seriesRoots
+                            .Where(s => rootPaths.ContainsKey(s.RootFolderId))
+                            .Select(s => (rootPaths[s.RootFolderId], bySeries[s.Id]))), shortfalls);
+                    }
+                    Add(UpgradeTrashId, "storage", trashStatus, "health.check.upgradeTrash", new
                     {
                         gib = Math.Round(trashBytes / Math.Pow(1024, 3), 2),
                         files = trashFiles,
@@ -234,7 +270,14 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 var (binBytes, binFiles) = await RecycleBinService.SizeAsync(db, ct);
                 if (binFiles > 0)
                 {
-                    Add(RecycleBinId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.recycleBin", new
+                    var binStatus = "healthy";
+                    if (shortfalls.Count > 0)
+                    {
+                        var byRoot = await db.RecycleBin.IgnoreQueryFilters().AsNoTracking()
+                            .GroupBy(e => e.RootPath).Select(g => new { g.Key, Bytes = g.Sum(e => e.Size) }).ToListAsync(ct);
+                        binStatus = ReclaimStatus(ByDrive(byRoot.Select(r => (r.Key, r.Bytes))), shortfalls);
+                    }
+                    Add(RecycleBinId, "storage", binStatus, "health.check.recycleBin", new
                     {
                         gib = Math.Round(binBytes / Math.Pow(1024, 3), 2),
                         files = binFiles,
@@ -418,7 +461,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 var secret = secretKey == null ? null : await settings.GetAsync(secretKey, ct);
                 if (string.IsNullOrWhiteSpace(url))
                 {
-                    Add(name, "connections", required || !string.IsNullOrWhiteSpace(secret) ? "warning" : "disabled",
+                    // Clearing the URL is how an optional service is switched off, so a key left behind is not a problem.
+                    Add(name, "connections", required ? "warning" : "disabled",
                         "health.check.notConfigured", new { service }, link);
                     return;
                 }

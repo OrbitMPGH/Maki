@@ -45,10 +45,24 @@ instead. At **High** a colour page is hard to tell from the original.
 **Set up conversion** opens one page that holds the whole plan. Nothing is saved until you press
 **Save only**, or **Save and start**, which also starts the library pass.
 
-The plan is a table. Each row is a rule, and the last row, **Files no rule above matches**, is the
-default. Every row has two targets, a format and a quality for **Black-and-white pages** and one for
-**Colour pages**, so colour inserts can go to JPEG XL while the manga around them goes to AVIF. A
-colour target can also be **Same as black-and-white**.
+The plan is a table. Each row is a rule, and the last row, **Everything else**, is the default for
+files no rule above matches (every file, while there are no rules). Every row has two targets, a
+format and a quality for **Black-and-white pages** and one for **Colour pages**, so colour inserts
+can go to JPEG XL while the manga around them goes to AVIF. A colour target can also be **Same as
+black-and-white**.
+
+**Where do you read?** above the table fills in the default row's targets for you:
+
+- **Only in Maki**: AVIF Compact for black-and-white and JPEG XL High for colour. Colour falls back
+  to AVIF High when the server or your browser cannot handle JPEG XL.
+- **Also in apps like Mihon**: AVIF Compact and AVIF High.
+- **Also in KOReader or on an e-reader**: WebP Compact and WebP High, since KOReader opens neither
+  AVIF nor JPEG XL.
+
+Changing a target by hand afterwards clears the choice. The first time you turn conversion on, Maki
+starts from **Only in Maki**.
+
+![Page conversion setup page with Where do you read? choices, a plan table whose one row targets AVIF Compact for black-and-white and AVIF High for colour pages, and a footer estimating the size now and after conversion with Save only and Save and start](../../../../assets/ui/pages/page-conversion-setup.webp)
 
 Click a target to see it on one of your own pages of that kind, taken from the files that row
 covers, with the page's size in the other formats beside it. **Fit** and **100%** set the zoom, and
@@ -101,6 +115,8 @@ paused. It also pauses itself rather than leave less than 1 GB free on the disk.
 file are encoded at once. The number is set on the same card and defaults to half your cores, between
 2 and 4.
 
+![Page conversion card during a library pass, with the new downloads waiting, files left to check, this pass's savings, a Pause button and a Pages converted at once setting](../../../../assets/ui/settings/page-conversion-running.webp)
+
 Each original goes to `.maki-trash/<SeriesId>/conv-*` and stays for the trash retention period
 (default 14 days), so you can undo a conversion until housekeeping deletes it.
 
@@ -112,6 +128,8 @@ original and which settings they were converted with. Then choose one of two opt
 
 - **Restore the originals** puts the original pages back.
 - **Restore and convert again with the current settings** converts the files again.
+
+![Undo conversion dialog saying how many files have their original in the trash, with Restore the originals selected, Restore and convert again with the current settings, and an Also set this series to Never checkbox](../../../../assets/ui/series/undo-conversion.webp)
 
 **Also set this series to Never** stops the series being converted again. It is unavailable with
 **Restore and convert again with the current settings**. An original that housekeeping has deleted

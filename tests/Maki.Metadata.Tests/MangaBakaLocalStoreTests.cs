@@ -954,6 +954,23 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     /// <summary>
+    /// Trending cards carry the month's climb, the figure the chart prints beside each rank; other
+    /// feeds carry none.
+    /// </summary>
+    [Fact]
+    public async Task Trending_cards_carry_the_months_climb()
+    {
+        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100,
+            popularityHistory1W: 300, popularityHistory1Mo: 900);
+
+        var trending = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+        var popular = await Store.GetBrowseAsync(BrowseFeed.Popular, 10);
+
+        Assert.Equal(800, Assert.Single(trending).Climb);
+        Assert.Null(Assert.Single(popular).Climb);
+    }
+
+    /// <summary>
     /// The ratio is taken over the week, not the month, because a month-wide ratio only asks
     /// whether a title climbed at some point in the last month. A title that spiked three weeks ago
     /// and has been sliding since still wins that comparison; it is not trending, it is decaying.
@@ -1225,5 +1242,56 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync([]));
         Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync(["", "  "]));
+    }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_drops_a_pilot_of_an_owned_series_and_keeps_other_versions()
+    {
+        const string native = "となりの席の先輩";
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "The serial", nativeTitle: native, totalChapters: "92", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its promotional one-shot", nativeTitle: native, totalChapters: "1");
+        _db.AddSeries(10, "Owned pilot", nativeTitle: "パイロット", totalChapters: "1", relationshipsV2: Alt(11));
+        _db.AddSeries(11, "Full serial of the owned pilot", nativeTitle: "パイロット", totalChapters: "80");
+        _db.AddSeries(20, "Owned manga", nativeTitle: "同じ題", totalChapters: "40");
+        _db.AddSeries(21, "Another serialization", nativeTitle: "違う題", totalChapters: "5", relationshipsV2: Alt(20));
+        _db.AddSeries(22, "The novel", nativeTitle: "同じ題", type: "novel", totalChapters: "3", relationshipsV2: Alt(20));
+        _db.AddSeries(23, "Same title, no relation", nativeTitle: "同じ題", totalChapters: "2");
+        _db.AddSeries(24, "Edition pointing back", nativeTitle: "同じ 題", totalChapters: "40", relationshipsV2: Alt(20));
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10, 20], [2, 11, 21, 22, 23, 24]);
+
+        Assert.Equal([2L, 24L], found.Order());
+    }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_with_an_unknown_owned_count_drops_only_a_short_pilot()
+    {
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "Owned pilot, no count", nativeTitle: "パイロット", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its full serial", nativeTitle: "パイロット", totalChapters: "80");
+        _db.AddSeries(10, "Owned ongoing, no count", nativeTitle: "連載中", relationshipsV2: Alt(11));
+        _db.AddSeries(11, "Its one-shot", nativeTitle: "連載中", totalChapters: "1");
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10], [2, 11]);
+
+        Assert.Equal([11L], found.Order());
+    }
+
+    [Fact]
+    public async Task GetOwnedEditionIdsAsync_reads_fractional_counts_and_skips_malformed_edges()
+    {
+        static string Alt(long to) => $$"""[{"to_series_id": {{to}}, "relation_type": "alternative"}]""";
+        _db.AddSeries(1, "Owned pilot", nativeTitle: "分数", totalChapters: "1.5", relationshipsV2: Alt(2));
+        _db.AddSeries(2, "Its full serial", nativeTitle: "分数", totalChapters: "80");
+        _db.AddSeries(10, "Owned serial", nativeTitle: "連載", totalChapters: "40",
+            relationshipsV2: """[{"to_series_id": "11", "relation_type": "alternative"}, {"to_series_id": 12, "relation_type": 5}, {"to_series_id": 13, "relation_type": "alternative"}]""");
+        _db.AddSeries(11, "String edge", nativeTitle: "連載", totalChapters: "1");
+        _db.AddSeries(12, "Numeric type edge", nativeTitle: "連載", totalChapters: "1");
+        _db.AddSeries(13, "Its half-chapter extra", nativeTitle: "連載", totalChapters: "0.5");
+
+        var found = await Store.GetOwnedEditionIdsAsync([1, 10], [2, 11, 12, 13]);
+
+        Assert.Equal([13L], found.Order());
     }
 }

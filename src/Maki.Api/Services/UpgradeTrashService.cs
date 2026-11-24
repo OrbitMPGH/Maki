@@ -171,6 +171,23 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             files.Count + await originals.CountAsync(ct));
     }
 
+    public static async Task<Dictionary<int, long>> BytesBySeriesAsync(MakiDbContext db, CancellationToken ct)
+    {
+        var rows = await db.UpgradeHistory.AsNoTracking()
+            .Where(h => h.TrashPath != null)
+            .Select(h => new { h.SeriesId, h.TrashPath, h.TrashBytes })
+            .ToListAsync(ct);
+        var originals = await db.PageConversionHistory.AsNoTracking()
+            .Where(h => h.TrashPath != null)
+            .GroupBy(h => h.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Bytes = g.Sum(h => h.TrashBytes ?? 0) })
+            .ToListAsync(ct);
+        return rows.GroupBy(r => (r.SeriesId, r.TrashPath)).Select(g => (g.Key.SeriesId, Bytes: g.Max(r => r.TrashBytes)))
+            .Concat(originals.Select(o => (o.SeriesId, o.Bytes)))
+            .GroupBy(x => x.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Bytes));
+    }
+
     /// <summary>
     /// Deletes trash older than <c>upgrades.trashRetentionDays</c>, referenced or not, and recycle bin
     /// entries older than <c>library.recyclebindays</c>, and returns the count.

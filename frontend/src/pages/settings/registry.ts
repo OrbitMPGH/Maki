@@ -139,6 +139,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'series-cards',
+    tab: 'preferences',
+    since: '0.38.0',
+    title: msg`Series cards`,
+    keywords: msg({
+      message: `cards, covers, progress bar, downloads, reading progress, read ring`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'language',
     tab: 'preferences',
     title: msg`Language`,
@@ -187,6 +197,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'series-page-width',
+    tab: 'preferences',
+    title: msg`Full-width series page`,
+    within: 'series-page',
+    since: '0.38.0',
+    keywords: msg({
+      message: `layout, page width, gutters, margins, wide screen`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'notification-prefs',
     tab: 'preferences',
     title: msg`Notifications`,
@@ -201,6 +222,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     since: '0.37.0',
     title: msg`New sequels and spin-offs`,
     within: 'notification-prefs',
+    nested: true,
     keywords: msg({
       message: `sequel, prequel, spin-off, side story, related works, catalogue`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -286,6 +308,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'keyboard-shortcuts',
+    tab: 'reading',
+    since: '0.38.0',
+    title: msg`Keyboard shortcuts`,
+    keywords: msg({
+      message: `keyboard, shortcuts, hotkeys, key bindings, keys, rebind, remap, arrow keys, page turn`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'progress',
     tab: 'reading',
     title: msg`Progress & achievements`,
@@ -300,6 +332,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Rating prompts`,
     keywords: msg({
       message: `rating, rate, so far, provisional, score, prompt, ask, stars`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'ratings',
+    tab: 'reading',
+    since: '0.38.0',
+    title: msg`Ratings`,
+    keywords: msg({
+      message: `rating, decimal, precision, breakdown, category, categories, story, art, characters, weight, score`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -472,6 +514,19 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'upscaling-maki-2x-hq',
+    tab: 'library',
+    since: '0.38.0',
+    title: msg`Maki 2x HQ`,
+    admin: true,
+    within: 'upscaling',
+    nested: true,
+    keywords: msg({
+      message: `maki 2x hq, high quality, upscaling model, sharper, real-esrgan`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'credit-scan',
     tab: 'library',
     since: '0.37.0',
@@ -549,6 +604,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'downloads',
     title: msg`Smart download`,
     admin: true,
+    within: 'downloads',
     keywords: msg({
       message: `smart download, unread trigger`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -603,6 +659,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `cloudflare, challenge, proxy, 8191`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'source-proxy',
+    tab: 'downloads',
+    since: '0.38.0',
+    title: msg`Source proxy`,
+    admin: true,
+    keywords: msg({
+      message: `proxy, vpn, blocked, ip, http proxy, access denied`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

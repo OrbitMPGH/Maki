@@ -25,6 +25,8 @@ one and appears in **Manage sources** with a **Custom** tag. See
    It also reports how many chapters are locked and which scanlation groups it found. A new source can
    only be saved once the test passes.
 
+![The first step of the Set up a site wizard, with Series page and Chapter page address fields and a Read the site button, ahead of the Chapters, Pages, Search and Details and test steps](../../../../assets/ui/settings/custom-source-wizard.webp)
+
 - Sites on the Madara, MangaThemesia, Keyoapp and HeanCMS themes are recognised, so the guessing is
   skipped.
 - If the wizard finds no search, the source still works, but you link each series by pasting its

@@ -3,9 +3,11 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { IconHistory } from '../../lib/icons'
 import { useRatingHistory, type RatingHistoryEntry } from '../../api/hooks'
 import { formatDate, formatDecimal } from '../../format'
+import { useRatingFormat } from '../../api/ratings'
 
 function EntryLabel({ entry }: { entry: RatingHistoryEntry }) {
-  const { rating } = entry
+  const { format } = useRatingFormat()
+  const rating = format(entry.rating)
   const chapter = entry.atChapter != null ? formatDecimal(entry.atChapter) : null
   if (entry.final) {
     return chapter != null ? <Trans>{rating}/10, your rating at ch. {chapter}</Trans> : <Trans>{rating}/10, your rating</Trans>

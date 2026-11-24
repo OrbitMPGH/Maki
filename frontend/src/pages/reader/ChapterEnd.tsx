@@ -1,6 +1,6 @@
 import { Button, Group } from '@mantine/core'
 import { IconArrowLeft, IconArrowRight, IconCircleCheck, IconNote } from '../../lib/icons'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import { useReaderEnding, type ReaderManifest } from '../../api/reader'
@@ -10,6 +10,7 @@ import { useChapterNotes } from '../../api/notes'
 import NoteBody from '../../components/notes/NoteBody'
 import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
 import { formatDateTime, formatReadingTime, serverChapterLabel } from '../../format'
+import { useCoverColour } from '../../lib/coverTint'
 import ChapterEndDownloads from './ChapterEndDownloads'
 import ChapterEndOutlook from './ChapterEndOutlook'
 import ChapterEndRating from './ChapterEndRating'
@@ -177,6 +178,10 @@ export default function ChapterEnd({
   const hasNext = nextChapterId != null
   const finished = seriesFinishedHere(manifest, ending, readingCounted)
   const askRating = finished && ending != null && ending.rating == null && !ending.rateHintDismissed
+  // Once asked, the line stays: rating refetches the ending with a rating, and the answer it shows
+  // (the nudges, Break it down) has to outlive that.
+  const [askedRating, setAskedRating] = useState(false)
+  if (askRating && !askedRating) setAskedRating(true)
   const timeLeft = finished ? null : seriesSecondsLeft(manifest.readingPace, readCount)
   const timeLeftText = timeLeft != null ? formatReadingTime(timeLeft) : ''
   const queue = useSeriesQueue(manifest.seriesId, !hasNext && pending > 0)
@@ -188,16 +193,14 @@ export default function ChapterEnd({
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
 
-  return (
-    <div className="reader-end">
-      {manifest.seriesCoverUrl && (
-        <div
-          className="reader-end-backdrop"
-          style={{ backgroundImage: `url("${manifest.seriesCoverUrl}")` }}
-          aria-hidden
-        />
-      )}
+  const tint = useCoverColour(manifest.seriesCoverUrl)
 
+  return (
+    <div
+      className="reader-end"
+      data-tint={tint ? '' : undefined}
+      style={tint ? ({ '--reader-end-tint': tint } as CSSProperties) : undefined}
+    >
       <div className="reader-end-body">
         <div className="reader-end-finished">
           {manifest.seriesCoverUrl && (
@@ -236,7 +239,7 @@ export default function ChapterEnd({
                 <Trans>About {timeLeftText} left in the series</Trans>
               </span>
             )}
-            {finished ? askRating && <ChapterEndRating seriesId={manifest.seriesId} soFar={ending?.provisionalRating ?? null} /> : ratingPrompt}
+            {finished ? (askRating || askedRating) && <ChapterEndRating seriesId={manifest.seriesId} soFar={ending?.provisionalRating ?? null} /> : ratingPrompt}
           </div>
         </div>
 

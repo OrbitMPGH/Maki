@@ -1,7 +1,7 @@
 # Contributing to Maki
 
 Thanks for helping out. This page covers where work goes and how pull requests are reviewed. For
-the codebase layout and build notes, see [README.md](README.md) and [CLAUDE.md](CLAUDE.md).
+the codebase layout and build notes, see [README.md](README.md) and [AGENTS.md](AGENTS.md).
 
 ## Branches
 

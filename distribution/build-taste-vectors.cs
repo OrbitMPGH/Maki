@@ -36,7 +36,7 @@
 //
 // It goes the other way on curated pairs - MangaUpdates prefers the fuller data by +0.0056 (95%
 // [+0.0004, +0.0106]) - which is the same discovery-against-familiarity split documented in
-// distribution/CLAUDE.md. Readers win here because the library gain is four and a half times the
+// distribution/AGENTS.md. Readers win here because the library gain is four and a half times the
 // size, and because "what will they actually read" is what this app is for.
 //
 // `--all-statuses` restores the old behaviour. The 3,647,125 explicit scores are still spent, on
@@ -64,7 +64,7 @@
 // on all 53k of them measured -0.0112 nDCG@40 on held-out readers against the 22k-reader August
 // build. Dropping lists under 300 entries keeps 38% of the readers and 79% of the cells, and at
 // lambda 6 beats that August build by +0.0046 at the same median pick popularity. Numbers in
-// distribution/CLAUDE.md under "v5.3".
+// distribution/AGENTS.md under "v5.3".
 
 using System.Diagnostics;
 using System.Globalization;

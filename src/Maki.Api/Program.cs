@@ -2,12 +2,14 @@ using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
+using Maki.Api.Http;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
@@ -19,6 +21,7 @@ using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Taste;
 using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
@@ -159,12 +162,8 @@ try
         // each one. CoverService only ever fetches URLs a source produced, so losing auto-redirect
         // there is a non-event. The allowlist checks host names only, so connections are also held
         // to public addresses: a source domain that resolves to the LAN must not be readable.
-        .ConfigurePrimaryHttpMessageHandler(() =>
-        {
-            var handler = PublicAddressGuard.CreateHandler();
-            handler.AllowAutoRedirect = false;
-            return handler;
-        })
+        // A cover fetched for a proxied source carries that source's route (SearchController, CoverFetcher).
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
@@ -218,7 +217,8 @@ try
     builder.Services.AddSingleton<KitsuReactionClient>();
     builder.Services.AddSingleton<SeriesReviewService>();
 
-    builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(new MangaBakaDumpOptions(
+        paths.MangaBakaDbPath, paths.CacheDir, paths.SharesMangaBakaDump, paths.ConfigDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
@@ -291,6 +291,30 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<CoReadInstaller>();
+
+    // EASE weight table. Personal recommendations only; SemanticRecommender takes the cache and the
+    // tuning as optional constructor arguments, and SimilarSeriesService passes `ease: false`.
+    builder.Services.AddSingleton(new EaseOptions(paths.EaseDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<EaseCache>();
+    builder.Services.AddSingleton(EaseTuning.Default);
+    builder.Services.AddSingleton(KnownTitleTuning.Default);
+    builder.Services.AddHttpClient(EaseInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<EaseInstaller>();
+
+    // Page-share table, for the penalty on titles every reader's page gets. Personal recommendations
+    // only; RecommendationService passes `common` from recommendations.pageshare.
+    builder.Services.AddSingleton(new Maki.Metadata.PageShare.PageShareOptions(paths.PageShareDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<Maki.Metadata.PageShare.PageShareCache>();
+    builder.Services.AddHttpClient(Maki.Metadata.PageShare.PageShareInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddSingleton<Maki.Metadata.PageShare.PageShareInstaller>();
 
     // Reader cohorts. Its own cache rather than a layer inside VectorIndexCache, because nothing
     // here is scanned per catalogue row: placement is one lookup per series the reader finished.
@@ -401,6 +425,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangadex")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -411,7 +436,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        // Shared by every source: PageDownloader tags each chapter's requests with that source's route.
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
         // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
@@ -420,26 +446,26 @@ try
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
     const string browserUa = BrowserUserAgent.Value;
-    foreach (var (name, baseUrl) in new[]
+    foreach (var (name, baseUrl, source) in new[]
              {
-                 (MangaPillSource.HttpClientName, "https://mangapill.com/"),
+                 (MangaPillSource.HttpClientName, "https://mangapill.com/", "mangapill"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/", "mangakatana"),
                  // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no
                  // challenge). Page images go through their own client below.
-                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/", GigaViewerSites.ShonenJumpPlus.Name),
+                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/", GigaViewerSites.ComicDays.Name),
+                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/", GigaViewerSites.SundayWebry.Name),
+                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/", GigaViewerSites.Magcomi.Name),
+                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/", GigaViewerSites.TonarinoYj.Name),
+                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/", GigaViewerSites.ComicZenon.Name),
+                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/", GigaViewerSites.KurageBunch.Name),
                  // Dynasty Scans — plain nginx, no Cloudflare.
-                 (DynastySource.HttpClientName, "https://dynasty-scans.com/"),
+                 (DynastySource.HttpClientName, "https://dynasty-scans.com/", "dynasty"),
                  // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
-                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/"),
-                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net"),
-                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/")
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/", "manhwaweb"),
+                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net", "mangadenizi"),
+                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/", "comicwalker")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -449,6 +475,7 @@ try
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
+            .ForSource(source)
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
@@ -461,23 +488,27 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("mangadenizi", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDeniziImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
-    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
+    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine. One client per
+    // site so each carries its site's proxy route; the limiter is still shared by all of them.
     var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
-    builder.Services.AddHttpClient(GigaViewerSource.ImageHttpClientName, client =>
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
-        .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
-        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    foreach (var site in GigaViewerSites.All)
+    {
+        builder.Services.AddHttpClient(GigaViewerSource.ImageClientNameFor(site), client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ForSource(site.Name, PublicAddressGuard.CreateManualRedirectHandler)
+            .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+            .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+    }
 
     // Shinigami: the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
     // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the
@@ -493,6 +524,7 @@ try
             client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("shinigami")
         .AddHttpMessageHandler(() => new RateLimitingHandler(shinigamiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -504,6 +536,7 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
         client.Timeout = TimeSpan.FromSeconds(30);
     })
+    .ForSource("topmanhua")
     .AddHttpMessageHandler(() => new RateLimitingHandler(topManhuaLimiter))
     .AddHttpMessageHandler(() =>  new RateLimitDetectingHandler());
 
@@ -521,6 +554,7 @@ try
                 "Cookie", "needGDPR=false; needCCPA=false; needCOPPA=false; ageGatePass=true");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("webtoons")
         .AddHttpMessageHandler(() => new RateLimitingHandler(webtoonsLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -535,6 +569,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri(tcbBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("tcbscans")
         .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -548,6 +583,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://asurascans.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("asura")
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -560,6 +596,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://raw.senmanga.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("senmanga")
         .AddHttpMessageHandler(() => new RateLimitingHandler(senMangaLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -572,6 +609,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://cn.baozimh.com/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("baozimanhua")
         .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -584,6 +622,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://mangalivre.to/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangalivre")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -597,6 +636,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("naverwebtoon")
         .AddHttpMessageHandler(() => new RateLimitingHandler(naverWebtoonLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -610,6 +650,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://atsu.moe/");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("atsumaru")
         .AddHttpMessageHandler(() => new RateLimitingHandler(atsumaruLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -628,6 +669,7 @@ try
             client.DefaultRequestHeaders.Referrer = new Uri("https://mangaplus.shueisha.co.jp/");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
+        .ForSource("mangaplus")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -645,6 +687,7 @@ try
             client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("mangalib")
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLibLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -666,6 +709,7 @@ try
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ForSource("manhuagui")
         .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -681,9 +725,12 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        .ForSource("mangatube", proxy => new SocketsHttpHandler
         {
-            UseCookies = false, AutomaticDecompression = DecompressionMethods.All
+            UseCookies = false,
+            AutomaticDecompression = DecompressionMethods.All,
+            Proxy = proxy is null ? null : new WebProxy(proxy),
+            UseProxy = true,
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -694,6 +741,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        // The source-bound fetchers put their source's route on every request (IHtmlFetcher.For).
+        .RoutesByProxy()
         .AddHttpMessageHandler(() => new PerHostRateLimitingHandler(challengeLimiters))
         // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
         // see that itself to hand off to FlareSolverr.
@@ -708,7 +757,7 @@ try
             client.Timeout = TimeSpan.FromSeconds(30);
             client.MaxResponseContentBufferSize = CustomSourceFetcher.MaxDocumentBytes;
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new SameSiteRedirectHandler())
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
@@ -726,7 +775,7 @@ try
             client.Timeout = TimeSpan.FromMinutes(2);
             client.MaxResponseContentBufferSize = 64 * 1024 * 1024;
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .RoutesByProxy(PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
@@ -743,7 +792,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("cuutruyen", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -756,7 +805,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .ForSource("taiyo", PublicAddressGuard.CreateManualRedirectHandler)
         .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -790,14 +839,22 @@ try
     builder.Services.AddScoped<InboxRenderer>();
 
     builder.Services.AddSingleton<KavitaUserResolver>();
+    builder.Services.AddSingleton<SourceProxyResolver>();
+    builder.Services.AddSingleton<ISourceProxyResolver>(sp => sp.GetRequiredService<SourceProxyResolver>());
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
     // Sources that only need "fetch this URL past Cloudflare" take the interface, so their parsers
     // stay testable without FlareSolverr and settings in the way.
     builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
+    // The headless shell is a ~110 MB zip; give it room to arrive on a slow line.
+    builder.Services.AddHttpClient(BrowserInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
     builder.Services.AddSingleton<BrowserInstaller>();
-    builder.Services.AddSingleton<SharedPlaywright>();
+    builder.Services.AddSingleton<HeadlessBrowserLauncher>();
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
     // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
@@ -865,6 +922,7 @@ try
     builder.Services.AddSingleton<ISourceProvider, CustomSourceProvider>();
     builder.Services.AddScoped<CustomSourceService>();
     builder.Services.AddSingleton<CustomSourceProbe>();
+    builder.Services.AddSingleton<SourceProxyTester>();
     builder.Services.AddSingleton<CustomRepositoryStore>();
     builder.Services.AddSingleton<CustomRepositoryClient>();
     builder.Services.AddScoped<CustomRepositoryService>();
@@ -1000,6 +1058,13 @@ try
     builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
+    builder.Services.AddScoped<ChapterFoldPreviewService>();
+    builder.Services.AddScoped<ChapterPageCountService>();
+    builder.Services.AddScoped<IChapterPageHasher, ChapterPageHasher>();
+    builder.Services.AddScoped<ChapterPageHashService>();
+    builder.Services.AddScoped<ChapterFoldService>();
+    builder.Services.AddSingleton<ChapterFoldChecks>();
+    builder.Services.AddSingleton<PageCountFailures>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SeriesArchiveService>();
     builder.Services.AddSingleton<RivalTitleProvider>();
@@ -1368,7 +1433,7 @@ try
         // MAKI_DUMP_BOOT_DOWNLOAD=0 keeps the +2 minutes, so test hosts on an empty config dir
         // never start a 350 MB transfer. A failure while no dump is installed retries sooner than
         // the 6 h interval through MangaBakaDumpRetry.
-        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) &&
+        var downloadAtBoot = !File.Exists(paths.MangaBakaDbPath) && !paths.SharesMangaBakaDump &&
                              Environment.GetEnvironmentVariable("MAKI_DUMP_BOOT_DOWNLOAD") != "0";
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
             .WithIdentity(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key));
@@ -1431,6 +1496,25 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
+        // EASE table, a swapped file like co-read. After the taste vectors, so the index rebuild
+        // that install triggers is not competing with a download on a fresh install.
+        q.AddJob<Maki.Api.Jobs.EaseJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EaseJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.EaseJob.Key)
+            .WithIdentity("ease-table-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Page-share table, a small swapped file like the EASE table and right behind it.
+        q.AddJob<Maki.Api.Jobs.PageShareJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.PageShareJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.PageShareJob.Key)
+            .WithIdentity("page-share-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7.5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
         // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
         // file in rather than invalidating the index, so it is last for bandwidth rather than for
         // correctness: the surfaces reading it are a hint and a rail.
@@ -1439,7 +1523,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
             .WithIdentity("reader-cohorts-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // New series from followed creators. Triggered after a dump install too; this daily run only
@@ -1493,7 +1577,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
             .WithIdentity("embedder-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
@@ -1504,21 +1588,22 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
-        // The same for the discovery artifacts, which are ~72 MB between them. Started well after
-        // the warm-up job so a fresh instance is not unloading what it is still building, and
-        // ticking every minute for the same reason as the embedder's.
+        // The same for the discovery artifacts, ticking every minute for the same reason as the
+        // embedder's. It used to start after the warm-up job, from when the window was 30 minutes
+        // and a reload a 9 s heap build; reloads now come from snapshots, and an unload never
+        // touches a build in progress, so a visit right after boot is released like any other.
         q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
-        // And the headless browsers, which are ~160 MB of native memory between the Playwright
-        // driver and the shell's processes. Nothing launches one at startup, so this can start
-        // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
+        // And the headless browsers, whose processes are native memory the heap work never sees.
+        // Nothing launches one at startup, so this can start early; it does nothing until a scrape
+        // has actually happened. Every minute, since the idle window is one: a browser goes one to
+        // two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
@@ -1559,6 +1644,17 @@ try
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Fetches the page counts pending chapter folds wait on, a budget of page lists per run. First
+        // run at +30, after the first monitored sync has had its turn at the sources.
+        q.AddJob<Maki.Api.Jobs.ChapterPageCountJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterPageCountJob.Key)
+            .WithIdentity("chapter-page-count-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(2).RepeatForever().WithMisfireHandlingInstructionNextWithRemainingCount()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
         // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a

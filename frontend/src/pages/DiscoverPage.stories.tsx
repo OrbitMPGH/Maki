@@ -116,11 +116,14 @@ export const DetailModal: Story = {
 }
 
 export const ExpandedRail: Story = {
-  play: async ({ canvas, canvasElement }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const buttons = await canvas.findAllByRole('button', { name: 'Show more' })
     buttons[0].click()
-    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(await within(dialog).findByText('Hidden everywhere (2)')).toBeVisible()
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog')
+    await expect(await within(dialog).findByRole('toolbar', { name: 'Filters' })).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'More filter actions' }))
+    await expect(await body.findByRole('menuitem', { name: 'Hidden everywhere (2)' })).toBeVisible()
   },
 }
 
@@ -136,17 +139,105 @@ export const EditLayout: Story = {
 export const Recommended: Story = {
   parameters: { router: route('/discover/recommended') },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('heading', { name: 'Because of what you collect' })).toBeVisible()
-    await expect(await canvas.findByRole('heading', { name: 'Related to your library' })).toBeVisible()
+    const similarTab = await canvas.findByRole('tab', { name: /Because of what you collect/ })
+    await expect(similarTab).toHaveAttribute('aria-selected', 'true')
+    await expect(await canvas.findByRole('tab', { name: /Related to your library/ })).toBeVisible()
+    // Page 2 auto-loads as the sentinel enters the viewport, with no Show more button.
+    await expect(await canvas.findByText('All 9 picks shown')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Show more' })).toBeNull()
   },
 }
 
-export const RecommendedCustomizeOpen: Story = {
+export const RecommendedRelatedTab: Story = {
   parameters: { router: route('/discover/recommended') },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Customize' }))
-    await expect(await canvas.findByText('Seed from')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Apply' })).toBeVisible()
+    const similarTab = await canvas.findByRole('tab', { name: /Because of what you collect/ })
+    similarTab.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    const relatedTab = await canvas.findByRole('tab', { name: /Related to your library/ })
+    await expect(relatedTab).toHaveAttribute('aria-selected', 'true')
+    await expect(await canvas.findByRole('tabpanel', { name: /Related to your library/ })).toBeVisible()
+    await expect(canvas.queryByRole('toolbar', { name: 'Filters' })).toBeNull()
+    const sequelsChip = await canvas.findByRole('button', { name: /Sequels/ })
+    await userEvent.click(sequelsChip)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /^View and add / })).toHaveLength(1))
+  },
+}
+
+export const RecommendedRelationsOnly: Story = {
+  parameters: {
+    router: route('/discover/recommended'),
+    msw: discoverPage(
+      http.post(api('/recommendations'), () =>
+        HttpResponse.json({
+          ...recommendationsPage(0),
+          similar: [],
+          hasMore: false,
+          totalSimilar: 0,
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const relatedTab = await canvas.findByRole('tab', { name: /Related to your library/ })
+    await expect(relatedTab).toHaveAttribute('aria-selected', 'true')
+    const similarTab = await canvas.findByRole('tab', { name: /Because of what you collect/ })
+    await userEvent.click(similarTab)
+    await expect(similarTab).toHaveAttribute('aria-selected', 'true')
+    await expect(await canvas.findByRole('toolbar', { name: 'Filters' })).toBeVisible()
+    await expect(await canvas.findByText('No matches')).toBeVisible()
+  },
+}
+
+let nextPageFailedOnce = false
+
+export const RecommendedNextPageRetry: Story = {
+  beforeEach: () => {
+    nextPageFailedOnce = false
+  },
+  parameters: {
+    router: route('/discover/recommended'),
+    msw: discoverPage(
+      http.post(api('/recommendations'), async ({ request }) => {
+        const body = (await request.json()) as { page?: number }
+        if ((body.page ?? 0) === 1 && !nextPageFailedOnce) {
+          nextPageFailedOnce = true
+          return failWith(500, 'Pool slice timed out')
+        }
+        return HttpResponse.json(recommendationsPage(body.page ?? 0))
+      }),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Could not load more recommendations.')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Try again' }))
+    await expect(await canvas.findByText('All 9 picks shown')).toBeVisible()
+  },
+}
+
+export const RecommendedNoRelated: Story = {
+  parameters: {
+    router: route('/discover/recommended'),
+    msw: discoverPage(
+      http.post(api('/recommendations'), async ({ request }) => {
+        const body = (await request.json()) as { page?: number }
+        return HttpResponse.json({ ...recommendationsPage(body.page ?? 0), related: [] })
+      }),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('All 9 picks shown')).toBeVisible()
+    await expect(canvas.queryByRole('tablist', { name: 'Recommendation views' })).toBeNull()
+  },
+}
+
+export const RecommendedSeedsOpen: Story = {
+  parameters: { router: route('/discover/recommended') },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Seeds' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('textbox', { name: 'Search series' })).toBeVisible()
+    await expect(await body.findByText('With no series picked, your whole library is used.')).toBeVisible()
   },
 }
 
@@ -156,16 +247,12 @@ export const RecommendedWithSavedDefault: Story = {
     msw: discoverPage(http.get(api('/recommendations/defaults'), () => HttpResponse.json(savedRecommendationDefaults))),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Customized' })).toBeVisible()
-    await expect(await canvas.findByRole('heading', { name: 'Feels like your seeds' })).toBeVisible()
-  },
-}
-
-export const RecommendedShowMore: Story = {
-  parameters: { router: route('/discover/recommended') },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Show more' }))
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: /^View and add / })).not.toHaveLength(0))
+    await expect(await canvas.findByRole('button', { name: 'Type: Manga' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Rating: 7.0+' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: /Feels like your seeds/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
   },
 }
 

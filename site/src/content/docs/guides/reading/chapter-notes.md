@@ -8,14 +8,18 @@ not available while reading offline.
 
 ## Write a note
 
-Open the notes from the toolbar's notes button, or use **Note on page** on the page you are reading.
-A note is pinned to the page you write it on. Wrap a spoiler in `||double bars||` and it shows as a
-Spoiler chip that readers click to reveal.
+Open the notes from the toolbar's notes button, or use **Note** beside the page in the margin. In
+Continuous mode the button sits at the foot of the margin and reads **Note on page N** for the page
+in view. **Pin to page N** is ticked to begin with; untick it to write a note on the whole chapter
+instead. Wrap a spoiler in `||double bars||` and it shows as a Spoiler chip that readers click to
+reveal.
 
 Each note is either:
 
 - **Private**: only you see it.
 - **Shared**: everyone who can see the series sees it, and can reply.
+
+![Note composer in the reader margin for page 1, with a text box that mentions wrapping spoilers in double bars, a Pin to page 1 checkbox, a Private or Shared choice, and Cancel and Add note buttons](../../../../assets/ui/reader/note-composer.webp)
 
 Replies go one level deep, and each reply notifies everyone in the thread through the
 [inbox](/Maki/guides/running/notifications/). A shared note can't be made private once someone else
@@ -33,6 +37,8 @@ chapter.
 - The toolbar's notes button lists every note in the chapter, and switches between **This page** and
   **Whole chapter**.
 - On the series page, a chapter row shows its note count and opens the same list.
+
+![Notes in the margin beside page 1: a shared note of yours with a reply, a private note with a lock icon, and a folded shared note from Rin with a Show button](../../../../assets/ui/reader/notes-margin.webp)
 
 **Notes beside the page** under **While reading** in the reader settings turns the margin off. Like
 other reader settings it is saved per [reading profile](/Maki/guides/reading/maki-reader/#reading-profiles).

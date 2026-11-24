@@ -1,15 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { actionFor, buildKeyMap, comboFromEvent, useShortcutBindings } from '../../lib/shortcuts'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'
+import { useCoverColour } from '../../lib/coverTint'
 import { useReaderSettings } from '../../api/reader'
 import { useReadingProfiles } from '../../api/readingProfiles'
 import ContinuousView from '../../pages/reader/ContinuousView'
 import PagedView from '../../pages/reader/PagedView'
 import { DEFAULT_PREFS } from '../../pages/reader/prefs'
 import { pagesFrom, usePreload } from '../../pages/reader/usePageUrls'
+
+const NATIVE_SCROLL_KEYS = new Set(['Space', 'Shift+Space', 'PageDown', 'PageUp'])
 
 type PreviewMode = 'paged' | 'vertical'
 
@@ -76,6 +80,7 @@ export function SeriesPreviewReader({
   const [page, setPage] = useState(0)
   const [seekVersion, setSeekVersion] = useState(0)
   const [atEnd, setAtEnd] = useState(false)
+  const endTint = useCoverColour(atEnd ? coverUrl : null)
   const seekToPage = useCallback((index: number) => {
     setPage(index)
     setSeekVersion((v) => v + 1)
@@ -109,37 +114,49 @@ export function SeriesPreviewReader({
   }, [complete])
 
   const rtl = prefs.direction === 'rtl'
+  const surfaceRef = useRef<HTMLDivElement>(null)
+  const shortcutBindings = useShortcutBindings()
+  const keyMap = useMemo(() => buildKeyMap(shortcutBindings, rtl), [shortcutBindings, rtl])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-      const forwardKey = rtl ? 'ArrowLeft' : 'ArrowRight'
-      const backKey = rtl ? 'ArrowRight' : 'ArrowLeft'
-      switch (event.key) {
-        case forwardKey:
+      if (event.defaultPrevented) return
+      const combo = comboFromEvent(event)
+      if (combo === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        onClose()
+        return
+      }
+      const action = combo ? actionFor(keyMap, combo) : undefined
+      switch (action) {
+        case 'reader.next':
           event.preventDefault()
           next()
           break
-        case backKey:
+        case 'reader.previous':
           event.preventDefault()
           previous()
           break
-        case ' ':
+        case 'reader.screenDown':
+        case 'reader.screenUp': {
+          const up = action === 'reader.screenUp'
           if (mode !== 'vertical' || atEnd) {
             event.preventDefault()
-            if (event.shiftKey) previous()
+            if (up) previous()
             else next()
+          } else if (combo && !NATIVE_SCROLL_KEYS.has(combo)) {
+            // The browser scrolls the strip itself for Space and Page Up/Down; any other key bound here is scrolled by hand.
+            event.preventDefault()
+            const strip = surfaceRef.current
+            if (strip) strip.scrollBy({ top: (up ? -0.9 : 0.9) * strip.clientHeight, behavior: 'smooth' })
           }
           break
-        case 'Escape':
-          event.preventDefault()
-          event.stopPropagation()
-          onClose()
-          break
+        }
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [rtl, mode, atEnd, next, previous, onClose])
+  }, [keyMap, mode, atEnd, next, previous, onClose])
 
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!prefs.tapZones || mode === 'vertical') return
@@ -179,10 +196,11 @@ export function SeriesPreviewReader({
     )
   } else if (atEnd) {
     body = (
-      <div className="reader-end">
-        {coverUrl && (
-          <div className="reader-end-backdrop" style={{ backgroundImage: `url("${coverUrl}")` }} aria-hidden />
-        )}
+      <div
+        className="reader-end"
+        data-tint={endTint ? '' : undefined}
+        style={endTint ? ({ '--reader-end-tint': endTint } as CSSProperties) : undefined}
+      >
         <div className="reader-end-body">
           <div className="reader-end-finished">
             {coverUrl && <img className="reader-end-cover" src={coverUrl} alt="" />}
@@ -235,6 +253,7 @@ export function SeriesPreviewReader({
   } else {
     body = (
       <div
+        ref={surfaceRef}
         className="reader-surface"
         data-scroll={mode === 'vertical' ? 'vertical' : undefined}
         onClick={onSurfaceClick}

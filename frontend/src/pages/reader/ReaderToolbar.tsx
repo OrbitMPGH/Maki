@@ -36,6 +36,8 @@ import { formatReadingTime, serverChapterLabel } from '../../format'
 import { timeLeft } from './endScreen'
 import { AUTO_SCROLL_MAX, AUTO_SCROLL_MIN } from './useAutoScroll'
 import { useReaderBack } from './useReaderBack'
+import { useShortcutBindings, type ShortcutActionId } from '../../lib/shortcuts'
+import { useFormatCombo } from '../../lib/shortcutLabels'
 
 export interface AutoScrollControls {
   on: boolean
@@ -160,6 +162,15 @@ export default function ReaderToolbar({
   hiddenCredits?: { count: number; cut: boolean; onShow: () => void } | null
 }) {
   const { t } = useLingui()
+  const shortcutBindings = useShortcutBindings()
+  const formatCombo = useFormatCombo()
+  // A tooltip names the first key bound to its action, or just the action once nothing is.
+  const withKey = (label: string, id: ShortcutActionId) => {
+    const combo = shortcutBindings[id][0]
+    if (!combo) return label
+    const key = formatCombo(combo, { rtl: prefs.direction === 'rtl' })
+    return t({ message: `${label} (${key})`, comment: 'A button tooltip followed by the keyboard key that does the same' })
+  }
 
   // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
   // so each chevron's disabled state follows the chapter it actually opens.
@@ -312,10 +323,10 @@ export default function ReaderToolbar({
                   enhancePhase ? (
                     <>
                       <div>{phaseLabel(enhancePhase)}</div>
-                      <div>{t`Hold to compare with the original (H)`}</div>
+                      <div>{withKey(t`Hold to compare with the original`, 'reader.compare')}</div>
                     </>
                   ) : (
-                    t`Hold to compare with the original (H)`
+                    withKey(t`Hold to compare with the original`, 'reader.compare')
                   )
                 }
                 withArrow
@@ -474,7 +485,7 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label={t`Page thumbnails`} withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={withKey(t`Page thumbnails`, 'reader.thumbnails')} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant={stripOpen ? 'light' : 'subtle'}
               color="gray"
@@ -505,7 +516,7 @@ export default function ReaderToolbar({
           />
 
           {/* No keyboard on a touch screen, so nothing for this to list there. */}
-          <Tooltip label={t`Keyboard shortcuts (?)`} withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={withKey(t`Keyboard shortcuts`, 'reader.shortcuts')} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
@@ -520,7 +531,7 @@ export default function ReaderToolbar({
           {prefs.mode === 'vertical' && autoScroll && (
             <Group gap={2} wrap="nowrap">
               {autoScroll.on && (
-                <Tooltip label={t`Slower ([)`} withArrow zIndex={OVERLAY_Z}>
+                <Tooltip label={withKey(t`Slower`, 'reader.autoScrollSlower')} withArrow zIndex={OVERLAY_Z}>
                   <ActionIcon
                     variant="subtle"
                     color="gray"
@@ -532,7 +543,7 @@ export default function ReaderToolbar({
                   </ActionIcon>
                 </Tooltip>
               )}
-              <Tooltip label={autoScroll.on ? t`Stop auto-scroll (A)` : t`Auto-scroll (A)`} withArrow zIndex={OVERLAY_Z}>
+              <Tooltip label={withKey(autoScroll.on ? t`Stop auto-scroll` : t`Auto-scroll`, 'reader.autoScroll')} withArrow zIndex={OVERLAY_Z}>
                 <ActionIcon
                   variant={autoScroll.on ? 'light' : 'subtle'}
                   color="gray"
@@ -555,7 +566,7 @@ export default function ReaderToolbar({
                   >
                     {autoScroll.level}
                   </Text>
-                  <Tooltip label={t`Faster (])`} withArrow zIndex={OVERLAY_Z}>
+                  <Tooltip label={withKey(t`Faster`, 'reader.autoScrollFaster')} withArrow zIndex={OVERLAY_Z}>
                     <ActionIcon
                       variant="subtle"
                       color="gray"
@@ -571,16 +582,17 @@ export default function ReaderToolbar({
             </Group>
           )}
 
+          {/* Continuous has no zoom buttons, only a way back from a pinch. */}
+          {zoom !== 1 && (
+            <Tooltip label={withKey(t`Reset zoom`, 'reader.zoomReset')} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
+                <IconZoomReset size={20} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {prefs.mode !== 'vertical' && (
             <>
-              {zoom !== 1 && (
-                <Tooltip label={t`Reset zoom`} withArrow zIndex={OVERLAY_Z}>
-                  <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
-                    <IconZoomReset size={20} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-              <Tooltip label={t`Zoom out`} withArrow zIndex={OVERLAY_Z}>
+              <Tooltip label={withKey(t`Zoom out`, 'reader.zoomOut')} withArrow zIndex={OVERLAY_Z}>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
@@ -591,7 +603,7 @@ export default function ReaderToolbar({
                   <IconZoomOut size={20} />
                 </ActionIcon>
               </Tooltip>
-              <Tooltip label={t`Zoom in`} withArrow zIndex={OVERLAY_Z}>
+              <Tooltip label={withKey(t`Zoom in`, 'reader.zoomIn')} withArrow zIndex={OVERLAY_Z}>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
@@ -606,7 +618,7 @@ export default function ReaderToolbar({
           )}
 
           {document.fullscreenEnabled && (
-            <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
+            <Tooltip label={withKey(fullscreen ? t`Exit full screen` : t`Full screen`, 'reader.fullscreen')} withArrow zIndex={OVERLAY_Z}>
               <ActionIcon
                 variant="subtle"
                 color="gray"

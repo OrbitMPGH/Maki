@@ -38,11 +38,13 @@ public sealed class ReaderCohortRailServiceTests : IDisposable
     private sealed class FixedCandidates(params long[] ids) : ReaderCohortService(
         null!, null!, null!, null!, null!, NullLogger<ReaderCohortService>.Instance)
     {
-        public override Task<IReadOnlyList<long>> GetCandidatesAsync(
-            ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit,
+        public override Task<CohortDraw?> GetDrawAsync(
+            ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit, int? onlyCohort,
             CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<long>>(
-                ids.Where(id => !owned.Contains(id) && (accept?.Invoke(id) ?? true)).Take(limit).ToList());
+            Task.FromResult<CohortDraw?>(new CohortDraw(
+                ids.Where(id => !owned.Contains(id) && (accept?.Invoke(id) ?? true)).Take(limit)
+                    .Select(id => new CohortPick(id, Cohort: 0, Share: 0.5)).ToList(),
+                [new CohortGroup(0, 1.0, [])]));
     }
 
     private ReaderCohortRailService Rail()

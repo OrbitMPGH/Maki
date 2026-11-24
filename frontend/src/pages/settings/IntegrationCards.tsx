@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Code, Group, MultiSelect, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Group, MultiSelect, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
@@ -19,6 +19,7 @@ import {
   type ScrobbleSettings,
 } from '../../api/hooks'
 import { MetaList } from '../../components/ui/MetaList'
+import { MonoValue } from '../../components/ui/MonoValue'
 import { relativeTime } from '../../components/ui/time'
 import {
   SettingsRow,
@@ -110,7 +111,7 @@ export function ScrobbleSection() {
               <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   Create an API client at anilist.co/settings/developer with redirect URL{' '}
-                  <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/anilist</Code>
+                  <MonoValue value={`${origin}/api/v1/scrobble/oauth/anilist`} copy wrap />
                 </Trans>
               </Text>
               <Group grow>
@@ -140,7 +141,7 @@ export function ScrobbleSection() {
               <SettingsHelp>
                 <Trans>
                   Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-                  <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>
+                  <MonoValue value={`${origin}/api/v1/scrobble/oauth/mal`} copy wrap />
                 </Trans>
               </SettingsHelp>
               <Group grow>

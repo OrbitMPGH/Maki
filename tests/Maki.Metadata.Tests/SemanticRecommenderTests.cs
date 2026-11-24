@@ -1,6 +1,7 @@
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -324,6 +325,36 @@ public class SemanticRecommenderTests : IDisposable
         // And it says so, since a pick that reads as the weaker match needs explaining.
         Assert.True(withGraph[0].CoRecommended);
         Assert.False(withGraph[1].CoRecommended);
+    }
+
+    [Fact]
+    public async Task ACallCanSetTheVoteWeight_AndZeroIsTheChannelOff()
+    {
+        // The series page asks for RecoGraphTuning.SingleSeedWeight; everything else leaves it null.
+        // The voted pick sits far enough from the seed that the default coefficient does not lift
+        // it past the closer one and the single-seed coefficient does.
+        Add(1, "Seed");
+        Add(10, "Closer by feel");
+        Add(11, "Co-read");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.6f)),
+            (11L, "h", Nudge(Axis(0), 3, 1.5f)),
+        ]);
+        var graph = WriteGraph((1, 11, 500));
+
+        var off = await Recommender(graph).GetSimilarAsync([1], [], limit: 5, graphWeight: 0);
+        var standard = await Recommender(graph).GetSimilarAsync([1], [], limit: 5);
+        var heavier = await Recommender(graph).GetSimilarAsync(
+            [1], [], limit: 5, graphWeight: RecoGraphTuning.SingleSeedWeight);
+
+        Assert.Equal(["10", "11"], off.Select(p => p.ProviderId));
+        Assert.All(off, p => Assert.False(p.CoRecommended));
+        Assert.Equal(["10", "11"], standard.Select(p => p.ProviderId));
+        Assert.True(standard[1].CoRecommended);
+        Assert.Equal(["11", "10"], heavier.Select(p => p.ProviderId));
+        Assert.True(heavier[0].CoRecommended);
     }
 
     [Fact]
@@ -769,6 +800,122 @@ public class SemanticRecommenderTests : IDisposable
 
         Assert.Equal(without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
         Assert.All(with, p => Assert.False(p.CoRecommended));
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_ChangesNothing_WithoutATable_AtWeightZero_OrSwitchedOffPerCall()
+    {
+        Add(1, "Seed");
+        Add(2, "Second seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.6f)),
+        ]);
+        var table = WriteEase((1, 11, 0.08f), (2, 11, 0.02f), (1, 12, -0.05f));
+        static string Json(IReadOnlyList<MangaBakaRecommendation> picks) => System.Text.Json.JsonSerializer.Serialize(picks);
+
+        var baseline = Json(await Recommender().GetSimilarAsync([1, 2], [], limit: 5));
+        var absent = Json(await Recommender(
+                easePath: Path.Combine(_dir, "absent-ease.db"), easeTuning: EaseTuning.Default with { Weight = 2 })
+            .GetSimilarAsync([1, 2], [], limit: 5));
+        var zeroWeight = Json(await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 0 })
+            .GetSimilarAsync([1, 2], [], limit: 5));
+        var switchedOff = Json(await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5, ease: false));
+
+        Assert.Equal(baseline, absent);
+        Assert.Equal(baseline, zeroWeight);
+        Assert.Equal(baseline, switchedOff);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_RunsAtTheShippedWeight_AndExplainsItsPickWithTheSeedThatPushedIt()
+    {
+        Add(1, "Seed");
+        Add(2, "Other seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.3f)),
+        ]);
+        var table = WriteEase((1, 11, 0.02f), (2, 11, 0.08f), (1, 12, -0.08f));
+
+        var off = await Recommender().GetSimilarAsync([1, 2], [], limit: 5);
+        var on = await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5);
+
+        Assert.NotEqual(off.Select(p => p.ProviderId), on.Select(p => p.ProviderId));
+        Assert.Equal("11", on[0].ProviderId);
+        var pick = on[0];
+        Assert.True(pick.CoRead);
+        Assert.Equal("Other seed", pick.CoReadWithTitle);
+        Assert.Equal("2", pick.CoReadWithId);
+        // Seed 1 carries 20% of the pick, under RecommenderTuning.MinReasonShare, so the reason cap
+        // has no weaker seed to fall back on.
+        Assert.Equal(["2"], pick.CoReadSeeds!.Select(s => s.Id));
+        Assert.False(on.Single(p => p.ProviderId == "12").CoRead);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_NamesNoSeed_WhenNoSeedCarriesEnoughOfThePick()
+    {
+        Add(1, "Seed");
+        Add(2, "Other seed");
+        Add(11, "Weighted by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+        ]);
+        var table = WriteEase((1, 11, 0.05f), (2, 11, 0.05f));
+
+        var picks = await Recommender(easePath: table, tuning: RecommenderTuning.Default with { MinReasonShare = 0.6 })
+            .GetSimilarAsync([1, 2], [], limit: 5);
+
+        var pick = picks.Single(p => p.ProviderId == "11");
+        Assert.True(pick.CoRead);
+        Assert.Null(pick.CoReadWithTitle);
+        Assert.Null(pick.CoReadWithId);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_ReordersByTheTablesSignedWeights_WhenSwitchedOn()
+    {
+        Add(1, "Seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.3f)),
+        ]);
+        var table = WriteEase((1, 11, 0.08f), (1, 12, -0.08f));
+
+        var off = await Recommender().GetSimilarAsync([1], [], limit: 5);
+        var on = await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 2, MinSeeds = 1 })
+            .GetSimilarAsync([1], [], limit: 5);
+        var shipped = await Recommender(easePath: table).GetSimilarAsync([1], [], limit: 5);
+
+        Assert.Equal(["12", "10", "11"], off.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10", "12"], on.Select(p => p.ProviderId));
+        // One seed is under the shipped MinSeeds, so the table stays out of it.
+        Assert.Equal(off.Select(p => p.ProviderId), shipped.Select(p => p.ProviderId));
+        Assert.DoesNotContain(shipped, p => p.CoRead);
     }
 
     [Fact]
@@ -1351,12 +1498,426 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
     }
 
+    [Fact]
+    public async Task ADemotedTitle_RanksLowerAndStaysOnThePage()
+    {
+        Add(1, "Seed");
+        Add(10, "Closest to the seed");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+
+        var plain = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(["10", "11"], plain.Select(p => p.ProviderId));
+
+        var demoted = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, demote: new Dictionary<long, double> { [10] = 1.0 });
+        Assert.Equal(["11", "10"], demoted.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task ThePageSharePenalty_NeedsATableAWeightAndACallerThatAsks()
+    {
+        Add(1, "Seed");
+        Add(10, "On every page");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+        var table = PageFrequency.From(new Dictionary<long, double> { [10] = 0.5 });
+        var weighted = RecommenderTuning.Default with { CommonWeight = 2 };
+        var unweighted = RecommenderTuning.Default with { CommonWeight = 0 };
+
+        var asked = await Recommender(tuning: weighted, pageFrequency: table)
+            .GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.Equal(["11", "10"], asked.Select(p => p.ProviderId));
+
+        // The series-page rail never asks, a weight of 0 is off, and no table means nothing to apply.
+        var rail = await Recommender(tuning: weighted, pageFrequency: table).GetSimilarAsync([1], [], limit: 10);
+        var off = await Recommender(tuning: unweighted, pageFrequency: table).GetSimilarAsync([1], [], limit: 10, common: true);
+        var noTable = await Recommender(tuning: weighted).GetSimilarAsync([1], [], limit: 10, common: true);
+        Assert.All(
+            new[] { rail, off, noTable },
+            picks => Assert.Equal(["10", "11"], picks.Select(p => p.ProviderId)));
+    }
+
+    [Fact]
+    public async Task ThePageSharePenalty_ReadsTheInstalledTable_AtTheShippedWeight()
+    {
+        Add(1, "Seed");
+        Add(10, "On every page");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+        ]);
+        var path = Path.Combine(_dir, "page-share.db");
+        using (var conn = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE share (series_id INTEGER PRIMARY KEY, share REAL NOT NULL);
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO share VALUES (10, 0.5);
+                INSERT INTO meta VALUES ('trainingFold', 'all');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        SqliteConnection.ClearAllPools();
+        var installed = new PageShare.PageShareCache(
+            new PageShare.PageShareOptions(path), NullLogger<PageShare.PageShareCache>.Instance);
+
+        var personal = await Recommender(pageShareCache: installed).GetSimilarAsync([1], [], limit: 10, common: true);
+        var rail = await Recommender(pageShareCache: installed).GetSimilarAsync([1], [], limit: 10);
+
+        Assert.Equal(4.0, RecommenderTuning.Default.CommonWeight);
+        Assert.Equal(["11", "10"], personal.Select(p => p.ProviderId));
+        Assert.Equal(["10", "11"], rail.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task TheFameCap_CountsOnlyWhatTheCallerLetsThrough()
+    {
+        // Ids are popularity ranks in this fixture. One famous seed and one niche one allow half of
+        // any prefix inside the top 100. The two famous candidates outscore the niche ones.
+        Add(50, "Famous seed");
+        Add(5000, "Niche seed");
+        Add(20, "Watched");
+        Add(30, "Famous");
+        Add(6001, "Niche one");
+        Add(6002, "Niche two");
+        WriteDump();
+        Store().UpsertBatch([
+            (50L, "h", Axis(0)),
+            (5000L, "h", Nudge(Axis(0), 1, 0.05f)),
+            (20L, "h", Nudge(Axis(0), 2, 0.10f)),
+            (30L, "h", Nudge(Axis(0), 3, 0.15f)),
+            (6001L, "h", Nudge(Axis(0), 4, 0.20f)),
+            (6002L, "h", Nudge(Axis(0), 5, 0.25f)),
+        ]);
+        var tuning = RecommenderTuning.Default with { FameCapRatio = 1.0, FameCapPseudoSeeds = 0, CommonWeight = 0 };
+
+        var thenFiltered = (await Recommender(tuning: tuning).GetSimilarAsync([50, 5000], [], limit: 10))
+            .Where(p => p.ProviderId != "20");
+        var excluded = await Recommender(tuning: tuning).GetSimilarAsync([50, 5000], [20], limit: 10);
+
+        // Removed after the cap ran, the watched title spent the one famous slot and pushed Famous down.
+        Assert.Equal(["6001", "30", "6002"], thenFiltered.Select(p => p.ProviderId));
+        Assert.Equal(["30", "6001", "6002"], excluded.Select(p => p.ProviderId));
+    }
+
+    /// <summary>
+    /// Nine action manga seeds and three romance manhwa ones. The whole-shelf page fills with action
+    /// manga, so the side taste falls short of its share and the lanes top it up.
+    /// </summary>
+    private void TwoTasteFixture()
+    {
+        var vectors = new List<(long, string, float[])>();
+        for (var i = 1; i <= 9; i++)
+        {
+            Add(i, $"Action seed {i}");
+            vectors.Add((i, "h", Nudge(Axis(0), i, 0.1f)));
+        }
+
+        for (var i = 1; i <= 3; i++)
+        {
+            Add(100 + i, $"Romance seed {i}", type: "manhwa", genres: """["Romance"]""");
+            vectors.Add((100 + i, "h", Nudge(Axis(12), 12 + i, 0.1f)));
+        }
+
+        for (var i = 1; i <= 20; i++)
+        {
+            Add(1000 + i, $"Action pick {i}");
+            vectors.Add((1000 + i, "h", Nudge(Axis(0), 1 + (i % 9), 0.05f + (0.01f * i))));
+        }
+
+        for (var i = 1; i <= 6; i++)
+        {
+            Add(2000 + i, $"Romance pick {i}", type: "manhwa", genres: """["Romance"]""");
+            vectors.Add((2000 + i, "h", Nudge(Axis(12), 12 + (i % 3) + 1, 0.3f + (0.05f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+    }
+
+    private static readonly RecommenderTuning SmallLanes =
+        RecommenderTuning.Default with { Lanes = 1.0, LanesPage = 10, LanesFrom = 2, CommonWeight = 0 };
+
+    [Fact]
+    public async Task TheLanes_TopUpAShortSideTaste_BelowTheTop_WithPicksNamedForItsOwnSeeds()
+    {
+        TwoTasteFixture();
+        long[] seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103];
+
+        var plain = await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10);
+        var topped = await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10, lanes: true);
+
+        Assert.True(plain.Count(p => p.ProviderId.StartsWith('2')) < 2);
+        Assert.Equal(10, topped.Count);
+        Assert.Equal(plain.Take(2).Select(p => p.ProviderId), topped.Take(2).Select(p => p.ProviderId));
+        var inserted = topped.Where(p => plain.All(q => q.ProviderId != p.ProviderId)).ToList();
+        Assert.NotEmpty(inserted);
+        Assert.Equal(2, topped.Count(p => p.ProviderId.StartsWith('2')));
+        Assert.All(inserted, p => Assert.StartsWith("200", p.ProviderId));
+        var named = inserted
+            .SelectMany(p => (p.FeelSeeds ?? []).Concat(p.CoReadSeeds ?? []).Select(r => r.Id)
+                .Append(p.BecauseOfId).Append(p.CoReadWithId))
+            .OfType<string>()
+            .ToList();
+        Assert.All(named, id => Assert.Contains(id, new[] { "101", "102", "103" }));
+    }
+
+    [Fact]
+    public async Task TheLanes_LeaveThePageAlone_ForOneSeed_ForNoQualifyingSideTaste_AndWhenOff()
+    {
+        TwoTasteFixture();
+        long[] twoSideSeeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102];
+        long[] seeds = [.. twoSideSeeds, 103];
+
+        static List<string> Ids(IReadOnlyList<MangaBakaRecommendation> picks) => [.. picks.Select(p => p.ProviderId)];
+
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync([1], [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync([1], [], limit: 10, lanes: true)));
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(twoSideSeeds, [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(twoSideSeeds, [], limit: 10, lanes: true)));
+        Assert.Equal(
+            Ids(await Recommender(tuning: SmallLanes).GetSimilarAsync(seeds, [], limit: 10)),
+            Ids(await Recommender(tuning: SmallLanes with { Lanes = 0 }).GetSimilarAsync(seeds, [], limit: 10, lanes: true)));
+    }
+
+    [Fact]
+    public async Task GetSimilarPoolAsync_AtDeeperDepth_PreservesCalibratedFeaturesAndHead()
+    {
+        var vectors = new List<(long, string, float[])>
+        {
+            (501, "h", Axis(0)),
+            (502, "h", Axis(1)),
+        };
+        Add(501, "Seed One", genres: """["Action"]""");
+        Add(502, "Seed Two", genres: """["Adventure"]""");
+
+        for (var i = 1; i <= 30; i++)
+        {
+            // Ids 10..60 sit inside the famous band (popularity = id) and 2001..2024 sit outside,
+            // exercising ShelfFame.Defer alongside MMR diversity.
+            var id = i <= 6 ? i * 10 : 2000 + i;
+            Add(id, $"Pick {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((id, "h", Nudge(Blend(Axis(0), Axis(1)), 2 + (i % 8), 0.05f + (0.02f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+
+        var tuning = RecommenderTuning.Default with { CommonWeight = 0 };
+        var shallowFeatures = new List<EmbeddingMath.CandidateFeatures>();
+        var deepFeatures = new List<EmbeddingMath.CandidateFeatures>();
+        var recommender = Recommender(tuning: tuning);
+
+        var shallow = await recommender.GetSimilarPoolAsync(
+            [501, 502], [], limit: 6, depth: 6, diversity: 0.4, features: shallowFeatures);
+        var deep = await recommender.GetSimilarPoolAsync(
+            [501, 502], [], limit: 6, depth: 20, diversity: 0.4, features: deepFeatures);
+
+        // Fusion budget, injections, and hybrid scores must stay identical when only `depth` grows.
+        Assert.Equal(shallowFeatures, deepFeatures);
+        Assert.Equal(6, shallow.Picks.Count);
+        Assert.Equal(20, deep.Picks.Count);
+        Assert.Equal(
+            shallow.Picks.Select(p => p.SeriesId),
+            deep.Picks.Take(6).Select(p => p.SeriesId));
+        Assert.Equal(
+            shallow.Picks.Select(p => p.PrimaryFeelSeedId),
+            deep.Picks.Take(6).Select(p => p.PrimaryFeelSeedId));
+    }
+
+    [Fact]
+    public async Task HydratePicksAsync_WorksAfterVectorIndexUnload_AndStripsPerSeriesSpoilers()
+    {
+        Add(1, "Seed", genres: """["Fantasy"]""");
+        Add(2, "Candidate", genres: """["Fantasy","Drama"]""");
+        WriteDump();
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE series
+                SET tags_v2 = '[{"name":"Time Loop","is_spoiler":false},{"name":"Secret Twist","is_spoiler":true}]'
+                WHERE id = 2;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var embeddingStore = Store();
+        embeddingStore.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Nudge(Axis(0), 1, 0.1f))]);
+        embeddingStore.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Time Loop", 10, false),
+            [2] = new("Secret Twist", 5, false),
+        });
+        var tagBlob = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        embeddingStore.UpsertTagsBatch([(1L, tagBlob), (2L, tagBlob)]);
+
+        var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
+        var indexCache = new VectorIndexCache(Options(), dump, NullLogger<VectorIndexCache>.Instance);
+        var graph = new RecoGraphOptions(Path.Combine(_dir, "absent-reco-edges.db"), _dir);
+        var coRead = new CoReadOptions(Path.Combine(_dir, "absent-coread-edges.db"), _dir);
+        var recommender = new SemanticRecommender(
+            Options(), dump, embeddingStore, indexCache,
+            new RecoGraphCache(graph, NullLogger<RecoGraphCache>.Instance), RecoGraphTuning.Default,
+            new CoReadCache(coRead, NullLogger<CoReadCache>.Instance), CoReadTuning.Default,
+            NullLogger<SemanticRecommender>.Instance,
+            RecommenderTuning.Default with { CommonWeight = 0 });
+
+        var pool = await recommender.GetSimilarPoolAsync([1], [], limit: 10, depth: 10);
+        Assert.Single(pool.Picks);
+
+        // Simulate MAKI_VECTOR_IDLE_MINUTES unloading the vector index before a later page hydrates.
+        indexCache.Invalidate();
+        Assert.Null(indexCache.TryGetLoaded());
+
+        var localStore = new MangaBakaLocalStore(dump, NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        Assert.Null(indexCache.TryGetLoaded());
+        var pick = Assert.Single(hydrated);
+        Assert.Equal("Candidate", pick.Title);
+        Assert.Equal(["Fantasy"], pick.MatchedGenres);
+        Assert.Equal(["Time Loop"], pick.MatchedTags);
+    }
+
+    [Fact]
+    public async Task GetSimilarPoolAsync_CappedHeadStaysIdenticalWhenFameCapExhaustsWindow()
+    {
+        var vectors = new List<(long, string, float[])>
+        {
+            (5001, "h", Axis(0)),
+            (5002, "h", Axis(1)),
+        };
+        Add(5001, "Obscure Seed One", genres: """["Action"]""");
+        Add(5002, "Obscure Seed Two", genres: """["Adventure"]""");
+
+        // 18 famous candidates (ids 1..18 -> popularity rank 1..18) fill the entire `limit * 3`
+        // window (limit = 6), forcing ShelfFame.Defer to fall back to deferred famous picks inside
+        // the head. Obscure tail candidates (6001..6012) sit past rank 18 and must not displace
+        // the calibrated head when `depth` grows.
+        var centroid = Blend(Axis(0), Axis(1));
+        for (var i = 1; i <= 18; i++)
+        {
+            Add(i, $"Famous {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((i, "h", Nudge(centroid, 2 + (i % 6), 0.02f * i)));
+        }
+
+        for (var i = 1; i <= 12; i++)
+        {
+            var id = 6000 + i;
+            Add(id, $"Obscure Tail {i}", genres: """["Action","Adventure"]""");
+            vectors.Add((id, "h", Nudge(centroid, 8 + (i % 6), 0.70f + (0.01f * i))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+
+        var tuning = RecommenderTuning.Default with { CommonWeight = 0, FameCapPseudoSeeds = 0.01 };
+        var recommender = Recommender(tuning: tuning);
+
+        var shallow = await recommender.GetSimilarPoolAsync([5001, 5002], [], limit: 6, depth: 6);
+        var deep = await recommender.GetSimilarPoolAsync([5001, 5002], [], limit: 6, depth: 20);
+
+        Assert.Equal(6, shallow.Picks.Count);
+        Assert.Equal(20, deep.Picks.Count);
+        Assert.Equal(
+            shallow.Picks.Select(p => p.SeriesId),
+            deep.Picks.Take(6).Select(p => p.SeriesId));
+        Assert.Equal(
+            shallow.Picks.Select(p => p.PrimaryFeelSeedId),
+            deep.Picks.Take(6).Select(p => p.PrimaryFeelSeedId));
+    }
+
+    [Fact]
+    public async Task GetSimilarPoolAsync_WithLanesAndDeeperDepth_MergesLaneSeedsAndExtendsTail()
+    {
+        TwoTasteFixture();
+        long[] seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 101, 102, 103];
+
+        var pool = await Recommender(tuning: SmallLanes).GetSimilarPoolAsync(
+            seeds, [], limit: 10, depth: 16, lanes: true);
+        var localStore = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_dumpPath, _dir), NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        Assert.Equal(16, hydrated.Count);
+        var inserted = hydrated.Take(10).Where(p => p.LaneFloor > 0).ToList();
+        Assert.NotEmpty(inserted);
+        Assert.All(inserted, p => Assert.StartsWith("200", p.ProviderId));
+        var named = inserted
+            .SelectMany(p => (p.FeelSeeds ?? []).Select(r => r.Id).Append(p.BecauseOfId))
+            .OfType<string>()
+            .ToList();
+        Assert.All(named, id => Assert.Contains(id, new[] { "101", "102", "103" }));
+    }
+
+    [Fact]
+    public async Task HydratePicksAsync_KeepsSafeTagPastSixteenPerSeriesSpoilers()
+    {
+        Add(1, "Seed", genres: """["Fantasy"]""");
+        Add(2, "Spoiler Heavy", genres: """["Fantasy"]""");
+        WriteDump();
+
+        var tagsV2 = "[" + string.Join(",",
+            Enumerable.Range(1, 17).Select(i => $$"""{"name":"Spoiler {{i}}","is_spoiler":true}""")
+                .Append("""{"name":"Safe Tag 18","is_spoiler":false}""")) + "]";
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE series SET tags_v2 = $tags WHERE id = 2;";
+            cmd.Parameters.AddWithValue("$tags", tagsV2);
+            cmd.ExecuteNonQuery();
+        }
+
+        var embeddingStore = Store();
+        embeddingStore.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Nudge(Axis(0), 1, 0.1f))]);
+        var vocab = Enumerable.Range(1, 17).ToDictionary(i => i, i => new TagInfo($"Spoiler {i}", 1, false));
+        vocab[18] = new TagInfo("Safe Tag 18", 500, false);
+        embeddingStore.UpsertVocab(vocab);
+        var blob = TagMath.Pack([.. Enumerable.Range(1, 18).Select(i => (i, TagMath.Core))]);
+        embeddingStore.UpsertTagsBatch([(1L, blob), (2L, blob)]);
+
+        var pool = await Recommender(tuning: RecommenderTuning.Default with { CommonWeight = 0 })
+            .GetSimilarPoolAsync([1], [], limit: 5, depth: 5);
+        var localStore = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(_dumpPath, _dir), NullLogger<MangaBakaLocalStore>.Instance);
+        var hydrated = await localStore.HydratePicksAsync(pool.Picks, pool.Seeds);
+
+        var pick = Assert.Single(hydrated);
+        Assert.Equal(["Safe Tag 18"], pick.MatchedTags);
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,
         string? coReadPath = null,
         CoReadTuning? coReadTuning = null,
-        RecommenderTuning? tuning = null)
+        RecommenderTuning? tuning = null,
+        string? easePath = null,
+        EaseTuning? easeTuning = null,
+        PageFrequency? pageFrequency = null,
+        PageShare.PageShareCache? pageShareCache = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
@@ -1371,7 +1932,31 @@ public class SemanticRecommenderTests : IDisposable
             new CoReadCache(coRead, NullLogger<CoReadCache>.Instance),
             coReadTuning ?? CoReadTuning.Default,
             NullLogger<SemanticRecommender>.Instance,
-            tuning);
+            tuning,
+            easeCache: easePath is null ? null : new EaseCache(new EaseOptions(easePath), NullLogger<EaseCache>.Instance),
+            easeTuning: easeTuning,
+            pageFrequency: pageFrequency,
+            pageShareCache: pageShareCache);
+    }
+
+    /// <summary>Writes an EASE table in the shape <c>distribution/build-ease-table.py</c> exports.</summary>
+    private string WriteEase(params (long Seed, long Item, float Weight)[] rows)
+    {
+        var path = Path.Combine(_dir, "ease-weights.db");
+        using var conn = new SqliteConnection($"Data Source={path};Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            CREATE TABLE weight (
+                seed_id INTEGER NOT NULL, item_id INTEGER NOT NULL, weight REAL NOT NULL,
+                PRIMARY KEY (seed_id, item_id)) WITHOUT ROWID;
+            CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            """ + $"""
+            INSERT INTO weight VALUES
+            {string.Join(",", rows.Select(r => FormattableString.Invariant($"({r.Seed}, {r.Item}, {r.Weight})")))};
+            """;
+        cmd.ExecuteNonQuery();
+        return path;
     }
 
     /// <summary>

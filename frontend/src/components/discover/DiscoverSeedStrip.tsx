@@ -4,6 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useSeries } from '../../api/hooks'
 import { activeSeries } from '../../lib/series'
 import { formatNumber } from '../../format'
+import { IconX } from '../../lib/icons'
 
 /**
  * The library series a personalised rail was built from, as the covers themselves.
@@ -21,7 +22,19 @@ import { formatNumber } from '../../format'
  * render — is dropped rather than shown as a gap.
  * </p>
  */
-export function DiscoverSeedStrip({ seedIds, label }: { seedIds: number[]; label?: string }) {
+export function DiscoverSeedStrip({
+  seedIds,
+  label,
+  selected,
+  onSelect,
+}: {
+  seedIds: number[]
+  label?: string
+  /** With `onSelect`, the seed whose picks the rail is narrowed to; null shows them all. */
+  selected?: number | null
+  /** Makes each seed a toggle that narrows the rail to it, instead of a link to the series. */
+  onSelect?: (seedId: number | null) => void
+}) {
   const { t } = useLingui()
   const resolvedLabel = label ?? t`Because you read`
   const { data: library } = useSeries()
@@ -40,19 +53,47 @@ export function DiscoverSeedStrip({ seedIds, label }: { seedIds: number[]; label
     <div className="discover-seeds">
       <span className="discover-seeds-label">{resolvedLabel}</span>
       <div className="discover-seeds-row">
-        {seeds.map((s) => (
-          <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.displayTitle}>
-            {s.coverUrl ? (
-              <img src={s.coverUrl} alt="" loading="lazy" decoding="async" />
-            ) : (
-              <span className="discover-seed-blank" aria-hidden />
-            )}
-            <span className="discover-seed-body">
-              <span className="discover-seed-title">{s.displayTitle}</span>
-              <span className="discover-seed-meta">{progressOf(s)}</span>
-            </span>
-          </Link>
-        ))}
+        {seeds.map((s) => {
+          const body = (
+            <>
+              {s.coverUrl ? (
+                <img src={s.coverUrl} alt="" loading="lazy" decoding="async" />
+              ) : (
+                <span className="discover-seed-blank" aria-hidden />
+              )}
+              <span className="discover-seed-body">
+                <span className="discover-seed-title">{s.displayTitle}</span>
+                <span className="discover-seed-meta">{progressOf(s)}</span>
+              </span>
+            </>
+          )
+          if (!onSelect) {
+            return (
+              <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.displayTitle}>
+                {body}
+              </Link>
+            )
+          }
+          const on = selected === s.mangaBakaId
+          return (
+            <button
+              key={s.id}
+              type="button"
+              className="discover-seed"
+              data-selectable
+              aria-pressed={on}
+              title={on ? t`Show picks from every series` : t`Only picks from ${s.displayTitle}`}
+              onClick={() => onSelect(on ? null : (s.mangaBakaId as number))}
+            >
+              {body}
+              {on && (
+                <span className="discover-seed-clear" aria-hidden>
+                  <IconX size={11} />
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

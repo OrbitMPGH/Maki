@@ -9,13 +9,11 @@ import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useStableActions } from '../lib/useStableActions'
 import {
   ActionIcon,
-  Badge,
   Box,
   Button,
   Checkbox,
   Divider,
   Group,
-  Indicator,
   Menu,
   Modal,
   MultiSelect,
@@ -54,8 +52,6 @@ import {
   IconScan,
   IconSearch,
   IconSettings,
-  IconSortAscending,
-  IconSortDescending,
   IconTable,
   IconListTree,
   IconBell,
@@ -112,6 +108,7 @@ import {
   useRateSeries,
   useTags,
 } from '../api/hooks'
+import { useRatingFormat } from '../api/ratings'
 import { offersPermanentDelete } from '../api/recycleBin'
 import { affectedKeys } from '../api/recommendationFeedback'
 import { useUpgradeProfiles } from '../api/upgrades'
@@ -133,6 +130,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { DrillChoices } from '../components/ui/DrillPanel'
 import {
   LibraryFilterPanel,
+  useActiveFilterChips,
   type LibraryFilterOptions,
   type LibraryFilterSetters,
   type LibraryFilterValues,
@@ -141,6 +139,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { TagChip } from '../components/ui/TagChip'
+import { CountIndicator } from '../components/ui/CountIndicator'
+import { FilterMenuButton, SortControl } from '../components/ListControls'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
@@ -626,6 +626,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const removeArchivedFiles = useRemoveArchivedFiles()
   const deleteSeries = useDeleteSeries()
   const rateSeries = useRateSeries()
+  const { format: formatRating } = useRatingFormat()
   const canArchive = can('ArchiveSeries')
   const canDelete = can('DeleteSeries')
   const queryClient = useQueryClient()
@@ -1249,6 +1250,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (overrideFilter.length > 0 ? 1 : 0),
   }
   const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
+  const activeChips = useActiveFilterChips(filterValues, filterSetters, filterOptions)
   const specActive = query.trim() !== '' || activeFilterCount > 0
 
   const defaultFilter = (savedFilters ?? []).find((f) => f.isDefault)
@@ -1521,16 +1523,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   // Stable so the memoized archived cards don't re-render on every library change; the series is
   // looked up at call time, since whether the stars set a "so far" score depends on its progress.
   const { onRate } = useStableActions({
-    onRate: (seriesId: number, rating: number | null) => {
+    onRate: (seriesId: number, value: number | null) => {
       const series = seriesById(seriesId)
       if (!series) return
-      rateSeries.rate(series, rating, (soFar) =>
+      rateSeries.rate(series, value, (soFar) => {
+        const rating = value === null ? null : formatRating(value)
         notifications.show({
           color: 'var(--ok)',
           message:
             rating === null ? now`Rating cleared` : soFar ? now`Rated ${rating}/10 so far` : now`Rated ${rating}/10`,
-        }),
-      )
+        })
+      })
     },
   })
 
@@ -2322,71 +2325,49 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   onClear={() => setQuery('')}
                   onChange={(e) => setQuery(e.currentTarget.value)}
                 />
+                {/* The chips under the bar name each active filter, so the button carries no count. */}
                 <Button
                   visibleFrom="sm"
                   variant={activeFilterCount > 0 ? 'light' : 'default'}
                   leftSection={<IconFilter size={16} />}
-                  rightSection={
-                    activeFilterCount > 0 ? (
-                      <Badge size="xs" circle variant="filled">
-                        {activeFilterCount}
-                      </Badge>
-                    ) : undefined
-                  }
                   onClick={() => setFiltersOpen(true)}
                 >
                   <Trans>Filters</Trans>
                 </Button>
                 {/* On a phone the bar is one sticky line, so the button gives up its label. */}
-                <Indicator
-                  hiddenFrom="sm"
-                  label={activeFilterCount}
-                  size={16}
-                  disabled={activeFilterCount === 0}
-                  className="library-filter-icon"
-                >
+                <CountIndicator hiddenFrom="sm" count={activeFilterCount}>
                   <ActionIcon
                     size={36}
                     variant={activeFilterCount > 0 ? 'light' : 'default'}
                     onClick={() => setFiltersOpen(true)}
-                    aria-label={t`Filters`}
+                    aria-label={
+                      activeFilterCount > 0
+                        ? plural(activeFilterCount, { one: 'Filters, # active', other: 'Filters, # active' })
+                        : t`Filters`
+                    }
                   >
                     <IconFilter size={16} />
                   </ActionIcon>
-                </Indicator>
-                {/* Field and direction as one control: the arrow only means something next to the field. */}
-                <div className="library-sort-control">
-                  <Select
-                    aria-label={t`Sort by`}
-                    className="library-sort"
-                    data={sortOptions}
-                    value={sort}
-                    onChange={(v) => {
-                      setSort(v ?? defaultSort)
-                      setSortDirOverride('')
-                    }}
-                    comboboxProps={{ withinPortal: true }}
-                  />
-                  <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
-                    <ActionIcon
-                      variant="default"
-                      size="input-sm"
-                      aria-label={t`Reverse sort order`}
-                      onClick={reverseSort}
-                    >
-                      {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
-                    </ActionIcon>
-                  </Tooltip>
-                </div>
-                <Select
-                  aria-label={t`Group by`}
+                </CountIndicator>
+                <SortControl
+                  className="library-sort-control"
+                  value={sort}
+                  options={sortOptions}
+                  direction={sortDir}
+                  onChange={(v) => {
+                    setSort(v)
+                    setSortDirOverride('')
+                  }}
+                  onReverse={reverseSort}
+                />
+                <FilterMenuButton
                   className="library-group-by"
-                  visibleFrom="sm"
-                  leftSection={<IconListTree size={16} />}
-                  data={groupByOptions}
-                  value={groupBy}
+                  icon={IconListTree}
+                  label={t`Group by`}
+                  anyLabel={_(GROUP_BY_LABELS.none)}
+                  value={groupBy === 'none' ? null : groupBy}
+                  options={groupByOptions.filter((o) => o.value !== 'none')}
                   onChange={(v) => setGroupBy(v ?? 'none')}
-                  comboboxProps={{ withinPortal: true }}
                 />
                 {filtersActive && !isLoading && (
                   <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count">
@@ -2509,6 +2490,26 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               </Group>
             </TagChip>
           )}
+          {activeChips.map(({ key, label: filterLabel, onRemove }) => (
+            <TagChip key={key} active aria-pressed={undefined} aria-label={t`Remove filter: ${filterLabel}`} onClick={onRemove}>
+              {filterLabel}
+              <IconX size={12} aria-hidden />
+            </TagChip>
+          ))}
+          {filtersActive && (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="var(--neutral)"
+              leftSection={<IconX size={16} />}
+              onClick={() => {
+                applySpec(DEFAULT_SPEC, null)
+                setOnDeviceOnly(false)
+              }}
+            >
+              <Trans>Clear</Trans>
+            </Button>
+          )}
           {(savedFilters ?? []).length > 0 && (
             <span className="library-saved-label">
               <IconBookmark size={16} />
@@ -2580,20 +2581,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               }}
             >
               <Trans>Save filter</Trans>
-            </Button>
-          )}
-          {filtersActive && (
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              color="var(--neutral)"
-              leftSection={<IconX size={16} />}
-              onClick={() => {
-                applySpec(DEFAULT_SPEC, null)
-                setOnDeviceOnly(false)
-              }}
-            >
-              <Trans>Clear</Trans>
             </Button>
           )}
         </Group>
@@ -2675,7 +2662,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Stack>
       </Modal>
 
-      <Modal opened={renameTarget != null} onClose={() => setRenameTarget(null)} title={t`Rename saved filter`}>
+      <Modal opened={renameTarget != null} onClose={() => setRenameTarget(null)} title={<ModalHeading title={t`Rename saved filter`} />}>
         <Stack
           component="form"
           gap="md"

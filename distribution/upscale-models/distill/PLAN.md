@@ -915,3 +915,20 @@ With N0/N2 and now O3/O4 invisible by eye, the measurable gains left at this spe
 sees; RESEARCH-PLAN-3's reading (the teacher's own noise sensitivity on faint detail) stands. Tuning stops here.
 
 NAS (i5-14500, owner's "Test speed", 2026-11-06): Maki 2x 1.5 s a page, Real-ESRGAN 4.2 s, 2.8x.
+
+### Specialists (step P, owner 2026-11-06 late: "Both, specialists first")
+
+`crop_stats.view_rows` adds `@grey`/`@colour` set views (Maki's `IsGreyscale` test on each LR crop, a
+damaged set taking its source's flags; train/served_train are 77% grey, colour sets 16-20%).
+`logs/stepP.sh`: p1-colour (colour sets whole plus train@colour, served_train@colour) and p2-grey
+(train@grey, served_train@grey, flat_train), 20k each from m1 on m1's recipe. p1's first 5k ran at 0.1-3
+it/s while Storybook and the browser story tests shared the GPU (its memory spilled); keep both off
+while training.
+
+Results on each specialist's own pages (m1 in brackets):
+- p1-colour, owner / colour: marks12 .075 / .057 (.106 / .089), marks .002 / .003 (.008 / .004), hair page
+  .001 (.004); PSNR owner 42.93 (42.55); faint .917 / .929 (.899 / .919), strong held; grain .162 / .151
+  (.156 / .139, teacher .204 / .155); blobs 2.18 / 0.79 (2.07 / 0.77). Seams 64.12 / 66.08 (64.41 /
+  66.80) and phase .053 / .036 (.047 / .027) slightly worse.
+- p2-grey, grey: blobs 6.28 (9.41), grain .278 (.301, teacher .279), marks12 .424 (.503), PSNR +0.05 to
+  +0.24 on every grey page; but faint lines .868 (.989): softer. Not a candidate as is.

@@ -205,6 +205,7 @@ const ICONS = {
   IconSortDescendingNumbers: 'sort-descending',
   IconSquare: 'square',
   IconSquareHalf: 'square-half',
+  IconStack: 'stack',
   IconStar: 'star',
   IconStarFilled: 'star:fill',
   IconStethoscope: 'stethoscope',

@@ -94,14 +94,50 @@ export const FinishedRateHint: Story = {
       }),
     ),
   },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
     await expect(canvas.queryByText("You've finished this. Archive it?")).toBeNull()
-    const stars = canvas.getByRole('group', { name: 'Rate this series' })
-    // Mantine commits a rating from the star's label; the radio itself only previews it.
-    await userEvent.click((within(stars).getByRole('radio', { name: '4' }) as HTMLInputElement).labels![0])
+    const words = canvas.getByRole('group', { name: 'Rate this series' })
+    await userEvent.click(within(words).getByRole('button', { name: 'Very good 8' }))
     await waitFor(() => expect(rated).toBe(8))
     await expect(await canvas.findByText("You've finished this. Archive it?")).toBeVisible()
+    // Undo in the toast puts the empty rating back.
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'Undo' }))
+    await waitFor(() => expect(rated).toBeNull())
+  },
+}
+
+let soFarRated: number | null = null
+
+/** A final rating clears a finished series' "so far" score, which cannot come back, so its toast offers no Undo. */
+export const FinishedSoFarRatedWithoutUndo: Story = {
+  beforeEach: () => {
+    soFarRated = null
+  },
+  parameters: {
+    ...at(2),
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json({
+          ...hintedSeriesDto(2),
+          rating: soFarRated,
+          provisionalRating: soFarRated == null ? 6.5 : null,
+          rateHintEligible: soFarRated == null,
+        }),
+      ),
+      http.put(api('/series/:id/rating'), async ({ request }) => {
+        soFarRated = ((await request.json()) as { rating: number | null }).rating
+        return HttpResponse.json({ rating: soFarRated })
+      }),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const scores = await canvas.findByRole('group', { name: 'Rate this series' })
+    await userEvent.click(within(scores).getByRole('button', { name: 'Very good 8' }))
+    await waitFor(() => expect(soFarRated).toBe(8))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Rated 8/10')).toBeVisible()
+    await expect(body.queryByRole('button', { name: 'Undo' })).toBeNull()
   },
 }
 
@@ -247,11 +283,11 @@ export const ChapterSortedByReleaseDate: Story = {
 export const ChaptersGroupedByVolume: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
-    const header = await canvas.findByRole('button', { name: 'Collapse Vol. 1' })
+    const header = await canvas.findByRole('button', { name: 'Collapse Volume 1' })
     await expect(header).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Collapse Vol. 2' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Collapse Volume 2' })).toBeVisible()
     await userEvent.click(header)
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Expand Vol. 1' })).toHaveAttribute('aria-expanded', 'false'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Expand Volume 1' })).toHaveAttribute('aria-expanded', 'false'))
     await expect(canvas.queryByText('Chapter 2')).toBeNull()
   },
 }
@@ -259,11 +295,11 @@ export const ChaptersGroupedByVolume: Story = {
 export const ChaptersUngroupedByRelease: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Collapse Volume 1' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     const picker = body(canvasElement)
     await userEvent.click(await picker.findByRole('radio', { name: 'Release date' }))
-    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Volume / })).toBeNull())
     await expect(await picker.findByText(/grouping is off while sorting by release date/)).toBeVisible()
   },
 }
@@ -271,10 +307,10 @@ export const ChaptersUngroupedByRelease: Story = {
 export const ChaptersGroupingOff: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: 'Collapse Vol. 1' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Collapse Volume 1' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
     await userEvent.click(await body(canvasElement).findByRole('switch', { name: 'Group by volume' }))
-    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Vol\./ })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: /^Collapse Volume / })).toBeNull())
   },
 }
 
@@ -536,6 +572,22 @@ export const NumberingClash: Story = {
       http.get(api('/series/:id'), () => HttpResponse.json(seriesDto(6, { numberingClash: 'comick|asurascans' }))),
     ),
     ...at(6),
+  },
+}
+
+export const NumberingClashes: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id'), () =>
+        HttpResponse.json(seriesDto(6, { numberingClash: 'comick|weebcentral;comick|asurascans' })),
+      ),
+    ),
+    ...at(6),
+  },
+  play: async ({ canvas }) => {
+    await expect((await canvas.findAllByText('Sub-chapters')).length).toBeGreaterThan(0)
+    await expect(canvas.getAllByText('Whole chapters').length).toBeGreaterThan(0)
+    await expect(canvas.queryByText('comick')).not.toBeInTheDocument()
   },
 }
 

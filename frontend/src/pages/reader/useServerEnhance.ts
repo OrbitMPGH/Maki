@@ -80,7 +80,8 @@ function chapterRest(from: number, pageCount: number, window: number[], plain: n
  * each page change. With `auto` set (Enhance on `auto`), only the window's wanted pages are asked
  * for, and a page joining them asks again. Pages `auto` shows plain are sent as `notWanted`, so the
  * server drops them where an earlier guess queued them (the previous chapter's look-ahead, the whole
- * chapter's rest), and their states are left out: a page shown plain never waits on an upscale. Each page is followed from `queued` or `working` to
+ * chapter's rest), and their states are left out unless ready: a page shown plain never waits on an
+ * upscale, and one the server already made is shown. Each page is followed from `queued` or `working` to
  * `ready`, `failed` or `skipped` through the response and the `pageEnhanced` push. If the live
  * connection has been down for 10 s, the window's unfinished pages are polled every 5 s instead. A
  * 409 (tier switched off or model gone) stops asking for the rest of the visit. Null whenever
@@ -292,8 +293,8 @@ export function useServerEnhance(
   const all = current.states
   const states = useMemo(() => {
     if (!plainKey) return all
-    const plain = plainKey.split(',').map(Number)
-    if (!plain.some((page) => all.has(page))) return all
+    const plain = plainKey.split(',').map(Number).filter((page) => all.has(page) && all.get(page) !== 'ready')
+    if (plain.length === 0) return all
     const kept = new Map(all)
     for (const page of plain) kept.delete(page)
     return kept

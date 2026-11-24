@@ -19,4 +19,21 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!--
+    A Debug build with no runtime given targets the machine it runs on, so each output folder gets
+    one platform's native libraries instead of every platform's (libvips, ONNX Runtime, SQLite and
+    pdfium for Linux, macOS, Android and iOS), which is most of a worktree's size. The output path
+    stays the same. Release, CI and anything passing -r are unaffected; -p:MakiAllRuntimes=true
+    restores the old layout.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release' And '$(RuntimeIdentifier)' == '' And '$(MakiAllRuntimes)' != 'true'">
+    <_MakiHostOs Condition="$([MSBuild]::IsOSPlatform('Windows'))">win</_MakiHostOs>
+    <_MakiHostOs Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux</_MakiHostOs>
+    <_MakiHostOs Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_MakiHostOs>
+    <_MakiHostArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant())</_MakiHostArch>
+    <RuntimeIdentifier Condition="'$(_MakiHostOs)' != ''">$(_MakiHostOs)-$(_MakiHostArch)</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
 </Project>

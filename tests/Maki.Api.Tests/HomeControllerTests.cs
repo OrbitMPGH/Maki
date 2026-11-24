@@ -420,6 +420,34 @@ public class HomeControllerTests : IDisposable
         Assert.NotNull(item.ReadChapterId);
     }
 
+    [Fact]
+    public async Task RecentlyAdded_counts_the_chapters_in_a_volume_pack_and_labels_the_last()
+    {
+        var seriesId = _db.SeedSeries("Volume pack");
+        using (var db = _db.NewContext())
+        {
+            for (var volume = 1; volume <= 5; volume++)
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId, RelativePath = $"Vol.{volume}.cbz", DateAdded = Base.AddMinutes(volume),
+                };
+                db.ChapterFiles.Add(file);
+                db.SaveChanges();
+                db.Chapters.AddRange(Enumerable.Range(4 * volume - 3, 4).Select(n => new Chapter
+                {
+                    SeriesId = seriesId, Number = n, Volume = volume, ChapterFileId = file.Id,
+                }));
+                db.SaveChanges();
+            }
+        }
+
+        var item = Assert.Single(Recent(await Controller().RecentlyAdded(ct: CancellationToken.None)));
+
+        Assert.Equal(20, item.NewChapterCount);
+        Assert.Equal("Vol.5 Ch.20", item.NewestChapterLabel);
+    }
+
     private void EditFile(int chapterId, Action<ChapterFile> edit)
     {
         using var db = _db.NewContext();

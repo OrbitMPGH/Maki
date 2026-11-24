@@ -25,7 +25,10 @@ public static class PerceptualHash
     }
 
     /// <summary>Hash of one-byte-per-pixel greyscale, averaged into a 9x8 grid of boxes.</summary>
-    public static ulong Of(byte[] grey, int width, int height)
+    public static ulong Of(byte[] grey, int width, int height) => Of(grey.AsSpan(), width, height);
+
+    /// <inheritdoc cref="Of(byte[], int, int)"/>
+    public static ulong Of(ReadOnlySpan<byte> grey, int width, int height)
     {
         // Box averaging, not a smoothing filter: no ringing or sharpening, so two copies of the
         // same page at different resolutions land on the same gradients.

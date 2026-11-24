@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Sources;
 
 namespace Maki.Api.Services;
@@ -20,6 +21,9 @@ public static class DownloadFailureReason
     public const string Unexpected = "error.download.unexpected";
     public const string ChallengeNotSolved = "error.download.challengeNotSolved";
 
+    /// <summary>The source's proxy could not be reached or refused the request; the proxy and what it said are the detail.</summary>
+    public const string Proxy = "error.download.proxy";
+
     /// <summary>The source lists the chapter but wants a login or a purchase for its pages.</summary>
     public const string NeedsPurchase = "error.download.sourceNeedsPurchase";
 
@@ -29,6 +33,10 @@ public static class DownloadFailureReason
     {
         switch (ex)
         {
+            // First: it is an HttpRequestException, and the network branch below would word it as the
+            // site being unreachable when it is the proxy.
+            case SourceProxyException proxy:
+                return (Proxy, Trim(proxy.Message));
             case HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden } http:
                 return (SourceRejected, $"HTTP {(int)http.StatusCode!}");
             case HttpRequestException { StatusCode: { } status }:
@@ -42,6 +50,12 @@ public static class DownloadFailureReason
             case HttpRequestException or HttpIOException or SocketException or AuthenticationException:
                 return (Network, Trim(Innermost(ex).Message));
             case TimeoutException or TaskCanceledException:
+                return (Network, Trim(ex.Message));
+            // The headless browser's navigation wraps its own timeout and Chromium's net::ERR_ codes,
+            // and its selector waits time out as a PuppeteerException, none of them a TimeoutException.
+            case PuppeteerSharp.NavigationException nav
+                when nav.InnerException is TimeoutException || nav.Message.StartsWith("net::", StringComparison.Ordinal):
+            case PuppeteerSharp.WaitTaskTimeoutException:
                 return (Network, Trim(ex.Message));
             case IOException or UnauthorizedAccessException:
                 return (Disk, Trim(ex.Message));

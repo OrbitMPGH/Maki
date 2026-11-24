@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBookFilled } from '../../lib/icons'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
@@ -9,14 +9,18 @@ import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /**
- * Horizontal rail of series that recently gained chapter files. Cards go to the series page;
+ * Horizontal rail of series that recently gained chapters to read. Cards go to the series page;
  * the small Read button jumps straight into the next unread chapter.
  */
 export const RecentlyAddedRail = memo(function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.seriesId} className="discover-rail-item reading-card">
+        <div
+          key={item.seriesId}
+          className="discover-rail-item reading-card"
+          style={item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined}
+        >
           <RecentCard item={item} />
           {item.readChapterId != null && <ReadNextButton chapterId={item.readChapterId} />}
         </div>
@@ -75,8 +79,8 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
             <span
               className="cover-new"
               data-tip={plural(newChapterCount, {
-                one: '# recent chapter file',
-                other: '# recent chapter files',
+                one: '# new chapter to read',
+                other: '# new chapters to read',
               })}
             >
               {plural(newChapterCount, { one: '# new', other: '# new' })}

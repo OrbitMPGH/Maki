@@ -29,6 +29,8 @@ are sent as WebP.
    password; Maki doesn't use it.
 3. Set **Document matching method** to **Binary**.
 
+![KOReader progress sync card showing the sync server address ending in /api/v1/kosync with a copy button, and the three setup steps](../../../../assets/ui/settings/koreader-sync-on.webp)
+
 **Push progress** and **Pull progress** in the same menu sync by hand. With **Automatically keep
 documents in sync** on, KOReader pushes your page as you read and when you close the book or the
 device sleeps, and pulls the latest position when a book opens.

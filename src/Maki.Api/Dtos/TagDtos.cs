@@ -92,8 +92,8 @@ public record LibraryFilterSpec(
     /// <see cref="RatingMax"/> only apply with "rated".
     /// </summary>
     string RatingState = "all",
-    int RatingMin = 1,
-    int RatingMax = 10,
+    double RatingMin = 1,
+    double RatingMax = 10,
     /// <summary>
     /// MangaBaka score window, 0–10 inclusive. The full range means "don't filter"; any narrower
     /// window drops series without a score.

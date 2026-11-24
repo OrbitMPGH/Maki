@@ -60,13 +60,10 @@ public static class SourcePageCounts
 
             foreach (var copy in copies)
             {
-                var others = copies.Where(c => c.MappingId != copy.MappingId).Select(Length).Order().ToList();
-                var median = others.Count % 2 == 1
-                    ? others[others.Count / 2]
-                    : (others[others.Count / 2 - 1] + others[others.Count / 2]) / 2.0;
+                var median = Median(copies.Where(c => c.MappingId != copy.MappingId).Select(Length));
                 var length = Length(copy);
                 compared[copy.MappingId] = compared.GetValueOrDefault(copy.MappingId) + 1;
-                if (length < median * ShortShare && median - length >= MinPagesShort)
+                if (IsShort(length, median))
                 {
                     shortCopies[copy.MappingId] = shortCopies.GetValueOrDefault(copy.MappingId) + 1;
                 }
@@ -101,9 +98,11 @@ public static class SourcePageCounts
     }
 
     /// <summary>
-    /// Whether, on most of these chapters that another source also sampled, some other copy is clearly
-    /// longer. With none sampled by another source (a source the scout measured on chapters of its
-    /// own, or downloads that never overlap), the other sources' typical chapter is the yardstick.
+    /// Whether, on most of these chapters that other sources also sampled, their typical copy is
+    /// clearly longer. Using the median rather than any single source stops one longer outlier (a bad
+    /// match, merged chapters, or extra credit pages) from marking every agreeing source truncated.
+    /// With none sampled by another source (a source the scout measured on chapters of its own, or
+    /// downloads that never overlap), the other sources' typical chapter is the yardstick.
     /// </summary>
     private static bool LongerElsewhere(
         List<Sample> chapters, Dictionary<int, List<Sample>> byChapter, IReadOnlyCollection<Sample> samples)
@@ -118,13 +117,9 @@ public static class SourcePageCounts
             }
 
             shared++;
-            if (others.Any(o =>
-                {
-                    var byShape = copy.HasShape && o.HasShape;
-                    var own = byShape ? copy.PageCount * copy.Aspect / PageAspect : copy.PageCount;
-                    var theirs = byShape ? o.PageCount * o.Aspect / PageAspect : o.PageCount;
-                    return theirs - own >= MinPagesShort;
-                }))
+            var byShape = copy.HasShape && others.All(o => o.HasShape);
+            double Length(Sample s) => byShape ? s.PageCount * s.Aspect / PageAspect : s.PageCount;
+            if (IsShort(Length(copy), Median(others.Select(Length))))
             {
                 longer++;
             }
@@ -143,12 +138,19 @@ public static class SourcePageCounts
             return false;
         }
 
-        var byShape = chapters.All(c => c.HasShape) && elsewhere.All(o => o.HasShape);
-        double Length(Sample s) => byShape ? s.PageCount * s.Aspect / PageAspect : s.PageCount;
-        var lengths = elsewhere.Select(Length).Order().ToList();
-        var median = lengths.Count % 2 == 1
-            ? lengths[lengths.Count / 2]
-            : (lengths[lengths.Count / 2 - 1] + lengths[lengths.Count / 2]) / 2.0;
-        return median - chapters.Max(Length) >= MinPagesShort;
+        var allShaped = chapters.All(c => c.HasShape) && elsewhere.All(o => o.HasShape);
+        double FullLength(Sample s) => allShaped ? s.PageCount * s.Aspect / PageAspect : s.PageCount;
+        return IsShort(chapters.Max(FullLength), Median(elsewhere.Select(FullLength)));
+    }
+
+    private static bool IsShort(double length, double reference) =>
+        length < reference * ShortShare && reference - length >= MinPagesShort;
+
+    private static double Median(IEnumerable<double> values)
+    {
+        var sorted = values.Order().ToList();
+        return sorted.Count % 2 == 1
+            ? sorted[sorted.Count / 2]
+            : (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2.0;
     }
 }

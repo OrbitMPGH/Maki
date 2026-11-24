@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
+  type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
@@ -274,6 +275,8 @@ export interface RecommendationItem {
   relatedToThumbUrl?: string | null
   becauseOfThumbUrl?: string | null
   coReadWithThumbUrl?: string | null
+  /** Set on Trending picks only: places climbed up the popularity ranking over the last month. */
+  climb?: number | null
   /**
    * The same-work component this pick belongs to, or null when it is in no franchise, which is
    * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
@@ -313,6 +316,8 @@ export interface RecommendationsResult {
   hasMore: boolean
   poolVersion?: string | null
   restartRequired?: boolean
+  totalSimilar?: number
+  nextCursor?: number | null
 }
 
 export interface RecommendationFilters {
@@ -395,6 +400,8 @@ export interface TasteMember {
   seriesId: number
   title: string
   coverUrl: string | null
+  /** So the page can recommend from this one series. */
+  mangaBakaId: number
 }
 
 /**
@@ -423,6 +430,39 @@ export interface TasteDriftPoint {
   similarityToPrevious: number
   distinctiveTags: string[]
   example: TasteMember | null
+  /** Up to five series of the quarter, nearest its centre first. */
+  examples: TasteMember[]
+}
+
+/** An unread or paused series the reader owns, and how well it fits what they read. */
+export interface TasteShelfPick {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  mangaBakaId: number
+  /** 0..1 over the shelf's candidates: the best fit is 1, the furthest 0. Not a percentage. */
+  fit: number
+  /** The tag or genre it shares with the most read series, when at least three do. */
+  reason: string | null
+  reasonCount: number
+  fromRecommendation: boolean
+  onHold: boolean
+  /** For a paused series, the highest chapter number read. */
+  resumeAt: number | null
+  /** A chapter is on disk. */
+  ready: boolean
+  /** The chapter "Start reading" opens. */
+  nextChapterId?: number | null
+}
+
+/** A side taste: read series of one type and one of Action, Romance or neither. */
+export interface TasteSideLane {
+  type: string | null
+  bucket: 'action' | 'romance' | 'other'
+  read: number
+  owned: number
+  examples: TasteMember[]
+  seedIds: number[]
 }
 
 export interface TasteInsights {
@@ -438,6 +478,9 @@ export interface TasteInsights {
   /** Why there is nothing to show. Null on success; every value is an ordinary state, not an error. */
   unavailable: string | null
   generatedAt: string
+  /** Absent with no index; empty under three read or three unread series. */
+  shelfPicks?: TasteShelfPick[] | null
+  sideLanes?: TasteSideLane[] | null
 }
 
 /**
@@ -490,6 +533,45 @@ export interface ReadingBehaviour {
   /** Ten buckets of where stalled series stopped, 0-10% through 90-100%. */
   stopPointHistogram: number[]
   generatedAt: string
+  /** Median length of finished against stalled series. Null under two of either. */
+  length?: LengthSweetSpot | null
+  binge?: BingeHabit | null
+  /** Paged against long-strip pace. Null unless both have ten timed chapters. */
+  paceByFormat?: FormatPace[] | null
+}
+
+export interface LengthSweetSpot {
+  finished: number
+  stalled: number
+  finishedCount: number
+  stalledCount: number
+}
+
+export interface BingeExample {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  chapters: number
+  activeDays: number
+  spanDays: number
+  /** Chapters finished on each day the series was read, in order; days without reading left out. */
+  perDay: number[]
+}
+
+export interface BingeHabit {
+  /** Series with five or more dated chapters. */
+  series: number
+  /** Of those, read in one or two days. */
+  binged: number
+  examples: BingeExample[]
+}
+
+export interface FormatPace {
+  format: 'paged' | 'strip'
+  medianSeconds: number
+  timedChapters: number
+  savoured: BehaviourSeries[]
+  devoured: BehaviourSeries[]
 }
 
 /** Needs no catalogue, so this one answers even on an install with no MangaBaka database. */
@@ -522,6 +604,40 @@ export interface TasteFacet {
   overIndexCatalogue: number | null
 }
 
+export interface TasteSeriesRef {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+}
+
+/** A genre or story tag the shelf holds far more of than the reading does. */
+export interface TasteUnderFacet {
+  name: string
+  isGenre: boolean
+  owned: number
+  read: number
+  /** Read share over shelf share, below 1. */
+  ratio: number
+  unread: number
+  examples: TasteSeriesRef[]
+}
+
+export interface TasteDeepCut extends TasteSeriesRef {
+  rank: number
+}
+
+/**
+ * Shares of the reading and the shelf in four catalogue popularity bands: top 100, top 1,000,
+ * top 10,000, deeper. MangaBaka's ranking, not other readers of this instance.
+ */
+export interface TastePopularity {
+  read: number[]
+  shelf: number[]
+  readRanked: number
+  shelfRanked: number
+  deepCuts: TasteDeepCut[]
+}
+
 export interface TasteYearFacet {
   year: number
   weight: number
@@ -546,6 +662,8 @@ export interface TasteProfile {
    */
   catalogueBaselineSource: 'readers' | 'popularity' | null
   generatedAt: string
+  underRead?: TasteUnderFacet[] | null
+  popularity?: TastePopularity | null
 }
 
 /** Which population a profile describes. Both weight a series the same way. */
@@ -581,12 +699,24 @@ const REFRESHED_REQUESTS = new Set<string>()
  * without it, and with `retry: false` and no `meta.silent` that surfaces as an error toast on
  * every page load.
  */
-export function useRecommendations(request: RecommendationRequest, enabled = true) {
+export function useRecommendations(
+  request: RecommendationRequest,
+  enabled = true,
+  /** Keeps the previous answer up while a changed request loads, for a request that follows live filters. */
+  keepPrevious = false,
+) {
+  const client = useQueryClient()
   const { refresh, ...identity } = request
   const identityKey = JSON.stringify(identity)
-  return useInfiniteQuery({
-    queryKey: ['recommendations', identity],
-    queryFn: ({ pageParam }) => {
+  const queryKey = useMemo(
+    () => ['recommendations', JSON.parse(identityKey) as Omit<RecommendationRequest, 'refresh'>] as const,
+    [identityKey],
+  )
+  const query = useInfiniteQuery({
+    queryKey,
+    // The signal lets a superseded live-apply request go: the server drops a queued pool build once
+    // nobody waits on it.
+    queryFn: ({ pageParam, signal }) => {
       // A refresh recomputes the pool: only bust the cache on the first page, so deeper pages
       // read from the pool that page 0 just rebuilt, and only once per applied request so a
       // later invalidation refetch reads the rebuilt pool instead of rebuilding it again.
@@ -594,17 +724,27 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
       if (bust) REFRESHED_REQUESTS.add(identityKey)
       return api<RecommendationsResult>('/recommendations', {
         method: 'POST',
+        signal,
         body: JSON.stringify({
           ...identity,
           page: pageParam.page,
           poolVersion: pageParam.poolVersion,
+          cursor: pageParam.cursor,
           refresh: bust,
         }),
       })
     },
-    initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
+    initialPageParam: {
+      page: 0,
+      poolVersion: undefined as string | undefined,
+      cursor: undefined as number | undefined,
+    },
     getNextPageParam: (last) => (last?.hasMore
-      ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
+      ? {
+          page: last.page + 1,
+          poolVersion: last.poolVersion ?? undefined,
+          cursor: last.nextCursor ?? undefined,
+        }
       : undefined),
     // A restart page is the server saying the pool changed under us and handing back the new one
     // from the top. Everything loaded before it came from a pool that no longer exists, so keeping
@@ -619,7 +759,40 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   })
+
+  // Prune superseded pre-restart pages from the raw cache as well (not only in `select`), so
+  // feedback mutations do not retain or decrement stale pages and a later refetch starts at page 0.
+  useEffect(() => {
+    const raw = client.getQueryData<
+      InfiniteData<RecommendationsResult, { page: number; poolVersion: string | undefined; cursor: number | undefined }>
+    >(queryKey)
+    if (!raw) return
+    const restart = raw.pages.findLastIndex((page) => page?.restartRequired)
+    if (restart <= 0) return
+    client.setQueryData(queryKey, {
+      pages: raw.pages.slice(restart),
+      pageParams: [{ page: 0, poolVersion: undefined, cursor: undefined }, ...raw.pageParams.slice(restart + 1)],
+    })
+  }, [client, queryKey, query.dataUpdatedAt])
+
+  // If this multi-page feed was invalidated lazily while mounted (e.g. after a hide/dismiss),
+  // trim it back to page 0 on unmount so returning to Discover refetches 1 page instead of up to 25.
+  useEffect(() => {
+    return () => {
+      const entry = client.getQueryCache().find({ queryKey })
+      if (!entry?.isStale()) return
+      const raw = entry.state.data as InfiniteData<RecommendationsResult, unknown> | undefined
+      if (!raw || !Array.isArray(raw.pages) || raw.pages.length <= 1) return
+      client.setQueryData(queryKey, {
+        pages: raw.pages.slice(0, 1),
+        pageParams: Array.isArray(raw.pageParams) ? raw.pageParams.slice(0, 1) : raw.pageParams,
+      })
+    }
+  }, [client, queryKey])
+
+  return query
 }
 
 /** One catalogue-browse rail on the Discover tab (Popular / New / Trending / …). */
@@ -654,6 +827,22 @@ export interface DiscoverRail {
   excludeInteracted?: boolean
   /** Set on the follow rail, so "Show more" keeps its release window. */
   releasedWithinMonths?: number
+  /** Set on the reader-cohort rail: its picks sorted into the groups of readers they came from, strongest first. */
+  groups?: DiscoverCohortGroup[] | null
+}
+
+/** One group of readers the reader was placed with, on the "Readers like you also finished" rail. */
+export interface DiscoverCohortGroup {
+  /** The group's id in the installed artifact; sent back to draw from it alone. */
+  key: number
+  /** Its share of the reader's placement, 0 to 1. */
+  weight: number
+  /** Up to three of the reader's own finished series that tie them to it (MangaBaka ids). */
+  seedIds: number[]
+  /** How many of the reader's finished series count towards it. */
+  shared: number
+  /** Its picks, by MangaBaka id as on the rail's items, with how many of the group finished each (0 to 1). */
+  members: { id: string; share: number }[]
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -766,7 +955,7 @@ export const READER_COHORT_FEED = 'ReaderCohorts'
  * reason as the recent-activity rail: it is an extra on a page that works without it.
  */
 export function useDiscoverCohort(
-  request: { filters?: RecommendationFilters; limit?: number } | null,
+  request: { filters?: RecommendationFilters; limit?: number; cohort?: number | null } | null,
   enabled = true,
 ) {
   return useQuery({
@@ -1020,6 +1209,8 @@ export interface HomeRecentSeriesItem {
   newestChapterLabel: string | null
   /** Next unread downloaded chapter. The server drops fully read series, so null is only defensive. */
   readChapterId: number | null
+  /** The colour the cover lends to the card's foot, as #rrggbb, or null when the art has no hue. */
+  coverAccent?: string | null
 }
 
 /** Most cards a Home rail asks for: the server's `HomeController.MaxRailItems`. The rails scroll. */
@@ -1128,10 +1319,10 @@ export const DISCOVER_SECTIONS = [
 export type DiscoverSectionKey = (typeof DISCOVER_SECTIONS)[number]
 
 export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescriptor> = {
-  hero: msg`Spotlight`,
+  hero: msg`Start here`,
   recent: msg`Based on your recent activity`,
   following: msg`New from creators you follow`,
-  sideinterests: msg`Side interests`,
+  sideinterests: msg`Another side of your library`,
   cohort: msg`Readers like you`,
   trending: msg`Trending now`,
   catalogue: msg`Browse the catalogue`,
@@ -1207,6 +1398,10 @@ export interface UiSettings {
   language: string
   /** How Discover's Browse tab is arranged. Leaving it out of a save keeps the stored one. */
   discoverLayout?: DiscoverLayout | null
+  /** What a library cover's progress bar leads with. Leaving it out of a save keeps the stored one. */
+  cardProgress?: 'auto' | 'downloads' | 'reading' | null
+  /** Read-only: what "auto" resolves to for this user, from their use of Maki's own reader. */
+  cardProgressAuto?: 'downloads' | 'reading' | null
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -1256,10 +1451,16 @@ export function useSavePageLayout() {
     mutationFn: ({ page, sections }: { page: 'home' | 'discover'; sections: PageSection[] }) => {
       const ui = queryClient.getQueryData<UiSettings>(['settings', 'ui'])
       if (!ui) throw new Error(t`Settings not loaded`)
+      // `cardProgress: null` keeps the stored choice, so a tab with an older copy cannot undo it.
       const next: UiSettings =
         page === 'home'
-          ? { ...ui, homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] }, discoverLayout: null }
-          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] } }
+          ? {
+              ...ui,
+              homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] },
+              discoverLayout: null,
+              cardProgress: null,
+            }
+          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] }, cardProgress: null }
       return api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(next) })
     },
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'ui'], saved),
@@ -1371,6 +1572,16 @@ export function useSaveHiddenContent() {
       }),
     onSuccess: (saved) => {
       queryClient.setQueryData(['discover-hidden'], saved)
+      // Changing the never-show list rebuilds the pool, so trim multi-page recommendation feeds
+      // back to page 0 before invalidating rather than refetching up to 25 pages in sequence.
+      for (const [key, data] of queryClient.getQueriesData<InfiniteData<unknown>>({ queryKey: ['recommendations'] })) {
+        if (data && Array.isArray(data.pages) && data.pages.length > 1) {
+          queryClient.setQueryData(key, {
+            pages: data.pages.slice(0, 1),
+            pageParams: Array.isArray(data.pageParams) ? data.pageParams.slice(0, 1) : data.pageParams,
+          })
+        }
+      }
       void queryClient.invalidateQueries({
         predicate: (q) => HIDDEN_SHAPED.has(String(q.queryKey[0])),
       })
@@ -3154,16 +3365,39 @@ export function useFinalizeRating() {
 export function useRateSeries() {
   const final = useSetRating()
   const provisional = useSetProvisionalRating()
+  // What each endpoint last saved per series, so Undo after two quick picks goes back one step
+  // rather than to the score the page loaded with.
+  const saved = useRef(new Map<string, number | null>())
   return {
     isPending: final.isPending || provisional.isPending,
     rate: (
       series: Pick<SeriesDto, 'id' | 'rating' | 'provisionalRating' | 'finished' | 'readChapterCount'>,
       rating: number | null,
-      onSuccess?: (soFar: boolean) => void,
+      /**
+       * `undo` puts back the score this replaced, through the same endpoint. It is null when that
+       * score cannot come back: a final rating clears the "so far" one, and a finished series
+       * refuses a new "so far" score.
+       */
+      onSuccess?: (soFar: boolean, undo: (() => void) | null) => void,
     ) => {
       const soFar = rating === null ? isProvisional(series) : ratesProvisionally(series)
       const mutation = soFar ? provisional : final
-      mutation.mutate({ seriesId: series.id, rating }, { onSuccess: () => onSuccess?.(soFar) })
+      const key = `${series.id}:${soFar ? 'so-far' : 'final'}`
+      const before = saved.current.has(key)
+        ? (saved.current.get(key) ?? null)
+        : ((soFar ? series.provisionalRating : series.rating) ?? null)
+      const replacesSoFar = !soFar && rating !== null && before === null && series.provisionalRating != null
+      const send = (value: number | null, after?: () => void) =>
+        mutation.mutate(
+          { seriesId: series.id, rating: value },
+          {
+            onSuccess: () => {
+              saved.current.set(key, value)
+              after?.()
+            },
+          },
+        )
+      send(rating, () => onSuccess?.(soFar, replacesSoFar ? null : () => send(before)))
     },
   }
 }
@@ -3878,8 +4112,8 @@ export function useDownloadClientKinds() {
 
 export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
-/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, or `indexer:{backend}`. */
-export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | `indexer:${IndexerBackend}`
+/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, `sourceproxy`, or `indexer:{backend}`. */
+export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | 'sourceproxy' | `indexer:${IndexerBackend}`
 
 /** The last Test of a connection, present only while the saved settings are the ones it tested. */
 export interface ConnectionTestStatus {
@@ -3938,6 +4172,53 @@ export function useTestConnectionSettings<T>(name: ConnectionName) {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    onSettled: () => invalidateConnectionTests(queryClient),
+  })
+}
+
+/** The one proxy chosen sources go through, and which sources those are. */
+export interface SourceProxySettings {
+  url: string | null
+  sources: string[]
+}
+
+export interface SourceProxyTestResult {
+  success: boolean
+  /** What the site answered through the proxy. */
+  status: number | null
+  /** True when the proxy also connects to private addresses; null when it could not be asked. */
+  allowsPrivate: boolean | null
+  /** FlareSolverr's own try through the proxy; null when the source does not need it. */
+  flareSolverr: boolean | null
+}
+
+const SOURCE_PROXY_KEY = ['settings', 'source-proxy'] as const
+
+export function useSourceProxy(enabled = true) {
+  return useQuery({
+    queryKey: SOURCE_PROXY_KEY,
+    queryFn: () => api<SourceProxySettings>('/settings/source-proxy'),
+    enabled,
+  })
+}
+
+export function useSaveSourceProxy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: SourceProxySettings) =>
+      api<SourceProxySettings>('/settings/source-proxy', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(SOURCE_PROXY_KEY, saved)
+      invalidateConnectionTests(queryClient)
+    },
+  })
+}
+
+export function useTestSourceProxy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { url: string | null; source: string }) =>
+      api<SourceProxyTestResult>('/settings/source-proxy/test', { method: 'POST', body: JSON.stringify(value) }),
     onSettled: () => invalidateConnectionTests(queryClient),
   })
 }

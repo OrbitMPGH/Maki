@@ -10,6 +10,7 @@ paths:
   - "src/Maki.Api/Services/UserMetrics*.cs"
   - "src/Maki.Api/Services/*Notification*.cs"
   - "src/Maki.Api/Services/Inbox*.cs"
+  - "src/Maki.Api/Services/CardProgress.cs"
   - "src/Maki.Api/Services/UserViewResolver.cs"
   - "frontend/src/pages/rewind/**"
   - "frontend/src/pages/stats/**"

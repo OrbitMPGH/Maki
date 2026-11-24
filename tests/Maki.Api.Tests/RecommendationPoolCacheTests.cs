@@ -8,7 +8,8 @@ namespace Maki.Api.Tests;
 /// </summary>
 public class RecommendationPoolCacheTests
 {
-    private static RecommendationsResult Pool(DateTime generatedAt) => new([], [], generatedAt);
+    private static CachedRecommendationPool Pool(DateTime generatedAt) =>
+        new([], CompactSimilar: null, Seeds: null, HydratedSimilar: [], generatedAt, BuildId: 1, DumpStamp: string.Empty);
 
     [Fact]
     public void Rail_inserts_never_evict_interactive_entries()
@@ -80,6 +81,24 @@ public class RecommendationPoolCacheTests
         cache.Store("rail-3", Pool(clock.Now.UtcDateTime), PoolOrigin.Rail);
 
         Assert.True(cache.TryGet("shared-key", PoolOrigin.Rail, out _));
+    }
+
+    [Fact]
+    public void The_idle_sweep_keeps_interactive_pools_past_the_rail_window()
+    {
+        var clock = new StoppedClock(DateTimeOffset.UtcNow);
+        var cache = new RecommendationPoolCache(interactiveSlots: 2, railSlots: 2, ttl: TimeSpan.FromHours(12), clock);
+        cache.Store("interactive", Pool(clock.Now.UtcDateTime), PoolOrigin.Interactive);
+        cache.Store("rail", Pool(clock.Now.UtcDateTime), PoolOrigin.Rail);
+
+        clock.Now = clock.Now.AddMinutes(30);
+        Assert.Equal(1, cache.ReleaseIdle(TimeSpan.FromMinutes(15), TimeSpan.FromHours(2)));
+        Assert.True(cache.TryGet("interactive", PoolOrigin.Interactive, out _));
+        Assert.False(cache.TryGet("rail", PoolOrigin.Rail, out _));
+
+        clock.Now = clock.Now.AddHours(2);
+        Assert.Equal(1, cache.ReleaseIdle(TimeSpan.FromMinutes(15), TimeSpan.FromHours(2)));
+        Assert.Equal(0, cache.Count);
     }
 
     [Fact]

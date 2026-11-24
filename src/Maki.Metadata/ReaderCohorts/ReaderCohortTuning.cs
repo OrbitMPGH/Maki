@@ -3,7 +3,7 @@ namespace Maki.Metadata.ReaderCohorts;
 /// <summary>
 /// Dials for the "readers like you" surfaces. Every value here came off
 /// <c>distribution/eval-reader-cohorts.cs</c> on held-out readers, and the numbers behind them are
-/// written up in <c>distribution/CLAUDE.md</c> under "v5: reader cohorts".
+/// written up in <c>distribution/AGENTS.md</c> under "v5: reader cohorts".
 ///
 /// <para>
 /// <b>The eval keeps its own copies of these, swept from the command line.</b> They must agree with

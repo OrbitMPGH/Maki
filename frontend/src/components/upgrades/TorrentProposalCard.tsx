@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { Button, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
@@ -20,6 +20,7 @@ import { formatBytes } from '../../format'
 import { Callout } from '../ui/Callout'
 import { Panel } from '../ui/Panel'
 import { Thumb } from '../ui/Thumb'
+import { LightBadge } from '../series/lightMantine'
 
 /**
  * A torrent volume release the nightly search found but did not grab on its own, waiting for a
@@ -73,12 +74,8 @@ export function TorrentProposalCard({
           {title}
         </Text>
         <Group gap={6} wrap="wrap">
-          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]}>
-            {tierLabel}
-          </Badge>
-          <Badge size="sm" variant="light" color="var(--neutral)">
-            {indexer}
-          </Badge>
+          <LightBadge color={QUALITY_TIER_COLOR[tier]}>{tierLabel}</LightBadge>
+          <LightBadge color="var(--neutral)">{indexer}</LightBadge>
           <Text size="xs" c="var(--ink-3)" className="tnum">
             {size}
           </Text>
@@ -94,9 +91,9 @@ export function TorrentProposalCard({
         {reasons.length > 0 && (
           <Group gap={6} wrap="wrap">
             {reasons.map((code) => (
-              <Badge key={code} size="xs" variant="light" color="var(--warn)" style={{ textTransform: 'none' }}>
+              <LightBadge key={code} color="var(--warn)">
                 {proposalReasonLabel(renderLabel, code)}
-              </Badge>
+              </LightBadge>
             ))}
           </Group>
         )}

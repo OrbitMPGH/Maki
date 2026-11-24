@@ -21,9 +21,9 @@ The service needs read and write access to your manga library folders.
 Sources that need a browser
   MangaFire and TopManhua download a headless browser (about 100 MB) the first time they are
   used. The browser needs some system libraries. If Health reports that it will not start,
-  install them once with:
-    sudo ./.playwright/node/linux-x64/node ./.playwright/package/cli.js install-deps chromium-headless-shell
-  (use linux-arm64 on an ARM machine). Both sources also need FlareSolverr.
+  install them once with (Debian and Ubuntu; elsewhere, install the packages it names):
+    sudo ./install-browser-deps.sh
+  Both sources also need FlareSolverr.
 
 JPEG XL for upscaled pages
   Server upscaling saves colour pages as JPEG XL with the libjxl files beside Maki.Api. They are

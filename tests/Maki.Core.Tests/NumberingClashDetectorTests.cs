@@ -13,11 +13,10 @@ public class NumberingClashDetectorTests
     {
         // The "At Home with a Girl in Her Cute Pajamas" case: MangaDex has 1.1/1.2-style
         // sub-chapters, WeebCentral covers the same range with integers.
-        var clash = NumberingClashDetector.Detect(Sources(
+        var clash = Assert.Single(NumberingClashDetector.Detect(Sources(
             ("mangadex", [1.1m, 1.2m, 2.1m, 2.2m, 3.1m, 3.2m, 4.1m]),
-            ("weebcentral", [1m, 2m, 3m, 4m, 5m])));
+            ("weebcentral", [1m, 2m, 3m, 4m, 5m]))));
 
-        Assert.NotNull(clash);
         Assert.Equal("mangadex", clash.SubChapterSource);
         Assert.Equal("weebcentral", clash.WholeChapterSource);
     }
@@ -26,7 +25,7 @@ public class NumberingClashDetectorTests
     public void OmakeDecimalsAreNotAClash()
     {
         // 10.5-style specials legitimately coexist with whole chapters everywhere.
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [9m, 9.5m, 10m, 10.5m, 11m, 11.5m, 12m]),
             ("weebcentral", [9m, 10m, 11m, 12m]))));
     }
@@ -34,7 +33,7 @@ public class NumberingClashDetectorTests
     [Fact]
     public void AgreeingSourcesAreNotAClash()
     {
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [1m, 2m, 3m, 4m]),
             ("weebcentral", [1m, 2m, 3m, 4m, 5m]))));
     }
@@ -43,7 +42,7 @@ public class NumberingClashDetectorTests
     public void SubChaptersAlongsideOwnWholesAreNotAClash()
     {
         // A source with both 32 and 32.1 is publishing extras, not a different scheme.
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [31m, 31.1m, 32m, 32.1m, 33m, 33.1m]),
             ("weebcentral", [31m, 32m, 33m]))));
     }
@@ -53,11 +52,10 @@ public class NumberingClashDetectorTests
     {
         // The actual "Cute Pajamas" lists as synced: 6 sub-chapters over just two
         // integer parts on MangaDex, 1..14 whole on WeebCentral.
-        var clash = NumberingClashDetector.Detect(Sources(
+        var clash = Assert.Single(NumberingClashDetector.Detect(Sources(
             ("mangadex", [1.1m, 1.2m, 2.1m, 2.2m, 2.3m, 2.4m]),
-            ("weebcentral", [1m, 2m, 3m, 4m, 5m, 6m, 7m, 8m, 9m, 10m, 11m, 12m, 13m, 14m])));
+            ("weebcentral", [1m, 2m, 3m, 4m, 5m, 6m, 7m, 8m, 9m, 10m, 11m, 12m, 13m, 14m]))));
 
-        Assert.NotNull(clash);
         Assert.Equal("mangadex", clash.SubChapterSource);
         Assert.Equal("weebcentral", clash.WholeChapterSource);
     }
@@ -66,7 +64,7 @@ public class NumberingClashDetectorTests
     public void OneSplitChapterIsNotAClash()
     {
         // A single chapter released in parts (10.1/10.2) happens on any source.
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [8m, 9m, 10.1m, 10.2m, 10.3m, 11m]),
             ("weebcentral", [8m, 9m, 10m, 11m]))));
     }
@@ -74,15 +72,39 @@ public class NumberingClashDetectorTests
     [Fact]
     public void SingleSourceNeverClashes()
     {
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [1.1m, 1.2m, 2.1m, 2.2m, 3.1m, 3.2m]))));
     }
 
     [Fact]
     public void OneShotsAreIgnored()
     {
-        Assert.Null(NumberingClashDetector.Detect(Sources(
+        Assert.Empty(NumberingClashDetector.Detect(Sources(
             ("mangadex", [null, null, null]),
             ("weebcentral", [1m, 2m, 3m]))));
     }
+
+    [Fact]
+    public void ReportsEveryClashingPair()
+    {
+        var clashes = NumberingClashDetector.Detect(Sources(
+            ("weebcentral", [1.1m, 1.2m, 2.1m, 2.2m, 3.1m]),
+            ("mangadex", [1m, 2m, 3m, 4m]),
+            ("suwayomi-1", [1m, 2m, 3m]),
+            ("suwayomi-2", [1m, 2m, 3m])));
+
+        Assert.Equal(
+            [
+                new NumberingClashDetector.Clash("weebcentral", "mangadex"),
+                new NumberingClashDetector.Clash("weebcentral", "suwayomi-1"),
+                new NumberingClashDetector.Clash("weebcentral", "suwayomi-2")
+            ],
+            clashes);
+        Assert.Equal(
+            "weebcentral|mangadex;weebcentral|suwayomi-1;weebcentral|suwayomi-2",
+            NumberingClashDetector.Format(clashes));
+    }
+
+    [Fact]
+    public void NoClashFormatsAsNull() => Assert.Null(NumberingClashDetector.Format([]));
 }

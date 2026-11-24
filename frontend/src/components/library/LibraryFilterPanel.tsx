@@ -29,7 +29,8 @@ import {
   IconTags,
   IconWorld,
 } from '../../lib/icons'
-import { formatDecimal, formatNumber, formatPercent } from '../../format'
+import { formatDecimal, formatNumber, formatPercent, formatFixedDecimal } from '../../format'
+import { useRatingFormat } from '../../api/ratings'
 import { DrillPanes } from '../ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages, type DrillChoice } from '../ui/DrillPanel'
 import {
@@ -197,61 +198,12 @@ function nameOf(options: FilterOption[], value: string) {
 }
 
 /**
- * The Library's filters on the drill grammar: chip rows for the filters people reach for most, then
- * one row per filter that opens its page inside the drawer. Every control writes the page's state
- * straight away, so the grid behind and the footer count follow as you go.
+ * What each filter is set to, as the drawer's rows and the toolbar's chips word it. Null for a
+ * filter that is not narrowing anything.
  */
-export function LibraryFilterPanel({
-  opened,
-  onClose,
-  values: v,
-  set,
-  options,
-  hasCommunityRatings,
-  readTracking,
-  showRootFolder,
-  shownCount,
-  activeCount,
-  onReset,
-  onManageTags,
-}: LibraryFilterPanelProps) {
+function useFilterText(v: LibraryFilterValues, options: LibraryFilterOptions) {
   const { t } = useLingui()
-  const pages = useDrillPages<FilterPage>('root', PARENTS)
-  const { page, open, back, backRef } = pages
-
-  const [wasOpened, setWasOpened] = useState(opened)
-  if (opened !== wasOpened) {
-    setWasOpened(opened)
-    if (opened) pages.reset()
-  }
-
-  // The root page comes back at the scroll position it was left at, so the row that opened a page is on screen.
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const rootScroll = useRef(0)
-  const lastPage = useRef<FilterPage>(page)
-  useLayoutEffect(() => {
-    const el = scrollRef.current
-    if (!el || lastPage.current === page) return
-    el.scrollTop = page === 'root' ? rootScroll.current : 0
-    lastPage.current = page
-  }, [page])
-  const openPage = (to: FilterPage) => {
-    rootScroll.current = scrollRef.current?.scrollTop ?? 0
-    open(to)
-  }
-
-  // Mantine's own Escape is off on a sub-page, so there Escape steps back one page instead of closing.
-  useEffect(() => {
-    if (!opened || page === 'root') return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.isComposing) return
-      event.preventDefault()
-      back()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [opened, page, back])
-
+  const formatRatingBound = (n: number) => (Number.isInteger(n) ? formatNumber(n) : formatFixedDecimal(n, 1))
   const any = t`Any`
   const selected = (count: number) => plural(count, { one: '# selected', other: '# selected' })
   const listValue = (opts: FilterOption[], picked: string[]) =>
@@ -326,11 +278,204 @@ export function LibraryFilterPanel({
   const myRatingValue =
     v.ratingState === 'rated'
       ? v.ratingRange[0] > 1 || v.ratingRange[1] < 10
-        ? boundsValue(v.ratingRange[0], v.ratingRange[1])
+        ? boundsValue(v.ratingRange[0], v.ratingRange[1], formatRatingBound)
         : nameOf(options.ratingStates, 'rated')
       : choiceValue(options.ratingStates, v.ratingState)
   const { addedWithin } = v
   const tagsValue = v.untaggedOnly ? t`Untagged only` : triValue(options.tags, v.tags, v.excludeTags)
+
+  const text: Record<string, string | null> = {
+    myRating: myRatingValue,
+    read: sliderValue(v.readRange, 0, 100, percent),
+    contentRating: listValue(options.contentRatings, v.contentRatings),
+    chapters: boundsValue(v.chapterMin, v.chapterMax),
+    year: boundsValue(v.yearMin, v.yearMax, String),
+    community: sliderValue(v.communityRange, 0, 10, formatDecimal),
+    anime: choiceValue(animeOptions, v.anime),
+    credits: listValue(options.credits, v.credits),
+    publishers: listValue(options.publishers, v.publishers),
+    genres: triValue(options.genres, v.genres, v.excludeGenres),
+    tags: tagsValue,
+    metaTags: listValue(options.metaTags, v.metaTags),
+    addedWithin: addedWithin == null ? null : plural(addedWithin, { one: '# day', other: '# days' }),
+    monitored: choiceValue(monitoredOptions, v.monitored),
+    completeness: choiceValue(completenessOptions, v.completeness),
+    qualityProfile: choiceValue(options.qualityProfiles, v.qualityProfile),
+    incognito: choiceValue(incognitoOptions, v.incognito),
+    muted: choiceValue(mutedOptions, v.muted),
+    overrides: listValue(options.overrides, v.overrides),
+    rootFolders: listValue(options.rootFolders, v.rootFolders),
+    sourceState: choiceValue(options.sourceStates, v.sourceState),
+    clash: choiceValue(clashOptions, v.clash),
+    sources: listValue(options.sources, v.sources),
+    fileSources: listValue(options.fileSources, v.fileSources),
+  }
+  return {
+    any,
+    formatRatingBound,
+    percent,
+    animeOptions,
+    clashOptions,
+    monitoredOptions,
+    completenessOptions,
+    incognitoOptions,
+    mutedOptions,
+    text,
+  }
+}
+
+export interface ActiveFilterChip {
+  key: string
+  label: string
+  onRemove: () => void
+}
+
+/**
+ * Every filter that is narrowing the Library, one chip each, worded as the drawer words it. The
+ * chip-row filters (status, reading status, type) get a chip per value; the rest one per filter,
+ * named unless the value names itself.
+ */
+export function useActiveFilterChips(
+  v: LibraryFilterValues,
+  set: LibraryFilterSetters,
+  options: LibraryFilterOptions,
+): ActiveFilterChip[] {
+  const { t } = useLingui()
+  const { text } = useFilterText(v, options)
+  const chips: ActiveFilterChip[] = []
+  const named = (key: string, name: string, onRemove: () => void) => {
+    const value = text[key]
+    if (value == null) return
+    chips.push({ key, label: t`${name}: ${value}`, onRemove })
+  }
+  const bare = (key: string, onRemove: () => void) => {
+    const value = text[key]
+    if (value != null) chips.push({ key, label: value, onRemove })
+  }
+
+  if (v.status !== 'all') chips.push({ key: 'status', label: nameOf(options.statuses, v.status), onRemove: () => set.status('all') })
+  for (const value of v.readingStatuses) {
+    chips.push({
+      key: `reading:${value}`,
+      label: nameOf(options.readingStatuses, value),
+      onRemove: () => set.readingStatuses(v.readingStatuses.filter((x) => x !== value)),
+    })
+  }
+  for (const value of v.types) {
+    chips.push({ key: `type:${value}`, label: nameOf(options.types, value), onRemove: () => set.types(v.types.filter((x) => x !== value)) })
+  }
+  named('genres', t`Genres`, () => {
+    set.genres([])
+    set.excludeGenres([])
+  })
+  named('tags', t`Your tags`, () => {
+    set.tags([])
+    set.excludeTags([])
+    set.untaggedOnly(false)
+  })
+  named('metaTags', t`Tags`, () => set.metaTags([]))
+  named('myRating', t`My rating`, () => {
+    set.ratingState('all')
+    set.ratingRange([1, 10])
+  })
+  named('read', t`Read`, () => set.readRange([0, 100]))
+  named('contentRating', t`Content rating`, () => set.contentRatings([]))
+  named('chapters', t`Chapters`, () => {
+    set.chapterMin(null)
+    set.chapterMax(null)
+  })
+  named('year', t`Year`, () => {
+    set.yearMin(null)
+    set.yearMax(null)
+  })
+  named('community', t({ message: 'Rating', context: 'MangaBaka score filter' }), () => set.communityRange([0, 10]))
+  bare('anime', () => set.anime('all'))
+  named('credits', t`Author or artist`, () => set.credits([]))
+  named('publishers', t`Publisher`, () => set.publishers([]))
+  named('addedWithin', t`Added within`, () => set.addedWithin(null))
+  bare('monitored', () => set.monitored('all'))
+  bare('completeness', () => set.completeness('all'))
+  named('qualityProfile', t`Quality profile`, () => set.qualityProfile('all'))
+  bare('incognito', () => set.incognito('all'))
+  bare('muted', () => set.muted('all'))
+  named('overrides', t`Own settings`, () => set.overrides([]))
+  named('rootFolders', t`Root folder`, () => set.rootFolders([]))
+  named('sourceState', t`Source state`, () => set.sourceState('all'))
+  bare('clash', () => set.clash('all'))
+  named('sources', t`Sources`, () => set.sources([]))
+  named('fileSources', t`Downloaded from`, () => set.fileSources([]))
+  return chips
+}
+
+/**
+ * The Library's filters on the drill grammar: chip rows for the filters people reach for most, then
+ * one row per filter that opens its page inside the drawer. Every control writes the page's state
+ * straight away, so the grid behind and the footer count follow as you go.
+ */
+export function LibraryFilterPanel({
+  opened,
+  onClose,
+  values: v,
+  set,
+  options,
+  hasCommunityRatings,
+  readTracking,
+  showRootFolder,
+  shownCount,
+  activeCount,
+  onReset,
+  onManageTags,
+}: LibraryFilterPanelProps) {
+  const { t } = useLingui()
+  const { precision: ratingPrecision } = useRatingFormat()
+  const pages = useDrillPages<FilterPage>('root', PARENTS)
+  const { page, open, back, backRef } = pages
+
+  const [wasOpened, setWasOpened] = useState(opened)
+  if (opened !== wasOpened) {
+    setWasOpened(opened)
+    if (opened) pages.reset()
+  }
+
+  // The root page comes back at the scroll position it was left at, so the row that opened a page is on screen.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const rootScroll = useRef(0)
+  const lastPage = useRef<FilterPage>(page)
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el || lastPage.current === page) return
+    el.scrollTop = page === 'root' ? rootScroll.current : 0
+    lastPage.current = page
+  }, [page])
+  const openPage = (to: FilterPage) => {
+    rootScroll.current = scrollRef.current?.scrollTop ?? 0
+    open(to)
+  }
+
+  // Mantine's own Escape is off on a sub-page, so there Escape steps back one page instead of closing.
+  useEffect(() => {
+    if (!opened || page === 'root') return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing) return
+      event.preventDefault()
+      back()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [opened, page, back])
+
+  const {
+    any,
+    formatRatingBound,
+    percent,
+    animeOptions,
+    clashOptions,
+    monitoredOptions,
+    completenessOptions,
+    incognitoOptions,
+    mutedOptions,
+    text,
+  } = useFilterText(v, options)
 
   const row = (target: FilterPage, icon: Parameters<typeof DrillRow>[0]['icon'], label: string, value: ReactNode) => (
     <DrillRow
@@ -450,49 +595,39 @@ export function LibraryFilterPanel({
             )}
 
             <DrillGroup heading={t`Reading`}>
-              {row('myRating', IconStar, t`My rating`, myRatingValue)}
-              {readTracking && row('read', IconBook, t`Read`, sliderValue(v.readRange, 0, 100, percent))}
+              {row('myRating', IconStar, t`My rating`, text.myRating)}
+              {readTracking && row('read', IconBook, t`Read`, text.read)}
             </DrillGroup>
             <DrillGroup heading={t`About the series`}>
-              {row('contentRating', IconShield, t`Content rating`, listValue(options.contentRatings, v.contentRatings))}
-              {row('chapters', IconFileText, t`Chapters`, boundsValue(v.chapterMin, v.chapterMax))}
-              {row('year', IconCalendar, t`Year`, boundsValue(v.yearMin, v.yearMax, String))}
+              {row('contentRating', IconShield, t`Content rating`, text.contentRating)}
+              {row('chapters', IconFileText, t`Chapters`, text.chapters)}
+              {row('year', IconCalendar, t`Year`, text.year)}
               {hasCommunityRatings &&
-                row(
-                  'community',
-                  IconRanking,
-                  t({ message: 'Rating', context: 'MangaBaka score filter' }),
-                  sliderValue(v.communityRange, 0, 10, formatDecimal),
-                )}
-              {row('anime', IconDeviceTv, t`Anime adaptation`, choiceValue(animeOptions, v.anime))}
-              {row('credits', IconFeather, t`Author or artist`, listValue(options.credits, v.credits))}
-              {row('publishers', IconBooks, t`Publisher`, listValue(options.publishers, v.publishers))}
+                row('community', IconRanking, t({ message: 'Rating', context: 'MangaBaka score filter' }), text.community)}
+              {row('anime', IconDeviceTv, t`Anime adaptation`, text.anime)}
+              {row('credits', IconFeather, t`Author or artist`, text.credits)}
+              {row('publishers', IconBooks, t`Publisher`, text.publishers)}
             </DrillGroup>
             <DrillGroup heading={t`Tags and genres`}>
-              {row('genres', IconBookmarks, t`Genres`, triValue(options.genres, v.genres, v.excludeGenres))}
-              {row('tags', IconTag, t`Your tags`, tagsValue)}
-              {row('metaTags', IconTags, t`Tags`, listValue(options.metaTags, v.metaTags))}
+              {row('genres', IconBookmarks, t`Genres`, text.genres)}
+              {row('tags', IconTag, t`Your tags`, text.tags)}
+              {row('metaTags', IconTags, t`Tags`, text.metaTags)}
             </DrillGroup>
             <DrillGroup heading={t`Library state`}>
-              {row(
-                'addedWithin',
-                IconClock,
-                t`Added within (days)`,
-                addedWithin == null ? null : plural(addedWithin, { one: '# day', other: '# days' }),
-              )}
-              {row('monitored', IconEye, t`Monitoring`, choiceValue(monitoredOptions, v.monitored))}
-              {row('completeness', IconChecks, t`Completeness`, choiceValue(completenessOptions, v.completeness))}
-              {row('qualityProfile', IconAdjustments, t`Quality profile`, choiceValue(options.qualityProfiles, v.qualityProfile))}
-              {row('incognito', IconEyeOff, t`Incognito`, choiceValue(incognitoOptions, v.incognito))}
-              {row('muted', IconBell, t`Notifications`, choiceValue(mutedOptions, v.muted))}
-              {row('overrides', IconSettings, t`Own settings`, listValue(options.overrides, v.overrides))}
-              {showRootFolder && row('rootFolders', IconFolder, t`Root folder`, listValue(options.rootFolders, v.rootFolders))}
+              {row('addedWithin', IconClock, t`Added within (days)`, text.addedWithin)}
+              {row('monitored', IconEye, t`Monitoring`, text.monitored)}
+              {row('completeness', IconChecks, t`Completeness`, text.completeness)}
+              {row('qualityProfile', IconAdjustments, t`Quality profile`, text.qualityProfile)}
+              {row('incognito', IconEyeOff, t`Incognito`, text.incognito)}
+              {row('muted', IconBell, t`Notifications`, text.muted)}
+              {row('overrides', IconSettings, t`Own settings`, text.overrides)}
+              {showRootFolder && row('rootFolders', IconFolder, t`Root folder`, text.rootFolders)}
             </DrillGroup>
             <DrillGroup heading={t`Files and sources`}>
-              {row('sourceState', IconPlugConnected, t`Source state`, choiceValue(options.sourceStates, v.sourceState))}
-              {row('clash', IconSortAscendingNumbers, t`Chapter numbering`, choiceValue(clashOptions, v.clash))}
-              {row('sources', IconWorld, t`Sources`, listValue(options.sources, v.sources))}
-              {row('fileSources', IconDownload, t`Downloaded from`, listValue(options.fileSources, v.fileSources))}
+              {row('sourceState', IconPlugConnected, t`Source state`, text.sourceState)}
+              {row('clash', IconSortAscendingNumbers, t`Chapter numbering`, text.clash)}
+              {row('sources', IconWorld, t`Sources`, text.sources)}
+              {row('fileSources', IconDownload, t`Downloaded from`, text.fileSources)}
             </DrillGroup>
           </div>
         )
@@ -512,12 +647,12 @@ export function LibraryFilterPanel({
               <DrillSliderLines
                 min={1}
                 max={10}
-                step={1}
+                step={ratingPrecision === 'decimal' ? 0.5 : 1}
                 value={v.ratingRange}
                 onChange={set.ratingRange}
                 fromLabel={t`My rating from`}
                 toLabel={t`My rating to`}
-                format={formatNumber}
+                format={formatRatingBound}
               />
             )}
           </DrillField>,

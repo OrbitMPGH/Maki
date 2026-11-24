@@ -91,6 +91,30 @@ public class RecommendationSpreadTests
     }
 
     [Fact]
+    public void A_side_taste_insert_is_never_pulled_into_the_top_ten()
+    {
+        // Three members of one franchise lead, so the pass pulls later picks forward; the insert at
+        // rank 11 would land at 9 without its floor.
+        List<MangaBakaRecommendation> ranked =
+        [
+            .. Enumerable.Range(1, 3).Select(i => Pick(i, franchise: 3)),
+            .. Enumerable.Range(4, 7).Select(i => Pick(i)),
+            Pick(100) with { LaneFloor = 10 },
+            .. Enumerable.Range(11, 20).Select(i => Pick(i)),
+        ];
+        var plain = RecommendationService.Spread([.. ranked.Select(p => p with { LaneFloor = 0 })]);
+
+        var spread = RecommendationService.Spread(ranked);
+
+        Assert.True(plain.ToList().FindIndex(p => p.ProviderId == "100") < 10);
+        Assert.True(spread.ToList().FindIndex(p => p.ProviderId == "100") >= 10);
+        Assert.Equal(
+            plain.Where(p => p.ProviderId != "100").Take(10).Select(p => p.ProviderId),
+            spread.Take(10).Select(p => p.ProviderId));
+        Assert.Equal(ranked.Count, spread.Count);
+    }
+
+    [Fact]
     public void Two_franchises_interleave_rather_than_queue()
     {
         List<MangaBakaRecommendation> ranked =

@@ -5,7 +5,9 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -120,18 +122,21 @@ public class MediaCoverController(
             return this.Fail(localizer, "error.metadata.coverTooLarge", new { megabytes = CoverUploadLimit / (1024 * 1024) });
         }
 
-        await using var buffer = new MemoryStream((int)file.Length);
+        byte[] bytes;
         await using (var upload = file.OpenReadStream())
         {
-            await upload.CopyToAsync(buffer, ct);
+            bytes = await PooledStreams.ReadAllBytesAsync(upload, "cover-upload", ct);
         }
 
-        if (!IsAcceptableImage(buffer))
+        using (var probe = new MemoryStream(bytes, writable: false))
         {
-            return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+            if (!IsAcceptableImage(probe))
+            {
+                return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+            }
         }
 
-        return await StoreAsync(series, buffer.ToArray(), ct);
+        return await StoreAsync(series, bytes, ct);
     }
 
     public record PageCoverRequest(int ChapterId, int Page);
@@ -202,6 +207,7 @@ public class MediaCoverController(
         [FromServices] SourceRegistry sources,
         [FromServices] SourceAvailability availability,
         [FromServices] CoverFetcher fetcher,
+        [FromServices] ISourceProxyResolver proxies,
         CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
@@ -220,9 +226,11 @@ public class MediaCoverController(
         }
 
         string? coverUrl;
+        ProxyRoute route;
         try
         {
             coverUrl = (await source.GetSeriesAsync(mapping.SourceSeriesId, ct)).CoverUrl;
+            route = await proxies.ResolveAsync(source.Name, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -236,7 +244,7 @@ public class MediaCoverController(
         }
 
         var result = await fetcher.FetchAsync(
-            target, hop => CoverHostPolicy.Allows(source, hop), (int)CoverUploadLimit, new Uri($"{source.BaseUrl}/"), ct);
+            target, hop => CoverHostPolicy.Allows(source, hop), (int)CoverUploadLimit, new Uri($"{source.BaseUrl}/"), ct, route);
         switch (result.Outcome)
         {
             case CoverFetcher.Outcome.Refused:

@@ -32,9 +32,9 @@ export const Connections: Story = {
     await expect(await canvas.findByText('Reading room Discord')).toBeVisible()
     await expect(await canvas.findByText('Phone alerts')).toBeVisible()
     await expect(await canvas.findByText('Home Assistant')).toBeVisible()
-    await expect(await canvas.findByText('Healthy')).toBeVisible()
-    await expect(await canvas.findByText('Not used yet')).toBeVisible()
-    await expect(await canvas.findByText('Disabled')).toBeVisible()
+    await expect((await canvas.findAllByText('Connected'))[0]).toBeVisible()
+    await expect((await canvas.findAllByText('Not tested'))[0]).toBeVisible()
+    await expect((await canvas.findAllByText('Off'))[0]).toBeVisible()
   },
 }
 
@@ -42,7 +42,8 @@ export const FailingConnectionShowsItsError: Story = {
   play: async ({ canvas }) => {
     await canvas.findByText('Phone alerts')
     const row = (await canvas.findByText('Phone alerts')).closest('.settings-row') as HTMLElement
-    await expect(await within(row).findByText(/Failing: 4 misses in a row/)).toBeVisible()
+    await expect(await within(row).findByText('Failing')).toBeVisible()
+    await expect(await within(row).findByText(/4 misses in a row/)).toBeVisible()
     await expect(await within(row).findByText('Favourites')).toBeVisible()
   },
 }

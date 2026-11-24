@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Builds the design system's files from the code, so the tokens and component styles it shows can
- * never drift from what the app ships.
+ * Builds the design system's tokens and preview styles from the code that the app ships.
  *
- * Values come from the code: every CSS custom property in `frontend/src/theme.css` (per theme, with
- * the light and accent overrides applied), the Mantine palettes, radii, shadows, headings and primary
+ * Values come from the code: shared CSS custom properties in `frontend/src/theme.css` (per theme,
+ * with ground, accent and light overrides applied), the Mantine palettes, radii, shadows, headings and primary
  * shade in `theme.ts`, and the theme list in `theme-context.tsx`. What the code cannot say lives in
  * `design-system/`: a usage note per token and the type styles (`tokens.notes.json`), the brand book
  * and component guidelines, the static previews, and `preview.css`, which stands in for the parts
@@ -38,7 +37,7 @@ const OUT = path.join(DS, 'out/project')
 
 const warnings = []
 const warn = (msg) => warnings.push(msg)
-const read = (p) => fs.readFileSync(p, 'utf8')
+const read = (p) => fs.readFileSync(p, 'utf8').replaceAll('\r\n', '\n')
 
 const themeCss = read(path.join(SRC, 'theme.css'))
 const themeTs = read(path.join(SRC, 'theme.ts'))
@@ -98,31 +97,42 @@ const lightVars = propsOf(":root[data-theme='light']")
 
 // --- Themes (theme-context.tsx) -----------------------------------------------------------------
 
-// Appearance is a background times an accent. The design system shows one theme per accent on
-// the :root reference ground (night) plus the light theme. The app's default ground is tinted,
-// and like the other grounds it mixes its surfaces from the accent with color-mix, which the
-// token reader cannot evaluate.
+// Show every accent on the default ground and every other ground with the default accent.
 const accentEntries = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*swatch:/g)]
   .map(([, id, label]) => ({ id, label }))
-const defaultAccent = /const DEFAULT_ACCENT[^=]*=\s*'(\w+)'/.exec(themeContext)?.[1] ?? 'indigo'
-const lightLabel = /id:\s*'light',\s*label:\s*msg`([^`]+)`/.exec(themeContext)?.[1] ?? 'Light'
+const backgrounds = [...themeContext.matchAll(/id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*scheme:\s*'(dark|light|system)',\s*ground:\s*'(\w+)'/g)]
+  .map(([, id, name, scheme, ground]) => ({ id, name, scheme, ground }))
+const defaultAccent = /const DEFAULT_ACCENT[^=]*=\s*'(\w+)'/.exec(themeContext)?.[1]
+const defaultBackground = /const DEFAULT_BACKGROUND\s*=\s*'(\w+)'/.exec(themeContext)?.[1]
+const background = backgrounds.find((b) => b.id === defaultBackground)
+if (!background || !accentEntries.some((a) => a.id === defaultAccent)) throw new Error('Could not read the appearance defaults from theme-context.tsx')
 const themes = [
   ...accentEntries.map((a) => ({
+    ...background,
     id: a.id === defaultAccent ? 'dark' : a.id,
-    name: a.label,
+    name: `${background.name} · ${a.label}`,
     accent: a.id,
-    scheme: 'dark',
   })),
-  { id: 'light', name: lightLabel, accent: defaultAccent, scheme: 'light' },
+  ...backgrounds.filter((b) => b !== background && b.scheme !== 'system').map((b) => ({ ...b, accent: defaultAccent })),
 ]
 themes.sort((a, b) => (a.id === 'dark' ? -1 : b.id === 'dark' ? 1 : a.id === 'light' ? -1 : b.id === 'light' ? 1 : 0))
-if (!themes.length) throw new Error('No theme presets found in theme-context.tsx')
 
 const varsFor = (theme) => {
-  const v = new Map(rootVars)
-  const over = theme.scheme === 'light' ? lightVars : propsOf(`:root[data-accent='${theme.accent}']`)
-  for (const [k, val] of over) v.set(k, val)
-  return v
+  const accent = `[data-accent='${theme.accent}']`
+  const ground = `[data-ground='${theme.ground}']`
+  const light = "[data-theme='light']"
+  const props = (selector) => propsOf(`:root${selector}`)
+  return new Map([
+    ...rootVars,
+    ...props(accent),
+    ...props(ground),
+    ...(theme.scheme === 'light' ? [
+      ...lightVars,
+      ...props(light + accent),
+      ...props(light + ground),
+      ...props(light + ground + accent),
+    ] : []),
+  ])
 }
 const themeVars = Object.fromEntries(themes.map((t) => [t.id, varsFor(t)]))
 
@@ -178,6 +188,23 @@ const luminance = (hex) =>
 
 const isColourValue = (v) => /^(#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|color-mix\(|var\(--)/.test(v)
 
+function rgbIn(name, vars) {
+  const value = vars.get(name)
+  const alias = /^var\(--([\w-]+)\)$/.exec(value)
+  if (alias) return rgbIn(alias[1], vars)
+  if (/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(value)) return rgbOf(value)
+  return mixedRgb(value, vars)
+}
+
+function mixedRgb(value, vars) {
+  const mix = /^color-mix\(in srgb, (#[\da-f]{6}) (\d+(?:\.\d+)?)%, var\(--([\w-]+)\)\)$/i.exec(value)
+  if (!mix) return null
+  const tint = rgbIn(mix[3], vars)
+  if (!tint) return null
+  const ratio = Number(mix[2]) / 100
+  return rgbOf(mix[1]).map((channel, i) => Number((channel * ratio + tint[i] * (1 - ratio)).toFixed(4)))
+}
+
 /** A colour variable's value in one theme, as the design system writes it, or null. */
 function colourIn(name, vars) {
   const v = vars.get(name)
@@ -185,12 +212,12 @@ function colourIn(name, vars) {
   let m
   if ((m = /^var\(--([\w-]+)\)$/.exec(v))) return `{${m[1]}}`
   if ((m = /^color-mix\(in srgb, var\(--([\w-]+)\) (\d+(?:\.\d+)?)%, transparent\)$/.exec(v))) {
-    let target = vars.get(m[1])
-    while (target && /^var\(--/.test(target)) target = vars.get(/^var\(--([\w-]+)\)$/.exec(target)[1])
-    if (!target || !target.startsWith('#')) return null
-    const [r, g, b] = rgbOf(target)
-    return `rgba(${r}, ${g}, ${b}, ${Number(m[2]) / 100})`
+    const target = rgbIn(m[1], vars)
+    if (!target) return null
+    return `rgba(${target.join(', ')}, ${Number(m[2]) / 100})`
   }
+  const mixed = mixedRgb(v, vars)
+  if (mixed) return `rgb(${mixed.join(', ')})`
   if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v.toLowerCase()
   if (/^rgba?\([\d\s.,]+\)$/.test(v)) return v.replace(/\s*,\s*/g, ', ')
   return null
@@ -286,7 +313,7 @@ const typeGroups = notes.type.groups.map((g) => ({
 for (const name of Object.keys(notes.usage)) if (!used.has(name)) warn(`usage note for "${name}" has no token any more`)
 
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim()
-const dirty = git('status', '--porcelain', '--', 'frontend/src', 'design-system').split('\n').some((l) => l && !l.includes('design-system/out/'))
+const dirty = Boolean(git('status', '--porcelain', '--', 'frontend/src', 'design-system', 'scripts/design-system'))
 const commit = `${git('rev-parse', '--abbrev-ref', 'HEAD')}@${git('rev-parse', '--short=7', 'HEAD')}`
 const ref = dirty ? `${commit} plus uncommitted changes` : commit
 
@@ -324,8 +351,9 @@ const CLASSES = new RegExp(
       String.raw`brand-mark\b`, 'brand-wordmark', String.raw`panel\b`, 'section-header', 'panel-title', 'status-dot', 'empty-state', 'empty-shelf', 'empty-missing',
       'figure-strip',String.raw`tag-chips?\b`, 'tag-chip-body', 'tag-dot',
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check|state|row|new)`,
-      String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
-      'engine-', 'series-row', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
+      'reading-card', 'rail-arrow', 'filter-bar', 'settings-summary', 'settings-drill',
+      String.raw`tip\b`, String.raw`discover-(card|rating|corner|meta|reason|sub|rail|density)`,
+      'engine-', 'series-row', 'series-title', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
       'surface-frame', 'disclosure', String.raw`drill-(row|back|panel-back|choices?|choice-check|choice-text|choice-label|choice-hint|field|group|box|search|range|sliders?|switch|footer)`, 'mono-value', 'meta-list', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`modal-(heading|footer|note)`, String.raw`tnum\b`, String.raw`figure\b`, 'score-inline', String.raw`thumb\b`, 'callout', String.raw`note(?![-\w])`, String.raw`note-(icon|body|action)\b`, 'step-strip',
     ].join('|') +
     ')',
@@ -349,8 +377,8 @@ const VAR_MAP = [
   [/var\(--mantine-color-gray-2\)/g, '#e9ecef'],
 ]
 const SCHEME_MAP = [
-  [/\[data-mantine-color-scheme='dark'\]/g, "[data-theme]:not([data-theme='light'])"],
-  [/\[data-mantine-color-scheme='light'\]/g, "[data-theme='light']"],
+  [/\[data-mantine-color-scheme='dark'\]/g, "[data-theme]:not([data-theme='light'], [data-theme='paper'])"],
+  [/\[(?:data-theme|data-mantine-color-scheme)='light'\]/g, ":is([data-theme='light'], [data-theme='paper'])"],
   [/\[data-mantine-color-scheme\]/g, '[data-theme]'],
 ]
 
@@ -371,10 +399,10 @@ const splitSelectors = (s) => {
 }
 
 function keepRule(prelude, body) {
-  if (!CLASSES.test(' ' + prelude)) return null
-  let sel = prelude
-  for (const [re, to] of SCHEME_MAP) sel = sel.replace(re, to)
-  const parts = splitSelectors(sel).filter((p) => !/mantine/i.test(p))
+  const parts = splitSelectors(prelude)
+    .filter((part) => CLASSES.test(' ' + part))
+    .map((part) => SCHEME_MAP.reduce((selector, [re, to]) => selector.replace(re, to), part))
+    .filter((part) => !/mantine/i.test(part))
   if (!parts.length) return null
   let decls = body
   for (const [re, to] of VAR_MAP) decls = decls.replace(re, to)
@@ -392,7 +420,7 @@ function keepRule(prelude, body) {
 const kept = []
 const animations = new Set()
 for (const [prelude, body] of top) {
-  if (prelude.startsWith('@media') || prelude.startsWith('@supports')) {
+  if (/^@(media|supports|container)\b/.test(prelude)) {
     const inner = blocks(body).map(([p, b]) => keepRule(p, b)).filter(Boolean)
     if (inner.length) kept.push(`${prelude} {\n${inner.join('\n')}\n}`)
   } else if (!prelude.startsWith('@')) {
@@ -411,6 +439,7 @@ const bundle = [
   '/* Generated by scripts/design-system/build.mjs from design-system/preview.css and frontend/src/theme.css. Do not edit. */',
   '',
   read(path.join(DS, 'preview.css')).trim(),
+  `:root[data-theme='paper'] { --paper-grain: ${propsOf(":root[data-theme='light'][data-ground='paper']").get('paper-grain')}; }`,
   '',
   '/* --- Motion (the design system has no motion token family) ----------------- */',
   `:root {\n${motionVars.map(([k, v]) => `  --${k}: ${v};`).join('\n')}\n}`,
@@ -464,8 +493,26 @@ const copyTree = (from, to) => {
   for (const e of fs.readdirSync(from, { withFileTypes: true })) {
     const src = path.join(from, e.name)
     if (e.isDirectory()) copyTree(src, path.join(to, e.name))
+    else if (e.name === 'preview.html') write(path.join(to, e.name), renderIcons(read(src)))
+    else if (/\.(md|ts)$/.test(e.name)) write(path.join(to, e.name), read(src))
     else write(path.join(to, e.name), fs.readFileSync(src))
   }
+}
+
+const icons = new Map(
+  [...read(path.join(SRC, 'lib/icons.tsx')).matchAll(/make\('(Icon\w+)', '([^']+)'(?:, '([^']+)')?\)/g)]
+    .map(([, name, regular, bold]) => [name, { regular, bold }]),
+)
+function renderIcons(html) {
+  return html.replace(/<svg data-icon="(Icon\w+)"(?: data-size="(\d+)")?([^>]*)><\/svg>/g, (tag, name, size = '16', attrs) => {
+    const paths = icons.get(name)
+    if (!paths) {
+      warn(`unknown preview icon "${name}"`)
+      return tag
+    }
+    const d = Number(size) < 14 ? paths.bold ?? paths.regular : paths.regular
+    return `<svg viewBox="0 0 256 256" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"${attrs}><path d="${d}"/></svg>`
+  })
 }
 write('README.md', readme)
 write('tokens.json', JSON.stringify(tokens, null, 2) + '\n')

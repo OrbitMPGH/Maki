@@ -56,16 +56,20 @@ export function mergeAnimeMarkers(
 /** Widest the stacked stripe in the Chapter cell gets. Beyond this a lane draws no line. */
 export const MAX_SPAN_LANES = 3
 
-export type AnimeSpan = {
+/** A paired adaptation: from its start marker to its end marker, or to the last chapter while it airs. */
+export type AnimeRange = {
   key: string
   label: string
+  /** The label on the end marker, which can differ from the start's when labels were mismatched. */
+  endLabel?: string
   from: number
   /** Inclusive. A season still airing has no end marker and runs to the last known chapter. */
   to: number
   /** True when `to` was inferred rather than read off an end marker. */
   openEnded: boolean
-  lane: number
 }
+
+export type AnimeSpan = AnimeRange & { lane: number }
 
 /**
  * Pairs the point markers into ranges, so a season reads as a run of chapters rather than as two
@@ -86,39 +90,9 @@ export function buildAnimeSpans(
     lastChapterNumber: number,
     maxLanes: number = MAX_SPAN_LANES,
 ): AnimeSpan[] {
-  const starts: { num: number; label: string }[] = []
-  const ends: { num: number; label: string; used: boolean }[] = []
-  for (const [num, list] of markers) {
-    for (const m of list) {
-      if (m.kind === 'start') starts.push({ num, label: m.label })
-      else ends.push({ num, label: m.label, used: false })
-    }
-  }
-  starts.sort((a, b) => a.num - b.num)
-  ends.sort((a, b) => a.num - b.num)
-
-  const spans: AnimeSpan[] = []
-  for (const start of starts) {
-    const norm = start.label.trim().toLowerCase()
-    const end =
-        ends.find((e) => !e.used && e.num >= start.num && e.label.trim().toLowerCase() === norm) ??
-        ends.find((e) => !e.used && e.num >= start.num)
-    if (end) end.used = true
-
-    const to = end?.num ?? lastChapterNumber
-    // A start past the last known chapter, or an end that lands on the start, spans nothing worth
-    // drawing a line for.
-    if (to <= start.num) continue
-
-    spans.push({
-      key: `${start.label}:${start.num}-${to}`,
-      label: start.label,
-      from: start.num,
-      to,
-      openEnded: end === undefined,
-      lane: 0,
-    })
-  }
+  // A start past the last known chapter, or an end that lands on the start, spans nothing worth
+  // drawing a line for.
+  const spans = pairAnimeMarkers(markers, lastChapterNumber).filter((range) => range.to > range.from)
 
   // Lanes: an enclosing span takes the outer one, so a film sitting inside a season's range draws
   // beside it rather than on top of it. Anything past the cap keeps its point badges and no line.
@@ -135,6 +109,45 @@ export function buildAnimeSpans(
     laid.push({ ...span, lane })
   }
   return laid
+}
+
+/**
+ * Every start marker paired with its end, the way `buildAnimeSpans` pairs them, but with no lane cap
+ * and keeping an adaptation that starts and ends on one chapter. What a volume heading names.
+ */
+export function pairAnimeMarkers(markers: Map<number, AnimeMarker[]>, lastChapterNumber: number): AnimeRange[] {
+  const starts: { num: number; label: string }[] = []
+  const ends: { num: number; label: string; used: boolean }[] = []
+  for (const [num, list] of markers) {
+    for (const m of list) {
+      if (m.kind === 'start') starts.push({ num, label: m.label })
+      else ends.push({ num, label: m.label, used: false })
+    }
+  }
+  starts.sort((a, b) => a.num - b.num)
+  ends.sort((a, b) => a.num - b.num)
+
+  const ranges: AnimeRange[] = []
+  for (const start of starts) {
+    const norm = start.label.trim().toLowerCase()
+    const end =
+        ends.find((e) => !e.used && e.num >= start.num && e.label.trim().toLowerCase() === norm) ??
+        ends.find((e) => !e.used && e.num >= start.num)
+    if (end) end.used = true
+
+    const to = end?.num ?? lastChapterNumber
+    if (to < start.num) continue
+
+    ranges.push({
+      key: `${start.label}:${start.num}-${to}`,
+      label: start.label,
+      endLabel: end?.label,
+      from: start.num,
+      to,
+      openEnded: end === undefined,
+    })
+  }
+  return ranges
 }
 
 /**

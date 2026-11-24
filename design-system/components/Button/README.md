@@ -10,6 +10,8 @@ Mantine `Button` with Maki's theme defaults: `radius="md"` (9px), weight 600, pr
 
 **The consumer provides:** a label that says what happens ("Add series", not "OK"), an optional icon from `lib/icons` at 16px (not 14: Phosphor renders soft there) as `leftSection`, and `size` (`xs` for dense toolbars, default `sm`, `md` for forms).
 
+Loading buttons use animated dots. Wrap the idle and busy wording in `PendingLabel` when the action changes text while loading. Both labels occupy the same grid cell, so the button keeps the width of the longer label.
+
 **Don't:** reach for Mantine's stock palette. Colour props take a status token: filled destructive buttons pass `color="var(--danger-fill)"` and confirm through `ConfirmDialog`, lighter variants pass `color="var(--danger)"`; quiet ones pass `color="var(--neutral)"`. Never put two filled buttons side by side.
 
 The preview is a static rendition styled by `bundle.css`; in the app this is Mantine.

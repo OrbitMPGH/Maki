@@ -23,7 +23,9 @@ export function DiscoverGlance({
   const { t, i18n } = useLingui()
   const renderLabel = useLabel()
   const { year, status } = detail
-  const altTitles = readableTitles(detail.altTitles, i18n.locale)
+  const altTitles = readableTitles(detail.altTitles, i18n.locale).filter(
+    (a) => a.title !== detail.nativeTitle && a.title !== detail.romanizedTitle,
+  )
   const ongoing = year != null && status === 'Ongoing'
 
   return (
@@ -68,7 +70,10 @@ export function DiscoverGlance({
             <span className="tnum">{detail.finalVolume}</span>
           </DetailRecord>
         )}
-        {/* The band keeps one line for the romanized and native titles; the rest live here. */}
+        {detail.nativeTitle && (
+          <DetailRecord label={t`Original title`}>{detail.nativeTitle}</DetailRecord>
+        )}
+        {detail.romanizedTitle && <DetailRecord label={t`Romanized title`}>{detail.romanizedTitle}</DetailRecord>}
         {altTitles.length > 0 && (
           <DetailRecord label={t`Also known as`}>
             {altTitles.map((a, i) => (

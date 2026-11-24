@@ -408,7 +408,7 @@ public sealed class EnhanceEndpointTests : IDisposable
             settings.GetProperty("prepare").GetRawText());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
-        Assert.Equal(["maki-2x", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal(["maki-2x", "maki-2x-hq", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
         var span = catalog.Single(c => c.GetProperty("id").GetString() == "span-s");
         foreach (var name in (string[])["id", "bytes", "license", "author", "source", "status", "error"])
         {

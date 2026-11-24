@@ -151,6 +151,70 @@ public class HostStartupTests : IDisposable
         Assert.False(await Failed());
     }
 
+    /// <summary>
+    /// A source's traffic goes through its proxy only on clients that route by proxy. A client only
+    /// one source uses is tagged with that source; a shared one is tagged by its callers; anything
+    /// else must stay off the router. A new client fails here until somebody decides which it is.
+    /// </summary>
+    [Fact]
+    public void Every_http_client_is_classified_for_source_proxies()
+    {
+        string[] callerTagged = ["pages", "covers", "challenge-fetcher", "custom-sources", "custom-source-pages"];
+        string[] notSources =
+        [
+            "anilist-reviews", "coread-graph", "custom-source-repositories", "ease-table", "embedding-model", "flaresolverr",
+            "github-release-page", "github-releases", "headless-browser", "indexer-download", "jackett", "kavita",
+            "kitsu-reactions", "mal-web", "mangabaka-dump", "notifications", "page-share", "prebuilt-index", "prowlarr",
+            "reader-cohorts", "reco-graph", "scrobble", "suwayomi", "suwayomi-pages", "taste-vectors", "upscale-models", "webpush",
+        ];
+
+        using var factory = new WebApplicationFactory<Program>();
+        var names = factory.Services.GetServices<Microsoft.Extensions.Options.IConfigureOptions<Microsoft.Extensions.Http.HttpClientFactoryOptions>>()
+            .OfType<Microsoft.Extensions.Options.ConfigureNamedOptions<Microsoft.Extensions.Http.HttpClientFactoryOptions>>()
+            .Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)).Select(n => n!).Distinct().Order().ToList();
+        var handlers = factory.Services.GetRequiredService<System.Net.Http.IHttpMessageHandlerFactory>();
+        var sources = factory.Services.GetServices<Maki.Core.Sources.ISource>().Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var problems = new List<string>();
+        foreach (var name in names)
+        {
+            var tags = new List<Maki.Core.Http.Proxy.SourceProxyTagHandler>();
+            HttpMessageHandler? handler = handlers.CreateHandler(name);
+            while (handler is DelegatingHandler delegating)
+            {
+                if (delegating is Maki.Core.Http.Proxy.SourceProxyTagHandler tag)
+                {
+                    tags.Add(tag);
+                }
+
+                handler = delegating.InnerHandler;
+            }
+
+            var routed = handler is Maki.Core.Http.Proxy.ProxyRoutingHandler;
+            if (notSources.Contains(name))
+            {
+                if (routed || tags.Count > 0)
+                {
+                    problems.Add($"{name}: listed as not a source but routes by proxy");
+                }
+            }
+            else if (callerTagged.Contains(name))
+            {
+                if (!routed || tags.Count > 0)
+                {
+                    problems.Add($"{name}: callers tag it, so it should route by proxy with no tag of its own");
+                }
+            }
+            else if (!routed || tags.Count != 1 || !sources.Contains(tags[0].SourceName))
+            {
+                problems.Add($"{name}: unclassified, or not tagged with one registered source (.ForSource)");
+            }
+        }
+
+        Assert.Empty(problems);
+        Assert.Empty(notSources.Concat(callerTagged).Except(names));
+    }
+
     private readonly string _configDir;
     private readonly string? _previousConfigDir;
 

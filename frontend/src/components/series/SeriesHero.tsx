@@ -4,7 +4,6 @@ import {
     Box,
     Group,
     Paper,
-    Rating,
     Skeleton,
     Stack,
     Text,
@@ -12,17 +11,17 @@ import {
     Tooltip,
     VisuallyHidden,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconCircleCheck, IconDownload, IconX } from '../../lib/icons'
+import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconCircleCheck, IconDownload } from '../../lib/icons'
 import { Link } from 'react-router-dom'
-import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
 import { seriesProgressVisual } from '../ui/status'
 import { HeroChips } from './HeroChips'
 import { ChapterCountsInfo } from './ChapterCountsInfo'
 import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
-import { formatDecimal } from '../../format'
-import { isProvisional, shownRating } from '../../lib/rating'
+import { isProvisional, ratesProvisionally, shownRating } from '../../lib/rating'
+import { RatingPill } from './RatingPill'
+import { RatingPanelOpener } from './RatingPanelOpener'
 import { RatingHistoryButton } from './RatingHistoryButton'
 import { ReadingStatusMenu } from './ReadingStatus'
 import type { ReadingStatus } from '../ui/status'
@@ -34,16 +33,12 @@ import { useCoverTint } from '../../lib/coverTint'
 import {HeroBackdrop} from './HeroBackdrop'
 import { MetadataLock } from './EditMetadataModal'
 import { TYPE_LABELS } from '../CatalogueFilters'
-import { MetaList } from '../ui/MetaList'
 import { Panel } from '../ui/Panel'
 import { PanelTitle } from '../ui/PanelTitle'
 import { OfflineBanner } from '../OfflineBanner'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
-
-/** How many alt titles fit under the heading before the line stops being readable. */
-const MAX_HERO_ALT_TITLES = 4
 
 /** A title's length in half-em units: CJK and full-width characters set about twice as wide as Latin ones. */
 function titleWidth(title: string) {
@@ -93,12 +88,11 @@ export function SeriesHero({
     /** The Progress card's last line: how long you have been reading and how long is left. */
     progressFoot?: ReactNode
 }) {
-    const { t, i18n } = useLingui()
+    const { t } = useLingui()
     const readTracking = useReadTracking()
     const author = series.authorStory ?? series.authorArt
     const rating = shownRating(series)
     const soFar = isProvisional(series)
-    const soFarChapter = series.provisionalAtChapter != null ? formatDecimal(series.provisionalAtChapter) : null
     const { data: chapters } = useChapters(series.id)
     // Wherever you came from, not a fixed destination: reached from Discover with a panel full of
     // filters, this walks back to that panel with the filters still on it. The library is only the
@@ -189,9 +183,10 @@ export function SeriesHero({
           ? 0
           : Math.max(0, series.knownChapterCount - totalCount)
     const readChapters = scoped && series.progressRead !== undefined ? series.progressRead : series.readChapterCount
-    // Reading counts what is downloaded, as the reader's own progress does; On disk below says how
-    // many are wanted, and the reader's tooltip how many are in the series.
-    const haveCount = progress.have
+    // Reading counts what is downloaded, as the reader's own progress does, less chapters switched
+    // off and not read; On disk below says how many are wanted, and the reader's tooltip how many
+    // are in the series.
+    const haveCount = progress.readable
     // A chapter read whose file has since gone is still read, but not among the downloaded ones.
     const readCount = Math.min(readChapters ?? 0, haveCount)
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
@@ -214,23 +209,7 @@ export function SeriesHero({
     // Through the same label map as the Discover modal, so the type reads the same (and in the
     // reader's language) on a result and on the series it becomes.
     const typeLabel = series.type ? label(TYPE_LABELS[series.type] ?? series.type) : null
-    const chapterTotal = series.totalChapters ?? (series.knownChapterCount || null)
-    const volumeTotal = series.totalVolumes || null
 
-    // The canonical title is in this line too when a language preference moved the heading off it —
-    // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
-    // the file names, search) disappear from the page entirely.
-    const altTitles = otherTitles(
-        readableTitles(series.altTitles ?? [], i18n.locale),
-        series.originalTitle,
-        series.displayTitle,
-    ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])
-
-    // Named rather than inlined into the <Plural>: Lingui names a placeholder after the expression
-    // only when it is a plain identifier, so a subtraction would extract as {0}. Naming it
-    // `overflow` also makes the message identical to the one TagBuckets already produces, which
-    // means this reuses that translation in all ten languages instead of adding a new entry.
-    const overflow = altTitles.length - MAX_HERO_ALT_TITLES
     const titleChars = titleWidth(series.displayTitle)
 
     return (
@@ -277,124 +256,67 @@ export function SeriesHero({
                                 {series.lockedFields.includes('title') && <>{' '}<MetadataLock size={18} /></>}
                             </Title>
 
-                            {altTitles.length > 0 && (
-                                // Capped at four and two lines: a well-covered series carries dozens
-                                // of these (One Piece has 37), and the full list belongs in the
-                                // Metadata card, not wrapped across six lines under the heading.
-                                <Text
-                                    component="div"
-                                    className="series-hero-alt hero-meta"
-                                    title={altTitles.map((a) => a.title).join(', ')}
-                                >
-                                    <MetaList
-                                        inline
-                                        items={[
-                                            ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((a, i) => (
-                                                <span key={i} lang={a.language ?? undefined}>
-                                                    {a.title}
-                                                </span>
-                                            )),
-                                            overflow > 0 && (
-                                                <span key="more" style={{ whiteSpace: 'nowrap' }}>
-                                                    <Plural value={overflow} one="+# more" other="+# more" />
-                                                </span>
-                                            ),
-                                        ]}
-                                    />
+                            {author && (
+                                <Text component="div" className="hero-meta">
+                                    {author}
                                 </Text>
                             )}
-
-                            <Text component="div" className="hero-meta">
-                                <MetaList
-                                    inline
-                                    items={[
-                                        author,
-                                        series.year != null && series.year > 0 ? series.year : null,
-                                        chapterTotal != null ? (
-                                            volumeTotal != null ? (
-                                                <Trans key="count">
-                                                    <Plural value={chapterTotal} one="# chapter" other="# chapters" /> in{' '}
-                                                    <Plural value={volumeTotal} one="# volume" other="# volumes" />
-                                                </Trans>
-                                            ) : (
-                                                <Plural key="count" value={chapterTotal} one="# chapter" other="# chapters" />
-                                            )
-                                        ) : null,
-                                    ]}
-                                />
-                            </Text>
 
                             <HeroChips
                                 status={series.status}
                                 contentRating={series.contentRating}
                                 typeLabel={typeLabel}
+                                year={series.year != null && series.year > 0 ? series.year : null}
                                 hasAnime={series.hasAnime}
                                 animeName={series.animeName}
-                            >
-                                <span className="hero-chips-break" aria-hidden />
-                                <div className="hero-yours">
-                                    <Group gap={8} wrap="nowrap" className="hero-rating">
-                                        <Rating
-                                            count={5}
-                                            fractions={2}
-                                            value={rating ? rating / 2 : 0}
-                                            color={soFar ? 'var(--ink-3)' : undefined}
-                                            onChange={(v) => onRate(Math.round(v * 2) || null)}
-                                            aria-label={t`Your rating`}
-                                        />
-                                        {rating ? (
-                                            <>
-                                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                                    {rating}/10
-                                                </Text>
-                                                {soFar && (
-                                                    <>
-                                                        <Text size="sm" c="var(--ink-4)">
-                                                            {soFarChapter != null
-                                                                ? <Trans>so far, at ch. {soFarChapter}</Trans>
-                                                                : <Trans>so far</Trans>}
-                                                        </Text>
-                                                        <Tooltip label={t`Make this my rating`} withArrow>
-                                                            <ActionIcon
-                                                                size="sm"
-                                                                variant="subtle"
-                                                                color="var(--neutral)"
-                                                                onClick={onFinalize}
-                                                                aria-label={t`Make this my rating`}
-                                                            >
-                                                                <IconCheck size={16} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                    </>
-                                                )}
-                                                <Tooltip label={t`Clear rating`} withArrow>
-                                                    <ActionIcon
-                                                        size="sm"
-                                                        variant="subtle"
-                                                        color="var(--neutral)"
-                                                        onClick={() => onRate(null)}
-                                                        aria-label={t`Clear rating`}
-                                                    >
-                                                        <IconX size={16} />
-                                                    </ActionIcon>
-                                                </Tooltip>
-                                                <RatingHistoryButton seriesId={series.id} />
-                                            </>
-                                        ) : (
-                                            <Text size="sm" c="var(--ink-4)">
-                                                <Trans>Not rated</Trans>
-                                            </Text>
+                            />
+
+                            <div className="hero-yours">
+                                <Group gap={8} wrap="nowrap" className="hero-rating">
+                                    <RatingPanelOpener
+                                        panel={{
+                                            seriesId: series.id,
+                                            value: rating,
+                                            soFar: rating == null ? ratesProvisionally(series) : soFar,
+                                            finished: series.finished ?? false,
+                                            breakdown: series.ratingBreakdown ?? null,
+                                            onChange: onRate,
+                                            onClear: () => onRate(null),
+                                            canEditCategories: true,
+                                        }}
+                                        target={(toggle, opened) => (
+                                            <RatingPill value={rating} soFar={soFar} opened={opened} onClick={toggle} onRate={onRate} />
                                         )}
-                                    </Group>
-                                    {onSetReadingStatus && (
-                                        <ReadingStatusMenu
-                                            status={series.readingStatus}
-                                            auto={series.readingStatusAuto}
-                                            onChange={onSetReadingStatus}
-                                        />
-                                    )}
-                                </div>
-                            </HeroChips>
+                                    />
+                                    {rating ? (
+                                        <>
+                                            {soFar && (
+                                                <>
+                                                    <Tooltip label={t`Make this my rating`} withArrow>
+                                                        <ActionIcon
+                                                            size="sm"
+                                                            variant="subtle"
+                                                            color="var(--neutral)"
+                                                            onClick={onFinalize}
+                                                            aria-label={t`Make this my rating`}
+                                                        >
+                                                            <IconCheck size={16} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                </>
+                                            )}
+                                            <RatingHistoryButton seriesId={series.id} />
+                                        </>
+                                    ) : null}
+                                </Group>
+                                {onSetReadingStatus && (
+                                    <ReadingStatusMenu
+                                        status={series.readingStatus}
+                                        auto={series.readingStatusAuto}
+                                        onChange={onSetReadingStatus}
+                                    />
+                                )}
+                            </div>
 
                             <div className="series-hero-actions hero-actions">{actions}</div>
                         </div>
@@ -635,6 +557,7 @@ export function SeriesHeroSkeleton() {
                 </Group>
             </div>
         </Box>
+        <div className="series-tab-stage">
         <div className="series-body">
             <div className="series-split">
                 <Paper withBorder radius="lg" p="lg">
@@ -655,6 +578,7 @@ export function SeriesHeroSkeleton() {
                     ))}
                 </Paper>
             </div>
+        </div>
         </div>
         </div>
     )

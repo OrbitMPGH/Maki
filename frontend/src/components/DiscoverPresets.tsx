@@ -11,6 +11,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '../lib/toast'
 import {
@@ -49,10 +50,13 @@ export function PresetMenu({
   current,
   onLoad,
   railDraft,
+  compact = false,
 }: {
   current: () => RecommendationFilters
   onLoad: (filters: RecommendationFilters) => void
   railDraft?: () => CustomRailSpec
+  /** An icon button, for the filter bar where width is short. */
+  compact?: boolean
 }) {
   const { t } = useLingui()
   const { data: presets } = useDiscoverPresets()
@@ -102,9 +106,17 @@ export function PresetMenu({
     <>
       <Menu position="bottom-start" withinPortal shadow="md" width={280}>
         <Menu.Target>
-          <Button size="xs" variant="default" leftSection={<IconBookmark size={16} />}>
-            <Trans>Saved filters</Trans>
-          </Button>
+          {compact ? (
+            <Tooltip label={t`Saved filters`} withArrow>
+              <ActionIcon variant="default" size="input-xs" aria-label={t`Saved filters`}>
+                <IconBookmark size={16} />
+              </ActionIcon>
+            </Tooltip>
+          ) : (
+            <Button size="xs" variant="default" leftSection={<IconBookmark size={16} />}>
+              <Trans>Saved filters</Trans>
+            </Button>
+          )}
         </Menu.Target>
         <Menu.Dropdown>
           {(presets ?? []).length === 0 && (
@@ -186,7 +198,7 @@ function SavePresetModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Save filters`} size={MODAL_SIZE.narrow}>
+    <Modal opened={opened} onClose={onClose} title={<ModalHeading title={t`Save filters`} />} size={MODAL_SIZE.narrow}>
       <Stack gap="sm">
         <TextInput
           label={t`Name`}
@@ -215,28 +227,18 @@ function SavePresetModal({
   )
 }
 
-/** Opens the never-show list. Shows how many terms it holds so the list is never invisible. */
-export function HiddenContentButton() {
+/** The never-show list as a menu item; the caller owns the modal, since a menu unmounts on click. */
+export function HiddenContentMenuItem({ onOpen }: { onOpen: () => void }) {
   const { data } = useHiddenContent()
-  const [open, setOpen] = useState(false)
   const count = data?.terms?.length ?? 0
   return (
-    <>
-      <Button
-        size="xs"
-        variant="subtle"
-        color="var(--neutral)"
-        leftSection={<IconEyeOff size={16} />}
-        onClick={() => setOpen(true)}
-      >
-        {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}
-      </Button>
-      {open && <HiddenContentModal onClose={() => setOpen(false)} />}
-    </>
+    <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={onOpen}>
+      {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}
+    </Menu.Item>
   )
 }
 
-function HiddenContentModal({ onClose }: { onClose: () => void }) {
+export function HiddenContentModal({ onClose }: { onClose: () => void }) {
   const { t } = useLingui()
   const { data, isLoading, isError } = useHiddenContent()
   const save = useSaveHiddenContent()

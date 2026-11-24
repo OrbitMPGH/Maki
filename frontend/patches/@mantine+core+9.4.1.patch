@@ -1,0 +1,62 @@
+diff --git a/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs b/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
+index 0e6ac31..03ea1a0 100644
+--- a/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
++++ b/node_modules/@mantine/core/cjs/components/Transition/use-transition.cjs
+@@ -57,8 +57,19 @@ function useTransition({ duration, exitDuration, timingFunction, mounted, onEnte
+ 	(0, _mantine_hooks.useDidUpdate)(() => {
+ 		handleTransitionWithDelay(mounted);
+ 	}, [mounted]);
+-	(0, react.useEffect)(() => () => {
+-		clearAllTimeouts();
++	const settleRef = (0, react.useRef)(null);
++	settleRef.current = { mounted, status: transitionStatus, onEntered, onExited };
++	(0, _mantine_hooks.useIsomorphicEffect)(() => {
++		const { mounted: shouldMount, status, onEntered: entered, onExited: exited } = settleRef.current;
++		const settled = shouldMount ? "entered" : "exited";
++		if (status !== settled) {
++			const handler = shouldMount ? entered : exited;
++			typeof handler === "function" && handler();
++			setStatus(settled);
++		}
++		return () => {
++			clearAllTimeouts();
++		};
+ 	}, []);
+ 	return {
+ 		transitionDuration,
+diff --git a/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs b/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
+index ea5fd53..6e98c66 100644
+--- a/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
++++ b/node_modules/@mantine/core/esm/components/Transition/use-transition.mjs
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useMantineTheme } from "../../core/MantineProvider/MantineThemeProvider/MantineThemeProvider.mjs";
+-import { useEffect, useRef, useState } from "react";
+-import { useDidUpdate, useReducedMotion } from "@mantine/hooks";
++import { useRef, useState } from "react";
++import { useDidUpdate, useIsomorphicEffect, useReducedMotion } from "@mantine/hooks";
+ import ReactDOM from "react-dom";
+ //#region packages/@mantine/core/src/components/Transition/use-transition.ts
+ function useTransition({ duration, exitDuration, timingFunction, mounted, onEnter, onExit, onEntered, onExited, enterDelay, exitDelay }) {
+@@ -55,8 +55,19 @@ function useTransition({ duration, exitDuration, timingFunction, mounted, onEnte
+ 	useDidUpdate(() => {
+ 		handleTransitionWithDelay(mounted);
+ 	}, [mounted]);
+-	useEffect(() => () => {
+-		clearAllTimeouts();
++	const settleRef = useRef(null);
++	settleRef.current = { mounted, status: transitionStatus, onEntered, onExited };
++	useIsomorphicEffect(() => {
++		const { mounted: shouldMount, status, onEntered: entered, onExited: exited } = settleRef.current;
++		const settled = shouldMount ? "entered" : "exited";
++		if (status !== settled) {
++			const handler = shouldMount ? entered : exited;
++			typeof handler === "function" && handler();
++			setStatus(settled);
++		}
++		return () => {
++			clearAllTimeouts();
++		};
+ 	}, []);
+ 	return {
+ 		transitionDuration,

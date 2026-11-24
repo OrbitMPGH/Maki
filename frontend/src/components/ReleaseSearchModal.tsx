@@ -23,11 +23,11 @@ import { SearchInput } from './ui/SearchInput'
 import { IconArrowUp } from '../lib/icons'
 import { EmptyState } from './ui/EmptyState'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
 import { Panel } from './ui/Panel'
 import { TableSkeleton } from './ui/TableSkeleton'
 
 const INDEXER_SETTINGS = '/settings?tab=downloads&s=indexer'
-const WIDE = 'min(1180px, calc(100vw - 3rem))'
 
 function seedHealth(seeders: number | null, belowMinimum: boolean): 'ok' | 'warn' | 'danger' {
   if (!seeders) return 'danger'
@@ -95,7 +95,7 @@ export function ReleaseSearchModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size={narrow ? 560 : WIDE}
+      size={narrow ? MODAL_SIZE.default : MODAL_SIZE.xwide}
       title={
         <ModalHeading
           title={<Trans>Search releases</Trans>}

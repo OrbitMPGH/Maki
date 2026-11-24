@@ -20,6 +20,8 @@ Access is granted per root folder under **Settings → Users & security**. An ac
 sees an empty library. Series, chapters, covers, search, OPDS and KOReader sync all respect it, and
 the same grants decide where someone with the **Add series** permission may add a title.
 
+![The Add user dialog with username, display name and password fields, the Administrator switch, permission checkboxes for Library, Downloads and Reading and sharing, and Library access with a maximum content rating and Access all root folders](../../../../assets/ui/settings/user-editor.webp)
+
 The **Import library** permission covers the library import and **Manual import**. Admins can browse
 anywhere on the server there. Other users with the permission can only browse inside the root
 folders they were granted.

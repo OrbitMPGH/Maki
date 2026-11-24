@@ -4,7 +4,7 @@ import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
 import { FieldAction } from './settings/FieldAction'
-import { ConnectionTestLine } from './ConnectionSettingsCardStatus'
+import { ConnectionStatus, ConnectionTestDetail } from './ConnectionSettingsCardStatus'
 import { notifications } from '../lib/toast'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -59,12 +59,14 @@ export function ConnectionSettingsCard({
 }) {
   const form = useConnectionForm(name, title, fields)
   const extraDirty = extra?.dirty ?? false
+  const testKey = name === 'indexer' ? undefined : name
 
   return (
     <SettingsSection
       id={name}
       title={title}
       description={description}
+      status={form.loaded && <ConnectionStatus testKey={testKey} configured={form.configured} />}
       dirty={form.dirty || extraDirty}
       saving={form.saving || (extra?.saving ?? false)}
       onSave={() => {
@@ -77,7 +79,7 @@ export function ConnectionSettingsCard({
       }}
     >
       <ConnectionFieldRow form={form} />
-      <ConnectionTestLine testKey={name === 'indexer' ? undefined : name} />
+      <ConnectionTestDetail testKey={testKey} />
       {children}
     </SettingsSection>
   )
@@ -127,6 +129,8 @@ function useConnectionForm(name: ConnectionName, title: string, allFields: Conne
   return {
     fields,
     values,
+    loaded: saved !== undefined,
+    configured: Boolean(saved?.url),
     setValue: (key: string, value: string) => setValues((v) => ({ ...v, [key]: value })),
     dirty,
     saving: save.isPending,

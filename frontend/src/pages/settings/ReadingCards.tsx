@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
-  ActionIcon,
   Button,
   Code,
   Group,
@@ -13,9 +12,8 @@ import {
   Stack,
   Switch,
   Text,
-  Tooltip,
 } from '@mantine/core'
-import { IconCopy, IconRefresh } from '../../lib/icons'
+import { IconRefresh } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
@@ -27,7 +25,7 @@ import {
   useSaveReaderSettings,
 } from '../../api/reader'
 import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
-import { useCopyText } from '../../components/ui/useCopyText'
+import { MonoValue } from '../../components/ui/MonoValue'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from '../../components/settings/MintConfirmation'
 import { Callout } from '../../components/ui/Callout'
 
@@ -171,7 +169,6 @@ export function OpdsSection() {
   const [enableModalOpen, setEnableModalOpen] = useState(false)
   const [password, setPassword] = useState('')
   const mint = useMintConfirmation()
-  const { copy: copyFeedUrl } = useCopyText()
 
   // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
   // once, in the response that minted it. Held here for as long as the page stays open; after that
@@ -210,13 +207,6 @@ export function OpdsSection() {
       },
     )
 
-  const copy = (value: string | null, message: string) => {
-    if (!value) return
-    void copyFeedUrl(value).then((ok) => {
-      if (ok) notifications.show({ message, color: 'var(--ok)' })
-    })
-  }
-
   return (
     <SettingsSection
       id="opds"
@@ -248,18 +238,7 @@ export function OpdsSection() {
             </SettingsGroupTitle>
             {feedUrl ? (
               <>
-                <Group gap="xs" wrap="nowrap">
-                  <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
-                  <Tooltip label={t`Copy feed URL`}>
-                    <ActionIcon
-                      variant="light"
-                      onClick={() => copy(feedUrl, now`Feed URL copied`)}
-                      aria-label={t`Copy feed URL`}
-                    >
-                      <IconCopy size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
+                <MonoValue value={feedUrl} copy wrap />
                 <Callout tone="warn" role="alert" mt="xs">
                   <Trans>
                     Copy this now. It can't be shown again; if you lose it, regenerate.
@@ -315,32 +294,14 @@ export function OpdsSection() {
                   <SettingsGroupTitle>
                     <Trans>Server address</Trans>
                   </SettingsGroupTitle>
-                  <Code style={{ overflowWrap: 'anywhere' }}>{komgaAddress}</Code>
-                  <Tooltip label={t`Copy server address`}>
-                    <ActionIcon
-                      variant="light"
-                      onClick={() => copy(komgaAddress, now`Server address copied`)}
-                      aria-label={t`Copy server address`}
-                    >
-                      <IconCopy size={16} />
-                    </ActionIcon>
-                  </Tooltip>
+                  <MonoValue value={komgaAddress} copy wrap />
                 </Group>
                 {token && (
                   <Group gap="xs" wrap="nowrap">
                     <SettingsGroupTitle>
                       <Trans>API key</Trans>
                     </SettingsGroupTitle>
-                    <Code style={{ overflowWrap: 'anywhere' }}>{token}</Code>
-                    <Tooltip label={t`Copy API key`}>
-                      <ActionIcon
-                        variant="light"
-                        onClick={() => copy(token, now`API key copied`)}
-                        aria-label={t`Copy API key`}
-                      >
-                        <IconCopy size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    <MonoValue value={token} copy wrap />
                   </Group>
                 )}
                 <Text size="xs" c="var(--ink-3)">
@@ -448,17 +409,10 @@ export function OpdsSection() {
  * token, so this only has instructions to give once the catalogue is on.
  */
 export function KoreaderSyncSection() {
-  const { t } = useLingui()
   const { data: opds } = useOpdsSettings()
-  const { copy: copyServerUrl } = useCopyText()
   const serverUrl = `${window.location.origin}/api/v1/kosync`
   const enabled = opds?.enabled ?? false
   const feedPath = '/api/v1/opds/'
-
-  const copy = () =>
-    void copyServerUrl(serverUrl).then((ok) => {
-      if (ok) notifications.show({ message: now`Sync server address copied`, color: 'var(--ok)' })
-    })
 
   return (
     <SettingsSection
@@ -475,14 +429,7 @@ export function KoreaderSyncSection() {
             <SettingsGroupTitle mb={4}>
               <Trans>Sync server</Trans>
             </SettingsGroupTitle>
-            <Group gap="xs" wrap="nowrap">
-              <Code style={{ overflowWrap: 'anywhere' }}>{serverUrl}</Code>
-              <Tooltip label={t`Copy sync server address`}>
-                <ActionIcon variant="light" onClick={copy} aria-label={t`Copy sync server address`}>
-                  <IconCopy size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
+            <MonoValue value={serverUrl} copy wrap />
           </div>
 
           <List type="ordered" size="sm" spacing={6}>

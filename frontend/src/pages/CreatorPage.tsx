@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
-  Badge,
   Button,
-  Collapse,
   Group,
-  Select,
-  Stack,
   Text,
 } from '@mantine/core'
-import { IconArrowLeft, IconBell, IconBellCheck, IconFilter } from '../lib/icons'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { IconArrowLeft, IconBell, IconBellCheck } from '../lib/icons'
+import { useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import {
   useCreator,
@@ -24,21 +20,20 @@ import {
 } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useFollowToggle } from '../api/following'
+import { CatalogueFilterBar, useCatalogueFilterSlots } from '../components/CatalogueFilterBar'
 import {
-  CatalogueFilterActions,
-  CatalogueFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
   useLiveApply,
 } from '../components/CatalogueFilters'
-import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { NextPageSkeleton, PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import type { ShortlistSource } from '../api/shortlist'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
-import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
+import { PresetMenu } from '../components/DiscoverPresets'
+import { SortControl } from '../components/ListControls'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
@@ -50,6 +45,7 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
 import { formatFixedDecimal } from '../format'
 import { Callout } from '../components/ui/Callout'
+import { pageScroller } from '../lib/pageScroll'
 
 const PAGE_SIZE = 60
 // Creator links come from Discover's detail card, so a page opened cold walks back there.
@@ -98,11 +94,11 @@ export default function CreatorPage() {
   // the last studio looked at.
   const scope = `creator:${decoded}:${role ?? ''}`
   const catalogue = useCatalogueFilters(undefined, scope)
-  const [filtersOpen, setFiltersOpen] = usePageState(`${scope}:filters-open`, false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(`${scope}:applied`, {})
   const [sort, setSort] = usePageState<BrowseSort>(`${scope}:sort`, 'popular')
   const [pages, setPages] = usePageState(`${scope}:pages`, 1)
   useLiveApply(catalogue.build, setApplied)
+  const filterSlots = useCatalogueFilterSlots(catalogue.controls, { creators: true })
 
   // New filters start the list over, but not on mount: restored filters arrive looking like a
   // change, and resetting there would drop pages loaded before opening one of the results.
@@ -189,6 +185,21 @@ export default function CreatorPage() {
   const items = data?.items ?? []
   const canLoadMore =
     items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
+  const loadingMore = canLoadMore && isFetching && items.length < PAGE_SIZE * pages
+  const hasMore = canLoadMore && !isFetching && !isPlaceholderData
+
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!sentinel || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPages((p) => p + 1)
+      },
+      { root: pageScroller(), rootMargin: '0px 0px 600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel, hasMore, setPages, items.length])
 
   if (decoded.length === 0) {
     return (
@@ -275,63 +286,29 @@ export default function CreatorPage() {
 
       {figures.length > 0 && <FigureStrip className="creator-figures" figures={figures} />}
 
-      <Group gap="xs" mb="md" justify="space-between" wrap="wrap">
-        <Button
-          variant={appliedCount > 0 ? 'light' : 'default'}
-          leftSection={<IconFilter size={16} />}
-          rightSection={
-            appliedCount > 0 ? (
-              <Badge size="xs" circle variant="filled">
-                {appliedCount}
-              </Badge>
-            ) : undefined
-          }
-          aria-expanded={filtersOpen}
-          onClick={() => setFiltersOpen((o) => !o)}
-        >
-          {t`Filters`}
-        </Button>
-        <Group gap="xs">
-          <Select
-            size="sm"
-            w={150}
-            value={sort}
-            onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-            data={sortOptions}
-            allowDeselect={false}
-            aria-label={t`Sort`}
+      <CatalogueFilterBar
+        slots={filterSlots}
+        isCustomized={catalogue.isCustomized || appliedCount > 0}
+        onReset={() => {
+          catalogue.reset()
+          setApplied({})
+        }}
+        saved={
+          <PresetMenu
+            compact
+            current={catalogue.build}
+            onLoad={(f) => {
+              catalogue.hydrate(f)
+              setApplied(f)
+              setPages(1)
+            }}
           />
-          <ViewPrefsControls prefs={prefs} />
-        </Group>
+        }
+      />
+      <Group gap="xs" mb="md" justify="flex-end">
+        <SortControl value={sort} options={sortOptions} onChange={setSort} />
+        <ViewPrefsControls prefs={prefs} />
       </Group>
-
-      <Collapse expanded={filtersOpen}>
-        <Panel p="md" mb="md">
-          <Stack gap="md">
-            <CatalogueFilters controls={catalogue.controls} />
-            <CatalogueFilterActions
-              isCustomized={catalogue.isCustomized || appliedCount > 0}
-              onReset={() => {
-                catalogue.reset()
-                setApplied({})
-              }}
-              extra={
-                <>
-                  <PresetMenu
-                    current={catalogue.build}
-                    onLoad={(f) => {
-                      catalogue.hydrate(f)
-                      setApplied(f)
-                      setPages(1)
-                    }}
-                  />
-                  <HiddenContentButton />
-                </>
-              }
-            />
-          </Stack>
-        </Panel>
-      </Collapse>
 
       {isFetching && !data && (
         <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />
@@ -351,13 +328,8 @@ export default function CreatorPage() {
       {items.length > 0 && (
         <>
           <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />
-          {canLoadMore && (
-            <Group justify="center" mt="lg">
-              <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
-                <Trans>Load more</Trans>
-              </Button>
-            </Group>
-          )}
+          {loadingMore && <NextPageSkeleton density={prefs.density} viewMode={prefs.viewMode} />}
+          {hasMore && <div ref={setSentinel} className="recommended-stream-sentinel" aria-hidden />}
         </>
       )}
 

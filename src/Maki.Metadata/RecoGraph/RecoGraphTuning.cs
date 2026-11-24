@@ -37,6 +37,14 @@ public sealed record RecoGraphTuning
     public double Weight { get; init; } = 0.6;
 
     /// <summary>
+    /// The coefficient the series page's "More like this" asks for instead of <see cref="Weight"/>.
+    /// One seed has no library to agree with, so what readers said about that one series is worth
+    /// more there: on the judged panel 1.2 against 0.6 is +0.025 feel@10 [+0.017, +0.034], and 2.4
+    /// or 4 add nothing certain on top (<c>distribution/AGENTS.md</c>, "v7: votes on the rail").
+    /// </summary>
+    public const double SingleSeedWeight = 1.2;
+
+    /// <summary>
     /// Exponent on the neighbour's degree, dividing its contribution. Fixes a failure that is
     /// obvious once measured: at 0 the channel is a shonen popularity chart, because a handful of
     /// mega-titles are paired with everything and their vote counts dwarf everything else.
@@ -160,7 +168,7 @@ public sealed record RecoGraphTuning
     /// </para>
     ///
     /// <para>
-    /// Re-swept on the 151,882-pair artifact (distribution/CLAUDE.md, "v5.3"): 0.55 measures +0.0024
+    /// Re-swept on the 151,882-pair artifact (distribution/AGENTS.md, "v5.3"): 0.55 measures +0.0024
     /// and +0.0035 nDCG@40 on MangaUpdates pairs at one and three seeds, is inert on held-out readers,
     /// and moves median pick popularity under 3%. Read on real output, 0.55 and 0.50 change nothing on
     /// a 104-series library and add one title (Golden Kamuy, carried by all three crowd channels) on

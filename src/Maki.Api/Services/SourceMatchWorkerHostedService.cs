@@ -274,8 +274,21 @@ public class SourceMatchWorkerHostedService(
                     }
                 }
 
-                var sync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
-                await sync.SyncSeriesAsync(series.Id, ct);
+                // Split chapters are checked against the pages while the scout measures the sources;
+                // Smart waits for both from before the sync saves, and the check triggers it when it ends.
+                var foldChecks = scope.ServiceProvider.GetService<ChapterFoldChecks>();
+                foldChecks?.Expect(series.Id);
+                try
+                {
+                    await scope.ServiceProvider.GetRequiredService<ChapterSyncService>().SyncSeriesAsync(series.Id, ct);
+                }
+                catch
+                {
+                    foldChecks?.Forget(series.Id);
+                    throw;
+                }
+
+                foldChecks?.Start(series.Id);
                 var scouting = await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
                     .StartIfEnabledAsync(db, series.Id, ct);
 

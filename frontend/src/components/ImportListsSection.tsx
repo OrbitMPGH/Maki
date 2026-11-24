@@ -1,23 +1,27 @@
 import { useState } from 'react'
 import {
+  Anchor,
   Badge,
   Button,
-  Chip,
   Group,
+  Modal,
   NumberInput,
   Select,
   Stack,
   Switch,
   Text,
 } from '@mantine/core'
-import { IconDownload, IconRefresh } from '../lib/icons'
+import { IconDownload, IconPlugConnected, IconRefresh } from '../lib/icons'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
+import { formatList } from '../format'
 import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './settings/SettingsRow'
-import { TagChip } from './ui/TagChip'
+import { TagChip, TagChips } from './ui/TagChip'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Note } from './ui/Note'
 import { relativeTime } from './ui/time'
@@ -113,27 +117,28 @@ function TrackerRow({
       />
 
       <Stack gap={10}>
-        <div>
-          <Text size="xs" c="var(--ink-3)" mb={4}>
+        <div role="group" aria-labelledby={`import-statuses-${service}`}>
+          <Text id={`import-statuses-${service}`} size="xs" c="var(--ink-3)" mb={4}>
             <Trans>Import entries with status</Trans>
           </Text>
-          <Chip.Group
-            multiple
-            value={prefs.statuses}
-            onChange={(value) => {
-              // A tracker with nothing selected would import nothing at all; keep at least one.
-              if (value.length === 0) return
-              save({ statuses: value as ImportListStatus[] })
-            }}
-          >
-            <Group gap="xs">
-              {STATUS_OPTIONS.map((o) => (
-                <Chip key={o.value} value={o.value} size="xs" variant="light">
+          <TagChips>
+            {STATUS_OPTIONS.map((o) => {
+              const on = prefs.statuses.includes(o.value)
+              return (
+                <TagChip
+                  key={o.value}
+                  active={on}
+                  onClick={() => {
+                    // A tracker with nothing selected would import nothing at all; keep at least one.
+                    if (on && prefs.statuses.length === 1) return
+                    save({ statuses: on ? prefs.statuses.filter((v) => v !== o.value) : [...prefs.statuses, o.value] })
+                  }}
+                >
                   {renderLabel(o.label)}
-                </Chip>
-              ))}
-            </Group>
-          </Chip.Group>
+                </TagChip>
+              )
+            })}
+          </TagChips>
         </div>
 
         {canAdd ? (
@@ -330,11 +335,20 @@ function trackerLabelFor(data: ImportListsStatusDto, service: string): string {
  * this does anything.
  */
 export function ImportListsSection() {
+  const { t } = useLingui()
   const { data } = useImportLists()
   const [open, setOpen] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
   const review = data?.skipped.filter((s) => s.reason === 'Unmatched' || s.reason === 'Ignored') ?? []
 
+  // Once the last entry is resolved the modal closes, and stays closed when a later sync adds one.
+  if (reviewing && data && review.length === 0) setReviewing(false)
+
   if (!data) return null
+
+  const connected = data.trackers.filter((tr) => tr.connected)
+  const unconnected = data.trackers.filter((tr) => !tr.connected)
+  const names = formatList(unconnected.map((tr) => tr.label))
 
   return (
     <>
@@ -345,42 +359,67 @@ export function ImportListsSection() {
           </Note>
         </SettingsRowsBlock>
       )}
-      <SettingsRows>
-        {data.trackers.map((tr) => (
-          <TrackerRow
-            key={tr.service}
-            tracker={tr}
-            listsEnabled={data.enabled !== false}
-            opened={open === tr.service}
-            onToggle={() => setOpen((current) => (current === tr.service ? null : tr.service))}
-          />
-        ))}
-      </SettingsRows>
+      {connected.length > 0 && (
+        <SettingsRows>
+          {connected.map((tr) => (
+            <TrackerRow
+              key={tr.service}
+              tracker={tr}
+              listsEnabled={data.enabled !== false}
+              opened={open === tr.service}
+              onToggle={() => setOpen((current) => (current === tr.service ? null : tr.service))}
+            />
+          ))}
+        </SettingsRows>
+      )}
+      {unconnected.length > 0 && (
+        <SettingsRowsBlock>
+          <Group gap="sm" wrap="nowrap" align="flex-start">
+            <IconPlugConnected size={16} aria-hidden style={{ flexShrink: 0, marginTop: 2, color: 'var(--ink-3)' }} />
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>Not connected: {names}.</Trans>{' '}
+              <Anchor component={Link} to="/scrobble" size="sm">
+                <Trans>Connect one on the Scrobble page</Trans>
+              </Anchor>
+            </Text>
+          </Group>
+        </SettingsRowsBlock>
+      )}
 
-      <SettingsRowsBlock>
-        <Group gap="xs">
-          <Text fw={600} size="sm">
-            <Trans>Not matched or ignored</Trans>
-          </Text>
-          {review.length > 0 && (
-            <Badge variant="light" color="var(--warn)">
-              {review.length}
-            </Badge>
-          )}
-        </Group>
-        {review.length === 0 && (
-          <Text size="sm" c="var(--ink-3)" mt={4}>
-            <Trans>Nothing unmatched.</Trans>
-          </Text>
-        )}
-      </SettingsRowsBlock>
       {review.length > 0 && (
+        <SettingsRowsBlock>
+          <Group justify="space-between" wrap="nowrap" gap="sm">
+            <Group gap="xs">
+              <Text fw={600} size="sm">
+                <Trans>Not matched or ignored</Trans>
+              </Text>
+              <Badge variant="light" color="var(--warn)">
+                {review.length}
+              </Badge>
+            </Group>
+            <Button size="xs" variant="default" onClick={() => setReviewing(true)}>
+              <Trans>Review</Trans>
+            </Button>
+          </Group>
+        </SettingsRowsBlock>
+      )}
+      <Modal
+        opened={reviewing}
+        onClose={() => setReviewing(false)}
+        size={MODAL_SIZE.wide}
+        title={<ModalHeading title={t`Not matched or ignored`} />}
+      >
         <SettingsRows>
           {review.map((s) => (
             <SkipRow key={s.id} skip={s} trackerLabel={trackerLabelFor(data, s.service)} />
           ))}
         </SettingsRows>
-      )}
+        <ModalFooter>
+          <Button onClick={() => setReviewing(false)}>
+            <Trans>Done</Trans>
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   )
 }

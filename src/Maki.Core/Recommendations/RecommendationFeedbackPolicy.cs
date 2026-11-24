@@ -98,6 +98,6 @@ public static class RecommendationFeedbackPolicy
     /// How hard a low rating pushes similar titles down, on (0, 1]: 1 → 1.0, 2 → 0.75, 3 → 0.5,
     /// 4 → 0.25. Zero for any rating at or above the neutral point, which carries no avoidance.
     /// </summary>
-    public static double AvoidStrength(int rating) =>
+    public static double AvoidStrength(double rating) =>
         rating is >= 1 and <= AvoidRatingCeiling ? (5 - rating) / 4.0 : 0;
 }

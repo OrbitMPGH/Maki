@@ -17,6 +17,8 @@ Under **Settings → Downloads → Indexer**:
 3. Enter the indexer's **API key**, then select **Test**.
 4. Choose which indexers to search and which categories to use, then save.
 
+![The Indexer card with Prowlarr picked, a URL field, an API key field, a Test button and the status Not tested](../../../../assets/ui/settings/indexer.webp)
+
 Maki uses one indexer at a time. Switching between Prowlarr and Jackett makes release suggestions you
 dismissed earlier stop matching, because the two number releases differently.
 
@@ -33,6 +35,8 @@ active at a time).
 - **Path as the download client reports it** and **Path as Maki sees it**: fill in both when the
   client and Maki see the downloads folder at different paths, for example in different containers.
   Without them, Maki can't find the files after a download.
+
+![The Download client card with qBittorrent picked, URL, Username, Password and Label fields, both path fields, and rows for Finished torrents, Stalled torrents and Declined releases](../../../../assets/ui/settings/downloadclient.webp)
 
 The **Finished torrents** switches control what happens after an import:
 
@@ -60,6 +64,8 @@ The **Finished torrents** switches control what happens after an import:
   titles it searched, and has buttons that put an alt title in the box. The search also tries the
   series' original title.
 
+![The Search releases window for Kaguya-sama Love is War with alt title chips and volume releases tagged Proposal, Auto-grab, Under minimum seeders and Title uncertain, each with a Grab button](../../../../assets/ui/series/release-search.webp)
+
 The Volume releases card has more controls:
 
 - **Search torrents for chapters no source has**, on by default, searches your indexers for wanted
@@ -69,11 +75,13 @@ The Volume releases card has more controls:
 - **Minimum seeders** (1 by default). Releases with fewer seeders are never grabbed or approved on
   their own, and no-seeder releases are skipped. The release search marks them, and you can still
   grab them by hand.
-- **Approve volume releases automatically**, off by default, grabs a proposed digital release under
-  the **Automatic approval size ceiling (MB)** (12 GB by default) when the only reasons it waited
-  were a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is
+- **Approve automatically** opens **Approve volume releases automatically**. Off by default, it grabs
+  a proposed digital release under the **Automatic approval size ceiling (MB)** on the same page
+  (12 GB by default) when the only reasons it waited were a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is
   unsure about, including a release whose language is in doubt, still waits for you. An approved
   release only replaces files it is at least as good as, and those go to the trash.
+
+![The Volume releases card with Search torrents for volume releases and Search torrents for chapters no source has switched on, Minimum seeders, Auto-grab size limit and Approve automatically](../../../../assets/ui/settings/volume-releases.webp)
 
 ### Volume releases first
 
@@ -119,6 +127,8 @@ your approval. For a Japanese series the search keeps going until it finds a Jap
    group, the group comes from the file names inside.
 4. If an import would replace chapter files you already have, the queue asks you to decide before
    anything changes.
+
+![The Activity queue with a Kaguya-sama volume pack downloading from Torrent next to MangaDex chapters, and the download history below](../../../../assets/ui/activity/queue-torrent.webp)
 
 The [monitoring and downloads](/Maki/features/monitoring-and-downloads/) page covers the rest of the
 import rules, including how Maki rejects a release that names a related work better than the series.

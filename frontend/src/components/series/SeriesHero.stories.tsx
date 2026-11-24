@@ -68,9 +68,75 @@ export const Rated: Story = {
 export const RatedSoFar: Story = {
   args: { series: seriesDto(3, { rating: null, provisionalRating: 7, provisionalAtChapter: 34, readChapterCount: 34 }) },
   play: async ({ canvas, args, userEvent }) => {
-    await expect(await canvas.findByText('so far, at ch. 34')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Your rating: Good 7 so far' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Make this my rating' }))
     await waitFor(() => expect(args.onFinalize).toHaveBeenCalledOnce())
+  },
+}
+
+export const QuickRate: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Rate from 1 to 10' }))
+    const scores = await canvas.findByRole('group', { name: 'Rate from 1 to 10' })
+    await userEvent.click(within(scores).getByRole('button', { name: 'Excellent 9' }))
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(9))
+  },
+}
+
+export const QuickRateByKeyboard: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    ;(await canvas.findByRole('button', { name: 'Rate from 1 to 10' })).focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{ArrowRight}{Enter}')
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(8))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Rate from 1 to 10' })).toHaveFocus())
+  },
+}
+
+/** Escape folds the buttons away and returns focus; reopening at once must not leave them stuck on the dashes. */
+export const QuickRateEscapeAndReopen: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    dashes.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dashes).toHaveFocus())
+    await userEvent.keyboard('{ArrowLeft}')
+    const seven = await canvas.findByRole('button', { name: 'Good 7' })
+    await waitFor(() => expect(seven).toHaveFocus())
+    await waitFor(() => expect(getComputedStyle(seven).transform).toBe('none'))
+  },
+}
+
+/** A keyboard pick does not lock out the mouse: hovering the dashes still opens the buttons. */
+export const QuickRateKeyboardThenHover: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, args, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    dashes.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Good 7' })).toHaveFocus())
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(args.onRate).toHaveBeenCalledWith(7))
+    await userEvent.hover(dashes)
+    await expect(await canvas.findByRole('group', { name: 'Rate from 1 to 10' })).toBeVisible()
+  },
+}
+
+/** A touch screen has no hover: a tap on the dashes opens the panel with the words. */
+export const QuickRateTouchOpensPanel: Story = {
+  args: { series: seriesDto(3, { rating: 7 }) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const dashes = await canvas.findByRole('button', { name: 'Rate from 1 to 10' })
+    await userEvent.pointer({ keys: '[TouchA]', target: dashes })
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('button', { name: 'Masterpiece' })).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Rate from 1 to 10' })).toBeNull()
   },
 }
 
@@ -94,45 +160,26 @@ export const RatingHistory: Story = {
   },
 }
 
-export const LockedTitleAndManyAltTitles: Story = {
+export const LockedTitle: Story = {
   args: {
-    series: seriesDto(1, {
-      lockedFields: ['title', 'overview'],
-      altTitles: [
-        { title: 'Lanterns Over Kasumi', language: 'en' },
-        { title: 'Kasumi no Ue no Tourou', language: 'ja-ro' },
-        { title: 'Faroles sobre Kasumi', language: 'es' },
-        { title: 'Lanternes au-dessus de Kasumi', language: 'fr' },
-        { title: 'Lanternas sobre Kasumi', language: 'pt-br' },
-        { title: 'Laternen uber Kasumi', language: 'de' },
-        { title: 'Lanterne su Kasumi', language: 'it' },
-      ],
-    }),
+    series: seriesDto(1, { lockedFields: ['title', 'overview'] }),
   },
 }
 
 const longTitle =
   'Exiled From the Lantern Guild on My Very First Night: My Childhood Friends Left Me in the Fog, But Thanks to a Cursed Teapot I Brewed a LVL 999 Tea Ceremony and Now the Whole Kingdom Wants a Cup'
 
-/** A light novel title at the length they really run to: it shrinks toward three lines, and the alt titles stop at two. */
+/** A light novel title at the length they really run to: it shrinks toward three lines. */
 export const VeryLongTitle: Story = {
   args: {
     series: seriesDto(1, {
       title: longTitle,
       displayTitle: longTitle,
-      altTitles: [
-        { title: '初夜にランタン組合を追放された僕、呪いの急須でレベル999の茶会を開いたら王国中が一杯欲しがるようになりました', language: 'ja' },
-        { title: 'Exiled From the Lantern Guild: My Friends Left Me in the Fog, But My Cursed Teapot Brews LVL 999 Tea', language: 'en' },
-        { title: 'My Cursed Teapot Is LVL 999', language: 'en' },
-        { title: 'Cursed Teapot: Exiled From the Lantern Guild, I Brew for the Kingdom Now!', language: 'en' },
-        { title: 'Lantern Guild Exile', language: 'en' },
-      ],
     }),
   },
   play: async ({ canvas }) => {
     const heading = await canvas.findByRole('heading', { level: 1, name: /Exiled From the Lantern Guild/ })
     await expect(heading).toHaveAttribute('data-length', 'long')
-    await expect(await canvas.findByText('+1 more')).toBeInTheDocument()
   },
 }
 

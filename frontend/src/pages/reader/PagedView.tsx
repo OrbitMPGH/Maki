@@ -105,8 +105,14 @@ function RegionPage({
         transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
       }
     : { inset: 0 }
+  const ratio = turned ? height / width : width / height
   return (
-    <div ref={setBox} className="reader-region" data-fit={fit} style={standby ? STANDBY : undefined}>
+    <div
+      ref={setBox}
+      className="reader-region"
+      data-fit={fit}
+      style={{ ...(standby ? STANDBY : undefined), '--reader-page-ratio': ratio } as React.CSSProperties}
+    >
       <canvas
         className={className}
         width={turned ? height : width}
@@ -256,7 +262,14 @@ function PagedPage({
         data-no-cover-fallback
         alt={alt}
         className={className}
-        style={{ ...style, filter: tone, ...(!visible ? { display: 'none' } : standby ? STANDBY : undefined) }}
+        style={
+          {
+            ...style,
+            filter: tone,
+            '--reader-page-ratio': natural ? natural.width / natural.height : undefined,
+            ...(!visible ? { display: 'none' } : standby ? STANDBY : undefined),
+          } as React.CSSProperties
+        }
         decoding="sync"
         draggable={false}
         onLoad={(event) => markReady(event.currentTarget)}
@@ -465,11 +478,13 @@ export default function PagedView({
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
             if (!target) return
-            const wanted =
+            const size = EnhanceScope.sizeKey(image)
+            const own =
               target.stretched ||
               (mode === 'auto' &&
                 isSoftPage(image, src, shownScale(target, image.naturalWidth * region.w, image.naturalHeight * region.h)))
-            owner.notePage(page, wanted)
+            owner.notePage(page, own, target.stretched, size)
+            const wanted = own || owner.sizeStretched(size)
             if (!live || !preset || !wanted || serverRef.current?.states.get(page) === 'ready') return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return

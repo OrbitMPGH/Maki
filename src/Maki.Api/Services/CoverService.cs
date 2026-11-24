@@ -2,6 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Notifications;
 using System.Security.Cryptography;
 
@@ -192,9 +193,7 @@ public class CoverService(
     public Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default) =>
         ImageWorkGate.RunAsync(async () =>
         {
-            using var buffer = new MemoryStream();
-            await content.CopyToAsync(buffer, ct);
-            return SavePoster(seriesId, buffer.ToArray());
+            return SavePoster(seriesId, await PooledStreams.ReadAllBytesAsync(content, "cover-upload", ct));
         }, ct);
 
     /// <summary>The first frame of an animation, shrunk to <see cref="PosterWidth"/> when wider and never enlarged.</summary>

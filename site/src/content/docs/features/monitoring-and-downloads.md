@@ -5,12 +5,14 @@ description: Scheduled checks, release-aware refresh, source matching, torrents 
 
 ## Monitoring
 
-![Chapters tab of a series: each row has a Wanted toggle, release date, source and download status](../../../assets/chapters.png)
+![Chapters tab of Frieren with filter chips, a file-missing notice and rows that each have a Wanted toggle, title, release date, source and status such as Downloaded, Read, Not downloaded and Delisted](../../../assets/ui/chapters/tab.webp)
 <hr>
 
 Chapter lists refresh on a schedule and new chapters are queued automatically. Whole-series monitor
 modes decide what gets queued, and a per-chapter **Wanted** toggle keeps individual chapters or
 specials out.
+
+![Automation menu on a series with Monitor choices All, Smart, Main only and None, plus Notify and Incognito choices and a Scanlation groups entry](../../../assets/ui/series/automation.webp)
 
 ## Release-aware refresh
 
@@ -21,9 +23,11 @@ quiet for longer, are checked once a day. A new chapter puts a series back on th
 Turn off **Check quiet series less often** in Settings, Downloads to check everything every 30
 minutes.
 
+![Next chapter panel on a series page showing the usual release rhythm, how often the source is checked and when the next check is due](../../../assets/ui/series/next-chapter.webp)
+
 ## Upcoming
 
-![Activity's Upcoming tab: a bar per series spanning the days its next chapter is likely, with blue diamonds on announced dates](../../../assets/upcoming.png)
+![Upcoming grid with a bar per series spanning the days its next chapter is likely, a confidence value beside each title, and blue diamonds on days the source announced](../../../assets/ui/activity/upcoming.webp)
 <hr>
 
 The Upcoming tab in Activity shows each series' likely next chapter on a five-week grid, as a span
@@ -33,7 +37,7 @@ the next check is due.
 
 ## Automatic source matching
 
-![Sources panel on a series page: four sources marked Found and one still searching](../../../assets/source-match.png)
+![Sources panel on a series page with Atsumaru and MangaDex linked by cross-id, Weeb Central found, TopManhua and MangaPill still matching, and a delisted-chapter alert above](../../../assets/ui/series/sources-matching.webp)
 <hr>
 
 Adding a series returns instantly. Matching runs in the background and can be re-run or fixed by
@@ -50,6 +54,8 @@ hand.
 - A chapter that is still early access on one source is taken from another linked source that has
   it free, and only waits when none does.
 
+![Is this it? card under the linked sources offering MangaPill's Sousou no Frieren, with its authors and synopsis, and Link and Dismiss buttons](../../../assets/ui/series/near-miss.webp)
+
 Files that no source chapter claims still become chapters. A chapter file gets a row under its
 number, and a volume file gets a row for each chapter its page names mark. A volume file with no
 chapter marks gets one **Vol.N** entry per volume it spans, but only while no source lists any
@@ -64,9 +70,13 @@ filter on the series page. An alert there offers **Show them** and **Keep them**
 itself if a source lists the chapter again, and a sync that delists chapters you have files for
 sends one inbox warning per series. Nothing is downloaded or deleted because of it.
 
+![Chapter rows where one chapter carries a Delisted badge next to Not downloaded, between downloaded and read chapters](../../../assets/ui/chapters/delisted.webp)
+
 Chapters no source has can still come from your indexers: **Search torrents for chapters no source
 has** is on by default once an indexer and a download client are set up. See
 [Torrents](/Maki/guides/sources/torrents/#getting-a-release).
+
+![Volume releases card with Search torrents for volume releases and Search torrents for chapters no source has switched on, and Minimum seeders, Auto-grab size limit, Approve automatically and Search limits rows](../../../assets/ui/settings/volume-releases.webp)
 
 A chapter whose file has gone from disk says **File missing**, with a count in the chapter heading,
 a filter and a **Relink files** button. Downloaded counts leave these chapters out. See
@@ -84,6 +94,8 @@ Search releases through Prowlarr or Jackett, grab them with qBittorrent, Transmi
 and auto-import on completion. Torrents share the queue with scraper downloads, and files are
 hardlinked into the library where possible. A release whose title names a related work (a spin-off
 or sequel) better than the series itself is rejected.
+
+![Kaguya-sama series page with a volume torrent downloading in a banner above the details, with an Open Activity link](../../../assets/ui/series/torrent-download.webp)
 
 Maki can also remove a torrent from the client, right after import or once it reaches a seed ratio
 or seeding time. This is off by default. Turn on **Remove torrents from the download client after
@@ -110,3 +122,5 @@ that need a decision, for example an import that would replace existing chapter 
 download ahead of big backlogs, one series can be paused on its own, a drive running low on space
 holds the downloads for that root folder, and the queue shows roughly how long it has left. See
 [Activity, Wanted and the queue](/Maki/guides/getting-started/activity-and-queue/).
+
+![Activity queue with a Kaguya-sama torrent and a Frieren chapter downloading, one more Frieren chapter queued with move and pause buttons, and a History list below](../../../assets/ui/activity/queue-torrent.webp)

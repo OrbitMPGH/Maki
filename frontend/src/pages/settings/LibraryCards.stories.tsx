@@ -110,7 +110,7 @@ export const RootFolderRemoveConfirm: Story = {
     const [first] = await canvas.findAllByRole('button', { name: 'Remove root folder' })
     await userEvent.click(first)
     const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('/library/manga')).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'Copy /library/manga' })).toBeInTheDocument()
     await expect(await dialog.findByRole('button', { name: 'Remove folder' })).toBeVisible()
   },
 }
@@ -250,9 +250,18 @@ export const CreditScan: Story = {
 
 export const Naming: Story = {
   render: () => <NamingSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('Example: Lanterns Over Kasumi (2021)')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Rename the folder to the series folder format' })).toBeChecked())
+    const row = await canvas.findByRole('button', { name: /^Folders on import.*Rename the folder/ })
+    await userEvent.click(row)
+    await waitFor(() => expect(canvas.getByRole('radio', { name: /^Rename the folder/ })).toBeChecked())
+    await expect(canvas.getByRole('radio', { name: /^Keep the name for everything/ })).not.toBeChecked()
+    // One tab stop for the choices, and the arrow keys move the pick as in a radio group.
+    await waitFor(() => expect(canvas.getByRole('radio', { name: /^Rename the folder/ })).toHaveAttribute('tabindex', '0'))
+    await expect(canvas.getByRole('radio', { name: /^Keep the name for everything/ })).toHaveAttribute('tabindex', '-1')
+    canvas.getByRole('radio', { name: /^Rename the folder/ }).focus()
+    await userEvent.keyboard('{ArrowDown}')
+    await waitFor(() => expect(canvas.getByRole('radio', { name: /^Keep the name, new downloads elsewhere/ })).toHaveFocus())
   },
 }
 
@@ -280,10 +289,13 @@ export const NamingRenameAllConfirm: Story = {
 
 export const NameParsing: Story = {
   render: () => <NameParsingSection />,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Chapters: Chapitre, Ch')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('checkbox', { name: /^Fran/ })).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Deutsch' })).not.toBeChecked())
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText(/^Fran/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Choose languages' }))
+    const modal = within(await within(document.body).findByRole('dialog', { name: 'File name parsing' }))
+    await expect(await modal.findByText('Chapitre, Ch')).toBeVisible()
+    await waitFor(() => expect(modal.getByRole('checkbox', { name: /^Fran/ })).toBeChecked())
+    await waitFor(() => expect(modal.getByRole('checkbox', { name: 'Deutsch' })).not.toBeChecked())
   },
 }
 
@@ -293,7 +305,10 @@ export const NameParsingToggle: Story = {
     msw: settingsMsw(http.get(api('/settings/nameparsing'), () => HttpResponse.json({ ...nameParsing, languages: [] }))),
   },
   play: async ({ canvas, userEvent }) => {
-    const spanish = await canvas.findByRole('checkbox', { name: /^Espa/ })
+    await expect(await canvas.findByText('No other languages')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Choose languages' }))
+    const modal = within(await within(document.body).findByRole('dialog', { name: 'File name parsing' }))
+    const spanish = await modal.findByRole('checkbox', { name: /^Espa/ })
     await userEvent.click(spanish)
     await expect(spanish).toBeInTheDocument()
   },

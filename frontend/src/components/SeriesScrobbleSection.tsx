@@ -18,7 +18,6 @@ import {
   useSeriesScrobble,
 } from '../api/hooks'
 import type { SeriesScrobbleServiceDto } from '../api/types'
-import { formatDate } from '../format'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
@@ -27,6 +26,12 @@ import { StatusDot } from './ui/StatusDot'
 import { Panel } from './ui/Panel'
 import { SectionHeader } from './ui/SectionHeader'
 import { EmptyState } from './ui/EmptyState'
+import { TimeAgo } from './ui/TimeAgo'
+
+// Errors are reported globally (see main.tsx); only success needs saying here.
+const notify = {
+  ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
+}
 
 /** "-> ch 12" / "ch 12, vol 2" summary for a synced service. */
 function progressLabel(s: SeriesScrobbleServiceDto): string {
@@ -48,11 +53,6 @@ function ReviewControls({
   const match = useScrobbleMatch()
   const ignore = useScrobbleIgnore()
   const [manual, setManual] = useState('')
-
-  // Errors are reported globally (see main.tsx); only success needs saying here.
-  const notify = {
-    ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
-  }
 
   const doMatch = (remoteId: string) =>
     match.mutate(
@@ -149,7 +149,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
             loading={syncNow.isPending}
             onClick={() =>
               syncNow.mutate(undefined, {
-                onSuccess: (r) => notifications.show({ message: r.message, color: 'var(--ok)' }),
+                onSuccess: (r) => notify.ok(r.message),
               })
             }
           >
@@ -158,12 +158,6 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         }
       />
       <div className="series-machine">
-        {!data.matched && (
-          <Text size="sm" c="var(--ink-3)" mb="sm">
-            <Trans>not yet synced</Trans>
-          </Text>
-        )}
-
         {data.services.length === 0 ? (
           <EmptyState
             compact
@@ -190,14 +184,11 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       <Table.Td>
                         <Group gap={6} wrap="nowrap">
                           <Tooltip label={s.connected ? t`Connected` : t`Not connected`} withArrow>
-                            <span
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: `var(--${statusToken(trackerConnectionVisual(s.connected, true).color)})`,
-                                flexShrink: 0,
-                              }}
+                            <StatusDot
+                              tone={statusToken(trackerConnectionVisual(s.connected, true).color)}
+                              role="img"
+                              aria-label={s.connected ? t`Connected` : t`Not connected`}
+                              style={{ flexShrink: 0 }}
                             />
                           </Tooltip>
                           <Text size="sm" fw={600}>
@@ -257,7 +248,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                           </Table.Td>
                           <Table.Td>
                             <Text size="sm" c="var(--ink-3)" className="tnum">
-                              {s.syncedAt ? formatDate(s.syncedAt) : '-'}
+                              {s.syncedAt ? <TimeAgo value={s.syncedAt} /> : '-'}
                             </Text>
                           </Table.Td>
                         </>

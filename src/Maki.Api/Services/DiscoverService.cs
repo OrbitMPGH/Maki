@@ -49,7 +49,29 @@ public record DiscoverRail(
     [property: JsonIgnore] object? TitleArgs = null,
     [property: JsonIgnore] object? SubtitleArgs = null,
     IReadOnlyList<string>? SubtitleTitles = null,
-    [property: JsonIgnore] int SubtitleMore = 0);
+    [property: JsonIgnore] int SubtitleMore = 0)
+{
+    /// <summary>
+    /// Set on the reader-cohort rail only: its picks sorted into the cohorts they were drawn from,
+    /// strongest cohort first.
+    /// </summary>
+    public IReadOnlyList<DiscoverCohortGroup>? Groups { get; init; }
+}
+
+/// <summary>
+/// One cohort on the "Readers like you also finished" rail.
+/// </summary>
+/// <param name="Key">The cohort's id in the installed artifact; sent back to draw from it alone.</param>
+/// <param name="Weight">Its share of the reader's placement, 0 to 1.</param>
+/// <param name="SeedIds">Up to three of the reader's own finished series that tie them to it (MangaBaka ids).</param>
+/// <param name="Shared">How many of the reader's finished series count towards it.</param>
+/// <param name="Members">Its picks on the rail, in rail order.</param>
+public record DiscoverCohortGroup(
+    int Key, double Weight, IReadOnlyList<long> SeedIds, int Shared, IReadOnlyList<DiscoverCohortMember> Members);
+
+/// <param name="Id">The pick's MangaBaka id, as on the rail's items.</param>
+/// <param name="Share">How many of the cohort's readers finished it, 0 to 1.</param>
+public record DiscoverCohortMember(string Id, double Share);
 
 /// <summary>A Discover feed name that is not a <see cref="BrowseFeed"/>; the controller renders it.</summary>
 public sealed class UnknownFeedException(string feed) : InvalidOperationException(feed)

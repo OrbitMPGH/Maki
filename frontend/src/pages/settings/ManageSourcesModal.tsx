@@ -1,19 +1,19 @@
 import { SearchInput } from '../../components/ui/SearchInput'
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  ActionIcon, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
-  Switch, Tabs, Text, Tooltip,
+  ActionIcon, Button, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, Select, Stack,
+  Switch, Tabs, Text, Tooltip, UnstyledButton,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   IconArrowUp,
+  IconBook,
   IconChevronDown,
   IconChevronUp,
   IconDownload,
   IconFileImport,
-  IconFilter,
   IconGripVertical,
   IconLanguage,
   IconPencil,
@@ -28,16 +28,20 @@ import {
   IconPackages,
 } from '../../lib/icons'
 import { OverflowButton } from '../../components/ui/OverflowButton'
+import { TagChip, TagChips } from '../../components/ui/TagChip'
+import { FilterMenuButton, FilterMultiMenuButton } from '../../components/ListControls'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
-  useSaveSourcePriority, useSourcePriority, useSources,
+  useSaveSourcePriority, useSourcePriority, useSourceProxy, useSources,
   type SourceContent, type SourceInfo, type SourceQualitySummary,
 } from '../../api/hooks'
 import { languageName } from '../../api/titles'
 import { useRefreshSuwayomiSources, useSetSuwayomiSourceLanguage, useSuwayomiConnection } from '../../api/suwayomi'
 import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 import { useAuth } from '../../auth/AuthProvider'
 import { errorText } from '../../api/errorText'
 import { fetchCustomSourceExport, useCustomSources, useDeleteCustomSource, type CustomSourceDefinition } from '../../api/customSources'
@@ -131,10 +135,12 @@ function QualityTag({ quality }: { quality: SourceQualitySummary }) {
   )
 }
 
-function SourceTags({ source, contentLabels, nameOfLanguage }: {
+function SourceTags({ source, contentLabels, nameOfLanguage, proxied = false }: {
   source: SourceInfo
   contentLabels: Record<SourceContent, string>
   nameOfLanguage: (code: string) => string
+  /** Goes through the source proxy; only admins are told. */
+  proxied?: boolean
 }) {
   const languages = source.supportedLanguages ?? []
   const languageCount = new Set(languages.map(baseLanguage)).size
@@ -236,6 +242,9 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       )}
       {source.supportsLanguageFilter && (
         <span className="source-tag" data-tone="filter"><Trans>Language filter</Trans></span>
+      )}
+      {proxied && (
+        <span className="source-tag" data-tone="kind"><Trans>Proxy</Trans></span>
       )}
     </div>
   )
@@ -597,6 +606,8 @@ export function ManageSourcesModal({
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const { data: customSources } = useCustomSources(opened && isAdmin)
+  const { data: sourceProxy } = useSourceProxy(opened && isAdmin)
+  const proxied = new Set(sourceProxy?.url ? sourceProxy.sources.map((name) => name.toLowerCase()) : [])
   const deleteCustom = useDeleteCustomSource()
   const [wizard, setWizard] = useState<{
     mode: WizardMode
@@ -958,7 +969,12 @@ export function ManageSourcesModal({
               : <span className="source-row-host">{sourceHost(source.baseUrl)}</span>}
             {source.provider === 'custom' && <CustomBadge />}
           </div>
-          <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
+          <SourceTags
+            source={source}
+            contentLabels={contentLabels}
+            nameOfLanguage={nameOfLanguage}
+            proxied={proxied.has(source.name.toLowerCase())}
+          />
         </div>
         <Group gap={8} wrap="nowrap">
           {source.scanlationGroups && isAdmin && (
@@ -1021,6 +1037,7 @@ export function ManageSourcesModal({
   }
 
   const enabledCount = rail.length
+  const onCount = (sources ?? []).filter((s) => railSet.has(s.name)).length
   const catalogue = (
     <section className="source-manager-catalogue">
       <div className="source-manager-tools">
@@ -1034,107 +1051,6 @@ export function ManageSourcesModal({
           idleSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
           style={{ flex: '1 1 200px', minWidth: 160 }}
         />
-        <SegmentedControl
-          aria-label={t`Filter by state`}
-          value={stateFilter}
-          onChange={(value) => setStateFilter(value as StateFilter)}
-          data={[
-            { value: 'all', label: t`All` },
-            { value: 'on', label: t`Enabled` },
-            { value: 'off', label: t`Disabled` },
-          ]}
-        />
-        <Popover opened={filtersOpen} onChange={setFiltersOpen} position="bottom-end" width={420} shadow="md">
-          <Popover.Target>
-            <Button
-              variant="default"
-              leftSection={<IconFilter size={16} />}
-              rightSection={activeFilters > 0 ? <span className="source-filter-count">{activeFilters}</span> : undefined}
-              onClick={() => setFiltersOpen((o) => !o)}
-              aria-expanded={filtersOpen}
-            >
-              <Trans>Filters</Trans>
-            </Button>
-          </Popover.Target>
-          <Popover.Dropdown className="source-filter-pop">
-            <div>
-              <div className="source-filter-label"><Trans>Content</Trans></div>
-              <Chip.Group multiple value={contentFilter} onChange={(v) => setContentFilter(v as SourceContent[])}>
-                <Group gap={6}>
-                  {CONTENT_ORDER.map((c) => (
-                    <Chip key={c} value={c} size="xs" variant="light">{contentLabels[c]}</Chip>
-                  ))}
-                </Group>
-              </Chip.Group>
-            </div>
-            <div>
-              <div className="source-filter-label"><Trans>Rating</Trans></div>
-              <Chip
-                size="xs" variant="light" color="var(--danger)"
-                checked={adultOnly} onChange={setAdultOnly}
-              >
-                <Trans>18+ only</Trans>
-              </Chip>
-            </div>
-            {(hasSuwayomi || hasCustom) && (
-              <div>
-                <div className="source-filter-label"><Trans>Provider</Trans></div>
-                <Group gap={6}>
-                  <Chip
-                    size="xs" variant="light"
-                    checked={providerFilter === 'builtin'}
-                    onChange={(checked) => setProviderFilter(checked ? 'builtin' : null)}
-                  >
-                    <Trans>Built in</Trans>
-                  </Chip>
-                  {hasSuwayomi && (
-                    <Chip
-                      size="xs" variant="light"
-                      checked={providerFilter === 'suwayomi'}
-                      onChange={(checked) => setProviderFilter(checked ? 'suwayomi' : null)}
-                    >
-                      Suwayomi
-                    </Chip>
-                  )}
-                  {hasCustom && (
-                    <Chip
-                      size="xs" variant="light"
-                      checked={providerFilter === 'custom'}
-                      onChange={(checked) => setProviderFilter(checked ? 'custom' : null)}
-                    >
-                      <Trans>Custom</Trans>
-                    </Chip>
-                  )}
-                </Group>
-              </div>
-            )}
-            {languageCounts.length > 0 && (
-              <div>
-                <div className="source-filter-label"><Trans>Language</Trans></div>
-                <Group gap={6}>
-                  {languageCounts.map(([code, count]) => (
-                    <Chip
-                      key={code} size="xs" variant="light"
-                      checked={languageFilter === code}
-                      onChange={(checked) => setLanguageFilter(checked ? code : null)}
-                    >
-                      {nameOfLanguage(code)}
-                      <span className="source-filter-n">{count}</span>
-                    </Chip>
-                  ))}
-                </Group>
-              </div>
-            )}
-            <Group justify="space-between" className="source-filter-foot">
-              <Button variant="subtle" color="var(--neutral)" size="xs" onClick={clearFilters} disabled={activeFilters === 0}>
-                <Trans>Clear filters</Trans>
-              </Button>
-              <Button variant="default" size="xs" onClick={() => setFiltersOpen(false)}>
-                <Trans>Done</Trans>
-              </Button>
-            </Group>
-          </Popover.Dropdown>
-        </Popover>
         {isAdmin && (
           <Menu position="bottom-end" withinPortal>
             <Menu.Target>
@@ -1155,6 +1071,69 @@ export function ManageSourcesModal({
             </Menu.Dropdown>
           </Menu>
         )}
+        <div className="source-manager-filters">
+          <TagChips>
+            {([
+              ['all', t`All`, total],
+              ['on', t`Enabled`, onCount],
+              ['off', t`Disabled`, total - onCount],
+            ] as const).map(([value, chipLabel, count]) => (
+              <TagChip key={value} active={stateFilter === value} count={count} onClick={() => setStateFilter(value)}>
+                {chipLabel}
+              </TagChip>
+            ))}
+          </TagChips>
+          <FilterMultiMenuButton
+            icon={IconBook}
+            label={t`Content`}
+            options={CONTENT_ORDER.map((c) => ({ value: c, label: contentLabels[c] }))}
+            value={contentFilter}
+            onChange={(v) => setContentFilter(v as SourceContent[])}
+            onOpenChange={setFiltersOpen}
+          />
+          {languageCounts.length > 0 && (
+            <FilterMenuButton
+              icon={IconLanguage}
+              label={t`Language`}
+              anyLabel={t`Any language`}
+              options={languageCounts.map(([code, count]) => ({ value: code, label: nameOfLanguage(code), count }))}
+              value={languageFilter}
+              onChange={setLanguageFilter}
+              onOpenChange={setFiltersOpen}
+            />
+          )}
+          {(hasSuwayomi || hasCustom) && (
+            <FilterMenuButton
+              icon={IconPuzzle}
+              label={t`Provider`}
+              anyLabel={t`Any provider`}
+              options={[
+                { value: 'builtin', label: t`Built in` },
+                ...(hasSuwayomi ? [{ value: 'suwayomi', label: 'Suwayomi' }] : []),
+                ...(hasCustom ? [{ value: 'custom', label: t`Custom` }] : []),
+              ]}
+              value={providerFilter}
+              onChange={(v) => setProviderFilter(v as ProviderFilter | null)}
+              onOpenChange={setFiltersOpen}
+            />
+          )}
+          <UnstyledButton
+            className="filter-bar-button"
+            data-active={adultOnly || undefined}
+            aria-pressed={adultOnly}
+            onClick={() => setAdultOnly(!adultOnly)}
+          >
+            <IconShield size={16} aria-hidden className="filter-bar-button-icon" />
+            <span>
+              <Trans>18+ only</Trans>
+            </span>
+          </UnstyledButton>
+          {activeFilters > 0 && (
+            <Button variant="subtle" color="var(--neutral)" size="xs" onClick={clearFilters}>
+              <Trans>Clear</Trans>
+            </Button>
+          )}
+        </div>
       </div>
       <div className="source-manager-list">
         {refresh.data && !refresh.data.reachable && (
@@ -1223,7 +1202,7 @@ export function ManageSourcesModal({
     <Modal
       opened={opened}
       onClose={requestClose}
-      size={980}
+      size={MODAL_SIZE.xwide}
       closeOnEscape={!filtersOpen && !setupFor && !groupsOpen}
       fullScreen={narrow}
       closeButtonProps={{ 'aria-label': t`Close` }}
@@ -1231,7 +1210,7 @@ export function ManageSourcesModal({
         content: narrow ? undefined : { height: 'min(860px, 92dvh)' },
         body: { padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
       }}
-      title={<Trans>Manage sources</Trans>}
+      title={<ModalHeading title={<Trans>Manage sources</Trans>} />}
     >
       <div className="source-manager" data-narrow={narrow || undefined}>
         {narrow && (
@@ -1246,20 +1225,17 @@ export function ManageSourcesModal({
           {(!narrow || pane === 'catalogue') && catalogue}
           {(!narrow || pane === 'priority') && priorityRail}
         </div>
-        <footer className="source-manager-foot">
-          <DirtySummary turnedOn={turnedOn} turnedOff={turnedOff} orderChanged={orderChanged} />
-          <Group gap="xs" ml="auto">
-            <Button variant="subtle" color="var(--neutral)" onClick={resetToDefaults} disabled={!sources}>
-              <Trans>Reset to defaults</Trans>
-            </Button>
-            <Button variant="default" onClick={requestClose} disabled={save.isPending}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button onClick={submit} disabled={!dirty || !priority} loading={save.isPending}>
-              <Trans>Save changes</Trans>
-            </Button>
-          </Group>
-        </footer>
+        <ModalFooter status={<DirtySummary turnedOn={turnedOn} turnedOff={turnedOff} orderChanged={orderChanged} />}>
+          <Button variant="subtle" color="var(--neutral)" onClick={resetToDefaults} disabled={!sources}>
+            <Trans>Reset to defaults</Trans>
+          </Button>
+          <Button variant="default" onClick={requestClose} disabled={save.isPending}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button onClick={submit} disabled={!dirty || !priority} loading={save.isPending}>
+            <Trans>Save changes</Trans>
+          </Button>
+        </ModalFooter>
       </div>
     </Modal>
     <ConfirmDialog

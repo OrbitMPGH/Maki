@@ -431,6 +431,7 @@ export function sourceOrderFor(id: number): SourceOrderDto {
     scout: null,
     qualityOrder: enabled.map((r) => r.id),
     tiers: Object.fromEntries(rows.map((r, i) => [r.id, i === 0 ? 'official' : 'aggregator'])) as SourceOrderDto['tiers'],
+    demoted: {},
   }
 }
 

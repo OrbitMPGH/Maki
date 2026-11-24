@@ -17,9 +17,9 @@ import {
   FlareSolverrCard,
   IndexerSection,
   ReadFileCleanupSection,
-  SmartDownloadSection,
   SourceLanguageSection,
   SourcePrioritySection,
+  SourceProxyCard,
   UpgradeScanSection,
   VolumeReleasesSection,
 } from './DownloadCards'
@@ -40,16 +40,30 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+type Canvas = ReturnType<typeof within>
+type User = { click: (element: Element) => Promise<void> }
+
+// A drill row opens its page in the card; the page's back header shows once it is there.
+async function openRow(canvas: Canvas, userEvent: User, row: RegExp) {
+  const button = await canvas.findByRole('button', { name: row })
+  await waitFor(() => expect(button).toBeEnabled())
+  await userEvent.click(button)
+  await canvas.findByRole('button', { name: /^Back/ })
+}
+
 export const DownloadQueue: Story = {
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Concurrent chapter downloads' })).toHaveValue('2'))
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Time limit per chapter' })).toHaveValue('120'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Time limit per chapter.*120 minutes/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Smart download.*Fetch 10 chapters at 5 unread/ })).toBeVisible())
     await expect(canvas.queryByText('Unsaved')).toBeNull()
   },
 }
 
 export const DownloadQueueEditShowsSave: Story = {
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -75,6 +89,8 @@ export const DownloadQueueSave: Story = {
   },
   beforeEach: () => onDownloadSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -89,6 +105,8 @@ export const DownloadQueueSave: Story = {
 export const DownloadQueueSaveRejected: Story = {
   parameters: { msw: settingsMsw(http.put(api('/settings/download'), () => failWith(400, 'Concurrent downloads must be between 1 and 8.'))) },
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Chapters at once.*2/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Chapters at once/)
     const field = await canvas.findByRole('textbox', { name: 'Concurrent chapter downloads' })
     await waitFor(() => expect(field).toHaveValue('2'))
     await userEvent.clear(field)
@@ -106,14 +124,15 @@ export const DownloadQueueNoTimeout: Story = {
     msw: settingsMsw(http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, itemTimeoutMinutes: 0, bulkHoldThreshold: 0 }))),
   },
   play: async ({ canvas }) => {
-    const timeout = await canvas.findByRole('textbox', { name: 'Time limit per chapter' })
-    await waitFor(() => expect(timeout).toHaveValue('0'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Time limit per chapter.*No limit/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Auto-queue limit.*Always queue/ })).toBeVisible())
   },
 }
 
 export const SmartDownload: Story = {
-  render: () => <SmartDownloadSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Smart download.*Fetch 10/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Smart download/)
     const left = await canvas.findByRole('textbox', { name: 'Fetch more when unread chapters drop to' })
     await waitFor(() => expect(left).toHaveValue('5'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Chapters to fetch each time' })).toHaveValue('10'))
@@ -136,37 +155,68 @@ export const ReadFileCleanupOn: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Delete read chapters for every series/ })
     await waitFor(() => expect(toggle).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Days after reading' })).toHaveValue('14'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Days after reading.*14 days/ })).toBeVisible())
   },
 }
 
 export const Languages: Story = {
   render: () => <SourceLanguageSection />,
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Enable English' })).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Enable French' })).not.toBeChecked())
+    await expect(await canvas.findByRole('button', { name: 'Remove English' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Add French' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Remove French' })).toBeNull()
   },
 }
 
 export const LanguagesToggleMarksUnsaved: Story = {
   render: () => <SourceLanguageSection />,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('switch', { name: 'Enable French' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Remove French' })).toBeVisible()
   },
 }
 
+/** A saved set with every language off says so until one is added back. */
 export const LanguagesNoneEnabledBlocksSave: Story = {
+  render: () => <SourceLanguageSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/settings/sources/languages'), () =>
+        HttpResponse.json({ ...sourceLanguages, order: ['en', 'fr'], disabled: ['en', 'fr'] }),
+      ),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('At least one language must stay enabled.')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
+    await waitFor(() => expect(canvas.queryByText('At least one language must stay enabled.')).toBeNull())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
+/** Adding or removing a language keeps focus on that language's other button. */
+export const LanguagesKeepFocus: Story = {
+  render: () => <SourceLanguageSection />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add French' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Remove French' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove French' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Add French' })).toHaveFocus())
+  },
+}
+
+/** The last language that is on cannot be removed, so there is always one to download in. */
+export const LanguagesKeepsTheLastOne: Story = {
   render: () => <SourceLanguageSection />,
   parameters: {
     msw: settingsMsw(
       http.get(api('/settings/sources/languages'), () => HttpResponse.json({ ...sourceLanguages, order: ['en'], disabled: [] })),
     ),
   },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('switch', { name: 'Enable English' }))
-    await expect(await canvas.findByText('At least one language must stay enabled.')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled())
+  play: async ({ canvas }) => {
+    const remove = await canvas.findByRole('button', { name: 'Remove English' })
+    await waitFor(() => expect(remove).toBeDisabled())
   },
 }
 
@@ -229,6 +279,71 @@ export const FlareSolverrUnreachable: Story = {
   },
 }
 
+const savedSourceProxy = fn()
+
+export const SourceProxy: Story = {
+  render: () => <SourceProxyCard />,
+  play: async ({ canvas }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await expect(await canvas.findByText('Weeb Central')).toBeVisible()
+  },
+}
+
+export const SourceProxyNotSetUp: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/source-proxy'), () => HttpResponse.json({ url: null, sources: [] }))),
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled())
+  },
+}
+
+export const SourceProxyTest: Story = {
+  render: () => <SourceProxyCard />,
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
+    await expect(await within(document.body).findByText('The proxy reached Weeb Central')).toBeVisible()
+  },
+}
+
+export const SourceProxyAllowsPrivate: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.post(api('/settings/source-proxy/test'), () =>
+      HttpResponse.json({ success: true, status: 200, allowsPrivate: true, flareSolverr: null }))),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
+    await expect(await within(document.body).findByText(/also connects to private addresses/)).toBeVisible()
+  },
+}
+
+export const SourceProxySave: Story = {
+  render: () => <SourceProxyCard />,
+  parameters: {
+    msw: settingsMsw(http.put(api('/settings/source-proxy'), async ({ request }) => {
+      const body = await request.json()
+      savedSourceProxy(body)
+      return HttpResponse.json(body)
+    })),
+  },
+  play: async ({ canvas, userEvent }) => {
+    const url = await canvas.findByRole('textbox', { name: 'URL' })
+    await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:3128'))
+    await userEvent.clear(url)
+    await userEvent.type(url, 'http://10.0.0.9:8888')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(savedSourceProxy).toHaveBeenCalledWith({ url: 'http://10.0.0.9:8888', sources: ['weebcentral'] }))
+  },
+}
+
 export const DownloadClient: Story = {
   render: () => <DownloadClientCard />,
   play: async ({ canvas }) => {
@@ -272,7 +387,7 @@ export const UpgradeScan: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Run the daily scan/ })
     await waitFor(() => expect(toggle).toBeChecked())
-    await waitFor(() => expect(canvas.getByLabelText('Default profile')).toHaveValue('Balanced'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Default profile.*Balanced/ })).toBeVisible())
   },
 }
 
@@ -301,7 +416,7 @@ export const VolumeReleases: Story = {
   play: async ({ canvas }) => {
     const search = await canvas.findByRole('switch', { name: /^Search torrents for volume releases/ })
     await waitFor(() => expect(search).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Auto-grab size limit' })).toHaveValue('500 MB'))
+    await expect(await canvas.findByRole('button', { name: /^Auto-grab size limit.*500 MB/ })).toBeEnabled()
   },
 }
 
@@ -325,7 +440,20 @@ export const VolumeReleasesMissingSearchWithVolumeSearchOff: Story = {
     const missing = await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ })
     await waitFor(() => expect(missing).toBeChecked())
     await expect(missing).toBeEnabled()
-    await expect(canvas.getByRole('textbox', { name: 'Minimum seeders' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Minimum seeders/ })).toBeEnabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Auto-grab size limit/ })).toBeDisabled())
+  },
+}
+
+/** Turning volume search off with one of its pages open locks that page's fields too. */
+export const VolumeReleasesSearchOffLocksOpenPage: Story = {
+  render: () => <VolumeReleasesSection />,
+  play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Search limits/)
+    const perRun = await canvas.findByRole('textbox', { name: 'Volume searches per run' })
+    await waitFor(() => expect(perRun).toBeEnabled())
+    await userEvent.click(canvas.getByRole('switch', { name: /^Search torrents for volume releases/ }))
+    await waitFor(() => expect(perRun).toBeDisabled())
   },
 }
 
@@ -344,10 +472,13 @@ export const VolumeReleasesSaveMinimumSeeders: Story = {
   },
   beforeEach: () => onUpgradeSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Minimum seeders/)
     const field = await canvas.findByRole('textbox', { name: 'Minimum seeders' })
     await waitFor(() => expect(field).toHaveValue('1'))
     await userEvent.clear(field)
     await userEvent.type(field, '5')
+    await userEvent.click(canvas.getByRole('button', { name: /^Back/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Minimum seeders.*5/ })).toBeVisible())
     await userEvent.click(await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await waitFor(() =>
@@ -415,11 +546,13 @@ const afterSeeding = (...overrides: Parameters<typeof settingsMsw>) =>
 export const DownloadClientRemovesAfterSeeding: Story = {
   render: () => <DownloadClientCard />,
   parameters: { msw: afterSeeding() },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Stalled torrents.*Given up after 1 hour/ })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Finished torrents.*removed after seeding/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Finished torrents/)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seed ratio' })).toHaveValue('2'))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seeding time (minutes)' })).toHaveValue('4320'))
     await expect(canvas.getByRole('radio', { name: 'After seeding' })).toBeChecked()
-    await expect(canvas.getByRole('textbox', { name: 'Give up after (hours)' })).toHaveValue('1')
   },
 }
 
@@ -430,7 +563,8 @@ export const DownloadClientRemovesRightAfterImport: Story = {
       http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, removeCompleted: 'afterimport' })),
     ),
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Finished torrents/)
     await waitFor(() => expect(canvas.getByRole('radio', { name: 'Right after import' })).toBeChecked())
     await expect(canvas.queryByRole('textbox', { name: 'Seed ratio' })).toBeNull()
   },
@@ -451,6 +585,7 @@ export const DownloadClientSeedTargetSaves: Story = {
   },
   beforeEach: () => onLifecycleSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Finished torrents/)
     const ratio = await canvas.findByRole('textbox', { name: 'Seed ratio' })
     await waitFor(() => expect(ratio).toHaveValue('2'))
     await userEvent.clear(ratio)
@@ -472,8 +607,9 @@ export const DownloadClientWithoutSeedTargets: Story = {
     ),
   },
   play: async ({ canvas, userEvent }) => {
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Stalled torrents.*Off/ })).toBeVisible())
+    await openRow(canvas, userEvent, /^Finished torrents/)
     await expect(await canvas.findByText('With no target, torrents stay in the client after import.')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Give up after (hours)' })).toHaveValue('0'))
     await userEvent.click(canvas.getByRole('button', { name: 'Read from qBittorrent' }))
     await expect(
       await within(document.body).findByText('qBittorrent has no seed limits set, so there are no targets'),
@@ -490,7 +626,8 @@ export const DownloadClientTransmissionHasNoSeedTime: Story = {
       ),
     ),
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Finished torrents/)
     await expect(await canvas.findByText('Transmission has no seeding time limit to read.')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Read from Transmission' })).toBeVisible()
   },

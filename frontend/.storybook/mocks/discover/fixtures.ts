@@ -148,11 +148,12 @@ const rail = (key: string, title: string, feed: string, list: RecommendationItem
   ...extra,
 })
 
-export const trendingRail = rail('trending', 'Trending this week', 'Trending', [
-  ...items(0, 5),
-  ownedItem(5),
-  ...items(5, 14),
-])
+export const trendingRail = rail(
+  'trending',
+  'Trending this week',
+  'Trending',
+  [...items(0, 5), ownedItem(5), ...items(5, 14)].map((item, i) => ({ ...item, climb: 420 - i * 23 })),
+)
 
 export const catalogueRails: DiscoverRail[] = [
   rail('popular', 'Most popular', 'Popular', [ownedItem(10), ...items(8, 16), ownedItem(2), ...items(0, 4)]),
@@ -195,12 +196,32 @@ export const sideInterestRails: DiscoverRail[] = [
   }),
 ]
 
+const cohortItems = [catalogueItem(10), catalogueItem(16), catalogueItem(24), catalogueItem(6), catalogueItem(25), catalogueItem(15)]
+
 export const cohortRail: DiscoverRail = rail(
   'cohort',
   'Readers like you also finished',
   READER_COHORT_FEED,
-  [catalogueItem(10), catalogueItem(16), catalogueItem(24), catalogueItem(6), catalogueItem(25), catalogueItem(15)],
-  { subtitle: 'Finished by readers whose libraries overlap yours' },
+  cohortItems,
+  {
+    subtitle: 'Finished by readers whose libraries overlap yours',
+    groups: [
+      {
+        key: 3,
+        weight: 0.6,
+        seedIds: [],
+        shared: 9,
+        members: [0, 2, 4].map((i, n) => ({ id: cohortItems[i].providerId, share: 0.42 - n * 0.06 })),
+      },
+      {
+        key: 7,
+        weight: 0.4,
+        seedIds: [],
+        shared: 5,
+        members: [1, 3, 5].map((i, n) => ({ id: cohortItems[i].providerId, share: 0.31 - n * 0.05 })),
+      },
+    ],
+  },
 )
 
 const GENRES = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Supernatural']
@@ -447,11 +468,11 @@ export const presets: DiscoverPreset[] = [
 
 export const recommendedPicks: RecommendationItem[] = [
   catalogueItem(0, { relationKind: 'Sequel', relatedToTitle: catalogue[4].title, relatedToId: String(catalogue[4].mangaBakaId) }),
-  catalogueItem(3, { authorMatch: true }),
-  catalogueItem(6, { coRead: true, coReadWithTitle: catalogue[1].title, coReadWithId: String(catalogue[1].mangaBakaId) }),
+  catalogueItem(3, { relationKind: 'Spin-off', relatedToTitle: catalogue[1].title, relatedToId: String(catalogue[1].mangaBakaId) }),
+  catalogueItem(6, { relationKind: 'Side story', relatedToTitle: catalogue[2].title, relatedToId: String(catalogue[2].mangaBakaId) }),
   catalogueItem(10, { tasteMatch: true }),
-  catalogueItem(12),
-  catalogueItem(14),
+  catalogueItem(12, { authorMatch: true }),
+  catalogueItem(14, { coRead: true, coReadWithTitle: catalogue[1].title, coReadWithId: String(catalogue[1].mangaBakaId) }),
   ownedItem(9),
   catalogueItem(18, { becauseOfTitle: catalogue[2].title, becauseOfId: String(catalogue[2].mangaBakaId) }),
   catalogueItem(21),
@@ -470,10 +491,16 @@ export function recommendationsPage(page: number): RecommendationsResult {
     page,
     hasMore: page === 0,
     poolVersion: 'story-pool',
+    totalSimilar: recommendedPicks.length - 3,
   }
 }
 
-const member = (id: number): TasteMember => ({ seriesId: id, title: catalogue[id - 1].title, coverUrl: cover(id) })
+const member = (id: number): TasteMember => ({
+  seriesId: id,
+  title: catalogue[id - 1].title,
+  coverUrl: cover(id),
+  mangaBakaId: 9000 + id,
+})
 
 const facet = (name: string, weight: number, share: number, support: number, shelf: number | null, cat: number | null): TasteFacet => ({
   name,
@@ -518,6 +545,24 @@ export const tasteProfile: TasteProfile = {
   catalogueBaselineAvailable: true,
   catalogueBaselineSource: 'readers',
   generatedAt: hoursAgo(3),
+  underRead: [
+    {
+      name: 'Cooking',
+      isGenre: false,
+      owned: 6,
+      read: 1,
+      ratio: 0.2,
+      unread: 5,
+      examples: [3, 4, 9].map((id) => ({ seriesId: id, title: catalogue[id - 1].title, coverUrl: cover(id) })),
+    },
+  ],
+  popularity: {
+    read: [0.2, 0.3, 0.3, 0.2],
+    shelf: [0.4, 0.3, 0.2, 0.1],
+    readRanked: 10,
+    shelfRanked: 12,
+    deepCuts: [11, 6].map((id, i) => ({ seriesId: id, title: catalogue[id - 1].title, coverUrl: cover(id), rank: 24000 - i * 9000 })),
+  },
 }
 
 export const tasteProfileEmpty: TasteProfile = {
@@ -531,6 +576,8 @@ export const tasteProfileEmpty: TasteProfile = {
   libraryCount: 0,
   catalogueBaselineAvailable: false,
   catalogueBaselineSource: null,
+  underRead: null,
+  popularity: null,
 }
 
 const group = (label: string, tags: string[], ids: number[], size: number, picks: RecommendationItem[]): TasteGroup => ({
@@ -554,16 +601,34 @@ export const tasteInsights: TasteInsights = {
   oddOneOut: member(11),
   oddOneOutSimilarity: 0.31,
   drift: [
-    { bucket: '2025-Q1', seriesCount: 3, similarityToStart: 1, similarityToPrevious: 1, distinctiveTags: ['Found Family', 'Travel'], example: member(1) },
-    { bucket: '2025-Q3', seriesCount: 4, similarityToStart: 0.82, similarityToPrevious: 0.82, distinctiveTags: ['Workplace', 'Cooking'], example: member(2) },
-    { bucket: '2026-Q1', seriesCount: 5, similarityToStart: 0.64, similarityToPrevious: 0.77, distinctiveTags: ['Regression', 'Royalty'], example: member(6) },
-    { bucket: '2026-Q3', seriesCount: 3, similarityToStart: 0.51, similarityToPrevious: 0.8, distinctiveTags: ['Seaside', 'Coming of Age'], example: member(5) },
+    { bucket: '2025-Q1', seriesCount: 3, similarityToStart: 1, similarityToPrevious: 1, distinctiveTags: ['Found Family', 'Travel'], example: member(1), examples: [member(1), member(3), member(4)] },
+    { bucket: '2025-Q3', seriesCount: 4, similarityToStart: 0.82, similarityToPrevious: 0.82, distinctiveTags: ['Workplace', 'Cooking'], example: member(2), examples: [member(2), member(7), member(8), member(9)] },
+    { bucket: '2026-Q1', seriesCount: 5, similarityToStart: 0.64, similarityToPrevious: 0.77, distinctiveTags: ['Regression', 'Royalty'], example: member(6), examples: [member(6), member(10), member(12), member(1), member(2)] },
+    { bucket: '2026-Q3', seriesCount: 3, similarityToStart: 0.51, similarityToPrevious: 0.8, distinctiveTags: ['Seaside', 'Coming of Age'], example: member(5), examples: [member(5), member(11), member(4)] },
   ],
   driftUnavailable: null,
   covered: 10,
   total: 12,
   unavailable: null,
   generatedAt: hoursAgo(3),
+  shelfPicks: [4, 9, 3, 12].map((id, i) => ({
+    seriesId: id,
+    title: catalogue[id - 1].title,
+    coverUrl: cover(id),
+    mangaBakaId: 9000 + id,
+    fit: 1 - i * 0.2,
+    reason: i === 0 ? 'Found Family' : i === 1 ? 'Travel' : null,
+    reasonCount: i < 2 ? 4 : 0,
+    fromRecommendation: i === 2,
+    onHold: i === 1,
+    resumeAt: i === 1 ? 12 : null,
+    ready: i !== 3,
+    nextChapterId: i === 0 ? 401 : null,
+  })),
+  sideLanes: [
+    { type: 'manhwa', bucket: 'action', read: 3, owned: 5, examples: [member(6), member(3), member(10)], seedIds: [9006, 9003] },
+    { type: 'manga', bucket: 'romance', read: 3, owned: 4, examples: [member(2), member(8), member(5)], seedIds: [9002, 9008] },
+  ],
 }
 
 export const tasteInsightsUnavailable: TasteInsights = {
@@ -575,6 +640,8 @@ export const tasteInsightsUnavailable: TasteInsights = {
   drift: [],
   driftUnavailable: 'Drift needs the embedding index.',
   unavailable: 'The embedding index is not built yet, so there is nothing to compare.',
+  shelfPicks: null,
+  sideLanes: null,
 }
 
 const behaviourSeries = (id: number, value: string, measure: number): BehaviourSeries => ({
@@ -602,6 +669,20 @@ export const readingBehaviour: ReadingBehaviour = {
   abandoned: [behaviourSeries(7, 'stopped at 10%', 0.1), behaviourSeries(12, 'stopped at 22%', 0.22)],
   stopPointHistogram: [3, 2, 1, 1, 0, 1, 0, 1, 0, 2],
   generatedAt: hoursAgo(3),
+  length: { finished: 48, stalled: 160, finishedCount: 5, stalledCount: 3 },
+  binge: {
+    series: 9,
+    binged: 6,
+    examples: [
+      { seriesId: 2, title: catalogue[1].title, coverUrl: cover(2), chapters: 28, activeDays: 2, spanDays: 2, perDay: [20, 8] },
+      { seriesId: 8, title: catalogue[7].title, coverUrl: cover(8), chapters: 12, activeDays: 1, spanDays: 1, perDay: [12] },
+      { seriesId: 10, title: catalogue[9].title, coverUrl: cover(10), chapters: 64, activeDays: 50, spanDays: 210, perDay: Array.from({ length: 50 }, (_, i) => 1 + (i % 3)) },
+    ],
+  },
+  paceByFormat: [
+    { format: 'paged', medianSeconds: 360, timedChapters: 520, savoured: [behaviourSeries(10, '14 min per chapter', 840)], devoured: [behaviourSeries(2, '3 min per chapter', 180)] },
+    { format: 'strip', medianSeconds: 480, timedChapters: 120, savoured: [behaviourSeries(5, '11 min per chapter', 660)], devoured: [behaviourSeries(8, '4 min per chapter', 240)] },
+  ],
 }
 
 export const readingBehaviourEmpty: ReadingBehaviour = {
@@ -621,6 +702,9 @@ export const readingBehaviourEmpty: ReadingBehaviour = {
   devoured: [],
   abandoned: [],
   stopPointHistogram: [],
+  length: null,
+  binge: null,
+  paceByFormat: null,
 }
 
 const stateFor = (id: number, partial: Partial<FeedbackState>): FeedbackState => ({
@@ -706,6 +790,18 @@ export const feedbackLab: FeedbackLabData = {
     feedbackRevision: 7,
     signalRevision: 3,
   },
+  steering: [
+    { mangaBakaId: catalogue[0].mangaBakaId, title: catalogue[0].title, coverUrl: cover(1), weight: 2, source: 'rating', value: 10 },
+    { mangaBakaId: catalogue[4].mangaBakaId, title: catalogue[4].title, coverUrl: cover(5), weight: 1.6, source: 'liked', value: null },
+    { mangaBakaId: catalogue[9].mangaBakaId, title: catalogue[9].title, coverUrl: cover(10), weight: 1.4, source: 'read', value: 40 },
+    { mangaBakaId: catalogue[6].mangaBakaId, title: catalogue[6].title, coverUrl: cover(7), weight: 0.6, source: 'read', value: 1 },
+  ],
+  recommendationAdds: {
+    added: 6,
+    started: 4,
+    finished: 2,
+    waiting: [{ seriesId: 12, title: catalogue[11].title, coverUrl: cover(12) }],
+  },
 }
 
 export const feedbackLabEmpty: FeedbackLabData = {
@@ -726,6 +822,8 @@ export const feedbackLabEmpty: FeedbackLabData = {
   avoids: [],
   sources: [],
   activity: { items: [], nextCursor: null, feedbackRevision: 0, signalRevision: 0 },
+  steering: [],
+  recommendationAdds: null,
 }
 
 export const signalOverrides: SignalOverrideState[] = [{ mangaBakaId: catalogue[2].mangaBakaId, ignoreAsSeed: true, revision: 1 }]
@@ -759,6 +857,10 @@ export const animeSignals: AnimeSignalsData = {
     { value: 'full', ratingShare: 1, topSeedWeight: 1 },
   ],
   counts: { total: 7, matched: 5, positive: 2, avoided: 1, neutral: 1, superseded: 1, unmatched: 2 },
+  pull: [
+    { genre: 'Mystery', anime: 0.5, read: 0.2, animeCount: 12 },
+    { genre: 'Sports', anime: 0.33, read: 0.1, animeCount: 12 },
+  ],
   entries: [
     animeEntry('a1', 'Clockwork Tea House: The Animation', ['AniList', 'MyAnimeList'], 8.6, 'Completed', 'positive', 7, { animeCount: 2 }),
     animeEntry('a2', 'Lanterns Over Kasumi', ['AniList'], 9.1, 'Completed', 'positive', 1),

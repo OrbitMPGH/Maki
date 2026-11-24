@@ -1,6 +1,8 @@
 import { forwardRef, memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ActionIcon, Button, Checkbox, Rating, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Tooltip } from '@mantine/core'
+import { RatingPanelOpener } from '../series/RatingPanelOpener'
+import { RatingPill } from '../series/RatingPill'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { IconArchiveOff, IconCheck, IconFileOff, IconTrash, IconX } from '../../lib/icons'
 import { useArchivePreview, useChapters } from '../../api/hooks'
@@ -97,16 +99,25 @@ const ArchivedRow = memo(function ArchivedRow({
         </div>
       </div>
       <div className="archived-row-rating">
-        <Rating
-          size="sm"
-          count={5}
-          fractions={2}
-          value={score ? score / 2 : 0}
-          color={isProvisional(series) ? 'var(--ink-3)' : undefined}
-          readOnly={selectMode}
-          role="group"
-          aria-label={t`Your rating for ${displayTitle}`}
-          onChange={(v) => onRate(series.id, Math.round(v * 2) || null)}
+        <RatingPanelOpener
+          panel={{
+            seriesId: series.id,
+            value: score,
+            soFar: isProvisional(series),
+            finished: false,
+            breakdown: undefined,
+            onChange: (v) => onRate(series.id, v),
+          }}
+          target={(toggle, opened) => (
+            <RatingPill
+              size="sm"
+              value={score}
+              soFar={isProvisional(series)}
+              opened={opened}
+              disabled={selectMode}
+              onClick={toggle}
+            />
+          )}
         />
         {score && !selectMode ? (
           <Tooltip label={t`Clear rating`} withArrow>

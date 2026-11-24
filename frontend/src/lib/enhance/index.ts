@@ -42,6 +42,8 @@ export interface EnhanceEngine {
   setPriority(key: string, priority: number): void
   evict(key: string): void
   clear(): void
+  /** Rejects queued work, closes every cached result and frees the worker or GPU context. */
+  dispose(): void
 }
 
 interface Waiter {
@@ -80,6 +82,7 @@ class Engine implements EnhanceEngine {
   private readonly cache = new Map<string, Entry>()
   private running: Job | null = null
   private seq = 0
+  private disposed = false
 
   constructor(backend: Backend | null, budget: number) {
     this.backend = backend
@@ -145,6 +148,20 @@ class Engine implements EnhanceEngine {
   clear() {
     for (const e of this.cache.values()) e.bitmap.close()
     this.cache.clear()
+  }
+
+  dispose() {
+    if (this.disposed) return
+    this.disposed = true
+    this.broken = true
+    const error = new EnhanceError('aborted')
+    for (const job of this.queue.splice(0)) {
+      job.source.close()
+      this.settle(job, { error })
+    }
+    if (this.running) this.settle(this.running, { error })
+    this.clear()
+    this.backend?.dispose()
   }
 
   private abandon(job: Job, waiter: Waiter) {
@@ -273,6 +290,12 @@ function createWorkerBackend(): Promise<Backend | null> {
           onLost(cb) {
             lost = cb
           },
+          dispose() {
+            lost = null
+            for (const p of pending.values()) p.reject(new Error('disposed'))
+            pending.clear()
+            worker.terminate()
+          },
         })
       } else if (msg.type === 'done' || msg.type === 'failed') {
         const p = pending.get(msg.id)
@@ -307,4 +330,11 @@ let engine: Promise<EnhanceEngine> | null = null
 export function loadEnhanceEngine(): Promise<EnhanceEngine> {
   engine ??= createEngine()
   return engine
+}
+
+/** Ends the session's engine. The next `loadEnhanceEngine` starts a new one. */
+export function disposeEnhanceEngine() {
+  const current = engine
+  engine = null
+  void current?.then((e) => e.dispose()).catch(() => {})
 }

@@ -3,6 +3,7 @@ import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../../../.storybook/mocks/api'
 import { librarySeries } from '../../../.storybook/mocks/home'
+import { setCardProgress } from '../../lib/cardProgress'
 import { CoverCard } from './CoverCard'
 
 const [lanterns, kitchen, ironPetal, , shiokaze, ashen, , bluefin, graveRobber, , neon] = librarySeries
@@ -30,7 +31,7 @@ export const PartlyRead: Story = {
     // The latest batch's unread files, as on Home's Recently added rail, not every unread chapter.
     const pill = await canvas.findByText('3 new')
     await expect(pill).toBeVisible()
-    await expect(pill).toHaveAttribute('data-tip', '3 recent chapter files')
+    await expect(pill).toHaveAttribute('data-tip', '3 new chapters to read')
   },
 }
 
@@ -52,6 +53,38 @@ export const FullyRead: Story = {
     await waitFor(() => expect(disc).toHaveAttribute('data-read', 'all'))
     // The ring closes around the status glyph instead of replacing it.
     await expect(disc.style.getPropertyValue('--ring-pct')).toBe('100%')
+  },
+}
+
+export const ReadingBar: Story = {
+  args: {
+    series: {
+      ...lanterns,
+      status: 'Hiatus',
+      monitored: true,
+      readingStatus: 'OnHold',
+      progressTotal: 48,
+      progressHave: 24,
+      progressRead: 24,
+    },
+  },
+  beforeEach: () => {
+    setCardProgress('reading')
+    return () => setCardProgress('downloads')
+  },
+  play: async ({ canvas }) => {
+    const disc = await canvas.findByRole('img', { name: /^Hiatus$/ })
+    await expect(disc).toHaveAttribute('data-tip', 'Hiatus')
+    await expect(disc).not.toHaveAttribute('data-read')
+    const card = await canvas.findByRole('link')
+    const bar = card.querySelector('.cover-bar-hit')
+    const downloads = bar?.querySelector<HTMLElement>('.cover-bar-fill')
+    const reading = bar?.querySelector<HTMLElement>('.cover-bar-read')
+    await expect(bar).toHaveAttribute('data-tip', '24 of 48 downloaded, 24 read')
+    await expect(downloads?.style.width).toBe('50%')
+    await expect(reading?.style.width).toBe('50%')
+    await expect(downloads?.getBoundingClientRect().top).toBe(reading!.getBoundingClientRect().top)
+    await expect(downloads?.getBoundingClientRect().bottom).toBe(reading!.getBoundingClientRect().bottom)
   },
 }
 

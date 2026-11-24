@@ -13,6 +13,8 @@ Open **Settings → Account → Sign-in** and click **Set up** in the Two-factor
 2. Enter the code from the app and your password, then click **Verify and enable**.
 3. Save the recovery codes Maki shows you.
 
+![The Two-factor authentication section of the Sign-in card with a QR code, the key and a Copy button, Code from your app and Your password fields, and Verify and enable](../../../../assets/ui/settings/two-factor-setup.webp)
+
 The key only becomes active once a code verifies, so a mistyped key cannot lock you out. Recovery
 codes are shown once and stored hashed, so nobody can read them back, including you. Keep them
 somewhere you can reach without your phone. Each code works once.
@@ -42,8 +44,8 @@ second factor. A code you set up still protects password sign-in. See
 
 ## API keys
 
-Open **Settings → Account → API keys**, type a name such as "Phone reader", enter your password, and
-click **Create**. An account that cannot sign in with a password, because it uses single sign-on only
+Open **Settings → Account → API keys** and click **New key** at the top of the card. In the form
+that opens, type a name such as "Phone reader", enter your password, and click **Create**. An account that cannot sign in with a password, because it uses single sign-on only
 or **Require single sign-on** switched password sign-in off, is not asked for one. It needs a sign-in
 from the last ten minutes instead, and the form says so up front with a **Sign in again** button that
 brings you back.
@@ -54,6 +56,8 @@ without touching the rest.
 
 The table lists each key's name, prefix and last use. **Revoke** stops anything using that key
 immediately and cannot be undone. Revoked keys stay in the table, greyed out.
+
+![The API keys card listing a Home automation key with a Revoke button and a greyed-out Old laptop key marked Revoked, with a New key button at the top](../../../../assets/ui/settings/api-keys-list.webp)
 
 ### What a key can reach
 

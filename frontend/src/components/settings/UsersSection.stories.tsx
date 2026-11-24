@@ -31,8 +31,8 @@ async function dialogOf(canvasElement: HTMLElement) {
 export const UserList: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Noa')).toBeVisible()
-    await expect(await canvas.findByText('you')).toBeVisible()
-    await expect(await canvas.findByText('disabled')).toBeVisible()
+    await expect(await canvas.findByText('You')).toBeVisible()
+    await expect(await canvas.findByText('Disabled')).toBeVisible()
     await expect(await canvas.findByText('guest')).toBeVisible()
     // Your own row has no Delete: the server refuses it anyway.
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Delete' })).toHaveLength(users.length - 1))

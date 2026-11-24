@@ -159,3 +159,35 @@ export const NotificationsWithoutNavItems: Story = {
     await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(1))
   },
 }
+
+/** A plain letter bound to search types into a field instead, and Enter bound to it still presses a focused button. */
+export const ReboundKeysLeaveTypingAndButtonsAlone: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/series'), () => HttpResponse.json(paletteSeries)),
+      http.get(api('/settings/shortcuts'), () => HttpResponse.json({ bindings: { 'app.search': ['j', 'Enter'] } })),
+    ],
+  },
+  decorators: [
+    (Story) => (
+      <>
+        <input aria-label="Filter library" />
+        <button type="button" onClick={(event) => (event.currentTarget.textContent = 'Pressed')}>
+          Press me
+        </button>
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Search/ })).toHaveTextContent('J'))
+    await userEvent.click(canvas.getByRole('textbox', { name: 'Filter library' }))
+    await userEvent.keyboard('jo')
+    await expect(canvas.getByRole('textbox', { name: 'Filter library' })).toHaveValue('jo')
+    canvas.getByRole('button', { name: 'Press me' }).focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Pressed' })).toBeVisible())
+    await expect(body.queryByRole('combobox', { name: INPUT_NAME })).toBeNull()
+  },
+}

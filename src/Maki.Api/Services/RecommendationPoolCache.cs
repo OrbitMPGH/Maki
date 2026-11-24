@@ -1,3 +1,5 @@
+using Maki.Metadata.MangaBaka;
+
 namespace Maki.Api.Services;
 
 /// <summary>Who asked for a recommendation pool, which decides whose slot budget it counts against.</summary>
@@ -10,6 +12,15 @@ public enum PoolOrigin
     Rail,
 }
 
+internal sealed record CachedRecommendationPool(
+    IReadOnlyList<MangaBakaRecommendation> Related,
+    IReadOnlyList<RankedRecommendationPick>? CompactSimilar,
+    IReadOnlyDictionary<long, ReasonSeed>? Seeds,
+    IReadOnlyList<MangaBakaRecommendation>? HydratedSimilar,
+    DateTime GeneratedAt,
+    long BuildId,
+    string DumpStamp);
+
 /// <summary>
 /// <see cref="RecommendationService"/>'s pool cache: one dictionary with a separate slot budget per
 /// <see cref="PoolOrigin"/>, least recently used first out within each. The split exists so a page of
@@ -20,9 +31,9 @@ public enum PoolOrigin
 /// </summary>
 internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlots, TimeSpan ttl, TimeProvider? clock = null)
 {
-    private sealed class Entry(RecommendationsResult pool, PoolOrigin origin, DateTime lastUsed)
+    private sealed class Entry(CachedRecommendationPool pool, PoolOrigin origin, DateTime lastUsed)
     {
-        public RecommendationsResult Pool { get; set; } = pool;
+        public CachedRecommendationPool Pool { get; set; } = pool;
         public PoolOrigin Origin { get; set; } = origin;
         public DateTime LastUsed { get; set; } = lastUsed;
     }
@@ -34,7 +45,7 @@ internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlot
 
     private DateTime Now => _clock.GetUtcNow().UtcDateTime;
 
-    public bool TryGet(string key, PoolOrigin origin, out RecommendationsResult pool)
+    public bool TryGet(string key, PoolOrigin origin, out CachedRecommendationPool pool)
     {
         pool = null!;
         if (!_entries.TryGetValue(key, out var entry))
@@ -58,7 +69,7 @@ internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlot
         return true;
     }
 
-    public void Store(string key, RecommendationsResult pool, PoolOrigin origin)
+    public void Store(string key, CachedRecommendationPool pool, PoolOrigin origin)
     {
         if (_entries.TryGetValue(key, out var existing))
         {
@@ -81,6 +92,26 @@ internal sealed class RecommendationPoolCache(int interactiveSlots, int railSlot
 
         Trim(PoolOrigin.Interactive, interactiveSlots);
         Trim(PoolOrigin.Rail, railSlots);
+    }
+
+    /// <summary>
+    /// Drops expired pools and pools unread for their origin's window. Interactive pools get the longer
+    /// one: a rebuilt pool has a new version, which restarts a feed the reader already scrolled.
+    /// </summary>
+    public int ReleaseIdle(TimeSpan railIdleFor, TimeSpan interactiveIdleFor)
+    {
+        var now = Now;
+        var stale = _entries
+            .Where(kv => now - kv.Value.Pool.GeneratedAt >= ttl
+                || now - kv.Value.LastUsed >= (kv.Value.Origin == PoolOrigin.Rail ? railIdleFor : interactiveIdleFor))
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var key in stale)
+        {
+            _entries.Remove(key);
+        }
+
+        return stale.Count;
     }
 
     private void Trim(PoolOrigin origin, int slots)

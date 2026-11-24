@@ -28,6 +28,8 @@ series, newest deletions first, with a filter by series, file name or why the fi
 series that was removed whole can be restored or deleted in one go, and **Empty bin** is in that
 window.
 
+![Recycle bin window with All, Deleted file and Removed chapter tabs, a filter box, files grouped by series with days left and Restore buttons, and Empty bin at the bottom](../../../../assets/ui/settings/recycle-bin-window.webp)
+
 - **Delete file** on a chapter moves the file into the bin. The chapter stays in the list with a **File
   removed** badge.
 - **Remove chapters** deletes the chapter rows and moves their files into the bin. Use it for a wrong
@@ -48,6 +50,8 @@ entry records the change. The same folder holds page conversion originals and fi
 superseded. They stay for **Trash retention**, set under **Settings, Downloads, Upgrade
 scan** (default 14). Until housekeeping purges a replaced file, the replacement can be reverted.
 
+![Upgrades tab on the Activity page with a recent Dandadan upgrade and its revert button, above a Cutoff unmet table of files with their tier, score and profile](../../../../assets/ui/pages/activity-upgrades.webp)
+
 ## Read file cleanup
 
 Off by default. An admin turns it on in the **Clean up read chapters** card on the Downloads tab,
@@ -55,11 +59,14 @@ where the delay defaults to 7 days. Maki deletes a chapter's file that many days
 who has progress in the series has finished it. The file is deleted outright, not trashed, and the
 chapter stays in the list marked **Auto-removed**.
 
+![Clean up read chapters card with Delete read chapters for every series switched off, a Days after reading field, and Keep each reader's last read chapter switched on](../../../../assets/ui/settings/read-cleanup.webp)
+
 Until the deletion, the chapter shows **Removed in N days** and gets no upgrades. Cleanup unticks
 **Wanted** on the chapter, so Maki does not download it again. Tick **Wanted** again to queue it.
 
-Cleanup keeps each reader's most recent finished chapter, and skips a series while a download is
-running for it.
+**Keep each reader's last read chapter**, on by default, holds back the chapter each reader finished
+most recently, so they can look back at where they stopped. Turn it off to let those go too.
+Cleanup skips a series while a download is running for it.
 
 ## Disk space
 

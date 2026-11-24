@@ -50,7 +50,7 @@ Paths in this document are relative to `C:/Users/Orbit/Documents/GitHub/Maki`. E
 | `frontend/src/components/discover/DiscoverLibraryRail.tsx` | Existing permission-aware Add/request action, root selection, incognito/monitoring controls, warnings, and errors; reuse intact |
 | `frontend/src/api/hooks.ts` and `frontend/src/main.tsx` | `RecommendationItem`, `useAddSeries`, query hooks, and global error handling; add typed Lab contracts and central invalidation |
 
-Read and preserve the relevant rules in `.claude/rules/recommendations.md`, `auth.md`, `reader-progress.md`, `series-matching.md`, `stats-notifications.md`, and `infra.md`, together with `CLAUDE.md`. In particular, watched chapters differ from actual reading, source-title explanations must respect visibility, tag spoiler flags are per candidate, and shared-library events do not establish personal authorship.
+Read and preserve the relevant rules in `.claude/rules/recommendations.md`, `auth.md`, `reader-progress.md`, `series-matching.md`, `stats-notifications.md`, and `infra.md`, together with `AGENTS.md`. In particular, watched chapters differ from actual reading, source-title explanations must respect visibility, tag spoiler flags are per candidate, and shared-library events do not establish personal authorship.
 
 Confirmed architectural constraints:
 

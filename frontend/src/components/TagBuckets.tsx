@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type ReactElement } from 'react'
 import { Tooltip, VisuallyHidden } from '@mantine/core'
 import { IconEyeOff } from '../lib/icons'
-import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { Plural, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { MangaBakaTag } from '../api/hooks'
@@ -17,23 +17,17 @@ const TAG_BUCKETS: { key: string; label: MessageDescriptor; token: string }[] = 
 
 const KNOWN_WEIGHTS = new Set(TAG_BUCKETS.map((b) => b.key))
 
-// Some series (e.g. One Piece) carry ~90 low-relevance tags in a single bucket. Show a bucket's
-// first slice and put the rest behind a button: a wall of ninety chips is not a list anyone reads,
-// but it is also not the panel's place to decide they can't have them.
-const MAX_TAGS_PER_BUCKET = 18
-
 /**
  * A series' tags, grouped by how much they define it.
  *
- * The relevance is the point, so it is what carries the colour — but as a dot per chip and a rule
- * under each bucket's name rather than forty filled badges, which at this count read as confetti
- * and make the buckets harder to tell apart, not easier.
+ * The relevance is the point, so it is what carries the colour: a dot per chip, a rule under each
+ * bucket's name, and a faint fill on Core and Defining only. Every non-spoiler tag is shown, even
+ * in a ninety-tag bucket, so the whole list can be scanned without opening anything.
  *
  * Bare markup with no panel around it, so callers can drop it into their own card
  * (`DiscoverTags` gives it one; the series page's Details panel puts it under a field label).
  */
 export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
-  const [expanded, setExpanded] = useState<string[]>([])
   const [revealed, setRevealed] = useState<string[]>([])
   const { t } = useLingui()
   const label = useLabel()
@@ -52,11 +46,8 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
           : tags.filter((tag) => !KNOWN_WEIGHTS.has(tag.weight))
         if (inBucket.length === 0) return null
 
-        const open = expanded.includes(bucket.key)
         const plain = inBucket.filter((tag) => !tag.isSpoiler)
         const spoilers = inBucket.filter((tag) => tag.isSpoiler)
-        const shown = open ? plain : plain.slice(0, MAX_TAGS_PER_BUCKET)
-        const overflow = plain.length - shown.length
         const spoilersShown = revealed.includes(bucket.key)
 
         const withTip = (key: string, tip: string | null, chip: ReactElement) =>
@@ -72,6 +63,7 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
           <div
             key={bucket.key}
             className="tag-bucket"
+            data-weight={bucket.key || undefined}
             style={{ '--bucket': `var(--${bucket.token})` } as CSSProperties}
           >
             <div className="tag-bucket-head">
@@ -81,7 +73,7 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
             </div>
 
             <div className="tag-chips">
-              {shown.map(({ name, description }) =>
+              {plain.map(({ name, description }) =>
                 withTip(
                   name,
                   description,
@@ -139,21 +131,6 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
                     </span>,
                   ),
                 )}
-
-              {overflow > 0 && (
-                <button type="button" className="tag-more" onClick={() => setExpanded((e) => [...e, bucket.key])}>
-                  <Plural value={overflow} one="+# more" other="+# more" />
-                </button>
-              )}
-              {open && plain.length > MAX_TAGS_PER_BUCKET && (
-                <button
-                  type="button"
-                  className="tag-more"
-                  onClick={() => setExpanded((e) => e.filter((k) => k !== bucket.key))}
-                >
-                  <Trans>Show fewer</Trans>
-                </button>
-              )}
             </div>
           </div>
         )

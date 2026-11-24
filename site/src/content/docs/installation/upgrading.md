@@ -28,6 +28,8 @@ To upgrade on purpose instead of following `latest`, pin a version tag such as
 `ghcr.io/orbitmpgh/maki:X.Y.Z`. CI publishes `X.Y.Z`, `X.Y` and `X` tags for each release. The `latest`
 tag only moves on stable releases.
 
+![Updates card in a Docker install with Check for updates on, the available version, a Check now button and a What's new link, noting that updating is manual](../../../assets/ui/settings/updates-docker.webp)
+
 ## Unraid
 
 Update the container from the Docker tab. Unraid keeps the settings from your template. See
@@ -38,8 +40,10 @@ Update the container from the Docker tab. Unraid keeps the settings from your te
 
 The Windows app checks for a new version two minutes after it starts, then every six hours, and
 downloads it in the background. When one is ready, choose **Restart to update to <version>** from
-the tray icon, or use **Settings → System → Updates**. If you do not, Maki installs it the next time it starts. Release candidates are never
+the tray icon, or **Restart to update** under **Settings → System → Updates**. If you do not, Maki installs it the next time it starts. Release candidates are never
 installed on their own.
+
+![Updates card in the Windows app with Check for updates on, the available version, a note that the update is downloaded, and Check now and Restart to update buttons](../../../assets/ui/settings/updates-desktop.webp)
 
 Your database, settings and logs are in `%LOCALAPPDATA%\Maki`, outside the install folder, so an
 update leaves them alone. The backup under [What happens on startup](#what-happens-on-startup)
@@ -80,6 +84,8 @@ corrupt data, so restore the pre-upgrade backup or upgrade again.
 
 After an upgrade, **Settings** has a **New** tab listing the settings added since the version you
 upgraded from. It stays until the next upgrade.
+
+![Settings New tab listing Keyboard shortcuts and Ratings from Reading, each marked New, and Server upscaling from Library with Maki 2x HQ new in it](../../../assets/ui/pages/settings-new.webp)
 
 ## Going back
 

@@ -5,6 +5,8 @@ description: How Maki names series folders and chapter files, where root folders
 
 Naming is set in **Settings, Library, Folder & file naming**.
 
+![Folder & file naming card with the series folder format, the chapter file format, a Rename every series to current format button and Folders on import set to Rename the folder](../../../../assets/ui/settings/naming.webp)
+
 ## Root folders
 
 A root folder is a directory on the server that Maki owns for its library. Every series lives in one
@@ -18,6 +20,8 @@ root folder. Imports and health scans skip folders starting with a dot.
 Each root folder keeps 5 GB free by default (**Free space to keep**, 0 turns it off). When its drive
 drops below that, downloads and torrent grabs for series in that folder wait, other folders keep
 going, and everything carries on once there is room again. Activity says which folder is held.
+
+![Root folders card listing /manga with its free space, a minimum free space field and an edit button, above a Path box with Browse and Add buttons](../../../../assets/ui/settings/root-folders.webp)
 
 If a share is re-mounted or the library moves to new storage, use the root folder's edit button
 rather than adding a new one. It checks the new path and counts the series folders there before
@@ -97,16 +101,18 @@ Saving a new format moves nothing. Existing files keep their names until you use
 series to current format** on the same card. Maki refuses to rename a series while a download for it
 is running, or when two chapters would end up with the same name.
 
-## Folder naming on import
+## Folders on import
 
-When Maki imports a series folder that already exists, **Folder naming on import** decides what
+When Maki imports a series folder that already exists, **Folders on import** decides what
 happens:
 
-- **Rename the folder to the series folder format.** The default.
-- **Keep the folder name, but put new downloads in a folder named by the format.** Old files stay
-  put and new chapters go into a second folder, so one series can span two folders under the same
-  root.
-- **Keep the folder name, and put new downloads there too.**
+- **Rename the folder**: it takes the series folder format. The default.
+- **Keep the name, new downloads elsewhere**: old files stay put and new chapters go into a folder
+  named by the format, so one series can span two folders under the same root.
+- **Keep the name for everything**: new downloads go in the original folder too.
+
+**Rename imported files to the chapter file format**, on the same card and on by default, renames
+the files a torrent or manual import adds. Turn it off to keep the release's own file names.
 
 :::tip
 Pick a format before you import a large library. Renaming later works, but it touches every file.

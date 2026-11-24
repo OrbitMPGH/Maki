@@ -33,6 +33,20 @@ public class MangaBakaDumpRefreshJob(
 
     public async Task Execute(IJobExecutionContext context)
     {
+        if (dumpOptions.Shared)
+        {
+            if (File.Exists(dumpOptions.DatabasePath))
+            {
+                logger.LogInformation("The MangaBaka dump at {Path} is shared; the instance that owns it refreshes it", dumpOptions.DatabasePath);
+            }
+            else
+            {
+                logger.LogWarning("No MangaBaka dump at the shared path {Path}; start the instance that owns it so it downloads one", dumpOptions.DatabasePath);
+            }
+
+            return;
+        }
+
         try
         {
             // One heavy build at a time across every job here; see ArtifactBuildGate.

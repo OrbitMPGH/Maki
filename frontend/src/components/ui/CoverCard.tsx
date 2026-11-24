@@ -13,6 +13,7 @@ import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { CoverCardMenu } from './CoverCardMenu'
+import { useCardProgress } from '../../lib/cardProgress'
 
 /** What a library entry offers while the server is out of reach. */
 export type OfflineAvailability = 'saved' | 'unavailable'
@@ -60,16 +61,20 @@ export const CoverCard = memo(function CoverCard({
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
+  const progressMode = useCardProgress()
   const download = seriesDownloadStateVisual(series)
   const status = seriesStatusVisual(series.status)
   const statusLabel = renderLabel(status.label)
   const StatusGlyph = seriesStatusGlyph(series.status)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series.
-  const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
+  const { total, nothingWanted, have, pct, complete, readPct, unread, read } = seriesProgressVisual(
     series,
     readTracking,
   )
+  // The "Series cards" setting moves reading from the ring round the disc onto the bar. With nothing
+  // tracking reading the bar has nothing to add, so it stays a download bar.
+  const readsOnBar = progressMode === 'reading' && total > 0 && read !== null
   const { readChapterCount, newChapterCount = 0 } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
@@ -87,7 +92,7 @@ export const CoverCard = memo(function CoverCard({
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
         : t`No chapters`
-  const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
+  const newTip = plural(newChapterCount, { one: '# new chapter to read', other: '# new chapters to read' })
   const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {
@@ -102,18 +107,49 @@ export const CoverCard = memo(function CoverCard({
   const downloadTip = downloading && download ? renderLabel(download.label) : null
   // Read progress wraps the status disc, so a cover carries one mark for both. Read through closes
   // the ring; the disc keeps its status glyph.
-  const showsRead = readPct !== null && readPct > 0
-  const readThrough = showsRead && unread === 0
-  const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
+  const showsReadRing = !readsOnBar && readPct !== null && readPct > 0
+  const readThrough = showsReadRing && unread === 0
+  // On the bar, reading is drawn as a share of the whole series, so it can pass what is downloaded.
+  const readOfTotal = readsOnBar ? Math.min(100, (read / total) * 100) : 0
+  const readTip = readThrough ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
   const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
-  const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
+  const statusTip = showsReadRing ? t`${statusOnly}. ${readTip}` : statusOnly
+
+  // The bar's numbers on hover, read included whenever reading is tracked.
+  const barTip =
+    total === 0
+      ? undefined
+      : read !== null
+        ? t`${have} of ${total} downloaded, ${read} read`
+        : t`${have} of ${total} downloaded`
+
+  // With no total the bar would only ever read 0%; it keeps its space so the grid holds still.
+  // The wrapper is a taller hover target for the tooltip than the 4px bar.
+  const bar = (
+    <div className="cover-bar-hit" data-tip={barTip}>
+      <div
+        className="cover-bar"
+        data-empty={total === 0 || undefined}
+        data-reading={readsOnBar || undefined}
+        data-finished={readOfTotal >= 100 || undefined}
+      >
+        <div
+          className="cover-bar-fill"
+          data-complete={complete || undefined}
+          style={{ width: `${pct}%` }}
+        />
+        {readOfTotal > 0 && <div className="cover-bar-read" style={{ width: `${readOfTotal}%` }} />}
+      </div>
+    </div>
+  )
 
   const card = (
     <Link
       to={`/series/${series.id}`}
       className="cover-card"
+      style={series.coverAccent ? ({ '--series-accent': series.coverAccent } as React.CSSProperties) : undefined}
       data-selected={selected || undefined}
       data-offline={offline}
       role={selectMode ? 'checkbox' : undefined}
@@ -155,14 +191,6 @@ export const CoverCard = memo(function CoverCard({
           <span className="cover-title" title={series.title}>
             {series.displayTitle}
           </span>
-          {/* With no total the bar would only ever read 0%; it keeps its space so the grid holds still. */}
-          <div className="cover-bar" data-empty={total === 0 || undefined}>
-            <div
-              className="cover-bar-fill"
-              data-complete={complete || undefined}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
           <div className="cover-row">
             {offline === 'unavailable' ? (
               <span>{t`Not available offline`}</span>
@@ -177,6 +205,7 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
           </div>
+          {bar}
         </div>
 
         <div className="cover-corners">
@@ -222,7 +251,7 @@ export const CoverCard = memo(function CoverCard({
               className="cover-state"
               data-tone="status"
               data-unmonitored={!series.monitored || undefined}
-              data-read={readThrough ? 'all' : showsRead ? 'part' : undefined}
+              data-read={readThrough ? 'all' : showsReadRing ? 'part' : undefined}
               data-tip={statusTip}
               role="img"
               aria-label={statusTip}
@@ -230,7 +259,7 @@ export const CoverCard = memo(function CoverCard({
                 {
                   '--tone': statusColor(status.color),
                   '--tone-on': statusOnColor(status.color),
-                  '--ring-pct': showsRead ? `${readThrough ? 100 : readPct}%` : undefined,
+                  '--ring-pct': showsReadRing ? `${readThrough ? 100 : readPct}%` : undefined,
                 } as React.CSSProperties
               }
             >

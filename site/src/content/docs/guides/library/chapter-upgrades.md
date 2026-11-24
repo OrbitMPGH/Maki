@@ -39,10 +39,14 @@ menu.
 | **Format scores** | Points for each quality format |
 | **Let the daily scan upgrade this profile's series** | Includes the profile in the daily scan |
 
+![Best copy from any source profile open for editing, with the tier order table, cutoff, score fields, resolution and compression weights, and format scores for Raw or machine translated and Trusted digital ripper](../../../../assets/ui/settings/quality-profile.webp)
+
 Starter profiles are added on first run: **Never upgrade** (keeps what was downloaded first),
 **Replace aggregator copies**, **Upgrade to official releases**, **Upgrade to digital volumes** and
 **Best copy from any source**. On a fresh install, **Best copy from any source** is the default
 profile. You can edit or delete them.
+
+![Quality profiles card listing the starter profiles, with Best copy from any source marked Default and Never upgrade showing Upgrades off](../../../../assets/ui/settings/profiles.webp)
 
 ## Quality formats and scores
 
@@ -54,6 +58,8 @@ too. A format with no conditions never matches.
 A profile gives each format a score, and a format scores 0 unless the profile says otherwise. The
 seed data's example gives `-100` to raw or machine-translated copies and `20` to a trusted digital
 ripper.
+
+![Quality formats card listing Raw or machine translated and Trusted digital ripper, each with its conditions and the profiles that score it](../../../../assets/ui/settings/formats.webp)
 
 A copy's score is the sum of its matched format scores plus measured points:
 
@@ -83,11 +89,15 @@ moment, under the profile as it is then. A loss deletes the new archive. A win m
 into the series' trash and puts the new one at the same path. Maki records a history entry, so the
 change can be reverted.
 
+![Upgrades tab on the Activity page with a recent Dandadan upgrade and its revert button, above a Cutoff unmet table of files with their tier, score and profile](../../../../assets/ui/pages/activity-upgrades.webp)
+
 ## The daily scan
 
 The scan runs once a day at **Daily scan hour**, in server local time, and queues upgrades for
 series whose profile allows it. The scan is off by default. Turn on **Run the daily scan** and pick
 a **Default profile** under **Upgrade scan** on the Downloads tab.
+
+![Upgrade scan card with Run the daily scan switched off, Default profile set to Best copy from any source, Schedule and limits, Replaced files kept, and a Scan now button](../../../../assets/ui/settings/upgrades.webp)
 
 - **Max upgrades per day**: `0` means no cap.
 - **Quiet period (days)**: a chapter is skipped this long after it was added or last upgraded. Only

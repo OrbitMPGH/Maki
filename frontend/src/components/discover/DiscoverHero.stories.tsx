@@ -3,13 +3,24 @@ import { expect, fn, waitFor } from 'storybook/test'
 import type { RecommendationItem } from '../../api/hooks'
 import { discoverPage, recentRail } from '../../../.storybook/mocks/discover'
 import { catalogue } from '../../../.storybook/mocks/shared'
-import { DiscoverHero } from './DiscoverHero'
+import { IconIntersect, IconUsers } from '../../lib/icons'
+import { engineReason } from '../ui/DiscoverRail'
+import { DiscoverHero, type StartPick } from './DiscoverHero'
+
+const source = { savedFrom: 'rail:hero' }
+const pick = (item: RecommendationItem): StartPick => ({ item, reason: engineReason(item), source })
+const lead = pick(recentRail.items[0])
+const side: StartPick[] = [
+  { item: recentRail.items[1], reason: { Glyph: IconUsers, text: 'Readers like you finished this' }, source },
+  { item: recentRail.items[2], reason: { Glyph: IconIntersect, text: 'Another side of you: Found Family' }, source },
+]
 
 const meta = {
   component: DiscoverHero,
   tags: ['ai-generated'],
   args: {
-    items: recentRail.items,
+    lead,
+    side,
     onOpen: fn(),
     onRecommend: fn(),
     seriesIdFor: (_item: RecommendationItem): number | null => null,
@@ -25,24 +36,20 @@ export const Default: Story = {
     await expect(await canvas.findByText('Feels like Lanterns Over Kasumi')).toBeVisible()
     await waitFor(() => expect(canvasElement.querySelector('.discover-hero .score-figure')).not.toBeNull())
     await userEvent.click(await canvas.findByRole('button', { name: 'More like this' }))
-    await waitFor(() => expect(args.onRecommend).toHaveBeenCalledWith(args.items[0]))
+    await waitFor(() => expect(args.onRecommend).toHaveBeenCalledWith(args.lead.item))
   },
 }
 
-export const PickAnother: Story = {
-  play: async ({ canvas, userEvent }) => {
-    const tabs = await canvas.findAllByRole('tab')
-    await userEvent.click(tabs[1])
-    await waitFor(() => expect(tabs[1]).toHaveAttribute('aria-selected', 'true'))
+export const OpenASidePick: Story = {
+  play: async ({ args, canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: `View ${side[0].item.title}` }))
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(side[0].item, source))
   },
 }
 
 export const OwnedPick: Story = {
   args: {
-    items: [
-      { ...recentRail.items[0], providerId: String(catalogue[0].mangaBakaId), title: catalogue[0].title },
-      ...recentRail.items.slice(1),
-    ],
+    lead: pick({ ...recentRail.items[0], providerId: String(catalogue[0].mangaBakaId), title: catalogue[0].title }),
     seriesIdFor: (item) => (item.providerId === String(catalogue[0].mangaBakaId) ? 1 : null),
   },
   play: async ({ canvas }) => {
@@ -50,10 +57,10 @@ export const OwnedPick: Story = {
   },
 }
 
-export const SinglePick: Story = {
-  args: { items: recentRail.items.slice(0, 1) },
+export const LeadOnly: Story = {
+  args: { side: [] },
 }
 
 export const BecauseOfRelation: Story = {
-  args: { items: [...recentRail.items.slice(4, 5), ...recentRail.items.slice(0, 4)] },
+  args: { lead: pick(recentRail.items[4]) },
 }

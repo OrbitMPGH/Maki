@@ -32,7 +32,8 @@ design-system/out/
 .devimport/
 **/.claude/launch.json
 TODO.md
-/.agents
+/.agents/*
+!/.agents/rules/
 /.claude/skills
 /.github/skills
 .github/hooks/impeccable.json
@@ -57,6 +58,10 @@ skills-lock.json
 
 # README image captures (scripts/readme-images)
 scripts/readme-images/raw/
+
+# Doc shots output (scripts/doc-shots)
+scripts/doc-shots/out/
+scripts/doc-shots/backend.log
 .screenshots/
 
 # Native build output (distribution/native/)

@@ -304,25 +304,23 @@ export const ReviewDuplicateAgainstLinkedFile: Story = {
 
 const filterBy = async (
   canvas: { findByRole: (role: string, options: { name: string }) => Promise<HTMLElement> },
-  body: ReturnType<typeof within>,
   click: (el: HTMLElement) => Promise<void>,
   finding: string,
 ) => {
-  await click(await canvas.findByRole('combobox', { name: 'Filter by finding' }))
-  await click(await body.findByRole('option', { name: finding }))
+  const group = await canvas.findByRole('group', { name: 'Filter by finding' })
+  await click(await within(group).findByRole('button', { name: finding }))
 }
 const filterDuplicates = (
   canvas: Parameters<typeof filterBy>[0],
-  body: ReturnType<typeof within>,
   click: (el: HTMLElement) => Promise<void>,
-) => filterBy(canvas, body, click, 'Duplicate')
+) => filterBy(canvas, click, 'Duplicate')
 
 /** The Missing filter: a file found at a new path relinks in one click, a vanished folder clears or downloads as a group. */
 export const FilesMissingFilter: Story = {
   parameters: tab('files'),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await filterBy(canvas, body, (el) => userEvent.click(el), 'Missing')
+    await filterBy(canvas, (el) => userEvent.click(el), 'Missing')
     await expect(await canvas.findByText('1 file found at a new path')).toBeVisible()
     await expect(await canvas.findByText('The Ninth Kitchen (2021)/The Ninth Kitchen - Ch.61.cbz')).toBeVisible()
     await expect(await canvas.findByText('2 files gone, nowhere else in the library')).toBeVisible()
@@ -338,7 +336,7 @@ export const FilesUnlinkedCases: Story = {
   parameters: tab('files'),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await filterBy(canvas, body, (el) => userEvent.click(el), 'Not linked')
+    await filterBy(canvas, (el) => userEvent.click(el), 'Not linked')
     await expect(await canvas.findByText(/Nothing holds these chapters yet/)).toBeVisible()
     await expect(await canvas.findByText(/No series owns the folder these sit in/)).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Import it' }))
@@ -364,7 +362,7 @@ export const FilesDuplicateGroups: Story = {
   parameters: { ...tab('files'), msw: [fileDetail(keptDuplicateDetail)] },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await filterDuplicates(canvas, body, (el) => userEvent.click(el))
+    await filterDuplicates(canvas, (el) => userEvent.click(el))
     await expect(await canvas.findByText(monoText('Ashen Crown Regression/Ashen Crown Regression v10.cbz'))).toBeVisible()
     await expect(
       await canvas.findByRole('button', { name: 'Review Ashen Crown Regression/Ashen Crown Regression - Volume 10 (Digital).cbz' }),
@@ -381,9 +379,8 @@ export const FilesDuplicateGroups: Story = {
 /** Selecting a set selects every copy, but delete only ever offers the spares. */
 export const FilesDuplicateSelection: Story = {
   parameters: tab('files'),
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body)
-    await filterDuplicates(canvas, body, (el) => userEvent.click(el))
+  play: async ({ canvas, userEvent }) => {
+    await filterDuplicates(canvas, (el) => userEvent.click(el))
     await userEvent.click(
       await canvas.findByRole('checkbox', { name: 'Select every copy of Ashen Crown Regression/Ashen Crown Regression v10.cbz' }),
     )

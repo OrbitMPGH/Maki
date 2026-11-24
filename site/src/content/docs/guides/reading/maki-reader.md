@@ -8,7 +8,7 @@ notes on pages, see [Chapter notes](/Maki/guides/reading/chapter-notes/).
 
 ## Reader settings
 
-<!-- screenshot: the reader settings panel -->
+![Reader quick settings panel with the Auto (Manga) profile chip and Incognito at the top, Single, Double and Continuous layouts, direction, page fit, brightness and four colour filters, and rows for Wide pages, Page look, Enhance, Chapters and While reading](../../../../assets/ui/reader/settings-panel.webp)
 
 The gear in the bottom bar opens the quick settings panel. At the top sit the reading profile in use
 and **Incognito**. Under them are the settings you change while reading: the layout, direction, page
@@ -102,9 +102,11 @@ the chapter and fills a ring as you pull. With auto-advance off, the end screen 
 - If the next chapter finishes downloading while the screen is open, **Read** appears. Queued
   chapters show their download progress.
 
+![End of chapter screen for the last chapter on disk of Frieren, showing the read progress, the time left in the series, a line about wanted chapters, and Back to series, Stay here and Add a note](../../../../assets/ui/reader/chapter-end.webp)
+
 ## Page bar
 
-<!-- screenshot: the page bar with a thumbnail above a segment -->
+![Reader in right to left order, with the page bar's rightmost segment lit and a thumbnail shown above a hovered segment](../../../../assets/ui/reader/page-bar.webp)
 
 The bar along the bottom has one segment per page. Segments up to the page on screen are lit.
 Pages ahead that the server has already upscaled show in a lighter grey. Hover a segment to see its
@@ -114,7 +116,7 @@ thumbnails strip.
 
 ## Enhance
 
-<!-- screenshot: the reader settings panel with the Enhance page open -->
+![Enhance page of the reader settings panel with Enhance on Always, Method set to Real-ESRGAN, While the server works on Strong, Upscale progress on Line, a Whole chapter switch and Don't enhance set to Volume](../../../../assets/ui/reader/settings-enhance.webp)
 
 Enhance sharpens soft pages. Its controls are on the **Enhance** page of the settings panel:
 **Enhance** (Off, Auto or Always), then **Method** and **Don't enhance** once Enhance is on. **While
@@ -139,12 +141,19 @@ it: the list offers **Auto** (labelled with the profile it picked, or **my defau
 profiles, and **Just this series**. The line under it says what your next change will touch: this
 series only, the profile in use, or your reader defaults.
 
+![Reading profile menu open from the chip in the reader settings panel, with Auto (Manga) selected above Comic, Manga, Webtoon and Just this series](../../../../assets/ui/reader/profile-menu.webp)
+
 **Incognito**, next to the profile chip, stops recording the current session.
 
 ## Keyboard shortcuts
 
 Press `?` in the reader for the list. Keys are ignored while focus is in a text field, and
 combinations with Ctrl, Cmd or Alt are left to the browser.
+
+The table below lists the default keys. To change them, use **Change keys** at the bottom of the
+list, which opens **Settings → Reading → Keyboard shortcuts**.
+
+![Keyboard shortcuts sheet in the reader, grouped into Turning pages, Auto-scroll, Layout and Everything else, with a Change keys link](../../../../assets/ui/reader/shortcuts.webp)
 
 | Key | Action |
 | --- | --- |
@@ -165,7 +174,7 @@ combinations with Ctrl, Cmd or Alt are left to the browser.
 | `F` | Full screen |
 | `T` | Page thumbnails |
 | `B` | Bookmark this page |
-| `,` / `.` | Previous / next bookmark |
+| `,` or `<` / `.` or `>` | Previous / next bookmark |
 | `H` (hold) | Show the original page while the key is held, if enhancement is on |
 | `Esc` | Back to the page you opened the chapter from, such as Home or the Library, or the series page after a reload or a link. Outside full screen only, since `Esc` leaves full screen first. |
 | `?` | Show or hide the shortcut list |

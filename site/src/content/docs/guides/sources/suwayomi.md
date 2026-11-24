@@ -21,6 +21,8 @@ pages through Suwayomi's API, so a source that works in Suwayomi usually works i
 5. Select **Test**, then save. The card keeps the last result, **Connected** or **Failed** with the
    reason and when it ran, until you change the address or credentials.
 
+![The Suwayomi card with a URL field, the Sign-in choice of None, Basic auth or UI login, a Test button and a Manage sources button](../../../../assets/ui/settings/suwayomi.webp)
+
 The test checks the server version. Suwayomi v2.1 or later is supported, and UI login needs v2.2 or
 later, so an older server fails the test if you choose it. Changing the URL clears the saved
 password, so enter it again.

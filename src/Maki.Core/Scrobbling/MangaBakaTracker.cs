@@ -22,6 +22,7 @@ public class MangaBakaTracker(
     public const string HttpClientName = "scrobble";
 
     public string Name => "mangabaka";
+    public double ScoreStep => 0.1;
     public string Label => "MangaBaka";
     public bool UsesOAuth => false;
 
@@ -220,8 +221,8 @@ public class MangaBakaTracker(
             TotalChapters: series.ValueKind == JsonValueKind.Object ? ToInt(series, "total_chapters") : null,
             TotalVolumes: series.ValueKind == JsonValueKind.Object ? ToInt(series, "final_volume") : null,
             Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
-            // Library rating is on a 0–10 scale (TEXT/fractional per the dump); 0 = unrated.
-            Score: hasEntry && ToInt(entry, "rating") is > 0 and <= 10 and { } r ? r : null);
+            // The library rating is 0-100 (the API's /v1/my/library schema); 0 or null is unrated.
+            Score: hasEntry && ToDouble(entry, "rating") is { } r ? TrackerScore.FromHundred(r) : null);
     }
 
     public async Task UpdateAsync(
@@ -244,12 +245,12 @@ public class MangaBakaTracker(
     }
 
     public async Task UpdateRatingAsync(
-        int userId, string remoteId, int score, CancellationToken ct = default)
+        int userId, string remoteId, double score, CancellationToken ct = default)
     {
-        // MangaBaka's own rating is on a 0–10 scale (same as the dump's `rating`), so our 1–10 maps
-        // directly. Same PATCH-then-POST-on-404 dance as UpdateAsync; a rejected field surfaces as a
-        // TrackerException the caller treats as a best-effort miss.
-        var body = new { rating = Math.Clamp(score, 0, 10) };
+        // The library rating is 0-100, so 7.8 goes as 78 and keeps its decimal; 0 clears it. Same
+        // PATCH-then-POST-on-404 dance as UpdateAsync; a rejected field surfaces as a TrackerException
+        // the caller treats as a best-effort miss.
+        var body = new { rating = TrackerScore.Hundred(score) };
         var response = await RequestAsync(userId, HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
             okStatuses: [404], jsonBody: body, ct: ct);
         if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)
@@ -476,6 +477,23 @@ public class MangaBakaTracker(
         }
 
         return names;
+    }
+
+    private static double? ToDouble(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number => p.GetDouble(),
+            JsonValueKind.String when double.TryParse(
+                p.GetString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var value) => value,
+            _ => null,
+        };
     }
 
     /// <summary>MangaBaka numbers can be TEXT and fractional ("112.5") — coerce like the original.</summary>

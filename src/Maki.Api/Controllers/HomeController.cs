@@ -35,8 +35,8 @@ public record HomeReadingResponse(IReadOnlyList<HomeReadingItem> ContinueReading
 
 /// <summary>A series that recently gained chapter files it still has unread.</summary>
 /// <param name="AddedAt">Newest <c>ChapterFile.DateAdded</c> for this series.</param>
-/// <param name="NewChapterCount">Unread files in the series' latest batch, the "4 new" badge.</param>
-/// <param name="NewestChapterLabel">The newest unread file in that batch.</param>
+/// <param name="NewChapterCount">Unread chapters in the series' latest batch, the "4 new" badge.</param>
+/// <param name="NewestChapterLabel">The highest-numbered of those chapters.</param>
 /// <param name="ReadChapterId">Next unread downloaded chapter, for the card's Read affordance.</param>
 public record HomeRecentSeriesItem(
     int SeriesId,
@@ -45,7 +45,8 @@ public record HomeRecentSeriesItem(
     DateTime AddedAt,
     int NewChapterCount,
     string? NewestChapterLabel,
-    int? ReadChapterId);
+    int? ReadChapterId,
+    string? CoverAccent = null);
 
 /// <summary>
 /// View-shaped queries for the Home dashboard.
@@ -322,8 +323,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// (<see cref="ChapterFile.IsNewContent"/>).
     /// </para>
     /// <para>
-    /// Only a series' latest batch counts (see <see cref="NewChapterBatch"/>), and only the files in it the
-    /// user has not read. A series whose latest batch is all read drops off the rail.
+    /// Only a series' latest batch counts (see <see cref="NewChapterBatch"/>), and only the chapters in it
+    /// the user has not read. A series whose latest batch is all read drops off the rail.
     /// </para>
     /// </summary>
     [HttpGet("recently-added")]
@@ -377,12 +378,13 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             start += chunk.Count;
             var next = await continueReading.NextForAsync(chunk.Select(c => c.SeriesId).ToList(), ct);
             var batchFileIds = chunk.SelectMany(c => c.Batch).ToList();
-            var chaptersByFile = (await db.Chapters
-                    .AsNoTracking()
-                    .Where(c => c.ChapterFileId != null && batchFileIds.Contains(c.ChapterFileId!.Value))
-                    .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, c.Number, c.Volume, c.Title, c.IsOneShot })
-                    .ToListAsync(ct))
-                .ToLookup(c => c.FileId);
+            var batchChapters = await db.Chapters
+                .AsNoTracking()
+                .Where(c => c.ChapterFileId != null && batchFileIds.Contains(c.ChapterFileId!.Value))
+                .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, c.Number, c.Volume, c.Title, c.IsOneShot })
+                .ToListAsync(ct);
+            var chaptersByFile = batchChapters.ToLookup(c => c.FileId, c => new NewChapterBatch.Chapter(c.Id, c.Number, c.Volume));
+            var chapterById = batchChapters.ToDictionary(c => c.Id);
 
             foreach (var candidate in chunk)
             {
@@ -392,25 +394,23 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                     continue;
                 }
 
-                var unreadFiles = NewChapterBatch.UnreadFiles(
-                    candidate.Batch, id => chaptersByFile[id].Select(c => c.Id), upNext.UnreadChapterIds);
-                if (unreadFiles.Count == 0)
+                var unread = NewChapterBatch.UnreadChapters(candidate.Batch, id => chaptersByFile[id], upNext.UnreadChapterIds);
+                if (unread.Count == 0)
                 {
                     continue;
                 }
 
-                // A volume file backs several chapters; label it with the lowest-numbered one it holds.
-                var first = chaptersByFile[unreadFiles[0]]
-                    .OrderBy(c => c.Number is null ? 1 : 0).ThenBy(c => c.Number).First();
+                var newest = chapterById[unread.OrderBy(c => c.Number is null ? 1 : 0).ThenByDescending(c => c.Number).First().Id];
 
                 items.Add(new HomeRecentSeriesItem(
                     series.Id,
                     series.Title,
                     SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
                     candidate.AddedAt,
-                    unreadFiles.Count,
-                    ChapterLabel.For(first.Number, first.Volume, first.Title, first.IsOneShot),
-                    upNext.ChapterId));
+                    unread.Count,
+                    ChapterLabel.For(newest.Number, newest.Volume, newest.Title, newest.IsOneShot),
+                    upNext.ChapterId,
+                    accents.AccentFor(series.Id)));
 
                 if (items.Count == limit)
                 {

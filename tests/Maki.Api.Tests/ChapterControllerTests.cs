@@ -53,6 +53,9 @@ public class ChapterControllerTests : IDisposable
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 
+    private static ReadingProgressService Progress(MakiDbContext db) =>
+        new(db, new ReadingProgressGate(), NullLogger<ReadingProgressService>.Instance);
+
     private static ChapterFileDeletion Deletion(MakiDbContext db) => new(
         db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
         TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance);
@@ -279,7 +282,7 @@ public class ChapterControllerTests : IDisposable
         var (_, second) = SeedSeriesWithChapter("Second");
 
         using var db = _db.NewContext();
-        var result = await Controller(db).Delete([first, second], Deletion(db), default);
+        var result = await Controller(db).Delete([first, second], Deletion(db), Progress(db), default);
 
         // The root folder used to build the delete path comes from chapters[0]'s series, so a mixed
         // batch would delete the second series' file from under the first series' root.
@@ -318,7 +321,7 @@ public class ChapterControllerTests : IDisposable
             }
 
             using var db = _db.NewContext();
-            var result = await Controller(db).Delete([chapterId], Deletion(db), default);
+            var result = await Controller(db).Delete([chapterId], Deletion(db), Progress(db), default);
 
             Assert.IsType<OkObjectResult>(result);
             Assert.True(File.Exists(outside));
@@ -371,7 +374,7 @@ public class ChapterControllerTests : IDisposable
 
             using (var db = _db.NewContext())
             {
-                var result = await Controller(db).Delete([chapterId], Deletion(db), default);
+                var result = await Controller(db).Delete([chapterId], Deletion(db), Progress(db), default);
 
                 Assert.IsType<OkObjectResult>(result);
                 Assert.Empty(db.Chapters);
@@ -418,7 +421,7 @@ public class ChapterControllerTests : IDisposable
 
             using (var db = _db.NewContext())
             {
-                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), default));
+                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), Progress(db), default));
                 Assert.Empty(db.ChapterFiles);
             }
 
@@ -476,7 +479,7 @@ public class ChapterControllerTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            var result = await Controller(db).Delete([chapterId], Deletion(db), default);
+            var result = await Controller(db).Delete([chapterId], Deletion(db), Progress(db), default);
 
             Assert.IsType<OkObjectResult>(result);
             Assert.Null(await db.Chapters.FindAsync(chapterId));
@@ -518,7 +521,7 @@ public class ChapterControllerTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId, secondChapterId], Deletion(db), default));
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId, secondChapterId], Deletion(db), Progress(db), default));
             Assert.Equal(keptFileId, Assert.Single(db.ChapterFiles).Id);
         }
 
@@ -558,7 +561,7 @@ public class ChapterControllerTests : IDisposable
         using (var failing = new FailingSaveDbContext(_db.Options))
         {
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => Controller(failing).Delete([chapterId], Deletion(failing), default));
+                () => Controller(failing).Delete([chapterId], Deletion(failing), Progress(failing), default));
         }
 
         using var db = _db.NewContext();
@@ -585,6 +588,39 @@ public class ChapterControllerTests : IDisposable
 
         seed.SaveChanges();
         return file.Id;
+    }
+
+    [Fact]
+    public async Task Delete_moves_the_reading_mark_back_off_a_removed_chapter()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        int bogusId;
+        using (var seed = _db.NewContext())
+        {
+            var bogus = new Chapter { SeriesId = seriesId, Number = 123, NumberRaw = "123" };
+            seed.Chapters.Add(bogus);
+            seed.SaveChanges();
+            bogusId = bogus.Id;
+            seed.ChapterProgress.AddRange(new[] { chapterId, bogusId }.Select(id => new ChapterProgress
+            {
+                UserId = 1, SeriesId = seriesId, ChapterId = id, Completed = true,
+                StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            }));
+            seed.ReadingStates.Add(new ReadingState
+            {
+                UserId = 1, SeriesId = seriesId, Title = "Series", MaxChapter = 123,
+                LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            });
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([bogusId], Deletion(db), Progress(db), default));
+        }
+
+        using var check = _db.NewContext();
+        Assert.Equal(1, check.ReadingStates.IgnoreQueryFilters().Single().MaxChapter);
     }
 
     [Fact]
@@ -680,7 +716,7 @@ public class ChapterControllerTests : IDisposable
         await LinkFile(seriesId, path, chapterId);
         using (var db = _db.NewContext())
         {
-            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), default));
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), Progress(db), default));
         }
 
         Assert.True(File.Exists(Path.Combine(_root, path)));

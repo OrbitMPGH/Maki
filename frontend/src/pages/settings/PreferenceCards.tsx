@@ -16,7 +16,10 @@ import {
   type UiSettings,
 } from '../../api/hooks'
 import { AppearancePicker } from '../../components/AppearancePicker'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
 import { prefersReducedMotion, useMotionPref } from '../../lib/motionPrefs'
+import { useFullWidthSeriesPage } from '../../lib/seriesPageWidth'
+import { useNewControlMark } from './newSettings'
 
 export function DiscoverSection() {
   const { data: settings } = useDiscoverSettings()
@@ -182,13 +185,50 @@ export function TitleLanguageSection() {
 }
 
 /**
- * The two supplementary rails on a series page. Both are extras around the chapter list and both
- * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
+ * Where a library cover shows reading progress: the ring round the status disc, or on the progress
+ * bar over the downloaded share. Server-stored like the start page, because "auto" is decided from
+ * how this user reads, not from the device they are on.
  */
+export function SeriesCardsSection() {
+  const { t } = useLingui()
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+
+  return (
+    <SettingsSection id="series-cards" title={<Trans>Series cards</Trans>}>
+      <div>
+        <Input.Wrapper label={t`Reading progress`}>
+          <SegmentedControl
+            mt={4}
+            aria-label={t`Reading progress`}
+            data={[
+              { value: 'auto', label: t`Automatic` },
+              { value: 'downloads', label: t`Ring` },
+              { value: 'reading', label: t`Bar` },
+            ]}
+            value={ui?.cardProgress ?? 'auto'}
+            onChange={(value) => patch?.({ cardProgress: value as UiSettings['cardProgress'] })}
+            disabled={!patch}
+          />
+        </Input.Wrapper>
+        <Text size="sm" c="dimmed" mt="xs">
+          {ui?.cardProgressAuto === 'reading' ? (
+            <Trans>Automatic is using Bar, since you have read in Maki's reader on 3 days in the last 30.</Trans>
+          ) : (
+            <Trans>Automatic switches to Bar once you have read in Maki's reader on 3 days in the last 30.</Trans>
+          )}
+        </Text>
+      </div>
+    </SettingsSection>
+  )
+}
+
 export function SeriesPageSection() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
+  const [fullWidth, setFullWidth] = useFullWidthSeriesPage()
+  const fullWidthMark = useNewControlMark('series-page-width')
   const sections = ui?.seriesSections
   const related = sections?.related !== false
   const similar = sections?.similar !== false
@@ -202,6 +242,18 @@ export function SeriesPageSection() {
       title={<Trans>Series page</Trans>}
     >
       <Stack gap="sm">
+        <div id="setting-series-page-width" {...fullWidthMark}>
+          <Switch
+            label={
+              <>
+                {t`Full-width series page`}
+                <NewSettingPill id="series-page-width" />
+              </>
+            }
+            checked={fullWidth}
+            onChange={(e) => setFullWidth(e.currentTarget.checked)}
+          />
+        </div>
         <Switch
           checked={related}
           disabled={!patch}

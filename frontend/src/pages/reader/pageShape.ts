@@ -10,15 +10,13 @@ export const FULL_REGION: Region = { x: 0, y: 0, w: 1, h: 1 }
 
 export type PagePart = 'whole' | 'left' | 'right'
 
-// Long edge of the copy the margins are measured on. Downscaling averages away JPEG noise and
-// screentone specks, and keeps the scan to a few thousand pixels.
-const SAMPLE_EDGE = 160
+// Long edge of the copy the margins are measured on. At 160 a sample averaged a dozen source
+// pixels, so thin lettering in the gutter faded to white and was cropped away.
+const SAMPLE_EDGE = 400
 const WHITE_AT = 228
 const BLACK_AT = 28
-// A row or column is margin when this share of it is the border colour.
-const BLANK_SHARE = 0.985
-// Cropping more than this off an axis means a mostly empty page (a title card, a blank), where
-// zooming the remaining speck up to full size would be worse than leaving it alone.
+// Samples kept back towards the margin on each side, so a soft edge of the art is never shaved.
+const EDGE_PAD = 2
 const MAX_CROP_SHARE = 0.45
 const MIN_CROP_SHARE = 0.01
 const CACHE_LIMIT = 500
@@ -54,6 +52,9 @@ function measureMargins(image: HTMLImageElement): Region | null {
   canvas.height = ch
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) return null
+  // The default low quality samples a few source pixels per output pixel and can skip thin strokes.
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = 'high'
   let data: Uint8ClampedArray
   try {
     context.drawImage(image, 0, 0, cw, ch)
@@ -88,37 +89,46 @@ function measureMargins(image: HTMLImageElement): Region | null {
   if ((isWhite ? white : black) < edge / 2) return null
   const blank = isWhite ? (value: number) => value >= WHITE_AT : (value: number) => value <= BLACK_AT
 
-  const rowBlank = (y: number, from: number, to: number) => {
-    let hits = 0
-    for (let x = from; x <= to; x++) if (blank(luma[y * cw + x])) hits++
-    return hits >= (to - from + 1) * BLANK_SHARE
+  // Content is any non-border sample with a non-border neighbour. Lone specks (dust, JPEG noise)
+  // have none, while even one thin stroke of lettering spans a few samples.
+  const ink = new Uint8Array(cw * ch)
+  for (let i = 0; i < ink.length; i++) if (!blank(luma[i])) ink[i] = 1
+  let top = ch
+  let bottom = -1
+  let left = cw
+  let right = -1
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      if (!ink[y * cw + x] || !hasInkNeighbour(ink, cw, ch, x, y)) continue
+      if (y < top) top = y
+      if (y > bottom) bottom = y
+      if (x < left) left = x
+      if (x > right) right = x
+    }
   }
-  const columnBlank = (x: number, from: number, to: number) => {
-    let hits = 0
-    for (let y = from; y <= to; y++) if (blank(luma[y * cw + x])) hits++
-    return hits >= (to - from + 1) * BLANK_SHARE
-  }
+  if (bottom < 0) return null
 
-  let top = 0
-  while (top < ch && rowBlank(top, 0, cw - 1)) top++
-  if (top === ch) return null
-  let bottom = ch - 1
-  while (bottom > top && rowBlank(bottom, 0, cw - 1)) bottom--
-  let left = 0
-  while (left < cw && columnBlank(left, top, bottom)) left++
-  let right = cw - 1
-  while (right > left && columnBlank(right, top, bottom)) right--
-
-  // One sample back towards the margin on each side, so a soft edge of the art is never shaved.
-  top = Math.max(0, top - 1)
-  left = Math.max(0, left - 1)
-  bottom = Math.min(ch - 1, bottom + 1)
-  right = Math.min(cw - 1, right + 1)
+  top = Math.max(0, top - EDGE_PAD)
+  left = Math.max(0, left - EDGE_PAD)
+  bottom = Math.min(ch - 1, bottom + EDGE_PAD)
+  right = Math.min(cw - 1, right + EDGE_PAD)
 
   const region = { x: left / cw, y: top / ch, w: (right - left + 1) / cw, h: (bottom - top + 1) / ch }
   if (1 - region.w > MAX_CROP_SHARE || 1 - region.h > MAX_CROP_SHARE) return null
   if (1 - region.w < MIN_CROP_SHARE && 1 - region.h < MIN_CROP_SHARE) return null
   return region
+}
+
+function hasInkNeighbour(ink: Uint8Array, cw: number, ch: number, x: number, y: number): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    const ny = y + dy
+    if (ny < 0 || ny >= ch) continue
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx
+      if ((dx || dy) && nx >= 0 && nx < cw && ink[ny * cw + nx]) return true
+    }
+  }
+  return false
 }
 
 /** The crop, narrowed to one half of a wide page. The halves meet at the page's own centre, the spine. */

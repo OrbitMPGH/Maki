@@ -13,7 +13,13 @@ Before putting Maki on a public address:
    Maki does not trust the header from other addresses because a client could forge the audit log
    and get around rate limiting and lockout. To ban repeat offenders at the firewall, see
    [Access log and CrowdSec](/Maki/installation/access-log-crowdsec/).
+
+   ![Network card with Allow other devices on your network on, Require HTTPS off, and Trusted proxies a Trusted proxies field](../../../assets/ui/settings/network.webp)
+
 3. **Turn on two-factor authentication** under **Settings → Account → Sign-in**.
+
+   ![Sign-in card showing the signed-in administrator, with Password, Two-factor authentication and Sessions rows and a Sign out everywhere else button](../../../assets/ui/settings/sign-in.webp)
+
 4. **Give each reader their own account.** A new account starts with OPDS and tracker access, no
    root folders, and no admin. If you run an identity provider, use
    [single sign-on](/Maki/installation/single-sign-on/) instead of handing out passwords.

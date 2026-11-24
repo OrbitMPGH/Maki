@@ -1,8 +1,11 @@
 import { SearchInput } from '../components/ui/SearchInput'
+import { TagChip, TagChips } from '../components/ui/TagChip'
+import { FilterMenuButton } from '../components/ListControls'
 import {
   ActionIcon,
   Anchor,
   Badge,
+  Box,
   Button,
   Checkbox,
   Divider,
@@ -20,8 +23,6 @@ import {
   Table,
   Tabs,
   Text,
-  
-  Title,
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -35,17 +36,27 @@ import {
   IconCloudOff,
   IconClock,
   IconClockPlay,
+  IconCloudDownload,
+  IconCopy,
   IconDatabase,
   IconDownload,
   IconEye,
   IconFileImport,
+  IconFileOff,
+  IconFileZip,
+  IconFolder,
   IconLink,
+  IconLinkOff,
+  IconListCheck,
+  IconLock,
+  IconPencil,
   IconPlugConnected,
   IconPhotoScan,
   IconPlayerPause,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
+  IconRowRemove,
   IconScan,
   IconServer,
   IconSettings,
@@ -90,6 +101,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
+import { PanelTitle } from '../components/ui/PanelTitle'
 import { ModalFooter, ModalHeading, ModalNote } from '../components/ui/ModalShell'
 import { Note } from '../components/ui/Note'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
@@ -613,37 +625,42 @@ export default function HealthPage() {
                 onClear={() => refilter(() => setSearch(''))}
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
-              <Select
-                aria-label={t`Filter by root folder`}
-                placeholder={t`All roots`}
-                clearable
-                value={root}
-                onChange={(v) => refilter(() => setRoot(v))}
-                data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
-              />
-              <Select
-                aria-label={t`Filter by finding`}
-                placeholder={t`All findings`}
-                clearable
-                value={kind}
-                onChange={(v) =>
-                  refilter(() => {
-                    setKind(v)
-                    setFileCase(null)
-                  })
-                }
-                data={Object.entries(FINDING_LABEL)
-                  .filter(([value]) => value !== 'ambiguousNames')
-                  .map(([value, label]) => ({ value, label: renderLabel(label) }))}
-              />
-              <Select
-                aria-label={t`Filter by state`}
-                placeholder={t`All states`}
-                clearable
+              <FilterMenuButton
+                icon={IconListCheck}
+                label={t`State`}
+                anyLabel={t`All states`}
                 value={state}
                 onChange={(v) => refilter(() => setState(v))}
-                data={FINDING_STATES.map((value) => ({ value, label: renderLabel(STATUS_LABEL[value]) }))}
+                options={FINDING_STATES.map((value) => ({ value, label: renderLabel(STATUS_LABEL[value]) }))}
               />
+              {(overview.data?.roots.length ?? 0) > 0 && (
+                <FilterMenuButton
+                  icon={IconFolder}
+                  label={t`Root folder`}
+                  anyLabel={t`All roots`}
+                  value={root}
+                  onChange={(v) => refilter(() => setRoot(v))}
+                  options={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
+                />
+              )}
+              <div className="health-finding-chips" role="group" aria-label={t`Filter by finding`}>
+                <TagChips>
+                  {[null, ...Object.keys(FINDING_LABEL).filter((value) => value !== 'ambiguousNames')].map((value) => (
+                    <TagChip
+                      key={value ?? 'all'}
+                      active={kind === value}
+                      onClick={() =>
+                        refilter(() => {
+                          setKind(value)
+                          setFileCase(null)
+                        })
+                      }
+                    >
+                      {value == null ? t`All findings` : renderLabel(FINDING_LABEL[value])}
+                    </TagChip>
+                  ))}
+                </TagChips>
+              </div>
             </Group>
 
             {selectedCount > 0 && (
@@ -1982,8 +1999,8 @@ function FileReview({
     <Modal
       opened
       onClose={close}
-      title={t`Review archive`}
-      size="min(1060px, 94vw)"
+      title={<ModalHeading title={t`Review archive`} />}
+      size={MODAL_SIZE.xwide}
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}
@@ -2137,9 +2154,11 @@ function FileReview({
               {showActions && (
               <>
               <Panel p="md">
-                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
-                  <Trans>Request replacement</Trans>
-                </Title>
+                <Box mb="sm">
+                  <PanelTitle icon={IconCloudDownload}>
+                    <Trans>Request replacement</Trans>
+                  </PanelTitle>
+                </Box>
                 <Select
                   aria-label={t`Request replacement`}
                   allowDeselect={false}
@@ -2193,9 +2212,11 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
-                  {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
-                </Title>
+                <Box mb="sm">
+                  <PanelTitle icon={gone ? IconRowRemove : IconTrash}>
+                    {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
+                  </PanelTitle>
+                </Box>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
                   {gone ? (
                     <Trans>
@@ -2351,9 +2372,9 @@ function MissingPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={3} size="h4" fz="var(--type-subhead)">
+        <PanelTitle icon={IconFileOff}>
           <Trans>File is gone from disk</Trans>
-        </Title>
+        </PanelTitle>
         <Badge variant="light" color="var(--neutral)">
           {span}
         </Badge>
@@ -2482,9 +2503,9 @@ function DamagedPanel({ detail, openOperation }: { detail: FileDetail; openOpera
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={3} size="h4" fz="var(--type-subhead)">
+        <PanelTitle icon={IconFileZip}>
           <Trans>Archive is damaged</Trans>
-        </Title>
+        </PanelTitle>
         {span && (
           <Badge variant="light" color="var(--neutral)">
             {span}
@@ -2573,9 +2594,11 @@ function SizePanel({ detail }: { detail: FileDetail }) {
 
   return (
     <Panel p="md">
-      <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
-        <Trans>File changed outside Maki</Trans>
-      </Title>
+      <Box mb="sm">
+        <PanelTitle icon={IconPencil}>
+          <Trans>File changed outside Maki</Trans>
+        </PanelTitle>
+      </Box>
       <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool
@@ -2612,9 +2635,11 @@ function UnreadablePanel({ detail }: { detail: FileDetail }) {
 
   return (
     <Panel p="md">
-      <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
-        <Trans>Maki cannot open this file</Trans>
-      </Title>
+      <Box mb="sm">
+        <PanelTitle icon={IconLock}>
+          <Trans>Maki cannot open this file</Trans>
+        </PanelTitle>
+      </Box>
       {message && (
         <Text size="sm" mb="xs">
           {message}
@@ -2707,9 +2732,9 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={3} size="h4" fz="var(--type-subhead)">
+        <PanelTitle icon={IconCopy}>
           <Trans>Identical copies</Trans>
-        </Title>
+        </PanelTitle>
         <Badge variant="light" color="var(--neutral)">
           <Plural value={copyCount} one="# copy" other="# copies" />
         </Badge>
@@ -2925,9 +2950,9 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={3} size="h4" fz="var(--type-subhead)">
+        <PanelTitle icon={IconLinkOff}>
           <Trans>Not linked to any chapter</Trans>
-        </Title>
+        </PanelTitle>
         <Badge variant="light" color="var(--neutral)">
           {label}
         </Badge>
@@ -3333,8 +3358,8 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
     <Modal
       opened
       onClose={close}
-      title={finished ? t`Operation details` : t`Review operation`}
-      size="min(1060px, 94vw)"
+      title={<ModalHeading title={finished ? t`Operation details` : t`Review operation`} />}
+      size={MODAL_SIZE.xwide}
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}

@@ -1,12 +1,14 @@
 Maki is a self-hosted manga collection manager: add a series once and it keeps it complete. The interface is content-first and cinematic. By default the ground is a near-black tinted toward the accent, the ink is a cool off-white, and the accent is blush. The chrome stays quiet so the covers carry the colour.
 
+Run `npm run ds:build` from `frontend/` to refresh the export in `design-system/out/project/`. The component cards are static examples. Storybook renders the running components and is the reference for interactions and states.
+
 ## Voice and copy
 
 - Write plain, direct sentences, the way a developer explains something to a teammate. Say what happens: "Add series", "Refresh the catalogue", "Browse the catalogue", never "Submit" or "OK".
 - Sentence case everywhere: buttons, titles, menu items. Labels and badges are sentence case too. The sidebar group labels are the one uppercase line in the app.
 - Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
-- Empty states are statements, not apologies: "No series yet", "No chapters read in this period.", "Queue is empty". Follow with one line on what would fill it and at most one action.
-- Explain a consequence in a short clause after a colon: "Sliding: a failed sign-in resets the timer." "No change: this title was already in that state."
+- State what is empty in the title. Add a line or action when it tells the user what would fill the space or how to proceed.
+- Descriptions are optional across page headers, modals and empty states. Keep one short sentence when it gives a consequence, requirement, limit or explanation absent from the title.
 - No em dashes. No emoji in UI copy. No filler words ("seamless", "robust", "leverage") and no "it's not just X, it's Y".
 - Every string is translated (Maki ships in eleven languages). A status Maki has no word for is shown exactly as the server sent it rather than guessed at.
 
@@ -16,10 +18,10 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 
 **Appearance.** The app's picker makes two choices per user. A background: `Tinted black` (the default), `Night`, `Charcoal`, `Moss`, `Cover tint`, `OLED black`, `Light`, `Paper` or `Match system`. An accent: `Blush` (the default), `Indigo`, `Rose`, `Emerald`, `Amber`, `Vermilion`, `Teal` or `Plum`. Tinted black mixes every surface 4% from neutral black toward the active accent, so the ground belongs to whichever accent is on. Night is blue-black, Charcoal a neutral grey with warmer ink, Moss a faint green. Cover tint is Tinted black aimed at the cover on screen (the series page and Home's hero) instead of the accent, easing between covers; other pages fall back to the accent. OLED black is true black with depth drawn by lines instead of lift. Paper is the light theme on warm stock with a faint grain and a pressed edge instead of a cast shadow.
 
-**Themes here.** Nine: the dark theme (`Blush`), seven dark accent swaps (`Indigo`, `Rose`, `Emerald`, `Amber`, `Vermilion`, `Teal`, `Plum`) and `Light` (Blush on cool paper, white cards). All the dark themes sit on Night, the reference ramp in `:root`: Tinted black is computed from the accent in the browser, so its exact values cannot be listed as tokens. Treat Night's values as the shape of the ladder and expect the default ground to read a touch more neutral and accent-warmed. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Blush, Emerald, Amber and Teal are pale enough that their fills take a near-black label. Light deepens `brand-fg` per accent so brand text holds on white.
+**Export presets.** Tinted black with Blush is the default. Each accent has a Tinted black preset, and each fixed background has a Blush preset. Cover tint shows its accent fallback. In the app, Home's hero and series pages supply the active cover colour. Match system uses Tinted black or Light based on the device.
 
 **The layer ladder.** Build every screen from these, in order of height:
-- `app-bg`: the page ground, flat. No washes, glows or grain; Tinted black already mixes 4% of the accent into every surface, which is all the temperature the ground needs. The app header and the sign-in frame sit on it opaque.
+- `app-bg` is the page ground. Tinted black mixes the accent into the surface ramp, and Paper adds a faint grain. The app header and sign-in frame sit on the ground.
 - `surface`: the default layer. Every Card, Paper and `Panel` sits here.
 - `surface-2`: one step up. Tag chips, inputs at rest.
 - `surface-raised`: overlays (modals, drawers, menus, popovers). Dark elevates by lightening (it aliases `surface-2`); light elevates by staying white and casting `shadow-raised`. Never assume one direction reads in both.
@@ -36,7 +38,7 @@ Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row 
 
 **Other palettes.** `rating` is the star colour. `tier-1` to `tier-6` (with `-soft` fills) colour the achievement ladder: bronze, silver, gold, platinum, diamond, then the accent at the top; locked badges keep their shape and drop the colour. `chart-1` to `chart-6` are the categorical set for charts only (`chart-1` is the accent); a chart uses a status hue only when the series shows that state. `mark-cream`, `mark-nori`, `mark-ink` and `mark-blush` belong to the brand mark only. The raw Mantine palettes (`indigo-0` to `indigo-9`, `rose-*`, `emerald-*`, `amber-*`, `dark-0` to `dark-9`) exist for Mantine `color` props that need a shade; reach for the semantic tokens first.
 
-**Contrast rules.** Text on a fill takes that fill's own foreground: `primary-on` on `primary` (Mantine autoContrast picks black on Emerald and Amber), the matching `-on` token on each status fill (`ok-on` on `ok`), white on `danger-fill`. Brand text on the surfaces is `brand-fg`; brand text over cover art is `brand-fg-on-art`, because the scrim stays dark in Light.
+**Contrast rules.** Filled primary buttons and accent corner cues use `brand-on`. Mantine's primary contrast token `primary-on` colours the chapter chip on Home covers. Status fills pair with their matching foreground, such as `ok-on` on `ok`. The destructive button uses white on `danger-fill`. Brand text on surfaces uses `brand-fg`, and brand text on cover art uses `brand-fg-on-art`.
 
 **Remaining gaps**, kept exact and flagged in each token's note: `tier-1`, `tier-5` and `tier-6` read between 3.7 and 4.4:1 on dark `surface`, and `rating` is 3.3:1 on white. Use them for icons and rims, not small text.
 
@@ -60,8 +62,9 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 - Every row of figures is a `FigureStrip`: equal cells in one bordered strip, number over label, an optional delta chip beside the number and a hint line under the label. Library, Health, Activity, the import plan, Stats and Discover's Taste tab all use it; there are no separate stat tiles.
 - `EmptyState` takes a `mood` for the inline form: the mascot at 56px beside the text (asleep for an empty queue or list, pleased when nothing is left to deal with, asking when it needs something from you). Page-level `art` states are unchanged.
 - One rule for a section with nothing to list: `EmptyState compact` with a mood. When it stands in for a table or list that has no card of its own (Activity, Scrobble, Import, Health, Requests, Notifications), add `framed` so the dashed outline holds the table's place. Inside a card that stays (Stats panels, a settings section), leave the frame off; the card is the frame.
-- `CoverCard` shows its monitor eye and mute bell only on hover or focus where there is a real pointer, and always on touch. A library with fewer than 12 series ends its grid in a dashed add cell.
-- Settings sections put the title in the display face and its explanation above the panel; the panel holds only the fields, and the content column is no longer capped.
+- `CoverCard` puts the publication status disc at the top right and the title, count and progress bar in the scrimmed footer. The Series cards preference picks a reading ring or places reading progress beside downloads in the bar.
+- Discover and Library share the filter button and chip treatments. `CatalogueFilterBar` groups set filters at the front and folds extra unset filters into Add filter.
+- Settings titles sit above the panel in the display face. `SettingsDrill` opens an editor inside the panel. `SettingsSummaryRow` shows the current configuration and a button to open its modal.
 - Standard pages cap at `content-wide` (72rem); reading text at `content-prose` (42rem). Editorial sections breathe by `section-space`.
 - Three page styles: standard, editorial (more air), operational (denser: tables at 40px rows, panels at `spacing-md`).
 - The hero band (cover art bleeding behind the page title) is reserved for the series page, the Discover modal and Rewind. Panels over it are opaque `surface-2` with a `border` hairline, never glass. Never hang a panel or a band beside a `PageHeader`.
@@ -78,7 +81,7 @@ Small settings panels that open in place share one grammar: the reader settings,
 
 ## Shape, borders and depth
 
-- Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` 7px (tag chips, squarer than a pill), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, hero panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (cards, panels, covers, modals, overlays), `radius-xl` 20px (large hero surfaces).
+- Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` and `radius-cover` 7px (tag chips and poster cards), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, hero panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (panels and overlays), `radius-xl` 20px (large hero surfaces).
 - Anything with round ends, whatever its height, takes `radius-pill`: progress bars and their fills, cover badges, seeds. Never set a radius of half the height by hand.
 - No other radius. A value between two steps belongs on one of them.
 - Panels carry a border and the 1px `shadow-card` in both schemes, and no accent edges. A panel that needs to report state does it with a `StatusDot` beside its title. No glows and no `backdrop-filter` anywhere: a selected or active thing takes a flat ring or fill, never a blurred halo, and anything floating over content is opaque.
@@ -95,11 +98,11 @@ Small settings panels that open in place share one grammar: the reader settings,
 
 ## Focus and states
 
-- Focus: a solid 2px `brand` outline at 2px offset.
-- Selected: `brand` border plus a 1px `brand` ring (cover cards, series rows), or brand at 10% behind a table row. A brand ring, not a glow.
+- Focus uses a 2px `focus-ring` outline at 2px offset. It follows `brand` on dark grounds and `brand-fg` on Light and Paper.
+- Selection uses a flat `brand` border and ring on cards and series rows, or a 10% accent fill behind a table row.
 - Nav active: a flat fill of brand at 14% with a 2px `brand` bar at the left edge.
 - Active chip: `brand` border, brand at 35% fill, `ink-hi` text.
-- Loading: skeletons in place of the content, keeping labels and icons in place and blanking only the numbers, so a count never reads as zero before it arrives. No page-level spinners.
+- Loading uses skeletons where the shape of the content is known. Figure strips keep the labels and blank the numbers. `DelayedLoader` waits before showing a spinner for a pending chunk or setting.
 - Text selection highlights in `brand-glow`.
 - Dirty: a Settings section with unsaved edits shows Save and Discard beside an "Unsaved" marker in its heading row; both disappear once it matches what is saved.
 
@@ -121,8 +124,8 @@ Small settings panels that open in place share one grammar: the reader settings,
 
 ## Logo
 
-The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top and bottom (`mark-nori`), outlined and featured in `mark-ink`, with `mark-blush` cheeks. In the navbar it sits in a 44px `brand-mark` tile (brand at 16% over `surface-2`, a brand-tinted border, `radius-hero`) beside the wordmark "Maki" set in `wordmark` and a `label` line, "Manga manager", in `ink-3`. The mark has four moods that change only the eyes and mouth: awake (the default, and what the navbar uses), asleep (closed eyes and two small z's in `ink-3`), asking (a raised brow and a small o mouth) and pleased (happy eyes and a wide smile). The mark's colours are fixed in every mood; never recolour it to the accent.
+The mark is a maki roll with a face. It has a `mark-cream` body, `mark-nori` bands, `mark-ink` features and `mark-blush` cheeks. The sidebar puts the 32px mark in a 40px `brand-mark` tile with a tinted background and border, next to the “Maki” wordmark. “Manga manager” is the mark's accessible label. Its four expressions are awake, asleep, asking and pleased. The mark keeps its fixed colours in each theme.
 
-## Not synced
+## Export scope
 
-Built from `OrbitMPGH/Maki` at {{REF}} (`frontend/src/theme.css`, `theme.ts`, `theme-context.tsx`, `components/ui/`). Left out: the per-feature rules in `theme.css` (reader, series hero, charts, and Discover beyond its cards); the `--ease` curve and `--dur-*` durations (motion has no token family here, so they live in the Motion section) and `--reader-overlay-z-index`; only the Latin subsets of both fonts. Components are static renditions styled by `components/bundle.css` rather than a built bundle. Every component in `components/ui/` has a card (`DrillPanes` and `useDrillPages` share the DrillPanel card); `RecommendationCard` and `RecommendationRow` are covered by the DiscoverRail and SeriesRow cards, and the `.ts` helpers beside them (status, viewPrefs, useWindowedRows and the rest) are hooks and data, so they have none.
+Built from `OrbitMPGH/Maki` at {{REF}}. The export includes shared tokens, Latin font specimens and static component cards, with app icons and selected rules from `theme.css`. The app and Storybook cover full routes, runtime theme combinations, translated text and interactive states.

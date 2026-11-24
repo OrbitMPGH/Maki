@@ -59,6 +59,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
     public DbSet<SourceNearMiss> SourceNearMisses => Set<SourceNearMiss>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
+    public DbSet<ChapterFold> ChapterFolds => Set<ChapterFold>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
@@ -168,6 +169,24 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
         Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
 
+    private bool _movingReads;
+
+    /// <summary>
+    /// While the returned scope lives, saved progress changes are not reads: a merge that moves rows
+    /// onto another chapter rewrites their pages and completion, and that must not move a finished,
+    /// on-hold or dropped series back to Reading.
+    /// </summary>
+    public IDisposable MovingReads()
+    {
+        _movingReads = true;
+        return new ReadMoveScope(this);
+    }
+
+    private sealed class ReadMoveScope(MakiDbContext db) : IDisposable
+    {
+        public void Dispose() => db._movingReads = false;
+    }
+
     private const string PromoteToCompletedSql = """
         INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
             "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
@@ -186,6 +205,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     /// </summary>
     private List<(int UserId, int SeriesId)> ReadsToPromote()
     {
+        if (_movingReads)
+        {
+            return [];
+        }
+
         var reads = new HashSet<(int, int)>();
         foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
         {
@@ -703,6 +727,18 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(l =>
                 _scope.Unrestricted ||
                 Chapters.Any(c => c.Id == l.ChapterId));
+        });
+
+        modelBuilder.Entity<ChapterFold>(e =>
+        {
+            // REAL like Chapter.Number, which it is compared against.
+            e.Property(f => f.Floor).HasConversion<double>();
+            e.Ignore(f => f.Parts);
+            e.HasQueryFilter(f => _scope.Unrestricted || Series.Any(s => s.Id == f.SeriesId));
+            e.HasIndex(f => new { f.SourceMappingId, f.Language, f.Floor }).IsUnique();
+            e.HasIndex(f => f.SeriesId);
+            e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<SourceMapping>().WithMany().HasForeignKey(f => f.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>

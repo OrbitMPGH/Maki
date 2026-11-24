@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { SETTINGS_TARGET_EVENT } from '../components/settings/SettingsDrill'
 import { Link, useSearchParams } from 'react-router-dom'
 import { msg } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
@@ -26,6 +27,8 @@ import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { RatingPromptsSection } from '../components/settings/RatingPromptsSection'
+import { KeyboardShortcutsSection } from '../components/settings/KeyboardShortcutsSection'
+import { RatingsSection } from '../components/settings/RatingsSection'
 import { ReadingStatusSection } from '../components/settings/ReadingStatusSection'
 import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
 import { useCompleteSetup } from '../api/hooks'
@@ -36,6 +39,7 @@ import { SettingsIndex, SettingsJump } from '../components/settings/SettingsInde
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
   AppearanceSection,
+  SeriesCardsSection,
   DiscoverSection,
   HomeSectionsSection,
   LanguageSection,
@@ -62,9 +66,9 @@ import { UpscalingSection } from './settings/UpscalingSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
+  SourceProxyCard,
   IndexerSection,
   DownloadClientCard,
-  SmartDownloadSection,
   ReadFileCleanupSection,
   SourceLanguageSection,
   SourcePrioritySection,
@@ -93,6 +97,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'api-keys': <ApiKeysSection />,
 
       appearance: <AppearanceSection />,
+      'series-cards': <SeriesCardsSection />,
       language: <LanguageSection />,
       'title-language': <TitleLanguageSection />,
       'discover-rating': <DiscoverSection />,
@@ -102,8 +107,10 @@ function useSectionNodes(): Record<string, ReactNode> {
       'push-notifications': <PushNotificationsSection />,
 
       reader: <ReadingProfilesSection />,
+      'keyboard-shortcuts': <KeyboardShortcutsSection />,
       progress: <ProgressSection />,
       'rating-prompts': <RatingPromptsSection />,
+      ratings: <RatingsSection />,
       'reading-status': <ReadingStatusSection />,
       opds: <OpdsSection />,
       'koreader-sync': <KoreaderSyncSection />,
@@ -126,11 +133,11 @@ function useSectionNodes(): Record<string, ReactNode> {
       recommendations: <RecommendationIndexSection />,
 
       downloads: <DownloadQueueSection />,
-      'smart-download': <SmartDownloadSection />,
       'read-cleanup': <ReadFileCleanupSection />,
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,
       flaresolverr: <FlareSolverrCard />,
+      'source-proxy': <SourceProxyCard />,
       indexer: <IndexerSection />,
       downloadclient: <DownloadClientCard />,
       profiles: <UpgradeProfilesSection />,
@@ -333,17 +340,24 @@ export default function SettingsPage() {
 
     // A control inside an editor or a row has no anchor of its own; its card does.
     const within = visible.find((e) => e.id === target)?.within
-    const el = document.getElementById(`setting-${target}`) ?? (within ? document.getElementById(`setting-${within}`) : null)
-    if (!el) return
-    const show = () => el.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
+    const locate = () =>
+      document.getElementById(`setting-${target}`) ?? (within ? document.getElementById(`setting-${within}`) : null)
+    // A card showing one of its drill pages goes back to its rows first, so the target's row is
+    // there by the time it is looked up.
+    document.dispatchEvent(new CustomEvent(SETTINGS_TARGET_EVENT, { detail: target }))
     // Cards above the target fill in as their queries resolve (the source table, the indexer list),
     // which pushes it down after the first scroll lands. Re-anchoring twice costs nothing and is
     // what makes a deep link arrive at the card rather than somewhere above it.
-    show()
+    const show = () => locate()?.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
+    window.setTimeout(() => {
+      const el = locate()
+      if (!el) return
+      show()
+      el.classList.add('settings-flash')
+      window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
+    }, 0)
     window.setTimeout(show, 400)
     window.setTimeout(show, 1000)
-    el.classList.add('settings-flash')
-    window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
   }, [target, awaitingTarget, activeTab, setSearchParams, visible])
 
   return (

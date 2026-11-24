@@ -17,7 +17,7 @@ public enum NotificationType
 /// A user-defined outbound notification connection (Sonarr/Radarr-style "Connect").
 /// One row per connection; <see cref="ConfigJson"/> holds provider-specific fields
 /// (webhook URLs, tokens) as JSON. Those are secrets stored in plaintext — same
-/// boundary as the rest of the config (see CLAUDE.md): the config dir and any DB copy
+/// boundary as the rest of the config (see AGENTS.md): the config dir and any DB copy
 /// are credential material.
 /// </summary>
 public class Notification

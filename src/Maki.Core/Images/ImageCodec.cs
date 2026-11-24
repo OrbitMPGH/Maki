@@ -401,7 +401,21 @@ public static class ImageCodec
             : grey ? srgb.ExtractBand(1)
             : srgb.ExtractBand(0, n: 3);
         using var bytes = shaped.Format == Enums.BandFormat.Uchar ? shaped.Copy() : shaped.Cast(Enums.BandFormat.Uchar);
-        return JpegXl.Encode(bytes.WriteToMemory<byte>(), bytes.Width, bytes.Height, bands, distance, PageJpegXlEffort);
+        return JpegXl.EncodeRows(new VipsJpegXlRows(bytes, bands), bytes.Width, bytes.Height, bands, distance, PageJpegXlEffort);
+    }
+
+    private sealed class VipsJpegXlRows(VipsImage image, int bands) : IJpegXlRows
+    {
+        private readonly int _stride = image.Width * bands;
+
+        public IntPtr Acquire(int top, int count, out int stride)
+        {
+            stride = _stride;
+            using var strip = image.Crop(0, top, image.Width, count);
+            return strip.WriteToMemory(out _);
+        }
+
+        public void Release(IntPtr rows) => global::NetVips.NetVips.Free(rows);
     }
 
     /// <summary>
@@ -419,7 +433,7 @@ public static class ImageCodec
     /// become sRGB, and the result always has 3 bands. The output is untagged sRGB, so a page in
     /// another profile (Adobe RGB colour pages) has to be converted here or it shows washed out.
     /// </summary>
-    public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source)
+    public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source, bool preserveGrey = false)
     {
         try
         {
@@ -449,6 +463,12 @@ public static class ImageCodec
             using var converted = Raster.ToSrgb(flat);
             // A grey profile converts to three bands a level apart, which would lose the one-band path.
             using var srgb = flat.Bands == 1 && converted.Bands > 1 ? converted.ExtractBand(1) : converted.Copy();
+            if (preserveGrey && srgb.Bands == 1)
+            {
+                using var greyBytes = srgb.Format == Enums.BandFormat.Uchar ? srgb.Copy() : srgb.Cast(Enums.BandFormat.Uchar);
+                return (Raster.Wrap(greyBytes.Width, greyBytes.Height, 1, greyBytes.WriteToMemory<byte>()), null);
+            }
+
             using var rgb = srgb.Bands switch
             {
                 1 => srgb.Bandjoin(srgb, srgb),
@@ -525,9 +545,10 @@ public static class ImageCodec
     internal const int UpscaledJpegXlEffort = 3;
 
     /// <summary>
-    /// A JPEG XL encode holds 25 to 34 bytes a pixel against WebP's 5 to 7, so bigger outputs (a 16 MP
-    /// source upscales to 64 MP) stay WebP or JPEG. 12 MP covers a 1880 x 4000 colour page and a
-    /// 1440 x 8000 webtoon slice at about 400 MB.
+    /// Bigger outputs (a 16 MP source upscales to 64 MP) stay WebP or JPEG. 12 MP covers a 1880 x 4000 colour
+    /// page and a 1440 x 8000 webtoon slice. Streamed (<see cref="EncodeUpscaledJpegXl"/>) the encoder holds
+    /// about the same at any size; the cap also bounds the full decode that converts a page for a browser
+    /// without JPEG XL.
     /// </summary>
     public const long MaxJpegXlPixels = 12_000_000;
 
@@ -547,7 +568,7 @@ public static class ImageCodec
             return EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height);
         }
 
-        if (jpegXl && (long)width * height <= MaxJpegXlPixels && JpegXl.IsAvailable)
+        if (jpegXl && FitsJpegXl(width, height))
         {
             try
             {
@@ -561,6 +582,16 @@ public static class ImageCodec
 
         return EncodeBands(rgb, width, height, 3);
     }
+
+    /// <summary>Whether <see cref="EncodeUpscaled"/> would write a colour page of this size as JPEG XL when asked to.</summary>
+    public static bool FitsJpegXl(int width, int height) => (long)width * height <= MaxJpegXlPixels && JpegXl.IsAvailable;
+
+    /// <summary>
+    /// A colour page as <see cref="EncodeUpscaled"/> writes it as JPEG XL, the same bytes, with the rows read from
+    /// <paramref name="rows"/> as the encoder gets to them. Throws <see cref="JpegXlException"/> when libjxl fails.
+    /// </summary>
+    public static UpscaledImage EncodeUpscaledJpegXl(IJpegXlRows rows, int width, int height) =>
+        new(JpegXl.EncodeRows(rows, width, height, 3, UpscaledJpegXlDistance, UpscaledJpegXlEffort), "jxl", width, height, 3);
 
     /// <summary>
     /// A cached JPEG XL page as the WebP or JPEG <see cref="EncodeUpscaled"/> would have written, for a
@@ -579,9 +610,48 @@ public static class ImageCodec
         return EncodeBands(pixels, width, height, bands);
     }
 
+    public static UpscaledImage EncodeUpscaled(IntPtr rgb, long byteLength, int width, int height, bool grey, bool jpegXl = false)
+    {
+        if (grey)
+        {
+            var pixels = (long)width * height;
+            UpscalePixels.FoldToSingleBandInPlace(rgb, pixels);
+            return EncodeBands(rgb, (ulong)pixels, width, height, 1);
+        }
+
+        if (jpegXl && FitsJpegXl(width, height))
+        {
+            try
+            {
+                return new UpscaledImage(JpegXl.Encode(rgb, byteLength, width, height, 3, UpscaledJpegXlDistance, UpscaledJpegXlEffort),
+                    "jxl", width, height, 3);
+            }
+            catch (JpegXlException)
+            {
+            }
+        }
+
+        return EncodeBands(rgb, (ulong)byteLength, width, height, 3);
+    }
+
+    public static UpscaledImage EncodeUpscaledGrey(IntPtr band, long byteLength, int width, int height) =>
+        EncodeBands(band, (ulong)byteLength, width, height, 1);
+
     /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool, bool)"/>.</summary>
     public static UpscaledImage EncodeUpscaledGrey(byte[] band, int width, int height) =>
         EncodeBands(band, width, height, 1);
+
+    private static UpscaledImage EncodeBands(IntPtr pixels, ulong byteLength, int width, int height, int bands)
+    {
+        var grey = bands == 1;
+        using var raw = VipsImage.NewFromMemory(pixels, byteLength, width, height, bands, Enums.BandFormat.Uchar);
+        using var image = raw.Copy(interpretation: grey ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
+        return Math.Max(width, height) > MaxWebpEdge
+            ? new UpscaledImage(image.JpegsaveBuffer(q: 90, subsampleMode: Enums.ForeignSubsample.On,
+                keep: Enums.ForeignKeep.None), "jpg", width, height, bands)
+            : new UpscaledImage(image.WebpsaveBuffer(q: grey ? UpscaledGreyQuality : UpscaledColourQuality,
+                effort: UpscaledWebpEffort, smartSubsample: false, keep: Enums.ForeignKeep.None), "webp", width, height, bands);
+    }
 
     private static UpscaledImage EncodeBands(byte[] pixels, int width, int height, int bands)
     {
@@ -624,21 +694,22 @@ public static class ImageCodec
             ? image.Flatten(background: Enumerable.Repeat(255.0, image.Bands - 1).ToArray())
             : image.Copy();
         using var grey = flat.Bands >= 3 ? flat.Colourspace(Enums.Interpretation.Bw) : flat.ExtractBand(0);
-        var pixels = grey.WriteToMemory<byte>();
+        using var luma = grey.Bands > 1 ? grey.ExtractBand(0) : grey.Copy();
+        // Doubles hold every sum exactly (under 2^53), where a uint's squares wrap past about 66,000 px a row.
+        using var wide = luma.Cast(Enums.BandFormat.Double);
+        using var squares = wide.Multiply(wide);
+        using var both = wide.Bandjoin(squares);
+        // Row sums of luma and luma squared in one libvips pass, so the page never exists as managed pixels.
+        var projections = both.Project();
+        using var columns = (VipsImage)projections[0];
+        using var sums = (VipsImage)projections[1];
+        var totals = sums.WriteToMemory<double>();
         var width = grey.Width;
         var rows = new double[grey.Height];
         for (var y = 0; y < rows.Length; y++)
         {
-            var row = pixels.AsSpan(y * width, width);
-            long sum = 0, squares = 0;
-            foreach (var value in row)
-            {
-                sum += value;
-                squares += value * value;
-            }
-
-            var mean = (double)sum / width;
-            rows[y] = Math.Sqrt(Math.Max(0, (double)squares / width - mean * mean));
+            var mean = totals[y * 2] / width;
+            rows[y] = Math.Sqrt(Math.Max(0, totals[y * 2 + 1] / width - mean * mean));
         }
 
         return rows;

@@ -3,7 +3,6 @@ import { SettingsGroupTitle } from './SettingsGroupTitle'
 import {
   Button,
   Code,
-  Group,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -11,7 +10,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconCopy, IconLock } from '../../lib/icons'
+import { IconLock } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
@@ -26,7 +25,7 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
-import { useCopyText } from '../ui/useCopyText'
+import { MonoValue } from '../ui/MonoValue'
 import { Note } from '../ui/Note'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { savedToast, useSliceSync } from '../../pages/settings/sharedRecord'
@@ -372,7 +371,6 @@ export function OidcSection() {
   const { t } = useLingui()
   const { data } = useOidcSettings()
   const save = useSaveOidcSettings()
-  const redirectCopy = useCopyText()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
   const [confirmingIssuer, setConfirmingIssuer] = useState(false)
   const [open, setOpen] = useState(false)
@@ -427,18 +425,8 @@ export function OidcSection() {
       <Stack gap="md">
         <SsoGroup title={<Trans>Provider</Trans>}>
         <Stack gap={6}>
-          <Group gap="xs">
-            <Code>{redirectUrl}</Code>
-            <Button
-              size="xs"
-              variant="default"
-              onClick={() => void redirectCopy.copy(redirectUrl)}
-              leftSection={redirectCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-            >
-              {redirectCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-            </Button>
-          </Group>
-          <Text size="xs" c="dimmed">
+          <MonoValue value={redirectUrl} copy wrap />
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Register this as the client&apos;s redirect URI.</Trans>
           </Text>
         </Stack>

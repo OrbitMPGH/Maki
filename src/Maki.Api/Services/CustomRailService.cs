@@ -44,7 +44,8 @@ public class CustomRailService(
     SourceAvailability? sourceAvailability = null,
     IAppSettings? appSettings = null,
     IUserSettings? userSettings = null,
-    ILogger<CustomRailService>? logger = null)
+    ILogger<CustomRailService>? logger = null,
+    CoverAccentCache? coverAccents = null)
 {
     /// <summary>
     /// How long a user's projected library rows are reused. Home renders each library rail through
@@ -263,7 +264,7 @@ public class CustomRailService(
         var titleLanguage = userSettings is null ? null : await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
         var rows = await LibraryListRows.BuildAsync(
             db, sourceAvailability, store, appSettings, titleLanguage,
-            (ILogger?)logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, null, ct);
+            (ILogger?)logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, null, ct, coverAccents);
         // The client's useReadTracking: the built-in reader has been used, or Kavita is connected.
         var readTracking = await db.ChapterProgress.AnyAsync(ct) ||
                            (!string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&

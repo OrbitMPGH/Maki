@@ -44,9 +44,17 @@
   story and feel. Picks with no judgement yet are written to .artifacts/eval/judge-queue.tsv for
   distribution/judge-pairs.py.
 
-  `rail` is the series-page "More like this" rail as it ships: both pair graphs off, the taste
-  vectors on, diversity 0.15. It is a default variant so the cost of that choice is printed on
-  every run. `railcontent` is the rail before v7, with the taste vectors off as well.
+  The EASE channel SHIPS as of v7 at weight 4 on personal recommendations, so `default` runs it
+  from <Config>/ease-table.db when that file is there (and without it when it is not, as the app
+  does). `noease` is its baseline. `rail` never runs it. In `library` mode with -LibraryFold the
+  installed table must be a fold-limited build too, or the eval refuses the run; pass it with
+  -LibraryEase.
+
+  `rail` is the series-page "More like this" rail as it ships: the vote graph at its single-seed
+  weight, co-read off, the taste vectors on, diversity 0.15. It is a default variant so the cost
+  of that choice is printed on every run. `railtaste` is the rail without the votes and
+  `railcontent` without the taste vectors either, the two rails that shipped before it. Against
+  the reco labels the eval switches the votes off, so `rail` reads as `railtaste` in those steps.
 
 .PARAMETER Split
   dev (default), confirm or all. Sweeps and fits run on dev. A default changes only after one
@@ -75,7 +83,7 @@
 [CmdletBinding()]
 param(
   [string[]]$Variants = @(
-    "nocrowd", "default", "rail", "noavoid",
+    "nocrowd", "default", "rail", "noavoid", "noease",
     "avoidnone12:avoidneutralize=none,avoidweight=12"),
   [string]$Config = "",
   [int]$Requests = 500,
@@ -83,6 +91,7 @@ param(
   [switch]$Quick,
   [switch]$NoFeel,
   [string]$LibraryFold = "",
+  [string]$LibraryEase = "",
   [ValidateSet("dev", "confirm", "all")]
   [string]$Split = "dev",
   [switch]$NoPanel,
@@ -181,6 +190,7 @@ $libraryArgs = @(
   "library", "--requests", "$Libraries", "--holdout", "0.2", "--split", $Split, "--strata", "--negatives") + $feel
 if ($LibraryFold) {
   $libraryArgs += @("--fold-users", $LibraryFold)
+  if ($LibraryEase) { $libraryArgs += @("--ease", $LibraryEase) }
 } elseif (Test-Path (Join-Path $Config "taste-vectors.db")) {
   Write-Warning ("A behavioural artifact is installed but -LibraryFold was not given. " +
     "Library-mode numbers will be contaminated unless that artifact held those readers out.")

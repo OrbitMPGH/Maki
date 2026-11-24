@@ -7,13 +7,10 @@ import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import {
   
   Anchor,
-  Badge,
   Button,
-  Collapse,
   Group,
   Loader,
   SegmentedControl,
-  Select,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -27,8 +24,7 @@ import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { SearchInput } from './ui/SearchInput'
-import { IconFilter, IconUser } from '../lib/icons'
-import { Panel } from './ui/Panel'
+import { IconUser } from '../lib/icons'
 import { TagChip } from './ui/TagChip'
 import {
   useDiscoverFeed,
@@ -46,10 +42,11 @@ import {
   type ResolvedCredit,
   type SearchFallback,
 } from '../api/hooks'
+import { CatalogueFilterBar, useCatalogueFilterSlots } from './CatalogueFilterBar'
+import { SortControl } from './ListControls'
 import {
-  CatalogueFilterActions,
-  CatalogueFilters,
   filtersFromSpec,
+  normalizeFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
   useFilterSummary,
@@ -57,7 +54,7 @@ import {
 } from './CatalogueFilters'
 import { MetaList } from './ui/MetaList'
 import { FilterMatchCount } from './CatalogueRules'
-import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
+import { PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow, type OpenItem } from './ui/DiscoverRail'
@@ -74,6 +71,7 @@ import {
 } from './ui/viewPrefs'
 import { ErrorMessage } from './ErrorMessage'
 import { Callout } from './ui/Callout'
+import { pageScroller } from '../lib/pageScroll'
 
 /**
  * Smart matches on meaning and falls back to the title index; Title is the plain FTS5 title search.
@@ -84,10 +82,10 @@ export type SearchMode = 'smart' | 'title'
 
 const SEARCH_MODES: readonly SearchMode[] = ['smart', 'title']
 
-/** One page of browse results. Load more asks for this many again. */
+/** One page of browse results. Scrolling near the end asks for this many again. */
 const PAGE_SIZE = 60
 
-/** Ceiling on how far Load more will page, matching the server's own clamp. */
+/** Ceiling on how far scrolling will page, matching the server's own clamp. */
 const MAX_BROWSE = 600
 /** The most the search endpoint returns for one query. */
 const MAX_SEARCH = 200
@@ -96,7 +94,6 @@ const MAX_SEARCH = 200
 export interface CatalogueSeed {
   sort: BrowseSort
   filters: RecommendationFilters
-  openFilters?: boolean
 }
 
 /**
@@ -173,11 +170,11 @@ export function CatalogueBrowser({
 
   // `applied` trails the live controls by a beat (see useLiveApply), so a slider drag is one
   // query when it settles rather than one per step.
-  const [filtersOpen, setFiltersOpen] = usePageState(memory('filters-open'), false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(memory('applied'), {})
   const [sort, setSort] = usePageState<BrowseSort>(memory('sort'), 'popular')
   const [pages, setPages] = usePageState(memory('pages'), 1)
   const catalogue = useCatalogueFilters(undefined, memory('filters'))
+  const filterSlots = useCatalogueFilterSlots(catalogue.controls, { creators: true })
   useLiveApply(catalogue.build, setApplied)
 
   // Seeded from the saved default exactly once, and nothing queries until that has happened:
@@ -202,7 +199,7 @@ export function CatalogueBrowser({
     }
     if (!defaultsLoaded || !savedDefaults) return
 
-    const filters = filtersFromSpec(savedDefaults)
+    const filters = normalizeFilters(filtersFromSpec(savedDefaults))
     hydrateFilters(filters)
     setApplied(filters)
     setHydrated(true)
@@ -213,12 +210,11 @@ export function CatalogueBrowser({
     if (!seededBrowse) return
     setQuery('')
     hydrateFilters(seededBrowse.filters)
-    setApplied(seededBrowse.filters)
+    setApplied(normalizeFilters(seededBrowse.filters))
     setSort(seededBrowse.sort)
     setPages(1)
-    if (seededBrowse.openFilters) setFiltersOpen(true)
     setHydrated(true)
-  }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setFiltersOpen, setHydrated])
+  }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setHydrated])
 
   const appliedCount = Object.keys(applied).length
   const summarizeFilters = useFilterSummary()
@@ -300,16 +296,27 @@ export function CatalogueBrowser({
     })
   }
 
-  // `pages` has already advanced by the time the wider request is in flight, so the count check
-  // fails for as long as the previous page is what's on screen. Keep the button there while it
-  // fetches rather than letting it vanish and come back under the reader's cursor.
+  // `pages` advances before the wider request is in flight, so while the previous page is still on
+  // screen the shown count is short of `PAGE_SIZE * pages`: that gap is what "loading more" means.
   const feedLimit = searching ? MAX_SEARCH : MAX_BROWSE
   const fetching = searching ? search.isFetching : browse.isFetching
-  const canLoadMore =
-    (searching ? searchRequest != null : browseRequest != null) &&
-    items.length > 0 &&
-    items.length < feedLimit &&
-    (fetching || items.length >= PAGE_SIZE * pages)
+  const requested = searching ? searchRequest != null : browseRequest != null
+  const loadingMore = requested && fetching && items.length > 0 && items.length < PAGE_SIZE * pages
+  const hasMore =
+    requested && !error && items.length > 0 && items.length < feedLimit && items.length >= PAGE_SIZE * pages
+
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!sentinel || !hasMore || fetching) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPages((p) => p + 1)
+      },
+      { root: pageScroller(), rootMargin: '0px 0px 600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel, hasMore, fetching, setPages, items.length])
 
   return (
     <>
@@ -364,53 +371,29 @@ export function CatalogueBrowser({
                 ]}
               />
             </Tooltip.Group>
-            <Button
-              size="md"
-              variant={appliedCount > 0 ? 'light' : 'default'}
-              leftSection={<IconFilter size={16} />}
-              rightSection={
-                appliedCount > 0 ? (
-                  <Badge size="xs" circle variant="filled">
-                    {appliedCount}
-                  </Badge>
-                ) : undefined
-              }
-              aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((o) => !o)}
-            >
-              <Trans>Filters</Trans>
-            </Button>
           </Group>
 
-          <Collapse expanded={filtersOpen}>
-            <Panel p="md" mb="md">
-              <Stack gap="md">
-                <CatalogueFilters controls={catalogue.controls} />
-                <CatalogueFilterActions
-                  isCustomized={catalogue.isCustomized || appliedCount > 0}
-                  onReset={() => {
-                    catalogue.reset()
-                    setApplied({})
-                  }}
-                  saving={saveDefaults.isPending}
-                  onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
-                  extra={
-                    <>
-                      <PresetMenu
-                        current={catalogue.build}
-                        onLoad={(f) => {
-                          catalogue.hydrate(f)
-                          setApplied(f)
-                        }}
-                      />
-                      <HiddenContentButton />
-                      <FilterMatchCount filters={catalogue.build()} />
-                    </>
-                  }
-                />
-              </Stack>
-            </Panel>
-          </Collapse>
+          <CatalogueFilterBar
+            slots={filterSlots}
+            isCustomized={catalogue.isCustomized || appliedCount > 0}
+            onReset={() => {
+              catalogue.reset()
+              setApplied({})
+            }}
+            count={appliedCount > 0 ? <FilterMatchCount filters={catalogue.build()} /> : undefined}
+            saved={
+              <PresetMenu
+                compact
+                current={catalogue.build}
+                onLoad={(f) => {
+                  catalogue.hydrate(f)
+                  setApplied(f)
+                }}
+              />
+            }
+            onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+            savingDefault={saveDefaults.isPending}
+          />
         </>
       )}
 
@@ -429,7 +412,7 @@ export function CatalogueBrowser({
                   )}
                 </Text>
               )}
-              {filterSummary.length > 0 && (
+              {hideSearch && filterSummary.length > 0 && (
                 <Text c="var(--ink-3)" size="sm" className="catalogue-filter-summary">
                   <MetaList inline items={filterSummary} />
                 </Text>
@@ -449,17 +432,7 @@ export function CatalogueBrowser({
               )}
             </Group>
             <Group gap="xs">
-              {!searching && (
-                <Select
-                  size="sm"
-                  w={150}
-                  value={sort}
-                  onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-                  data={sortOptions}
-                  allowDeselect={false}
-                  aria-label={t`Sort`}
-                />
-              )}
+              {!searching && <SortControl value={sort} options={sortOptions} onChange={setSort} />}
               <ViewPrefsControls prefs={prefs} />
             </Group>
           </Group>
@@ -489,17 +462,8 @@ export function CatalogueBrowser({
 
           {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />}
 
-          {canLoadMore && (
-            <Group justify="center" mt="lg">
-              <Button
-                variant="default"
-                loading={fetching}
-                onClick={() => setPages((p) => p + 1)}
-              >
-                <Trans>Load more</Trans>
-              </Button>
-            </Group>
-          )}
+          {loadingMore && <NextPageSkeleton density={prefs.density} viewMode={prefs.viewMode} />}
+          {hasMore && !fetching && <div ref={setSentinel} className="recommended-stream-sentinel" aria-hidden />}
         </>
       )}
 
@@ -748,6 +712,44 @@ export function PosterSkeletons({
       aria-hidden
     >
       {Array.from({ length: visibleCount }, (_, i) => (
+        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
+      ))}
+    </SimpleGrid>
+  )
+}
+
+/** One row of placeholders under a stream while its next page loads. */
+export function NextPageSkeleton({
+  density,
+  viewMode,
+}: {
+  density: ViewPrefs['density']
+  viewMode: ViewMode
+}) {
+  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  if (viewMode === 'list') {
+    const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+    return (
+      <Stack gap="xs" className="recommended-next-skeleton" aria-hidden>
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className={`series-row ${density}`}>
+            <Skeleton
+              radius="var(--radius-thumb)"
+              style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
+            />
+            <div className="row-body">
+              <Skeleton h={14} w="42%" mb="sm" />
+              <Skeleton h={10} w="68%" mb="sm" />
+              <Skeleton h={10} w="24%" />
+            </div>
+          </div>
+        ))}
+      </Stack>
+    )
+  }
+  return (
+    <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md" className="recommended-next-skeleton" aria-hidden>
+      {Array.from({ length: columns }, (_, i) => (
         <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>

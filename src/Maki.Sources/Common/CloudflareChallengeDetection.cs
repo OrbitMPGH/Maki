@@ -1,6 +1,6 @@
 using Maki.Core.Http;
 using Maki.Core.Sources;
-using Microsoft.Playwright;
+using PuppeteerSharp;
 
 namespace Maki.Sources.Common;
 
@@ -12,15 +12,15 @@ public enum PageVerdict
     /// <summary>Not obviously Cloudflare's doing.</summary>
     Unknown,
 
-    /// <summary>The solvable JS interstitial ("Just a moment") — stale clearance, worth re-solving.</summary>
+    /// <summary>The solvable JS interstitial ("Just a moment"): stale clearance, worth re-solving.</summary>
     Challenge,
 
-    /// <summary>A firewall/bot-score block — re-solving alone won't clear it.</summary>
+    /// <summary>A firewall/bot-score block; re-solving alone won't clear it.</summary>
     Blocked,
 }
 
 /// <summary>
-/// Cloudflare challenge/block-page detection shared by every source that drives its own Playwright
+/// Cloudflare challenge/block-page detection shared by every source that drives its own headless
 /// browser through a FlareSolverr-solved session (<c>MangaFireBrowser</c>, <c>TopManhuaImageBrowser</c>).
 /// The JS challenge interstitial's markers are the same everywhere; the firewall block page's wording
 /// varies per site, so callers supply their own.
@@ -32,8 +32,8 @@ public static class CloudflareChallengeDetection
     {
         try
         {
-            var title = await page.TitleAsync();
-            var content = await page.ContentAsync();
+            var title = await page.GetTitleAsync();
+            var content = await page.GetContentAsync();
 
             if (blockedTitleContains.Any(s => title.Contains(s, StringComparison.OrdinalIgnoreCase))
                 || blockedContentContains.Any(s => content.Contains(s, StringComparison.OrdinalIgnoreCase)))
@@ -43,7 +43,7 @@ public static class CloudflareChallengeDetection
 
             return IsChallenge(title, content) ? PageVerdict.Challenge : PageVerdict.Unknown;
         }
-        catch (PlaywrightException)
+        catch (PuppeteerException)
         {
             return PageVerdict.Unknown;
         }

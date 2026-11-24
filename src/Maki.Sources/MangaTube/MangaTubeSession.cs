@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Maki.Core.Http.Proxy;
 
 namespace Maki.Sources.MangaTube;
 
@@ -36,12 +37,18 @@ internal readonly record struct MangaTubeChallenge(string Arg1, string Arg2, str
 /// request comes back challenged, rather than relying on the DI-owned HttpClient's own state:
 /// IHttpClientFactory rotates primary handlers every couple of minutes, which would silently drop
 /// a CookieContainer-held pass and force a re-solve on an unpredictable cadence.
+/// <para>
+/// Each <see cref="SendAsync"/> resolves the source's proxy route once and sends every request of
+/// that call (the challenge fetch, the solve and the retry) on it, and a pass is kept only for the
+/// route that earned it, since the site may bind it to the address it was solved from.
+/// </para>
 /// </summary>
-internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFactory, string httpClientName)
+internal sealed partial class MangaTubeSession(
+    IHttpClientFactory httpClientFactory, string httpClientName, string sourceName, ISourceProxyResolver? proxies = null)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
     // Written under _gate, but read by every request without taking it.
-    private volatile string? _cookie;
+    private volatile Pass? _pass;
 
     /// <summary>Epoch-ms expiry read off the current pass, for the live-harness report.</summary>
     public DateTimeOffset? PassExpiresAt { get; private set; }
@@ -54,15 +61,16 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
     public async Task<MangaTubeResponse> SendAsync(
         HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, CancellationToken ct)
     {
-        var sentCookie = _cookie;
-        var response = await SendOnceAsync(method, path, headers, sentCookie, ct);
+        var route = proxies is null ? ProxyRoute.Direct : await proxies.ResolveAsync(sourceName, ct);
+        var sentCookie = CookieFor(route);
+        var response = await SendOnceAsync(method, path, headers, sentCookie, route, ct);
         if (!IsChallenge(response))
         {
             return response;
         }
 
-        await SolveChallengeAsync(sentCookie, ct);
-        response = await SendOnceAsync(method, path, headers, _cookie, ct);
+        await SolveChallengeAsync(sentCookie, route, ct);
+        response = await SendOnceAsync(method, path, headers, CookieFor(route), route, ct);
         if (IsChallenge(response))
         {
             throw new InvalidOperationException($"Manga-Tube challenge solve failed twice in a row for {path}.");
@@ -71,10 +79,13 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
         return response;
     }
 
+    private string? CookieFor(ProxyRoute route) => _pass is { } pass && pass.Route.Equals(route) ? pass.Cookie : null;
+
     private async Task<MangaTubeResponse> SendOnceAsync(
-        HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, string? cookie, CancellationToken ct)
+        HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, string? cookie, ProxyRoute route, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path);
+        route.ApplyTo(request);
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
         if (cookie is not null)
         {
@@ -102,18 +113,19 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
 
     /// <param name="rejectedCookie">The cookie the challenged request carried, null if it had none.
     /// The server can revoke a pass before its stated expiry, so only a different cookie counts as fresh.</param>
-    private async Task SolveChallengeAsync(string? rejectedCookie, CancellationToken ct)
+    private async Task SolveChallengeAsync(string? rejectedCookie, ProxyRoute route, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
         {
-            // Another caller may have solved it while this one waited for the gate.
-            if (_cookie is not null && !string.Equals(_cookie, rejectedCookie, StringComparison.Ordinal))
+            // Another caller may have solved it on this route while this one waited for the gate.
+            var current = CookieFor(route);
+            if (current is not null && !string.Equals(current, rejectedCookie, StringComparison.Ordinal))
             {
                 return;
             }
 
-            var shell = await SendOnceAsync(HttpMethod.Get, "/", null, null, ct);
+            var shell = await SendOnceAsync(HttpMethod.Get, "/", null, null, route, ct);
             var challenge = ParseChallenge(shell.Body);
 
             // The page's own script waits ~1s before solving; matched here rather than fired
@@ -122,6 +134,7 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
             var solution = Solve(challenge);
 
             using var solveRequest = new HttpRequestMessage(HttpMethod.Post, "/");
+            route.ApplyTo(solveRequest);
             var content = new StringContent(string.Empty);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
             solveRequest.Content = content;
@@ -140,8 +153,9 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
                 throw new InvalidOperationException("Manga-Tube challenge solve did not return a __mtbpass cookie.");
             }
 
-            _cookie = mtbpass.Split(';')[0].Trim();
-            PassExpiresAt = ParseExpiry(_cookie);
+            var cookie = mtbpass.Split(';')[0].Trim();
+            _pass = new Pass(cookie, route);
+            PassExpiresAt = ParseExpiry(cookie);
             ChallengeSolved = true;
         }
         finally
@@ -149,6 +163,8 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
             _gate.Release();
         }
     }
+
+    private sealed record Pass(string Cookie, ProxyRoute Route);
 
     /// <summary><c>__mtbpass={expiryEpochMs}:{hash}</c>, and only the prefix is ours to read.</summary>
     private static DateTimeOffset? ParseExpiry(string cookie)

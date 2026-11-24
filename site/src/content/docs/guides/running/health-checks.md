@@ -36,6 +36,8 @@ File problems are separate. The **Files** tab lists each archive with its findin
 corrupt, no pages, damaged image, duplicate, not linked, size mismatch, ambiguous names, or
 unreadable.
 
+![The Files tab listing missing archives from Frieren and One Piece, each with a Review button, above search, root, finding and status filters](../../../../assets/ui/health/files-findings.webp)
+
 ## Scan the files
 
 **Scan files** offers two scans. If the Files tab has a root folder selected, the scan covers only
@@ -43,6 +45,8 @@ that folder, and the menu says so.
 
 - **Index** finds missing, new or broken files. It takes seconds.
 - **Verify** reads every byte to catch rotted files. Expect about half an hour per 100 GB.
+
+![The Scan files menu offering Index, which finds missing, new or broken files, and Verify, which reads every byte](../../../../assets/ui/health/scan-menu.webp)
 
 ## Act on a finding
 
@@ -56,6 +60,8 @@ System checks have these buttons:
 - **Show passing** lists the healthy checks.
 - A source outage row has **Refresh all**, which re-checks every series on that source. Use it once
   the site is back, so chapters released during the outage get queued.
+
+![A FlareSolverr: not configured warning under System checks, with Open and Acknowledge buttons and the Show passing switch](../../../../assets/ui/health/system-checks.webp)
 
 For files:
 
@@ -97,6 +103,8 @@ entry names the problem and shows the status it moved from. Background jobs appe
 their status changes, under readable names. History keeps 90 days of events, and always at least the
 newest 300.
 
+![The History tab grouping status changes by day, such as FlareSolverr moving to Warning and the MangaBaka database check back to Healthy, with file scans between them](../../../../assets/ui/pages/health-history.webp)
+
 ## Running now and scheduled jobs
 
 The **Overview** tab shows what Maki is busy with right now, next to its current processor and memory
@@ -114,8 +122,12 @@ posters and thumbnails, and how many posters are missing. **Rebuild missing imag
 posters that are missing or do not decode. Thumbnails regenerate on their own as the reader asks for
 them. **Backup and cache tools** opens the System tab in settings.
 
+![The Image cache and backups panel showing poster and thumbnail sizes, the missing poster count, and the Rebuild missing images and Backup and cache tools buttons](../../../../assets/ui/health/image-cache.webp)
+
 ## Tune the checks
 
 Click the gear next to **Check now**, or open **Settings → System → Library health**. You can change
 the low disk thresholds (percentage and GiB, for warning and error), backup freshness in days, the
 daily scan hour, the time zone, and how many pages are decoded at once.
+
+![The Library health settings card with the Analyze new files and run daily reconciliation switch, Daily scan hour, Timezone, Pages decoded at once, and low disk and backup freshness thresholds](../../../../assets/ui/settings/health.webp)

@@ -59,10 +59,11 @@ public sealed class CatalogueIndexCache(
 
     /// <summary>
     /// Where the built indexes are kept between unloads (<see cref="SnapshotFile"/>), beside the dump
-    /// they are built from and keyed by its write time and length, like the in-memory copy.
+    /// they are built from and keyed by its write time and length, like the in-memory copy. A shared
+    /// dump keeps it in this instance's own folder, since each build writes its own layout.
     /// </summary>
     internal string SnapshotPath =>
-        Path.Combine(Path.GetDirectoryName(dumpOptions.DatabasePath) ?? ".",
+        Path.Combine(dumpOptions.SnapshotDirectory ?? Path.GetDirectoryName(dumpOptions.DatabasePath) ?? ".",
             Path.GetFileNameWithoutExtension(dumpOptions.DatabasePath) + ".catalogue");
 
     private const ulong SnapshotMagic = 0x3154414345494B4D; // "MKIECAT1"

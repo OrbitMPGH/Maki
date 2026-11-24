@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { onPageScroll, pageScrollTop, pageViewportHeight } from '../../lib/pageScroll'
 
 /**
@@ -80,6 +80,10 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
   const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const [metrics, setMetrics] = useState<Metrics>(UNMEASURED)
   const [rows, setRows] = useState<[number, number]>([0, 0])
+  // The row holding keyboard focus stays mounted, or scrolling away would drop focus to the body.
+  const [focusedRow, setFocusedRow] = useState<number | null>(null)
+  const sliceStart = useRef(0)
+  const perRow = useRef(1)
 
   /**
    * Re-reads the layout facts. Deliberately does not look at the wrapper's own height: that
@@ -143,8 +147,20 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
+        if (!container.contains(document.activeElement)) setFocusedRow(null)
         recompute()
       })
+    }
+    const onFocusIn = (event: FocusEvent) => {
+      // Keyboard focus only: a clicked card would otherwise keep every row up to the viewport mounted.
+      if (!(event.target instanceof Element) || !focusVisible(event.target)) return
+      let item: Node | null = event.target
+      while (item && item.parentNode !== container) item = item.parentNode
+      const index = item ? Array.prototype.indexOf.call(container.children, item) : -1
+      if (index >= 0) setFocusedRow(Math.floor((sliceStart.current + index) / perRow.current))
+    }
+    const onFocusOut = (event: FocusEvent) => {
+      if (!(event.relatedTarget instanceof Node) || !container.contains(event.relatedTarget)) setFocusedRow(null)
     }
     const onResize = () => {
       measure()
@@ -158,33 +174,64 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
 
     const unlisten = onPageScroll(onScroll)
     window.addEventListener('resize', onResize)
+    container.addEventListener('focusin', onFocusIn)
+    container.addEventListener('focusout', onFocusOut)
     return () => {
       if (frame) cancelAnimationFrame(frame)
       observer.disconnect()
       unlisten()
       window.removeEventListener('resize', onResize)
+      container.removeEventListener('focusin', onFocusIn)
+      container.removeEventListener('focusout', onFocusOut)
     }
   }, [enabled, wrapper, container, measure, recompute])
 
   const refs = { outerRef: setWrapper, innerRef: setContainer }
+  const result = windowFor(count, enabled, metrics, rows, focusedRow)
 
+  useLayoutEffect(() => {
+    sliceStart.current = result.start
+    perRow.current = metrics.perRow
+  })
+
+  return { ...refs, ...result }
+}
+
+function focusVisible(element: Element): boolean {
+  try {
+    return element.matches(':focus-visible')
+  } catch {
+    return true
+  }
+}
+
+function windowFor(
+  count: number,
+  enabled: boolean,
+  metrics: Metrics,
+  rows: [number, number],
+  focusedRow: number | null,
+): Omit<WindowedRows, 'outerRef' | 'innerRef'> {
   if (!enabled) {
-    return { ...refs, start: 0, end: count, padTop: 0, padBottom: 0 }
+    return { start: 0, end: count, padTop: 0, padBottom: 0 }
   }
 
   const stride = metrics.rowHeight + metrics.gap
   if (stride <= 0) {
     // First pass: render enough to fill the viewport and to give `measure` something to read.
-    return { ...refs, start: 0, end: Math.min(count, INITIAL_ITEMS), padTop: 0, padBottom: 0 }
+    return { start: 0, end: Math.min(count, INITIAL_ITEMS), padTop: 0, padBottom: 0 }
   }
 
   const lastIndex = Math.max(0, Math.ceil(count / metrics.perRow) - 1)
   // Clamped here as well as in `recompute`: a filter that shrinks the list re-renders with the
   // previous range still in state, and an unclamped `start` past the end would render nothing.
-  const lastRow = Math.min(rows[1], lastIndex)
-  const firstRow = Math.min(rows[0], lastRow)
+  let lastRow = Math.min(rows[1], lastIndex)
+  let firstRow = Math.min(rows[0], lastRow)
+  if (focusedRow !== null && focusedRow <= lastIndex) {
+    firstRow = Math.min(firstRow, focusedRow)
+    lastRow = Math.max(lastRow, focusedRow)
+  }
   return {
-    ...refs,
     start: firstRow * metrics.perRow,
     end: Math.min(count, (lastRow + 1) * metrics.perRow),
     padTop: firstRow * stride,

@@ -7,7 +7,7 @@ import {
   IconLibrary,
   IconStar,
   IconUsers,
-  IconWand,
+  IconIntersect,
 } from '../../lib/icons'
 import { DISCOVER_SECTIONS, DISCOVER_SECTION_LABELS } from '../../api/hooks'
 import type { LayoutConfig, SectionRegistry } from '../layout/pageLayout'
@@ -25,7 +25,7 @@ export const DISCOVER_SECTION_DEFS: SectionRegistry = {
   hero: {
     icon: IconStar,
     label: DISCOVER_SECTION_LABELS.hero,
-    description: msg`A few large picks at the top, from your recent reading or what is trending.`,
+    description: msg`Three picks from different sections, each with its synopsis. Without reading history, the popular titles of a genre you pick.`,
   },
   recent: {
     icon: IconLibrary,
@@ -38,14 +38,14 @@ export const DISCOVER_SECTION_DEFS: SectionRegistry = {
     description: msg`The newest titles from the creators and studios you follow. Empty until you follow someone.`,
   },
   sideinterests: {
-    icon: IconWand,
+    icon: IconIntersect,
     label: DISCOVER_SECTION_LABELS.sideinterests,
-    description: msg`A row for each smaller theme on your shelf.`,
+    description: msg`A card for each smaller theme on your shelf.`,
   },
   cohort: {
     icon: IconUsers,
     label: DISCOVER_SECTION_LABELS.cohort,
-    description: msg`What readers who finished the same series as you went on to finish.`,
+    description: msg`What readers who finished the same series as you went on to finish, one column per group of readers.`,
   },
   trending: {
     icon: IconFlame,

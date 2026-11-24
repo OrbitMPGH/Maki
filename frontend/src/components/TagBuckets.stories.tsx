@@ -27,7 +27,8 @@ const sample: MangaBakaTag[] = [
 
 const crowded: MangaBakaTag[] = [
   tag('Core Theme', 'core'),
-  ...Array.from({ length: 30 }, (_, i) => tag(`Incidental Detail ${i + 1}`, 'incidental')),
+  tag('Character Who Bullies the One They Love Without Realising It', 'defining'),
+  ...Array.from({ length: 90 }, (_, i) => tag(`Incidental Detail ${i + 1}`, 'incidental')),
 ]
 
 const meta = {
@@ -82,14 +83,11 @@ export const SpoilerKeyboardReveal: Story = {
   },
 }
 
-export const ManyTagsCollapsed: Story = {
+export const ManyTagsAllShown: Story = {
   args: { tags: crowded },
-  play: async ({ canvas, userEvent }) => {
-    await expect(canvas.queryByText('Incidental Detail 30')).toBeNull()
-    await userEvent.click(await canvas.findByRole('button', { name: '+12 more' }))
-    await expect(await canvas.findByText('Incidental Detail 30')).toBeVisible()
-    await userEvent.click(await canvas.findByRole('button', { name: 'Show fewer' }))
-    await expect(canvas.queryByText('Incidental Detail 30')).toBeNull()
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Incidental Detail 90')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /more/ })).toBeNull()
   },
 }
 

@@ -1,11 +1,13 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using Maki.Core;
 using Maki.Core.Configuration;
+using Maki.Core.Http.Proxy;
 using Maki.Core.Http;
 using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
-using Microsoft.Playwright;
+using PuppeteerSharp;
 
 namespace Maki.Sources.MangaFire;
 
@@ -15,7 +17,7 @@ namespace Maki.Sources.MangaFire;
 /// The site's SPA signs every protected <c>/api</c> call with a <c>vrf</c> query token minted by an
 /// obfuscated, anti-tamper "protection" module (seeded by a per-build <c>window.__config</c>). The
 /// token binds the request's headers, the module actively resists observation/instrumentation, and
-/// it issues requests through a network primitive our page hooks can't reach — so the token can be
+/// it issues requests through a network primitive our page hooks can't reach, so the token can be
 /// neither reverse-implemented in C# nor forged from an injected <c>fetch</c>. The only durable way
 /// in is to let the site's own code sign and issue the request inside a real browser and read the
 /// response back off the network. That is what this class does, matching how upstream Tachiyomi
@@ -28,33 +30,37 @@ namespace Maki.Sources.MangaFire;
 public sealed class MangaFireBrowser(
     ChallengeAwareFetcher fetcher,
     IAppSettings settings,
-    SharedPlaywright shared,
+    HeadlessBrowserLauncher launcher,
     ILogger<MangaFireBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://mangafire.to";
     private const string Host = "mangafire.to";
+    private const string SourceName = "mangafire";
     private const int NavTimeoutMs = 45_000;
     private const int ResponseTimeoutMs = 30_000;
     private const int PageResponseTimeoutMs = 12_000;
     private const int TrackerRowTimeoutMs = 8_000;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private IPlaywright? _playwright;
     private IBrowser? _browser;
     private IBrowserContext? _context;
+    private BrowserProfile? _profile;
+
+    /// <summary>The route the current context was made with, and the clearance it holds was earned through.</summary>
+    private ProxyRoute _route = ProxyRoute.Direct;
     private readonly IdleStamp _idle = new();
 
     public string BrowserName => "MangaFire";
 
-    public bool IsRunning => _playwright is not null;
+    public bool IsRunning => _browser is not null;
 
     /// <summary>
-    /// Closes the browser and the driver process behind it once nothing has scraped for
+    /// Closes the browser once nothing has scraped for
     /// <paramref name="idleFor"/>. See <see cref="IIdleBrowser"/> for what that is worth.
     /// </summary>
     public async Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
     {
-        if (_playwright is null || _idle.Idle < idleFor)
+        if (_browser is null || _idle.Idle < idleFor)
         {
             return false;
         }
@@ -69,7 +75,7 @@ public sealed class MangaFireBrowser(
 
         try
         {
-            if (_playwright is null || _idle.Idle < idleFor)
+            if (_browser is null || _idle.Idle < idleFor)
             {
                 return false;
             }
@@ -87,30 +93,22 @@ public sealed class MangaFireBrowser(
         }
     }
 
-    /// <summary>
-    /// Tears the whole stack down, in order. Disposing the driver is the part that matters most:
-    /// it is what ends the Node process, which is the larger half of what a parked browser costs.
-    /// </summary>
+    /// <summary>Closes the context, then the browser process tree.</summary>
     private async Task ShutdownAsync()
     {
         var context = _context;
         var browser = _browser;
-        var playwright = _playwright;
         _context = null;
         _browser = null;
-        _playwright = null;
+        _profile = null;
 
         try
         {
             await BrowserSupport.CloseQuietlyAsync(context);
-            await BrowserSupport.CloseQuietlyAsync(browser);
         }
         finally
         {
-            if (playwright is not null)
-            {
-                await shared.ReleaseAsync(playwright);
-            }
+            await launcher.CloseAsync(browser);
         }
     }
 
@@ -149,16 +147,7 @@ public sealed class MangaFireBrowser(
             ct);
 
     /// <summary>
-    /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
-    /// the chapter pager. The title page loads whichever language the site defaults to for that
-    /// series (not always English — a Japanese-only title defaults to <c>ja</c>), so when the request
-    /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
-    /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
-    /// code for the caller to filter on). A title with no chapters in the requested language simply
-    /// yields nothing.
-    /// </summary>
-    /// <summary>
-    /// Pass as <c>language</c> to drive the dropdown to "All" — the mixed view where every item
+    /// Pass as <c>language</c> to drive the dropdown to "All", the mixed view where every item
     /// carries its own <c>language</c> field. It is not a MangaFire language code, which is why it
     /// is absent from <see cref="LanguageLabels"/>: the lookup missing is exactly what routes it to
     /// the "All" item that <see cref="SwitchLanguageAsync"/> already falls back to.
@@ -166,11 +155,20 @@ public sealed class MangaFireBrowser(
     public const string AllLanguages = "all";
 
     /// <summary>
-    /// Chapter list items, plus whether the returned list is confirmed to be in <paramref
+    /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
+    /// the chapter pager. The title page loads whichever language the site defaults to for that
+    /// series (not always English: a Japanese-only title defaults to <c>ja</c>), so when the request
+    /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
+    /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
+    /// code for the caller to filter on). A title with no chapters in the requested language simply
+    /// yields nothing.
+    /// <para>
+    /// Returns the chapter list items, plus whether the returned list is confirmed to be in <paramref
     /// name="language"/>: either it was already loaded in that language, or a switch to it
     /// succeeded. When false (a switch was attempted and failed), the caller is looking at
     /// whatever language was loaded before the attempt, not the one it asked for, so an unlabelled
     /// item here must not be assumed to match the request.
+    /// </para>
     /// <para>
     /// <paramref name="stopAt"/> is shown each page's items as it arrives (newest first) and ends the
     /// walk when it returns true. <c>Complete</c> is false only when that left pages unread.
@@ -196,12 +194,12 @@ public sealed class MangaFireBrowser(
                         return;
                     }
 
-                    if (response.Status == 403)
+                    if (response.Status == HttpStatusCode.Forbidden)
                     {
                         throw new ChallengeException();
                     }
 
-                    using var doc = JsonDocument.Parse(await response.TextAsync());
+                    using var doc = JsonDocument.Parse(await BrowserSupport.ReadTextAsync(response, ct));
                     var root = doc.RootElement;
                     if (root.TryGetProperty("items", out var arr))
                     {
@@ -222,21 +220,14 @@ public sealed class MangaFireBrowser(
                     }
                 }
 
-                var firstWait = page.WaitForResponseAsync(r => IsChaptersUrl(r.Url), new() { Timeout = ResponseTimeoutMs });
-                var firstResponse = await NavigateAndCaptureAsync(page, firstWait, $"{BaseUrl}/title/{seriesId}");
+                var firstWait = page.WaitForResponseAsync(r => IsChaptersUrl(r.Url), Wait(ResponseTimeoutMs, ct));
+                var firstResponse = await NavigateAndCaptureAsync(page, firstWait, $"{BaseUrl}/title/{seriesId}", ct);
                 await CollectAsync(firstResponse);
 
                 // let the chapter list + toolbar paint and bring them on-screen before driving them
-                try
-                {
-                    await page.Locator(".title-detail__chapters").ScrollIntoViewIfNeededAsync(new() { Timeout = 8000 });
-                }
-                catch (PlaywrightException)
-                {
-                    // list may already be in view
-                }
+                await ScrollIntoViewAsync(page, ".title-detail__chapters", 8000, ct);
 
-                await page.WaitForTimeoutAsync(500);
+                await Task.Delay(500, ct);
 
                 var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? string.Empty;
                 // An empty language on the loaded list already *is* the "All" view, so asking to
@@ -246,7 +237,7 @@ public sealed class MangaFireBrowser(
                 var languageMatched = alreadyLoaded;
                 if (!string.IsNullOrWhiteSpace(language) && !alreadyLoaded)
                 {
-                    var switched = await SwitchLanguageAsync(page, language, loadedLanguage);
+                    var switched = await SwitchLanguageAsync(page, language, loadedLanguage, ct);
                     if (switched == null)
                     {
                         logger.LogInformation(
@@ -255,7 +246,7 @@ public sealed class MangaFireBrowser(
                     }
                     else
                     {
-                        // the list was replaced wholesale — the previous language's items don't belong
+                        // the list was replaced wholesale; the previous language's items don't belong
                         items.Clear();
                         lastPage = null;
                         await CollectAsync(switched);
@@ -276,9 +267,9 @@ public sealed class MangaFireBrowser(
                     ct.ThrowIfCancellationRequested();
                     var wait = page.WaitForResponseAsync(
                         r => IsChaptersUrl(r.Url) && r.Url.Contains($"page={pageNo}", StringComparison.Ordinal),
-                        new() { Timeout = PageResponseTimeoutMs });
+                        Wait(PageResponseTimeoutMs, ct));
 
-                    var advanced = await ClickNextPageAsync(page, pageNo);
+                    var advanced = await ClickNextPageAsync(page, pageNo, ct);
                     if (!advanced)
                     {
                         logger.LogWarning("MangaFire pager stalled at page {Page}/{Last} for {Series}", pageNo, expected, seriesId);
@@ -323,30 +314,29 @@ public sealed class MangaFireBrowser(
         {
             return await WithPageAsync(async page =>
             {
-                var response = await page.GotoAsync(
-                    $"{BaseUrl}/title/{seriesId}",
-                    new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+                var response = await page.GoToAsync($"{BaseUrl}/title/{seriesId}", Navigation(ct));
 
-                if (response?.Status == 403 || await ClassifyAsync(page) is not PageVerdict.Unknown)
+                if (response?.Status == HttpStatusCode.Forbidden || await ClassifyAsync(page) is not PageVerdict.Unknown)
                 {
                     throw new ChallengeException();
                 }
 
                 // The row is painted once the SPA's detail call resolves. A title that genuinely links
-                // nowhere never paints one, so a timeout here is an ordinary outcome, not a failure —
+                // nowhere never paints one, so a timeout here is an ordinary outcome, not a failure:
                 // fall through and return whatever links the page does have.
                 try
                 {
-                    await page.Locator(".title-detail__trackers a[href]").First
-                        .WaitForAsync(new() { Timeout = TrackerRowTimeoutMs });
+                    await page.WaitForSelectorAsync(
+                        ".title-detail__trackers a[href]",
+                        new WaitForSelectorOptions { Visible = true, Timeout = TrackerRowTimeoutMs });
                 }
-                catch (PlaywrightException)
+                catch (Exception ex) when ((ex is PuppeteerException or TimeoutException) && !ct.IsCancellationRequested)
                 {
                     // no tracker row on this title
                 }
 
-                return (IReadOnlyList<string>)await page.EvalOnSelectorAllAsync<string[]>(
-                    "a[href]", "els => els.map(e => e.href)");
+                return (IReadOnlyList<string>)await page.EvaluateExpressionAsync<string[]>(
+                    "[...document.querySelectorAll('a[href]')].map(e => e.href)");
             }, ct);
         }
         finally
@@ -363,9 +353,9 @@ public sealed class MangaFireBrowser(
         {
             return await WithPageAsync(async page =>
             {
-                var wait = page.WaitForResponseAsync(r => matches(r.Url), new() { Timeout = ResponseTimeoutMs });
-                var response = await NavigateAndCaptureAsync(page, wait, navUrl);
-                return await response.TextAsync();
+                var wait = page.WaitForResponseAsync(r => matches(r.Url), Wait(ResponseTimeoutMs, ct));
+                var response = await NavigateAndCaptureAsync(page, wait, navUrl, ct);
+                return await BrowserSupport.ReadTextAsync(response, ct);
             }, ct);
         }
         finally
@@ -380,38 +370,51 @@ public sealed class MangaFireBrowser(
         _idle.Touch();
         for (var attempt = 0; ; attempt++)
         {
-            var context = await EnsureContextAsync(ct);
-            IPage page;
+            var (context, profile) = await EnsureContextAsync(ct);
+            IPage? opened = null;
             try
             {
-                page = await context.NewPageAsync();
+                opened = await context.NewPageAsync();
+                await BrowserSupport.PreparePageAsync(opened, profile);
             }
-            catch (PlaywrightException) when (attempt == 0)
+            catch (Exception ex)
             {
+                await BrowserSupport.CloseQuietlyAsync(opened);
+                if (attempt > 0 || ex is not PuppeteerException)
+                {
+                    throw;
+                }
+
                 logger.LogWarning("MangaFire browser could not open a page; relaunching it");
                 await ShutdownAsync();
                 continue;
             }
 
+            var page = opened;
+
             try
             {
-                return await CancellableBrowserCall.RunAsync(() => page.CloseAsync(), () => action(page), ct);
+                return await CancellableBrowserCall.RunAsync(() => BrowserSupport.CloseQuietlyAsync(page), () => action(page), ct);
+            }
+            catch (NavigationException ex) when (BrowserSupport.ProxyFailure(ex, _route, SourceName) is { } proxyFailure)
+            {
+                throw proxyFailure;
             }
             catch (ChallengeException) when (attempt == 0)
             {
                 logger.LogInformation("MangaFire browser hit a challenge; re-solving clearance and retrying");
-                fetcher.InvalidateSession(Host);
+                fetcher.InvalidateSession(Host, _route);
                 await ResetContextAsync();
             }
             finally
             {
-                await page.CloseAsync();
+                await BrowserSupport.CloseQuietlyAsync(page);
                 _idle.Touch();
             }
         }
     }
 
-    private async Task<IBrowserContext> EnsureContextAsync(CancellationToken ct)
+    private async Task<(IBrowserContext Context, BrowserProfile Profile)> EnsureContextAsync(CancellationToken ct)
     {
         if (_browser is { IsConnected: false })
         {
@@ -419,111 +422,80 @@ public sealed class MangaFireBrowser(
             await ShutdownAsync();
         }
 
-        if (_context != null)
+        // Resolved once per context: the context's proxy, its clearance and every request it makes
+        // share one egress for as long as the context lives.
+        var route = await fetcher.RouteForAsync(SourceName, ct);
+        if (_context != null && _profile != null)
         {
-            return _context;
+            if (route.Equals(_route))
+            {
+                return (_context, _profile);
+            }
+
+            logger.LogInformation("MangaFire's proxy setting changed; starting a new browser context");
+            await ResetContextAsync();
         }
 
-        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", ct);
+        var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", route, ct);
 
-        _playwright ??= await shared.AcquireAsync(ct);
         if (_browser == null)
         {
-            // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
-            // keeps the Docker image far smaller. The Dockerfile installs only this browser.
-            var args = new List<string>(BrowserSupport.LaunchArgs);
+            // The ~100 MB headless shell, not full Chromium: we never render headed, and it keeps the
+            // Docker image far smaller.
+            var args = new List<string>();
             var resolverRules = await settings.GetAsync(SettingKeys.MangaFireBrowserHostResolverRules, ct);
             if (!string.IsNullOrWhiteSpace(resolverRules))
             {
                 args.Add($"--host-resolver-rules={resolverRules}");
             }
 
-            var launch = new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-                Channel = "chromium-headless-shell",
-                Args = args,
-            };
-
-            try
-            {
-                _browser = await _playwright.Chromium.LaunchAsync(launch);
-            }
-            catch (PlaywrightException)
-            {
-                // The driver is shared with the other browser, so one that cannot launch may itself
-                // be gone. Drop it so the retry starts a fresh one.
-                var driver = _playwright;
-                _playwright = null;
-                await shared.DiscardAsync(driver);
-                throw;
-            }
+            _browser = await launcher.LaunchAsync(args, ct);
         }
 
-        var context = await _browser.NewContextAsync(new()
-        {
-            UserAgent = session.UserAgent,
-            ViewportSize = new() { Width = 1280, Height = 900 },
+        var context = await _browser.CreateBrowserContextAsync(BrowserSupport.ContextOptions(route));
+        _route = route;
+        await context.SetCookieAsync(BrowserSupport.SessionCookies(session.Cookies, Host));
+
+        _profile = new BrowserProfile(
+            session.UserAgent,
+            1280,
+            900,
             // The headless shell advertises itself in the client hints ("HeadlessChrome") even though
-            // the UA header is overridden above — the mismatch between the two is a decisive bot signal,
-            // and Cloudflare answers it with an outright "Access denied" block (not a solvable challenge)
+            // the UA header is overridden, and the mismatch between the two is a decisive bot signal:
+            // Cloudflare answers it with an outright "Access denied" block (not a solvable challenge)
             // wherever the egress IP's reputation is anything short of pristine. Restate the hints so
             // they agree with the UA FlareSolverr earned the clearance cookie with.
-            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent),
-        });
-
-        await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
-
-        // The site remembers the last chapter-list language/filter in web storage, and the context is
-        // shared across every series we scrape — so a title would otherwise load carrying the previous
-        // title's selection, which desynchronises the pager mid-walk. Start every navigation clean.
-        await context.AddInitScriptAsync("try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }");
-
-        // only the JSON responses matter — skip images/media/fonts and the analytics and share scripts
-        // to cut nav time, bandwidth and renderer work.
-        await context.RouteAsync("**/*", async route =>
-        {
-            try
-            {
-                var type = route.Request.ResourceType;
-                if (type is "image" or "media" or "font" || BrowserSupport.IsUnneeded(route.Request.Url))
-                {
-                    await route.AbortAsync();
-                }
-                else
-                {
-                    await route.ContinueAsync();
-                }
-            }
-            catch (PlaywrightException)
-            {
-                // the page closed under the request; nothing left to route
-            }
-        });
-
-        await context.AddCookiesAsync(session.Cookies.Select(c => new Cookie
-        {
-            Name = c.Key,
-            Value = c.Value,
-            Domain = $".{Host}",
-            Path = "/",
-        }).ToArray());
+            BrowserSupport.ClientHintsFor(session.UserAgent),
+            [
+                BrowserSupport.HideWebDriver,
+                // The site remembers the last chapter-list language/filter in web storage, and the
+                // context is shared across every series we scrape, so a title would otherwise load
+                // carrying the previous title's selection, which desynchronises the pager mid-walk.
+                // Start every navigation clean.
+                "try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }",
+            ],
+            // only the JSON responses matter: skip images/media/fonts and the analytics and share
+            // scripts to cut nav time, bandwidth and renderer work.
+            request => BrowserSupport.IsImage(request) ||
+                       request.ResourceType is ResourceType.Media or ResourceType.Font ||
+                       BrowserSupport.IsUnneeded(request.Url));
 
         _context = context;
-        return _context;
+        return (_context, _profile);
     }
 
     private async Task ResetContextAsync()
     {
         var context = _context;
         _context = null;
+        _profile = null;
         await BrowserSupport.CloseQuietlyAsync(context);
     }
 
     /// <summary>
     /// MangaFire language codes to the label its "Lang" dropdown shows (minus the flag emoji).
     /// Only the codes seen in the wild are certain (en, es-la, pt-br); the rest follow the same
-    /// English-name convention and cost nothing when wrong — an unmatched code falls back to "All".
+    /// English-name convention and cost nothing when wrong: an unmatched code falls back to "All".
     /// </summary>
     private static readonly Dictionary<string, string> LanguageLabels = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -552,29 +524,26 @@ public sealed class MangaFireBrowser(
     /// doesn't offer that language (the menu only lists languages the title actually has). Returns the
     /// first chapters response of the new selection, or null if nothing could be selected.
     /// </summary>
-    private static async Task<IResponse?> SwitchLanguageAsync(IPage page, string wanted, string loaded)
+    private static async Task<IResponse?> SwitchLanguageAsync(IPage page, string wanted, string loaded, CancellationToken ct)
     {
-        var menu = page.Locator("button.select", new() { HasText = "Lang" }).First;
         try
         {
-            if (await menu.CountAsync() == 0)
+            if (!await page.EvaluateFunctionAsync<bool>(OpenLanguageMenuScript))
             {
                 return null;
             }
-
-            await menu.DispatchEventAsync("click");
         }
-        catch (PlaywrightException)
+        catch (PuppeteerException)
         {
             return null;
         }
 
-        await page.WaitForTimeoutAsync(300);
+        await Task.Delay(300, ct);
 
         var wait = page.WaitForResponseAsync(
             r => IsChaptersUrl(r.Url) &&
                  !string.Equals(QueryParam(r.Url, "language") ?? string.Empty, loaded, StringComparison.OrdinalIgnoreCase),
-            new() { Timeout = PageResponseTimeoutMs });
+            Wait(PageResponseTimeoutMs, ct));
 
         var label = LanguageLabels.GetValueOrDefault(wanted);
         if ((label == null || !await ClickMenuItemAsync(page, label)) && !await ClickMenuItemAsync(page, "All"))
@@ -594,17 +563,94 @@ public sealed class MangaFireBrowser(
 
     /// <summary>Clicks the open dropdown's item whose label (flag emoji stripped) equals <paramref name="label"/>.</summary>
     private static async Task<bool> ClickMenuItemAsync(IPage page, string label) =>
-        await page.EvaluateAsync<bool>(
-            """
-            (label) => {
-              const norm = s => (s || '').replace(/[^A-Za-z()\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-              const items = [...document.querySelectorAll('.dropdown__menu button, .dropdown__menu [role=menuitem]')];
-              const target = items.find(e => norm(e.textContent) === norm(label));
-              if (!target) return false;
-              target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-              return true;
+        await page.EvaluateFunctionAsync<bool>(ClickMenuItemScript, label);
+
+    internal const string ClickMenuItemScript =
+        """
+        (label) => {
+          const norm = s => (s || '').replace(/[^A-Za-z()\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+          const items = [...document.querySelectorAll('.dropdown__menu button, .dropdown__menu [role=menuitem]')];
+          const target = items.find(e => norm(e.textContent) === norm(label));
+          if (!target) return false;
+          target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          return true;
+        }
+        """;
+
+    /// <summary>Opens the "Lang" dropdown: the first <c>button.select</c> whose text contains "lang",
+    /// as <c>Locator(HasText)</c> matched it.</summary>
+    internal const string OpenLanguageMenuScript =
+        """
+        () => {
+          const menu = [...document.querySelectorAll('button.select')]
+            .find(b => (b.textContent || '').toLowerCase().includes('lang'));
+          if (!menu) return false;
+          menu.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+          return true;
+        }
+        """;
+
+    /// <summary>
+    /// Clicks the first usable pager button, the way the Playwright locators this replaced did. In
+    /// order: the "Next page" arrow by class, then any button whose accessible name contains "next
+    /// page" (case-insensitive), then the numbered pager button reading exactly <c>pageNo</c>.
+    /// <para>
+    /// The two CSS candidates take their first match and give up on it when it is hidden or disabled,
+    /// as <c>Locator.First</c> did. The role candidate skips matches hidden from the accessibility tree
+    /// first, as <c>GetByRole</c> did, and names each button the way the accessible name is computed:
+    /// <c>aria-labelledby</c>, then <c>aria-label</c>, then the text, then <c>title</c>. Disabled means
+    /// what Playwright's <c>IsEnabled</c> meant: the control itself, a disabled fieldset outside its
+    /// legend, or <c>aria-disabled</c> on it or any ancestor.
+    /// </para>
+    /// </summary>
+    internal const string ClickPagerScript =
+        """
+        (pageNo) => {
+          const text = el => (el.innerText ?? el.textContent ?? '').replace(/\s+/g, ' ').trim();
+          const visible = el => {
+            const box = el.getBoundingClientRect();
+            return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility === 'visible';
+          };
+          const disabled = el => {
+            if (el.disabled) return true;
+            const fieldset = el.closest('fieldset[disabled]');
+            if (fieldset) {
+              const legend = [...fieldset.children].find(c => c.tagName === 'LEGEND');
+              if (!legend || !legend.contains(el)) return true;
             }
-            """, label);
+            for (let e = el; e; e = e.parentElement) {
+              if (e.getAttribute('aria-disabled') === 'true') return true;
+            }
+            return false;
+          };
+          const usable = el => !!el && el.isConnected && visible(el) && !disabled(el);
+          const hiddenFromAria = el =>
+            !el.checkVisibility({ visibilityProperty: true }) || !!el.closest('[aria-hidden="true"], [inert]');
+          const accessibleName = el => {
+            const ids = (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean);
+            const labelled = ids.map(id => document.getElementById(id)).filter(Boolean).map(text).join(' ').trim();
+            if (labelled) return labelled;
+            const label = (el.getAttribute('aria-label') || '').trim();
+            if (label) return label;
+            const content = text(el);
+            if (content) return content;
+            return (el.getAttribute('title') || '').trim();
+          };
+          const roleButtons = [...document.querySelectorAll(
+            'button:not([role]), [role=button], input[type=button]:not([role]), input[type=submit]:not([role]), input[type=reset]:not([role])')];
+          const candidates = [
+            document.querySelector("[class*=pager] button[aria-label='Next page']"),
+            roleButtons.find(b => !hiddenFromAria(b) && accessibleName(b).replace(/\s+/g, ' ').toLowerCase().includes('next page')),
+            [...document.querySelectorAll('[class*=pager] button')].find(b => text(b) === String(pageNo)),
+          ];
+          for (const target of candidates) {
+            if (!usable(target)) continue;
+            target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+            return true;
+          }
+          return false;
+        }
+        """;
 
     /// <summary>
     /// Advances the chapter pager to <paramref name="pageNo"/>. Uses the "Next page" arrow while it's
@@ -612,55 +658,63 @@ public sealed class MangaFireBrowser(
     /// Fires the click as a dispatched event because the pager re-renders (shifting its number window)
     /// and a normal actionable click races the detach.
     /// </summary>
-    private static async Task<bool> ClickNextPageAsync(IPage page, int pageNo)
+    private static async Task<bool> ClickNextPageAsync(IPage page, int pageNo, CancellationToken ct)
     {
-        ILocator[] candidates =
-        [
-            page.Locator("[class*=pager] button[aria-label='Next page']"),
-            page.GetByRole(AriaRole.Button, new() { Name = "Next page" }),
-            page.Locator($"[class*=pager] button:text-is('{pageNo}')"),
-        ];
-
         // The pager is briefly absent mid-re-render, so a single sweep of the candidates can find
-        // nothing clickable on a page that is perfectly reachable a moment later — sweep again.
+        // nothing clickable on a page that is perfectly reachable a moment later; sweep again.
         for (var attempt = 0; attempt < 3; attempt++)
         {
             if (attempt > 0)
             {
-                await page.WaitForTimeoutAsync(400);
+                await Task.Delay(400, ct);
             }
+
+            // pager may be mid-render (element unstable/absent); the candidate sweep below reports the real outcome
+            await ScrollIntoViewAsync(page, "[class*=pager]", 3000, ct);
 
             try
             {
-                await page.Locator("[class*=pager]").First.ScrollIntoViewIfNeededAsync(new() { Timeout = 3000 });
-            }
-            catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
-            {
-                // pager may be mid-render (element unstable/absent); the candidate sweep below reports the real outcome
-            }
-
-            foreach (var candidate in candidates)
-            {
-                try
+                if (await page.EvaluateFunctionAsync<bool>(ClickPagerScript, pageNo))
                 {
-                    var element = candidate.First;
-                    if (await element.CountAsync() == 0 || !await element.IsVisibleAsync() || !await element.IsEnabledAsync())
-                    {
-                        continue;
-                    }
-
-                    await element.DispatchEventAsync("click");
                     return true;
                 }
-                catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
-                {
-                    // try the next candidate
-                }
+            }
+            catch (PuppeteerException)
+            {
+                // the page re-rendered under the script; sweep again
             }
         }
 
         return false;
     }
+
+    /// <summary>Waits for <paramref name="selector"/> to be visible and scrolls it into view; quietly
+    /// does nothing when it never shows up.</summary>
+    private static async Task ScrollIntoViewAsync(IPage page, string selector, int timeoutMs, CancellationToken ct)
+    {
+        try
+        {
+            await using var element = await page.WaitForSelectorAsync(
+                selector, new WaitForSelectorOptions { Visible = true, Timeout = timeoutMs });
+            if (element is not null)
+            {
+                await element.EvaluateFunctionAsync("e => e.scrollIntoView({ block: 'center', inline: 'center' })");
+            }
+        }
+        catch (Exception ex) when ((ex is PuppeteerException or TimeoutException) && !ct.IsCancellationRequested)
+        {
+        }
+    }
+
+    private static WaitForOptions Wait(int timeoutMs, CancellationToken ct) =>
+        new() { Timeout = timeoutMs, CancellationToken = ct };
+
+    private static NavigationOptions Navigation(CancellationToken ct) => new()
+    {
+        WaitUntil = [WaitUntilNavigation.DOMContentLoaded],
+        Timeout = NavTimeoutMs,
+        CancellationToken = ct,
+    };
 
     private static bool IsChaptersUrl(string url) =>
         url.Contains("/api/titles/", StringComparison.Ordinal) &&
@@ -699,15 +753,16 @@ public sealed class MangaFireBrowser(
 
     /// <summary>Navigate, then await the pre-armed response wait, turning an opaque timeout into a
     /// diagnosable cause (Cloudflare challenge vs. a page that simply never issued the request).</summary>
-    private async Task<IResponse> NavigateAndCaptureAsync(IPage page, Task<IResponse> waitTask, string navUrl)
+    private async Task<IResponse> NavigateAndCaptureAsync(IPage page, Task<IResponse> waitTask, string navUrl, CancellationToken ct)
     {
         // What the page *did* ask for is the only thing that separates the remaining failure modes:
         // the site renaming the endpoint (some other /api response arrives) from it never issuing the
         // call at all (results rendered server-side, or a boot the SPA never finished). Without the
         // list the timeout says the same thing for both and there is nothing to act on.
         var seen = new List<string>();
-        void Record(object? _, IResponse r)
+        void Record(object? _, ResponseCreatedEventArgs e)
         {
+            var r = e.Response;
             if (!r.Url.Contains("/api/", StringComparison.Ordinal))
             {
                 return;
@@ -725,7 +780,7 @@ public sealed class MangaFireBrowser(
         page.Response += Record;
         try
         {
-            return await NavigateAndCaptureCoreAsync(page, waitTask, navUrl, seen);
+            return await NavigateAndCaptureCoreAsync(page, waitTask, navUrl, seen, ct);
         }
         finally
         {
@@ -734,10 +789,10 @@ public sealed class MangaFireBrowser(
     }
 
     private async Task<IResponse> NavigateAndCaptureCoreAsync(
-        IPage page, Task<IResponse> waitTask, string navUrl, List<string> seen)
+        IPage page, Task<IResponse> waitTask, string navUrl, List<string> seen, CancellationToken ct)
     {
         var started = Stopwatch.GetTimestamp();
-        await page.GotoAsync(navUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+        await page.GoToAsync(navUrl, Navigation(ct));
         var navMs = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
         IResponse response;
@@ -751,12 +806,13 @@ public sealed class MangaFireBrowser(
             {
                 case PageVerdict.Challenge:
                     throw new ChallengeException(
-                        "MangaFire: the headless browser did not clear Cloudflare — the FlareSolverr clearance " +
+                        "MangaFire: the headless browser did not clear Cloudflare: the FlareSolverr clearance " +
                         "cookie was rejected. This usually means Maki's network egress IP differs from " +
-                        "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
+                        "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy. A proxy " +
+                        "whose outgoing IP rotates between requests breaks it the same way.");
                 case PageVerdict.Blocked:
                     throw new ChallengeException(
-                        "MangaFire: Cloudflare served an 'Access denied' block page — this is a firewall/bot-score " +
+                        "MangaFire: Cloudflare served an 'Access denied' block page. This is a firewall/bot-score " +
                         "rejection, not a solvable challenge, so re-solving won't help on its own. It's driven by the " +
                         "egress IP's reputation (VPN/VPS ranges score badly) plus the headless browser's fingerprint; " +
                         "route Maki's traffic through a residential-grade egress if it persists.");
@@ -774,7 +830,7 @@ public sealed class MangaFireBrowser(
                 $"(page title '{title}', url {page.Url}, navigation {navMs} ms, /api responses seen: {apiSeen}).");
         }
 
-        if (response.Status == 403)
+        if (response.Status == HttpStatusCode.Forbidden)
         {
             throw new ChallengeException();
         }
@@ -793,9 +849,9 @@ public sealed class MangaFireBrowser(
     {
         try
         {
-            return await page.TitleAsync();
+            return await page.GetTitleAsync();
         }
-        catch (PlaywrightException)
+        catch (PuppeteerException)
         {
             return "(unavailable)";
         }

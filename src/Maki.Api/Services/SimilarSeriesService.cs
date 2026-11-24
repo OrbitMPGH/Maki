@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 
 namespace Maki.Api.Services;
 
@@ -24,16 +25,17 @@ namespace Maki.Api.Services;
 /// </para>
 ///
 /// <para>
-/// <b>The two pair graphs are off; the taste vectors are on.</b> Co-recommendation and co-read answer
-/// "who else read this", which is the question Discover's rails and the reader-cohort rail exist
-/// for, and they are off here whatever the instance settings say. The behavioural taste vectors
-/// were off as well until the rail was graded on its own. On a judged panel of 300 seeds the
-/// content-only list was the less story-alike one: 1.45 against 1.57 with the vectors on, for
-/// "similar story, tone and feel" on a 0 to 3 scale, and 8% of its picks were unrelated against
-/// 3% (<c>distribution/CLAUDE.md</c>, "v7").
-/// A series' description and tags say less about how it reads than what its readers went on to
-/// read, so the vectors stay on and follow the instance's <c>recommendations.tastevectors</c>
-/// switch.
+/// <b>Co-read and the EASE table are off; the taste vectors and the recommendation votes are
+/// on.</b> Co-read and EASE answer "who else read this", which is the question Discover's rails
+/// and the reader-cohort rail exist for, and they are off here whatever the instance settings
+/// say. The other two were off as well until the rail was graded on its own, on a judged panel of
+/// 300 seeds, for "similar story, tone and feel" on a 0 to 3 scale
+/// (<c>distribution/AGENTS.md</c>, "v7"): content only 1.45 with 8% of picks unrelated, with the
+/// taste vectors 1.57 and 3%, with the votes as well 1.65. A vote is a reader saying "if you
+/// liked this, try that", a statement about two works, which is what this rail's heading claims.
+/// Each follows its instance switch (<c>recommendations.tastevectors</c>,
+/// <c>recommendations.cograph</c>), and the votes run at
+/// <see cref="Maki.Metadata.RecoGraph.RecoGraphTuning.SingleSeedWeight"/>.
 /// </para>
 /// </summary>
 public class SimilarSeriesService(
@@ -51,7 +53,7 @@ public class SimilarSeriesService(
     /// </summary>
     private const int PoolSize = 60;
 
-    /// <summary>One entry per (series, content-rating ceiling) actually being looked at.</summary>
+    /// <summary>One entry per (series, content-rating ceiling, channel switches) actually being looked at.</summary>
     private const int MaxEntries = 256;
 
     /// <summary>
@@ -76,7 +78,7 @@ public class SimilarSeriesService(
     /// the candidate norm to 0.75 fixed that at the source, and re-swept over 800 single-seed
     /// requests the override stopped paying for itself: +0.0026 against simply using the default,
     /// 95% [-0.0007, +0.0061]. So it went away again, and the rail asks for the same weights
-    /// Discover does.
+    /// Discover does, with the vote graph's coefficient as the one measured exception.
     /// </para>
     ///
     /// <para>
@@ -92,6 +94,7 @@ public class SimilarSeriesService(
         public IReadOnlyList<MangaBakaRecommendation>? Results;
         public DateTime ComputedAt = DateTime.MinValue;
         public string? Stamp;
+        public int VoteGraph;
         public long LastUsedTicks;
     }
 
@@ -126,12 +129,17 @@ public class SimilarSeriesService(
             await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
             StringComparison.OrdinalIgnoreCase);
 
+        var votes = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}", _ => new Entry());
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|t:{(taste ? 1 : 0)}|g:{(votes ? 1 : 0)}",
+            static _ => new Entry { LastUsedTicks = DateTime.UtcNow.Ticks });
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
-        if (IsFresh(entry, now, semantic.IndexStamp))
+        if (IsFresh(entry, now))
         {
             return entry.Results!;
         }
@@ -140,11 +148,13 @@ public class SimilarSeriesService(
         try
         {
             // Somebody else computed it while this call waited for the gate.
-            if (IsFresh(entry, DateTime.UtcNow, semantic.IndexStamp))
+            if (IsFresh(entry, DateTime.UtcNow))
             {
                 return entry.Results!;
             }
 
+            // Read before the scan, so a graph installed while it runs leaves the entry stale.
+            var voteGraph = semantic.VoteGraphGeneration;
             IReadOnlyList<MangaBakaRecommendation> results;
             await _scans.WaitAsync(ct);
             try
@@ -157,14 +167,21 @@ public class SimilarSeriesService(
                     obscurity: 0,
                     seedWeights: null,
                     diversity: Diversity,
-                    coGraph: false,
+                    coGraph: votes,
                     coRead: false,
                     taste: taste,
+                    ease: false,
+                    graphWeight: RecoGraphTuning.SingleSeedWeight,
                     ct: ct);
 
-                // The card reads TasteMatch as "Close to your taste". This pool is shared by every
-                // viewer and is about the seed, so that line would be false here.
-                results = picks.Select(p => p.TasteMatch ? p with { TasteMatch = false } : p).ToList();
+                // The card reads TasteMatch as "Close to your taste" and CoRecommended as "Readers
+                // like you also recommended this". This pool is shared by every viewer and is about
+                // the seed, so both lines would be false here.
+                results = picks
+                    .Select(p => p.TasteMatch || p.CoRecommended
+                        ? p with { TasteMatch = false, CoRecommended = false }
+                        : p)
+                    .ToList();
             }
             finally
             {
@@ -173,6 +190,7 @@ public class SimilarSeriesService(
 
             entry.Results = results;
             entry.Stamp = semantic.IndexStamp;
+            entry.VoteGraph = voteGraph;
             entry.ComputedAt = DateTime.UtcNow;
             logger.LogInformation(
                 "Computed {Count} similar series for MangaBaka {Id}", results.Count, mangaBakaId);
@@ -185,9 +203,18 @@ public class SimilarSeriesService(
         }
     }
 
-    private static bool IsFresh(Entry entry, DateTime now, string? stamp) =>
-        entry.Results is not null && now - entry.ComputedAt < Ttl &&
-        (stamp is null || entry.Stamp is null || entry.Stamp == stamp);
+    /// <summary>
+    /// A pool goes stale with its age, with the vector index, and with the vote graph: a page
+    /// opened before the graph's first download would otherwise keep a rail without votes for
+    /// the whole <see cref="Ttl"/>.
+    /// </summary>
+    private bool IsFresh(Entry entry, DateTime now)
+    {
+        var stamp = semantic.IndexStamp;
+        return entry.Results is not null && now - entry.ComputedAt < Ttl &&
+            (stamp is null || entry.Stamp is null || entry.Stamp == stamp) &&
+            entry.VoteGraph == semantic.VoteGraphGeneration;
+    }
 
     /// <summary>Evicts the least recently used entries once over capacity.</summary>
     private void Trim()
@@ -197,13 +224,38 @@ public class SimilarSeriesService(
             return;
         }
 
-        foreach (var key in _entries
+        foreach (var oldest in _entries
                      .OrderBy(kv => Volatile.Read(ref kv.Value.LastUsedTicks))
                      .Take(_entries.Count - MaxEntries)
-                     .Select(kv => kv.Key)
                      .ToList())
         {
-            _entries.TryRemove(key, out _);
+            _entries.TryRemove(oldest);
         }
+    }
+
+    public int ReleaseIdle(TimeSpan idleFor)
+    {
+        var now = DateTime.UtcNow;
+        var cutoff = (now - idleFor).Ticks;
+        var removed = 0;
+        bool Stale(Entry entry) =>
+            entry.Gate.CurrentCount != 0
+            && ((entry.Results is not null && now - entry.ComputedAt >= Ttl) || Volatile.Read(ref entry.LastUsedTicks) <= cutoff);
+
+        foreach (var (key, entry) in _entries)
+        {
+            if (!Stale(entry) || !_entries.TryRemove(new KeyValuePair<string, Entry>(key, entry)))
+            {
+                continue;
+            }
+
+            // A caller that found the entry just before it went keeps it cached.
+            if (Stale(entry) || !_entries.TryAdd(key, entry))
+            {
+                removed++;
+            }
+        }
+
+        return removed;
     }
 }

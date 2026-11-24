@@ -2,7 +2,6 @@ import { errorText } from '../api/errorText'
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Box,
   Button,
   Card,
@@ -32,6 +31,7 @@ import {
   IconColumns,
   IconDots,
   IconRuler,
+  IconSortAscendingNumbers,
   IconExternalLink,
   IconLink,
   IconPencil,
@@ -80,7 +80,7 @@ import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
-import { ModalNote } from './ui/ModalShell'
+import { ModalHeading, ModalNote } from './ui/ModalShell'
 import { StatusDot } from './ui/StatusDot'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
@@ -95,6 +95,10 @@ import { MonoValue } from './ui/MonoValue'
 import { PanelTitle } from './ui/PanelTitle'
 import { MODAL_SIZE } from './ui/modalSizes'
 import { Callout } from './ui/Callout'
+import { DrillChoices } from './ui/DrillPanel'
+import { LightBadge } from './series/lightMantine'
+import type { NumberingClashPair } from '../lib/numberingClash'
+import { formatList } from '../lib/listFormat'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -118,6 +122,7 @@ export function SourceMappingsSection({
   seriesTitle,
   altTitles = [],
   matching = false,
+  numberingClashes = [],
 }: {
   seriesId: number
   seriesTitle: string
@@ -129,6 +134,8 @@ export function SourceMappingsSection({
    * minute the source searches take, which is alarming and wrong.
    */
   matching?: boolean
+  /** Pairs from `Series.numberingClash`, so each row involved can say which side of a clash it is on. */
+  numberingClashes?: NumberingClashPair[]
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sourceOrder } = useSourceOrder(seriesId)
@@ -184,8 +191,10 @@ export function SourceMappingsSection({
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
   const failedNames = failedSources.map(sourceLabel).join(', ')
+  const clashTip = (names: string) => t`Numbering clashes with ${names}`
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [orderOpen, setOrderOpen] = useState(false)
   const hintId = useId()
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
@@ -210,6 +219,7 @@ export function SourceMappingsSection({
   // No source knows the pasted address: an admin can set the site up as a custom source right here,
   // or fix the one that already reads that host but whose series template didn't match.
   const [setupSite, setSetupSite] = useState<WizardRequest | null>(null)
+  const searching = (isFetching && !results?.length) || (resolving && !resolved)
   const unrecognised = resolveError instanceof ApiError && resolveError.code === 'error.search.noSourceRecognizesUrl'
   const pastedHost = pastedUrl ? sourceHost(pastedUrl) : null
   const ownerOfHost = pastedHost
@@ -266,6 +276,23 @@ export function SourceMappingsSection({
     ) ?? []
   const missingSnapshotNames = missingSnapshots.map((m) => sourceLabel(m.sourceName)).join(', ')
 
+  const orderValue = sourceOrder?.seriesMode ?? 'default'
+  const orderOptions = [
+    {
+      value: 'default',
+      label:
+        sourceOrder?.defaultMode === 'quality' ? t`Default (best quality first)` : t`Default (manual priority)`,
+      hint: t`Follows the order set in Settings.`,
+    },
+    { value: 'manual', label: t`Manual priority`, hint: t`Lower number = tried first when downloading` },
+    {
+      value: 'quality',
+      label: t`Best quality first`,
+      hint: t`Downloads try the best-scoring source first. Priority only breaks ties.`,
+    },
+  ]
+  const orderLabel = orderOptions.find((o) => o.value === orderValue)?.label ?? ''
+
   const link = (mappingName: string, sourceSeriesId: string, url: string) => {
     if (createMapping.isPending) return
     createMapping.mutate(
@@ -290,34 +317,41 @@ export function SourceMappingsSection({
             source that the matcher is about to add itself fails its whole batch of mappings. */}
         <Group gap="xs">
           {sourceOrder && (
-            <Tooltip
-              label={t`Which source a chapter downloads from first.`}
-              withArrow
-              multiline
-              w={280}
+            <Popover
+              opened={orderOpen}
+              onChange={setOrderOpen}
+              position="bottom-end"
+              width={300}
+              shadow="md"
+              trapFocus
+              returnFocus
             >
-              <Select
-                size="xs"
-                w={210}
-                aria-label={t`Download order`}
-                allowDeselect={false}
-                value={sourceOrder.seriesMode ?? 'default'}
-                onChange={(value) =>
-                  value && setOrderMode.mutate(value === 'default' ? null : (value as SourceOrderMode))
-                }
-                data={[
-                  {
-                    value: 'default',
-                    label:
-                      sourceOrder.defaultMode === 'quality'
-                        ? t`Default (best quality first)`
-                        : t`Default (manual priority)`,
-                  },
-                  { value: 'manual', label: t`Manual priority` },
-                  { value: 'quality', label: t`Best quality first` },
-                ]}
-              />
-            </Tooltip>
+              <Popover.Target>
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconSortAscendingNumbers size={16} />}
+                  rightSection={<IconChevronDown size={16} />}
+                  aria-label={t`Download order: ${orderLabel}`}
+                  aria-expanded={orderOpen}
+                  onClick={() => setOrderOpen((o) => !o)}
+                >
+                  {orderLabel}
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown p={6}>
+                <DrillChoices
+                  label={t`Download order`}
+                  heading={t`Download order`}
+                  value={orderValue}
+                  options={orderOptions}
+                  onPick={(value) => {
+                    setOrderOpen(false)
+                    if (value !== orderValue) setOrderMode.mutate(value === 'default' ? null : (value as SourceOrderMode))
+                  }}
+                />
+              </Popover.Dropdown>
+            </Popover>
           )}
           <Tooltip
             label={t`Auto-matching is still running. It'll be free in a moment.`}
@@ -415,16 +449,13 @@ export function SourceMappingsSection({
       </Group>
 
       {matching && (
-        <Group gap="xs">
-          <Loader size="xs" />
-          <Text c="var(--ink-3)" size="sm">
-            {mappings && mappings.length > 0 ? (
-              <Trans>Matching the remaining sources…</Trans>
-            ) : (
-              <Trans>Searching sources for a match…</Trans>
-            )}
-          </Text>
-        </Group>
+        <StatusDot tone="info" live role="status">
+          {mappings && mappings.length > 0 ? (
+            <Trans>Matching the remaining sources…</Trans>
+          ) : (
+            <Trans>Searching sources for a match…</Trans>
+          )}
+        </StatusDot>
       )}
 
       {sourceOrder && scouting && <MeasureProgress order={sourceOrder} />}
@@ -491,6 +522,10 @@ export function SourceMappingsSection({
               {(orderedMappings ?? []).map((m) => {
               const { sourceName: sourceKey } = m
               const sourceName = sourceLabel(sourceKey)
+              const clashing = (side: 'sub' | 'whole', other: 'sub' | 'whole') =>
+                formatList(numberingClashes.filter((c) => c[side] === sourceKey).map((c) => sourceLabel(c[other])))
+              const wholeNames = clashing('sub', 'whole')
+              const subNames = clashing('whole', 'sub')
               const open = expanded[m.id] ?? false
               const detailsId = `${hintId}-details-${m.id}`
               return (
@@ -502,8 +537,8 @@ export function SourceMappingsSection({
                         <Image
                             src={SOURCE_ICONS[m.sourceName]}
                             alt=""
-                            w={20}
-                            h={20}
+                            w={16}
+                            h={16}
                             fit="contain"
                             style={{
                               flex: '0 0 auto',
@@ -529,10 +564,40 @@ export function SourceMappingsSection({
                           </StatusDot>
                         )}
                         {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                          <Badge size="sm" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
+                          <LightBadge color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} style={{ flexShrink: 0 }}>
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
-                          </Badge>
+                          </LightBadge>
                         </Tooltip>}
+                        {byQuality && sourceOrder?.demoted[m.id] && (
+                          <Tooltip
+                            label={
+                              sourceOrder.demoted[m.id] === 'unreliable'
+                                ? t`Downloads from ${sourceName} keep failing, so it is tried after every other source whatever its quality.`
+                                : t`The chapters sampled from ${sourceName} are much shorter than other sources' copies, so they look like previews. It is tried after every other source whatever its quality.`
+                            }
+                            withArrow
+                            multiline
+                            w={280}
+                          >
+                            <LightBadge color="var(--warn)" style={{ flexShrink: 0 }}>
+                              <Trans>Tried last</Trans>
+                            </LightBadge>
+                          </Tooltip>
+                        )}
+                        {wholeNames && (
+                          <Tooltip label={clashTip(wholeNames)}>
+                            <LightBadge color="var(--warn)" style={{ flexShrink: 0 }}>
+                              <Trans>Sub-chapters</Trans>
+                            </LightBadge>
+                          </Tooltip>
+                        )}
+                        {subNames && (
+                          <Tooltip label={clashTip(subNames)}>
+                            <LightBadge color="var(--warn)" style={{ flexShrink: 0 }}>
+                              <Trans>Whole chapters</Trans>
+                            </LightBadge>
+                          </Tooltip>
+                        )}
                         {m.lastError && (
                           <Tooltip label={m.lastError} withArrow multiline w={280}>
                             <Text size="xs" c="var(--danger)" fw={600} style={{ flexShrink: 0 }}>
@@ -678,8 +743,8 @@ export function SourceMappingsSection({
                         <Image
                           src={SOURCE_ICONS[name]}
                           alt=""
-                          w={20}
-                          h={20}
+                          w={16}
+                          h={16}
                           fit="contain"
                           style={{ flex: '0 0 auto' }}
                         />
@@ -702,7 +767,9 @@ export function SourceMappingsSection({
                               <Trans>Search failed</Trans>
                             </StatusDot>
                           ) : (
-                            <Loader size={12} />
+                            <StatusDot tone="info" live style={{ flexShrink: 0 }}>
+                              <Trans>Searching</Trans>
+                            </StatusDot>
                           )}
                         </Group>
                         <Skeleton height={8} width="55%" radius="sm" animate={state === 'Searching'} />
@@ -951,7 +1018,7 @@ export function SourceMappingsSection({
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={t`Link a source`}
+        title={<ModalHeading title={t`Link a source`} />}
         size={MODAL_SIZE.default}
       >
         <Stack>
@@ -968,15 +1035,14 @@ export function SourceMappingsSection({
               label={t`Search or paste a series URL`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              rightSection={isFetching || resolving || createMapping.isPending ? <Loader size="xs" /> : null}
             />
           </Group>
           {createMapping.isPending && (
-            <Text size="xs" c="dimmed"><Trans>Linking and listing chapters…</Trans></Text>
+            <Text size="xs" c="var(--ink-3)"><Trans>Linking and listing chapters…</Trans></Text>
           )}
           {otherEnglishTitles.length > 0 && (
             <Group gap={6} wrap="wrap">
-              <Text size="xs" c="dimmed"><Trans>Search for</Trans></Text>
+              <Text size="xs" c="var(--ink-3)"><Trans>Search for</Trans></Text>
               {[seriesTitle, ...otherEnglishTitles].map((title) => (
                 <Button
                   key={title}
@@ -990,7 +1056,17 @@ export function SourceMappingsSection({
               ))}
             </Group>
           )}
-          <Stack gap="xs">
+          <Stack gap="xs" aria-busy={searching || undefined}>
+            {searching &&
+              Array.from({ length: 3 }, (_, i) => (
+                <Group key={i} wrap="nowrap" p="xs" aria-hidden>
+                  <Skeleton w={40} h={60} radius="sm" />
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Skeleton height={12} width="60%" radius="sm" />
+                    <Skeleton height={10} width="85%" radius="sm" />
+                  </Stack>
+                </Group>
+              ))}
             {pastedUrl && resolved && (
               <Card
                 withBorder
@@ -1007,9 +1083,7 @@ export function SourceMappingsSection({
                       <Text fw={600} size="sm">
                         {resolved.title}
                       </Text>
-                      <Badge size="sm" variant="light">
-                        {resolved.displayName}
-                      </Badge>
+                      <LightBadge color="var(--neutral)">{resolved.displayName}</LightBadge>
                     </Group>
                     {resolved.url && (
                       <Text size="xs" c="var(--ink-3)" lineClamp={1}>
@@ -1043,7 +1117,7 @@ export function SourceMappingsSection({
                 )}
               </Group>
             )}
-            {!pastedUrl && results?.map((r) => (
+            {!searching && !pastedUrl && results?.map((r) => (
               <Card
                 key={r.sourceSeriesId}
                 withBorder
@@ -1157,9 +1231,9 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           multiline
           w={260}
         >
-          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]} style={{ flexShrink: 0 }}>
+          <LightBadge color={QUALITY_TIER_COLOR[tier]} style={{ flexShrink: 0 }}>
             {renderLabel(QUALITY_TIER_LABELS[tier])}
-          </Badge>
+          </LightBadge>
         </Tooltip>
       )}
       {/* Under a tier pill an unmeasured source shows nothing; the dash only fills an otherwise empty cell. */}

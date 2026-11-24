@@ -66,6 +66,14 @@ public record SeedSnapshot(
     IReadOnlyDictionary<long, double> Avoided)
 {
     /// <summary>
+    /// Manga whose anime the reader has started, scored or not
+    /// (<see cref="AnimeSignalGrouping.WatchedManga"/>). Exposure rather than taste: it never seeds
+    /// or avoids, and <see cref="RecommendationService"/> reads it only when
+    /// <see cref="KnownTitleTuning"/> asks. Empty unless anime signals are on for the reader.
+    /// </summary>
+    public IReadOnlySet<long> WatchedAnime { get; init; } = new HashSet<long>();
+
+    /// <summary>
     /// A digest of every input behind this snapshot, for callers that key a cache on it.
     /// <para>
     /// Hashed rather than spelled out because the inputs are the whole library, its weights and its
@@ -258,10 +266,31 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var now = DateTime.UtcNow;
 
         var effectiveWeights = Weigh(positiveRows, signals, behavioural, addWeighting, now);
+        if (tuning.UnreadSeedScale != 1.0)
+        {
+            foreach (var r in positiveRows.Where(r => r.Rating is null && r.Provisional is null &&
+                (!signals.TryGetValue(r.Id, out var signal) || signal.Completed <= 0)))
+            {
+                effectiveWeights[r.Id] = effectiveWeights.GetValueOrDefault(r.Id, 1) * tuning.UnreadSeedScale;
+            }
+        }
+
+        var shelfIds = libraryIds.ToHashSet();
+        var offShelf = tuning.OffShelfSeedScale;
         // A liked title the reader then rated 2 is a contradiction they created, and the rating
         // wins: it is the considered action, same argument as LikedWeight's own remarks.
         foreach (var id in liked.Where(id => !avoided.ContainsKey(id)))
         {
+            if (!shelfIds.Contains(id) && offShelf != 1.0)
+            {
+                if (offShelf > 0)
+                {
+                    effectiveWeights[id] = RecommendationFeedbackPolicy.LikedWeight * offShelf;
+                }
+
+                continue;
+            }
+
             // Max, not overwrite: a liked title the reader also rated 10 keeps the rating's 2.0.
             effectiveWeights[id] = Math.Max(
                 effectiveWeights.GetValueOrDefault(id, 1), RecommendationFeedbackPolicy.LikedWeight);
@@ -270,6 +299,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         // Anime signals last, so every stronger kind of evidence is already in hand: a title on the
         // shelf, a thumbs up or down, and an ignored source all win over "the adaptation was good".
         var animeSeeds = new Dictionary<long, double>();
+        IReadOnlySet<long> watchedAnime = new HashSet<long>();
         if (await AnimeSignalsEnabledAsync(db, scope.UserId, ct))
         {
             var strength = await AnimeSignalStrengthAsync(db, scope.UserId, ct);
@@ -291,6 +321,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // opinion as several and let the best-liked season speak for a work the reader was
             // lukewarm on overall. One group is one manga, with the seasons' scores averaged.
             var groups = AnimeSignalGrouping.Group(animeRows).ToList();
+            watchedAnime = AnimeSignalGrouping.WatchedManga(animeRows);
             // The ceiling applies to a matched manga exactly as it applies to a shelf row, and the
             // only place a matched row's rating lives is the dump: nothing here is on the shelf, so
             // there is no ContentRating column to read it off. One batched read for every matched
@@ -315,7 +346,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                     continue;
                 }
 
-                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score, strength);
+                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score, strength) * offShelf;
                 if (weight > 0 && !avoided.ContainsKey(id))
                 {
                     animeSeeds[id] = weight;
@@ -332,7 +363,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         return new SeedSnapshot(
             new SeedWeights(libraryIds, effectiveWeights,
                 positiveIds
-                    .Concat(liked.Where(id => !avoided.ContainsKey(id)))
+                    .Concat(liked.Where(id => !avoided.ContainsKey(id) && effectiveWeights.ContainsKey(id)))
                     // Seeds and nothing else, exactly like a liked title: not LibraryIds, which is
                     // the owned-candidate list, and not the observed population, which describes a
                     // shelf these are not on. Being a seed is also what keeps a matched title out of
@@ -343,7 +374,10 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // profile chart that dropped everything they disliked would describe a different shelf.
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
             signals,
-            avoided);
+            avoided)
+        {
+            WatchedAnime = watchedAnime,
+        };
     }
 
     private Dictionary<long, double> Weigh(
@@ -404,7 +438,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
 
     /// <param name="Provisional">The "so far" score, only when there is no final <paramref name="Rating"/>.</param>
     private sealed record SeedRow(
-        long Id, int? Rating, DateTime? AddedAt, int? Provisional = null, bool Completed = false,
+        long Id, double? Rating, DateTime? AddedAt, double? Provisional = null, bool Completed = false,
         int? TotalChapters = null);
 
     /// <summary>

@@ -166,7 +166,7 @@ public sealed record EmbeddingModelProfile(
     /// v1.5 is trained with Matryoshka loss, so its leading 256 dimensions stand on their own, and
     /// <see cref="TextEmbedder"/> keeps those and renormalizes. v1 is not: cut to 256 it falls from
     /// MRR@10 0.4382 to 0.2679 on 2,000 held-out descriptions. Measured against v1 at 768 on the
-    /// 128,403-row catalogue (distribution/CLAUDE.md, "v6: the embedding model, at 256 dimensions"):
+    /// 128,403-row catalogue (distribution/AGENTS.md, "v6: the embedding model, at 256 dimensions"):
     /// the full search fusion over the 190 hand-written queries +0.0255 MRR, 95% [+0.0002, +0.0527],
     /// and recommendation nDCG@40 indistinguishable on every grader that is not trained on the same
     /// readers (single seed against MangaUpdates +0.0009 [-0.0025, +0.0045], held-out reading lists

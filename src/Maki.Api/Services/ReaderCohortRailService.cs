@@ -54,7 +54,8 @@ public class ReaderCohortRailService(
     /// nothing.
     /// </summary>
     public async Task<DiscoverRail?> GetAsync(
-        ICurrentUser scope, RecommendationFilters? filters, int limit, CancellationToken ct = default)
+        ICurrentUser scope, RecommendationFilters? filters, int limit, CancellationToken ct = default,
+        int? onlyCohort = null)
     {
         IReadOnlySet<long> owned;
         HashSet<long> suppressed;
@@ -78,13 +79,14 @@ public class ReaderCohortRailService(
         var baseAccept = accept;
         accept = id => !suppressed.Contains(id) && (baseAccept?.Invoke(id) ?? true);
 
-        var ids = await cohorts.GetCandidatesAsync(scope, owned, accept, limit, ct);
-        if (ids.Count == 0)
+        var draw = await cohorts.GetDrawAsync(scope, owned, accept, limit, onlyCohort, ct);
+        if (draw is null || draw.Picks.Count == 0)
         {
             return null;
         }
 
-        var items = await store.GetByIdsAsync([.. ids], allowed, ct);
+        var ids = draw.Picks.Select(p => p.Id).ToList();
+        var items = await store.GetByIdsAsync(ids, allowed, ct);
         if (items.Count == 0)
         {
             return null;
@@ -100,7 +102,37 @@ public class ReaderCohortRailService(
             RailFeed,
             Genre: null,
             Items: items,
-            Subtitle: "discover.rail.readerCohortsSubtitle");
+            Subtitle: "discover.rail.readerCohortsSubtitle")
+        {
+            Groups = GroupsOf(draw, items, owned),
+        };
+    }
+
+    /// <summary>
+    /// The picks sorted into the cohorts they were drawn from, in rail order, each with the reader's
+    /// own series that put them in that cohort. Only series still on the shelf are named, since the
+    /// client draws them from the library; the count is every finished series behind the cohort.
+    /// A cohort none of whose picks survived hydration is left out.
+    /// </summary>
+    internal static IReadOnlyList<DiscoverCohortGroup> GroupsOf(
+        CohortDraw draw, IReadOnlyList<MangaBakaRecommendation> items, IReadOnlySet<long> owned)
+    {
+        var shown = items.Select(i => i.ProviderId).ToHashSet(StringComparer.Ordinal);
+        var members = draw.Picks
+            .Select(p => (Pick: p, Id: p.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            .Where(x => shown.Contains(x.Id))
+            .GroupBy(x => x.Pick.Cohort)
+            .ToDictionary(g => g.Key, g => g.Select(x => new DiscoverCohortMember(x.Id, Math.Round(x.Pick.Share, 4))).ToList());
+
+        return draw.Groups
+            .Where(g => members.ContainsKey(g.Cohort))
+            .Select(g => new DiscoverCohortGroup(
+                g.Cohort,
+                Math.Round(g.Weight, 4),
+                g.Shared.Where(owned.Contains).Take(3).ToList(),
+                g.Shared.Count,
+                members[g.Cohort]))
+            .ToList();
     }
 
     public Task<DiscoverRail?> GetAsync(ICurrentUser scope, CancellationToken ct = default) =>

@@ -73,11 +73,6 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>
-          {resumePct !== null && (
-            <div className="home-resume-bar" data-tip={t`Page ${pageNumber} of ${pageCount}`}>
-              <div className="home-resume-fill" style={{ width: `${resumePct}%` }} />
-            </div>
-          )}
           <div className="cover-row">
             <span className="cover-row-verb">{item.page > 0 ? t`Resume` : t`Start`}</span>
             {note ? (
@@ -90,6 +85,11 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
               )
             )}
           </div>
+          {resumePct !== null && (
+            <div className="home-resume-bar" data-tip={t`Page ${pageNumber} of ${pageCount}`}>
+              <div className="home-resume-fill" style={{ width: `${resumePct}%` }} />
+            </div>
+          )}
         </div>
       </div>
     </Link>

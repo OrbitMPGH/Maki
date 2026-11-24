@@ -1,4 +1,8 @@
-import { Checkbox, Group, Rating, Stack, Text } from '@mantine/core'
+import { Button, Checkbox, Group, Stack, Text } from '@mantine/core'
+import { RatingScoreButtons } from './RatingScoreButtons'
+import { useRatingFormat } from '../../api/ratings'
+import { IconAdjustmentsHorizontal } from '../../lib/icons'
+import { RatingPanelOpener } from './RatingPanelOpener'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useRecycleBinDays } from '../../api/recycleBin'
@@ -40,7 +44,13 @@ export function ArchiveSeriesDialog({
    * Offered when the caller is leaving a part-read series without a rating. "Dropped at ch. 80, it's
    * a 4" is a real verdict, so the score picked here becomes the rating when the archive goes through.
    */
-  leavingRating?: { value: number | null; soFar: number | null; onChange: (rating: number | null) => void }
+  leavingRating?: {
+    value: number | null
+    soFar: number | null
+    onChange: (rating: number | null) => void
+    /** The stored category scores, to offer the breakdown. */
+    breakdown?: Record<string, number> | null
+  }
 }) {
   const { t } = useLingui()
   const binDays = useRecycleBinDays(opened && removeFiles)
@@ -48,7 +58,8 @@ export function ArchiveSeriesDialog({
   const sizeBytes = preview?.freeableBytes ?? 0
   const otherReaders = preview?.otherActiveReaders ?? 0
   const size = formatBytes(sizeBytes)
-  const soFar = leavingRating?.soFar ?? null
+  const { format } = useRatingFormat()
+  const soFar = leavingRating?.soFar != null ? format(leavingRating.soFar) : null
 
   return (
     <ConfirmDialog
@@ -99,19 +110,29 @@ export function ArchiveSeriesDialog({
                 <Trans>Want to rate it before it goes?</Trans>
               )}
             </Text>
+            <RatingScoreButtons
+              label={t`Your rating for ${title}`}
+              value={leavingRating.value}
+              soFar={leavingRating.soFar}
+              onPick={leavingRating.onChange}
+            />
             <Group gap="xs">
-              <Rating
-                count={5}
-                fractions={2}
-                value={leavingRating.value ? leavingRating.value / 2 : 0}
-                role="group"
-                aria-label={t`Your rating for ${title}`}
-                onChange={(v) => leavingRating.onChange(Math.round(v * 2) || null)}
-              />
-              {leavingRating.value != null && (
-                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                  {leavingRating.value}/10
-                </Text>
+              {seriesId != null && leavingRating.breakdown !== undefined && (
+                <RatingPanelOpener
+                  panel={{
+                    seriesId,
+                    value: leavingRating.value,
+                    finished: false,
+                    breakdown: leavingRating.breakdown,
+                    onChange: leavingRating.onChange,
+                    immediate: true,
+                  }}
+                  target={(toggle) => (
+                    <Button size="compact-sm" variant="subtle" leftSection={<IconAdjustmentsHorizontal size={16} />} onClick={toggle}>
+                      <Trans>Break it down</Trans>
+                    </Button>
+                  )}
+                />
               )}
             </Group>
           </Stack>

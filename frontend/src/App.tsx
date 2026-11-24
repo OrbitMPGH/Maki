@@ -49,12 +49,15 @@ import { DelayedLoader } from './components/ui/DelayedLoader'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, isInSection, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 import { KeptPages } from './components/layout/KeptPages'
+import { CardProgressSync } from './components/CardProgressSync'
+import { useFullWidthSeriesPage } from './lib/seriesPageWidth'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
@@ -300,6 +303,7 @@ function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
   const heroPage = /^\/series\/\d+(?:\/|$)/.test(location.pathname)
+  const [fullWidthSeriesPage] = useFullWidthSeriesPage()
   usePrefetchSeriesOnHover()
   useEffect(() => preloadRoutes(), [])
   const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
@@ -504,18 +508,28 @@ function AppShellRoutes() {
       <AppShell.Header className="app-header" hiddenFrom={navCollapsed ? undefined : 'sm'}>
         <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap" className="app-header-lead">
-            <Burger
-              ref={burgerRef}
-              opened={opened}
-              onClick={toggle}
-              onPointerEnter={peekEnter}
-              onPointerMove={peeking ? undefined : peekEnter}
-              onPointerLeave={peekLeave}
-              size="sm"
-              aria-label={t`Menu`}
-              aria-expanded={opened}
-              aria-controls="app-navbar"
-            />
+            {/* The Health badge sits in the drawer, out of sight while it is shut. */}
+            <span className="burger-wrap">
+              <Burger
+                ref={burgerRef}
+                opened={opened}
+                onClick={toggle}
+                onPointerEnter={peekEnter}
+                onPointerMove={peeking ? undefined : peekEnter}
+                onPointerLeave={peekLeave}
+                size="sm"
+                aria-label={
+                  healthIssues > 0 && !opened
+                    ? plural(healthIssues, { one: 'Menu, # health problem', other: 'Menu, # health problems' })
+                    : t`Menu`
+                }
+                aria-expanded={opened}
+                aria-controls="app-navbar"
+              />
+              {healthIssues > 0 && !opened && (
+                <span className="burger-dot" data-tone={healthTone} aria-hidden />
+              )}
+            </span>
             {/* A phone has no sidebar to show where you are, so the bar names the page instead of
                 repeating the logo the drawer already carries. */}
             {phone && pageName && titleAway ? (
@@ -638,6 +652,7 @@ function AppShellRoutes() {
       {/* Zeroes the shell padding on the series page, whose hero band bleeds to the window edges. */}
       <AppShell.Main
         className={heroPage ? 'app-main-hero' : undefined}
+        data-series-full-width={heroPage && fullWidthSeriesPage ? '' : undefined}
         id="main"
         tabIndex={-1}
       >
@@ -715,6 +730,7 @@ function AppShellRoutes() {
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
       {isAdmin && <MetadataDumpProgress quiet={!setup?.completed} />}
       <TipLayer />
+      <CardProgressSync />
     </AppShell>
   )
 }

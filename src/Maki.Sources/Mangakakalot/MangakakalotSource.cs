@@ -17,8 +17,10 @@ namespace Maki.Sources.Mangakakalot;
 /// needs the offset walk in <see cref="ListChaptersAsync"/>.
 /// Series id is the slug from <c>/manga/{slug}</c>.
 /// </summary>
-public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
+public class MangakakalotSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("mangakakalot");
+
     private static readonly HtmlParser Parser = new();
 
     public string Name => "mangakakalot";
@@ -63,7 +65,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
         // condition survives the FlareSolverr fallback (it fetches with its own browser's headers and
         // would hand back HTML where JSON was parsed), so the plain page is read instead: one shape,
         // whichever way the fetch went.
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/search/story/{keyword}", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/search/story/{keyword}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var results = new List<SourceSeriesResult>();
@@ -99,7 +101,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var seriesId = NormalizeSeriesId(sourceSeriesId);
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/manga/{seriesId}", ct);
+        var html = await _fetcher.GetHtmlAsync($"{BaseUrl}/manga/{seriesId}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var title = doc.QuerySelector("ul.manga-info-text h1")?.TextContent.Trim();
@@ -167,7 +169,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
         {
             var offset = page * ChapterPageSize;
             var url = $"{BaseUrl}/api/manga/{seriesId}/chapters?offset={offset}&limit={ChapterPageSize}";
-            var body = await PreUnwrap.UnwrapAsync(await fetcher.GetHtmlAsync(url, ct), url, ct);
+            var body = await PreUnwrap.UnwrapAsync(await _fetcher.GetHtmlAsync(url, ct), url, ct);
 
             using var json = JsonDocument.Parse(body);
             if (!json.RootElement.TryGetProperty("data", out var data))
@@ -260,7 +262,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var seriesId = NormalizeSeriesId(chapter.SourceSeriesId);
-        var html = await fetcher.GetHtmlAsync(
+        var html = await _fetcher.GetHtmlAsync(
             $"{BaseUrl}/manga/{seriesId}/{chapter.SourceChapterId}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 

@@ -3,7 +3,7 @@ title: What is Maki
 description: A self-hosted manga manager in the spirit of Sonarr and Radarr, with a reader built in.
 ---
 
-![Home screen with a Continue reading hero card, a Next up tray and Recently added covers](../../../assets/home.png)
+![Home screen with Horimiya in the Continue reading card, a reading grid, a Next up row and Recently added covers](../../../assets/ui/pages/home-top.webp)
 <hr>
 
 Maki watches manga sites for new chapters, downloads the pages and writes CBZ files with

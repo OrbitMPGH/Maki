@@ -129,7 +129,7 @@ public enum AttributionScale
 /// There are two of them because each alone has a known failure. The semantic half penalizes
 /// everything near an avoided vector, and a reader's dislikes are disproportionately famous, so the
 /// penalty lands on the popular part of the space rather than on resemblance: measured, median pick
-/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/CLAUDE.md</c>, "v5: negative
+/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/AGENTS.md</c>, "v5: negative
 /// signals"). The tag half on its own would penalize every title carrying an avoided tag, including
 /// the harem comedies a harem reader would have liked.
 /// </para>
@@ -172,7 +172,7 @@ public enum AvoidBlend
 /// same reason: in this space a raw cosine is a popularity hub effect before it is a resemblance
 /// measure. Famous rows sit near everything, a reader's dislikes are disproportionately famous, and
 /// median pick popularity therefore left its band in every configuration that moved anything
-/// (<c>distribution/CLAUDE.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
+/// (<c>distribution/AGENTS.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
 /// resemblance beyond what something else already predicts.
 /// </para>
 /// </summary>
@@ -460,6 +460,103 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double AttributionMargin { get; init; } = 0.5;
+
+    /// <summary>
+    /// The share of a crowd pick's positive co-read or EASE total a seed must carry before a "Fans of"
+    /// card may name it (<see cref="ReasonShare"/>). Below it the card says "Readers like you also
+    /// finished this". 0 names the largest contributor however small. Reason fields only, never the
+    /// order or the score.
+    /// </summary>
+    public double MinReasonShare { get; init; } = 0.25;
+
+    /// <summary>
+    /// Score subtracted from a pick that lands on every reader's page: this times its
+    /// <see cref="PageFrequency"/> share raised to <see cref="CommonPower"/>. 0 is off; 4 ships. Only
+    /// applies when a table is installed (<c>page-share.db</c>) and the caller asks for it (personal
+    /// recommendations, behind <c>recommendations.pageshare</c>), never on the series-page rail. Eval
+    /// key <c>commonweight</c>. See distribution/AGENTS.md, "v8: what shipped".
+    /// </summary>
+    public double CommonWeight { get; init; } = 4.0;
+
+    /// <summary>
+    /// Shape of the page-share penalty. 1 is linear in the share; below 1 reaches further down the
+    /// list of common titles, above 1 only touches the ones nearly everybody gets.
+    /// </summary>
+    public double CommonPower { get; init; } = 1.0;
+
+    /// <summary>
+    /// How hard the page's type and genre mix is pulled toward the shelf's (<see cref="ShelfCalibration"/>).
+    /// 0 is off and ships: 0.1 widens pages with wantN flat but raises passed household titles on the
+    /// confirm split, 0.2 does so on dev too. Runs inside <c>SelectWinners</c> from two seeds up, before the fame cap.
+    /// The shelf-wide channels give a title fitting a fifth of the shelf about a fifth of their
+    /// signal, so a second taste falls off the page while the main one fills it; this puts it back
+    /// and trims a webtoon flood on in-progress shelves too. Eval key <c>calibration</c>. See
+    /// distribution/AGENTS.md, "v9: why a second taste falls off the page".
+    /// </summary>
+    public double ShelfCalibration { get; init; } = 0;
+
+    /// <summary>
+    /// Calibrates on type x genre cells instead of types and genres apart. Off and unshipped. The
+    /// separate facets cannot see a second taste that is a combination: a romance shelf with some
+    /// romance webtoons reads as "enough Romance" and "a few webtoons", which action webtoons fill.
+    /// Only read when <see cref="ShelfCalibration"/> is above 0. Eval key <c>calibrationjoint</c>.
+    /// See distribution/AGENTS.md, "v9: a second taste that is a combination".
+    /// </summary>
+    public bool ShelfCalibrationJoint { get; init; }
+
+    /// <summary>
+    /// How many times the shelf's own share of famous titles a list may hold at any point
+    /// (<see cref="ShelfFame"/>). 0 is off; 1.0 ships. 1.0 holds every prefix of the list
+    /// to the shelf's popularity mix, 1.5 lets it run half again as famous. Picks over the limit are
+    /// deferred, not dropped, and a one-seed request is never limited. On held-out readers 1.25
+    /// costs 0.003 nDCG@40 for 4 points of top-1k share and 1.0 costs 0.007 for 8; on a real mixed
+    /// shelf they take a page from 98% top-1k to 68% and 55%. Eval key <c>famecap</c>. See
+    /// distribution/AGENTS.md, "v8: a shelf-relative fame cap" and "v8: what shipped".
+    /// </summary>
+    public double FameCapRatio { get; init; } = 1.0;
+
+    /// <summary>
+    /// Seed weight <see cref="ShelfFame.Limits"/> adds on the famous side, so a shelf of a few
+    /// series is barely limited. Only read when <see cref="FameCapRatio"/> is above 0. 3 instead of
+    /// 10 is a tighter ratio by another name: it lands on the same cost-for-fame line and barely
+    /// changes a shelf of 100 or more. Eval key <c>famecappseudo</c>.
+    /// </summary>
+    public double FameCapPseudoSeeds { get; init; } = 10;
+
+    /// <summary>
+    /// How much of its seed-weight share of the page a side taste is topped up to
+    /// (<see cref="ShelfLanes"/>). 0 is off; 0.5 ships. Only runs when the caller asks (personal
+    /// recommendations from the whole shelf, never the series-page rail) and from two seeds up.
+    /// At 0.5 with <see cref="LanesFame"/> wantN stayed flat, passed fell slightly and the next reads
+    /// the page lost fell by 17 to 21% on dev and confirm, both shelf kinds. Eval key <c>lanes2</c>.
+    /// See distribution/AGENTS.md, "v9: lanes as a top-up".
+    /// </summary>
+    public double Lanes { get; init; } = 0.5;
+
+    /// <summary>The least share of the seed weight a side taste needs. Eval key <c>lanes2min</c>.</summary>
+    public double LanesMinShare { get; init; } = 0.05;
+
+    /// <summary>The most side tastes topped up. Eval key <c>lanes2max</c>.</summary>
+    public int LanesMaxSides { get; init; } = 3;
+
+    /// <summary>How many leading picks the top-up never touches. Eval key <c>lanes2from</c>.</summary>
+    public int LanesFrom { get; init; } = 10;
+
+    /// <summary>
+    /// The page the targets are counted on and each lane's own request size. 40 is the page the
+    /// harness grades; deeper picks keep the whole-shelf order. Eval key <c>lanes2page</c>.
+    /// </summary>
+    public int LanesPage { get; init; } = 40;
+
+    /// <summary>
+    /// Whether an insert must not add a breach of <see cref="ShelfFame"/>'s limits for the whole
+    /// shelf. Without it the inserts are a third household titles and passed rises. Eval key
+    /// <c>lanes2fame</c>.
+    /// </summary>
+    public bool LanesFame { get; init; } = true;
+
+    /// <summary>Skips a side taste the page holds none of. Off. Eval key <c>lanes2held</c>.</summary>
+    public bool LanesHeldOnly { get; init; }
 
     /// <summary>
     /// Whether <see cref="AttributionMargin"/> is a raw difference or a position in the pool's own

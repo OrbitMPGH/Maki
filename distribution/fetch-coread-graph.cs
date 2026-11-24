@@ -99,6 +99,8 @@ var minItemUsers = 3;        // a series nobody much has finished cannot inform 
 var maxItemsPerUser = 200;   // one 900-title list would otherwise contribute 400k pairs
 var smoothing = 10.0;        // the k above
 var topPerItem = 60;         // neighbours kept per series, so the artifact stays shippable
+var foldOut = -1;            // --fold-out k/n: leave reader fold k out, so library mode can grade co-read
+var foldCount = 0;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -146,6 +148,20 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--top":
             topPerItem = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        // Builds the matrix without one reader fold, for eval-reco-labels.cs library --fold-users.
+        // Run it against a COPY of the working database: build overwrites the stored matrix.
+        case "--fold-out":
+            var foldParts = args[++i].Split('/');
+            if (foldParts.Length != 2
+                || !int.TryParse(foldParts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out foldOut)
+                || !int.TryParse(foldParts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out foldCount)
+                || foldCount < 2 || foldOut < 0 || foldOut >= foldCount)
+            {
+                Console.WriteLine($"error: --fold-out wants k/n with n >= 2 and 0 <= k < n, not '{args[i]}'.");
+                return 2;
+            }
+
             break;
         default:
             Console.WriteLine($"error: unknown argument '{args[i]}'");
@@ -676,6 +692,16 @@ int Build()
     // Only COMPLETED counts, and only series the dump knows: an edge to an id the rest of Maki
     // cannot resolve is dead weight in the index.
     var byUser = work.CompletedByUser(crossRef);
+    if (foldCount > 0)
+    {
+        foreach (var user in byUser.Keys.Where(u => UserFold.Of(u, foldCount) == foldOut).ToList())
+        {
+            byUser.Remove(user);
+        }
+
+        Console.WriteLine($"fold     : holding reader fold {foldOut} of {foldCount} out");
+    }
+
     Console.WriteLine($"lists    : {byUser.Count} users with at least one resolvable completed series");
     if (byUser.Count == 0)
     {
@@ -851,7 +877,10 @@ int Build()
     Console.WriteLine($"top {topPerItem}   : {survivors.Count} pairs survive per-series truncation");
 
     Console.WriteLine($"writing  : {survivors.Count} rows …");
-    work.WriteMatrix(survivors.Select(i => rows[i]), users);
+    var trainedOn = foldCount == 0
+        ? "all"
+        : string.Join(',', Enumerable.Range(0, foldCount).Where(f => f != foldOut));
+    work.WriteMatrix(survivors.Select(i => rows[i]), users, trainedOn);
     Console.WriteLine($"done in {clock.Elapsed.TotalSeconds:F0}s. Next: export");
     return 0;
 
@@ -916,6 +945,7 @@ int Export()
                 ('pairCount', (SELECT COUNT(*) FROM pair)),
                 ('seriesCount', (SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair))),
                 ('userCount', (SELECT value FROM w.meta WHERE key = 'buildUsers')),
+                ('trainingFold', COALESCE((SELECT value FROM w.meta WHERE key = 'buildFold'), 'all')),
                 ('source', 'anilist-lists')
             """;
         meta.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
@@ -1451,7 +1481,7 @@ internal sealed class Work : IDisposable
         return byUser;
     }
 
-    public void WriteMatrix(IEnumerable<(long A, long B, int Support, double Strength)> rows, int users)
+    public void WriteMatrix(IEnumerable<(long A, long B, int Support, double Strength)> rows, int users, string trainedOn)
     {
         using var tx = _conn.BeginTransaction();
         Run(_conn, tx, "DELETE FROM cooccurrence;");
@@ -1480,10 +1510,11 @@ internal sealed class Work : IDisposable
         {
             meta.Transaction = tx;
             meta.CommandText = """
-                INSERT INTO meta (key, value) VALUES ('buildUsers', $u)
+                INSERT INTO meta (key, value) VALUES ('buildUsers', $u), ('buildFold', $f)
                 ON CONFLICT (key) DO UPDATE SET value = excluded.value
                 """;
             meta.Parameters.AddWithValue("$u", users.ToString(CultureInfo.InvariantCulture));
+            meta.Parameters.AddWithValue("$f", trainedOn);
             meta.ExecuteNonQuery();
         }
 
@@ -1626,4 +1657,23 @@ internal sealed class Progress(int total, string unit)
 
     private static string Format(TimeSpan t)
         => t.TotalHours >= 1 ? $"{(int)t.TotalHours}h{t.Minutes:D2}m" : $"{(int)t.TotalMinutes}m{t.Seconds:D2}s";
+}
+
+/// <summary>
+/// Which evaluation fold a reader belongs to. MUST stay byte-identical to the copies in
+/// build-taste-vectors.cs and eval-reco-labels.cs.
+/// </summary>
+internal static class UserFold
+{
+    public static int Of(long userId, int folds)
+    {
+        var hash = 2166136261u;
+        var value = (ulong)userId;
+        for (var i = 0; i < 8; i++)
+        {
+            hash = (hash ^ (byte)(value >> (i * 8))) * 16777619u;
+        }
+
+        return (int)(hash % (uint)folds);
+    }
 }

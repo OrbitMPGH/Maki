@@ -103,8 +103,8 @@ const meta = {
         <Table.Tr>
           <Table.Th>Want</Table.Th>
           <Table.Th>Chapter</Table.Th>
-          <Table.Th>Title</Table.Th>
           <Table.Th>Released</Table.Th>
+          <Table.Th>Title</Table.Th>
           <Table.Th>Source</Table.Th>
           <Table.Th>Status</Table.Th>
           <Table.Th><VisuallyHidden>Actions</VisuallyHidden></Table.Th>
@@ -362,7 +362,13 @@ const volumeStory = (
           group={{ key: group.volume === null ? 'none' : `v${group.volume}`, ...group }}
           collapsed={false}
           readProgress={progress}
+          queueStates={new Map()}
+          seasons={[]}
           readTracking
+          nameSpan={3}
+          progressSpan={2}
+          columnCount={7}
+          gapBefore={false}
           canEditMetadata
           canDownload
           downloadDisabled={false}
@@ -385,6 +391,56 @@ export const VolumeHeaderMixedWantedAndMissing = volumeStory({
   chapters: chapters.slice(9, 18).map((c, i) => (i % 3 === 0 ? { ...c, wanted: false, hasFile: false } : c)),
 })
 
+export const VolumeHeaderQueueAndFileMissing = volumeStory(
+  {
+    volume: 3,
+    chapters: chapters.slice(0, 8).map((c, i) =>
+      i === 1
+        ? { ...c, fileMissing: true }
+        : i === 5
+          ? { ...c, hasFile: false, fileRemovedAt: '2026-10-01T00:00:00Z' }
+          : i >= 3 ? { ...c, hasFile: false } : c),
+  },
+  { queueStates: new Map([[chapters[3].id, 'active'], [chapters[4].id, 'failed'], [chapters[6].id, 'held']]) },
+)
+
+export const VolumeHeaderDownloadCountPlay: StoryObj<typeof ChapterVolumeRow> = {
+  ...VolumeHeaderQueueAndFileMissing,
+  play: async ({ canvas }) => {
+    // Eight chapters: three on disk (one missing its file), one queued, one failed, one removed on
+    // purpose, one held. Only the last is fetchable from the heading.
+    await expect(await canvas.findByRole('button', { name: 'Download 1 missing chapter in Volume 3' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('1 queued')).toBeVisible())
+    await waitFor(() => expect(canvas.getByText('1 removed')).toBeVisible())
+  },
+}
+
+export const VolumeHeaderWithSeasons: StoryObj<typeof ChapterVolumeRow> = {
+  ...volumeStory(
+    { volume: 1, chapters: chapters.slice(0, 9) },
+    {
+      seasons: [
+        season,
+        { key: 'mv', label: 'Movie', from: 5, to: 7, openEnded: false },
+        { key: 'ova', label: 'OVA', from: 3, to: 3, openEnded: false },
+        { ...season, key: 's2', label: 'S2', from: 20, to: 30 },
+      ],
+      readProgress: new Map([...progress].map(([id, p], i) => [id, i === 0 ? { ...p, completed: true, watched: true } : p])),
+    },
+  ),
+  play: async ({ canvas }) => {
+    // S1, the movie and the one-chapter OVA cover chapters in this volume; S2 starts later and stays
+    // off the heading.
+    await expect(await canvas.findByText('S1')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('Movie')).toBeVisible())
+    await waitFor(() => expect(canvas.getByText('OVA')).toBeVisible())
+    await waitFor(() => expect(canvas.queryByText('S2')).toBeNull())
+    await waitFor(() => expect(canvas.getByText('1 watched')).toBeVisible())
+  },
+}
+
+export const VolumeHeaderLong = volumeStory({ volume: 4, chapters: chaptersFor(1, { limit: 36 }) }, { gapBefore: true })
+
 export const VolumeHeaderNoVolume = volumeStory({ volume: null, chapters: chapters.slice(24) })
 
 export const VolumeHeaderReadOnly = volumeStory(
@@ -395,10 +451,10 @@ export const VolumeHeaderReadOnly = volumeStory(
 export const VolumeHeaderPlay: StoryObj<typeof ChapterVolumeRow> = {
   ...volumeStory({ volume: 1, chapters: chapters.slice(0, 9) }),
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByText('Vol. 1')).toBeVisible()
+    await expect(await canvas.findByText('Volume 1')).toBeVisible()
     await waitFor(() => expect(canvas.getByText('2 read')).toBeVisible())
-    await userEvent.click(canvas.getByRole('button', { name: 'Collapse Vol. 1' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Actions for Vol. 1' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Collapse Volume 1' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions for Volume 1' }))
     await expect(await within(canvas.getByRole('table').ownerDocument.body).findByRole('menuitem', { name: 'Mark read' })).toBeVisible()
   },
 }

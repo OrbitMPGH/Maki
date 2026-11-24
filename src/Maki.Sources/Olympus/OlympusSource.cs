@@ -37,7 +37,7 @@ public class OlympusSource : ISource
 
     public OlympusSource(IHtmlFetcher fetcher, ILogger<OlympusSource>? logger = null, TimeProvider? time = null)
     {
-        _fetcher = fetcher;
+        _fetcher = fetcher.For(Name);
         _logger = logger;
         _time = time ?? TimeProvider.System;
     }

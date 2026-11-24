@@ -68,12 +68,14 @@ export interface SeriesDto {
   authorStory: string | null
   authorArt: string | null
   publisher: string | null
-  /** The user's own rating on a 1–10 scale, or null if unrated. */
+  /** The user's own rating on a 1–10 scale, to one decimal, or null if unrated. */
   rating: number | null
   /** The user's "so far" score while partway through, or null. Never set alongside `rating`. Absent on older responses. */
   provisionalRating?: number | null
   /** The highest chapter number read when `provisionalRating` was set. */
   provisionalAtChapter?: number | null
+  /** The reader's category scores (key to whole points 1-10). Series detail only. */
+  ratingBreakdown?: Record<string, number> | null
   /** You finished this series. The stars set a "so far" score only while it is part-read. */
   finished?: boolean
   /** The "how is it so far?" prompt waiting for you. Detail endpoint only. */
@@ -100,6 +102,8 @@ export interface SeriesDto {
   progressTotal?: number
   /** Chapters had (on disk or removed on purpose). */
   progressHave?: number
+  /** What Read counts against: `progressHave` less downloaded chapters with Wanted off and not read. */
+  progressReadable?: number | null
   /** `readChapterCount` clamped to `progressTotal`; null when nothing has been read. */
   progressRead?: number | null
   /** Listed chapters with a decimal number. */
@@ -190,6 +194,8 @@ export interface SeriesDto {
    * added rail shows. 0 with nothing new. Library list endpoint only.
    */
   newChapterCount?: number
+  /** The colour the cover lends to the card's foot, as #rrggbb. Library list rows only; null when the art has no hue. */
+  coverAccent?: string | null
   /** The newest release date among the series' known chapters, or null with none dated. Library list endpoint only. */
   latestChapterAt?: string | null
   /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */

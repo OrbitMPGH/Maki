@@ -21,6 +21,8 @@ a newer snapshot if one exists. A failed download is retried after 15 minutes, t
 installed. Otherwise it waits for the next six-hourly run. A series
 MangaBaka added after the latest snapshot appears with the next one.
 
+![The Metadata database card showing the snapshot size on disk, its last refresh and a Refresh now button](../../../../assets/ui/settings/metadata.webp)
+
 The snapshot powers:
 
 - Metadata lookups. A search identifies a series and brings its MyAnimeList, AniList, MangaUpdates
@@ -39,9 +41,16 @@ database first. Turning it on starts a model switch that downloads the model and
 on the status line. Maki tries the prebuilt vectors first, about 42 MB to download and 65 MB on disk.
 If none are available, it builds the index on your machine, which takes a long time on a CPU. Search
 and the rails that need the index are empty until it is in place. While loaded, the search model
-uses about 40 MB of its own memory. Its weights are read from a memory-mapped copy of the model,
-about 110 MB on disk in the config folder, which Maki writes after the first search by meaning, so
-they count as page cache the system can reclaim. It unloads after 1 idle minute by default.
+uses about 150 MB of RAM, as the card says. Most of that is its weights, read from a memory-mapped
+copy of the model, about 110 MB on disk in the config folder, which Maki writes after the first
+search by meaning, so they count as page cache the system can reclaim. It unloads after 1 idle
+minute by default.
+
+**Check for prebuilt now** downloads the prebuilt index straight away, even if the one you have is
+current, as long as it was built for your model. It is greyed out while the switch is off or the
+index is building, and a message says why when nothing was installed.
+
+![The Semantic search & recommendations card switched on, with a progress bar, the embedded series count and a Check for prebuilt now button](../../../../assets/ui/settings/recommendations.webp)
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.

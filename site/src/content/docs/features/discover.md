@@ -5,7 +5,7 @@ description: Recommendations, rails and metadata, all computed on your server.
 
 ## Recommendations
 
-![Discover tab with a Your next read spotlight, an Also for you list and a row of taste dials](../../../assets/reco.png)
+![Top pick on Discover: Demon Slayer: Kimetsu no Yaiba - Kyojuro Rengoku's Story as a spin-off, with Completed, Safe and Manga pills, a score with a rating word, Add to library and More like this, beside an Also for you list](../../../assets/ui/discover/hero.webp)
 <hr>
 
 Local ONNX embeddings over the MangaBaka dump find titles similar to your library. Seed them from
@@ -16,13 +16,10 @@ to obscure.
 
 ## Discover
 
-![Discover rails titled Another side of your library, with Feels like and Fans of reasons on each card](../../../assets/reco2.png)
+![Your taste tab with What shapes your recommendations: tag bars, shelf, read and thumbs counts, tags you seem to avoid and a Recent feedback list with Undo](../../../assets/ui/discover/taste-top.webp)
 <hr>
 
-![Your Taste tab with shelf and read counts and a Recent feedback list](../../../assets/taste.png)
-<hr>
-
-![Your Taste tab with How you read stats and a What you read, grouped section](../../../assets/taste2.png)
+![How you read on the Your taste tab, with finish rate, typical chapter time, where you usually stop and your biggest day, lists of series you slow down for, tear through and put down, and the start of Recurring themes](../../../assets/ui/discover/taste-how-you-read.webp)
 <hr>
 
 Discover has four tabs:
@@ -34,8 +31,12 @@ Discover has four tabs:
   your taste has moved. Each group has **More like this**, which opens Recommended seeded from it.
 - **Shortlist** holds titles you saved for later.
 
+![Another side of your library: Iyashikei rail drawn from The Fragrant Flower Blooms with Dignity and Yotsuba&!, with Fans of and Feels like reasons under each card](../../../assets/ui/discover/side-interests.webp)
+
 Every card shows its rating top left, and titles already in your library carry a check mark top
 right. Every rail has a fullscreen **Show more** view.
+
+![Show more view of Based on your recent activity with Genres and tags, Series and Length, year and rating filter groups, Saved filters, Hidden everywhere, a Compact, Default and Comfortable size switch and a grid of titles](../../../assets/ui/discover/show-more.webp)
 
 A detail card opens with a compact header: the reason the card gave (such as "Feels like ...")
 above the title, a line with the year, chapters and volumes, and status, content rating and type as
@@ -44,6 +45,8 @@ pills. The score says where it stands, such as "8.6 Exceptional" and "Top 1% of 
 one card: **Folder** and **Incognito** show their current setting, **Automation** holds monitoring
 and the quality profile, and **Preview first chapter** sits under **Add to library**. The pick at
 the top of Discover uses the same header.
+
+![Detail card for Kyojuro Rengoku's Story with the spin-off reason above the title, status, content rating and type pills, a score with site chips, an add card with Folder, Incognito, Automation, Add to library and Preview first chapter, and Synopsis, Tags, Reviews and At a glance panels below](../../../assets/ui/discover/detail-modal.webp)
 
 Detail cards also show categorized tags, alternate titles, creators and reviews from AniList and
 MyAnimeList, with the most liked Kitsu one-line takes below them. A site that does not answer is
@@ -64,6 +67,8 @@ button, saved cards carry a ribbon, and the **Shortlist** tab lists them. Each e
 - Saving doesn't count as a taste signal for recommendations.
 - Tracker [import lists](/Maki/guides/trackers/connect/#importing-your-lists) put **Plan to read**
   entries here.
+
+![Shortlist tab with The Apothecary Diaries under Changed since you saved them, marked On hiatus since you saved it, and Delicious in Dungeon and March Comes In Like a Lion under Waiting for you, each with Preview first chapter and Add to library](../../../assets/ui/discover/shortlist.webp)
 
 ## Related works
 

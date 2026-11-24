@@ -157,6 +157,22 @@ public class CoReadGraphTests : IDisposable
     }
 
     [Fact]
+    public async Task SeedsForKeepsOnlySeedsCarryingTheMinimumShare()
+    {
+        // Contributions to 5: seed 1 0.3, seed 2 0.6, seed 3 0.2, so shares of 27%, 55% and 18%.
+        var graph = await Load((1, 5, 0.6f), (2, 5, 0.3f), (3, 5, 0.2f));
+        var weights = new Dictionary<long, double> { [1] = 0.5, [2] = 2.0, [3] = 1.0 };
+
+        var quarter = CoReadScorer.SeedsFor(
+            graph!, [1L, 2L, 3L], weights, CoReadTuning.Default, new HashSet<long> { 5 }, minShare: 0.25);
+        var most = CoReadScorer.SeedsFor(
+            graph!, [1L, 2L, 3L], weights, CoReadTuning.Default, new HashSet<long> { 5 }, minShare: 0.6);
+
+        Assert.Equal([2L, 1L], quarter[5]);
+        Assert.Empty(most[5]);
+    }
+
+    [Fact]
     public async Task DegreeDoesNotPenalize_BecauseTheStrengthAlreadyDividedByPopularity()
     {
         // This is the whole reason CoReadScorer exists rather than reusing RecoGraphScorer. The hub

@@ -167,7 +167,7 @@ export function sortChapters(chapters: readonly ChapterDto[], sort: ChapterSort)
 }
 
 /** The columns the table lets the reader hide. The chapter number, the switch and the row actions always show. */
-export const HIDABLE_CHAPTER_COLUMNS = ['title', 'released', 'source', 'status'] as const
+export const HIDABLE_CHAPTER_COLUMNS = ['released', 'title', 'source', 'status'] as const
 export type HidableChapterColumn = (typeof HIDABLE_CHAPTER_COLUMNS)[number]
 
 export function parseHiddenColumns(raw: string | null): ReadonlySet<HidableChapterColumn> {
@@ -193,6 +193,21 @@ export type VolumeGroup = {
   /** Null for the trailing "No volume" group. */
   volume: number | null
   chapters: ChapterDto[]
+}
+
+/**
+ * Where a chapter stands in the download queue, as far as its volume's heading cares. Held is parked
+ * (waiting for an early-access release) or waiting on the reader's import decision, which the
+ * queue summary doesn't count as active either.
+ */
+export type VolumeQueueState = 'active' | 'failed' | 'held'
+
+/** Finished and cancelled items no longer say anything about the chapter. */
+export function volumeQueueState(status: string): VolumeQueueState | null {
+  if (status === 'Failed') return 'failed'
+  if (status === 'Waiting' || status === 'AwaitingImport') return 'held'
+  if (status === 'Completed' || status === 'Cancelled') return null
+  return 'active'
 }
 
 /** Grouping starts on by default only when most chapters name a volume. */

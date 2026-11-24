@@ -37,7 +37,7 @@ Fixed Smart Download picking a source before it had measured it.
 
 The body is what goes in the notes: plain sentences describing what the user sees, no class names,
 endpoints or migrations. A fix starts with "Fixed". A big feature can be a short paragraph or a few
-bullets. Follow the text style in the root `CLAUDE.md` (no em dashes, no filler).
+bullets. Follow the text style in the root `AGENTS.md` (no em dashes, no filler).
 
 ## Hotfixes
 

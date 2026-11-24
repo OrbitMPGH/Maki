@@ -1,20 +1,20 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Button,
   Code,
   Collapse,
+  Divider,
   FileButton,
   Group,
   Modal,
   Progress,
   ScrollArea,
   Stack,
-  SimpleGrid,
   Switch,
   Table,
   Text,
@@ -24,9 +24,14 @@ import {
   Box,
 } from '@mantine/core'
 import {
+  IconArchive,
   IconChevronDown,
   IconChevronRight,
+  IconClock,
+  IconDatabase,
   IconDownload,
+  IconGauge,
+  IconHistory,
   IconTrash,
   IconUpload,
 } from '../../lib/icons'
@@ -34,6 +39,7 @@ import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { Note } from '../../components/ui/Note'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { TagChip } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
@@ -55,8 +61,10 @@ import {
   useUpdateSettings,
   useUpdateStatus,
 } from '../../api/hooks'
-import { formatBytes, formatDateTime, formatNumber } from '../../format'
+import { formatBytes, formatDateTime, formatHour, formatNumber, formatPercent } from '../../format'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
+import { SettingsDrill, SettingsDrillPage } from '../../components/settings/SettingsDrill'
+import { DrillBack, DrillRow, useDrillPages } from '../../components/ui/DrillPanel'
 import { useHealthAction, useHealthData, type HealthOptions } from '../../api/health'
 import { TimeAgo } from '../../components/ui/TimeAgo'
 import { Callout } from '../../components/ui/Callout'
@@ -79,6 +87,13 @@ export function BackupSection() {
   const [scheduled, setScheduled] = useState(false)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [listing, setListing] = useState(false)
+  const backupCount = backups?.length ?? 0
+  const totalSize = formatBytes((backups ?? []).reduce((n, b) => n + b.sizeBytes, 0))
+  const latest = (backups ?? []).reduce<NonNullable<typeof backups>[number] | undefined>(
+    (best, b) => (!best || b.manifest.createdUtc > best.manifest.createdUtc ? b : best),
+    undefined,
+  )
 
   // Named, so the restore sentence extracts as `<0>{backupName}</0>` instead of an anonymous slot.
   const backupName =
@@ -147,7 +162,102 @@ export function BackupSection() {
           </Trans>
         </Note>
 
-        {backups && backups.length > 0 && (
+        {latest ? (
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <Group gap="sm" wrap="nowrap" miw={0}>
+              <Text size="sm" c="var(--ink-3)">
+                <Trans>Latest</Trans>
+              </Text>
+              <Text size="sm" fw={500} className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                <TimeAgo value={latest.manifest.createdUtc} />
+              </Text>
+              <TagChip size="sm">{kindLabel(latest.manifest.kind)}</TagChip>
+              <Text size="sm" c="var(--ink-2)" className="tnum">
+                {formatBytes(latest.sizeBytes)}
+              </Text>
+            </Group>
+            <Group gap={4} wrap="nowrap">
+              <Button
+                size="xs"
+                variant="subtle"
+                color="var(--ink-hi)"
+                onClick={() => setTarget({ kind: 'existing', name: latest.name })}
+              >
+                <Trans>Restore</Trans>
+              </Button>
+              <ActionIcon
+                variant="subtle"
+                color="var(--neutral)"
+                onClick={() => void downloadBackup(latest.name)}
+                aria-label={t`Download backup`}
+              >
+                <IconDownload size={16} />
+              </ActionIcon>
+              <Button size="xs" variant="default" leftSection={<IconArchive size={16} />} onClick={() => setListing(true)}>
+                <Trans>All backups ({backupCount})</Trans>
+              </Button>
+            </Group>
+          </Group>
+        ) : (
+          backups && (
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>No backups yet.</Trans>
+            </Text>
+          )
+        )}
+
+        <Divider />
+
+        <Group>
+          <Button
+            onClick={() =>
+              create.mutate(undefined, {
+                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
+              })
+            }
+            loading={create.isPending}
+          >
+            <Trans>Back up now</Trans>
+          </Button>
+          <FileButton onChange={(f) => f && setTarget({ kind: 'upload', file: f })} accept=".zip">
+            {(props) => (
+              <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
+                <Trans>Restore from file…</Trans>
+              </Button>
+            )}
+          </FileButton>
+        </Group>
+
+        <div className="settings-field-grid" data-pairs>
+          <Switch
+            label={t`Back up on a schedule`}
+            description={t`Follows the backup freshness set on the Health page.`}
+            checked={scheduled}
+            onChange={(e) => setScheduled(e.currentTarget.checked)}
+          />
+          <SettingsNumberInput
+            label={t`Backups to keep`}
+            description={t`Per kind: automatic, manual and scheduled.`}
+            min={1}
+            max={50}
+            value={retention}
+            onChange={setRetention}
+          />
+        </div>
+      </Stack>
+
+      <Modal
+        opened={listing}
+        onClose={() => setListing(false)}
+        // A restore or delete confirm opened from the list sits on top of it and takes Esc alone.
+        closeOnEscape={target === null && deleting === null}
+        size={MODAL_SIZE.wide}
+        title={<ModalHeading title={t`Backups`} />}
+      >
+        <Stack gap="md">
+          <Note>
+            <Trans>Backups hold API keys and passwords in plain text. Treat a downloaded one like a password.</Trans>
+          </Note>
           <Table.ScrollContainer minWidth={520}>
             <Table className="panel-table ops-table">
               <Table.Thead>
@@ -160,7 +270,7 @@ export function BackupSection() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {backups.map((b) => (
+                {(backups ?? []).map((b) => (
                   <Table.Tr key={b.name}>
                     <Table.Td className="tnum" style={{ whiteSpace: 'nowrap' }}><TimeAgo value={b.manifest.createdUtc} /></Table.Td>
                     <Table.Td>
@@ -205,44 +315,15 @@ export function BackupSection() {
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
-        )}
-
-        <Group>
-          <Button
-            onClick={() =>
-              create.mutate(undefined, {
-                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
-              })
-            }
-            loading={create.isPending}
-          >
-            <Trans>Back up now</Trans>
+        </Stack>
+        <ModalFooter
+          status={<Plural value={backupCount} one={`# backup, ${totalSize}`} other={`# backups, ${totalSize}`} />}
+        >
+          <Button onClick={() => setListing(false)}>
+            <Trans>Done</Trans>
           </Button>
-          <FileButton onChange={(f) => f && setTarget({ kind: 'upload', file: f })} accept=".zip">
-            {(props) => (
-              <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
-                <Trans>Restore from file…</Trans>
-              </Button>
-            )}
-          </FileButton>
-        </Group>
-
-        <Switch
-          label={t`Back up on a schedule`}
-          description={t`Follows the backup freshness set on the Health page.`}
-          checked={scheduled}
-          onChange={(e) => setScheduled(e.currentTarget.checked)}
-        />
-
-        <SettingsNumberInput
-          label={t`Backups to keep`}
-          description={t`Per kind: automatic, manual and scheduled.`}
-          min={1}
-          max={50}
-          value={retention}
-          onChange={setRetention}
-        />
-      </Stack>
+        </ModalFooter>
+      </Modal>
 
       <ConfirmDialog
         opened={target !== null}
@@ -614,38 +695,35 @@ export function ImageCacheSection() {
         </Button>
       </Group>
 
-      <Modal
+      <ConfirmDialog
         opened={confirmForce}
         onClose={() => setConfirmForce(false)}
-        title={
-          <ModalHeading
-            title={t`Rebuild every poster`}
-            description={plural(seriesTotalCount, {
-              one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
-              other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
-            })}
-          />
-        }
-      >
-        <Stack>
-          <ModalFooter>
-            <Button variant="default" onClick={() => setConfirmForce(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              onClick={() => {
-                setConfirmForce(false)
-                start(true)
-              }}
-            >
-              <Trans>Rebuild all</Trans>
-            </Button>
-          </ModalFooter>
-        </Stack>
-      </Modal>
+        title={t`Rebuild every poster`}
+        description={plural(seriesTotalCount, {
+          one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+          other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+        })}
+        confirmLabel={<Trans>Rebuild all</Trans>}
+        onConfirm={() => {
+          setConfirmForce(false)
+          start(true)
+        }}
+      />
     </SettingsSection>
   )
 }
+
+type HealthPage = 'main' | 'scan' | 'workers' | 'disk' | 'backup'
+const HEALTH_PARENTS: Record<HealthPage, HealthPage> = {
+  main: 'main',
+  scan: 'main',
+  workers: 'main',
+  disk: 'main',
+  backup: 'main',
+}
+
+/** A threshold percentage as the reader's locale writes it, keeping a decimal when it has one. */
+const thresholdPercent = (value: number) => formatPercent(value / 100, Number.isInteger(value) ? 0 : 1)
 
 /**
  * When the health scans run and where the disk and backup checks draw their lines. The checks and
@@ -657,8 +735,24 @@ export function HealthSettingsSection() {
   const { data } = useHealthData<HealthOptions>('/options')
   const save = useHealthAction()
   const [draft, setDraft] = useState<HealthOptions | null>(null)
+  const pages = useDrillPages<HealthPage>('main', HEALTH_PARENTS)
   const value = draft ?? data
   const update = (patch: Partial<HealthOptions>) => value && setDraft({ ...value, ...patch })
+
+  const scanText = () => {
+    if (!value) return undefined
+    const hour = formatHour(value.scanHour)
+    const zone = value.timeZone
+    return zone ? t`${hour}, ${zone}` : t`${hour}, server time`
+  }
+  const diskText = () => {
+    if (!value) return undefined
+    const warnPercent = thresholdPercent(value.warningPercent)
+    const warnGiB = formatNumber(value.warningGiB)
+    const errorPercent = thresholdPercent(value.errorPercent)
+    const errorGiB = formatNumber(value.errorGiB)
+    return t`Warn at ${warnPercent} or ${warnGiB} GiB, error at ${errorPercent} or ${errorGiB} GiB`
+  }
 
   return (
     <SettingsSection
@@ -687,60 +781,113 @@ export function HealthSettingsSection() {
         </Callout>
       )}
       {value && (
-        <Stack gap="lg">
+        <Stack gap="sm">
           <Switch
             label={t`Analyze new files and run daily reconciliation`}
             checked={value.automaticScanning}
             onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
           />
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <SettingsNumberInput
-              label={t`Daily scan hour`}
-              description={t`0 to 23.`}
-              min={0}
-              max={23}
-              value={value.scanHour}
-              onChange={(v) => update({ scanHour: v })}
-            />
-            <TextInput
-              label={t`Timezone`}
-              description={t`Empty uses the server's timezone.`}
-              value={value.timeZone ?? ''}
-              onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
-            />
-            <SettingsNumberInput
-              label={t`Pages decoded at once`}
-              description={t`0 picks a number for this machine.`}
-              min={0}
-              max={32}
-              value={value.scanWorkers}
-              onChange={(v) => update({ scanWorkers: v })}
-            />
-          </SimpleGrid>
-          <Stack gap="xs">
-            <Text size="sm" fw={600}>
-              <Trans>Thresholds</Trans>
-            </Text>
-            <SimpleGrid cols={{ base: 1, sm: 3 }}>
-              {(['warningPercent', 'errorPercent', 'backupDays', 'warningGiB', 'errorGiB'] as const).map((key) => (
-                <SettingsNumberInput
-                  key={key}
-                  label={
-                    {
-                      warningPercent: t`Low disk warning (%)`,
-                      errorPercent: t`Low disk error (%)`,
-                      warningGiB: t`Low disk warning (GiB)`,
-                      errorGiB: t`Low disk error (GiB)`,
-                      backupDays: t`Backup freshness (days)`,
-                    }[key]
-                  }
-                  min={0}
-                  value={value[key]}
-                  onChange={(v) => update({ [key]: v })}
+          <SettingsDrill page={pages.page} depth={pages.depth}>
+            {pages.page === 'main' && (
+              <>
+                <DrillRow
+                  ref={pages.rowRef('scan')}
+                  icon={IconClock}
+                  label={<Trans>Daily scan</Trans>}
+                  value={scanText()}
+                  onClick={() => pages.open('scan')}
                 />
-              ))}
-            </SimpleGrid>
-          </Stack>
+                <DrillRow
+                  ref={pages.rowRef('workers')}
+                  icon={IconGauge}
+                  label={<Trans>Pages decoded at once</Trans>}
+                  value={value.scanWorkers === 0 ? t`Automatic` : formatNumber(value.scanWorkers)}
+                  onClick={() => pages.open('workers')}
+                />
+                <DrillRow
+                  ref={pages.rowRef('disk')}
+                  icon={IconDatabase}
+                  label={<Trans>Low disk</Trans>}
+                  value={diskText()}
+                  onClick={() => pages.open('disk')}
+                />
+                <DrillRow
+                  ref={pages.rowRef('backup')}
+                  icon={IconHistory}
+                  label={<Trans>Backup freshness</Trans>}
+                  value={plural(value.backupDays, { one: 'Warn after # day', other: 'Warn after # days' })}
+                  onClick={() => pages.open('backup')}
+                />
+              </>
+            )}
+            {pages.page === 'scan' && (
+              <SettingsDrillPage>
+                <DrillBack ref={pages.backRef} title={<Trans>Daily scan</Trans>} onBack={pages.back} />
+                <div className="settings-field-grid" data-pairs>
+                  <SettingsNumberInput
+                    label={t`Daily scan hour`}
+                    min={0}
+                    max={23}
+                    value={value.scanHour}
+                    onChange={(v) => update({ scanHour: v })}
+                  />
+                  <TextInput
+                    label={t`Timezone`}
+                    description={t`Empty uses the server's timezone.`}
+                    value={value.timeZone ?? ''}
+                    onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
+                  />
+                </div>
+              </SettingsDrillPage>
+            )}
+            {pages.page === 'workers' && (
+              <SettingsDrillPage>
+                <DrillBack ref={pages.backRef} title={<Trans>Pages decoded at once</Trans>} onBack={pages.back} />
+                <SettingsNumberInput
+                  label={t`Pages decoded at once`}
+                  description={t`0 picks a number for this machine.`}
+                  min={0}
+                  max={32}
+                  value={value.scanWorkers}
+                  onChange={(v) => update({ scanWorkers: v })}
+                />
+              </SettingsDrillPage>
+            )}
+            {pages.page === 'disk' && (
+              <SettingsDrillPage>
+                <DrillBack ref={pages.backRef} title={<Trans>Low disk</Trans>} onBack={pages.back} />
+                <div className="settings-field-grid" data-pairs>
+                  {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB'] as const).map((key) => (
+                    <SettingsNumberInput
+                      key={key}
+                      label={
+                        {
+                          warningPercent: t`Low disk warning (%)`,
+                          errorPercent: t`Low disk error (%)`,
+                          warningGiB: t`Low disk warning (GiB)`,
+                          errorGiB: t`Low disk error (GiB)`,
+                        }[key]
+                      }
+                      min={0}
+                      value={value[key]}
+                      onChange={(v) => update({ [key]: v })}
+                    />
+                  ))}
+                </div>
+              </SettingsDrillPage>
+            )}
+            {pages.page === 'backup' && (
+              <SettingsDrillPage>
+                <DrillBack ref={pages.backRef} title={<Trans>Backup freshness</Trans>} onBack={pages.back} />
+                <SettingsNumberInput
+                  label={t`Backup freshness (days)`}
+                  min={0}
+                  value={value.backupDays}
+                  onChange={(v) => update({ backupDays: v })}
+                />
+              </SettingsDrillPage>
+            )}
+          </SettingsDrill>
         </Stack>
       )}
     </SettingsSection>

@@ -14,6 +14,7 @@ import {
   Button,
   Divider,
   Group,
+  List,
   Loader,
   Menu,
   NumberInput,
@@ -110,6 +111,7 @@ import {
   useRecommendationDetail,
   hasReviewIds,
 } from '../api/hooks'
+import { useRatingFormat } from '../api/ratings'
 import {
   useContinueReading,
   useReadTracking,
@@ -183,6 +185,8 @@ import {
   serializeHiddenColumns,
   sortChapters,
   volumeOf,
+  volumeQueueState,
+  type VolumeQueueState,
   type ChapterSort,
   type FileOrigin,
   type HidableChapterColumn,
@@ -227,6 +231,8 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
 import { Callout } from '../components/ui/Callout'
+import { useSourceLabel } from '../sourceLabels'
+import { parseNumberingClash } from '../lib/numberingClash'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { MetaList } from '../components/ui/MetaList'
@@ -242,7 +248,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
 import { showRestoreResult } from '../components/series/restoreToast'
-import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
+import { buildAnimeSpans, mergeAnimeMarkers, pairAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis, splitSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
@@ -348,10 +354,14 @@ const chapterTableMinWidthFor = (
       chapterColumnsWidthFor(widths, layout, hidden),
       layout === 'full' ? chapterFullMinWidth(hidden) : chapterCompactMinWidth(hidden),
   )
-const chapterLayoutFor = (panelWidth: number, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS): ChapterLayout =>
-  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden)
+const chapterLayoutFor = (
+  panelWidth: number,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+  extra = 0,
+): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden) + extra
       ? 'full'
-      : panelWidth >= chapterCompactMinWidth(hidden) ? 'compact' : 'list'
+      : panelWidth >= chapterCompactMinWidth(hidden) + extra ? 'compact' : 'list'
 
 type ChapterColumnRoom = {
   panel: number
@@ -494,8 +504,12 @@ function SeriesDetailBody() {
     setSyncedUrlTab(urlTab)
     setTab(urlTab)
   }
+  // Only a switch fades the new tab in; on arrival the page transition already brings it in, and
+  // WebKit captures that transition's new page as a still, which would catch the body faded out.
+  const [tabSwitched, setTabSwitched] = useState(false)
   const changeTab = (value: string | null) => {
     if (!value || !TABS.includes(value as Tab)) return
+    setTabSwitched(true)
     setTab(value as Tab)
     const next = new URLSearchParams(searchParams)
     if (value === 'details') next.delete('tab')
@@ -525,6 +539,8 @@ function SeriesDetailBody() {
 
   // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
   const { data: sources } = useSources()
+  const sourceLabel = useSourceLabel()
+  const numberingClashes = useMemo(() => parseNumberingClash(series?.numberingClash), [series?.numberingClash])
   /**
    * ChapterFile.SourceName is a scrape source's name, the sentinel "import" for a file the user
    * brought in from disk, or "torrent:{indexer}". Only a scraped file can be re-fetched from a
@@ -615,6 +631,26 @@ function SeriesDetailBody() {
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
+  )
+  // Keyed on the states alone, so a download's page count ticking up doesn't re-render every volume
+  // heading. A chapter can be in the queue twice (a failed bulk run, then a retry), and an attempt
+  // still going wins over an old failure.
+  const volumeQueueKey = useMemo(() => {
+    const states = new Map<number, VolumeQueueState>()
+    for (const q of queue?.items ?? []) {
+      if (q.seriesId !== seriesId || q.chapterId === null) continue
+      const state = volumeQueueState(q.status)
+      const current = states.get(q.chapterId)
+      if (state && current !== 'active' && !(current === 'held' && state === 'failed')) states.set(q.chapterId, state)
+    }
+    return [...states].map(([id, state]) => `${id}:${state}`).join(',')
+  }, [queue, seriesId])
+  const volumeQueueStates = useMemo(
+      () => new Map(volumeQueueKey === '' ? [] : volumeQueueKey.split(',').map((entry) => {
+        const [id, state] = entry.split(':')
+        return [Number(id), state as VolumeQueueState] as const
+      })),
+      [volumeQueueKey],
   )
   const torrentDownloads = useMemo(
       () => (queue?.items ?? []).filter((q) => q.seriesId === seriesId && q.releaseTitle != null),
@@ -718,6 +754,8 @@ function SeriesDetailBody() {
   const setPrepareAhead = useSetSeriesPrepareAhead()
   const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
+  const ratingToast = useRef<string | null>(null)
+  const { format: formatRating } = useRatingFormat()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
   const setSoFar = useSetProvisionalRating()
@@ -1065,6 +1103,12 @@ function SeriesDetailBody() {
     if (lastChapterNumber === null || chapterSortedByRelease) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, lastChapterNumber)
   }, [animeMarkers, lastChapterNumber, chapterSortedByRelease])
+  // What each volume heading names: every adaptation, including one on a single chapter and any past
+  // the lane cap that `animeSpans` drops for the lines.
+  const animeRanges = useMemo(
+      () => (lastChapterNumber === null ? [] : pairAnimeMarkers(animeMarkers, lastChapterNumber)),
+      [animeMarkers, lastChapterNumber],
+  )
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -1127,9 +1171,14 @@ function SeriesDetailBody() {
   /** The span (if any) a marker at this exact chapter number both starts or ends, so its badge can
    *  double as the fold control and as the line's anchor. A marker that lost its pairing, or its
    *  lane to the cap, stays a plain informational badge — same as before spans existed. */
+  // Matched on the label as well as the chapter: a film starting on a season's first chapter would
+  // otherwise take the season's span, its line and its fold.
   const spanForMarker = useCallback(
-      (num: number, kind: 'start' | 'end') =>
-          animeSpans.find((s) => (kind === 'start' ? s.from === num : !s.openEnded && s.to === num)),
+      (num: number, kind: 'start' | 'end', label: string) =>
+          animeSpans.find((s) =>
+            kind === 'start'
+                ? s.from === num && s.label === label
+                : !s.openEnded && s.to === num && (s.endLabel ?? s.label) === label),
       [animeSpans],
   )
 
@@ -1152,32 +1201,19 @@ function SeriesDetailBody() {
    * lines only appeared if the page was loaded straight into Chapters.
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
+  // The volume headings stick under the toolbar, which sticks too and changes height as it wraps.
+  const [chapterHead, setChapterHead] = useState<HTMLDivElement | null>(null)
+  const [chapterHeadHeight, setChapterHeadHeight] = useState(0)
+  useEffect(() => {
+    if (!chapterHead) return
+    // Not offsetHeight: a fractional toolbar would round down and leave a slit above the headings.
+    const observer = new ResizeObserver(() => setChapterHeadHeight(chapterHead.getBoundingClientRect().height))
+    observer.observe(chapterHead)
+    return () => observer.disconnect()
+  }, [chapterHead])
   // Only the layout is state, so a window resize re-renders the page when it crosses a threshold
   // rather than on every pixel. The width itself goes to the column specs' drag limits.
   const [chapterLayoutByWidth, setChapterLayoutByWidth] = useState<ChapterLayout>('full')
-  useEffect(() => {
-    if (!chapterTable) return
-    const observer = new ResizeObserver(([entry]) => {
-      chapterColumnRoom.current.panel = entry.contentRect.width
-      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns))
-    })
-    observer.observe(chapterTable)
-    return () => observer.disconnect()
-  }, [chapterTable, hiddenChapterColumns])
-  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
-  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
-  // actions out of view.
-  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
-  const chapterRowsAsList = chapterLayout === 'list'
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
-  useLayoutEffect(() => {
-    chapterColumnRoom.current.layout = chapterLayout
-    chapterColumnRoom.current.widths = chapterColumnWidths
-    chapterColumnRoom.current.hidden = hiddenChapterColumns
-  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
-  const [spanLines, setSpanLines] = useState<
-      { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
-  >([])
   /**
    * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
    * Without it only the rows that actually carry a badge leave room at the right of the column,
@@ -1185,13 +1221,57 @@ function SeriesDetailBody() {
    */
   const [markerSlot, setMarkerSlot] = useState(0)
   const hasAnimeMarkers = animeMarkers.size > 0
+  // The reserved marker slot (plus the cell's own 18px) widens the Chapter column, so the layout
+  // budgets for it: the panel doesn't scroll sideways while grouped, and a table wider than it
+  // would clip the actions.
+  const markerRoom = hasAnimeMarkers ? markerSlot + 18 : 0
+  useEffect(() => {
+    if (!chapterTable) return
+    const observer = new ResizeObserver(([entry]) => {
+      chapterColumnRoom.current.panel = entry.contentRect.width
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns, markerRoom))
+    })
+    observer.observe(chapterTable)
+    return () => observer.disconnect()
+  }, [chapterTable, hiddenChapterColumns, markerRoom])
+  // A panel that can't hold the default columns first drops Released, then turns rows into two-line
+  // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
+  // actions out of view.
+  const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
+  const chapterRowsAsList = chapterLayout === 'list'
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
+  // A volume heading's name takes Chapter, Released and Title, and its strip takes Source and Status.
+  // List rows ignore column spans, so there the strip always gets its own cell and line.
+  const shownColumns = shownChapterColumns(chapterLayout, hiddenChapterColumns)
+  const volumeNameSpan =
+      1 + (hiddenChapterColumns.has('title') ? 0 : 1) + (shownColumns.includes('released') ? 1 : 0)
+  const volumeProgressSpan = Math.max(
+      chapterRowsAsList ? 1 : 0,
+      shownColumns.filter((key) => key === 'source' || key === 'status').length,
+  )
+  const chapterColumnCount = 2 + volumeNameSpan + volumeProgressSpan
+  useLayoutEffect(() => {
+    chapterColumnRoom.current.layout = chapterLayout
+    chapterColumnRoom.current.widths = chapterColumnWidths
+    chapterColumnRoom.current.hidden = hiddenChapterColumns
+  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
+  const [spanLines, setSpanLines] = useState<{
+    key: string
+    spanKey: string
+    label: string
+    top: number
+    height: number
+    left: number
+    openStart: boolean
+    openEnded: boolean
+  }[]>([])
 
   const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
   const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
   const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
-  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
-  // being in play means the table stays flat.
-  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  // Volumes follow chapter order, so sorting by release date keeps the table flat. Anime seasons
+  // stay as badges and lines inside the volumes; only their folding waits for the flat view.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : null
   const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
   const setChapterGrouping = (on: boolean) => {
     const next = on ? 'on' : 'off'
@@ -1330,6 +1410,54 @@ function SeriesDetailBody() {
    * search on a long page gets the same treatment: the old rows stay until the new ones are ready.
    */
   const shownRows = useDeferredValue(tab === 'chapters' ? pagedRows : NO_ROWS, NO_ROWS)
+
+  // Every volume heading sticks at the same spot for the whole table, so the later one covers the
+  // earlier ones. A heading whose counts wrapped is taller and would show under its successor, so
+  // the covered ones are hidden while the successor is stuck. Focus that lands under the stuck
+  // heading is scrolled clear of it: the browser counts it as on screen and wouldn't move.
+  useEffect(() => {
+    if (!chapterTable || !groupingActive) return
+    let frame = 0
+    const headings = () => [...chapterTable.querySelectorAll<HTMLElement>('tr.chapter-volume-row')]
+    /** The heading pinned under the toolbar right now, if any: the last one at its sticky top. */
+    const stuckHeading = (rows: HTMLElement[]) => {
+      if (rows.length === 0) return null
+      const stickAt = parseFloat(getComputedStyle(rows[0]).top) || 0
+      return rows.findLast((row) => row.getBoundingClientRect().top <= stickAt + 1) ?? null
+    }
+    const update = () => {
+      frame = 0
+      const rows = headings()
+      const stuck = stuckHeading(rows)
+      const stuckIndex = stuck ? rows.indexOf(stuck) : -1
+      rows.forEach((row, i) => row.toggleAttribute('data-covered', i < stuckIndex))
+    }
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(update)
+    }
+    const revealFocus = (event: FocusEvent) => {
+      const el = event.target
+      if (!(el instanceof HTMLElement) || el.closest('tr.chapter-volume-row')) return
+      const stuck = stuckHeading(headings())
+      if (!stuck) return
+      const overlap = stuck.getBoundingClientRect().bottom + 8 - el.getBoundingClientRect().top
+      if (overlap <= 0) return
+      let scroller: HTMLElement | null = el.parentElement
+      while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) {
+        scroller = scroller.parentElement
+      }
+      ;(scroller ?? document.scrollingElement ?? document.documentElement).scrollBy({ top: -overlap })
+    }
+    // Capture, because the page may scroll an inner element rather than the window.
+    document.addEventListener('scroll', schedule, { capture: true, passive: true })
+    chapterTable.addEventListener('focusin', revealFocus)
+    schedule()
+    return () => {
+      document.removeEventListener('scroll', schedule, { capture: true })
+      chapterTable.removeEventListener('focusin', revealFocus)
+      cancelAnimationFrame(frame)
+    }
+  }, [chapterTable, groupingActive, shownRows])
   const chapterRowsLoading = chapters === undefined || (shownRows.length === 0 && pagedRows.length > 0)
 
   useEffect(() => {
@@ -1398,49 +1526,65 @@ function SeriesDetailBody() {
       setMarkerSlot((current) => (current === slot ? current : slot))
 
       const next: typeof spanLines = []
-      const chapterCells = Array.from(wrap.querySelectorAll<HTMLElement>('.chapter-cell[data-chapter-number]'))
+      // Grouped by volume, a season's line stops at each volume heading and picks up again under it,
+      // so the rows are split into runs at the headings and every run gets its own piece of line.
+      const runs: HTMLElement[][] = [[]]
+      for (const row of wrap.querySelectorAll<HTMLElement>('tbody tr')) {
+        if (row.classList.contains('chapter-volume-row')) {
+          if (runs[runs.length - 1].length > 0) runs.push([])
+          continue
+        }
+        const cell = row.querySelector<HTMLElement>('.chapter-cell[data-chapter-number]')
+        if (cell) runs[runs.length - 1].push(cell)
+      }
       for (const span of animeSpans) {
         // An off-page end continues the line; an inferred end is not an actual boundary.
-        if (span.openEnded || foldedSpans.has(span.key)) continue
-        const cells = chapterCells.filter((cell) => {
-          const number = Number(cell.dataset.chapterNumber)
-          return number >= span.from && number <= span.to
-        })
-        if (cells.length === 0) continue
-        const startEl = markerRefs.current.get(`${span.key}:start`)
-        const endEl = markerRefs.current.get(`${span.key}:end`)
-        // Sorted descending, the end badge is the one on top.
-        const topEl = chapterSortDescending ? endEl : startEl
-        const bottomEl = chapterSortDescending ? startEl : endEl
-        // Clip to the visible run, below the table header. Either badge can be on another
-        // page (or hidden by a filter), including both on a middle page of a long season.
-        const top = topEl
-            ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
-            : cells[0].getBoundingClientRect().top - wrapRect.top
-        const bottom = bottomEl
-            ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
-            : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
-        if (bottom - top < 4) continue
+        if (span.openEnded || (!groupingActive && foldedSpans.has(span.key))) continue
+        const startBadge = markerRefs.current.get(`${span.key}:start`)
+        const endBadge = markerRefs.current.get(`${span.key}:end`)
+        for (const [run, runCells] of runs.entries()) {
+          const cells = runCells.filter((cell) => {
+            const number = Number(cell.dataset.chapterNumber)
+            return number >= span.from && number <= span.to
+          })
+          if (cells.length === 0) continue
+          const inRun = (el: HTMLElement | undefined) => (el && cells.some((cell) => cell.contains(el)) ? el : undefined)
+          const startEl = inRun(startBadge)
+          const endEl = inRun(endBadge)
+          // Sorted descending, the end badge is the one on top.
+          const topEl = chapterSortDescending ? endEl : startEl
+          const bottomEl = chapterSortDescending ? startEl : endEl
+          // Clip to the visible run, below the table header. Either badge can be on another
+          // page (or hidden by a filter), including both on a middle page of a long season.
+          const top = topEl
+              ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
+              : cells[0].getBoundingClientRect().top - wrapRect.top
+          const bottom = bottomEl
+              ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
+              : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
+          if (bottom - top < 4) continue
 
-        // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
-        // the series' widest label and centres its badge, so this is one shared x for every season
-        // — a badge's own centre would drift with its label's width. Taking it off the slot rather
-        // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
-        // that carries two markers (one season ending where the next begins).
-        const anchor = startEl ?? endEl
-        const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
-        if (!holder) continue
-        const holderRect = holder.getBoundingClientRect()
+          // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
+          // the series' widest label and centres its badge, so this is one shared x for every season
+          // — a badge's own centre would drift with its label's width. Taking it off the slot rather
+          // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
+          // that carries two markers (one season ending where the next begins).
+          const anchor = startEl ?? endEl
+          const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
+          if (!holder) continue
+          const holderRect = holder.getBoundingClientRect()
 
-        next.push({
-          key: span.key,
-          label: span.label,
-          top,
-          height: bottom - top,
-          left: holderRect.left - wrapRect.left + holderRect.width / 2,
-          openStart: !topEl,
-          openEnded: !bottomEl,
-        })
+          next.push({
+            key: `${span.key}:${run}`,
+            spanKey: span.key,
+            label: span.label,
+            top,
+            height: bottom - top,
+            left: holderRect.left - wrapRect.left + holderRect.width / 2,
+            openStart: !topEl,
+            openEnded: !bottomEl,
+          })
+        }
       }
 
       // Same-value bail-out: this runs from a ResizeObserver, and setting state that re-renders
@@ -1477,12 +1621,15 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
+  }, [chapterTable, animeSpans, foldedSpans, groupingActive, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
-  // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
-  // together cover a third of the screen.
+  // On a desktop the search sits in the Chapters heading beside Select. On a phone only the toolbar
+  // stays pinned and the search scrolls away with the page, or the two together cover a third of
+  // the screen.
   const chapterSearchInput = chapters && chapters.length > 0 && (
       <SearchInput
+          className="chapter-search"
+          size={isMobile ? undefined : 'xs'}
           mt={isMobile ? -8 : undefined}
           value={chapterSearch}
           onChange={(event) => setChapterSearch(event.currentTarget.value)}
@@ -1644,7 +1791,7 @@ function SeriesDetailBody() {
 
   if (isLoading) {
     return (
-        <SurfaceFrame width="full" pageStyle="editorial">
+        <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
           <SeriesHeroSkeleton />
           {luckyPill}
         </SurfaceFrame>
@@ -1849,23 +1996,53 @@ function SeriesDetailBody() {
     queueAllWanted()
   }
 
-  const submitRating = (rating: number | null) => {
+  const submitRating = (value: number | null) => {
     if (!series) return
-    rateSeries.rate(series, rating, (soFar) =>
-        notify.ok(
-            rating === null
-                ? staticT`Rating cleared`
-                : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`,
+    rateSeries.rate(series, value, (soFar, undo) => {
+      const rating = value === null ? null : formatRating(value)
+      const message =
+          rating === null
+              ? staticT`Rating cleared`
+              : soFar ? staticT`Rated ${rating}/10 so far` : staticT`Rated ${rating}/10`
+      // One rating toast at a time: an older one's Undo would put back a score from before the newer pick.
+      if (ratingToast.current) notifications.hide(ratingToast.current)
+      if (!undo) {
+        ratingToast.current = null
+        notify.ok(message)
+        return
+      }
+      const id = notifications.show({
+        color: 'var(--ok)',
+        message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">{message}</Text>
+              <Button
+                  size="xs"
+                  variant="subtle"
+                  style={{ flexShrink: 0 }}
+                  onClick={() => {
+                    notifications.hide(id)
+                    ratingToast.current = null
+                    undo()
+                  }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
         ),
-    )
+      })
+      ratingToast.current = id
+    })
   }
 
   const keepRating = () =>
       finalizeRating.mutate(
           { seriesId },
           {
-            onSuccess: ({ rating }) => {
-              if (rating != null) notify.ok(staticT`Rated ${rating}/10`)
+            onSuccess: ({ rating: kept }) => {
+              if (kept == null) return
+              const rating = formatRating(kept)
+              notify.ok(staticT`Rated ${rating}/10`)
             },
           },
       )
@@ -2231,9 +2408,10 @@ function SeriesDetailBody() {
     )
 
   return (
-    <SurfaceFrame width="full" pageStyle="editorial">
+    <SurfaceFrame width="full" pageStyle="editorial" className="series-page">
       <Tabs
           className="series-detail-surface"
+          data-tab={tab}
           value={tab}
           onChange={changeTab}
           variant="unstyled"
@@ -2559,6 +2737,7 @@ function SeriesDetailBody() {
             }
         />
 
+        <div className="series-tab-stage" data-tab-switched={tabSwitched || undefined}>
         {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
@@ -2566,15 +2745,27 @@ function SeriesDetailBody() {
             onRate={submitRating}
             onKeep={keepRating}
             onDismiss={() => dismissRateHint.mutate(series.id)}
+            panel={{
+              seriesId: series.id,
+              value: series.rating,
+              finished: true,
+              breakdown: series.ratingBreakdown ?? null,
+              onChange: submitRating,
+            }}
           />
         ) : series.ratingCheckpoint ? (
           <RatingCheckpointPrompt
             checkpoint={series.ratingCheckpoint}
             soFar={series.provisionalRating ?? null}
-            onRate={(rating) =>
+            onRate={(value) =>
               setSoFar.mutate(
-                { seriesId: series.id, rating },
-                { onSuccess: () => notify.ok(staticT`Rated ${rating}/10 so far`) },
+                { seriesId: series.id, rating: value },
+                {
+                  onSuccess: () => {
+                    const rating = formatRating(value)
+                    notify.ok(staticT`Rated ${rating}/10 so far`)
+                  },
+                },
               )
             }
             onDismiss={() => dismissCheckpoint.mutate(series.id)}
@@ -2755,27 +2946,43 @@ function SeriesDetailBody() {
 
               <div className="series-split-row">
                 <Panel className="series-detail-source-panel series-machine">
-                  {series.numberingClash && (
+                  {numberingClashes.length > 0 && (
                       <Callout
                           style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={t`Sources disagree on chapter numbering`}
                       >
                         {(() => {
-                          const [sub, whole] = series.numberingClash.split('|')
-                          return (
-                              <>
-                                <Trans>
-                                  <Text span fw={600}>
+                          const sentences = numberingClashes.map((pair) => {
+                            const sub = sourceLabel(pair.sub)
+                            const whole = sourceLabel(pair.whole)
+                            return (
+                                <Trans key={`${pair.sub}|${pair.whole}`}>
+                                  <Text span inherit fw={600}>
                                     {sub}
                                   </Text>{' '}
                                   lists sub-chapters (1.1, 1.2, …) where{' '}
-                                  <Text span fw={600}>
+                                  <Text span inherit fw={600}>
                                     {whole}
                                   </Text>{' '}
                                   lists whole chapters for the same content, so both appear as separate rows below.
-                                </Trans>{' '}
-                                <Trans>There is no safe automatic merge.</Trans>{' '}
-                                <Trans>Consider disabling one of the two source mappings; the warning clears on the next refresh.</Trans>
+                                </Trans>
+                            )
+                          })
+                          return numberingClashes.length === 1 ? (
+                              <>
+                                {sentences[0]}{' '}
+                                <Trans>Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm.</Trans>{' '}
+                                <Trans>Disabling one of the two source mappings removes them.</Trans>
+                              </>
+                          ) : (
+                              <>
+                                <List size="sm" spacing={4} my={4}>
+                                  {sentences.map((sentence, i) => (
+                                      <List.Item key={i}>{sentence}</List.Item>
+                                  ))}
+                                </List>
+                                <Trans>Maki merges split chapters into the whole chapter once their pages match, so these are the ones it could not confirm.</Trans>{' '}
+                                <Trans>Disabling one source mapping in each pair removes them.</Trans>
                               </>
                           )
                         })()}
@@ -2836,6 +3043,7 @@ function SeriesDetailBody() {
                                 seriesTitle={series.title}
                                 altTitles={series.altTitles}
                                 matching={series.sourceMatchPending}
+                                numberingClashes={numberingClashes}
                             />
                           </div>
                         </div>
@@ -2969,7 +3177,7 @@ function SeriesDetailBody() {
                         </RecordRow>
                     )}
                     {series.rootFolderPath && (
-                        <RecordRow label={t`Folder`}>
+                        <RecordRow label={t`Folder`} wide>
                           <MonoValue value={series.rootFolderPath} copy wrap c="var(--ink-3)" />
                         </RecordRow>
                     )}
@@ -3025,7 +3233,7 @@ function SeriesDetailBody() {
         <Modal
             opened={nextCountOpen}
             onClose={() => setNextCountOpen(false)}
-            title={t`Download next chapters`}
+            title={<ModalHeading title={t`Download next chapters`} />}
         >
           <Stack
               component="form"
@@ -3152,31 +3360,43 @@ function SeriesDetailBody() {
 
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
-            <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
+            <div
+                className="series-detail-chapter-head"
+                data-sticky
+                data-grouped={groupingActive || undefined}
+                ref={setChapterHead}
+            >
               <Stack className="series-detail-chapter-toolbar" gap="sm">
                 <SectionHeader
                     icon={IconBook}
                     title={t`Chapters`}
                     count={chapters ? chaptersCounted : undefined}
-                    action={chapters && chapters.length > 0 && !selectMode && (
+                    action={chapters && chapters.length > 0 && (
                       isMobile ? (
-                          <ActionIcon
-                              size="input-xs"
-                              variant="default"
-                              aria-label={t`Select`}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <IconListCheck size={16} />
-                          </ActionIcon>
+                          !selectMode && (
+                              <ActionIcon
+                                  size="input-xs"
+                                  variant="default"
+                                  aria-label={t`Select`}
+                                  onClick={() => setSelectMode(true)}
+                              >
+                                <IconListCheck size={16} />
+                              </ActionIcon>
+                          )
                       ) : (
-                          <Button
-                              size="xs"
-                              variant="default"
-                              leftSection={<IconListCheck size={16} />}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <Trans>Select</Trans>
-                          </Button>
+                          <Group gap="xs" wrap="nowrap">
+                            {chapterSearchInput}
+                            {!selectMode && (
+                                <Button
+                                    size="xs"
+                                    variant="default"
+                                    leftSection={<IconListCheck size={16} />}
+                                    onClick={() => setSelectMode(true)}
+                                >
+                                  <Trans>Select</Trans>
+                                </Button>
+                            )}
+                          </Group>
                       )
                     )}
                 />
@@ -3264,9 +3484,168 @@ function SeriesDetailBody() {
                       />
                     </Group>
                 )}
+                {selectMode && (
+                    <div className="series-detail-chapter-selection" role="toolbar" aria-label={t`Selected chapters`}>
+                      <Group justify="space-between" wrap="wrap" gap="xs">
+                        <Group gap="xs">
+                          <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
+                            <IconX size={16} />
+                          </ActionIcon>
+                          <Text size="sm" fw={600} c="var(--ink-hi)" className="tnum">
+                            <Trans>{selectedCount} selected</Trans>
+                          </Text>
+                          <Menu shadow="md" position="bottom-start" withinPortal>
+                            <Menu.Target>
+                              <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
+                                <Trans>Select all</Trans>
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              {/* Every item works over the rows the filter is showing, same as a shift-range,
+                            so "Specials" under the Missing filter means the specials you can see. */}
+                              <Menu.Item
+                                  className="tnum"
+                                  onClick={() => selectAll(() => true)}
+                              >
+                                <Trans>All ({visibleAllCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Item
+                                  className="tnum"
+                                  disabled={visibleMain.length === 0}
+                                  onClick={() => selectAll((c) => !isSpecial(c))}
+                              >
+                                <Trans>Main ({visibleMainCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Item
+                                  className="tnum"
+                                  disabled={visibleSpecials.length === 0}
+                                  onClick={() => selectAll(isSpecial)}
+                              >
+                                <Trans>Specials ({visibleSpecialsCount})</Trans>
+                              </Menu.Item>
+                              <Menu.Divider />
+                              <Menu.Item
+                                  disabled={selected.size === 0}
+                                  onClick={() => {
+                                    selectAnchor.current = null
+                                    setSelected(new Set())
+                                  }}
+                              >
+                                <Trans>Clear</Trans>
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                          <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
+                            <Trans>Click a row to select, shift-click for a range</Trans>
+                          </Text>
+                        </Group>
+                        <Group gap="xs">
+                          {chapterPrimaryActions.map((a) => {
+                            const button = (
+                              <Button
+                                  key={a.key}
+                                  visibleFrom="sm"
+                                  size="xs"
+                                  variant={a.key === 'download' ? 'filled' : 'default'}
+                                  leftSection={a.icon}
+                                  disabled={selected.size === 0}
+                                  data-disabled={a.disabled || undefined}
+                                  aria-disabled={a.disabled || undefined}
+                                  loading={a.loading}
+                                  onClick={a.run}
+                              >
+                                {a.label}
+                              </Button>
+                            )
+                            return a.key === 'download' ? (
+                                <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
+                                  {button}
+                                </Tooltip>
+                            ) : (
+                                button
+                            )
+                          })}
+                          {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
+                              <Menu position="bottom-end" withinPortal>
+                                <Menu.Target>
+                                  <Button
+                                      size="xs"
+                                      variant="default"
+                                      rightSection={<IconChevronDown size={16} />}
+                                      disabled={selected.size === 0}
+                                      loading={chapterMoreBusy}
+                                      className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
+                                  >
+                                    <Text span inherit visibleFrom="sm">
+                                      <Trans>More</Trans>
+                                    </Text>
+                                    <Text span inherit hiddenFrom="sm">
+                                      <Trans>Actions</Trans>
+                                    </Text>
+                                  </Button>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  {chapterPrimaryActions.map((a) => (
+                                      <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
+                                        {a.label}
+                                      </Menu.Item>
+                                  ))}
+                                  {chapterMoreGroups.map((group, i) => (
+                                      <Fragment key={group[0].key}>
+                                        {(i > 0 || chapterPrimaryActions.length > 0) && (
+                                            <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
+                                        )}
+                                        {group.map((a) => (
+                                            <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                                              {a.label}
+                                            </Menu.Item>
+                                        ))}
+                                      </Fragment>
+                                  ))}
+                                </Menu.Dropdown>
+                              </Menu>
+                          )}
+                          {canDelete && (
+                              <>
+                                <Divider orientation="vertical" className="library-bulk-divider" />
+                                <Menu position="bottom-end" withinPortal>
+                                  <Menu.Target>
+                                    <Button
+                                        size="xs"
+                                        variant="light"
+                                        color="var(--danger)"
+                                        leftSection={<IconTrash size={16} />}
+                                        rightSection={<IconChevronDown size={16} />}
+                                        disabled={selected.size === 0}
+                                    >
+                                      <Trans>Delete</Trans>
+                                    </Button>
+                                  </Menu.Target>
+                                  <Menu.Dropdown>
+                                    <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
+                                      <Trans>Delete files</Trans>
+                                    </Menu.Item>
+                                    <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
+                                      <Trans>Remove chapters</Trans>
+                                    </Menu.Item>
+                                  </Menu.Dropdown>
+                                </Menu>
+                              </>
+                          )}
+                          <Button
+                              visibleFrom="sm"
+                              size="xs"
+                              variant="default"
+                              leftSection={<IconX size={16} />}
+                              onClick={exitSelectMode}
+                          >
+                            <Trans>Done</Trans>
+                          </Button>
+                        </Group>
+                      </Group>
+                    </div>
+                )}
               </Stack>
-
-              {!isMobile && chapterSearchInput}
             </div>
             {isMobile && chapterSearchInput}
 
@@ -3467,14 +3846,26 @@ function SeriesDetailBody() {
                       ].join(' ')}
                       withBorder
                       radius="lg"
-                      style={{ overflow: 'hidden' }}
+                      // Clip rather than hidden: a hidden overflow makes the panel a scroll container,
+                      // and the volume headings could then never stick to the page.
+                      style={{
+                        overflow: 'clip',
+                        '--chapter-sticky-top': `calc(var(--app-shell-header-offset, 0px) + ${chapterHeadHeight}px)`,
+                      } as React.CSSProperties}
                   >
                     <Box
                         pos="relative"
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}>
+                      {/* The layout is picked so the table fits the panel. Grouped, the container must not
+                          scroll, or the volume headings couldn't stick to the page; flat, it keeps
+                          sideways scrolling as the fallback for a table that still comes out wider. */}
+                      <Table.ScrollContainer
+                          type="native"
+                          minWidth={chapterRowsAsList ? 0 : chapterTableMinWidth}
+                          style={groupingActive ? { overflow: 'clip' } : { overflowX: 'auto' }}
+                      >
                         <Table
                             className="chapter-table"
                             highlightOnHover
@@ -3493,16 +3884,16 @@ function SeriesDetailBody() {
                                     <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
                                 )}
                               </Table.Th>
+                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
+                                <Trans>Released</Trans>
+                                {!chapterRowsAsList && (
+                                    <div {...chapterColumnHandle('released')} aria-label={t`Resize Released column`} />
+                                )}
+                              </Table.Th>
                               <Table.Th>
                                 {/* Less the cell's padding. The table's min-width alone doesn't stop the
                                     browser squeezing Title when the other columns grow. */}
                                 <Box miw={CHAPTER_TITLE_MIN_WIDTH - 32}><Trans>Title</Trans></Box>
-                              </Table.Th>
-                              <Table.Th w={chapterColumnWidths.released} className="chapter-released">
-                                <Trans>Released</Trans>
-                                {!chapterRowsAsList && (
-                                    <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
-                                )}
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.source}>
                                 <Trans>Source</Trans>
@@ -3524,7 +3915,7 @@ function SeriesDetailBody() {
                                 <ChapterRowSkeletons count={pagedRows.length > 0 ? Math.min(pagedRows.length, 12) : 8} />
                             ) : (
                                 <ChunkedRows rows={shownRows}>
-                                  {(rows) => rows.map((row) => {
+                                  {(rows) => rows.map((row, index) => {
                                   if (row.kind === 'volume') {
                                     return (
                                         <ChapterVolumeRow
@@ -3532,7 +3923,13 @@ function SeriesDetailBody() {
                                             group={row.group}
                                             collapsed={row.collapsed}
                                             readProgress={readProgress}
+                                            queueStates={volumeQueueStates}
+                                            seasons={animeRanges}
                                             readTracking={readTracking}
+                                            nameSpan={volumeNameSpan}
+                                            progressSpan={volumeProgressSpan}
+                                            columnCount={chapterColumnCount}
+                                            gapBefore={index > 0}
                                             canEditMetadata={canEditMetadata}
                                             canDownload={canDownload}
                                             downloadDisabled={archived}
@@ -3572,6 +3969,7 @@ function SeriesDetailBody() {
                                           markers={markers}
                                           foldedSpans={markers ? foldedSpans : undefined}
                                           spanForMarker={spanForMarker}
+                                          spanFoldable={!groupingActive}
                                           canEditMetadata={canEditMetadata}
                                           canDownload={canDownload}
                                           canDelete={canDelete}
@@ -3601,6 +3999,19 @@ function SeriesDetailBody() {
                       <div className="chapter-span-overlay" aria-hidden={spanLines.length === 0}>
                         {spanLines.map((line) => {
                           const { label: lineLabel } = line
+                          // Grouped by volume, seasons don't fold, so the line is only a marker.
+                          if (groupingActive) {
+                            return (
+                                <span
+                                    key={line.key}
+                                    className="chapter-span-line"
+                                    data-static=""
+                                    style={{ top: line.top, height: line.height, left: line.left }}
+                                    data-open-start={line.openStart ? '' : undefined}
+                                    data-open-ended={line.openEnded ? '' : undefined}
+                                />
+                            )
+                          }
                           return (
                             <button
                                 key={line.key}
@@ -3611,7 +4022,7 @@ function SeriesDetailBody() {
                                 data-open-ended={line.openEnded ? '' : undefined}
                                 title={t`${lineLabel}. Click to collapse.`}
                                 aria-label={t`Collapse ${lineLabel}`}
-                                onClick={() => toggleSpanFold(line.key)}
+                                onClick={() => toggleSpanFold(line.spanKey)}
                             />
                           )
                         })}
@@ -3641,167 +4052,6 @@ function SeriesDetailBody() {
                         />
                       </Group>
                   )}
-              {selectMode && (
-                  <div className="series-detail-chapter-selection" role="toolbar" aria-label={t`Selected chapters`}>
-                    <Group justify="space-between" wrap="wrap" gap="xs">
-                      <Group gap="xs">
-                        <ActionIcon hiddenFrom="sm" variant="default" onClick={exitSelectMode} aria-label={t`Done`}>
-                          <IconX size={16} />
-                        </ActionIcon>
-                        <Text size="sm" fw={600} c="var(--ink-hi)" className="tnum">
-                          <Trans>{selectedCount} selected</Trans>
-                        </Text>
-                        <Menu shadow="md" position="bottom-start" withinPortal>
-                          <Menu.Target>
-                            <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={16} />}>
-                              <Trans>Select all</Trans>
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            {/* Every item works over the rows the filter is showing, same as a shift-range,
-                          so "Specials" under the Missing filter means the specials you can see. */}
-                            <Menu.Item
-                                className="tnum"
-                                onClick={() => selectAll(() => true)}
-                            >
-                              <Trans>All ({visibleAllCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Item
-                                className="tnum"
-                                disabled={visibleMain.length === 0}
-                                onClick={() => selectAll((c) => !isSpecial(c))}
-                            >
-                              <Trans>Main ({visibleMainCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Item
-                                className="tnum"
-                                disabled={visibleSpecials.length === 0}
-                                onClick={() => selectAll(isSpecial)}
-                            >
-                              <Trans>Specials ({visibleSpecialsCount})</Trans>
-                            </Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item
-                                disabled={selected.size === 0}
-                                onClick={() => {
-                                  selectAnchor.current = null
-                                  setSelected(new Set())
-                                }}
-                            >
-                              <Trans>Clear</Trans>
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                        <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
-                          <Trans>Click a row to select, shift-click for a range</Trans>
-                        </Text>
-                      </Group>
-                      <Group gap="xs">
-                        {chapterPrimaryActions.map((a) => {
-                          const button = (
-                            <Button
-                                key={a.key}
-                                visibleFrom="sm"
-                                size="xs"
-                                variant={a.key === 'download' ? 'filled' : 'default'}
-                                leftSection={a.icon}
-                                disabled={selected.size === 0}
-                                data-disabled={a.disabled || undefined}
-                                aria-disabled={a.disabled || undefined}
-                                loading={a.loading}
-                                onClick={a.run}
-                            >
-                              {a.label}
-                            </Button>
-                          )
-                          return a.key === 'download' ? (
-                              <Tooltip key={a.key} label={archivedReason} withArrow disabled={!archived} events={TOOLTIP_EVENTS}>
-                                {button}
-                              </Tooltip>
-                          ) : (
-                              button
-                          )
-                        })}
-                        {(chapterPrimaryActions.length > 0 || chapterMoreGroups.length > 0) && (
-                            <Menu position="bottom-end" withinPortal>
-                              <Menu.Target>
-                                <Button
-                                    size="xs"
-                                    variant="default"
-                                    rightSection={<IconChevronDown size={16} />}
-                                    disabled={selected.size === 0}
-                                    loading={chapterMoreBusy}
-                                    className={chapterMoreGroups.length === 0 ? 'library-bulk-more-phone' : undefined}
-                                >
-                                  <Text span inherit visibleFrom="sm">
-                                    <Trans>More</Trans>
-                                  </Text>
-                                  <Text span inherit hiddenFrom="sm">
-                                    <Trans>Actions</Trans>
-                                  </Text>
-                                </Button>
-                              </Menu.Target>
-                              <Menu.Dropdown>
-                                {chapterPrimaryActions.map((a) => (
-                                    <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} disabled={a.disabled} onClick={a.run}>
-                                      {a.label}
-                                    </Menu.Item>
-                                ))}
-                                {chapterMoreGroups.map((group, i) => (
-                                    <Fragment key={group[0].key}>
-                                      {(i > 0 || chapterPrimaryActions.length > 0) && (
-                                          <Menu.Divider hiddenFrom={i === 0 ? 'sm' : undefined} />
-                                      )}
-                                      {group.map((a) => (
-                                          <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
-                                            {a.label}
-                                          </Menu.Item>
-                                      ))}
-                                    </Fragment>
-                                ))}
-                              </Menu.Dropdown>
-                            </Menu>
-                        )}
-                        {canDelete && (
-                            <>
-                              <Divider orientation="vertical" className="library-bulk-divider" />
-                              <Menu position="bottom-end" withinPortal>
-                                <Menu.Target>
-                                  <Button
-                                      size="xs"
-                                      variant="light"
-                                      color="var(--danger)"
-                                      leftSection={<IconTrash size={16} />}
-                                      rightSection={<IconChevronDown size={16} />}
-                                      disabled={selected.size === 0}
-                                  >
-                                    <Trans>Delete</Trans>
-                                  </Button>
-                                </Menu.Target>
-                                <Menu.Dropdown>
-                                  <Menu.Item leftSection={<IconTrash size={16} />} onClick={() => setDeleteFileIds([...selected])}>
-                                    <Trans>Delete files</Trans>
-                                  </Menu.Item>
-                                  <Menu.Item leftSection={<IconRowRemove size={16} />} onClick={() => setDeleteChaptersModalOpen(true)}>
-                                    <Trans>Remove chapters</Trans>
-                                  </Menu.Item>
-                                </Menu.Dropdown>
-                              </Menu>
-                            </>
-                        )}
-                        <Button
-                            visibleFrom="sm"
-                            size="xs"
-                            variant="default"
-                            leftSection={<IconX size={16} />}
-                            onClick={exitSelectMode}
-                        >
-                          <Trans>Done</Trans>
-                        </Button>
-                      </Group>
-                    </Group>
-                  </div>
-              )}
                 </Stack>
             )}
           </Stack>
@@ -3812,6 +4062,7 @@ function SeriesDetailBody() {
             <SeriesFilesSection seriesId={seriesId} />
           </div>
         </Tabs.Panel>
+        </div>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
         <ArchiveSeriesDialog
@@ -3830,7 +4081,12 @@ function SeriesDetailBody() {
           onConfirmPermanent={binRefused === 'archive' ? () => archiveCurrent(true) : undefined}
           leavingRating={
             ratesProvisionally(series)
-              ? { value: leavingRating, soFar: series.provisionalRating ?? null, onChange: setLeavingRating }
+              ? {
+                  value: leavingRating,
+                  soFar: series.provisionalRating ?? null,
+                  onChange: setLeavingRating,
+                  breakdown: series.ratingBreakdown ?? null,
+                }
               : undefined
           }
         />
@@ -3896,7 +4152,7 @@ function SeriesDetailBody() {
         <Modal
             opened={requestModalOpen}
             onClose={() => setRequestModalOpen(false)}
-            title={t`Request chapters of ${seriesTitle}`}
+            title={<ModalHeading title={t`Request chapters of ${seriesTitle}`} />}
         >
           <RequestForm
               chapterStart={requestStart}
@@ -3907,6 +4163,7 @@ function SeriesDetailBody() {
               onNote={setRequestNote}
               pending={createRequest.isPending}
               label={t`Send request`}
+              onCancel={() => setRequestModalOpen(false)}
               onSubmit={() =>
                   createRequest.mutate(
                       {
@@ -4039,9 +4296,9 @@ function ListedChapters({ known, specials }: { known: number; specials: number }
 }
 
 /** One labelled line in the Metadata panel. Separated by a hairline, not boxed. */
-function RecordRow({ label, children }: { label: string; children: ReactNode }) {
+function RecordRow({ label, wide, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-      <div className="series-record">
+      <div className="series-record" data-wide={wide || undefined}>
         <Text size="xs" c="var(--ink-4)">
           {label}
         </Text>

@@ -1,0 +1,520 @@
+using Maki.Api.Services;
+using Maki.Core.Entities;
+using Maki.Core.Sources;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Maki.Api.Tests;
+
+public sealed class ChapterFoldServiceTests : IDisposable
+{
+    private readonly TestDb _db = new();
+    private readonly FakeSource _parts = new() { Name = "parts" };
+    private readonly FakeSource _whole = new() { Name = "whole" };
+
+    public void Dispose() => _db.Dispose();
+
+    private static SourceMapping Mapping(string source) => new()
+    {
+        SourceName = source, SourceSeriesId = "series", Url = $"https://{source}.test/series", Priority = 1, Enabled = true,
+    };
+
+    private static List<ulong> Hashes(int from, int count) => [.. Enumerable.Range(from, count).Select(seed =>
+    {
+        var random = new Random(seed);
+        ulong hash;
+        do
+        {
+            hash = (ulong)random.NextInt64();
+        }
+        while (System.Numerics.BitOperations.PopCount(hash) is < 24 or > 40);
+
+        return hash;
+    })];
+
+    private static readonly List<ulong> Whole = Hashes(0, 39);
+
+    /// <summary>
+    /// Chapter 3 whole on "whole", 3.1 (13 pages) and 3.2 (26) on "parts", their pages the whole's; 4 on both.
+    /// The counts nominate the fold and the hashes confirm it.
+    /// </summary>
+    private int Seed(Action<Microsoft.EntityFrameworkCore.DbContext, Dictionary<decimal, Chapter>>? more = null)
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("parts"), Mapping("whole")]);
+        using var db = _db.NewContext();
+        var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToDictionary(m => m.SourceName);
+        var rows = new Dictionary<decimal, Chapter>();
+        void Link(FakeSource source, decimal number, int pages, IEnumerable<ulong>? hashes)
+        {
+            if (!rows.TryGetValue(number, out var chapter))
+            {
+                chapter = db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = number, Language = "en", Wanted = true }).Entity;
+                rows[number] = chapter;
+            }
+
+            var sc = source.Chapter(number);
+            db.ChapterSourceLinks.Add(new ChapterSourceLink
+            {
+                Chapter = chapter, SourceMappingId = mappings[source.Name].Id, SourceChapterId = sc.SourceChapterId,
+                NumberRaw = sc.NumberRaw, PageCount = pages,
+                PageHashes = hashes is null ? null : ChapterPageMatch.Format(hashes),
+            });
+        }
+
+        Link(_parts, 3.1m, 13, Whole[..13]);
+        Link(_parts, 3.2m, 26, Whole[13..]);
+        Link(_parts, 4, 40, null);
+        Link(_whole, 3, 39, Whole);
+        Link(_whole, 4, 40, null);
+        db.SaveChanges();
+        more?.Invoke(db, rows);
+        db.SaveChanges();
+        return seriesId;
+    }
+
+    private ChapterFoldService Folds()
+    {
+        var db = _db.NewContext();
+        return new ChapterFoldService(
+            db,
+            new ChapterFoldPreviewService(db, Sources.AllEnabled),
+            new ChapterFileDeletion(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
+                TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance),
+            TimeProvider.System,
+            NullLogger<ChapterFoldService>.Instance);
+    }
+
+    private ChapterSyncService Sync() => new(
+        _db.NewContext(),
+        new SourceRegistry([_parts, _whole]),
+        new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+        Sources.AllEnabled,
+        new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+        new FakeAppSettings(),
+        NullLogger<ChapterSyncService>.Instance);
+
+    private List<Chapter> Chapters(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return [.. db.Chapters.Include(c => c.SourceLinks).ThenInclude(l => l.SourceMapping)
+            .Where(c => c.SeriesId == seriesId).AsEnumerable().OrderBy(c => c.Number)];
+    }
+
+    [Fact]
+    public async Task Confirmed_parts_become_one_link_on_the_whole_chapter()
+    {
+        var seriesId = Seed();
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        var chapters = Chapters(seriesId);
+        Assert.Equal([3m, 4m], chapters.Select(c => c.Number!.Value));
+        var link = chapters[0].SourceLinks.Single(l => l.SourceMapping!.SourceName == "parts");
+        Assert.Equal(_parts.Chapter(3.1m).SourceChapterId, link.SourceChapterId);
+        Assert.Equal([3.1m, 3.2m], ChapterFoldPart.Parse(link.Parts).Select(p => p.Number));
+        Assert.Equal(39, link.PageCount);
+        Assert.Equal(Whole, ChapterPageMatch.Parse(link.PageHashes));
+        using var db = _db.NewContext();
+        Assert.Equal(3m, db.ChapterFolds.Single(f => f.SeriesId == seriesId).Floor);
+    }
+
+    [Fact]
+    public async Task Folding_clears_the_clash_warning_without_waiting_for_a_refresh()
+    {
+        var seriesId = Seed(more: (db, rows) =>
+        {
+            var id = rows[3].SeriesId;
+            db.Set<Series>().Single(s => s.Id == id).NumberingClash = "parts|whole";
+            var mappings = db.Set<SourceMapping>().Where(m => m.SeriesId == id).ToDictionary(m => m.SourceName, m => m.Id);
+            foreach (var (source, number) in new[] { ("parts", 5.1m), ("parts", 5.2m), ("parts", 6.1m), ("whole", 5m), ("whole", 6m) })
+            {
+                var row = db.Add(new Chapter { SeriesId = id, Number = number, Language = "en" }).Entity;
+                db.Add(new ChapterSourceLink
+                {
+                    Chapter = row, SourceMappingId = mappings[source], SourceChapterId = $"{source}{number}", NumberRaw = $"{number}",
+                });
+            }
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+        using (var db = _db.NewContext())
+        {
+            // 5.1, 5.2 and 6.1 still clash, so the pair stays.
+            Assert.Equal("parts|whole", db.Series.Single(s => s.Id == seriesId).NumberingClash);
+        }
+
+        var clean = Seed(more: (db, rows) => db.Set<Series>().Single(s => s.Id == rows[3].SeriesId).NumberingClash = "parts|whole");
+        Assert.Equal(1, await Folds().ApplyAsync(clean, CancellationToken.None));
+        using (var db = _db.NewContext())
+        {
+            Assert.Null(db.Series.Single(s => s.Id == clean).NumberingClash);
+        }
+    }
+
+    [Fact]
+    public async Task A_sync_keeps_a_fold_while_the_source_lists_the_same_parts()
+    {
+        var seriesId = Seed();
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+        var parts = new FakeSource { Name = "parts", OnListChapters = _ => [_parts.Chapter(3.1m), _parts.Chapter(3.2m), _parts.Chapter(4)] };
+        var whole = new FakeSource { Name = "whole", OnListChapters = _ => [_whole.Chapter(3), _whole.Chapter(4)] };
+
+        var added = await new ChapterSyncService(
+            _db.NewContext(), new SourceRegistry([parts, whole]),
+            new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+            Sources.AllEnabled, new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            new FakeAppSettings(), NullLogger<ChapterSyncService>.Instance).SyncSeriesAsync(seriesId, CancellationToken.None);
+
+        Assert.Empty(added);
+        var chapters = Chapters(seriesId);
+        Assert.Equal([3m, 4m], chapters.Select(c => c.Number!.Value));
+        Assert.NotNull(chapters[0].SourceLinks.Single(l => l.SourceMapping!.SourceName == "parts").Parts);
+        using var db = _db.NewContext();
+        Assert.Null(db.Series.Single(s => s.Id == seriesId).NumberingClash);
+    }
+
+    [Fact]
+    public async Task A_part_the_source_no_longer_lists_unfolds_the_chapter()
+    {
+        var seriesId = Seed();
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+        var parts = new FakeSource { Name = "parts", OnListChapters = _ => [_parts.Chapter(3.1m), _parts.Chapter(4)] };
+        var whole = new FakeSource { Name = "whole", OnListChapters = _ => [_whole.Chapter(3), _whole.Chapter(4)] };
+
+        await new ChapterSyncService(
+            _db.NewContext(), new SourceRegistry([parts, whole]),
+            new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+            Sources.AllEnabled, new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            new FakeAppSettings(), NullLogger<ChapterSyncService>.Instance).SyncSeriesAsync(seriesId, CancellationToken.None);
+
+        var chapters = Chapters(seriesId);
+        Assert.Equal([3m, 3.1m, 4m], chapters.Select(c => c.Number!.Value));
+        Assert.DoesNotContain(chapters[0].SourceLinks, l => l.SourceMapping!.SourceName == "parts");
+        using var db = _db.NewContext();
+        Assert.Empty(db.ChapterFolds.Where(f => f.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task Reads_on_the_parts_move_onto_the_whole_at_the_same_page()
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            var now = DateTime.UtcNow;
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.1m].SeriesId, ChapterId = rows[3.1m].Id, PageIndex = 12, PageCount = 13,
+                Completed = true, CompletedAt = now.AddHours(-1), ReadSeconds = 100, ReportedSeconds = 100, StartedAt = now.AddHours(-2), UpdatedAt = now.AddHours(-1),
+            });
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 5, PageCount = 26,
+                ReadSeconds = 40, ReportedSeconds = 20, StartedAt = now.AddMinutes(-30), UpdatedAt = now,
+            });
+            db.Add(new ReaderBookmark { UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 2, CreatedAt = now });
+        });
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var check = _db.NewContext();
+        var three = check.Chapters.Single(c => c.SeriesId == seriesId && c.Number == 3m).Id;
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.Equal(three, progress.ChapterId);
+        Assert.False(progress.Completed);
+        Assert.Equal(13 + 5, progress.PageIndex);
+        Assert.Equal(39, progress.PageCount);
+        Assert.Equal(140, progress.ReadSeconds);
+        Assert.Equal(120, progress.ReportedSeconds);
+        var bookmark = check.ReaderBookmarks.IgnoreQueryFilters().Single(b => b.SeriesId == seriesId);
+        Assert.Equal((three, 15), (bookmark.ChapterId, bookmark.PageIndex));
+    }
+
+    [Fact]
+    public async Task A_part_on_disk_waits_until_the_whole_is_downloaded()
+    {
+        var seriesId = Seed((db, rows) =>
+        {
+            var file = new ChapterFile { SeriesId = rows[3.1m].SeriesId, RelativePath = "Test Series/3.1.cbz" };
+            db.Add(file);
+            db.SaveChanges();
+            rows[3.1m].ChapterFileId = file.Id;
+        });
+
+        Assert.Equal(0, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        Assert.Equal([3m, 3.1m, 3.2m, 4m], Chapters(seriesId).Select(c => c.Number!.Value));
+    }
+
+    [Fact]
+    public async Task Reads_on_split_part_files_land_by_the_files_own_pages()
+    {
+        // Tall-strip splitting made each part file 50 pages and the whole's 100; the sources serve 13 and 26.
+        var reader = _db.SeedUser();
+        var root = Directory.CreateTempSubdirectory("maki-fold-").FullName;
+        var seriesId = Seed((db, rows) =>
+        {
+            // The part files go to the recycle bin, which needs a root folder that can hold one.
+            var series = db.Find<Series>(rows[3m].SeriesId)!;
+            db.Find<RootFolder>(series.RootFolderId)!.Path = root;
+            ChapterFile File(string name, int pages) =>
+                db.Add(new ChapterFile { SeriesId = rows[3m].SeriesId, RelativePath = $"Test Series/{name}.cbz", PageCount = 10, SplitPageCount = pages }).Entity;
+            var whole = File("3", 100);
+            Directory.CreateDirectory(Path.Combine(root, "Test Series"));
+            System.IO.File.WriteAllBytes(Path.Combine(root, "Test Series", "3.cbz"), []);
+            var first = File("3.1", 50);
+            var second = File("3.2", 50);
+            db.SaveChanges();
+            rows[3m].ChapterFileId = whole.Id;
+            rows[3.1m].ChapterFileId = first.Id;
+            rows[3.2m].ChapterFileId = second.Id;
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 40, PageCount = 50,
+                StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.Equal((50 + 40, 100), (progress.PageIndex, progress.PageCount));
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public async Task Finishing_only_the_part_that_leaves_does_not_finish_the_whole()
+    {
+        // A third source still lists 3.1, so that row stays; the reader finished 3.2 alone.
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            var other = db.Add(new SourceMapping
+            {
+                SeriesId = rows[3.1m].SeriesId, SourceName = "other", SourceSeriesId = "series", Url = "https://other.test/series",
+                Priority = 9, Enabled = true,
+            }).Entity;
+            db.SaveChanges();
+            db.Add(new ChapterSourceLink { ChapterId = rows[3.1m].Id, SourceMappingId = other.Id, SourceChapterId = "other-3.1" });
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 25, PageCount = 26,
+                Completed = true, CompletedAt = DateTime.UtcNow, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+        });
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        var three = check.Chapters.Single(c => c.SeriesId == seriesId && c.Number == 3m).Id;
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.Equal(three, progress.ChapterId);
+        Assert.False(progress.Completed);
+        Assert.Contains(check.Chapters, c => c.SeriesId == seriesId && c.Number == 3.1m);
+    }
+
+    [Fact]
+    public void A_series_expected_for_a_check_holds_Smart_until_it_starts_or_is_let_go()
+    {
+        var checks = new ChapterFoldChecks(null!, NullLogger<ChapterFoldChecks>.Instance);
+
+        checks.Expect(7);
+        Assert.True(checks.Running(7));
+        checks.Forget(7);
+        Assert.False(checks.Running(7));
+    }
+
+    [Fact]
+    public void A_folded_link_stands_for_each_of_its_parts()
+    {
+        var parts = ChapterFoldPart.Format([new("a", 3.1m, "3.1", 13), new("b", 3.2m, "3.2", 26)]);
+        var link = new FoldLink(1, 1, "parts", "parts", "series", 1, "a", "3", 3, null, null, "en", null, null, 39, parts);
+
+        Assert.Equal([("a", 3.1m), ("b", 3.2m)], link.ToSourceChapters().Select(c => (c.SourceChapterId, c.Number!.Value)));
+        Assert.Equal("a", Assert.Single((link with { Parts = null }).ToSourceChapters()).SourceChapterId);
+    }
+
+    [Theory]
+    [InlineData(ReadingStatus.Completed)]
+    [InlineData(ReadingStatus.Dropped)]
+    public async Task Moving_reads_leaves_the_reading_status_alone(ReadingStatus status)
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) => db.Add(new ChapterProgress
+        {
+            UserId = reader, SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, PageIndex = 5, PageCount = 26,
+            StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        }));
+        // Set after the seed, whose own progress write counts as a read.
+        using (var db = _db.NewContext())
+        {
+            db.UserSeriesStates.IgnoreQueryFilters().Where(s => s.SeriesId == seriesId)
+                .ExecuteUpdate(set => set.SetProperty(s => s.Status, status));
+        }
+
+        Assert.Equal(1, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+
+        using var check = _db.NewContext();
+        Assert.Equal(13 + 5, check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId).PageIndex);
+        Assert.Equal(status, check.UserSeriesStates.IgnoreQueryFilters().Single(s => s.SeriesId == seriesId).Status);
+    }
+
+    [Fact]
+    public async Task Imported_reads_keep_their_imported_page_count()
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            foreach (var part in new[] { 3.1m, 3.2m })
+            {
+                db.Add(new ChapterProgress
+                {
+                    UserId = reader, SeriesId = rows[part].SeriesId, ChapterId = rows[part].Id, PageCount = 0,
+                    Completed = true, CompletedAt = DateTime.UtcNow, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+                });
+            }
+        });
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.True(progress.Completed);
+        Assert.Equal(0, progress.PageCount);
+    }
+
+    [Fact]
+    public async Task Finishing_every_part_finishes_a_whole_left_open_on_its_last_page()
+    {
+        var reader = _db.SeedUser();
+        var seriesId = Seed((db, rows) =>
+        {
+            var now = DateTime.UtcNow;
+            db.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = rows[3m].SeriesId, ChapterId = rows[3m].Id, PageIndex = 38, PageCount = 39,
+                StartedAt = now, UpdatedAt = now,
+            });
+            foreach (var part in new[] { 3.1m, 3.2m })
+            {
+                db.Add(new ChapterProgress
+                {
+                    UserId = reader, SeriesId = rows[part].SeriesId, ChapterId = rows[part].Id, PageIndex = 10, PageCount = 13,
+                    Completed = true, CompletedAt = now, StartedAt = now, UpdatedAt = now,
+                });
+            }
+        });
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var check = _db.NewContext();
+        var progress = check.ChapterProgress.IgnoreQueryFilters().Single(p => p.SeriesId == seriesId);
+        Assert.True(progress.Completed);
+        Assert.Equal(38, progress.PageIndex);
+    }
+
+    [Fact]
+    public async Task A_source_listing_part_one_under_the_whole_number_is_not_folded()
+    {
+        // "parts" lists chapter 3 (really part 1, 13 pages) and 3.2; "whole" lists 3 with all 39 pages.
+        var seriesId = _db.SeedSeries(mappings: [Mapping("parts"), Mapping("whole")]);
+        using (var db = _db.NewContext())
+        {
+            var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToDictionary(m => m.SourceName);
+            var three = db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3, Language = "en", Wanted = true }).Entity;
+            var threeTwo = db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3.2m, Language = "en", Wanted = true }).Entity;
+            void Link(Chapter chapter, FakeSource source, decimal number, int pages, IEnumerable<ulong> hashes)
+            {
+                var sc = source.Chapter(number);
+                db.ChapterSourceLinks.Add(new ChapterSourceLink
+                {
+                    Chapter = chapter, SourceMappingId = mappings[source.Name].Id, SourceChapterId = sc.SourceChapterId,
+                    NumberRaw = sc.NumberRaw, PageCount = pages, PageHashes = ChapterPageMatch.Format(hashes),
+                });
+            }
+
+            Link(three, _parts, 3, 13, Whole[..13]);
+            Link(threeTwo, _parts, 3.2m, 26, Whole[13..]);
+            Link(three, _whole, 3, 39, Whole);
+            db.SaveChanges();
+        }
+
+        await Folds().ApplyAsync(seriesId, CancellationToken.None);
+
+        var chapters = Chapters(seriesId);
+        Assert.Equal([3m, 3.2m], chapters.Select(c => c.Number!.Value));
+        Assert.Contains(chapters[0].SourceLinks, l => l.SourceMapping!.SourceName == "parts" && l.Parts is null);
+    }
+
+    private sealed class PagesOf(IReadOnlyDictionary<string, List<ulong>> pages) : IChapterPageHasher
+    {
+        public Task<PageEvidence?> HashAsync(ISource source, SourceChapter chapter, CancellationToken ct) =>
+            Task.FromResult(pages.GetValueOrDefault(chapter.SourceChapterId) is { } found ? new PageEvidence(found, found) : null);
+    }
+
+    [Fact]
+    public async Task The_check_after_a_match_counts_hashes_and_folds_the_series()
+    {
+        // As a freshly matched series has it: nothing counted or hashed yet.
+        var seriesId = Seed();
+        using (var db = _db.NewContext())
+        {
+            foreach (var link in db.ChapterSourceLinks.Include(l => l.SourceMapping).Where(l => l.Chapter!.SeriesId == seriesId))
+            {
+                link.PageHashes = null;
+                if (link.SourceMapping!.SourceName == "whole")
+                {
+                    link.PageCount = null;
+                }
+            }
+
+            db.SaveChanges();
+        }
+
+        var whole = new FakeSource
+        {
+            Name = "whole",
+            OnGetPages = c => new ChapterPages([.. Enumerable.Range(0, c.Number == 3 ? 39 : 40).Select(i => new PageRequest($"https://whole.test/{i}"))]),
+        };
+        var services = new ServiceCollection();
+        services.AddScoped(_ => _db.NewContext());
+        services.AddSingleton(new SourceRegistry([_parts, whole]));
+        services.AddSingleton(Sources.AllEnabled);
+        services.AddSingleton(new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance));
+        services.AddSingleton(new PageCountFailures());
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddSingleton<IChapterPageHasher>(new PagesOf(new Dictionary<string, List<ulong>>
+        {
+            [_whole.Chapter(3).SourceChapterId] = Whole,
+            [_parts.Chapter(3.1m).SourceChapterId] = Whole[..13],
+            [_parts.Chapter(3.2m).SourceChapterId] = Whole[13..],
+        }));
+        services.AddScoped<ChapterFoldPreviewService>();
+        services.AddScoped<ChapterPageCountService>();
+        services.AddScoped<ChapterPageHashService>();
+        services.AddScoped(sp => new ChapterFileDeletion(sp.GetRequiredService<Maki.Data.MakiDbContext>(),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
+            TestRecycleBin.For(sp.GetRequiredService<Maki.Data.MakiDbContext>()), NullLogger<ChapterFileDeletion>.Instance));
+        services.AddScoped<ChapterFoldService>();
+        using var provider = services.BuildServiceProvider();
+
+        await new ChapterFoldChecks(provider.GetRequiredService<IServiceScopeFactory>(), NullLogger<ChapterFoldChecks>.Instance)
+            .CheckAsync(seriesId, CancellationToken.None);
+
+        Assert.Equal([3m, 4m], Chapters(seriesId).Select(c => c.Number!.Value));
+    }
+
+    [Fact]
+    public async Task A_part_being_downloaded_is_not_folded_under_it()
+    {
+        var seriesId = Seed((db, rows) => db.Add(new DownloadQueueItem
+        {
+            SeriesId = rows[3.2m].SeriesId, ChapterId = rows[3.2m].Id, Status = QueueStatus.Downloading, QueuedAt = DateTime.UtcNow,
+        }));
+
+        Assert.Equal(0, await Folds().ApplyAsync(seriesId, CancellationToken.None));
+    }
+}

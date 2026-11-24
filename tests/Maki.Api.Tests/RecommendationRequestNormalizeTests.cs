@@ -10,7 +10,7 @@ public class RecommendationRequestNormalizeTests
     {
         var request = new RecommendationRequest(
             SeedIds: Enumerable.Range(1, 5000).Select(x => (long)x).Append(1).ToList(),
-            Obscurity: 40, Diversity: -3, Page: int.MaxValue);
+            Obscurity: 40, Diversity: -3, Page: int.MaxValue, Cursor: int.MaxValue);
 
         var normalized = RecommendationService.Normalize(request);
 
@@ -18,12 +18,13 @@ public class RecommendationRequestNormalizeTests
         Assert.Equal(1, normalized.Obscurity);
         Assert.Equal(0, normalized.Diversity);
         Assert.Equal(RecommendationService.MaxPage, normalized.Page);
+        Assert.Equal(RecommendationService.PoolSize, normalized.Cursor);
     }
 
     [Fact]
     public void AnOrdinaryRequestIsLeftAlone()
     {
-        var request = new RecommendationRequest(SeedIds: [3, 1, 2], Obscurity: -0.5, Diversity: 0.25, Page: 2);
+        var request = new RecommendationRequest(SeedIds: [3, 1, 2], Obscurity: -0.5, Diversity: 0.25, Page: 2, Cursor: 80);
 
         var normalized = RecommendationService.Normalize(request);
 
@@ -31,5 +32,6 @@ public class RecommendationRequestNormalizeTests
         Assert.Equal(-0.5, normalized.Obscurity);
         Assert.Equal(0.25, normalized.Diversity);
         Assert.Equal(2, normalized.Page);
+        Assert.Equal(80, normalized.Cursor);
     }
 }

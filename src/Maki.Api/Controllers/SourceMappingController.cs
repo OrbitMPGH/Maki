@@ -74,7 +74,7 @@ public class SourceMappingController(
             .Where(n => !mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase))
             .Select(n => new NearMissDto(
                 n.Id, n.SourceName, n.SourceSeriesId, n.Title, n.Url,
-                n.CoverUrl, n.Author, n.Language, n.Description, n.Score)));
+                SearchController.ProxiedCoverUrl(n.SourceName, n.CoverUrl), n.Author, n.Language, n.Description, n.Score)));
     }
 
     /// <summary>Turns a suggestion down for good. A later re-match can still offer a different result.</summary>
@@ -326,7 +326,8 @@ public class SourceMappingController(
             [.. qualityOrder.Ordered.Select(m => m.Id)],
             mappings.ToDictionary(m => m.Id, m => QualityNames.Tier(
                 qualityOrder.Scores.GetValueOrDefault(m.Id)?.Tier
-                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false)))));
+                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false))),
+            qualityOrder.Demoted.ToDictionary(d => d.Key, d => d.Value == SourceDemotion.Unreliable ? "unreliable" : "truncated")));
     }
 
     public record ScoutRequest(int SeriesId);

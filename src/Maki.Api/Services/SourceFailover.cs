@@ -13,9 +13,11 @@ public static class SourceFailover
     /// <summary>
     /// Only failures that say something about the source. A challenge or a rate limit has its own
     /// cooldown and clears by itself, and a disk or page error would follow the item to any source.
+    /// A dead proxy counts: another source is not the direct connection the proxy is there to avoid.
     /// </summary>
     public static bool CountsAgainstSource(string reasonKey) =>
-        reasonKey is DownloadFailureReason.SourceRejected or DownloadFailureReason.SourceError or DownloadFailureReason.Network;
+        reasonKey is DownloadFailureReason.SourceRejected or DownloadFailureReason.SourceError or DownloadFailureReason.Network
+            or DownloadFailureReason.Proxy;
 
     /// <param name="reasonKey">The key the failure being recorded classified as.</param>
     /// <param name="failureCount">The item's <c>RetryCount</c> including this failure.</param>

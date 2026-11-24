@@ -35,7 +35,7 @@ public record PrebuiltIndexManifest
 /// Outcome of one install attempt, for logs and the settings UI.
 /// <para>
 /// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
-/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// <c>ILocalizer</c> (see <c>AGENTS.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
 /// renders it. <c>Install failed: {ex.Message}</c> is the one exception: it embeds a raw exception
 /// message and stays unconverted, same as every other site in this codebase that does that.
 /// </para>

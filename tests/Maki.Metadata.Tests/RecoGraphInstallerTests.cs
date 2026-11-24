@@ -53,11 +53,14 @@ public class RecoGraphInstallerTests : IDisposable
         var cache = Cache();
 
         Assert.Null(await cache.GetAsync());
+        var before = cache.Generation;
         Assert.True((await Installer(cache).InstallAsync(ct: CancellationToken.None)).Installed);
 
         var graph = await cache.GetAsync();
         Assert.NotNull(graph);
         Assert.Equal(2000 * 2, graph.EdgeCount);
+        // Results cached while there was no graph have to be recognisable as stale.
+        Assert.NotEqual(before, cache.Generation);
     }
 
     [Fact]

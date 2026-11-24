@@ -22,16 +22,16 @@
     "ink-4": "Tertiary text: timestamps, zero counts, the sidebar group labels. Reads 6:1 or better on surface in every dark ground (5.1:1 on surface-hover) and 5.6:1 in Light.",
     "brand": "The single accent: progress fills, selected borders, focus outlines, unread badges. Blush by default. A fill and border colour, not body text; brand-fg is the text form.",
     "brand-hover": "Hover state for fills in brand.",
-    "brand-on": "Text and icons on a brand fill where the fill is brand itself (the play corner). Near-black on dark Blush (6.85:1), white on Light Blush (4.7:1); Emerald and Amber flip to near-black. White on Indigo brand is only 3.5:1, so anything carrying small text sits on the Mantine primary fill with primary-on instead.",
+    "brand-on": "The foreground for brand-filled controls, including the Discover corner cues and the selected cover check. The Mantine button variant resolver also uses it for filled primary buttons.",
     "brand-fg": "Brand-tinted text and icons on the surfaces: section-header icons and counts, engine reasons, links in prose, and every Mantine Anchor. Blush reads 10.3:1 on dark surface, Light uses a deeper blush (5.7:1, 4.9:1 on its own 10% tint). On cover art use brand-fg-on-art.",
     "focus-ring": "Keyboard focus outline on every control, Mantine's included. brand on dark grounds, brand-fg on Light and Paper, where Emerald and Amber fills drop to 2.4:1 against the page. Keeps 3:1 or better on every ground and accent.",
     "brand-fg-on-art": "Brand-tinted text over cover art under the dark scrim (Discover reason lines, the Resume label on Home cards). The scrim stays dark in Light, so Light keeps the pale blush here.",
     "brand-glow": "Text selection, the unread inbox tint and the ring on the active import step. Never a text colour, and not a halo: selected cards take a 2px brand ring only.",
-    "primary": "Mantine primary fill (filled Button, Switch, active Tabs, the unread badge, the add corner): the brand palette at primaryShade, dark 5 and light 6. Rose steps to 6 because its shade 5 only reaches 4:1 under white; Blush fills at 3 in dark, where it is pale, and 6 in light.",
+    "primary": "The Mantine primary fill for filled buttons, switches and indicators. It uses the accent palette and the primary shade for the active scheme.",
     "primary-hover": "Hover on a primary fill: one shade darker.",
-    "primary-on": "Label and icon colour on a primary fill. Mantine autoContrast picks it: black on dark Blush, Emerald and Amber, white on Light, Indigo and Rose. Every pair clears 4.5:1.",
+    "primary-on": "Mantine's primary contrast variable, used by elements such as the chapter chip over a Home cover.",
     "ok": "Success, Completed, downloaded, positive deltas. As text or a dot on surface and surface-2.",
-    "ok-on": "Icon or text on an ok fill, such as the In library check on Discover cards. Near-black in dark (7.4:1 on ok), white in Light (5.3:1).",
+    "ok-on": "Icon or text on an ok fill, such as the completed status disc on a Library cover.",
     "warn-on": "Text or icon on a warn fill, such as the Hiatus badge on a list row. Near-black in dark, white in Light; both clear 4.5:1.",
     "info-on": "Text or icon on an info fill, such as the Ongoing badge on a list row. Near-black in dark, white in Light; both clear 4.5:1.",
     "danger-on": "Text or icon on a danger fill (status badges on a list row or cover). Near-black in dark, white in Light; both clear 4.5:1. Filled buttons use danger-fill with white instead.",
@@ -76,6 +76,7 @@
     "q-aggregator-soft": "Tinted fill behind q-aggregator text: q-aggregator at 15%.",
     "neutral-soft": "Tinted fill behind neutral text: neutral at 15%. Pair with neutral as the foreground.",
     "rating": "Star icons for ratings. An icon colour: 3.3:1 on white in light, so set the score number itself in ink-hi.",
+    "rating-on": "Text on a filled rating-colour surface: the chosen word in the rating panel and prompts.",
     "tier-1": "Achievement tier 1 of 6. The ladder runs bronze, silver, gold, platinum, diamond, then the accent, so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Platinum and diamond are pale in dark and sit near 3.8:1 and 4.3:1 on white in Light, so as text keep them bold and 19px or larger, or mix 65% toward ink-hi as the tier badge labels do.",
     "tier-2": "Achievement tier 2 of 6. The ladder runs bronze, silver, gold, platinum, diamond, then the accent, so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Platinum and diamond are pale in dark and sit near 3.8:1 and 4.3:1 on white in Light, so as text keep them bold and 19px or larger, or mix 65% toward ink-hi as the tier badge labels do.",
     "tier-3": "Achievement tier 3 of 6. The ladder runs bronze, silver, gold, platinum, diamond, then the accent, so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Platinum and diamond are pale in dark and sit near 3.8:1 and 4.3:1 on white in Light, so as text keep them bold and 19px or larger, or mix 65% toward ink-hi as the tier badge labels do.",
@@ -355,7 +356,7 @@
           },
           {
             "name": "wordmark",
-            "fontSize": "1.125rem",
+            "fontSizeVar": "type-section",
             "lineHeight": 1,
             "fontWeight": 700,
             "letterSpacing": "-0.025em",
@@ -516,7 +517,7 @@
       ],
       "docs": [
         "README.md",
-        "CLAUDE.md"
+        "AGENTS.md"
       ]
     },
     "components": {

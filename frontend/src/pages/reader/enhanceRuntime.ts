@@ -15,6 +15,11 @@ const OFF: EngineState = { status: 'off' }
 let state: EngineState = OFF
 const listeners = new Set<() => void>()
 
+/** How long the engine outlives the last reader view, so a quick reopen keeps its worker and cache. */
+const IDLE_DISPOSE_MS = 15_000
+let consumers = 0
+let idleTimer: ReturnType<typeof setTimeout> | undefined
+
 function set(next: EngineState) {
   state = next
   for (const listener of listeners) listener()
@@ -38,6 +43,37 @@ function start() {
     )
 }
 
+function retain() {
+  consumers++
+  clearTimeout(idleTimer)
+  idleTimer = undefined
+}
+
+function release() {
+  consumers--
+  if (consumers === 0) idleTimer = setTimeout(stop, IDLE_DISPOSE_MS)
+}
+
+// Frees the worker, its GPU context and the cached results once no reader view uses them.
+// A broken engine stays broken; only its resources go.
+function stop() {
+  idleTimer = undefined
+  if (consumers > 0) return
+  if (state.status === 'loading') {
+    idleTimer = setTimeout(stop, IDLE_DISPOSE_MS)
+    return
+  }
+  if (state.status !== 'ready' && state.status !== 'broken') return
+  if (state.status === 'ready') set(OFF)
+  void import('../../lib/enhance')
+    .then((module) => {
+      // A reader view that came back meanwhile is loading or using the same cached engine.
+      if (consumers > 0 || (state.status !== 'off' && state.status !== 'broken')) return
+      module.disposeEnhanceEngine()
+    })
+    .catch(() => {})
+}
+
 /** The engine failed mid-session: every page falls back to the plain image until a reload. */
 export function markEnhanceBroken() {
   if (state.status === 'ready') set({ status: 'broken' })
@@ -47,7 +83,10 @@ export function markEnhanceBroken() {
 export function useEnhanceEngine(active: boolean): EngineState {
   const current = useSyncExternalStore(subscribe, () => state)
   useEffect(() => {
-    if (active) start()
+    if (!active) return
+    retain()
+    start()
+    return release
   }, [active])
   return active ? current : OFF
 }
@@ -135,11 +174,16 @@ export type StretchedReport = (wanted: ReadonlySet<number>, plain: ReadonlySet<n
  * is how a page not yet on screen can be enhanced ahead at the size it will be shown, and which
  * pages `auto` wants (stretched or soft), which is all it asks the server for. The pages it measured
  * and does not want are reported too, so the server can drop them.
+ *
+ * A stretched page makes every page of the same natural size wanted. Border crop trims each page
+ * by a different amount, so pages of one release shown near the threshold would otherwise flip
+ * between enhanced and plain from one page to the next.
  */
 export class EnhanceScope {
   private readonly keys = new Map<string, Set<string>>()
   private readonly sizes = new Map<string, EnhanceTarget>()
-  private readonly stretched = new Map<number, boolean>()
+  private readonly pages = new Map<number, { wanted: boolean; stretched: boolean; size: string }>()
+  private readonly listeners = new Set<() => void>()
   private engine: EnhanceEngine | null = null
   private readonly onSize: () => void
   private readonly onStretched: StretchedReport
@@ -171,24 +215,56 @@ export class EnhanceScope {
     return this.sizes.get(`${Math.round(regionWidth)}x${Math.round(regionHeight)}`)
   }
 
-  notePage(page: number, stretched: boolean) {
-    if (this.stretched.get(page) === stretched) return
-    this.stretched.set(page, stretched)
-    this.reportPages()
+  /**
+   * Records what `auto` measured for a page: `wanted` is its own answer (stretched or soft),
+   * `stretched` whether its own size alone crossed the threshold, and `size` its natural size.
+   */
+  notePage(page: number, wanted: boolean, stretched: boolean, size: string) {
+    const known = this.pages.get(page)
+    if (known && known.wanted === wanted && known.stretched === stretched && known.size === size) return
+    const before = this.stretchedSizes()
+    this.pages.set(page, { wanted, stretched, size })
+    this.changed(before)
+  }
+
+  /** Whether a page of this natural size was measured as stretched. */
+  sizeStretched(size: string): boolean {
+    for (const entry of this.pages.values()) if (entry.stretched && entry.size === size) return true
+    return false
+  }
+
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
   }
 
   /** Drops every page's stretched state, for a new chapter or a view going away. */
   forgetPages() {
-    if (this.stretched.size === 0) return
-    this.stretched.clear()
-    this.reportPages()
+    if (this.pages.size === 0) return
+    const before = this.stretchedSizes()
+    this.pages.clear()
+    this.changed(before)
   }
 
-  private reportPages() {
+  private stretchedSet(): Set<string> {
+    const sizes = new Set<string>()
+    for (const entry of this.pages.values()) if (entry.stretched) sizes.add(entry.size)
+    return sizes
+  }
+
+  private stretchedSizes(): string {
+    return [...this.stretchedSet()].sort().join(',')
+  }
+
+  private changed(before: string) {
+    const stretched = this.stretchedSet()
     const wanted = new Set<number>()
     const plain = new Set<number>()
-    for (const [page, stretched] of this.stretched) (stretched ? wanted : plain).add(page)
+    for (const [page, entry] of this.pages) (entry.wanted || stretched.has(entry.size) ? wanted : plain).add(page)
     this.onStretched(wanted, plain)
+    if ([...stretched].sort().join(',') !== before) for (const listener of this.listeners) listener()
   }
 
   /** Evicts every page whose URL is not in `srcs`. */
@@ -198,6 +274,11 @@ export class EnhanceScope {
       for (const key of keys) this.engine?.evict(key)
       this.keys.delete(src)
     }
+  }
+
+  /** The key `notePage` and `sizeStretched` group pages by. */
+  static sizeKey(image: HTMLImageElement): string {
+    return `${image.naturalWidth}x${image.naturalHeight}`
   }
 
   release() {

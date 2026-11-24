@@ -14,8 +14,10 @@ namespace Maki.Sources.TeamX;
 /// site's own links are mixed case. The chapter list pages 40 rows at a time; the walk reads the
 /// highest page number off the pager and fetches pages 2..last sequentially.
 /// </summary>
-public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
+public partial class TeamXSource(IHtmlFetcher htmlFetcher) : ISource
 {
+    private readonly IHtmlFetcher _fetcher = htmlFetcher.For("teamx");
+
     private static readonly HtmlParser Parser = new();
 
     public string Name => "teamx";
@@ -46,7 +48,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         var url = $"{BaseUrl}/search?keyword={Uri.EscapeDataString(title)}";
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var results = new List<SourceSeriesResult>();
@@ -98,7 +100,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var url = SeriesUrl(sourceSeriesId);
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         RequireSeriesPage(doc, url, html);
 
@@ -152,7 +154,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var firstUrl = SeriesUrl(sourceSeriesId);
-        var html = await fetcher.GetHtmlAsync(firstUrl, ct);
+        var html = await _fetcher.GetHtmlAsync(firstUrl, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         RequireSeriesPage(doc, firstUrl, html);
 
@@ -173,7 +175,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
         for (var page = 2; page <= lastPage; page++)
         {
             var pageUrl = $"{firstUrl}?page={page}";
-            var pageHtml = await fetcher.GetHtmlAsync(pageUrl, ct);
+            var pageHtml = await _fetcher.GetHtmlAsync(pageUrl, ct);
             var pageDoc = await Parser.ParseDocumentAsync(pageHtml, ct);
             RequireSeriesPage(pageDoc, pageUrl, pageHtml);
 
@@ -243,7 +245,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var url = $"{SeriesUrl(chapter.SourceSeriesId)}/{chapter.SourceChapterId}";
-        var html = await fetcher.GetHtmlAsync(url, ct);
+        var html = await _fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var imageList = doc.QuerySelector("div.image_list");

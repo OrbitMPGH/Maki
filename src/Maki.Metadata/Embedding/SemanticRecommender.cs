@@ -3,6 +3,7 @@ using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.RecoGraph;
 using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
@@ -53,7 +54,11 @@ public class SemanticRecommender(
     CoReadTuning coReadTuning,
     ILogger<SemanticRecommender> logger,
     RecommenderTuning? tuning = null,
-    TasteVectorTuning? tasteTuning = null)
+    TasteVectorTuning? tasteTuning = null,
+    EaseCache? easeCache = null,
+    EaseTuning? easeTuning = null,
+    PageFrequency? pageFrequency = null,
+    PageShare.PageShareCache? pageShareCache = null)
 {
     private static readonly EmbeddingMath.Weights Weights = new();
 
@@ -65,6 +70,9 @@ public class SemanticRecommender(
 
     /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
+
+    /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
+    private readonly EaseTuning _easeTuning = easeTuning ?? EaseTuning.Default;
 
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
@@ -96,11 +104,19 @@ public class SemanticRecommender(
     /// </summary>
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
+    public virtual bool SupportsCompactPool => cache is not null;
+
     /// <summary>
     /// Identifies the vector index currently loaded, so a caller holding results computed from one
     /// can tell the index has since been rebuilt. Null while nothing is loaded.
     /// </summary>
     public virtual string? IndexStamp => cache.Stamp;
+
+    /// <summary>
+    /// Goes up when the vote graph is installed or replaced, for a caller that caches results the
+    /// graph took part in.
+    /// </summary>
+    public virtual int VoteGraphGeneration => graphCache.Generation;
 
     /// <summary>
     /// Which same-work component each of <paramref name="ids"/> sits in
@@ -278,6 +294,22 @@ public class SemanticRecommender(
     /// modes, published and installed independently, and an install can easily have one and not the
     /// other. A single flag would make "turn off the noisy one" impossible to express.
     /// </param>
+    /// <param name="ease">
+    /// Whether the readers-also-finished table (<see cref="EaseCache"/>) may contribute. Personal
+    /// recommendations pass the instance switch; the series page's rail passes false, since it is a
+    /// claim about two works rather than about a reader. Off also when no cache was passed or the
+    /// tuned weight is 0.
+    /// </param>
+    /// <param name="demote">
+    /// Catalogue id -> score subtracted from that candidate. For titles the caller has a reason to
+    /// rank lower without removing, such as a manga whose anime the reader already watched. Changes
+    /// order only: pool membership and the reasons are untouched.
+    /// </param>
+    /// <param name="common">
+    /// Whether the page-share penalty (<see cref="RecommenderTuning.CommonWeight"/>) may apply.
+    /// Personal recommendations only. The table is the fixed <see cref="PageFrequency"/> the eval and
+    /// the tests pass, else the installed one; with neither the penalty does nothing.
+    /// </param>
     /// <param name="avoidWeights">
     /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
     /// Scanned as extra queries in the same pass, and each candidate's best strength-weighted
@@ -297,14 +329,143 @@ public class SemanticRecommender(
     /// resemblance.
     /// </para>
     /// </param>
+    /// <param name="lanes">
+    /// Whether the reader's side tastes are topped up on the page (<see cref="ShelfLanes"/>,
+    /// <see cref="RecommenderTuning.Lanes"/>). Personal recommendations from the whole shelf only;
+    /// the series-page rail never passes it. Each side taste that falls short is scored on its own
+    /// seeds, so a lane pick's reasons name a seed of its own taste.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null,
         IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
+        IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
         CancellationToken ct = default)
+    {
+        var pool = await GetSimilarPoolAsync(
+            seedIds, excludeIds, limit, depth: limit, filters, obscurity, seedWeights, avoidWeights,
+            diversity, weights, coGraph, coRead, taste, ease, features, graphWeight, demote, common,
+            lanes, stampFranchises: false, ct);
+        if (pool.Picks.Count == 0)
+        {
+            return [];
+        }
+
+        using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        return await MangaBakaLocalStore.HydratePicksAsync(conn, pool.Picks, pool.Seeds, ct);
+    }
+
+    /// <summary>
+    /// Compact ranking path for cached paginated pools. <paramref name="limit"/> pins the fusion
+    /// budget (<see cref="FuseByRank"/>), the MMR window (<c>limit * 3</c>), and the
+    /// <see cref="AttributionCutoff"/> reference head so raising <paramref name="depth"/> past
+    /// <paramref name="limit"/> extends the tail without perturbing the calibrated head. Picks carry
+    /// precomputed genres, candidate tags, franchises, and seed ids so per-page hydration only needs
+    /// a primary-key lookup against the dump.
+    /// </summary>
+    public virtual async Task<RankedRecommendationPool> GetSimilarPoolAsync(
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, int depth, RecommendationFilters? filters = null, double obscurity = 0,
+        IReadOnlyDictionary<long, double>? seedWeights = null,
+        IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
+        EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
+        bool taste = true, bool ease = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null, double? graphWeight = null,
+        IReadOnlyDictionary<long, double>? demote = null, bool common = false, bool lanes = false,
+        bool stampFranchises = true,
+        CancellationToken ct = default)
+    {
+        var targetDepth = Math.Max(depth, limit);
+        // One index for the whole build: a refresh between the scans would otherwise leave the merge
+        // unable to place lane picks the lanes found.
+        var (whole, index) = await RankAsync(
+            seedIds, excludeIds, limit, targetDepth, filters, obscurity, seedWeights, avoidWeights, diversity, weights,
+            coGraph, coRead, taste, ease, features, graphWeight, demote, common, stampFranchises, null, ct);
+        if (!lanes || _tuning.Lanes <= 0 || seedIds.Count < 2 || whole.Picks.Count <= _tuning.LanesFrom
+            || index is null || index.Count == 0)
+        {
+            return whole;
+        }
+
+        var sides = ShelfLanes.Sides(index, seedIds, seedWeights, _tuning.LanesMinShare, _tuning.LanesMaxSides);
+        var size = Math.Min(_tuning.LanesPage, whole.Picks.Count);
+        if (sides.Count == 0 || size <= _tuning.LanesFrom)
+        {
+            return whole;
+        }
+
+        ShelfLanes.Key? KeyOf(RankedRecommendationPick pick) =>
+            index.TryGetRow(pick.SeriesId, out var row)
+                ? ShelfLanes.KeyOf(index, row)
+                : null;
+        int RankOf(RankedRecommendationPick pick) =>
+            index.TryGetRow(pick.SeriesId, out var row)
+                ? index.PopularityAt(row)
+                : VectorIndex.Unknown;
+
+        var started = DateTime.UtcNow;
+        var page = whole.Picks.Take(size).ToList();
+        var onPage = page.Select(p => p.SeriesId).ToHashSet();
+        var laneExclude = excludeIds.Concat(seedIds).Distinct().ToList();
+        var queues = new List<(List<RankedRecommendationPick> Picks, int Need)>();
+        var mergedSeeds = new Dictionary<long, ReasonSeed>(whole.Seeds);
+        foreach (var shortfall in ShelfLanes.Shortfalls(page, sides, KeyOf, _tuning.Lanes, _tuning.LanesHeldOnly))
+        {
+            var (lane, _) = await RankAsync(
+                shortfall.Side.Ids, laneExclude, _tuning.LanesPage, _tuning.LanesPage, filters, obscurity, seedWeights, avoidWeights,
+                diversity, weights, coGraph, coRead, taste, ease, null, graphWeight, demote, common, stampFranchises, index, ct);
+            foreach (var (id, seed) in lane.Seeds)
+            {
+                mergedSeeds.TryAdd(id, seed);
+            }
+
+            var candidates = lane.Picks
+                .Where(p => KeyOf(p) == shortfall.Side.Key && !onPage.Contains(p.SeriesId))
+                .ToList();
+            if (candidates.Count > 0)
+            {
+                queues.Add((candidates, Math.Min(shortfall.Target - shortfall.Have, candidates.Count)));
+            }
+        }
+
+        if (queues.Count == 0)
+        {
+            return whole;
+        }
+
+        var limits = _tuning.LanesFame && _tuning.FameCapRatio > 0
+            ? ShelfFame.Limits(
+                seedIds.Distinct().Select(id => (
+                    index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
+                    seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
+                _tuning.FameCapRatio,
+                _tuning.FameCapPseudoSeeds)
+            : null;
+        var merged = ShelfLanes.Merge(
+                page, sides.Select(s => s.Key).ToHashSet(), queues, KeyOf, RankOf, _tuning.LanesFrom, limits)
+            .Select(p => onPage.Contains(p.SeriesId) ? p : p with { LaneFloor = _tuning.LanesFrom })
+            .ToList();
+        logger.LogInformation(
+            "Topped up {Inserted} picks from {Lanes} side taste(s) in {Elapsed:F0}ms",
+            merged.Count(p => p.LaneFloor > 0), queues.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+        var assembled = ShelfLanes.Assemble(merged, whole.Picks, size, p => p.SeriesId, targetDepth);
+        return new RankedRecommendationPool(assembled, mergedSeeds);
+    }
+
+    /// <param name="pinned">The index to rank on, so a lanes build reads one; null fetches it.</param>
+    /// <returns>The compact pool and the index it was ranked on, null when none was built.</returns>
+    private async Task<(RankedRecommendationPool Pool, VectorIndex? Index)> RankAsync(
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, int depth, RecommendationFilters? filters, double obscurity,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        IReadOnlyDictionary<long, double>? avoidWeights, double diversity,
+        EmbeddingMath.Weights? weights, bool coGraph, bool coRead,
+        bool taste, bool ease, ICollection<EmbeddingMath.CandidateFeatures>? features, double? graphWeight,
+        IReadOnlyDictionary<long, double>? demote, bool common, bool stampFranchises, VectorIndex? pinned,
+        CancellationToken ct)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;
@@ -315,34 +476,38 @@ public class SemanticRecommender(
 
         // The graphs live in their own files, so after an idle unload they load alongside the
         // vector index instead of after it. The awaits further down join these same loads.
-        Observe(coGraph && graphTuning.Weight > 0 ? graphCache.GetAsync(ct) : null);
+        var graphCoefficient = graphWeight ?? graphTuning.Weight;
+        Observe(coGraph && graphCoefficient > 0 ? graphCache.GetAsync(ct) : null);
         Observe(coRead && coReadTuning.Weight > 0 ? coReadCache.GetAsync(ct) : null);
+        var easeLive = ease && easeCache is not null && _easeTuning.Weight > 0
+            && seedIds.Count >= _easeTuning.MinSeeds;
+        Observe(easeLive ? easeCache!.GetAsync(ct) : null);
 
-        var index = await cache.GetAsync(ct);
+        var index = pinned ?? await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — the vector index isn't built yet");
-            return [];
+            return (RankedRecommendationPool.Empty, index);
         }
 
         var plan = index.Plan(filters);
         if (plan.Impossible)
         {
-            return [];
+            return (RankedRecommendationPool.Empty, index);
         }
 
         var seedVectors = store.GetVectors(seedIds);
         if (seedVectors.Count == 0)
         {
             logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");
-            return [];
+            return (RankedRecommendationPool.Empty, index);
         }
 
         // Co-recommendation evidence, keyed by index row so the scan and the scoring loop can both
         // read it without a dictionary hop through ids. Seeded from `seedIds` rather than
         // `seedVectors.Keys`: a seed with no vector yet can still carry graph edges, and dropping it
         // would silently narrow the channel on a freshly added library.
-        var graphByRow = coGraph && graphTuning.Weight > 0
+        var graphByRow = coGraph && graphCoefficient > 0
             ? await BuildGraphScoresAsync(index, seedIds, seedWeights, ct)
             : [];
 
@@ -355,12 +520,20 @@ public class SemanticRecommender(
         // it would otherwise be carrying.
         if (graphByRow.Count > 0)
         {
-            w = w with { Graph = graphTuning.Weight };
+            w = w with { Graph = graphCoefficient };
         }
 
         if (coReadByRow.Count > 0)
         {
             w = w with { CoRead = coReadTuning.Weight };
+        }
+
+        var easeByRow = easeLive
+            ? await BuildEaseScoresAsync(index, seedIds, seedWeights, ct)
+            : [];
+        if (easeByRow.Count > 0)
+        {
+            w = w with { Ease = _easeTuning.Weight };
         }
 
         SqliteKeeper.For(store.DbPath).Attach();
@@ -432,7 +605,7 @@ public class SemanticRecommender(
         var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
         if (queries.Count == 0)
         {
-            return [];
+            return (RankedRecommendationPool.Empty, index);
         }
 
         // Live only when an artifact is actually loaded and the weight is positive, exactly like the
@@ -510,11 +683,13 @@ public class SemanticRecommender(
         // quality too - so it is gated on corroboration exactly like the two crowd channels.
         var tasteInjected = InjectTasteCandidates(
             cosines, pooled, injected.Concat(coReadInjected), tasteByRow, _tasteTuning);
+        var easeInjected = InjectEaseCandidates(
+            cosines, pooled, [.. injected, .. coReadInjected, .. tasteInjected], easeByRow, _easeTuning);
 
         // Which rows got here on crowd evidence rather than on cosine. Only used to decide whether
         // the cosine floor may drop them, and only when the tuning says so.
         var crowdInjected = _tuning.CrowdBypassesCosineFloor
-            ? new HashSet<int>(injected.Concat(coReadInjected).Concat(tasteInjected))
+            ? new HashSet<int>(injected.Concat(coReadInjected).Concat(tasteInjected).Concat(easeInjected))
             : [];
 
         // Per-query mean and spread, so the loop below can ask which query finds a row unusually
@@ -525,7 +700,7 @@ public class SemanticRecommender(
             : MeasureQueries(cosines, scan.Rows);
 
         var poolRows = pooled
-            .Concat(injected).Concat(coReadInjected).Concat(tasteInjected).ToList();
+            .Concat(injected).Concat(coReadInjected).Concat(tasteInjected).Concat(easeInjected).ToList();
 
         // First pass over the pool, before anything is scored: the raw resemblance to the avoided
         // set per row, and whatever the neutralization needs from the pool as a whole. Relative is
@@ -564,6 +739,14 @@ public class SemanticRecommender(
             }
         }
 
+        var tasteMissing = tasteLive && tasteQueries.Count > 0 && _tasteTuning.MissingShare > 0
+            ? (float)(_tasteTuning.MissingShare * MeanOfBest(tasteByRow, poolRows, 40))
+            : 0f;
+
+        var pageShare = common && _tuning.CommonWeight > 0
+            ? pageFrequency ?? (pageShareCache is null ? null : await pageShareCache.GetAsync(ct))
+            : null;
+        var commonLive = pageShare is not null;
         var scored = new List<Candidate>(poolRows.Count);
         var floored = 0;
         // Reported so a run can tell an empty contrastive profile from one that matched nothing.
@@ -630,11 +813,17 @@ public class SemanticRecommender(
 
             var graphScore = graphByRow.GetValueOrDefault(row);
             var coReadScore = coReadByRow.GetValueOrDefault(row);
+            var easeScore = easeByRow.GetValueOrDefault(row);
             // Floored at 0 in BestPerRow, so a row the artifact does not cover and a row it covers
             // and finds dissimilar are both worth nothing here rather than one being a penalty.
             var tasteScore = tasteByRow.Length > row && !float.IsNegativeInfinity(tasteByRow[row])
                 ? tasteByRow[row]
                 : 0;
+            var tasteImputed = tasteMissing > 0 && !index.HasTasteAt(row);
+            if (tasteImputed)
+            {
+                tasteScore = tasteMissing;
+            }
             if (bestCosine < _tuning.CosineFloor && !crowdInjected.Contains(row))
             {
                 // Counted, not just skipped: a row the crowd channels paid a MaxInjected slot for
@@ -702,14 +891,6 @@ public class SemanticRecommender(
 
             var avoidScore = BlendAvoid(semanticAvoid, tagAvoid, _tuning);
 
-            // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
-            // rows that lost as much as the ones that won, and after this point the pool is
-            // collapsed and diversified.
-            features?.Add(new EmbeddingMath.CandidateFeatures(
-                index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
-                index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
-                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid));
-
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
                 genreSum,
@@ -723,38 +904,82 @@ public class SemanticRecommender(
                 coReadScore,
                 Math.Max(0, distinctiveness),
                 tasteScore,
-                avoidScore);
+                avoidScore,
+                easeScore);
+            if (demote is not null && demote.TryGetValue(index.IdAt(row), out var demotion))
+            {
+                score -= demotion;
+            }
+
+            if (commonLive)
+            {
+                score -= _tuning.CommonWeight
+                    * Math.Pow(pageShare!.ShareOf(index.IdAt(row)), _tuning.CommonPower);
+            }
+
+            // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
+            // rows that lost as much as the ones that won, and after this point the pool is
+            // collapsed and diversified.
+            features?.Add(new EmbeddingMath.CandidateFeatures(
+                index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
+                index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
+                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid, easeScore,
+                RouteOf(poolIndex, pooled.Count, injected.Count, coReadInjected.Count, tasteInjected.Count),
+                storedRank == VectorIndex.Unknown ? 0 : storedRank, score));
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
-                graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
+                graphScore > 0, coReadScore > 0, tasteScore > 0 && !tasteImputed, avoidScore > 0));
         }
 
-        var winners = SelectWinners(index, scored, limit, diversity, seedIds, _tuning);
-        // Calibrated against the winners, not the scored pool. The pool is RRF-fused, so it holds
-        // the top slice of every query at once - by construction the most seed-specific rows in the
-        // catalogue, and nothing like what comes back. Measured on a 92-seed library the pool ran to
-        // 9,300 rows with a mean distinctiveness of 1.62 against 0.69 among the 40 actually
-        // returned, so calibrating on it set the bar at 1.95 where the page warranted 0.81 and a
-        // near-duplicate of a seed scoring 1.15 went unnamed.
-        var cutoff = AttributionCutoff([.. winners.Select(c => c.Distinctiveness)], _tuning);
+        var winners = SelectWinners(index, scored, limit, depth, diversity, seedIds, seedWeights, _tuning);
+        // Calibrated against the head winners (`limit`), not the scored pool or the deeper tail.
+        // The pool is RRF-fused, so it holds the top slice of every query at once - by construction
+        // the most seed-specific rows in the catalogue, and nothing like what comes back. Pinning
+        // the cutoff to `limit` also keeps "Feels like X" labels stable when `depth` extends deeper.
+        var calibrationCount = Math.Min(limit, winners.Count);
+        var cutoff = AttributionCutoff(
+            [.. winners.Take(calibrationCount).Select(c => c.Distinctiveness)], _tuning);
         var feelQueriesByRow = winners.ToDictionary(
             c => c.Row, c => FeelQueries(cosines, scales, queries, c.Row, c.BestSeedQuery, c.Distinctiveness, cutoff));
         var coReadSeedsByRow = coReadSeedByRow.Count > 0 && winners.Any(c => c.CoRead)
             ? await CoReadSeedsForAsync(index, winners.Where(c => c.CoRead).ToList(), seedIds, seedWeights, ct)
             : [];
-        var results = await HydrateAsync(
-            conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
-            cutoff, coReadSeedByRow, feelQueriesByRow, coReadSeedsByRow, ct);
+        // No seed carries enough of the pick for its name to mean anything: the card keeps the
+        // co-read reason and says "readers like you" instead.
+        foreach (var (row, seeds) in coReadSeedsByRow)
+        {
+            if (seeds.Count == 0)
+            {
+                coReadSeedByRow.Remove(row);
+            }
+        }
+        if (easeByRow.Count > 0)
+        {
+            winners = await AttributeEaseAsync(
+                index, winners, easeByRow, coReadSeedByRow, coReadSeedsByRow, seedIds, seedWeights, ct);
+        }
+
+        var pool = await BuildCompactPoolAsync(
+            conn, index, winners, queries, genreWeightById, tagProfile, vocab, Idf, CategoryWeight, tagTree,
+            cutoff, coReadSeedByRow, feelQueriesByRow, coReadSeedsByRow, stampFranchises, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
             "candidates joined the pool, {Floored} crowd-backed rows dropped by the cosine floor, " +
             "{Penalized} rows penalized by the avoid channel, {TagAvoided} carrying a contrastive " +
             "avoided tag)",
-            results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
+            pool.Picks.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
             injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided), tagAvoidRows);
-        return results;
+        return (pool, index);
     }
+
+    /// <summary>Which stage put pool row <paramref name="poolIndex"/> in: see <c>CandidateFeatures.Route</c>.</summary>
+    private static int RouteOf(int poolIndex, int pooled, int graph, int coRead, int taste) =>
+        poolIndex < pooled ? 0
+        : poolIndex < pooled + graph ? 1
+        : poolIndex < pooled + graph + coRead ? 2
+        : poolIndex < pooled + graph + coRead + taste ? 3
+        : 4;
 
     /// <summary>
     /// Cosine ∈ [0,1] between the seed genre profile and a candidate's genres, deliberately the same
@@ -1293,6 +1518,34 @@ public class SemanticRecommender(
         return kept;
     }
 
+    /// <summary>Mean of the <paramref name="count"/> highest values among the pool's rows, 0 for an empty pool.</summary>
+    private static double MeanOfBest(float[] byRow, List<int> poolRows, int count)
+    {
+        var values = new List<float>(poolRows.Count);
+        foreach (var row in poolRows)
+        {
+            if (row < byRow.Length && !float.IsNegativeInfinity(byRow[row]))
+            {
+                values.Add(byRow[row]);
+            }
+        }
+
+        if (values.Count == 0)
+        {
+            return 0;
+        }
+
+        values.Sort();
+        var take = Math.Min(count, values.Count);
+        double sum = 0;
+        for (var i = values.Count - take; i < values.Count; i++)
+        {
+            sum += values[i];
+        }
+
+        return sum / take;
+    }
+
     /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>
     private static float[] BestPerRow(float[][] channels, int rows)
     {
@@ -1357,7 +1610,10 @@ public class SemanticRecommender(
         }
 
         var queries = new List<SeedQuery>(tuning.MaxSeedQueries + 1);
-        if (EmbeddingMath.WeightedMean(vectors) is { } centroid)
+        var centre = tuning.UserSolve
+            ? TasteFoldIn.Solve(index, vectors, tuning.UserSolveLambda, tuning.UserSolveAlpha)
+            : EmbeddingMath.WeightedMean(vectors);
+        if (centre is { } centroid)
         {
             queries.Add(Pack(centroid));
             if (vectors.Count == 1)
@@ -1978,6 +2234,120 @@ public class SemanticRecommender(
         return (byRow, seedByRow);
     }
 
+    /// <summary>EASE scores keyed by index row; rows the index does not hold are dropped.</summary>
+    private async Task<Dictionary<int, double>> BuildEaseScoresAsync(
+        VectorIndex index,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var table = await easeCache!.GetAsync(ct);
+        if (table is null)
+        {
+            return [];
+        }
+
+        var byRow = new Dictionary<int, double>();
+        foreach (var (id, score) in EaseScorer.Score(table, seedIds, seedWeights, _easeTuning))
+        {
+            if (index.TryGetRow(id, out var row))
+            {
+                byRow[row] = score;
+            }
+        }
+
+        return byRow;
+    }
+
+    /// <summary>
+    /// Gives a pick the EASE table pushed up the co-read card reason, "Readers who finished X also
+    /// finished this", naming the seed with the largest positive weighted contribution. That is literally
+    /// what the table measures (it is fitted on finished lists), so no new wording is needed. Only
+    /// picks with no co-read reason of their own, and only where some seed weighs them up: a row the
+    /// table scores at or below zero keeps whatever reason it had. When no seed carries
+    /// <see cref="RecommenderTuning.MinReasonShare"/> of the pick, the reason names no seed ("Readers
+    /// like you also finished this"). Rewrites the reason fields only, never the order or the score.
+    /// </summary>
+    private async Task<List<Candidate>> AttributeEaseAsync(
+        VectorIndex index,
+        List<Candidate> winners,
+        Dictionary<int, double> easeByRow,
+        Dictionary<int, long> coReadSeedByRow,
+        Dictionary<int, List<long>> coReadSeedsByRow,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var unexplained = winners
+            .Where(c => !c.CoRead && easeByRow.GetValueOrDefault(c.Row) > 0)
+            .ToDictionary(c => index.IdAt(c.Row), c => c.Row);
+        if (unexplained.Count == 0 || await easeCache!.GetAsync(ct) is not { } table)
+        {
+            return winners;
+        }
+
+        var seedsById = EaseScorer.SeedsFor(
+            table, seedIds, seedWeights, unexplained.Keys.ToHashSet(), _tuning.MinReasonShare);
+        if (seedsById.Count == 0)
+        {
+            return winners;
+        }
+
+        var attributed = new HashSet<int>();
+        foreach (var (id, seeds) in seedsById)
+        {
+            var row = unexplained[id];
+            if (seeds.Count == 0)
+            {
+                // Pushed up by many seeds a little each: a co-read reason with no seed named.
+                attributed.Add(row);
+                continue;
+            }
+
+            coReadSeedByRow[row] = seeds[0];
+            coReadSeedsByRow[row] = seeds;
+            attributed.Add(row);
+        }
+
+        return [.. winners.Select(c => attributed.Contains(c.Row) ? c with { CoRead = true } : c)];
+    }
+
+    /// <summary>
+    /// Rows the EASE table vouches for that nothing else pooled, best first and capped. Same
+    /// contract as <see cref="InjectCoReadCandidates"/>.
+    /// </summary>
+    internal static List<int> InjectEaseCandidates(
+        float[][] cosines,
+        List<int> pooled,
+        List<int> alreadyInjected,
+        Dictionary<int, double> easeByRow,
+        EaseTuning tuning)
+    {
+        if (easeByRow.Count == 0 || tuning.MaxInjected <= 0)
+        {
+            return [];
+        }
+
+        var already = new HashSet<int>(pooled);
+        already.UnionWith(alreadyInjected);
+        var candidates = new List<(int Row, double Score)>();
+        foreach (var (row, score) in easeByRow)
+        {
+            if (score >= tuning.MinInjectedScore && !already.Contains(row) && !float.IsNegativeInfinity(cosines[0][row]))
+            {
+                candidates.Add((row, score));
+            }
+        }
+
+        candidates.Sort((a, b) => b.Score != a.Score ? b.Score.CompareTo(a.Score) : a.Row.CompareTo(b.Row));
+        if (candidates.Count > tuning.MaxInjected)
+        {
+            candidates.RemoveRange(tuning.MaxInjected, candidates.Count - tuning.MaxInjected);
+        }
+
+        return [.. candidates.Select(c => c.Row)];
+    }
+
     /// <summary>
     /// Every seed the co-read graph pairs with each co-read winner, strongest first, keyed by row.
     /// </summary>
@@ -1995,7 +2365,8 @@ public class SemanticRecommender(
         }
 
         var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w.Row);
-        var byId = CoReadScorer.SeedsFor(graph, seedIds, seedWeights, coReadTuning, rowById.Keys.ToHashSet());
+        var byId = CoReadScorer.SeedsFor(
+            graph, seedIds, seedWeights, coReadTuning, rowById.Keys.ToHashSet(), _tuning.MinReasonShare);
         return byId.ToDictionary(kv => rowById[kv.Key], kv => kv.Value);
     }
 
@@ -2091,13 +2462,17 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// Orders the scored pool and diversifies it. Relevance is min-max normalized over the pool
-    /// because MMR subtracts a cosine from it and the hybrid score has no natural range; negative
-    /// candidate-to-candidate cosines are clamped away for the same reason.
+    /// Orders the scored pool and diversifies the calibrated head (<paramref name="limit"/>).
+    /// Relevance is min-max normalized over the <c>limit * 3</c> head window because MMR subtracts a
+    /// cosine from it and the hybrid score has no natural range; negative candidate-to-candidate
+    /// cosines are clamped away for the same reason. When <paramref name="depth"/> exceeds
+    /// <paramref name="limit"/>, the remaining relevance-sorted tail follows the diversified head so
+    /// raising depth neither explodes MMR's O(N^2) work nor disturbs the calibrated head.
     /// </summary>
     private static List<Candidate> SelectWinners(
-        VectorIndex index, List<Candidate> scored, int limit, double diversity,
-        IReadOnlyCollection<long> seedIds, RecommenderTuning tuning)
+        VectorIndex index, List<Candidate> scored, int limit, int depth, double diversity,
+        IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights,
+        RecommenderTuning tuning)
     {
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));
         // Collapsed on the sorted list and BEFORE the pool is trimmed, so a suppressed franchise
@@ -2114,25 +2489,137 @@ public class SemanticRecommender(
         var span = pool[0].Score - pool[^1].Score;
         var relevance = pool.Select(c => span > 0 ? (c.Score - pool[^1].Score) / span : 1.0).ToList();
 
-        var picked = EmbeddingMath.SelectDiverse(
-            relevance,
-            (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1),
-            limit,
-            diversity);
-        return picked.Select(i => pool[i]).ToList();
+        // The fame cap re-orders the whole window, so its replacements come from past `limit`.
+        // One seed is a claim about two works, not a shelf to measure against.
+        var capped = tuning.FameCapRatio > 0 && seedIds.Count >= 2;
+        var targetDepth = Math.Max(depth, limit);
+        Func<int, int, double> similarity = (a, b) => Math.Clamp(index.CosineBetween(pool[a].Row, pool[b].Row), 0, 1);
+        var target = tuning.ShelfCalibration > 0 && seedIds.Count >= 2
+            ? CalibrationTarget(index, seedIds, seedWeights, tuning.ShelfCalibrationJoint)
+            : null;
+        var picked = target is { } shelf
+            ? ShelfCalibration.Order(
+                relevance,
+                pool.Select(c => ShelfCalibration.Facets(
+                    index, c.Row, shelf.TypeCount, shelf.Mix.Length, tuning.ShelfCalibrationJoint)).ToList(),
+                shelf.Mix,
+                capped ? pool.Count : limit,
+                tuning.ShelfCalibration,
+                similarity,
+                diversity)
+            : EmbeddingMath.SelectDiverse(relevance, similarity, capped ? pool.Count : limit, diversity);
+        var winners = picked.Select(i => pool[i]).ToList();
+        if (!capped)
+        {
+            if (targetDepth <= winners.Count)
+            {
+                return winners;
+            }
+
+            var pickedIndices = picked.ToHashSet();
+            for (var i = 0; i < pool.Count && winners.Count < targetDepth; i++)
+            {
+                if (!pickedIndices.Contains(i))
+                {
+                    winners.Add(pool[i]);
+                }
+            }
+
+            for (var i = pool.Count; i < scored.Count && winners.Count < targetDepth; i++)
+            {
+                winners.Add(scored[i]);
+            }
+
+            return winners;
+        }
+
+        var limits = ShelfFame.Limits(
+            seedIds.Distinct().Select(id => (
+                index.TryGetRow(id, out var row) ? index.PopularityAt(row) : VectorIndex.Unknown,
+                seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)),
+            tuning.FameCapRatio,
+            tuning.FameCapPseudoSeeds);
+        // Defer the calibrated head over the `limit * 3` window alone so `depth > limit` never pulls
+        // tail rows into the first `limit` slots (or shifts `AttributionCutoff`).
+        var head = ShelfFame.Defer(winners, c => index.PopularityAt(c.Row), limits, limit);
+        if (targetDepth <= head.Count)
+        {
+            return head;
+        }
+
+        var inHead = head.Select(c => c.Row).ToHashSet();
+        var tailCandidates = new List<Candidate>(winners.Count - head.Count + Math.Max(0, scored.Count - pool.Count));
+        foreach (var candidate in winners)
+        {
+            if (!inHead.Contains(candidate.Row))
+            {
+                tailCandidates.Add(candidate);
+            }
+        }
+
+        if (scored.Count > pool.Count)
+        {
+            tailCandidates.AddRange(scored.Skip(pool.Count));
+        }
+
+        if (tailCandidates.Count == 0)
+        {
+            return head;
+        }
+
+        head.AddRange(ShelfFame.Defer(tailCandidates, c => index.PopularityAt(c.Row), limits, targetDepth - head.Count));
+        return head;
     }
 
     /// <summary>
-    /// Turns winning rows into results: one dump query for the display columns the index doesn't
-    /// carry, plus the matched genres/tags, which are only worth computing for the handful of rows
-    /// that made it.
+    /// The shelf's facet mix for <see cref="ShelfCalibration"/>: each seed the index holds, by its
+    /// seed weight. Null when no seed is indexed, which leaves the page uncalibrated.
     /// </summary>
-    private static async Task<IReadOnlyList<MangaBakaRecommendation>> HydrateAsync(
+    private static (double[] Mix, int TypeCount)? CalibrationTarget(
+        VectorIndex index, IReadOnlyCollection<long> seedIds, IReadOnlyDictionary<long, double>? seedWeights,
+        bool joint)
+    {
+        var typeCount = index.TypeCount;
+        var genreCount = index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1;
+        var dims = joint ? typeCount * (genreCount + 1) : typeCount + genreCount;
+        var mix = new double[dims];
+        var total = 0.0;
+        foreach (var id in seedIds.Distinct())
+        {
+            var weight = seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0;
+            if (weight <= 0 || !index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            var facets = ShelfCalibration.Facets(index, row, typeCount, dims, joint);
+            for (var d = 0; d < dims; d++)
+            {
+                mix[d] += weight * facets[d];
+            }
+
+            total += weight;
+        }
+
+        if (total <= 0)
+        {
+            return null;
+        }
+
+        for (var d = 0; d < dims; d++)
+        {
+            mix[d] /= total;
+        }
+
+        return (mix, typeCount);
+    }
+
+    private static async Task<RankedRecommendationPool> BuildCompactPoolAsync(
         SqliteConnection conn,
         VectorIndex index,
         List<Candidate> winners,
         List<SeedQuery> queries,
-        Dictionary<string, double> genreWeight,
+        Dictionary<int, double> genreWeightById,
         TagMath.Profile tagProfile,
         IReadOnlyDictionary<int, TagInfo> vocab,
         Func<int, double> idf,
@@ -2142,15 +2629,14 @@ public class SemanticRecommender(
         IReadOnlyDictionary<int, long> coReadSeedByRow,
         IReadOnlyDictionary<int, List<int>> feelQueriesByRow,
         IReadOnlyDictionary<int, List<long>> coReadSeedsByRow,
+        bool stampFranchises,
         CancellationToken ct)
     {
         if (winners.Count == 0)
         {
-            return [];
+            return RankedRecommendationPool.Empty;
         }
 
-        var ids = winners.Select(w => index.IdAt(w.Row)).ToList();
-        var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w);
         var seedRows = await SeedRowsAsync(
             conn,
             winners.Where(w => w.CoRead).Select(w => coReadSeedByRow.GetValueOrDefault(w.Row))
@@ -2159,136 +2645,132 @@ public class SemanticRecommender(
                 .Concat(queries.Select(q => q.SeedId ?? 0)),
             ct);
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText =
-            $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")}, cover_raw_url, year, " +
-            "description, status, rating, total_chapters, genres, cover_x250_x1, cover_x250_x2, tags_v2 " +
-            $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
-        cmd.CommandTimeout = 600;
-
-        var byId = new Dictionary<long, MangaBakaRecommendation>(winners.Count);
-        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        var seeds = new Dictionary<long, ReasonSeed>(seedRows.Count);
+        foreach (var (id, row) in seedRows)
         {
-            while (await reader.ReadAsync(ct))
+            seeds[id] = new ReasonSeed(id.ToString(CultureInfo.InvariantCulture), row.Title, row.Thumb);
+        }
+
+        foreach (var q in queries)
+        {
+            if (q.SeedId is { } sid && q.SeedTitle is { Length: > 0 } title && !seeds.ContainsKey(sid))
             {
-                var id = reader.GetInt64(0);
-                if (!rowById.TryGetValue(id, out var winner))
+                seeds[sid] = new ReasonSeed(sid.ToString(CultureInfo.InvariantCulture), title, null);
+            }
+        }
+
+        var genreNameCount = index.GenreVocabulary.Count == 0 ? 0 : index.GenreVocabulary.Values.Max() + 1;
+        var genreNames = new string?[genreNameCount];
+        foreach (var (name, id) in index.GenreVocabulary)
+        {
+            if (id >= 0 && id < genreNames.Length)
+            {
+                genreNames[id] = name;
+            }
+        }
+
+        var picks = new List<RankedRecommendationPick>(winners.Count);
+        var contributions = new List<(int Id, double Contribution)>();
+        var genreMatches = new List<(string Name, double Weight)>();
+
+        foreach (var winner in winners)
+        {
+            genreMatches.Clear();
+            foreach (var g in index.GenresAt(winner.Row))
+            {
+                if (genreWeightById.TryGetValue(g, out var weight)
+                    && g >= 0 && g < genreNames.Length
+                    && genreNames[g] is { } name)
                 {
-                    continue;
+                    genreMatches.Add((name, weight));
                 }
+            }
 
-                var matchedGenres = ParseStringArray(GetString(reader, 8))
-                    .Where(genreWeight.ContainsKey).OrderByDescending(g => genreWeight[g]).ToList();
+            IReadOnlyList<string> matchedGenres = genreMatches.Count == 0
+                ? []
+                : genreMatches
+                    .OrderByDescending(g => g.Weight)
+                    .Select(g => g.Name)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(4)
+                    .ToList();
 
-                // Strongest shared tags for the UI — never spoilers, ranked by how much they
-                // actually moved the score.
-                var contributions = new List<(int Id, double Contribution)>();
-                // Same weighting the ranking used, so the tags shown as matches are ordered by
-                // what actually earned the score rather than by an unweighted echo of it.
-                TagMath.Score(
-                    index.TagsAt(winner.Row), tagProfile, idf, contributions, 1.0, categoryWeight,
-                    tagTree);
-                var matchedTags = contributions
+            contributions.Clear();
+            // Same weighting the ranking used, so the tags shown as matches are ordered by
+            // what actually earned the score rather than by an unweighted echo of it.
+            TagMath.Score(
+                index.TagsAt(winner.Row), tagProfile, idf, contributions, 1.0, categoryWeight,
+                tagTree);
+            IReadOnlyList<string> candidateTags = contributions.Count == 0
+                ? []
+                : contributions
                     .OrderByDescending(m => m.Contribution)
                     .Select(m => vocab.TryGetValue(m.Id, out var info) && !info.IsSpoiler ? info.Name : null)
                     .OfType<string>()
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                var feelSeed = winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff
-                    ? null
-                    : queries[winner.BestSeedQuery];
-                var coReadSeed = winner.CoRead
-                    && coReadSeedByRow.TryGetValue(winner.Row, out var seed)
-                    && seedRows.TryGetValue(seed, out var seedRow)
-                        ? (Id: seed, seedRow.Title, seedRow.Thumb)
-                        : default((long Id, string Title, string? Thumb)?);
-                var feelThumb = feelSeed?.SeedId is { } feelId && seedRows.TryGetValue(feelId, out var feelRow)
-                    ? feelRow.Thumb
-                    : null;
-                var feelSeeds = feelSeed?.SeedTitle is null
-                    ? null
-                    : FeelReasonSeeds(feelQueriesByRow.GetValueOrDefault(winner.Row), queries, seedRows);
-                var coReadSeeds = coReadSeed is { } primary
-                    ? CoReadReasonSeeds(primary, coReadSeedsByRow.GetValueOrDefault(winner.Row), seedRows)
-                    : null;
-
-                byId[id] = new MangaBakaRecommendation(
-                    id.ToString(CultureInfo.InvariantCulture),
-                    GetString(reader, 1) ?? string.Empty,
-                    GetString(reader, 2),
-                    GetInt(reader, 3),
-                    GetString(reader, 4),
-                    MangaBakaProvider.MapStatus(GetString(reader, 5)),
-                    reader.IsDBNull(6) ? index.RatingAt(winner.Row) : reader.GetDouble(6),
-                    ParseCount(GetString(reader, 7)),
-                    matchedGenres.Take(4).ToList(),
-                    MangaBakaLocalStore.WithoutSpoilerTags(matchedTags, GetString(reader, 11)).Take(4).ToList(),
-                    winner.AuthorMatch,
-                    RelationKind: null,
-                    RelatedToTitle: null,
-                    // "Feels like X": the individual seed whose query ranked this highest. Null
-                    // when the centroid won, which is the honest answer — no one title drove it.
-                    BecauseOfTitle: feelSeed?.SeedTitle,
-                    ThumbUrl: GetString(reader, 9),
-                    ThumbUrlHiDpi: GetString(reader, 10),
-                    CoRecommended: winner.CoRecommended,
-                    CoRead: winner.CoRead,
-                    TasteMatch: winner.TasteMatch,
-                    CoReadWithTitle: coReadSeed?.Title,
-                    BecauseOfId: feelSeed?.SeedTitle is null
-                        ? null
-                        : feelSeed.SeedId?.ToString(CultureInfo.InvariantCulture),
-                    CoReadWithId: coReadSeed?.Id.ToString(CultureInfo.InvariantCulture),
-                    BecauseOfThumbUrl: feelSeed?.SeedTitle is null ? null : feelThumb,
-                    CoReadWithThumbUrl: coReadSeed?.Thumb,
-                    FeelSeeds: feelSeeds,
-                    CoReadSeeds: coReadSeeds);
-            }
-        }
-
-        // Preserve the ranking the selection produced; the IN query returns rows in whatever order
-        // SQLite likes.
-        return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
-    }
-
-    /// <summary>
-    /// The "Feels like" candidates as card fields, in <see cref="FeelQueries"/> order, so the first
-    /// entry is always what <c>BecauseOfTitle</c> says.
-    /// </summary>
-    private static List<ReasonSeed>? FeelReasonSeeds(
-        List<int>? feelQueries, List<SeedQuery> queries,
-        IReadOnlyDictionary<long, (string Title, string? Thumb)> seedRows)
-    {
-        if (feelQueries is not { Count: > 0 })
-        {
-            return null;
-        }
-
-        return [.. feelQueries.Select(q => queries[q]).Where(q => q.SeedTitle is not null).Select(q => new ReasonSeed(
-            q.SeedId?.ToString(CultureInfo.InvariantCulture),
-            q.SeedTitle!,
-            q.SeedId is { } id && seedRows.TryGetValue(id, out var row) ? row.Thumb : null))];
-    }
-
-    /// <summary>
-    /// The co-read candidates as card fields: the strongest seed first, as before, then the other
-    /// seeds the graph pairs the pick with that the dump has a title for.
-    /// </summary>
-    private static List<ReasonSeed> CoReadReasonSeeds(
-        (long Id, string Title, string? Thumb) primary, List<long>? others,
-        IReadOnlyDictionary<long, (string Title, string? Thumb)> seedRows)
-    {
-        List<ReasonSeed> seeds = [new(primary.Id.ToString(CultureInfo.InvariantCulture), primary.Title, primary.Thumb)];
-        foreach (var id in others ?? [])
-        {
-            if (id != primary.Id && seedRows.TryGetValue(id, out var row))
+            var feelSeed = winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff
+                ? null
+                : queries[winner.BestSeedQuery];
+            IReadOnlyList<long>? feelSeedIds = null;
+            if (feelSeed?.SeedTitle is not null && feelQueriesByRow.TryGetValue(winner.Row, out var fq) && fq.Count > 0)
             {
-                seeds.Add(new ReasonSeed(id.ToString(CultureInfo.InvariantCulture), row.Title, row.Thumb));
+                var ids = new List<long>(fq.Count);
+                foreach (var q in fq)
+                {
+                    if (queries[q].SeedId is { } sid && queries[q].SeedTitle is not null && seeds.ContainsKey(sid))
+                    {
+                        ids.Add(sid);
+                    }
+                }
+
+                if (ids.Count > 0)
+                {
+                    feelSeedIds = ids;
+                }
             }
+
+            IReadOnlyList<long>? coReadSeedIds = null;
+            if (winner.CoRead
+                && coReadSeedByRow.TryGetValue(winner.Row, out var primarySeed)
+                && seeds.ContainsKey(primarySeed))
+            {
+                var ids = new List<long> { primarySeed };
+                if (coReadSeedsByRow.TryGetValue(winner.Row, out var others))
+                {
+                    foreach (var sid in others)
+                    {
+                        if (sid != primarySeed && seeds.ContainsKey(sid))
+                        {
+                            ids.Add(sid);
+                        }
+                    }
+                }
+
+                coReadSeedIds = ids;
+            }
+
+            int? franchiseId = stampFranchises && index.FranchiseAt(winner.Row) is var franchise
+                && franchise != VectorIndex.Unknown
+                    ? franchise
+                    : null;
+
+            picks.Add(new RankedRecommendationPick(
+                index.IdAt(winner.Row),
+                index.RatingAt(winner.Row),
+                matchedGenres,
+                candidateTags,
+                winner.AuthorMatch,
+                winner.CoRecommended,
+                winner.CoRead,
+                winner.TasteMatch,
+                FranchiseId: franchiseId,
+                FeelSeedIds: feelSeedIds,
+                CoReadSeedIds: coReadSeedIds));
         }
 
-        return seeds;
+        return new RankedRecommendationPool(picks, seeds);
     }
 
     private static async Task<Dictionary<long, (string Title, string? Thumb)>> SeedRowsAsync(
@@ -2509,24 +2991,6 @@ public class SemanticRecommender(
         }
     }
 
-    private static int? ParseCount(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var whole))
-        {
-            return whole;
-        }
-
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var frac) ? (int)frac : null;
-    }
-
     private static string? GetString(SqliteDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-
-    private static int? GetInt(SqliteDataReader reader, int ordinal) =>
-        reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
 }

@@ -29,9 +29,11 @@ import ChapterEnd from './ChapterEnd'
 import NotesMargin from './NotesMargin'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
 import { useDismissRatingCheckpoint, useRatingCheckpoint, useSetProvisionalRating } from '../../api/hooks'
+import { useRatingFormat } from '../../api/ratings'
 import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
+import { actionFor, buildKeyMap, comboFromEvent, parseCombo, useShortcutBindings } from '../../lib/shortcuts'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
 import RecapSkip from './RecapSkip'
@@ -64,6 +66,7 @@ import {
   type StripResume,
 } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
+import { useStripZoom } from './useStripZoom'
 import { CREDITS_MIN_PAGES, clampToCut, clampToWindow, creditWindow, tailCut, type PageWindow } from './creditWindow'
 import { stripTapActionAt, tapActionAt } from './tapZones'
 import TapZoneOverlay from './TapZoneOverlay'
@@ -471,6 +474,9 @@ export default function ReaderPage() {
       void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
       void queryClient.invalidateQueries({ queryKey: ['progress'] })
       void queryClient.invalidateQueries({ queryKey: ['stats'] })
+      // Reading days decide what Automatic picks for the series cards. Marked stale only, so the
+      // cards pick it up on the next page instead of refetching on every flush here.
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'], refetchType: 'none' })
     },
     [queryClient],
   )
@@ -971,6 +977,9 @@ export default function ReaderPage() {
     if (mode !== 'vertical') setAutoScroll(false)
   }, [mode])
 
+  // Switching layout starts unzoomed.
+  useEffect(() => setZoom(1), [mode])
+
   // Paused whenever something sits over the page; the chrome hides itself after a few seconds, so a
   // tap in the middle is a pause that lets go on its own.
   useAutoScroll(
@@ -982,130 +991,138 @@ export default function ReaderPage() {
 
   // The listener is registered once and reads the latest handler, so it is not torn down and
   // re-added on every render (a page change in continuous mode re-renders on each scroll step).
+  const shortcutBindings = useShortcutBindings()
+  const keyMap = useMemo(() => buildKeyMap(shortcutBindings, prefs.direction === 'rtl'), [shortcutBindings, prefs.direction])
+
   const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
   onKey.current = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+    if (event.defaultPrevented) return
     const target = event.target instanceof HTMLElement ? event.target : null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
     // Keys inside the notes belong to them, not to the page behind.
     if (target?.closest('.notes-surface')) return
-    // Space on a control reached by keyboard presses that control, it does not turn the page.
+    const combo = comboFromEvent(event)
+    if (!combo) return
+    // Space or Enter on a control reached by keyboard presses that control, it does not turn the page.
+    const { key } = parseCombo(combo)
     if (
-      event.key === ' ' &&
+      (key === 'Space' || key === 'Enter') &&
       target?.matches(':focus-visible') &&
       target.closest('button, a, [role="button"], [role="slider"], [contenteditable="true"]')
     ) {
       return
     }
+    const action = actionFor(keyMap, combo)
 
     // The sheet is read, not driven: while it is up the only keys that do anything close it.
     if (shortcutsOpen) {
-      if (event.key === 'Escape' || event.key === '?') {
+      if (combo === 'Escape' || action === 'reader.shortcuts') {
         event.preventDefault()
         setShortcutsOpen(false)
       }
       return
     }
 
-    // In right-to-left reading the left arrow advances; in left-to-right it goes back.
-    const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
-    const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+    if (combo === 'Escape') {
+      if (!document.fullscreenElement && manifest) back.go()
+      return
+    }
+    if (!action) return
 
-    // Caps Lock and Shift upper-case letters; the named keys (ArrowLeft, Home) are longer than 1.
-    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
-
-    switch (key) {
-      case forwardKey:
+    switch (action) {
+      case 'reader.next':
         event.preventDefault()
         next()
         break
-      case backKey:
+      case 'reader.previous':
         event.preventDefault()
         previous()
         break
-      case ' ':
-      case 'PageDown':
-      case 'PageUp': {
+      case 'reader.screenDown':
+      case 'reader.screenUp': {
         event.preventDefault()
-        const back = key === 'PageUp' || (key === ' ' && event.shiftKey)
-        if (mode === 'vertical' && !atEnd) stepStrip(back ? -1 : 1)
-        else if (back) previous()
+        const up = action === 'reader.screenUp'
+        if (mode === 'vertical' && !atEnd) stepStrip(up ? -1 : 1)
+        else if (up) previous()
         else next()
         break
       }
-      case 'a':
-        if (mode === 'vertical') toggleAutoScroll()
+      case 'reader.autoScroll':
+      case 'reader.autoScrollSlower':
+      case 'reader.autoScrollFaster':
+        // Outside Continuous these do nothing, so the key keeps whatever the browser does with it.
+        if (mode !== 'vertical') break
+        event.preventDefault()
+        if (action === 'reader.autoScroll') toggleAutoScroll()
+        else setAutoScrollLevel(autoScrollLevel + (action === 'reader.autoScrollFaster' ? 1 : -1))
         break
-      case '[':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel - 1)
-        break
-      case ']':
-        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel + 1)
-        break
-      case 'Home':
+      case 'reader.first':
         event.preventDefault()
         setAtEnd(false)
         seekToPage(0)
         break
-      case 'End':
+      case 'reader.last':
         event.preventDefault()
         setAtEnd(false)
         seekToPage(Math.max(0, pageCount - 1))
         break
-      case 'f':
+      case 'reader.fullscreen':
+        event.preventDefault()
         toggleFullscreen()
         break
-      case 'd':
+      case 'reader.direction':
+        event.preventDefault()
         update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
         break
-      case 'b':
-        if (!bookmarkOffline) toggleBookmark.mutate(page)
+      case 'reader.bookmark':
+        if (bookmarkOffline) break
+        event.preventDefault()
+        toggleBookmark.mutate(page)
         break
-      case 't':
+      case 'reader.thumbnails':
+        event.preventDefault()
         setStripOpen((open) => !open)
         break
-      case ',':
-      case '<':
-      case '.':
-      case '>': {
-        const toward = key === ',' || key === '<' ? -1 : 1
+      case 'reader.previousBookmark':
+      case 'reader.nextBookmark': {
+        const toward = action === 'reader.previousBookmark' ? -1 : 1
         const target = adjacentBookmark(bookmarkedPages, page, shownTo, toward)
         if (target !== null) {
+          event.preventDefault()
           setAtEnd(false)
           seekToPage(target)
         }
         break
       }
-      case '1':
-        edit({ mode: 'paged' })
+      case 'reader.single':
+      case 'reader.double':
+      case 'reader.continuous':
+        event.preventDefault()
+        edit({ mode: action === 'reader.single' ? 'paged' : action === 'reader.double' ? 'double' : 'vertical' })
         break
-      case '2':
-        edit({ mode: 'double' })
-        break
-      case '3':
-        edit({ mode: 'vertical' })
-        break
-      case 'c':
+      case 'reader.crop':
+        event.preventDefault()
         update({ cropBorders: !prefs.cropBorders })
         break
-      case 'e':
+      case 'reader.enhance':
+        event.preventDefault()
         toggleAlwaysEnhance()
         break
-      case '+':
-      case '=':
+      case 'reader.zoomIn':
+        event.preventDefault()
         zoomIn()
         break
-      case '-':
+      case 'reader.zoomOut':
+        event.preventDefault()
         zoomOut()
         break
-      case '0':
+      case 'reader.zoomReset':
+        event.preventDefault()
         zoomReset()
         break
-      case '?':
+      case 'reader.shortcuts':
+        event.preventDefault()
         setShortcutsOpen(true)
-        break
-      case 'Escape':
-        if (!document.fullscreenElement && manifest) back.go()
         break
     }
   }
@@ -1123,6 +1140,12 @@ export default function ReaderPage() {
     rtl: prefs.direction === 'rtl',
     onZoom: setZoom,
     onTurn: (forward) => (forward ? next() : previous()),
+  })
+  useStripZoom(surface, {
+    enabled: mode === 'vertical',
+    zoom,
+    zoomMax: ZOOM_MAX,
+    onZoom: setZoom,
   })
   const tapAction = (clientX: number, clientY: number, bounds: DOMRect) =>
     tapActionAt(
@@ -1175,6 +1198,7 @@ export default function ReaderPage() {
   // nothing to ask while the chapter is still open. Incognito reading writes nothing to arm one.
   const { data: checkpoint } = useRatingCheckpoint(manifest?.seriesId, chapterId, atEnd && !incognito)
   const setSoFar = useSetProvisionalRating()
+  const { format: formatRating } = useRatingFormat()
   const dismissCheckpoint = useDismissRatingCheckpoint()
 
   /**
@@ -1382,10 +1406,15 @@ export default function ReaderPage() {
               <RatingCheckpointPrompt
                 checkpoint={checkpoint.checkpoint}
                 soFar={checkpoint.provisionalRating}
-                onRate={(rating) =>
+                onRate={(value) =>
                   setSoFar.mutate(
-                    { seriesId: manifest.seriesId, rating },
-                    { onSuccess: () => notifications.show({ color: 'var(--ok)', message: now`Rated ${rating}/10 so far` }) },
+                    { seriesId: manifest.seriesId, rating: value },
+                    {
+                      onSuccess: () => {
+                        const rating = formatRating(value)
+                        notifications.show({ color: 'var(--ok)', message: now`Rated ${rating}/10 so far` })
+                      },
+                    },
                   )
                 }
                 onDismiss={() => dismissCheckpoint.mutate(manifest.seriesId)}
@@ -1397,10 +1426,10 @@ export default function ReaderPage() {
         <div
           ref={setSurface}
           className="reader-surface"
-          // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
-          // which is the one case where panning across a page is what was asked for.
+          // Continuous mode scrolls one way only, unless the reader has zoomed in or set 1:1 past
+          // 100%, the cases where panning across a page is what was asked for.
           data-scroll={
-            mode === 'vertical' && !(fit === 'original' && prefs.scale > 100)
+            mode === 'vertical' && zoom === 1 && !(fit === 'original' && prefs.scale > 100)
               ? 'vertical'
               : undefined
           }
@@ -1434,6 +1463,7 @@ export default function ReaderPage() {
               onEnhanceRange={onEnhanceRange}
               tracker={stripTracker}
               lastCut={lastCut}
+              zoom={zoom}
             />
           ) : (
             <PagedView

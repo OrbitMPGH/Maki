@@ -4,6 +4,7 @@ import { expect, waitFor } from 'storybook/test'
 import EnhancedPage from './EnhancedPage'
 import { EnhanceScope, type PageEnhance } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
+import type { ServerEnhance } from './useServerEnhance'
 
 const SRC = '/mock/page/4401/1.svg'
 const STANDBY: React.CSSProperties = { position: 'fixed', inset: 0, visibility: 'hidden', pointerEvents: 'none' }
@@ -11,10 +12,29 @@ const STANDBY: React.CSSProperties = { position: 'fixed', inset: 0, visibility: 
 /** Every set of pages the scope reported as wanted by Auto, in order. */
 const reported: number[][] = []
 
-function Harness() {
+const READY: ServerEnhance = {
+  chapterId: 4401,
+  model: 'maki-2x',
+  pageVersion: 'v1',
+  states: new Map([[0, 'ready']]),
+  shown: new Set(),
+  reportShown: () => {},
+  reportMissing: () => {},
+}
+
+interface HarnessProps {
+  /** Start in standby, shown by the "Show page" button. */
+  standby?: boolean
+  /** A second page of the same size, in a box that shows it stretched. */
+  stretchedSibling?: boolean
+  server?: ServerEnhance | null
+}
+
+function Harness({ standby: startInStandby = true, stretchedSibling = false, server = null }: HarnessProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [box, setBox] = useState<HTMLDivElement | null>(null)
-  const [standby, setStandby] = useState(true)
+  const [siblingBox, setSiblingBox] = useState<HTMLDivElement | null>(null)
+  const [standby, setStandby] = useState(startInStandby)
   const [enhance] = useState<PageEnhance>(() => ({
     mode: 'auto',
     preset: null,
@@ -44,6 +64,7 @@ function Harness() {
             alt="Page 1"
             enhance={enhance}
             page={0}
+            server={server}
             priority={0}
             box={box}
             standby={standby}
@@ -51,6 +72,24 @@ function Harness() {
           />
         )}
       </div>
+      {stretchedSibling && (
+        <div ref={setSiblingBox} style={{ position: 'relative', width: 1000 / devicePixelRatio, height: 1500 / devicePixelRatio }}>
+          {image && (
+            <EnhancedPage
+              image={image}
+              src={SRC}
+              region={FULL_REGION}
+              rotate={0}
+              alt="Page 2"
+              enhance={enhance}
+              page={1}
+              priority={1}
+              box={siblingBox}
+              onShowing={() => {}}
+            />
+          )}
+        </div>
+      )}
     </>
   )
 }
@@ -79,6 +118,31 @@ export const StandbyIsNotMeasured: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Show page' }))
     await waitFor(() => expect(reported.length).toBeGreaterThan(0))
     await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(reported.flat()).not.toContain(0)
+  },
+}
+
+/**
+ * Border crop trims each page by its own amount, so pages of one release shown near the threshold
+ * fall on both sides of it. A page of the same size as one shown stretched is wanted too.
+ */
+export const SameSizeFollowsAStretchedPage: Story = {
+  args: { standby: false, stretchedSibling: true },
+  play: async () => {
+    await waitFor(() => expect(reported.at(-1)).toEqual(expect.arrayContaining([0, 1])))
+  },
+}
+
+/** A page Auto measured as plain still shows the server's upscale once it is ready: it costs nothing more. */
+export const ReadyUpscaleShowsOnAPlainPage: Story = {
+  args: { standby: false, server: READY },
+  play: async ({ canvasElement }) => {
+    const server = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLImageElement>('img.reader-enhanced-server')
+      expect(element?.dataset.enhanced).toBe('true')
+      return element!
+    })
+    await expect(server.getAttribute('src')).toContain('/reader/chapter/4401/page/0/enhanced')
     await expect(reported.flat()).not.toContain(0)
   },
 }

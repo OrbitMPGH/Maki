@@ -308,6 +308,7 @@ export default function ContinuousView({
   onEnhanceRange,
   tracker,
   lastCut = 0,
+  zoom = 1,
 }: {
   /** The pages shown: the chapter's from `first` on, past any credit pages left out. */
   urls: string[]
@@ -359,6 +360,8 @@ export default function ContinuousView({
   tracker?: StripTracker
   /** The share of the last page, from its bottom, that is left out: a credit banner fused into it. */
   lastCut?: number
+  /** The reader's pinch zoom, drawn as a scale from the strip's top-left corner (useStripZoom). */
+  zoom?: number
 }) {
   // Inside, pages count from the first one shown.
   const page = chapterPage - first
@@ -413,7 +416,7 @@ export default function ContinuousView({
     return () => scope.release()
   }, [scope, engine, urls])
   useEffect(() => () => scope.forgetPages(), [scope, urls])
-  const layout = `${fit}|${scale}`
+  const layout = `${fit}|${scale}|${zoom}`
   const serverOn = server !== null
   const pageEnhance = useMemo<PageEnhance | null>(
     () =>
@@ -467,7 +470,7 @@ export default function ContinuousView({
     update()
     window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
-  }, [enhanceOn, urls, page, shape, fit, scale, gap])
+  }, [enhanceOn, urls, page, shape, fit, scale, gap, zoom])
 
   useEffect(() => {
     leaving.current = false
@@ -740,6 +743,8 @@ export default function ContinuousView({
     const touchDistance = () => Math.max(PAST_END_TOUCH_MIN, scroller.clientHeight * PAST_END_TOUCH_SHARE)
 
     const onWheel = (event: WheelEvent) => {
+      // Ctrl+wheel and trackpad pinches zoom the strip (useStripZoom).
+      if (event.ctrlKey) return
       abandonSeek()
       const now = performance.now()
       const sinceLast = now - lastWheelAt.current
@@ -847,6 +852,7 @@ export default function ContinuousView({
         data-shaped={shape ? true : undefined}
         style={{
           gap: `${gap}px`,
+          ...(zoom !== 1 && { transform: `scale(${zoom})`, transformOrigin: 'left top' }),
           ...(shape && {
             '--page-aspect': String(shape.aspect),
             '--page-width': `${shape.width}px`,

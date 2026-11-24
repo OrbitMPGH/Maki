@@ -11,13 +11,15 @@ see [Page enhance](/Maki/features/page-enhance/).
 Nothing runs until both steps are done.
 
 1. Open **Settings, Library, Server upscaling** and switch on **Enable server upscaling**.
-2. Pick the models readers may use. Models are not bundled. Each downloads from a Maki
-   GitHub release when you tick it and save, or from its Download button, and Maki checks its
-   SHA-256 before using it. Some models are non-commercial only,
+2. Pick the models readers may use. Maki 2x and Maki 2x HQ ship with Maki and work offline. The
+   others download from a Maki GitHub release when you tick them and save, or from their Download
+   button, and Maki checks their SHA-256 before using them. Some models are non-commercial only,
    and the licences are listed in `THIRD_PARTY_NOTICES.md` in the Maki repository.
 
+![Server upscaling card with Enable server upscaling on, Real-ESRGAN under Models readers can pick with a Manage models button, and rows for Processing, Page cache and Prepare ahead](../../../../assets/ui/settings/upscaling.webp)
+
 Readers then turn **Enhance** on under **Enhance** in the reader's settings panel, where the **Method** list shows
-**Maki 2x**, **Real-ESRGAN** and **SPAN-S** under "On the server". They still choose Off, Auto or Always for
+**Maki 2x**, **Maki 2x HQ**, **Real-ESRGAN** and **SPAN-S** under "On the server". They still choose Off, Auto or Always for
 themselves, so enabling the feature changes nobody's reading.
 
 ## What the server needs

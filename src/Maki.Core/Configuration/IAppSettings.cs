@@ -14,6 +14,13 @@ public static class SettingKeys
     public const string FlareSolverrUrl = "flaresolverr.url";
 
     /// <summary>
+    /// JSON <c>{"proxies": [{"id", "url"}], "sources": {name: proxyId}}</c>: the proxy chosen sources
+    /// go through (browser, FlareSolverr and Maki's own requests alike). Read through
+    /// <c>SourceProxyResolver</c>, never parsed at the call site.
+    /// </summary>
+    public const string SourceProxy = "sources.proxy";
+
+    /// <summary>
     /// Optional Chromium <c>--host-resolver-rules</c> for the MangaFire headless browser, e.g.
     /// "MAP mangafire.to 188.114.96.1". Only needed where the Maki host can't resolve the site's
     /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.
@@ -293,6 +300,14 @@ public static class SettingKeys
     public const string UiDiscoverSections = "ui.discoversections";
 
     /// <summary>
+    /// What the progress bar on a library cover leads with: "downloads" (coloured download bar, read
+    /// ring on the status disc), "reading" (reading drawn over the downloaded share of the bar), or
+    /// "auto" (unset), which picks reading for someone who reads in Maki's own reader. See
+    /// <c>CardProgress</c>.
+    /// </summary>
+    public const string UiCardProgress = "ui.cardprogress";
+
+    /// <summary>
     /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
     /// blob. Unset = both on.
     /// <para>
@@ -366,6 +381,9 @@ public static class SettingKeys
     /// </summary>
     public const string UiAppearanceAnnouncement = "ui.appearanceannouncement";
 
+    /// <summary>Per user: keyboard shortcut overrides as a JSON object (<c>ShortcutBindings</c>). Unset = defaults.</summary>
+    public const string UiShortcuts = "ui.shortcuts";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 
@@ -403,6 +421,12 @@ public static class SettingKeys
 
     /// <summary>Per user: "on" also asks at the end of each volume. Unset = off.</summary>
     public const string RatingPromptsVolumes = "ratings.prompts.volumes";
+
+    /// <summary>Per user: "decimal" allows ratings like 7.8. Unset = whole numbers.</summary>
+    public const string RatingPrecision = "ratings.precision";
+
+    /// <summary>Per user: the rating breakdown categories as a JSON array (<c>RatingCategoryDefaults</c>). Unset = defaults.</summary>
+    public const string RatingCategories = "ratings.categories";
 
     /// <summary>
     /// Per user: days without reading before a Reading series with unread chapters downloaded is
@@ -814,6 +838,37 @@ public static class SettingKeys
     /// one.
     /// </summary>
     public const string RecommendationsReaderCohortsGeneratedAt = "recommendations.readercohortsgeneratedat";
+
+    /// <summary>
+    /// Kill switch for the EASE channel (the "readers who finished X also finished Y" weight table,
+    /// <c>ease-table.db</c>), the same shape as <see cref="RecommendationsCoRead"/>: default on, no
+    /// UI, read per uncached request and folded into the pool cache key. Off means no download, no
+    /// load and no scoring.
+    /// </summary>
+    public const string RecommendationsEase = "recommendations.ease";
+
+    /// <summary>Manifest the EASE table is downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsEaseUrl = "recommendations.easeurl";
+
+    /// <summary>
+    /// The installer's own record of what it put on disk, never read back out of the file, so a
+    /// hand-placed table is replaced by the first download rather than mistaken for a current one.
+    /// </summary>
+    public const string RecommendationsEaseGeneratedAt = "recommendations.easegeneratedat";
+
+    /// <summary>
+    /// Kill switch for the page-share penalty (<c>page-share.db</c>, how often each series lands on
+    /// a reader's Recommended page), the same shape as <see cref="RecommendationsEase"/>: default on,
+    /// no UI, read per uncached request and folded into the pool cache key. Off means no download,
+    /// no load and no penalty.
+    /// </summary>
+    public const string RecommendationsPageShare = "recommendations.pageshare";
+
+    /// <summary>Manifest the page-share table is downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsPageShareUrl = "recommendations.pageshareurl";
+
+    /// <summary>The installer's record of what it put on disk, as for the EASE table.</summary>
+    public const string RecommendationsPageShareGeneratedAt = "recommendations.pagesharegeneratedat";
 
     /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
     /// <see cref="RecommendationsCoGraphUrl"/>.</summary>

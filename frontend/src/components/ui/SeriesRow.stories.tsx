@@ -36,7 +36,7 @@ export const NewChapters: Story = {
   play: async ({ canvas }) => {
     const pill = await canvas.findByText('2 new')
     await expect(pill).toBeVisible()
-    await expect(pill.closest('[data-tip]')).toHaveAttribute('data-tip', '2 recent chapter files')
+    await expect(pill.closest('[data-tip]')).toHaveAttribute('data-tip', '2 new chapters to read')
   },
 }
 

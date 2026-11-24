@@ -9,6 +9,7 @@ import { formatBytes } from '../../format'
 import { useCheckedWithLabel } from '../pageconversion/labels'
 import { IconArrowBackUp } from '../../lib/icons'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 type Choice = 'restore' | 'again'
 
@@ -72,6 +73,7 @@ export function UndoConversionModal({
     <Modal
       opened={opened}
       onClose={close}
+      size={MODAL_SIZE.default}
       title={
         <ModalHeading
           title={<Trans>Undo conversion</Trans>}

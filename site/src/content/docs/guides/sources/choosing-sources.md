@@ -10,6 +10,8 @@ For the sources themselves, see [Built-in sources](/Maki/guides/sources/built-in
 When you add a series, Maki searches every enabled source for it in the background, and the series
 shows as matching until the searches finish.
 
+![The Sources section of a series page matching the remaining sources, with Atsumaru and MangaDex linked by Cross-id, Weeb Central found and TopManhua and MangaPill still searching](../../../../assets/ui/series/sources-matching.webp)
+
 - A result is accepted when its title agrees closely enough with the series. If the main title finds
   nothing on a source, Maki retries with alternative titles: up to two English ones on a source that
   publishes English, otherwise the alt title in the source's own language, then the original title if
@@ -28,6 +30,8 @@ When a result comes close to the series title but not close enough to link on it
 section shows it as **Is this it?** with **Link** and **Dismiss**, so an odd romanisation does not
 need a manual search. A dismissed suggestion is not offered again for that source.
 
+![The Sources section with an Is this it? card suggesting Sousou no Frieren on MangaPill, with Link and Dismiss buttons](../../../../assets/ui/series/near-miss.webp)
+
 **Auto-match** in the Sources section of the series page searches again. It only tries sources that
 are not linked yet.
 
@@ -36,6 +40,8 @@ are not linked yet.
 In **Settings → Downloads → Sources → Manage sources**, drag sources into order in the **Priority**
 panel beside **All sources**. On narrow screens it is a tab instead. The top source is tried first
 when several carry the same series. Newly enabled sources join at the bottom.
+
+![The Manage sources window with the source list on the left, each row tagged by type, quality and language, and the Priority panel on the right ranking MangaDex first](../../../../assets/ui/settings/manage-sources.webp)
 
 Languages affect the order too. In **Settings → Downloads → Languages**, list your languages, most
 preferred first. Maki ranks each source by the most preferred enabled language it publishes in, and
@@ -63,9 +69,10 @@ Each linked source also has a priority number. In manual order, a lower number i
 quality order, the priority number only breaks ties between sources of equal quality.
 
 Quality comes from sampling. **Measure** on the series page takes a few pages from three chapters on
-every enabled source and records a quality tier for each, and **Compare** shows two sources side by
-side. To measure new series automatically, turn on **Measure sources when a series is added** in the
-Sources section of Downloads settings.
+every enabled source and records a quality tier for each, and **Compare** shows the same chapter from
+each source in its own column. Drag the columns into the order you like and save to set the series'
+download order. To measure new series automatically, turn on **Measure sources when a series is
+added** in the Sources section of Downloads settings.
 
 Smart Download waits until a new series' sources have been measured, so its first batch doesn't go
 to a source ranked on a guess. If no measurement ever ran, it starts one, and it starts downloading
@@ -90,6 +97,8 @@ alone.
 On the series page, select **Link source** in the Sources section, pick a source, then search for
 the series or paste its URL. A source with no search only works with a pasted URL.
 
+![The Link a source dialog with TCB Scans picked, a search for Frieren: Beyond Journey's End, alternative title chips and three matching results](../../../../assets/ui/series/link-source.webp)
+
 ## Unlinking a source
 
 Select **Remove mapping** on the source's row and confirm in the **Remove source?** dialog. Chapters
@@ -100,6 +109,8 @@ chapters are deleted too.
 - **Remove and clean up** does the removal above. Tick **Also delete detached files from disk** to
   delete those files as well, if your account is allowed to delete series.
 - **Remove without cleanup** skips the chapter clean-up. You confirm it in a second dialog.
+
+![The Remove Atsumaru? dialog with the Also delete detached files from disk checkbox, a warning that reading progress and bookmarks will be deleted, and Remove without cleanup and Remove and clean up buttons](../../../../assets/ui/series/remove-source.webp)
 
 ## Turning sources off
 

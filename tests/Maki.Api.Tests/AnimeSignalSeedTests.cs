@@ -101,6 +101,27 @@ public class AnimeSignalSeedTests : IDisposable
     }
 
     [Fact]
+    public async Task The_off_shelf_seed_scale_weighs_an_anime_seed_down_or_leaves_it_out()
+    {
+        OptIn();
+        Signal(500, AnimeWatchStatus.Completed, 9);
+        SeedWeightService Scaled(double scale)
+        {
+            var tuning = TasteTuning.Default with { OffShelfSeedScale = scale };
+            return new SeedWeightService(new BehavioralTasteService(tuning), tuning, new FakeAppSettings());
+        }
+
+        using var db = _fixture.NewContext(1);
+        var full = (await Service().SnapshotAsync(db, new TestCurrentUser(1))).Effective.Weights[500];
+        var half = await Scaled(0.5).SnapshotAsync(db, new TestCurrentUser(1));
+        var none = await Scaled(0).SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(full / 2, half.Effective.Weights[500], 8);
+        Assert.DoesNotContain(500L, none.Effective.EligibleIds);
+        Assert.DoesNotContain(500L, none.Effective.Weights.Keys);
+    }
+
+    [Fact]
     public async Task A_dropped_or_low_scored_anime_joins_the_avoided_set_instead()
     {
         OptIn();

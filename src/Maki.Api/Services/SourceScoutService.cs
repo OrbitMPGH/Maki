@@ -175,8 +175,10 @@ public sealed class SourceScoutService(
             .Where(m => !disabled.Contains(m.SourceName) && registry.Find(m.SourceName) is not null)
             .ToList();
         var mappingIds = mappings.Select(m => m.Id).ToList();
+        // A folded whole's link names only its first part, so probing it would measure part 1 as the
+        // whole chapter and read the source as truncated; the upgrade scan leaves them out the same way.
         var links = await db.ChapterSourceLinks.AsNoTracking()
-            .Where(l => mappingIds.Contains(l.SourceMappingId))
+            .Where(l => mappingIds.Contains(l.SourceMappingId) && l.Parts == null)
             .Include(l => l.Chapter)
             .ToListAsync(ct);
 

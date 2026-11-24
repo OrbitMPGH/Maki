@@ -27,7 +27,7 @@ Archiving a part-read series from its page asks whether to rate it first, if it 
 The score you pick becomes the rating when the archive goes through. If you already set a so-far
 score, the dialog shows it. See [Ratings](/Maki/guides/trackers/ratings/).
 
-<!-- screenshot: the Archive dialog for a part-read series, with the rating stars -->
+![Archive dialog for Frieren: Beyond Journey's End with the Also remove the files checkbox, a warning that another reader is partway through, and rating choices from Bad to Masterpiece](../../../../assets/ui/series/archive-dialog.webp)
 
 When you finish a completed series, its page offers to archive it with the line **You've finished
 this. Archive it?**. It needs the permission to archive series, and it only appears once everyone
@@ -54,6 +54,8 @@ Archived series still count as a seed for recommendations.
 If the series kept its files, the archived banner on its page has a **Remove files** button. The
 files go to the recycle bin and stay for the recycle bin retention period. See
 [Retention and deleting files](/Maki/guides/library/retention/).
+
+![Archived banner on a series page showing who archived the series and when, with Restore to library and Remove files buttons](../../../../assets/ui/series/archived-banner.webp)
 
 Removed chapters do not count as missing, and restoring the series can download them again.
 

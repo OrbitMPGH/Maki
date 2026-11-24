@@ -99,4 +99,17 @@ public sealed record TasteTuning(
     /// and the aggregate is not worth running.
     /// </summary>
     public bool IsUniform => DepthWeight <= 0 && RatioWeight <= 0 && EngageWeight <= 0;
+
+    /// <summary>
+    /// Multiplier on the seed weight of a shelf series with no rating and no chapter read. 1 ships.
+    /// Measurement only: an unread add otherwise steers at 1.0 to 1.5, the same as a series read
+    /// halfway. See distribution/AGENTS.md, "v9: series the reader data does not cover".
+    /// </summary>
+    public double UnreadSeedScale { get; init; } = 1.0;
+
+    /// <summary>
+    /// Multiplier on the seed weight of a liked title or an anime-list match that is not on the
+    /// shelf. 1 ships; 0 leaves those seeds out. Measurement only, same section.
+    /// </summary>
+    public double OffShelfSeedScale { get; init; } = 1.0;
 }

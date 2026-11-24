@@ -10,6 +10,7 @@ import {
 } from '../../src/api/hooks'
 import type { QueueSummaryDto, SeriesDto } from '../../src/api/types'
 import { adminMe, api } from './api'
+import type { RatingSettings } from '../../src/api/ratings'
 import { imageHandlers } from './images'
 
 /**
@@ -308,6 +309,16 @@ export const seriesLookupHandler = http.get(api('/series/lookup'), async () => {
   )
 })
 
+export const ratingSettings = {
+  precision: 'whole',
+  categories: ['story', 'characters', 'art', 'enjoyment', 'pacing', 'world', 'originality', 'ending'].map((key, i) => ({
+    key,
+    name: null,
+    enabled: i < 4,
+    weight: 1,
+  })),
+} satisfies RatingSettings
+
 export const sharedHandlers = [
   // Ahead of every `/series/:id` handler, which would otherwise take `lookup` for an id.
   seriesLookupHandler,
@@ -320,6 +331,16 @@ export const sharedHandlers = [
     }),
   ),
   http.get(api('/auth/me'), () => HttpResponse.json(adminMe)),
+  // The rating precision and breakdown categories every star and score reads.
+  http.get(api('/settings/ratings'), () => HttpResponse.json(ratingSettings)),
+  http.put(api('/settings/ratings'), async ({ request }) => HttpResponse.json(await request.json())),
+  http.put(api('/series/:id/rating/breakdown'), async ({ request }) => {
+    const { scores } = (await request.json()) as { scores: Record<string, number> }
+    return HttpResponse.json({ ratingBreakdown: Object.keys(scores).length ? scores : null })
+  }),
+  // Keyboard shortcut overrides: the search pill and the reader read them on every page.
+  http.get(api('/settings/shortcuts'), () => HttpResponse.json({ bindings: {} })),
+  http.put(api('/settings/shortcuts'), async ({ request }) => HttpResponse.json(await request.json())),
   http.get(api('/settings/setup'), () => HttpResponse.json(setupStatus)),
   http.get(api('/settings/ui'), () => HttpResponse.json(uiSettings)),
   http.get(api('/settings/metadata'), () => HttpResponse.json(metadataSettings)),

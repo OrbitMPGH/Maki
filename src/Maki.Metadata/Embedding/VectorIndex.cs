@@ -396,6 +396,12 @@ public sealed class VectorIndex(
         return year is >= 1 and <= 9999 ? new DateOnly(year, 1, 1).DayNumber : Unknown;
     }
 
+    /// <summary>The row's interned type id (manga, manhwa, ...), from <see cref="TypeCount"/> values.</summary>
+    public byte TypeAt(int row) => columns.Types[row];
+
+    /// <summary>How many distinct types the index interns; type ids run below it.</summary>
+    public int TypeCount => vocabularies.Types.Count == 0 ? 0 : vocabularies.Types.Values.Max() + 1;
+
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
     public ReadOnlySpan<int> GenresAt(int row) => columns.Genres[row];
 

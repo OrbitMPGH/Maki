@@ -1,2 +1,2 @@
-/** The three modal widths: confirms and short prompts, forms, and tables or pickers. */
-export const MODAL_SIZE = { narrow: 420, default: 560, wide: 820 } as const
+/** The four modal widths: confirms and short prompts, forms, tables or pickers, and wide workspaces. */
+export const MODAL_SIZE = { narrow: 420, default: 560, wide: 820, xwide: 1080 } as const

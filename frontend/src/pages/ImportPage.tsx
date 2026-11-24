@@ -18,12 +18,14 @@ import {
 import {
   IconEye,
   IconEyeOff,
+  IconFolder,
   IconFolders,
   IconFolderSearch,
   IconPackageImport,
   IconSearch,
 } from '../lib/icons'
 import { notifications } from '../lib/toast'
+import { FilterMenuButton } from '../components/ListControls'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -454,11 +456,11 @@ function FolderImport() {
       <Panel p="sm" className="import-toolbar">
         <StepStrip steps={steps} label={t`Import progress`} />
         <Group gap="sm" wrap="wrap">
-          <Select
+          <FilterMenuButton
             className="import-root-select"
-            aria-label={t`Root folder`}
-            placeholder={t`Root folder`}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            icon={IconFolder}
+            label={t`Root folder`}
+            options={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             disabled={doImport.isPending}
             value={rootFolderId}
             onChange={(v) => {

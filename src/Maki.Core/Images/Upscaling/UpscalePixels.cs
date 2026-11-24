@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Maki.Core.Images.Upscaling;
 
 public static class UpscalePixels
@@ -44,8 +46,8 @@ public static class UpscalePixels
         return spreadSum <= (long)samples * MaxMeanSpread;
     }
 
-    private const int SmoothReach = 2;     // taps each side: a 5 x 5 grid
-    private const int SmoothStep = 2;      // source px between taps, so the grid spans an 8 px JPEG block
+    internal const int SmoothReach = 2;    // taps each side: a 5 x 5 grid
+    internal const int SmoothStep = 2;     // source px between taps, so the grid spans an 8 px JPEG block
     private const double SmoothSpace = 4;  // source px
     private const double SmoothLuma = 4;   // luma levels
     private const double SmoothChroma = 3; // Cb/Cr levels
@@ -81,107 +83,96 @@ public static class UpscalePixels
     /// colour edges and line edges are large steps and stay. The colour is then sampled up bilinearly.
     /// </para>
     /// </summary>
-    public static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads) =>
-        TakeColourFrom(output, width, height, source, sourceWidth, sourceHeight, threads,
-            banded: (long)sourceWidth * sourceHeight > BandedFromPixels);
+    public static unsafe void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
+        int threads)
+    {
+        fixed (byte* ptr = output)
+        {
+            TakeColourFrom((IntPtr)ptr, output.Length, width, height, source, sourceWidth, sourceHeight, threads);
+        }
+    }
 
-    /// <summary>
-    /// From this many source pixels the colour pass works band by band. The whole-page pass holds 13 bytes a
-    /// source pixel (136 MB on a 720 x 16000 webtoon slice, the peak of a tall page) and the banded one a few MB,
-    /// for the same bytes out. On a typical 1.7 MP page the banded pass was 7 to 18% slower, on 2.6 MP and up
-    /// within noise of the whole-page one.
-    /// </summary>
-    internal const long BandedFromPixels = 4_000_000;
-
-    internal static void TakeColourFrom(byte[] output, int width, int height, byte[] source, int sourceWidth, int sourceHeight,
-        int threads, bool banded)
+    public static unsafe void TakeColourFrom(IntPtr output, long outputLength, int width, int height, byte[] source, int sourceWidth,
+        int sourceHeight, int threads)
     {
         var scale = sourceWidth > 0 ? width / sourceWidth : 0;
         if (scale < 1 || width != sourceWidth * scale || height != sourceHeight * scale
-            || output.Length != width * height * 3 || source.Length != sourceWidth * sourceHeight * 3)
+            || outputLength < (long)width * height * 3 || source.Length != sourceWidth * sourceHeight * 3)
         {
             throw new ArgumentException("The output must be the source's size times a whole scale.", nameof(source));
         }
 
         var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads) };
-        var guide = new byte[sourceWidth * sourceHeight];
-        var chroma = banded ? [] : new short[sourceWidth * sourceHeight * 2];
-        Parallel.For(0, sourceHeight, options, y =>
+        var guideLength = sourceWidth * sourceHeight;
+        var guidePtr = Marshal.AllocHGlobal(guideLength);
+        try
         {
-            for (var x = 0; x < sourceWidth; x++)
+            Parallel.For(0, sourceHeight, options, y =>
             {
-                var sum = 0;
-                for (var dy = 0; dy < scale; dy++)
+                var outBase = (byte*)output;
+                var gBase = (byte*)guidePtr;
+                for (var x = 0; x < sourceWidth; x++)
                 {
-                    var o = ((y * scale + dy) * width + x * scale) * 3;
-                    for (var dx = 0; dx < scale; dx++, o += 3)
+                    var sum = 0;
+                    for (var dy = 0; dy < scale; dy++)
                     {
-                        sum += Luma(output[o], output[o + 1], output[o + 2]);
+                        var o = ((long)(y * scale + dy) * width + x * scale) * 3;
+                        for (var dx = 0; dx < scale; dx++, o += 3)
+                        {
+                            sum += Luma(outBase[o], outBase[o + 1], outBase[o + 2]);
+                        }
                     }
+
+                    gBase[y * sourceWidth + x] = (byte)((sum + scale * scale / 2) / (scale * scale));
                 }
+            });
 
-                guide[y * sourceWidth + x] = (byte)((sum + scale * scale / 2) / (scale * scale));
-            }
-
-            if (!banded)
+            var reach = SmoothReach * SmoothStep;
+            var count = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
+            var starts = new int[count + 1];
+            for (int band = 1, y = 0; band <= count; band++)
             {
-                ChromaRow(source, chroma, sourceWidth, y, 0);
-            }
-        });
-
-        if (!banded)
-        {
-            var smooth = new float[sourceWidth * sourceHeight * 2];
-            var bands = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
-            Parallel.For(0, bands, options, band => SmoothRows(chroma, 0, guide, smooth, 0, sourceWidth, sourceHeight,
-                band * SmoothBandRows, Math.Min(sourceHeight, (band + 1) * SmoothBandRows)));
-            Parallel.For(0, height, options, y => ColourRow(output, width, smooth, 0, sourceWidth, sourceHeight, scale, y));
-            return;
-        }
-
-        // Each band of source rows works out its own chroma (with the rows its taps reach) and smoothed colour
-        // (with the next row, for the bilinear), then colours the output rows it covers. Nothing waits between
-        // bands; the guide is the only whole-page buffer, taken before any output row changes. Every pixel gets
-        // the same arithmetic as in the whole-page pass.
-        var reach = SmoothReach * SmoothStep;
-        var count = (sourceHeight + SmoothBandRows - 1) / SmoothBandRows;
-        var starts = new int[count + 1];
-        for (int band = 1, y = 0; band <= count; band++)
-        {
-            while (y < height && (int)SourceY(y, scale, sourceHeight) < Math.Min(sourceHeight, band * SmoothBandRows))
-            {
-                y++;
-            }
-
-            starts[band] = y;
-        }
-
-        Parallel.For(0, count, options,
-            () => (Chroma: new short[(SmoothBandRows + 1 + 2 * reach) * sourceWidth * 2],
-                Smooth: new float[(SmoothBandRows + 1) * sourceWidth * 2]),
-            (band, _, buffers) =>
-            {
-                var top = band * SmoothBandRows;
-                var last = Math.Min(sourceHeight - 1, top + SmoothBandRows);
-                var chromaTop = Math.Max(0, top - reach);
-                for (var y = chromaTop; y < Math.Min(sourceHeight, last + reach + 1); y++)
+                while (y < height && (int)SourceY(y, scale, sourceHeight) < Math.Min(sourceHeight, band * SmoothBandRows))
                 {
-                    ChromaRow(source, buffers.Chroma, sourceWidth, y, chromaTop);
+                    y++;
                 }
 
-                SmoothRows(buffers.Chroma, chromaTop, guide, buffers.Smooth, top, sourceWidth, sourceHeight, top, last + 1);
-                for (var y = starts[band]; y < starts[band + 1]; y++)
+                starts[band] = y;
+            }
+
+            Parallel.For(0, count, options,
+                () => (Chroma: new short[(SmoothBandRows + 1 + 2 * reach) * sourceWidth * 2],
+                    Smooth: new float[(SmoothBandRows + 1) * sourceWidth * 2]),
+                (band, _, buffers) =>
                 {
-                    ColourRow(output, width, buffers.Smooth, top, sourceWidth, sourceHeight, scale, y);
-                }
+                    var top = band * SmoothBandRows;
+                    var last = Math.Min(sourceHeight - 1, top + SmoothBandRows);
+                    var chromaTop = Math.Max(0, top - reach);
+                    for (var y = chromaTop; y < Math.Min(sourceHeight, last + reach + 1); y++)
+                    {
+                        ChromaRow(source, buffers.Chroma, sourceWidth, y, chromaTop);
+                    }
 
-                return buffers;
-            },
-            _ => { });
+                    var guideSpan = new ReadOnlySpan<byte>((void*)guidePtr, guideLength);
+                    SmoothRows(buffers.Chroma, chromaTop, guideSpan, buffers.Smooth, top, sourceWidth, sourceHeight, top, last + 1);
+                    var rowBytes = width * 3;
+                    for (var y = starts[band]; y < starts[band + 1]; y++)
+                    {
+                        var row = new Span<byte>((byte*)output + (long)y * rowBytes, rowBytes);
+                        ColourRow(row, width, buffers.Smooth, top, sourceWidth, sourceHeight, scale, y);
+                    }
+
+                    return buffers;
+                },
+                _ => { });
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(guidePtr);
+        }
     }
 
-    private static void ChromaRow(byte[] source, short[] chroma, int width, int y, int chromaTop)
+    internal static void ChromaRow(byte[] source, short[] chroma, int width, int y, int chromaTop)
     {
         for (var x = 0; x < width; x++)
         {
@@ -198,7 +189,7 @@ public static class UpscalePixels
     /// Smooths source rows <paramref name="from"/> up to <paramref name="end"/>. Chroma rows are held from
     /// <paramref name="chromaTop"/>, smoothed rows from <paramref name="smoothTop"/>; the guide is the whole page.
     /// </summary>
-    private static void SmoothRows(short[] chroma, int chromaTop, byte[] guide, float[] smooth, int smoothTop, int width,
+    internal static void SmoothRows(short[] chroma, int chromaTop, ReadOnlySpan<byte> guide, float[] smooth, int smoothTop, int width,
         int height, int from, int end)
     {
         var tapW = SmoothTapWeights;
@@ -253,13 +244,13 @@ public static class UpscalePixels
     }
 
     /// <summary>Where output row <paramref name="y"/> samples the source, in source rows.</summary>
-    private static float SourceY(int y, int scale, int sourceHeight) => Math.Clamp((y + 0.5f) / scale - 0.5f, 0, sourceHeight - 1);
+    internal static float SourceY(int y, int scale, int sourceHeight) => Math.Clamp((y + 0.5f) / scale - 0.5f, 0, sourceHeight - 1);
 
     /// <summary>
-    /// One output row: its own luma plus the smoothed colour (blue and red minus luma) sampled up bilinearly.
-    /// <paramref name="smooth"/> holds source rows from <paramref name="smoothTop"/>.
+    /// Output row <paramref name="y"/> (<paramref name="row"/>): its own luma plus the smoothed colour (blue and red
+    /// minus luma) sampled up bilinearly. <paramref name="smooth"/> holds source rows from <paramref name="smoothTop"/>.
     /// </summary>
-    private static void ColourRow(byte[] output, int width, float[] smooth, int smoothTop, int sourceWidth, int sourceHeight,
+    internal static void ColourRow(Span<byte> row, int width, float[] smooth, int smoothTop, int sourceWidth, int sourceHeight,
         int scale, int y)
     {
         var sy = SourceY(y, scale, sourceHeight);
@@ -277,11 +268,11 @@ public static class UpscalePixels
             var db = Bilinear(smooth, top + x0 * 2, top + x1 * 2, bottom + x0 * 2, bottom + x1 * 2, fx, fy);
             var dr = Bilinear(smooth, top + x0 * 2 + 1, top + x1 * 2 + 1, bottom + x0 * 2 + 1, bottom + x1 * 2 + 1, fx, fy);
             var dg = -(0.299f * dr + 0.114f * db) / 0.587f;
-            var o = (y * width + x) * 3;
-            var l = Luma(output[o], output[o + 1], output[o + 2]);
-            output[o] = (byte)Math.Clamp((int)MathF.Round(l + dr), 0, 255);
-            output[o + 1] = (byte)Math.Clamp((int)MathF.Round(l + dg), 0, 255);
-            output[o + 2] = (byte)Math.Clamp((int)MathF.Round(l + db), 0, 255);
+            var o = x * 3;
+            var l = Luma(row[o], row[o + 1], row[o + 2]);
+            row[o] = (byte)Math.Clamp((int)MathF.Round(l + dr), 0, 255);
+            row[o + 1] = (byte)Math.Clamp((int)MathF.Round(l + dg), 0, 255);
+            row[o + 2] = (byte)Math.Clamp((int)MathF.Round(l + db), 0, 255);
         }
     }
 
@@ -319,5 +310,16 @@ public static class UpscalePixels
         }
 
         return grey;
+    }
+
+    /// <summary>Folds interleaved RGB into one band per pixel in the front third of the same buffer.</summary>
+    public static unsafe void FoldToSingleBandInPlace(IntPtr rgb, long pixels)
+    {
+        var ptr = (byte*)rgb;
+        for (long p = 0; p < pixels; p++)
+        {
+            var o = p * 3;
+            ptr[p] = (byte)((ptr[o] + ptr[o + 1] + ptr[o + 2] + 1) / 3);
+        }
     }
 }

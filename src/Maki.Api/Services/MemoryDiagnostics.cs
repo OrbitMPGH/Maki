@@ -4,6 +4,7 @@ using Maki.Core.Images;
 using Maki.Core.Io;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
@@ -39,6 +40,7 @@ namespace Maki.Api.Services;
 public sealed class MemoryDiagnostics(
     CatalogueIndexCache catalogue,
     CoReadCache coRead,
+    EaseCache ease,
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
     VectorIndexCache vectors,
@@ -106,14 +108,15 @@ public sealed class MemoryDiagnostics(
             {
                 Artifact("catalogue-indexes", catalogue.IsLoaded, catalogue.IdleFor),
                 Artifact("co-read-graph", coRead.IsLoaded, coRead.IdleFor),
+                Artifact("ease-table", ease.IsLoaded, ease.IdleFor),
                 Artifact("reco-graph", recoGraph.IsLoaded, recoGraph.IdleFor),
                 Artifact("reader-cohorts", cohorts.IsLoaded, cohorts.IdleFor),
                 Artifact("search-vectors", vectors.IsLoaded, vectors.IdleFor),
                 Artifact("text-embedder", embedder.IsReady, idle: null)
             },
-            // Native, and the largest single thing on the list when one is up: the Playwright
-            // driver and the headless shell together. Nothing here can see their size from inside
-            // the process, so this reports only whether they are running.
+            // Native, and the largest single thing on the list when one is up: the headless
+            // shell's process tree. Nothing here can see its size from inside the process, so this
+            // reports only whether they are running.
             browsers = browsers
                 .Select(b => new { name = b.BrowserName, running = b.IsRunning })
                 .ToArray()

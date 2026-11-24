@@ -19,6 +19,8 @@ with the same name, and following an artist does not follow the same name as an 
 off. It shows catalogue titles from the last 12 months by the people you follow, newest first. Titles
 you own, have thumbed, marked as seen, hidden or dismissed stay out.
 
+![The New from creators you follow rail with one title, Archives of Witch Hat Atelier, and the Manage and Show more buttons](../../../../assets/ui/discover/following.webp)
+
 - **Manage** lists the creators you follow, and is where you unfollow.
 - **Show more** opens every title in the rail, with the followed creators as the filter.
 

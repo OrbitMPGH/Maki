@@ -21,7 +21,8 @@ internal static class LibraryListRows
     /// <param name="ids">The series to build, or null for every series the caller can see.</param>
     public static async Task<List<SeriesDto>> BuildAsync(
         MakiDbContext db, SourceAvailability sourceAvailability, MangaBakaLocalStore mangaBakaStore,
-        IAppSettings appSettings, string? titleLanguage, ILogger logger, int[]? ids, CancellationToken ct)
+        IAppSettings appSettings, string? titleLanguage, ILogger logger, int[]? ids, CancellationToken ct,
+        CoverAccentCache? accents = null)
     {
         var series = await ForSeries(db.Series.AsNoTracking(), ids, s => s.Id).OrderBy(s => s.SortTitle).ToListAsync(ct);
         var chapterCounts = await ChapterTalliesAsync(ForSeries(db.Chapters, ids, c => c.SeriesId), ReadCounts.Read(db), ct);
@@ -149,6 +150,7 @@ internal static class LibraryListRows
                 RemovedChapterCount = counts?.Removed ?? 0,
                 ProgressTotal = progress.Total,
                 ProgressHave = progress.Have,
+                ProgressReadable = progress.Readable,
                 ProgressRead = progress.Read,
                 ListedSpecials = progress.ListedSpecials,
                 ProgressSkipped = progress.Skipped,
@@ -170,6 +172,7 @@ internal static class LibraryListRows
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
                 NewChapterCount = newChapterCounts.GetValueOrDefault(s.Id),
+                CoverAccent = accents?.CachedAccentFor(s.Id),
                 LatestChapterAt = latestReleaseBySeries.GetValueOrDefault(s.Id),
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)
@@ -279,7 +282,7 @@ internal static class LibraryListRows
             .Select(r => (r.SeriesId, r.Slot!.Value))
             .ToHashSet();
 
-        var chapterIdsByFile = batchChapters.ToLookup(c => c.FileId, c => c.Id);
+        var chaptersByFile = batchChapters.ToLookup(c => c.FileId, c => new NewChapterBatch.Chapter(c.Id, c.Number, c.Volume));
         var unreadBySeries = batchChapters
             .Where(c => !completed.Contains(c.Id) &&
                         !(ContinueReadingService.SlotOf(c.Number, c.Volume) is { } slot && readSlots.Contains((c.SeriesId, slot))))
@@ -289,7 +292,7 @@ internal static class LibraryListRows
         var counts = new Dictionary<int, int>();
         foreach (var (seriesId, unread) in unreadBySeries)
         {
-            var count = NewChapterBatch.UnreadFiles(batches[seriesId], id => chapterIdsByFile[id], unread).Count;
+            var count = NewChapterBatch.UnreadChapters(batches[seriesId], id => chaptersByFile[id], unread).Count;
             if (count > 0)
             {
                 counts[seriesId] = count;
@@ -368,7 +371,8 @@ internal static class LibraryListRows
 
     internal sealed record ChapterTallies(
         int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain,
-        double? HighestKeptMain = null, int SwitchedOff = 0, int SwitchedOffSpecials = 0, double? HighestSpecial = null);
+        double? HighestKeptMain = null, int SwitchedOff = 0, int SwitchedOffSpecials = 0, double? HighestSpecial = null,
+        int UnwantedHad = 0);
 
     /// <summary>
     /// The chapter counts every series surface reports, keyed by series id. The list and detail
@@ -388,6 +392,11 @@ internal static class LibraryListRows
     /// <para>
     /// A chapter in <paramref name="reads"/> is never switched off: it moves to <c>Wanted</c>, so a
     /// read count taken from the same rows cannot pass the total.
+    /// </para>
+    /// <para>
+    /// <c>UnwantedHad</c> is what Read leaves out of its total: numbered chapters with Wanted off that
+    /// have or had a file and are not read, such as specials that came inside a volume. A None series
+    /// has every switch off, so it has none (<see cref="UnwantedHad"/>).
     /// </para>
     /// </summary>
     internal static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
@@ -428,6 +437,18 @@ internal static class LibraryListRows
             }
         }
 
+        var unwantedHad = await UnwantedHad(chapters, reads)
+            .GroupBy(c => c.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        foreach (var row in unwantedHad)
+        {
+            if (tallies.TryGetValue(row.SeriesId, out var t))
+            {
+                tallies[row.SeriesId] = t with { UnwantedHad = row.Count };
+            }
+        }
+
         var readOff = await chapters
             .Where(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
                         reads.Any(p => p.ChapterId == c.Id))
@@ -456,11 +477,22 @@ internal static class LibraryListRows
         return tallies;
     }
 
+    /// <summary>
+    /// Chapters on disk (or removed on purpose) that Read leaves out: Wanted off, numbered, not read,
+    /// in a series whose switches mean something. Volume entries and one-shots have no number and stay.
+    /// </summary>
+    internal static IQueryable<Chapter> UnwantedHad(IQueryable<Chapter> chapters, IQueryable<ChapterProgress> reads) =>
+        chapters.Where(c => !c.Wanted && (c.ChapterFileId != null || c.FileRemovedAt != null) &&
+                            c.Number != null &&
+                            c.Series!.MonitorNewItems != NewChapterMonitorMode.None &&
+                            !reads.Any(p => p.ChapterId == c.Id));
+
     /// <summary>What Reading and Downloads count against (<see cref="SeriesProgressScope.Wanted"/>).</summary>
     internal static SeriesProgressScope.Totals ProgressTotals(ChapterTallies? counts, int? read) =>
         SeriesProgressScope.Wanted(
             counts?.Wanted ?? 0, (counts?.WithFile ?? 0) + (counts?.Removed ?? 0), read,
-            counts?.Specials ?? 0, counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0);
+            counts?.Specials ?? 0, counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0,
+            counts?.UnwantedHad ?? 0);
 
     /// <summary>How long the series is (<see cref="SeriesProgressScope.Compute"/>), for the automatic Completed only.</summary>
     internal static SeriesProgressScope.Totals SeriesLength(

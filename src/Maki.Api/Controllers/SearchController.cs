@@ -5,6 +5,8 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Http.Proxy;
+using Maki.Core.Io;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -29,7 +31,8 @@ public class SearchController(
     ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
-    ILogger<SearchController> logger) : ControllerBase
+    ILogger<SearchController> logger,
+    ISourceProxyResolver? proxies = null) : ControllerBase
 {
     /// <summary>Search a specific site source, for manually linking a series.</summary>
     [HttpGet("source")]
@@ -53,7 +56,16 @@ public class SearchController(
             return BadRequest();
         }
 
-        var results = await source.SearchAsync(query, ct);
+        IReadOnlyList<SourceSeriesResult> results;
+        try
+        {
+            results = await source.SearchAsync(query, ct);
+        }
+        catch (SourceProxyException ex)
+        {
+            logger.LogWarning("Search on {Source} failed at its proxy: {Message}", source.Name, ex.Message);
+            return this.BadGateway(localizer, "error.search.sourceProxyFailed", new { source = source.DisplayName });
+        }
 
         // Source CDNs often block hotlinking (e.g. MangaPill requires its own Referer,
         // which a browser <img> can't send), so covers are rewritten through our proxy.
@@ -145,6 +157,19 @@ public class SearchController(
         var client = httpClientFactory.CreateClient("covers");
         var referer = new Uri($"{source.BaseUrl}/");
 
+        // A source behind a proxy often has its cover host blocked the same way, so covers go
+        // through the source's proxy too, every redirect hop included.
+        ProxyRoute route;
+        try
+        {
+            route = await (proxies ?? NoSourceProxies.Instance).ResolveAsync(source.Name, ct);
+        }
+        catch (SourceProxyException ex)
+        {
+            logger.LogDebug(ex, "No proxy route for covers of {Source}", sourceName);
+            return this.BadGateway(localizer, "error.search.coverUnavailable");
+        }
+
         // Redirects are followed by hand so the allowlist can be re-checked at every hop. Letting
         // HttpClient follow them automatically would make the check above decorative: any open
         // redirect on an allowed CDN would bounce the request to an arbitrary host — including one on
@@ -153,6 +178,7 @@ public class SearchController(
         for (var hop = 0; hop <= MaxCoverRedirects; hop++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
+            route.ApplyTo(request);
             request.Headers.Referrer = referer;
             // This stands in for the browser's <img> request, and some CDNs (cdn.atsu.moe) 403 the Maki UA.
             request.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent.Value);
@@ -266,20 +292,8 @@ public class SearchController(
         }
 
         await using var stream = await content.ReadAsStreamAsync(ct);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[64 * 1024];
-        int read;
-        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
-        {
-            if (buffer.Length + read > max)
-            {
-                return null;
-            }
-
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
+        return await PooledStreams.ReadAllBytesCappedAsync(
+            stream, max, "cover-proxy", ct, expectedLength: content.Headers.ContentLength);
     }
 
     /// <summary>A source's own measurements count once there are this many samples from this many series.</summary>
@@ -437,7 +451,7 @@ public class SearchController(
     // Suwayomi's thumbnail relay is already a same-origin path and passes as is, but only from a
     // Suwayomi source and only in its exact shape: a scraper handing back some other relative URL,
     // dot segments included, must not point readers at arbitrary Maki paths.
-    private static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
+    internal static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
         coverUrl is null ? null
         : sourceName.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase) &&
           SuwayomiSource.IsThumbnailPath(coverUrl) ? coverUrl

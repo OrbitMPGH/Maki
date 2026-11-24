@@ -17,9 +17,15 @@ public static class NumberingClashDetector
 
     public record Clash(string SubChapterSource, string WholeChapterSource);
 
+    /// <summary>
+    /// Every clashing pair, ordered by source name so the stored value only changes when the clashes do.
+    /// All of them, not the first: with many mappings the user would otherwise switch one off, refresh,
+    /// and only then learn about the next pair.
+    /// </summary>
     /// <param name="numbersBySource">Chapter numbers per source name (null numbers = one-shots, ignored).</param>
-    public static Clash? Detect(IReadOnlyDictionary<string, IReadOnlyCollection<decimal?>> numbersBySource)
+    public static IReadOnlyList<Clash> Detect(IReadOnlyDictionary<string, IReadOnlyCollection<decimal?>> numbersBySource)
     {
+        var clashes = new List<Clash>();
         foreach (var (subSource, subNumbers) in numbersBySource)
         {
             // Sub-chapter numbers (x.1–x.4) whose whole chapter this source does
@@ -50,13 +56,19 @@ public static class NumberingClashDetector
                 if (colliding.Count >= MinSubChapters &&
                     colliding.Select(decimal.Floor).Distinct().Count() >= MinParts)
                 {
-                    return new Clash(subSource, wholeSource);
+                    clashes.Add(new Clash(subSource, wholeSource));
                 }
             }
         }
 
-        return null;
+        return [.. clashes
+            .OrderBy(c => c.SubChapterSource, StringComparer.Ordinal)
+            .ThenBy(c => c.WholeChapterSource, StringComparer.Ordinal)];
     }
+
+    /// <summary>The <c>Series.NumberingClash</c> value: "sub|whole" pairs joined by ';', or null for none.</summary>
+    public static string? Format(IReadOnlyList<Clash> clashes) =>
+        clashes.Count == 0 ? null : string.Join(';', clashes.Select(c => $"{c.SubChapterSource}|{c.WholeChapterSource}"));
 
     private static HashSet<decimal> Wholes(IReadOnlyCollection<decimal?> numbers) =>
         numbers.Where(n => n is { } d && d % 1 == 0).Select(n => n!.Value).ToHashSet();

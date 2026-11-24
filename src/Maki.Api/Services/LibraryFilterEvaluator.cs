@@ -110,7 +110,7 @@ public static class LibraryFilterEvaluator
             return false;
         }
 
-        if (f.RatingState == "rated" && (shown is not int r || r < f.RatingMin || r > f.RatingMax))
+        if (f.RatingState == "rated" && (shown is not double r || r < f.RatingMin || r > f.RatingMax))
         {
             return false;
         }
@@ -264,12 +264,13 @@ public static class LibraryFilterEvaluator
     {
         var scoped = s.ProgressTotal > 0;
         var have = scoped ? s.ProgressHave : Obtained(s);
+        var readable = scoped ? s.ProgressReadable ?? have : have;
         var read = scoped ? s.ProgressRead : s.ReadChapterCount;
-        var tracked = readTracking && read is not null && have > 0;
+        var tracked = readTracking && read is not null && readable > 0;
         return new ProgressShape(
             have,
-            tracked ? Math.Min(100, (double)read!.Value / have * 100) : null,
-            tracked ? Math.Max(0, have - read!.Value) : null);
+            tracked ? Math.Min(100, (double)read!.Value / readable * 100) : null,
+            tracked ? Math.Max(0, readable - read!.Value) : null);
     }
 
     private static int Unread(SeriesDto s) => Math.Max(0, s.ChapterFileCount - (s.ReadChapterCount ?? 0));

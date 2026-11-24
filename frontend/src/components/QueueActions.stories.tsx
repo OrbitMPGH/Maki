@@ -39,7 +39,7 @@ export const RetryNarrowedByReason: Story = {
     await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Reason' }))
     await userEvent.click(await body.findByRole('option', { name: 'The source returned no pages' }))
     await waitFor(() =>
-      expect(within(dialog).getByText('4 failed downloads will be queued again, ignoring the automatic retry limit.')).toBeVisible(),
+      expect(within(dialog).getByText('4 failed downloads match')).toBeVisible(),
     )
   },
 }
@@ -51,7 +51,7 @@ export const RemoveWithTorrents: Story = {
     await userEvent.click(await body.findByRole('menuitem', { name: 'Remove failed' }))
     const dialog = await body.findByRole('dialog', { name: 'Remove failed downloads' })
     await waitFor(() => expect(within(dialog).getByRole('checkbox', { name: "Don't grab removed torrent releases again" })).toBeChecked())
-    await waitFor(() => expect(within(dialog).getByText('8 failed downloads will be removed from the queue.')).toBeVisible())
+    await waitFor(() => expect(within(dialog).getByText('8 failed downloads match')).toBeVisible())
   },
 }
 

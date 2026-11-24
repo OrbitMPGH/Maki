@@ -1,6 +1,6 @@
 # Badge
 
-Mantine `Badge` with Maki defaults: `radius="sm"` (6px), `fw={600}`, almost always `variant="light"`.
+Mantine `Badge` and `LightBadge` share the same treatment. The small light badge uses `radius-sm`, `type-badge` and a weight of 600. A tint fills the badge and a 1px edge uses the foreground at 45%. Use the matching semantic tone and a translated label. The light danger variant uses `danger-fg` for the label and edge.
 
 A badge names a state in a word. The colour comes from the status tokens, never Mantine's stock palette: map a status through `statusColor()` (status.tsx) so "Completed" is the same `ok` green on a badge, a cover and a table row, and follows the light theme.
 

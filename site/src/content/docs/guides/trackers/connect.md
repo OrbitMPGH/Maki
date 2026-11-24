@@ -6,17 +6,24 @@ description: Link AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates, and de
 Accounts are connected on the **Scrobble** page (`/scrobble`). Each tracker has its own block in
 **Settings → Integrations → Trackers**.
 
-- Trackers that use a redirect (AniList, MyAnimeList) have a **Connect** button on the Scrobble page.
-  An admin must first enter the app's client ID and secret in Settings.
-- The others have no Connect button. You save their credentials in Settings instead.
+- The Scrobble page shows one chip per tracker. Click a chip to see its state and what to do next.
+- Trackers that use a redirect (AniList, MyAnimeList) have a **Connect** button in their chip.
+  An admin must first enter the app's client ID and secret in Settings. **Set up trackers**, shown to
+  admins, opens that card.
+- The others have no Connect button. You save their credentials in Settings instead, and their chip
+  can link there with **Set up in Settings** or **Check in Settings**.
 - **Sync now** on the Scrobble page stays disabled until one tracker is connected.
+
+![The Scrobble page with a status chip per tracker, Set up trackers and Sync now buttons, an empty Needs review section, Recent syncs and the Activity log](../../../../assets/ui/pages/scrobble.webp)
 
 ## AniList
 
 1. An admin creates an API client at `anilist.co/settings/developer`. The redirect URL is your Maki
    address followed by `/api/v1/scrobble/oauth/anilist`.
 2. The admin enters the client ID and client secret in **Settings → Integrations → Trackers**.
-3. Press **Connect** on the Scrobble page and approve the login on AniList.
+3. On the Scrobble page, click the AniList chip, press **Connect** and approve the login on AniList.
+
+![The Trackers card in Settings with AniList, MyAnimeList, MangaBaka and Kitsu connected, MangaUpdates not set up, a sync interval and the Add unread series as plan-to-read switch](../../../../assets/ui/settings/scrobbling.webp)
 
 AniList tokens last about a year and cannot be refreshed. When the token expires, connect again.
 
@@ -26,7 +33,7 @@ lets Discover learn from it, once **Anime you've watched** is also on in Discove
 
 ## MyAnimeList
 
-Enter the client ID and secret in the same Trackers card, then press **Connect**. Maki refreshes the
+Enter the client ID and secret in the same Trackers card, then press **Connect** in the MyAnimeList chip on the Scrobble page. Maki refreshes the
 token on its own, so you do not need to reconnect.
 
 ## Kitsu
