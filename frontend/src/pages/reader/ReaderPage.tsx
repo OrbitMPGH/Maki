@@ -54,7 +54,7 @@ import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 import { serverChapterLabel } from '../../format'
-import { scrollStripTo } from './stripScroll'
+import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
 import {
@@ -953,16 +953,10 @@ export default function ReaderPage() {
     width: number
     height: number
   } | null>(null)
-  const stopStripMotion = useRef<(() => void) | undefined>(undefined)
-  const clearStripStep = useCallback(() => {
-    stopStripMotion.current?.()
-    stopStripMotion.current = undefined
-    stripStep.current = null
-  }, [])
-  useEffect(
-    () => clearStripStep,
-    [clearStripStep, surface, shownUrls, seekVersion, zoom, fit, lastCut, prefs.adaptiveScroll, prefs.screenTurnMotion, autoScroll, atEnd],
-  )
+  const clearStripStep = useCallback(() => { stripStep.current = null }, [])
+  useEffect(() => {
+    clearStripStep()
+  }, [clearStripStep, surface, shownUrls, seekVersion, zoom, fit, lastCut, prefs.adaptiveScroll, autoScroll, atEnd])
   useEffect(() => {
     if (!surface) return
     surface.addEventListener('wheel', clearStripStep, { passive: true })
@@ -1001,10 +995,9 @@ export default function ReaderPage() {
       const top = reversing ? last.from
         : (prefs.adaptiveScroll ? stripTracker.framedTarget?.(from, direction, max) : undefined) ?? fallback
       stripStep.current = { from, top, at: now, max, width, height }
-      stopStripMotion.current?.()
-      stopStripMotion.current = scrollStripTo(surface, top, prefs.screenTurnMotion)
+      surface.scrollTo({ top, behavior: scrollBehavior() })
     },
-    [surface, continuousPastEnd, manifest, goToChapter, settling, clearStripStep, prefs.adaptiveScroll, prefs.screenTurnMotion, stripTracker],
+    [surface, continuousPastEnd, manifest, goToChapter, settling, clearStripStep, prefs.adaptiveScroll, stripTracker],
   )
 
   const toggleAutoScroll = useCallback(() => {

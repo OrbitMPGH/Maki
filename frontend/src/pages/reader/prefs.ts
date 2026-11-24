@@ -8,7 +8,6 @@ import type { QualityTierName } from '../../api/upgrades'
 import type { TapLayout } from './tapZones'
 
 export type ReaderMode = 'paged' | 'double' | 'vertical'
-export type ScreenTurnMotion = 'smooth' | 'quick' | 'instant'
 export type ReaderDirection = 'ltr' | 'rtl'
 export type ReaderFit = 'width' | 'height' | 'screen' | 'original'
 export type ReaderFilter = 'none' | 'grayscale' | 'sepia' | 'invert'
@@ -71,7 +70,6 @@ export interface ReaderPrefs {
   /** In Continuous, show the chapter's progress as a rail down the screen's edge that can be dragged to seek. */
   progressRail: boolean
   adaptiveScroll: boolean
-  screenTurnMotion: ScreenTurnMotion
   /** How the page divides into tap zones in Single and Double. */
   tapLayout: TapLayout
   /** The side zones' share of the page, in percent. */
@@ -139,7 +137,6 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   autoSkipRecap: false,
   progressRail: false,
   adaptiveScroll: false,
-  screenTurnMotion: 'smooth',
   tapLayout: 'sides',
   tapWidth: 33,
   tapInvert: false,

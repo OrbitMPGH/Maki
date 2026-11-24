@@ -71,7 +71,6 @@ import {
 } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
 import TapZoneSettings from './TapZoneSettings'
-import { SCREEN_TURN_MOTIONS } from './stripScroll'
 import { TAP_LAYOUTS } from './tapZones'
 import { formatList } from '../../lib/listFormat'
 
@@ -865,18 +864,6 @@ export default function ReaderSettings({
                 <Stack gap={12}>
                   <div className="reader-settings-inline-row">{row('taps', IconHandTap, t`Tap zones`, tapSummary)}</div>
                   {renderToggles(readingToggles)}
-                  {prefs.mode === 'vertical' && (
-                    <Field icon={IconGauge} title={<Trans>Screen turn motion</Trans>}>
-                      <SegmentedControl
-                        aria-label={t`Screen turn motion`}
-                        size="xs"
-                        fullWidth
-                        value={prefs.screenTurnMotion}
-                        data={SCREEN_TURN_MOTIONS.map(({ value, label }) => ({ value, label: renderLabel(label) }))}
-                        onChange={(value) => onPrefs({ screenTurnMotion: value as ReaderPrefs['screenTurnMotion'] })}
-                      />
-                    </Field>
-                  )}
                 </Stack>
               </SubPage>
             )}

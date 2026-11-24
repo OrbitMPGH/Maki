@@ -13905,10 +13905,6 @@ msgstr "实例默认"
 msgid "Instance default clears each series' own choice."
 msgstr "选择「实例默认」会清除每个系列各自的选择。"
 
-#: src/pages/reader/stripScroll.ts
-msgid "Instant"
-msgstr ""
-
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Integrations"
@@ -20977,10 +20973,6 @@ msgstr "已将来自 {winnerSource} 的升级加入队列"
 msgid "Queues the removed chapters that are still wanted."
 msgstr "将仍想要的已移除章节加入队列。"
 
-#: src/pages/reader/stripScroll.ts
-msgid "Quick"
-msgstr ""
-
 #: src/App.tsx
 #, fuzzy
 msgid "Quick links"
@@ -24195,12 +24187,6 @@ msgstr "爬虫"
 msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 msgstr "抓取来源, 管理来源, 优先级, 来源优先级, 来源顺序, 最佳质量, 18+, 成人来源, mangadex, mangafire, webtoons, asura, tcb, flame comics, 排序来源, 禁用来源, 自动匹配, 重新排序, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/reader/ReaderSettings.tsx
-#: src/pages/settings/registry.ts
-msgid "Screen turn motion"
-msgstr ""
-
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Screentone gets lighter but stays visible."
@@ -24277,11 +24263,6 @@ msgstr "向前滚动"
 #, fuzzy
 msgid "Scroll slower"
 msgstr "滚动更慢"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-msgid "scroll speed, motion, animation, smooth scrolling, instant scrolling, page up, page down"
-msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -25951,10 +25932,6 @@ msgstr "Smart download 已排队的章节"
 #, fuzzy
 msgid "smart download, unread trigger"
 msgstr "智能下载, 未读触发"
-
-#: src/pages/reader/stripScroll.ts
-msgid "Smooth"
-msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
