@@ -139,7 +139,7 @@ function LensColumns({
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: OpenItem
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const columns = useMemo(() => {
     const used = new Set<string>()
     const take = (sorted: CohortRow[]) => {
@@ -155,7 +155,7 @@ function LensColumns({
       { key: 'rated', title: t`Rated highest`, sub: t`Score from all readers`, rows: ratedHighest },
       { key: 'radar', title: t`Under the radar`, sub: t`Finished by them far more than by most readers`, rows: unusual },
     ].filter((c) => c.rows.length > 0)
-  }, [rows, t])
+  }, [rows, t, i18n.locale])
 
   return (
     <div className="discover-cohorts" data-columns={columns.length}>

@@ -1,9 +1,10 @@
 import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
+import { http, HttpResponse } from 'msw'
 import { useUiSettings, type PageSection } from '../../api/hooks'
 import type { CustomRail } from '../../api/customRails'
-import { cover } from '../../../.storybook/mocks/api'
+import { api, cover } from '../../../.storybook/mocks/api'
 import { customRails, homePage, homeUi } from '../../../.storybook/mocks/home'
 import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../home/homeSectionDefs'
 import { LayoutEditLoading, LayoutEditSurface } from './LayoutEditSurface'
@@ -164,6 +165,48 @@ export const Cancel: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Cancel' }))
     await waitFor(() => expect(args.onExit).toHaveBeenCalledOnce())
+  },
+}
+
+const deletedRails: string[] = []
+
+/** Adds a rail from the first "Add a rail" gap, then presses the button that leaves edit mode. */
+const addRailThen = (leave: 'Cancel' | 'Done') =>
+  (async ({ args, canvas, canvasElement, userEvent }) => {
+    deletedRails.length = 0
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Add a rail' }))[0])
+    const editor = await body.findByRole('dialog', { name: 'New rail' })
+    await userEvent.type(within(editor).getByRole('textbox', { name: 'Name' }), 'Weekend reads')
+    await userEvent.click(within(editor).getByRole('button', { name: 'Add rail' }))
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'New rail' })).toBeNull())
+    await userEvent.click(await canvas.findByRole('button', { name: leave }))
+    await waitFor(() => expect(args.onExit).toHaveBeenCalledOnce())
+  }) satisfies Story['play']
+
+const recordDeletes = {
+  msw: [
+    http.delete(api('/rails/:id'), ({ params }) => {
+      deletedRails.push(String(params.id))
+      return new HttpResponse(null, { status: 204 })
+    }),
+    ...homePage(),
+  ],
+}
+
+export const CancelDeletesAddedRail: Story = {
+  parameters: recordDeletes,
+  play: async (context) => {
+    await addRailThen('Cancel')(context)
+    await waitFor(() => expect(deletedRails).toEqual(['90']))
+  },
+}
+
+export const DoneKeepsAddedRail: Story = {
+  parameters: recordDeletes,
+  play: async (context) => {
+    await addRailThen('Done')(context)
+    await expect(deletedRails).toEqual([])
   },
 }
 

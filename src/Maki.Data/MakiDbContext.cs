@@ -170,6 +170,24 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
         Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
 
+    private bool _movingReads;
+
+    /// <summary>
+    /// While the returned scope lives, saved progress changes are not reads: a merge that moves rows
+    /// onto another chapter rewrites their pages and completion, and that must not move a finished,
+    /// on-hold or dropped series back to Reading.
+    /// </summary>
+    public IDisposable MovingReads()
+    {
+        _movingReads = true;
+        return new ReadMoveScope(this);
+    }
+
+    private sealed class ReadMoveScope(MakiDbContext db) : IDisposable
+    {
+        public void Dispose() => db._movingReads = false;
+    }
+
     private const string PromoteToCompletedSql = """
         INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
             "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
@@ -188,6 +206,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     /// </summary>
     private List<(int UserId, int SeriesId)> ReadsToPromote()
     {
+        if (_movingReads)
+        {
+            return [];
+        }
+
         var reads = new HashSet<(int, int)>();
         foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
         {

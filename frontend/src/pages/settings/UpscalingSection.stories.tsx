@@ -190,6 +190,6 @@ export const JpegXlUnavailable: Story = {
       expect(toggle).toBeDisabled()
       expect(toggle).not.toBeChecked()
     })
-    await expect(canvas.getByText(/this build of Maki has no JPEG XL library/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByText(/this build of Maki has no JPEG XL library/)).toBeVisible())
   },
 }

@@ -2446,8 +2446,9 @@ msgstr "评级必须介于 1 和 10 之间，也可以填 null 来清除评级"
 
 #. English: Each category score must be a whole number from 1 to 10, for at most 16 categories
 #: src/Maki.Api/Controllers/SeriesController.cs
+#, fuzzy
 msgid "error.series.invalidRatingBreakdown"
-msgstr ""
+msgstr "每个分类的分数必须是 1 到 10 之间的整数，且最多 16 个分类"
 
 #. English: There is no "so far" rating to keep
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2588,18 +2589,21 @@ msgstr "天数必须介于 1 与 {max} 之间。"
 
 #. English: Rating precision must be whole or decimal.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidRatingPrecision"
-msgstr ""
+msgstr "评分精度必须为整数或小数。"
 
 #. English: Rating categories are invalid. Use at most 8 enabled and 8 custom categories, each custom one with a name of up to 40 characters and a weight of 0.5, 1 or 2.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidRatingCategories"
-msgstr ""
+msgstr "评分分类无效。最多启用 8 个、自定义 8 个分类，每个自定义分类的名称最多 40 个字符，权重为 0.5、1 或 2。"
 
 #. English: Keyboard shortcuts are invalid.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.invalidShortcuts"
-msgstr ""
+msgstr "键盘快捷键设置无效。"
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin
@@ -3696,56 +3700,66 @@ msgstr "未配置 FlareSolverr URL"
 
 #. English: Enter the proxy as http://host:port
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyInvalidUrl"
-msgstr ""
+msgstr "请按 http://主机:端口 的格式输入代理地址"
 
 #. English: Only HTTP proxies are supported, so the address has to start with http://
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyHttpOnly"
-msgstr ""
+msgstr "目前只支持 HTTP 代理，地址必须以 http:// 开头"
 
 #. English: Proxies that need a username and password are not supported yet
 #: src/Maki.Core/Http/Proxy/SourceProxyConfig.cs
+#, fuzzy
 msgid "error.settings.sourceProxyNoCredentials"
-msgstr ""
+msgstr "暂不支持需要用户名和密码的代理"
 
 #. English: Turn the proxy off for every source before removing its address
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyInUse"
-msgstr ""
+msgstr "请先为所有来源关闭代理，再移除其地址。"
 
 #. {source} is a site's name and is never translated.
 #. English: {source} goes through a proxy that could not be reached or refused the request
 #: src/Maki.Api/Controllers/SearchController.cs
+#, fuzzy
 msgid "error.search.sourceProxyFailed"
-msgstr ""
+msgstr "{source} 经由代理访问，但代理无法连接或拒绝了请求"
 
 #. English: No proxy answered at that address
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyUnreachable"
-msgstr ""
+msgstr "该地址没有代理响应"
 
 #. {source} is a site's name and is never translated.
 #. English: The proxy answered but could not reach {source}
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyRejected"
-msgstr ""
+msgstr "代理已响应，但无法连接 {source}"
 
 #. {source} is a site's name and is never translated. Maki refuses to fetch private addresses, and the site's name resolved to one where Maki runs (often a DNS blocklist), so the proxy was never asked.
 #. English: Maki did not send {source} to the proxy: its address looks up to a private address on Maki's network
+#, fuzzy
 msgid "error.settings.sourceProxyRefusedHere"
-msgstr ""
+msgstr "Maki 没有将 {source} 发送到代理：代理地址解析到了 Maki 所在网络中的私有地址。"
 
 #. {source} is a site's name and is never translated. Either the site or the proxy went quiet; Maki cannot tell which.
 #. English: Nothing came back from {source} through the proxy within 20 seconds
+#, fuzzy
 msgid "error.settings.sourceProxySiteTimeout"
-msgstr ""
+msgstr "20 秒内，通过代理没有从 {source} 收到任何响应"
 
 #. FlareSolverr is a product name. The proxy itself worked for Maki; FlareSolverr, which runs separately, could not use it.
 #. English: The proxy works, but FlareSolverr could not go through it
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.settings.sourceProxyFlareSolverr"
-msgstr ""
+msgstr "代理可用，但 FlareSolverr 无法通过它访问"
 
 #. English: FlareSolverr did not respond
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -5300,8 +5314,9 @@ msgstr "无法连接到来源"
 #. The source is set to go through a proxy, and the proxy could not be reached or refused the request. Maki never falls back to a direct connection.
 #. English: The source's proxy could not be reached or refused the request
 #: src/Maki.Api/Services/DownloadFailureReason.cs
+#, fuzzy
 msgid "error.download.proxy"
-msgstr ""
+msgstr "来源设置了代理，但代理无法连接或拒绝了请求。Maki 从不回退为直连。"
 
 #. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
 #. English: Could not write the chapter to disk
@@ -6484,8 +6499,9 @@ msgstr "测量章节文件"
 
 #. English: Count chapter pages
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.chapterPageCounts"
-msgstr ""
+msgstr "统计章节页数"
 
 #. English: Check for updates
 #: src/Maki.Api/Services/JobLabels.cs
@@ -6525,13 +6541,15 @@ msgstr "准备发现页"
 
 #. English: Install the also-finished table
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.ease"
-msgstr ""
+msgstr "安装“同样读完”关联表"
 
 #. English: Install the page-share table
 #: src/Maki.Api/Services/JobLabels.cs
+#, fuzzy
 msgid "health.job.pageShare"
-msgstr ""
+msgstr "安装页面共享表"
 
 #. English: Check the drop folder
 #: src/Maki.Api/Services/JobLabels.cs
@@ -7430,85 +7448,101 @@ msgstr "无法读取共读关系图清单。"
 
 #. English: The local also-finished table is already current.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.current"
-msgstr ""
+msgstr "本地“同样读完”关联表已是最新。"
 
 #. English: The also-finished channel is turned off.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.disabled"
-msgstr ""
+msgstr "“同样读完”通道已关闭。"
 
 #. English: The published also-finished table is an evaluation build.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.evaluationBuild"
-msgstr ""
+msgstr "已发布的“同样读完”关联表是评估版本。"
 
 #. {weights} is the raw install count.
 #. English: Installed {weights, plural, one {# also-finished weight} other {# also-finished weights}}
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.installed"
-msgstr ""
+msgstr "{weights, plural, other {已安装 # 个“同样读完”权重}}"
 
 #. English: The also-finished table manifest is malformed.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.manifestMalformed"
-msgstr ""
+msgstr "“同样读完”关联表的清单格式错误。"
 
 #. English: Could not read the also-finished table manifest.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.manifestUnavailable"
-msgstr ""
+msgstr "无法读取“同样读完”关联表的清单。"
 
 #. English: The published also-finished table uses a newer schema than this build reads.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.schemaNewer"
-msgstr ""
+msgstr "已发布的“同样读完”关联表使用的结构比此版本能读取的更新。"
 
 #. English: The published also-finished table looks truncated; ignoring it.
 #: src/Maki.Metadata/Ease/EaseInstaller.cs
+#, fuzzy
 msgid "install.ease.truncated"
-msgstr ""
+msgstr "已发布的“同样读完”关联表似乎不完整，已忽略。"
 
 #. English: The local page-share table is already current.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.current"
-msgstr ""
+msgstr "本地页面共享表已是最新。"
 
 #. English: The page-share penalty is turned off.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.disabled"
-msgstr ""
+msgstr "页面共享惩罚已关闭。"
 
 #. English: The published page-share table is an evaluation build.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.evaluationBuild"
-msgstr ""
+msgstr "已发布的页面共享表是评估版本。"
 
 #. {rows} is the raw install count.
 #. English: Installed {rows, plural, one {# page-share row} other {# page-share rows}}
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.installed"
-msgstr ""
+msgstr "{rows, plural, other {已安装 # 行页面共享数据}}"
 
 #. English: The page-share table manifest is malformed.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.manifestMalformed"
-msgstr ""
+msgstr "页面共享表的清单格式错误。"
 
 #. English: Could not read the page-share table manifest.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.manifestUnavailable"
-msgstr ""
+msgstr "无法读取页面共享表的清单。"
 
 #. English: The published page-share table uses a newer schema than this build reads.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.schemaNewer"
-msgstr ""
+msgstr "已发布的页面共享表使用的结构比此版本能读取的更新。"
 
 #. English: The published page-share table looks truncated; ignoring it.
 #: src/Maki.Metadata/PageShare/PageShareInstaller.cs
+#, fuzzy
 msgid "install.pageShare.truncated"
-msgstr ""
+msgstr "已发布的页面共享表似乎不完整，已忽略。"
 
 #. English: The local index is already current.
 #: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs

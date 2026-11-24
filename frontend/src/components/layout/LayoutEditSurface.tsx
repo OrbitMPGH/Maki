@@ -33,6 +33,7 @@ import { isRailKey, railIdOf, useSavePageLayout, type PageSection } from '../../
 import {
   RAIL_SOURCE_LABELS,
   useCustomRailItems,
+  useDeleteCustomRail,
   type CustomRail,
   type CustomRailPlacement,
 } from '../../api/customRails'
@@ -219,6 +220,11 @@ export function LayoutEditSurface({
   const [editingRail, setEditingRail] = useState<CustomRail | null>(null)
   const [deletingRail, setDeletingRail] = useState<CustomRail | null>(null)
   const [created, setCreated] = useState<Set<number>>(() => new Set())
+  const deleteRail = useDeleteCustomRail()
+  /** Cancel was pressed: the rails added in this session go once the page has grown back. */
+  const discardCreated = useRef(false)
+  /** The rest of Done or Cancel, while the page is still growing back. */
+  const leaveDone = useRef<(() => void) | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [scrollKey, setScrollKey] = useState<string | null>(null)
   const [moving, setMoving] = useState<{
@@ -634,6 +640,8 @@ export function LayoutEditSurface({
       const scrolled = pageScrollTop()
       if (scrolled > 0) scrollPageTo(scrolled + barSpace.current)
       leaving.current = false
+      discardCreated.current = false
+      setCreated(new Set())
       view.current = FULL
       setLayout(FULL, 1)
       restHeights()
@@ -665,12 +673,21 @@ export function LayoutEditSurface({
     // Runs when edit mode starts or ends.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editActive])
-  // Also runs when a kept page is hidden, so a drag never outlives the page it started on.
+  // Also runs when a kept page is hidden, so a drag never outlives the page it started on. A page hidden
+  // while Done or Cancel grew it back finishes leaving when it is shown again: a hidden page answers to
+  // its own last location, so leaving there would change the URL of the page on screen.
   useLayoutEffect(
-    () => () => {
-      anim.current?.cancel()
-      release()
-      teardownDrag()
+    () => {
+      const pending = leaveDone.current
+      if (pending) {
+        leaveDone.current = null
+        pending()
+      }
+      return () => {
+        anim.current?.cancel()
+        release()
+        teardownDrag()
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -685,7 +702,15 @@ export function LayoutEditSurface({
     // Nothing on the sections answers while they grow back; set here rather than through state so
     // no section re-renders mid-animation.
     framesRef.current?.setAttribute('inert', '')
-    shrinkTo(FULL, onExit)
+    const finish = () => {
+      if (discardCreated.current) for (const id of created) deleteRail.mutate(id)
+      onExit()
+    }
+    leaveDone.current = finish
+    shrinkTo(FULL, () => {
+      leaveDone.current = null
+      finish()
+    })
   }
   useLayoutEffect(() => {
     if (!leaveAfterRender.current) return
@@ -1082,6 +1107,7 @@ export function LayoutEditSurface({
   }, [save.isPending])
   const cancel = () => {
     if (leaving.current || saving.current || waitForDrop('cancel')) return
+    discardCreated.current = true
     if (!dirty) {
       leave()
       return
@@ -1242,7 +1268,11 @@ export function LayoutEditSurface({
         onClose={() => setDeletingRail(null)}
         railId={deletingRail?.id}
         railName={deletingRail?.name ?? ''}
-        onDeleted={() => setSelected(null)}
+        onDeleted={() => {
+          const id = deletingRail?.id
+          if (id != null) setCreated((prev) => new Set([...prev].filter((c) => c !== id)))
+          setSelected(null)
+        }}
       />
     </>
   )
@@ -1528,7 +1558,8 @@ function LayoutFrame({
             p={6}
             aria-labelledby={titleId}
             className="layout-settings-pop"
-            onKeyDownCapture={(e) => {
+            // Bubbling, so a settings page stepping back on Escape (SectionSettings) gets it first.
+            onKeyDown={(e) => {
               if (e.key !== 'Escape') return
               e.stopPropagation()
               closeToButton()

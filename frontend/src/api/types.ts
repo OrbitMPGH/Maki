@@ -102,6 +102,8 @@ export interface SeriesDto {
   progressTotal?: number
   /** Chapters had (on disk or removed on purpose). */
   progressHave?: number
+  /** What Read counts against: `progressHave` less downloaded chapters with Wanted off and not read. */
+  progressReadable?: number | null
   /** `readChapterCount` clamped to `progressTotal`; null when nothing has been read. */
   progressRead?: number | null
   /** Listed chapters with a decimal number. */

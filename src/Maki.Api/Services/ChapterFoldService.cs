@@ -137,7 +137,9 @@ public class ChapterFoldService(
 
         var keeper = Row(floor.Decision.Floor);
         var parts = numbers.Select(Row).ToList();
-        if (keeper is null || parts.Any(p => p is null))
+        // A source listing "f, f.2" has its part 1 on the whole's own row, whose link and reads stand
+        // for part 1 only; folding it would take that link away and read part 1's progress as the whole's.
+        if (keeper is null || parts.Any(p => p is null) || parts.Contains(keeper))
         {
             return null;
         }
@@ -196,6 +198,15 @@ public class ChapterFoldService(
             root = series.RootFolder?.Path;
             var absolute = files.Select(f => root is null ? null : Maki.Core.Paths.LibraryPaths.ResolveForDelete(root, f.RelativePath)).ToList();
             if (root is null || absolute.Any(a => a is null) || deletion.Bin.Refusal(root, absolute.OfType<string>()) is not null)
+            {
+                return null;
+            }
+
+            // The parts' files go only when the whole's is really there: a row can still point at a file
+            // removed outside Maki until the next scan notices.
+            var keeperPath = await db.ChapterFiles.Where(f => f.Id == keeper.ChapterFileId).Select(f => f.RelativePath).FirstOrDefaultAsync(ct);
+            if (keeperPath is null || Maki.Core.Paths.LibraryPaths.ResolveForDelete(root, keeperPath) is not { } keeperAbsolute ||
+                !File.Exists(keeperAbsolute))
             {
                 return null;
             }
@@ -261,6 +272,10 @@ public class ChapterFoldService(
                          !chapters.Any(c => c.ChapterFileId == keeperFile && c.Id != keeper.Id && !leaving.Contains(c))
             ? await db.ChapterFiles.Where(f => f.Id == keeperFile).Select(f => f.SplitPageCount ?? f.PageCount).FirstOrDefaultAsync(ct)
             : null;
+        if (wholePages <= 0)
+        {
+            wholePages = null;
+        }
         var offsets = new Dictionary<int, int>();
         var offset = 0;
         for (var i = 0; i < rows.Count; i++)
@@ -279,7 +294,11 @@ public class ChapterFoldService(
             db.Chapters.Remove(row);
         }
 
-        await db.SaveChangesAsync(ct);
+        // Moving reads is not reading: the series' reading status stays as the reader left it.
+        using (db.MovingReads())
+        {
+            await db.SaveChangesAsync(ct);
+        }
         await transaction.CommitAsync(ct);
         logger.LogInformation(
             "Folded {Parts} of mapping {MappingId} into chapter {Floor} of series {SeriesId}",
@@ -364,7 +383,8 @@ public class ChapterFoldService(
             var whole = progress.FirstOrDefault(p => p.ChapterId == keeper.Id && p.UserId == reader.Key);
             var carrier = whole ?? current;
             var at = all ? position.Pages - 1 : position.Map(current.ChapterId, current.PageIndex);
-            var ahead = whole is not null && (whole.Completed || whole.PageIndex >= at) && whole.UnreadAt is null;
+            // Finishing every part finishes the whole, even when the whole's own row sits on its last page.
+            var ahead = whole is not null && whole.UnreadAt is null && (whole.Completed || (!all && whole.PageIndex >= at));
             var everyRow = whole is null ? rows : [.. rows, whole];
 
             carrier.ReadSeconds = everyRow.Sum(p => p.ReadSeconds);
@@ -384,7 +404,13 @@ public class ChapterFoldService(
                 carrier.PageOffset = all ? 0 : current.PageOffset;
             }
 
-            carrier.PageCount = position.Pages;
+            // A page count of 0 marks a read imported from a tracker or Kavita, which stats tell apart
+            // from reading in Maki (as PageSplitRemap keeps it).
+            if (carrier.PageCount > 0)
+            {
+                carrier.PageCount = position.Pages;
+            }
+
             carrier.ChapterId = keeper.Id;
             foreach (var other in rows.Where(p => !ReferenceEquals(p, carrier)))
             {

@@ -332,6 +332,12 @@ public record SeriesDto(
     /// <summary>Chapters had (on disk or removed on purpose) within <see cref="ProgressTotal"/>'s scope.</summary>
     public int ProgressHave { get; init; }
 
+    /// <summary>
+    /// What Read counts against: <see cref="ProgressHave"/> less downloaded chapters with Wanted off
+    /// that are not read. Null on rows built without it; the client then uses <see cref="ProgressHave"/>.
+    /// </summary>
+    public int? ProgressReadable { get; init; }
+
     /// <summary><see cref="ReadChapterCount"/> clamped to <see cref="ProgressTotal"/>. Null when nothing has been read.</summary>
     public int? ProgressRead { get; init; }
 

@@ -10070,6 +10070,11 @@ msgstr "Full review"
 msgid "Full screen"
 msgstr "Full screen"
 
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Full-width series page"
+msgstr "Full-width series page"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Fully read owned"
 msgstr "Fully read owned"
@@ -11864,6 +11869,11 @@ msgstr "Layout"
 #: src/components/layout/LayoutEditSurface.tsx
 msgid "Layout saved"
 msgstr "Layout saved"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "layout, page width, gutters, margins, wide screen"
+msgstr "layout, page width, gutters, margins, wide screen"
 
 #: src/components/layout/SectionSettings.tsx
 msgid "Lead with a hero"

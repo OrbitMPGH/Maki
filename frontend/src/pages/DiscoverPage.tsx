@@ -1362,7 +1362,7 @@ function DiscoverBrowseTab({
   editing: boolean
   onExitEditing: () => void
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const { data: ui, isError: uiFailed } = useUiSettings()
   const { data: customRails, isError: railsFailed } = useCustomRails()
   const discoverRails = useMemo(
@@ -1554,7 +1554,7 @@ function DiscoverBrowseTab({
       }
     }
     return picked
-  }, [noHistory, samplerRail, renderLabel, startRound, rails, recentRail, cohortRail, sideInterests, t])
+  }, [noHistory, samplerRail, renderLabel, startRound, rails, recentRail, cohortRail, sideInterests, t, i18n.locale])
   const heroItems = useMemo(() => startPicks.map((p) => p.item), [startPicks])
   // The picks Start here shows are left out of the sections below, so nothing appears twice.
   const startIds = useMemo(

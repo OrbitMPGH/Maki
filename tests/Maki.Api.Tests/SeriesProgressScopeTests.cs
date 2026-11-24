@@ -277,6 +277,42 @@ public sealed class SeriesProgressScopeTests : IDisposable
         Assert.Equal((5, 5, 3, 2), (row.ProgressTotal, row.ProgressHave, row.ProgressRead, row.ListedSpecials));
     }
 
+    [Theory]
+    [InlineData(NewChapterMonitorMode.MainOnly, 4)]
+    [InlineData(NewChapterMonitorMode.None, 5)]
+    public async Task Read_leaves_out_downloaded_chapters_switched_off_and_unread(NewChapterMonitorMode mode, int readable)
+    {
+        var user = _db.SeedUser("reader");
+        var id = _db.SeedSeries("Volume specials", configure: s => s.MonitorNewItems = mode);
+        using (var db = _db.NewContext())
+        {
+            var file = new ChapterFile { SeriesId = id, RelativePath = "v1.cbz" };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            foreach (var n in new decimal?[] { 1m, 1.5m, 2m, 2.5m, 3m })
+            {
+                var special = Chapter.IsSpecial(n);
+                var chapter = new Chapter { SeriesId = id, Number = n, ChapterFileId = file.Id, Wanted = !special };
+                db.Chapters.Add(chapter);
+                db.SaveChanges();
+                if (n is 1m or 2.5m)
+                {
+                    db.ChapterProgress.Add(new ChapterProgress
+                    {
+                        UserId = user, SeriesId = id, ChapterId = chapter.Id, Completed = true,
+                        StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+                    });
+                }
+            }
+            db.SaveChanges();
+        }
+
+        // 1.5 is off and unread, so Read leaves it out; 2.5 is off but read, so it stays. On disk keeps all five.
+        // A None series stamps every switch off, so there they mean nothing.
+        var row = await Row(user, id, new FakeAppSettings());
+        Assert.Equal((5, readable, 2), (row.ProgressHave, row.ProgressReadable, row.ProgressRead));
+    }
+
     private async Task<SeriesDto> Row(int user, int id, FakeAppSettings settings)
     {
         using var db = _db.NewContext(user);

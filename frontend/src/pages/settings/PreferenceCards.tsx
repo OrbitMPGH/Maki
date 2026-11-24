@@ -16,7 +16,10 @@ import {
   type UiSettings,
 } from '../../api/hooks'
 import { AppearancePicker } from '../../components/AppearancePicker'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
 import { prefersReducedMotion, useMotionPref } from '../../lib/motionPrefs'
+import { useFullWidthSeriesPage } from '../../lib/seriesPageWidth'
+import { useNewControlMark } from './newSettings'
 
 export function DiscoverSection() {
   const { data: settings } = useDiscoverSettings()
@@ -220,14 +223,12 @@ export function SeriesCardsSection() {
   )
 }
 
-/**
- * The two supplementary rails on a series page. Both are extras around the chapter list and both
- * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
- */
 export function SeriesPageSection() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
+  const [fullWidth, setFullWidth] = useFullWidthSeriesPage()
+  const fullWidthMark = useNewControlMark('series-page-width')
   const sections = ui?.seriesSections
   const related = sections?.related !== false
   const similar = sections?.similar !== false
@@ -241,6 +242,18 @@ export function SeriesPageSection() {
       title={<Trans>Series page</Trans>}
     >
       <Stack gap="sm">
+        <div id="setting-series-page-width" {...fullWidthMark}>
+          <Switch
+            label={
+              <>
+                {t`Full-width series page`}
+                <NewSettingPill id="series-page-width" />
+              </>
+            }
+            checked={fullWidth}
+            onChange={(e) => setFullWidth(e.currentTarget.checked)}
+          />
+        </div>
         <Switch
           checked={related}
           disabled={!patch}
