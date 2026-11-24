@@ -153,20 +153,23 @@ export function SeriesHero({
             ),
         [series, readTracking],
     )
-    // Downloads alone leaves those chapters out; reading progress still counts them.
+    // On disk leaves those chapters out, and the ones whose file was deleted on purpose; reading
+    // progress still counts both.
+    const removed = series.removedChapterCount ?? 0
     const downloads = useMemo(
         () =>
-            fileMissing === 0
+            fileMissing === 0 && removed === 0
                 ? progress
                 : seriesProgressVisual(
                       {
                           ...series,
                           chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing),
-                          progressHave: Math.max(0, (series.progressHave ?? 0) - fileMissing),
+                          removedChapterCount: 0,
+                          progressHave: Math.max(0, (series.progressHave ?? 0) - fileMissing - removed),
                       },
                       readTracking,
                   ),
-        [progress, series, readTracking, fileMissing],
+        [progress, series, readTracking, fileMissing, removed],
     )
 
     // Hoisted out of the JSX below: Lingui names a placeholder after the expression only when that
@@ -413,6 +416,15 @@ export function SeriesHero({
                                         <span className="hero-wanted tnum">
                                             <Plural value={missingWanted} one="# wanted" other="# wanted" />
                                         </span>
+                                    </span>
+                                )}
+                                {removed > 0 && (
+                                    <span className="hero-bar-subline tnum">
+                                        <Plural
+                                            value={removed}
+                                            one="# file deleted, not downloaded again"
+                                            other="# files deleted, not downloaded again"
+                                        />
                                     </span>
                                 )}
                                 {notWanted > 0 && (

@@ -305,6 +305,30 @@ export const SmartModeReadsWhatIsDownloaded: Story = {
   },
 }
 
+/** Files deleted on purpose are not on disk: On disk reads 0 of 126 and says why the wanted count is 116. */
+export const DeletedFilesAreNotOnDisk: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 126,
+      wantedChapterCount: 126,
+      chapterFileCount: 0,
+      removedChapterCount: 10,
+      readChapterCount: 0,
+      progressTotal: 126,
+      progressHave: 10,
+      progressRead: 0,
+    }),
+  },
+  parameters: {
+    msw: seriesMsw(http.get(api('/chapter'), () => HttpResponse.json(chaptersFor(1, { limit: 40, trailingMissing: 0 })))),
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByText(/^0 \/ 126/)
+    await canvas.findByText('10 files deleted, not downloaded again')
+    expect(canvas.queryByText(/^10 \/ 126/)).toBeNull()
+  },
+}
+
 export const NoCover: Story = {
   args: { series: seriesDto(4, { coverUrl: null }) },
 }

@@ -3087,6 +3087,10 @@ msgstr "{relinked, plural, other {#件のファイルを再リンクしました
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, other {残り#章}}"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{removed, plural, one {# file deleted, not downloaded again} other {# files deleted, not downloaded again}}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{removedCount} removed"
