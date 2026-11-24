@@ -993,7 +993,7 @@ export default function ReaderPage() {
       const fallback = Math.min(max, Math.max(0, from + direction * height * STRIP_STEP_SHARE))
       const reversing = prefs.adaptiveScroll && (arrived || chained) && (last.top - last.from) * direction < 0
       const top = reversing ? last.from
-        : (prefs.adaptiveScroll ? stripTracker.gutterTarget?.(from, direction, fallback, max) : null) ?? fallback
+        : (prefs.adaptiveScroll ? stripTracker.framedTarget?.(from, direction, max) : undefined) ?? fallback
       stripStep.current = { from, top, at: now, max, width, height }
       surface.scrollTo({ top, behavior: scrollBehavior() })
     },

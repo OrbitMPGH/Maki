@@ -341,7 +341,7 @@ export default function ReaderSettings({
     ...(prefs.mode === 'vertical' ? [{
       key: 'adaptiveScroll' as const,
       label: t`Adaptive scrolling`,
-      hint: t`In Continuous, screen turns look for gaps between panels.`,
+      hint: t`In Continuous, screen turns try to keep panels and their dialogue together.`,
     }] : []),
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]

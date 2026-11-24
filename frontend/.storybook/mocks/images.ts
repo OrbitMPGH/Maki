@@ -97,14 +97,17 @@ function stripSvg(seed: string, n: string, titleFor: (seed: string) => string) {
   )
 }
 
-function gutterSvg() {
+function framingSvg(page: number) {
   return svg(
-    '<rect width="400" height="3200" fill="#fff"/>' +
-      '<rect x="25" width="350" height="600" fill="#445"/>' +
-      '<rect x="25" y="630" width="350" height="720" fill="#659"/>' +
-      '<rect x="25" y="1390" width="350" height="1810" fill="#547"/>',
-    400,
-    3200,
+    `<g transform="translate(0 ${-page * 800})">` +
+      '<rect width="400" height="4800" fill="#fff"/>' +
+      '<rect x="25" y="80" width="350" height="320" fill="#445"/>' +
+      '<ellipse cx="180" cy="532" rx="60" ry="32" fill="#fff" stroke="#111" stroke-width="3"/>' +
+      '<rect x="25" y="600" width="350" height="620" fill="#659"/>' +
+      '<ellipse cx="270" cy="1130" rx="74" ry="115" fill="#fff" stroke="#111" stroke-width="3"/>' +
+      '<rect x="25" y="1570" width="350" height="600" fill="#547"/>' +
+      '<rect x="25" y="2430" width="350" height="1810" fill="#764"/></g>',
+    400, 800,
   )
 }
 
@@ -129,7 +132,7 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   http.get('/mock/banner/:seed', ({ params }) => bannerSvg(String(params.seed).replace(/\.svg$/, ''))),
   http.get(api('/reader/chapter/:id/page/:n'), ({ params, request }) =>
     new URL(request.url).searchParams.get('v') === 'adaptive-scrolling'
-      ? gutterSvg()
+      ? framingSvg(Number(params.n) % 6)
       : pageSvg(String(params.id), String(params.n), titleFor)),
   http.get(api('/reader/chapter/:id/thumb/:n'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
   // A server upscale: the same page, so a swap is visible only through the element that shows it.

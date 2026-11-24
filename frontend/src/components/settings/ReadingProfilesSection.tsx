@@ -635,7 +635,7 @@ function ProfileEditor({
             <NewSettingPill id="adaptive-scrolling" />
           </>
         }
-        description={t`In Continuous, screen turns look for gaps between panels.`}
+        description={t`In Continuous, screen turns try to keep panels and their dialogue together.`}
         checked={prefs.adaptiveScroll ?? false}
         onChange={(e) => set({ adaptiveScroll: e.currentTarget.checked })}
       />

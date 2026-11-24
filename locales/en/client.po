@@ -11099,8 +11099,8 @@ msgstr "In Continuous, jumps past the part of the previous chapter that this one
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
-msgid "In Continuous, screen turns look for gaps between panels."
-msgstr "In Continuous, screen turns look for gaps between panels."
+msgid "In Continuous, screen turns try to keep panels and their dialogue together."
+msgstr "In Continuous, screen turns try to keep panels and their dialogue together."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, the top and bottom move a screen."

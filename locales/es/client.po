@@ -13649,7 +13649,7 @@ msgstr "En Continuo, salta la parte del capítulo anterior que este repite."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
-msgid "In Continuous, screen turns look for gaps between panels."
+msgid "In Continuous, screen turns try to keep panels and their dialogue together."
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx

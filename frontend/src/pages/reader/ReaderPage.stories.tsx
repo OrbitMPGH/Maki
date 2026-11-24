@@ -193,6 +193,8 @@ export const ContinuousTapMovesAScreen: Story = {
   },
 }
 
+const adaptivePageGap = 36
+
 export const AdaptiveScrolling: Story = {
   parameters: {
     ...open(3040),
@@ -200,49 +202,59 @@ export const AdaptiveScrolling: Story = {
       withManifest({
         ...chapters[3040],
         pageVersion: 'adaptive-scrolling',
-        prefs: { ...chapters[3040].prefs, fit: 'width', maxWidth: 400, adaptiveScroll: true, chapterBanner: false },
+        prefs: {
+          ...chapters[3040].prefs, fit: 'width', maxWidth: 400, pageGap: adaptivePageGap,
+          adaptiveScroll: true, chapterBanner: false,
+        },
       }),
     ],
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const first = await canvas.findByRole<HTMLImageElement>('img', { name: 'Chapter 40 - page 1' })
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
     const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
     const height = surface.clientHeight
-    await waitFor(() => expect(first.naturalHeight).toBe(3200))
-    await waitFor(() => expect(first).toHaveAttribute('data-loaded', 'true'))
-    // Let the reader's pending idle work sample the first strip before asking it to snap.
-    await new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 200 }))
+    const warm = async (...pages: number[]) => {
+      for (const page of pages) {
+        const image = await canvas.findByRole<HTMLImageElement>('img', { name: `Chapter 40 - page ${page}` })
+        await waitFor(() => expect(image).toHaveAttribute('data-loaded', 'true'))
+      }
+      for (let i = 0; i < pages.length; i++) {
+        await new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 200 }))
+      }
+    }
+    await warm(1, 2, 3)
     const start = surface.scrollTop
+    const firstStop = start + (500 + 1245 + adaptivePageGap - height) / 2
+    const secondStop = start + (1570 + 2170 + adaptivePageGap * 3 - height) / 2
+    const at = (top: number) => waitFor(() => expect(Math.abs(surface.scrollTop - top)).toBeLessThan(6))
 
     await userEvent.keyboard('{PageDown}')
-    await waitFor(() => expect(surface.scrollTop - start).toBeGreaterThan(600))
-    await expect(surface.scrollTop - start).toBeLessThan(630)
-    await expect(surface.scrollTop - start).toBeLessThan(height * 0.85)
+    await at(firstStop)
     await userEvent.keyboard('{PageUp}')
-    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(start, 0))
-
-    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
-    surface.scrollTop = start + 1350 - height * 0.91
-    const beforeLongTurn = surface.scrollTop
+    await at(start)
     await userEvent.keyboard('{PageDown}')
-    await waitFor(() => expect(surface.scrollTop - start).toBeGreaterThan(1350))
-    await expect(surface.scrollTop - start).toBeLessThan(1390)
-    const secondStop = surface.scrollTop
-    await expect(secondStop - beforeLongTurn).toBeGreaterThan(height * 0.85)
-
-    await userEvent.keyboard('{PageUp}')
-    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(beforeLongTurn, 0))
+    await at(firstStop)
+    await warm(2, 3)
     await userEvent.keyboard('{PageDown}')
-    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(secondStop, 0))
+    await at(secondStop)
+    await warm(4, 5)
     await userEvent.keyboard('{PageDown}')
-    await waitFor(() => expect(Math.abs(surface.scrollTop - secondStop - height * 0.85)).toBeLessThan(2))
+    await at(secondStop + height * 0.85)
 
-    // A wheel interruption clears the previous stop. The next turn up must find its own gutter.
+    // Start inside the gutter behind the second panel so Up has to frame it independently.
     surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -1 }))
-    surface.scrollTop = start + 1280
+    surface.scrollTop = start + 2250 + adaptivePageGap * 2
+    await warm(2, 3)
     await userEvent.keyboard('{PageUp}')
-    await waitFor(() => expect(surface.scrollTop + height - start).toBeLessThan(1390))
-    await expect(surface.scrollTop + height - start).toBeGreaterThan(1350)
+    await at(secondStop)
+
+    // The tall panel cannot fit. Its end is just beyond a screen turn from this position.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
+    const tallEnd = start + 4240 + adaptivePageGap * 5
+    surface.scrollTop = tallEnd - height * 2 - 40
+    await warm(4, 5, 6)
+    await userEvent.keyboard('{PageDown}')
+    await at(tallEnd + 7 - height)
   },
 }
 

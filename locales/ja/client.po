@@ -13648,7 +13648,7 @@ msgstr "連続表示では、前の章のうちこの章と重複する部分を
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
-msgid "In Continuous, screen turns look for gaps between panels."
+msgid "In Continuous, screen turns try to keep panels and their dialogue together."
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx

@@ -1,8 +1,9 @@
 import { useEffect, type RefObject } from 'react'
 import type { StripTracker } from './stripPosition'
+import { frameStripSection, mergeStripBands, type StripBand } from './stripFraming'
 
-type Band = { top: number; bottom: number }
-type Page = Band & { index: number; image: HTMLImageElement; height: number }
+type Page = StripBand & { index: number; image: HTMLImageElement; height: number }
+type Sample = StripBand & { gutters: StripBand[] }
 
 const SAMPLE_WIDTH = 320
 const CHUNK_ASPECT = 2
@@ -11,9 +12,7 @@ const MIN_BAND_ROWS = 3
 const MAX_CHUNKS = 96
 const WARM_CHUNKS = 24
 const MAX_NEARBY_PAGES = 24
-const GUTTER_PAD = 7
-const MIN_STEP = 0.65
-const MAX_STEP = 0.95
+const LOOKAHEAD = 1.35
 
 function nearbyPages(
   scroller: HTMLElement,
@@ -60,7 +59,7 @@ function chunks(page: Page, low: number, high: number, focus: number): number[] 
 }
 
 /** Finds flat bands in a bounded tile. Keep their ends in fractions of the original page. */
-function sampleGutters(canvas: HTMLCanvasElement, image: HTMLImageElement, chunk: number): Band[] {
+function sampleGutters(canvas: HTMLCanvasElement, image: HTMLImageElement, chunk: number): Sample | null {
   const { naturalWidth: width, naturalHeight: height } = image
   const chunkHeight = width * CHUNK_ASPECT
   const overlap = Math.ceil((SAMPLE_OVERLAP * width) / SAMPLE_WIDTH)
@@ -69,7 +68,7 @@ function sampleGutters(canvas: HTMLCanvasElement, image: HTMLImageElement, chunk
   canvas.width = Math.min(width, SAMPLE_WIDTH)
   canvas.height = Math.max(1, Math.round(((end - start) * canvas.width) / width))
   const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true })
-  if (!context) return []
+  if (!context) return null
   context.fillStyle = '#fff'
   context.fillRect(0, 0, canvas.width, canvas.height)
   context.imageSmoothingQuality = 'high'
@@ -78,9 +77,9 @@ function sampleGutters(canvas: HTMLCanvasElement, image: HTMLImageElement, chunk
     context.drawImage(image, 0, start, width, end - start, 0, 0, canvas.width, canvas.height)
     data = context.getImageData(0, 0, canvas.width, canvas.height).data
   } catch {
-    return []
+    return null
   }
-  const bands: Band[] = []
+  const gutters: StripBand[] = []
   const share = (row: number) => (start + (row / canvas.height) * (end - start)) / height
   let from = -1
   const sums = [0, 0, 0]
@@ -107,14 +106,14 @@ function sampleGutters(canvas: HTMLCanvasElement, image: HTMLImageElement, chunk
     }
     if (quiet && from < 0) from = y
     if (!quiet && from >= 0) {
-      if (y - from >= MIN_BAND_ROWS) bands.push({ top: share(from), bottom: share(y) })
+      if (y - from >= MIN_BAND_ROWS) gutters.push({ top: share(from), bottom: share(y) })
       from = -1
     }
   }
   if (from >= 0 && canvas.height - from >= MIN_BAND_ROWS) {
-    bands.push({ top: share(from), bottom: share(canvas.height) })
+    gutters.push({ top: share(from), bottom: share(canvas.height) })
   }
-  return bands
+  return { top: start / height, bottom: end / height, gutters }
 }
 
 export function useStripGutters(
@@ -131,7 +130,7 @@ export function useStripGutters(
     if (!enabled || !tracker || !strip || !scroller || urls.length === 0) return
 
     const canvas = document.createElement('canvas')
-    const cache = new Map<string, Band[]>()
+    const cache = new Map<string, Sample | null>()
     const key = (image: HTMLImageElement, chunk: number) => `${image.currentSrc || image.src}:${chunk}`
     const points = (low: number, high: number) => nearbyPages(scroller, images.current, page.current, low, high)
     const canSample = () => scroller.scrollWidth <= scroller.clientWidth + 2
@@ -142,8 +141,8 @@ export function useStripGutters(
       if (!canSample()) return
       const height = scroller.clientHeight
       const middle = scroller.scrollTop + height / 2
-      const low = middle - height * 1.5
-      const high = middle + height * 1.5
+      const low = middle - height * (0.5 + LOOKAHEAD)
+      const high = middle + height * (0.5 + LOOKAHEAD)
       const nearby = points(low, high).flatMap((item) => chunks(item, low, high, middle).map((chunk) => ({
         image: item.image,
         chunk,
@@ -169,43 +168,53 @@ export function useStripGutters(
       }
     }
 
-    tracker.gutterTarget = (from, direction, fallback, max) => {
-      if (fallback <= 0 || fallback >= max || !canSample()) return fallback
+    tracker.framedTarget = (from, direction, max) => {
+      if (!canSample()) return
       const height = scroller.clientHeight
-      const edgeOffset = direction < 0 ? height : 0
-      const first = from + direction * height * MIN_STEP
-      const last = from + direction * height * MAX_STEP
-      const low = Math.max(0, Math.min(first, last)) + edgeOffset
-      const high = Math.min(max, Math.max(first, last)) + edgeOffset
-      const preferred = fallback + edgeOffset
-      let best = preferred
-      let distance = Infinity
-      const consider = (top: number, bottom: number) => {
-        const start = Math.max(low, top + GUTTER_PAD)
-        const end = Math.min(high, bottom - GUTTER_PAD)
-        if (start > end) return
-        const position = Math.min(end, Math.max(start, preferred))
-        const difference = Math.abs(position - preferred)
-        if (difference < distance || (difference === distance && (position - best) * direction < 0)) {
-          best = position
-          distance = difference
-        }
-      }
-      const pages = points(low - GUTTER_PAD, high + GUTTER_PAD).sort((a, b) => a.index - b.index)
+      const low = from - height * LOOKAHEAD
+      const high = from + height * (1 + LOOKAHEAD)
+      const pages = points(low, high).sort((a, b) => a.index - b.index)
+      const coverage: StripBand[] = []
+      const gutters: StripBand[] = []
+      let previousGutterAtEnd = false
       for (let i = 0; i < pages.length; i++) {
         const item = pages[i]
         const previous = pages[i - 1]
-        if (previous?.index === item.index - 1 && previous.image.complete && previous.image.naturalWidth &&
-          item.image.complete && item.image.naturalWidth) {
-          consider(previous.bottom, item.top)
-        }
-        for (const chunk of chunks(item, low - GUTTER_PAD, high + GUTTER_PAD, preferred)) {
-          for (const band of cache.get(key(item.image, chunk)) ?? []) {
-            consider(item.top + band.top * item.height, Math.min(item.bottom, item.top + band.bottom * item.height))
+        let gutterAtStart = false
+        let gutterAtEnd = false
+        const project = (band: StripBand) => ({
+          top: item.top + band.top * item.height,
+          bottom: Math.min(item.bottom, item.top + band.bottom * item.height),
+        })
+        for (const chunk of chunks(item, low, high, from + height / 2)) {
+          const sample = cache.get(key(item.image, chunk))
+          if (!sample) continue
+          const range = project(sample)
+          if (range.bottom <= range.top) continue
+          coverage.push(range)
+          for (const gutter of sample.gutters) {
+            const band = project(gutter)
+            if (band.bottom <= band.top) continue
+            gutters.push(band)
+            gutterAtStart ||= band.top <= item.top + 1
+            gutterAtEnd ||= band.bottom >= item.bottom - 1
           }
         }
+        if (previous?.index === item.index - 1 && previous.bottom < item.top) {
+          const displayGap = { top: previous.bottom, bottom: item.top }
+          coverage.push(displayGap)
+          // A display gap extends a gutter when both images are blank at the join.
+          if (previousGutterAtEnd && gutterAtStart) gutters.push(displayGap)
+        }
+        previousGutterAtEnd = gutterAtEnd
       }
-      return best - edgeOffset
+      const first = pages[0]
+      const last = pages.at(-1)
+      return frameStripSection(
+        from, height, max, direction, mergeStripBands(coverage), mergeStripBands(gutters),
+        first?.index === 0 ? first.top : undefined,
+        last?.index === urls.length - 1 ? last.bottom : undefined,
+      )
     }
 
     const observer = new ResizeObserver(schedule)
@@ -219,7 +228,7 @@ export function useStripGutters(
       observer.disconnect()
       scroller.removeEventListener('scroll', schedule)
       scroller.removeEventListener('load', schedule, true)
-      tracker.gutterTarget = null
+      tracker.framedTarget = null
     }
   }, [enabled, tracker, container, images, page, urls])
 }
