@@ -113,7 +113,12 @@ public record ReaderPrefsSpec(
     /// Leave out the credit, recruitment and notice pages that repeat at the start or end of a
     /// series' chapters. Display only: the files and the page indexes progress records are untouched.
     /// </summary>
-    bool HideCredits = false)
+    bool HideCredits = false,
+    /// <summary>
+    /// In continuous mode, the widest Fit width and Fit screen draw a page, in CSS pixels. 0 means
+    /// no limit. Pixels rather than a share of the screen, so one setting suits a phone and a desktop.
+    /// </summary>
+    int MaxWidth = 0)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -140,6 +145,9 @@ public record ReaderPrefsSpec(
 
     public const string TapLayoutDefault = "sides";
     public const int TapWidthDefault = 33;
+
+    public const int MaxWidthMin = 400;
+    public const int MaxWidthMax = 2000;
 
     public const string FitWidth = "width";
     public const string FitHeight = "height";
@@ -189,6 +197,7 @@ public record ReaderPrefsSpec(
         EnhanceProgress = EnhanceProgressStyles.Contains(EnhanceProgress) ? EnhanceProgress : EnhanceProgressDefault,
         TapLayout = TapLayouts.Contains(TapLayout) ? TapLayout : TapLayoutDefault,
         TapWidth = Math.Clamp(TapWidth, 15, 45),
+        MaxWidth = MaxWidth is <= 0 or >= MaxWidthMax ? 0 : Math.Max(MaxWidth, MaxWidthMin),
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>

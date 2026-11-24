@@ -133,6 +133,8 @@ interface StripPageProps {
   label: string
   fit: ReaderFit
   scale: number
+  /** Set once a page has loaded: 1:1 then takes its scale from the strip's common width, not `zoom`. */
+  shaped: boolean
   tone: string | undefined
   eager: boolean
   /** Set only for pages in the eager window while Enhance is on. */
@@ -158,6 +160,7 @@ const StripPage = memo(function StripPage({
   label,
   fit,
   scale,
+  shaped,
   tone,
   eager,
   enhance,
@@ -227,7 +230,7 @@ const StripPage = memo(function StripPage({
         aria-hidden={enhance && covered ? true : undefined}
         className={`reader-page ${FIT_CLASS[fit]}`}
         style={{
-          ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
+          ...(fit === 'original' && scale !== 100 && !shaped ? { zoom: scale / 100 } : undefined),
           ...(tone ? { filter: tone } : undefined),
           ...(failed ? { display: 'none' } : undefined),
         }}
@@ -296,6 +299,7 @@ export default function ContinuousView({
   nextLabel,
   fit,
   scale,
+  maxWidth = 0,
   tone,
   gap,
   label,
@@ -338,6 +342,8 @@ export default function ContinuousView({
   fit: ReaderFit
   /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
   scale: number
+  /** The widest Fit width and Fit screen draw a page, in CSS px; 0 is no limit. */
+  maxWidth?: number
   /** CSS filter for the page images (dim and colour), from `toneFilter`. */
   tone?: string
   gap: number
@@ -447,6 +453,8 @@ export default function ContinuousView({
   // real length long before most pages arrive: the scrollbar says where you are and dragging it
   // does not chase a strip that grows under it. Chapters nearly always use one page size, so after
   // the first page the estimate is usually exact. Until then the CSS placeholder holds the room.
+  // Fit height and 1:1 also draw every page at the median width, so a chapter whose slices come in
+  // several widths still reads as one column; a chapter of one page size looks as it did.
   const samples = useRef<{ widths: number[]; aspects: number[] }>({ widths: [], aspects: [] })
   const [shape, setShape] = useState<PageShape | null>(null)
 
@@ -855,8 +863,9 @@ export default function ContinuousView({
           ...(zoom !== 1 && { transform: `scale(${zoom})`, transformOrigin: 'left top' }),
           ...(shape && {
             '--page-aspect': String(shape.aspect),
-            '--page-width': `${shape.width}px`,
+            '--page-width': `${fit === 'original' ? (shape.width * scale) / 100 : shape.width}px`,
           }),
+          ...(maxWidth > 0 && { '--reader-page-max': `${maxWidth}px` }),
         } as React.CSSProperties}
       >
         {urls.map((src, index) => (
@@ -868,6 +877,7 @@ export default function ContinuousView({
             label={label}
             fit={fit}
             scale={scale}
+            shaped={shape !== null}
             tone={tone}
             eager={isEager(index)}
             enhance={pageEnhance && inRange.has(index) ? pageEnhance : null}

@@ -99,6 +99,7 @@ export const readerPrefs: ReaderPrefs = {
   tapWidth: 33,
   tapInvert: false,
   hideCredits: false,
+  maxWidth: 0,
 }
 
 export const readerSettings: ReaderSettings = {

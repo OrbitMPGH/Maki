@@ -1452,6 +1452,7 @@ export default function ReaderPage() {
               nextLabel={manifest.nextChapterLabel ? serverChapterLabel(manifest.nextChapterLabel) : manifest.nextChapterLabel}
               fit={fit}
               scale={prefs.scale}
+              maxWidth={prefs.maxWidth}
               tone={tone}
               gap={prefs.pageGap}
               label={serverChapterLabel(manifest.label)}

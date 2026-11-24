@@ -270,6 +270,7 @@ export function SeriesPreviewReader({
               pastEndLabel={<Trans>Scroll to finish the preview</Trans>}
               fit={prefs.fit}
               scale={prefs.scale}
+              maxWidth={prefs.maxWidth}
               gap={prefs.pageGap}
               label={label}
             />

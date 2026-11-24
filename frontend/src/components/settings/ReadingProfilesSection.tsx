@@ -12,7 +12,15 @@ import {
   type ReadingProfile,
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
-import { BACKGROUNDS, DEFAULT_PREFS, backgroundChoice, type BackgroundChoice, type ReaderPrefs } from '../../pages/reader/prefs'
+import {
+  BACKGROUNDS,
+  DEFAULT_PREFS,
+  MAX_WIDTH_MAX,
+  MAX_WIDTH_MIN,
+  backgroundChoice,
+  type BackgroundChoice,
+  type ReaderPrefs,
+} from '../../pages/reader/prefs'
 import TapZoneSettings from '../../pages/reader/TapZoneSettings'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
@@ -87,7 +95,14 @@ export function ReadingProfilesSection() {
   const { data: profiles } = useReadingProfiles()
   const create = useCreateReadingProfile()
   const [creating, setCreating] = useState(false)
-  const mark = useNewControlMark('skip-recap', 'hide-credit-pages', 'progress-rail', 'page-backgrounds', 'tap-zone-layouts')
+  const mark = useNewControlMark(
+    'skip-recap',
+    'hide-credit-pages',
+    'progress-rail',
+    'page-backgrounds',
+    'tap-zone-layouts',
+    'max-page-width',
+  )
 
   return (
     <SettingsSection
@@ -397,6 +412,24 @@ function ProfileEditor({
             onChange={(value) => set({ scale: value })}
           />
         )}
+      {(prefs.fit === 'width' || prefs.fit === 'screen') && (
+        <SettingsNumberInput
+          label={
+            <>
+              {t`Max page width`}
+              <NewSettingPill id="max-page-width" />
+            </>
+          }
+          description={t`Continuous layout only. 0 is no limit.`}
+          suffix=" px"
+          min={0}
+          max={MAX_WIDTH_MAX}
+          step={50}
+          value={prefs.maxWidth}
+          settle={(value) => (value <= 0 || value >= MAX_WIDTH_MAX ? 0 : Math.max(value, MAX_WIDTH_MIN))}
+          onChange={(value) => set({ maxWidth: value })}
+        />
+      )}
 
       <Group grow align="flex-start">
         <Select

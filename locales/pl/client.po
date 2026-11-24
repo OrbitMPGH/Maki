@@ -8662,6 +8662,10 @@ msgid "Continuous layout only."
 msgstr "Tylko układ ciągły."
 
 #: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. 0 is no limit."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
 msgstr "Tylko układ ciągły. Pasek przy prawym brzegu, który możesz przeciągać, żeby przechodzić przez rozdział."
@@ -15861,6 +15865,21 @@ msgstr "Dojrzałe"
 msgid "Max"
 msgstr "Maks."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
+msgid "Max page width"
+msgstr ""
+
+#. placeholder {0}: prefs.maxWidth
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Max page width ({0} px)"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Max page width (no limit)"
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Max per run"
@@ -19863,6 +19882,11 @@ msgstr "Przejścia między stronami"
 #, fuzzy
 msgid "Page Up"
 msgstr "Page Up"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page width, strip width, column width, webtoon width, fit width, narrow"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/discover/taste/TasteHabits.tsx

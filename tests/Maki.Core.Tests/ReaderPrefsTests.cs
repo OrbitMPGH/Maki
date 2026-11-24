@@ -15,6 +15,19 @@ public class ReaderPrefsTests
     }
 
     [Theory]
+    [InlineData(0, 0)]
+    [InlineData(-10, 0)]
+    [InlineData(100, 400)]
+    [InlineData(800, 800)]
+    [InlineData(2000, 0)]
+    [InlineData(5000, 0)]
+    public void Sanitized_reads_max_width_at_or_past_the_top_as_no_limit(int stored, int expected)
+    {
+        Assert.Equal(expected, new ReaderPrefsSpec(MaxWidth: stored).Sanitized().MaxWidth);
+        Assert.Equal(0, ReaderPrefsSpec.Parse("""{"mode":"vertical"}""").MaxWidth);
+    }
+
+    [Theory]
     [InlineData("none")]
     [InlineData("grayscale")]
     [InlineData("sepia")]

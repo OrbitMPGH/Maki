@@ -58,7 +58,17 @@ import {
   serverModelId,
   shownEnhanceMethod,
 } from './enhanceMethods'
-import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundChoice, type PrefsSelection, type ReaderPrefs } from './prefs'
+import {
+  BACKGROUNDS,
+  MAX_WIDTH_MAX,
+  MAX_WIDTH_MIN,
+  backgroundChoice,
+  enhanceFor,
+  toneFilter,
+  type BackgroundChoice,
+  type PrefsSelection,
+  type ReaderPrefs,
+} from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
 import TapZoneSettings from './TapZoneSettings'
 import { TAP_LAYOUTS } from './tapZones'
@@ -590,6 +600,29 @@ export default function ReaderSettings({
                         step={5}
                         value={prefs.scale}
                         onChange={(value) => onPrefs({ scale: value })}
+                      />
+                    </Field>
+                  )}
+                  {prefs.mode === 'vertical' && (prefs.fit === 'width' || prefs.fit === 'screen') && (
+                    <Field
+                      icon={IconArrowAutofitWidth}
+                      title={
+                        prefs.maxWidth > 0 ? (
+                          <Trans>Max page width ({prefs.maxWidth} px)</Trans>
+                        ) : (
+                          <Trans>Max page width (no limit)</Trans>
+                        )
+                      }
+                    >
+                      <Slider
+                        thumbLabel={t`Max page width`}
+                        size="xs"
+                        min={MAX_WIDTH_MIN}
+                        max={MAX_WIDTH_MAX}
+                        step={50}
+                        label={null}
+                        value={prefs.maxWidth > 0 ? prefs.maxWidth : MAX_WIDTH_MAX}
+                        onChange={(value) => onPrefs({ maxWidth: value >= MAX_WIDTH_MAX ? 0 : value })}
                       />
                     </Field>
                   )}

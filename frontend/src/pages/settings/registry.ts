@@ -296,6 +296,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'max-page-width',
+    tab: 'reading',
+    since: 'next',
+    title: msg`Max page width`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `page width, strip width, column width, webtoon width, fit width, narrow`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'tap-zone-layouts',
     tab: 'reading',
     since: '0.37.0',

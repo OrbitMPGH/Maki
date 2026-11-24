@@ -11584,17 +11584,30 @@ body.reader-open {
 }
 /* Once a page has loaded, the rest borrow its shape (ContinuousView sets --page-aspect and
    --page-width from the pages so far), so the strip is close to its real length before they load
-   and the scrollbar stays put. Fit-height pages are a viewport tall whatever their shape. */
+   and the scrollbar stays put. */
 .reader-continuous[data-shaped] .reader-page:not([data-loaded]) {
   min-height: 0;
   aspect-ratio: 1 / var(--page-aspect);
 }
-.reader-continuous[data-shaped] .reader-fit-original:not([data-loaded]) {
+/* Fit height and 1:1 draw every page, loaded or not, at the chapter's common width (--page-width,
+   with 1:1's scale already in it), so slices that come in several widths read as one column. Fit
+   height keeps the typical page within the screen; a page taller than typical runs past it. A
+   chapter of one page size comes out exactly as fitting each page on its own did. */
+.reader-continuous[data-shaped] .reader-fit-original {
   width: min(var(--page-width), 100%);
+  height: auto;
 }
-.reader-continuous[data-shaped] .reader-fit-height:not([data-loaded]) {
-  height: 100dvh;
-  aspect-ratio: auto;
+.reader-continuous[data-shaped][data-zoomed='true'] .reader-fit-original {
+  width: var(--page-width);
+}
+.reader-continuous[data-shaped] .reader-fit-height {
+  width: min(var(--page-width), 100%, 100dvh / var(--page-aspect));
+  height: auto;
+  max-height: none;
+}
+/* Fit width and Fit screen fill the strip, up to the reader's Max page width when one is set. */
+.reader-continuous .reader-fit-width {
+  width: min(100%, var(--reader-page-max, 100%));
 }
 
 .reader-page {

@@ -77,6 +77,8 @@ export interface ReaderPrefs {
   tapInvert: boolean
   /** Leave out the credit and notice pages that repeat at the start or end of a series' chapters. */
   hideCredits: boolean
+  /** Continuous only: the widest Fit width and Fit screen draw a page, in CSS px. 0 is no limit. */
+  maxWidth: number
 }
 
 /**
@@ -137,7 +139,12 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   tapWidth: 33,
   tapInvert: false,
   hideCredits: false,
+  maxWidth: 0,
 }
+
+/** The Max page width slider's range. The top of it stores 0, no limit, as the server does. */
+export const MAX_WIDTH_MIN = 400
+export const MAX_WIDTH_MAX = 2000
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */
 export function enhanceFor(prefs: Pick<ReaderPrefs, 'enhance' | 'enhanceSkipTiers'>, tier: QualityTierName | undefined): ReaderEnhance {
