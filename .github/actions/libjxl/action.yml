@@ -9,12 +9,18 @@ inputs:
 runs:
   using: composite
   steps:
+    # The key names the runner image, not just the OS: ubuntu-latest (26.04) builds against a newer glibc
+    # than the native builds' ubuntu-24.04 can load, and a tag run restores main's cache.
+    - name: Runner image
+      id: image
+      shell: bash
+      run: echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
     - name: Restore libjxl
       id: cache
       uses: actions/cache/restore@v4
       with:
         path: .artifacts/libjxl
-        key: libjxl-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
+        key: libjxl-${{ steps.image.outputs.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
     - name: Build libjxl
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
