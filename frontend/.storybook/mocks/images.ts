@@ -111,6 +111,17 @@ function framingSvg(page: number) {
   )
 }
 
+function wideGutterSvg(page: number) {
+  return svg(
+    `<g transform="translate(0 ${-page * 800})">` +
+      '<rect width="400" height="3200" fill="#fff"/>' +
+      '<rect x="30" y="140" width="340" height="490" fill="#445"/>' +
+      '<rect x="30" y="1230" width="340" height="650" fill="#659"/>' +
+      '<rect x="110" y="1830" width="180" height="200" fill="#fff" stroke="#111" stroke-width="3"/></g>',
+    400, 800,
+  )
+}
+
 function bannerSvg(seed: string) {
   const h = hue(seed)
   return svg(
@@ -130,10 +141,12 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   http.get('/mock/spread/:seed/:n', ({ params }) => spreadSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''), titleFor)),
   http.get('/mock/strip/:seed/:n', ({ params }) => stripSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''), titleFor)),
   http.get('/mock/banner/:seed', ({ params }) => bannerSvg(String(params.seed).replace(/\.svg$/, ''))),
-  http.get(api('/reader/chapter/:id/page/:n'), ({ params, request }) =>
-    new URL(request.url).searchParams.get('v') === 'adaptive-scrolling'
-      ? framingSvg(Number(params.n) % 6)
-      : pageSvg(String(params.id), String(params.n), titleFor)),
+  http.get(api('/reader/chapter/:id/page/:n'), ({ params, request }) => {
+    const version = new URL(request.url).searchParams.get('v')
+    if (version === 'adaptive-scrolling') return framingSvg(Number(params.n) % 6)
+    if (version === 'adaptive-wide-gutter') return wideGutterSvg(Number(params.n) % 4)
+    return pageSvg(String(params.id), String(params.n), titleFor)
+  }),
   http.get(api('/reader/chapter/:id/thumb/:n'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
   // A server upscale: the same page, so a swap is visible only through the element that shows it.
   http.get(api('/reader/chapter/:id/page/:n/enhanced'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),

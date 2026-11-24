@@ -96,6 +96,7 @@ export const readerPrefs: ReaderPrefs = {
   autoSkipRecap: false,
   progressRail: false,
   adaptiveScroll: false,
+  screenTurnMotion: 'smooth',
   tapLayout: 'sides',
   tapWidth: 33,
   tapInvert: false,

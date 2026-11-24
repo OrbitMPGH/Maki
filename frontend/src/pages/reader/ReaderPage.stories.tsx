@@ -260,6 +260,41 @@ export const AdaptiveScrolling: Story = {
 
 const recapEndsAt = http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: 4, offset: 0.5 }))
 
+export const AdaptiveScrollingAcrossWhitespace: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [
+      withManifest({
+        ...chapters[3040],
+        pageVersion: 'adaptive-wide-gutter',
+        prefs: {
+          ...chapters[3040].prefs, fit: 'width', maxWidth: 400, pageGap: 0,
+          adaptiveScroll: true, chapterBanner: false,
+        },
+      }),
+    ],
+  },
+  beforeEach: () => {
+    const requestIdle = window.requestIdleCallback
+    window.requestIdleCallback = () => 0
+    return () => { window.requestIdleCallback = requestIdle }
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const page of [1, 2, 3]) {
+      const image = await canvas.findByRole('img', { name: `Chapter 40 - page ${page}` })
+      await waitFor(() => expect(image).toHaveAttribute('data-loaded', 'true'))
+    }
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const height = surface.clientHeight
+    const start = surface.scrollTop
+    const centered = start + (1230 + 2030 - height) / 2
+    await expect(centered - start).toBeGreaterThan(height)
+
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(Math.abs(surface.scrollTop - centered)).toBeLessThan(6))
+  },
+}
+
 /** A chapter opening with the previous chapter's last pages offers to skip them, and scrolls past them when asked. */
 export const ContinuousSkipRecap: Story = {
   parameters: { ...open(3040), msw: [recapEndsAt] },

@@ -432,3 +432,16 @@ export const TapZonesContinuous: Story = {
     await waitFor(() => expect(b.getByRole('slider', { name: 'Zone size' })).toBeEnabled())
   },
 }
+
+export const ScreenTurnMotion: Story = {
+  args: { prefs: { ...mangaPrefs, mode: 'vertical' } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await expect(await b.findByRole('radio', { name: 'Smooth' })).toBeChecked()
+    await userEvent.click(await b.findByRole('radio', { name: 'Quick' }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ screenTurnMotion: 'quick' }))
+    await userEvent.click(await b.findByRole('radio', { name: 'Instant' }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ screenTurnMotion: 'instant' }))
+  },
+}

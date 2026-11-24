@@ -36,6 +36,17 @@ public class ReaderPrefsTests
     }
 
     [Theory]
+    [InlineData("quick", "quick")]
+    [InlineData("instant", "instant")]
+    [InlineData("unknown", "smooth")]
+    public void Screen_turn_motion_defaults_to_smooth_and_round_trips(string stored, string expected)
+    {
+        Assert.Equal("smooth", ReaderPrefsSpec.Parse("""{"mode":"vertical"}""").ScreenTurnMotion);
+        var json = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(ScreenTurnMotion: stored));
+        Assert.Equal(expected, ReaderPrefsSpec.Parse(json).ScreenTurnMotion);
+    }
+
+    [Theory]
     [InlineData("none")]
     [InlineData("grayscale")]
     [InlineData("sepia")]

@@ -4,6 +4,7 @@ import { frameStripSection, mergeStripBands, type StripBand } from './stripFrami
 
 type Page = StripBand & { index: number; image: HTMLImageElement; height: number }
 type Sample = StripBand & { gutters: StripBand[] }
+type Tile = StripBand & { image: HTMLImageElement; chunk: number; id: string }
 
 const SAMPLE_WIDTH = 320
 const CHUNK_ASPECT = 2
@@ -13,6 +14,12 @@ const MAX_CHUNKS = 96
 const WARM_CHUNKS = 24
 const MAX_NEARBY_PAGES = 24
 const LOOKAHEAD = 1.35
+const TURN_SAMPLE_LIMIT = 3
+const TURN_SAMPLE_BUDGET_MS = 12
+
+function distanceTo(band: StripBand, point: number): number {
+  return Math.max(0, band.top - point, point - band.bottom)
+}
 
 function nearbyPages(
   scroller: HTMLElement,
@@ -134,27 +141,34 @@ export function useStripGutters(
     const key = (image: HTMLImageElement, chunk: number) => `${image.currentSrc || image.src}:${chunk}`
     const points = (low: number, high: number) => nearbyPages(scroller, images.current, page.current, low, high)
     const canSample = () => scroller.scrollWidth <= scroller.clientWidth + 2
+    const tilesFor = (item: Page, low: number, high: number, focus: number): Tile[] => {
+      const { image } = item
+      return chunks(item, low, high, focus).map((chunk) => {
+        const height = item.height * image.naturalWidth * CHUNK_ASPECT / image.naturalHeight
+        const top = item.top + chunk * height
+        return { image, chunk, id: key(image, chunk), top, bottom: Math.min(item.bottom, top + height) }
+      })
+    }
+    const remember = ({ id, image, chunk }: Tile) => {
+      if (cache.size >= MAX_CHUNKS) cache.delete(cache.keys().next().value!)
+      cache.set(id, sampleGutters(canvas, image, chunk))
+    }
 
     let cancel: (() => void) | undefined
     const warm = () => {
       cancel = undefined
       if (!canSample()) return
       const height = scroller.clientHeight
-      const middle = scroller.scrollTop + height / 2
-      const low = middle - height * (0.5 + LOOKAHEAD)
-      const high = middle + height * (0.5 + LOOKAHEAD)
-      const nearby = points(low, high).flatMap((item) => chunks(item, low, high, middle).map((chunk) => ({
-        image: item.image,
-        chunk,
-        id: key(item.image, chunk),
-        distance: Math.abs(item.top + (chunk + 0.5) * item.height *
-          ((item.image.naturalWidth * CHUNK_ASPECT) / item.image.naturalHeight) - middle),
-      })))
-      nearby.sort((a, b) => a.distance - b.distance)
+      const top = scroller.scrollTop
+      const bottom = top + height
+      const low = top - height * LOOKAHEAD
+      const high = bottom + height * LOOKAHEAD
+      const nearby = points(low, high).flatMap((item) => tilesFor(item, low, high, top + height / 2))
+      const distance = (tile: Tile) => Math.min(distanceTo(tile, bottom), distanceTo(tile, top) + height / 4)
+      nearby.sort((a, b) => distance(a) - distance(b))
       const next = nearby.slice(0, WARM_CHUNKS).find(({ id }) => !cache.has(id))
       if (!next) return
-      if (cache.size >= MAX_CHUNKS) cache.delete(cache.keys().next().value!)
-      cache.set(next.id, sampleGutters(canvas, next.image, next.chunk))
+      remember(next)
       schedule()
     }
     function schedule() {
@@ -168,26 +182,21 @@ export function useStripGutters(
       }
     }
 
-    tracker.framedTarget = (from, direction, max) => {
-      if (!canSample()) return
-      const height = scroller.clientHeight
-      const low = from - height * LOOKAHEAD
-      const high = from + height * (1 + LOOKAHEAD)
-      const pages = points(low, high).sort((a, b) => a.index - b.index)
+    const plan = (pages: { item: Page; tiles: Tile[] }[], from: number, height: number, direction: 1 | -1, max: number) => {
       const coverage: StripBand[] = []
       const gutters: StripBand[] = []
       let previousGutterAtEnd = false
       for (let i = 0; i < pages.length; i++) {
-        const item = pages[i]
-        const previous = pages[i - 1]
+        const { item, tiles } = pages[i]
+        const previous = pages[i - 1]?.item
         let gutterAtStart = false
         let gutterAtEnd = false
         const project = (band: StripBand) => ({
           top: item.top + band.top * item.height,
           bottom: Math.min(item.bottom, item.top + band.bottom * item.height),
         })
-        for (const chunk of chunks(item, low, high, from + height / 2)) {
-          const sample = cache.get(key(item.image, chunk))
+        for (const { id } of tiles) {
+          const sample = cache.get(id)
           if (!sample) continue
           const range = project(sample)
           if (range.bottom <= range.top) continue
@@ -208,13 +217,38 @@ export function useStripGutters(
         }
         previousGutterAtEnd = gutterAtEnd
       }
-      const first = pages[0]
-      const last = pages.at(-1)
+      const first = pages[0]?.item
+      const last = pages.at(-1)?.item
       return frameStripSection(
         from, height, max, direction, mergeStripBands(coverage), mergeStripBands(gutters),
         first?.index === 0 ? first.top : undefined,
         last?.index === urls.length - 1 ? last.bottom : undefined,
       )
+    }
+
+    tracker.framedTarget = (from, direction, max) => {
+      if (!canSample()) return
+      const height = scroller.clientHeight
+      const low = from - height * LOOKAHEAD
+      const high = from + height * (1 + LOOKAHEAD)
+      const pages = points(low, high).sort((a, b) => a.index - b.index)
+        .map((item) => ({ item, tiles: tilesFor(item, low, high, from + height / 2) }))
+      const target = plan(pages, from, height, direction, max)
+      if (target !== undefined) return target
+
+      // Rapid turns can reach loaded images before the idle callback has sampled them.
+      const edge = direction > 0 ? from + height : from
+      const priority = (tile: Tile) => distanceTo(tile, edge) +
+        ((direction > 0 ? tile.bottom < edge : tile.top > edge) ? height * 0.85 : 0)
+      const missing = pages.flatMap(({ tiles }) => tiles).filter(({ id }) => !cache.has(id))
+        .sort((a, b) => priority(a) - priority(b))
+      const deadline = performance.now() + TURN_SAMPLE_BUDGET_MS
+      for (const tile of missing.slice(0, TURN_SAMPLE_LIMIT)) {
+        remember(tile)
+        const framed = plan(pages, from, height, direction, max)
+        if (framed !== undefined) return framed
+        if (performance.now() >= deadline) break
+      }
     }
 
     const observer = new ResizeObserver(schedule)

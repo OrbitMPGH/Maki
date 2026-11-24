@@ -11310,6 +11310,10 @@ msgstr "Instance default"
 msgid "Instance default clears each series' own choice."
 msgstr "Instance default clears each series' own choice."
 
+#: src/pages/reader/stripScroll.ts
+msgid "Instant"
+msgstr "Instant"
+
 #: src/pages/settings/registry.ts
 msgid "Integrations"
 msgstr "Integrations"
@@ -17057,6 +17061,10 @@ msgstr "Queued upgrade from {winnerSource}"
 msgid "Queues the removed chapters that are still wanted."
 msgstr "Queues the removed chapters that are still wanted."
 
+#: src/pages/reader/stripScroll.ts
+msgid "Quick"
+msgstr "Quick"
+
 #: src/App.tsx
 msgid "Quick links"
 msgstr "Quick links"
@@ -19679,6 +19687,12 @@ msgstr "Scraper"
 msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 msgstr "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe, custom source, add site, set up a site, scanlator, website, definition, import definition"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
+msgid "Screen turn motion"
+msgstr "Screen turn motion"
+
 #: src/components/pageconversion/labels.ts
 msgid "Screentone gets lighter but stays visible."
 msgstr "Screentone gets lighter but stays visible."
@@ -19740,6 +19754,11 @@ msgstr "Scroll forward"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Scroll slower"
 msgstr "Scroll slower"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scroll speed, motion, animation, smooth scrolling, instant scrolling, page up, page down"
+msgstr "scroll speed, motion, animation, smooth scrolling, instant scrolling, page up, page down"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
@@ -21095,6 +21114,10 @@ msgstr "Smart download queued chapters"
 #: src/pages/settings/registry.ts
 msgid "smart download, unread trigger"
 msgstr "smart download, unread trigger"
+
+#: src/pages/reader/stripScroll.ts
+msgid "Smooth"
+msgstr "Smooth"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"

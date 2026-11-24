@@ -296,6 +296,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'screen-turn-motion',
+    tab: 'reading',
+    since: 'next',
+    title: msg`Screen turn motion`,
+    within: 'reader',
+    nested: true,
+    keywords: msg({
+      message: `scroll speed, motion, animation, smooth scrolling, instant scrolling, page up, page down`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'page-backgrounds',
     tab: 'reading',
     since: '0.37.0',

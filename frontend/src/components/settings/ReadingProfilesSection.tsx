@@ -22,6 +22,7 @@ import {
   type ReaderPrefs,
 } from '../../pages/reader/prefs'
 import TapZoneSettings from '../../pages/reader/TapZoneSettings'
+import { SCREEN_TURN_MOTIONS } from '../../pages/reader/stripScroll'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { TagChip } from '../ui/TagChip'
@@ -100,6 +101,7 @@ export function ReadingProfilesSection() {
     'hide-credit-pages',
     'progress-rail',
     'adaptive-scrolling',
+    'screen-turn-motion',
     'page-backgrounds',
     'tap-zone-layouts',
     'max-page-width',
@@ -270,15 +272,17 @@ function Choice({
   value,
   onChange,
   data,
+  settingId,
 }: {
   label: string
   description?: string
   value: string
   onChange: (value: string) => void
   data: { value: string; label: ReactNode }[]
+  settingId?: string
 }) {
   return (
-    <Input.Wrapper label={label} description={description}>
+    <Input.Wrapper label={settingId ? <>{label}<NewSettingPill id={settingId} /></> : label} description={description}>
       <SegmentedControl aria-label={label} fullWidth mt={4} value={value} onChange={onChange} data={data} />
     </Input.Wrapper>
   )
@@ -639,6 +643,16 @@ function ProfileEditor({
         checked={prefs.adaptiveScroll ?? false}
         onChange={(e) => set({ adaptiveScroll: e.currentTarget.checked })}
       />
+      <div id={fixed ? 'setting-screen-turn-motion' : undefined}>
+        <Choice
+          label={t`Screen turn motion`}
+          description={t`Continuous layout only.`}
+          value={prefs.screenTurnMotion ?? DEFAULT_PREFS.screenTurnMotion}
+          onChange={(value) => set({ screenTurnMotion: value as ReaderPrefs['screenTurnMotion'] })}
+          data={SCREEN_TURN_MOTIONS.map(({ value, label }) => ({ value, label: renderLabel(label) }))}
+          settingId="screen-turn-motion"
+        />
+      </div>
       <Switch
         size="sm"
         label={
