@@ -33,8 +33,17 @@ internal static class CancellableBrowserCall
         {
             if (await Task.WhenAny(work, cancelled.Task) != work)
             {
-                _ = work.ContinueWith(t => _ = t.Exception, CancellationToken.None,
-                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                _ = work.ContinueWith(static t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        _ = t.Exception;
+                    }
+                    else if (t.IsCompletedSuccessfully && t.Result is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 throw new OperationCanceledException(ct);
             }
             return await work;

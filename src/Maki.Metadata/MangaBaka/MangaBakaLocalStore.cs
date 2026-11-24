@@ -1,3 +1,4 @@
+using Maki.Core;
 using Maki.Core.Io;
 using System.Globalization;
 using System.Text.Json;
@@ -55,12 +56,42 @@ public class MangaBakaLocalStore(
     /// <summary>Rows a title search returns when the caller does not ask for a different depth.</summary>
     public const int DefaultSearchLimit = 20;
 
+    private readonly IdleStamp _lastOpened = new();
+    private int _openedSinceDrop;
+
+    internal Action<string> DropCache { get; init; } = PageCache.DropAfterScan;
+
     /// <summary>
     /// Asks the kernel to forget the dump's pages. For a caller that has just finished a batch of
     /// browse scans and knows it will not read the file again soon; see <see cref="PageCache"/> for
     /// why a point query must never do this.
     /// </summary>
-    public void DropScanCache() => PageCache.DropAfterScan(options.DatabasePath);
+    public void DropScanCache()
+    {
+        Volatile.Write(ref _openedSinceDrop, 0);
+        DropCache(options.DatabasePath);
+    }
+
+    /// <summary>
+    /// Drops the dump's OS page cache once nothing has opened it for <paramref name="idleFor"/>.
+    /// Catches pages pulled in by search and lookup sessions once the instance goes quiet without
+    /// evicting them mid-session.
+    /// </summary>
+    public bool DropScanCacheIfIdle(TimeSpan idleFor)
+    {
+        if (Volatile.Read(ref _openedSinceDrop) == 0 || (idleFor > TimeSpan.Zero && _lastOpened.Idle < idleFor))
+        {
+            return false;
+        }
+
+        if (Interlocked.CompareExchange(ref _openedSinceDrop, 0, 1) != 1)
+        {
+            return false;
+        }
+
+        DropCache(options.DatabasePath);
+        return true;
+    }
 
     /// <summary>
     /// Backstop on how many ids a credit restriction will inline. Callers holding a
@@ -2614,6 +2645,8 @@ public class MangaBakaLocalStore(
         // Pooling=False keeps handles off the file so the nightly swap can replace it.
         var conn = new SqliteConnection($"Data Source={options.DatabasePath};Mode=ReadOnly;Pooling=False");
         conn.Open();
+        _lastOpened.Touch();
+        Volatile.Write(ref _openedSinceDrop, 1);
         return conn;
     }
 

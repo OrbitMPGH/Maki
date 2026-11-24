@@ -2,6 +2,7 @@ using Maki.Api.Services.Ocr;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,8 +35,13 @@ namespace Maki.Api.Services;
 public sealed class CreditScanWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ReaderCreditsCache credits, CreditStore store,
     ReaderArchiveCache archives, PageConversionWorker conversion, CreditBank bank, CreditStrips strips,
-    ILogger<CreditScanWorker> logger, Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
+    ILogger<CreditScanWorker> logger, Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
+    PageTextReader? ocr = null,
+    Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
+    Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null) : BackgroundService
 {
+    internal Action<string> DropCache { get; init; } = PageCache.DropAfterScan;
+    internal TimeSpan QuietPoll { get; set; } = TimeSpan.FromSeconds(2);
     /// <summary>Chapters one bank recheck looks at before the worker looks for due series again.</summary>
     private const int BankBatch = 200;
 
@@ -168,6 +174,7 @@ public sealed class CreditScanWorker(
         }
 
         using var collect = new DeferredCollect();
+        var worked = false;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -175,6 +182,7 @@ public sealed class CreditScanWorker(
                 collect.Busy();
                 if (_enabled && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
                 {
+                    worked = true;
                     collect.Worked();
                     await ScanSeriesAsync(next.SeriesId, next.Language, stoppingToken);
                     continue;
@@ -182,11 +190,18 @@ public sealed class CreditScanWorker(
 
                 if (_enabled && !Paused && await RecheckBankAsync(stoppingToken) > 0)
                 {
+                    worked = true;
                     collect.Worked();
                     continue;
                 }
 
                 SetWorking(null);
+                if (worked)
+                {
+                    worked = false;
+                    ReleaseOcrIfIdle();
+                }
+
                 collect.Idle();
                 await Wake.WaitAsync(IdleFallback, stoppingToken);
             }
@@ -198,6 +213,12 @@ public sealed class CreditScanWorker(
             {
                 logger.LogError(e, "Credit page scan failed");
                 SetWorking(null);
+                if (worked)
+                {
+                    worked = false;
+                    ReleaseOcrIfIdle();
+                }
+
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
@@ -360,108 +381,166 @@ public sealed class CreditScanWorker(
 
         // Each volume file is probed once, and the answer kept on its rows; a hit on any makes the whole
         // series a scanlation pack. A probe that could not tell (null) leaves the volumes as they are.
-        var probes = new Dictionary<int, bool?>();
-        foreach (var slice in ordered.OfType<ReaderService.ChapterSlice>().Where(IsVolume))
+        var touched = new HashSet<string>(StringComparer.Ordinal);
+        try
         {
-            if (probes.ContainsKey(slice.ChapterFileId))
+            var probes = new Dictionary<int, bool?>();
+            foreach (var slice in ordered.OfType<ReaderService.ChapterSlice>().Where(IsVolume))
             {
-                continue;
-            }
-
-            var known = ordered.OfType<ReaderService.ChapterSlice>()
-                .Where(s => s.ChapterFileId == slice.ChapterFileId)
-                .Select(s => (Slice: s, Row: rows.GetValueOrDefault(s.Chapter.Id)))
-                .FirstOrDefault(x => x.Row is { ProbeHit: not null } && x.Row.EdgeKey == x.Slice.EdgeKey);
-            probes[slice.ChapterFileId] = known.Row?.ProbeHit ?? await ProbeAsync(slice, ct);
-        }
-
-        var pack = probes.Values.Any(hit => hit == true);
-        var volumesKnown = pack || probes.Values.All(hit => hit is not null);
-        var lastRead = await db.ChapterProgress.IgnoreQueryFilters()
-            .Where(p => order.Contains(p.ChapterId))
-            .OrderByDescending(p => p.UpdatedAt)
-            .Select(p => (int?)p.ChapterId)
-            .FirstOrDefaultAsync(ct);
-        var start = lastRead is { } readId && order.IndexOf(readId) is var at and >= 0 ? at + 1 : 0;
-
-        for (var step = 0; step < ordered.Count && !Paused; step++)
-        {
-            var i = (start + step) % ordered.Count;
-            if (ordered[i] is not { } slice)
-            {
-                continue;
-            }
-
-            var row = rows.GetValueOrDefault(slice.Chapter.Id);
-            if (queued.Contains(slice.Chapter.Id))
-            {
-                continue;
-            }
-
-            var current = row is not null && store.Current(row, slice.EdgeKey);
-            if (!ReaderCreditsCache.Applies(slice) || slice.EdgeKey is null)
-            {
-                if (row is null || !CreditStore.Settled(row, slice))
-                {
-                    await store.SaveAsync(slice, string.Empty, CreditPages.None, CreditJudge.Ocr, [], ct);
-                }
-
-                continue;
-            }
-
-            var volume = IsVolume(slice);
-            if (volume && !pack)
-            {
-                if (!volumesKnown)
+                if (probes.ContainsKey(slice.ChapterFileId))
                 {
                     continue;
                 }
 
-                if (current && row is { Skipped: true })
+                var known = ordered.OfType<ReaderService.ChapterSlice>()
+                    .Where(s => s.ChapterFileId == slice.ChapterFileId)
+                    .Select(s => (Slice: s, Row: rows.GetValueOrDefault(s.Chapter.Id)))
+                    .FirstOrDefault(x => x.Row is { ProbeHit: not null } && x.Row.EdgeKey == x.Slice.EdgeKey);
+                if (known.Row?.ProbeHit is { } knownHit)
                 {
-                    await RestampAsync(row, slice, ct);
+                    probes[slice.ChapterFileId] = knownHit;
                 }
                 else
                 {
-                    await store.SaveSkippedAsync(slice, probes.GetValueOrDefault(slice.ChapterFileId) == true, ct);
+                    probes[slice.ChapterFileId] = await ProbeAsync(slice, ct);
+                    touched.Add(slice.ArchivePath);
                 }
-
-                continue;
             }
 
-            var (before, after) = ReaderService.NearbyOf(ordered, i, CreditDetector.References, ReaderCreditsCache.Usable);
-            List<ReaderService.ChapterSlice> references = [.. before, .. after];
-            var referencesKey = CreditStore.ReferencesKey(references);
-            if (current && row is { Skipped: false } && row.ReferencesKey == referencesKey)
+            var pack = probes.Values.Any(hit => hit == true);
+            if (!pack && touched.Count > 0)
             {
-                await RestampAsync(row, slice, ct);
-                continue;
+                DropTouchedArchives(touched);
             }
 
-            await QuietAsync(ct);
-            var (found, failed) = await credits.SearchAsync(slice, references, ct, parallelism: 1);
-            var probe = volume ? probes.GetValueOrDefault(slice.ChapterFileId) : null;
-            if (!failed)
+            var volumesKnown = pack || probes.Values.All(hit => hit is not null);
+            var lastRead = await db.ChapterProgress.IgnoreQueryFilters()
+                .Where(p => order.Contains(p.ChapterId))
+                .OrderByDescending(p => p.UpdatedAt)
+                .Select(p => (int?)p.ChapterId)
+                .FirstOrDefaultAsync(ct);
+            var start = lastRead is { } readId && order.IndexOf(readId) is var at and >= 0 ? at + 1 : 0;
+
+            var lastStep = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var step = 0; step < ordered.Count; step++)
             {
-                // A run the cache already held answers without writing (or wrote for other neighbours);
-                // store it so the chapter is settled under the neighbours it has now.
-                var written = await store.RowAsync(slice.Chapter.Id, ct);
-                if (written is null || !store.Current(written, slice.EdgeKey) || written.ReferencesKey != referencesKey)
+                var i = (start + step) % ordered.Count;
+                if (ordered[i] is not { } slice || queued.Contains(slice.Chapter.Id) ||
+                    !ReaderCreditsCache.Applies(slice) || slice.EdgeKey is null || (IsVolume(slice) && !pack))
                 {
-                    await store.SaveAsync(slice, referencesKey, found, written?.Judge ?? CreditJudge.Ocr, [], ct, probe);
+                    continue;
                 }
-                else if (probe is { } hit && written.ProbeHit != hit)
+
+                lastStep[slice.ArchivePath] = step;
+                var (before, after) = ReaderService.NearbyOf(ordered, i, CreditDetector.References, ReaderCreditsCache.Usable);
+                foreach (var r in before)
                 {
-                    await store.SetProbeAsync(slice.Chapter.Id, hit, ct);
+                    lastStep[r.ArchivePath] = step;
+                }
+
+                foreach (var r in after)
+                {
+                    lastStep[r.ArchivePath] = step;
                 }
             }
 
-            lock (_sync)
+            for (var step = 0; step < ordered.Count && !Paused; step++)
             {
-                _done++;
-            }
+                var i = (start + step) % ordered.Count;
+                if (ordered[i] is not { } slice)
+                {
+                    DropFinishedArchives(touched, lastStep, step);
+                    continue;
+                }
 
-            await Task.Delay(BetweenChapters, ct);
+                var row = rows.GetValueOrDefault(slice.Chapter.Id);
+                if (queued.Contains(slice.Chapter.Id))
+                {
+                    DropFinishedArchives(touched, lastStep, step);
+                    continue;
+                }
+
+                var current = row is not null && store.Current(row, slice.EdgeKey);
+                if (!ReaderCreditsCache.Applies(slice) || slice.EdgeKey is null)
+                {
+                    if (row is null || !CreditStore.Settled(row, slice))
+                    {
+                        await store.SaveAsync(slice, string.Empty, CreditPages.None, CreditJudge.Ocr, [], ct);
+                    }
+
+                    DropFinishedArchives(touched, lastStep, step);
+                    continue;
+                }
+
+                var volume = IsVolume(slice);
+                if (volume && !pack)
+                {
+                    if (!volumesKnown)
+                    {
+                        DropFinishedArchives(touched, lastStep, step);
+                        continue;
+                    }
+
+                    if (current && row is { Skipped: true })
+                    {
+                        await RestampAsync(row, slice, ct);
+                    }
+                    else
+                    {
+                        await store.SaveSkippedAsync(slice, probes.GetValueOrDefault(slice.ChapterFileId) == true, ct);
+                    }
+
+                    DropFinishedArchives(touched, lastStep, step);
+                    continue;
+                }
+
+                var (before, after) = ReaderService.NearbyOf(ordered, i, CreditDetector.References, ReaderCreditsCache.Usable);
+                List<ReaderService.ChapterSlice> references = [.. before, .. after];
+                var referencesKey = CreditStore.ReferencesKey(references);
+                if (current && row is { Skipped: false } && row.ReferencesKey == referencesKey)
+                {
+                    await RestampAsync(row, slice, ct);
+                    DropFinishedArchives(touched, lastStep, step);
+                    continue;
+                }
+
+                await QuietAsync(ct);
+                var (found, failed) = await credits.SearchAsync(slice, references, ct, parallelism: 1);
+                touched.Add(slice.ArchivePath);
+                foreach (var reference in references)
+                {
+                    touched.Add(reference.ArchivePath);
+                }
+
+                var probe = volume ? probes.GetValueOrDefault(slice.ChapterFileId) : null;
+                if (!failed)
+                {
+                    // A run the cache already held answers without writing (or wrote for other neighbours);
+                    // store it so the chapter is settled under the neighbours it has now.
+                    var written = await store.RowAsync(slice.Chapter.Id, ct);
+                    if (written is null || !store.Current(written, slice.EdgeKey) || written.ReferencesKey != referencesKey)
+                    {
+                        await store.SaveAsync(slice, referencesKey, found, written?.Judge ?? CreditJudge.Ocr, [], ct, probe);
+                    }
+                    else if (probe is { } hit && written.ProbeHit != hit)
+                    {
+                        await store.SetProbeAsync(slice.Chapter.Id, hit, ct);
+                    }
+                }
+
+                DropFinishedArchives(touched, lastStep, step);
+
+                lock (_sync)
+                {
+                    _done++;
+                }
+
+                await Task.Delay(BetweenChapters, ct);
+            }
+        }
+        finally
+        {
+            DropTouchedArchives(touched);
         }
     }
 
@@ -562,14 +641,23 @@ public sealed class CreditScanWorker(
             ? Task.CompletedTask
             : store.RestampAsync(row.ChapterId, slice.ChapterFileId, slice.ArchiveSize, ct);
 
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
+        Maki.Api.Jobs.BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable));
+
+    private bool BrowserBlocking =>
+        browsers is { Running: > 0 } && ResolveBrowserIdleMinutes() > 0;
+
     /// <summary>
-    /// Waits while a reader is being served pages, the scan is paused, or an artifact build holds the
-    /// gate: the scan starts in the same minutes as the startup builds, and its decode and OCR bursts
-    /// would stack on whichever one is running.
+    /// Waits while a reader is being served pages, the scan is paused, or another heavy subsystem
+    /// (artifact build, headless browser, file conversion, or upscaling) is active so decode and
+    /// OCR bursts never stack on top of them.
     /// </summary>
     private async Task QuietAsync(CancellationToken ct)
     {
-        while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false })
+        while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false } ||
+               BrowserBlocking || conversion.Working is not null ||
+               upscaleQueue is { HasForegroundWork: true } or { HasBackground: true } or { IsWorking: true })
         {
             if (buildGate is { IsIdle: false })
             {
@@ -577,8 +665,70 @@ public sealed class CreditScanWorker(
             }
             else
             {
-                await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                await Task.Delay(QuietPoll, ct);
             }
+        }
+    }
+
+    internal bool ReleaseOcrIfIdle()
+    {
+        if (ocr is null || credits.IsActive || archives.SinceLastServed < ReadingQuiet)
+        {
+            return false;
+        }
+
+        if (!ocr.ReleaseIfIdle(TimeSpan.Zero))
+        {
+            return false;
+        }
+
+        NativeHeap.Trim();
+        return true;
+    }
+
+    private void DropFinishedArchives(HashSet<string> touched, Dictionary<string, int> lastStep, int step)
+    {
+        if (touched.Count == 0)
+        {
+            return;
+        }
+
+        List<string>? done = null;
+        foreach (var path in touched)
+        {
+            if (lastStep.GetValueOrDefault(path, -1) <= step)
+            {
+                (done ??= []).Add(path);
+            }
+        }
+
+        if (done is null)
+        {
+            return;
+        }
+
+        foreach (var path in done)
+        {
+            touched.Remove(path);
+            DropScannedArchive(path);
+        }
+    }
+
+    private void DropTouchedArchives(HashSet<string> touched)
+    {
+        foreach (var path in touched)
+        {
+            DropScannedArchive(path);
+        }
+
+        touched.Clear();
+    }
+
+    private void DropScannedArchive(string path)
+    {
+        if (!archives.ReadWithin(path, PageConversionService.ReadingQuiet))
+        {
+            DropCache(path);
         }
     }
 

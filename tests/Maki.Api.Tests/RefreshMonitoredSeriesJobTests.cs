@@ -397,4 +397,54 @@ public class RefreshSmartGateTests : IDisposable
 
         Assert.Equal(50, queued);
     }
+
+    private sealed class FakeIdleBrowser(string name, bool running) : Maki.Sources.Common.IIdleBrowser
+    {
+        public string BrowserName => name;
+        public bool IsRunning { get; set; } = running;
+        public List<TimeSpan> Asked { get; } = [];
+
+        public Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
+        {
+            Asked.Add(idleFor);
+            IsRunning = false;
+            return Task.FromResult(true);
+        }
+    }
+
+    [Fact]
+    public async Task ReleaseBrowsersIfIdle_closes_running_browsers_when_queue_is_idle_and_skips_when_busy_or_disabled()
+    {
+        var registry = new SourceRegistry([new FakeSource { Name = "fake" }]);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), TimeProvider.System, Sources.Resolver(registry),
+            NullLogger<DownloadQueueService>.Instance);
+        var running = new FakeIdleBrowser("MangaFire", running: true);
+        var stopped = new FakeIdleBrowser("TopManhua", running: false);
+        var job = new RefreshMonitoredSeriesJob(
+            ScopeFactoryWith(new FakeSource { Name = "fake" }), queue, new RecordingNotifications(), new RecordingInbox(),
+            _batches, Sources.AllEnabled, new TestLocalizer(), new TestUserLocaleResolver(),
+            NullLogger<RefreshMonitoredSeriesJob>.Instance, _deferrals, [running, stopped]);
+
+        // Queue starts Busy until the first empty claim runs.
+        var idleMinutes = 1;
+        job.ResolveBrowserIdleMinutes = () => idleMinutes;
+
+        Assert.True(queue.Busy);
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Empty(running.Asked);
+
+        Assert.Null(await queue.ClaimNextAsync(CancellationToken.None));
+        Assert.False(queue.Busy);
+
+        // Disabled via MAKI_BROWSER_IDLE_MINUTES=0 leaves browsers alive.
+        idleMinutes = 0;
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Empty(running.Asked);
+
+        idleMinutes = 1;
+        await job.ReleaseBrowsersIfIdleAsync();
+        Assert.Equal([TimeSpan.Zero], running.Asked);
+        Assert.Empty(stopped.Asked);
+    }
 }

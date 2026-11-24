@@ -112,9 +112,16 @@ public class ChapterPageCountService(
                 var pages = 0;
                 foreach (var chapter in link.ToSourceChapters())
                 {
-                    var count = source is IPageCountSource counter
-                        ? await counter.CountPagesAsync(chapter, ct)
-                        : (await source.GetPagesAsync(chapter, ct)).Pages.Count;
+                    int count;
+                    if (source is IPageCountSource counter)
+                    {
+                        count = await counter.CountPagesAsync(chapter, ct);
+                    }
+                    else
+                    {
+                        using var resolved = await source.GetPagesAsync(chapter, ct);
+                        count = resolved.Pages.Count;
+                    }
                     if (count <= 0)
                     {
                         pages = 0;

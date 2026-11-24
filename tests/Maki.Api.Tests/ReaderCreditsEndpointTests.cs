@@ -441,7 +441,11 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         return JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value, Web);
     }
 
-    private CreditScanWorker Worker(Maki.Api.Jobs.ArtifactBuildGate? buildGate = null)
+    private CreditScanWorker Worker(
+        Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
+        PageTextReader? ocr = null,
+        Action<string>? dropCache = null,
+        Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null)
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
@@ -451,7 +455,11 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var settings = new FakeAppSettings();
         return new CreditScanWorker(scopes, settings, _credits, _store, _archives,
             new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance), _bank, _strips,
-            NullLogger<CreditScanWorker>.Instance, buildGate);
+            NullLogger<CreditScanWorker>.Instance, buildGate, ocr, upscaleQueue: upscaleQueue)
+        {
+            DropCache = dropCache ?? (_ => { }),
+            QuietPoll = TimeSpan.FromMilliseconds(25),
+        };
     }
 
     [Fact]
@@ -937,5 +945,132 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         await worker.RecheckBankAsync(default);
         Assert.Equal(CreditDetector.Version, (await RowAsync(shortChapter))!.DetectorVersion);
         Assert.Equal(0, await worker.RecheckBankAsync(default));
+    }
+
+    private sealed class PrepareCountingTextReader : IPageTextReader
+    {
+        public int Prepares;
+        public int Reads;
+
+        public bool Available => true;
+
+        public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
+        {
+            Interlocked.Increment(ref Reads);
+            return Task.FromResult<string?>("");
+        }
+
+        public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct) => ReadAsync(image, share, ct);
+
+        public Task PrepareAsync()
+        {
+            Interlocked.Increment(ref Prepares);
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task A_search_with_no_repeated_candidates_does_not_prepare_the_ocr_models()
+    {
+        var reader = new PrepareCountingTextReader();
+        _credits = Credits(reader);
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, Story(n, 8))).ToList();
+
+        var found = await FoundAsync(chapters[1]);
+
+        Assert.Equal(0, found.GetProperty("headPages").GetInt32());
+        Assert.Equal(0, found.GetProperty("tailPages").GetInt32());
+        Assert.Equal(0, reader.Prepares);
+        Assert.Equal(0, reader.Reads);
+    }
+
+    [Fact]
+    public async Task The_scan_drops_scanned_archives_from_page_cache_unless_recently_read()
+    {
+        var credit = Tinted(Noise(7, 90));
+        Enumerable.Range(1, 5).ToList().ForEach(n => AddChapter(n, [credit, .. Story(n, 8)]));
+        var readPath = Path.Combine(_root, "S", "c3.cbz");
+        await using (var _ = await _archives.OpenPageAsync(readPath, "001.png", default, forReader: false))
+        {
+        }
+
+        var dropped = new List<string>();
+        var worker = Worker(dropCache: dropped.Add);
+
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+
+        Assert.DoesNotContain(readPath, dropped);
+        foreach (var n in new[] { 1, 2, 4, 5 })
+        {
+            Assert.Contains(Path.Combine(_root, "S", $"c{n}.cbz"), dropped);
+        }
+    }
+
+    [Fact]
+    public async Task The_scan_releases_ocr_models_when_idle_unless_a_reader_is_active()
+    {
+        using var ocr = new PageTextReader(
+            NullLogger<PageTextReader>.Instance, Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var credit = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        await ocr.ReadAsync(credit, 0.2, default);
+
+        var worker = Worker(ocr: ocr);
+        Assert.True(worker.ReleaseOcrIfIdle());
+        Assert.False(worker.ReleaseOcrIfIdle());
+
+        // Reload and simulate a reader served a page: the scan must leave the models alone.
+        await ocr.ReadAsync(credit, 0.2, default);
+        AddChapter(1, Story(1, 8));
+        await using (var _ = await _archives.OpenPageAsync(Path.Combine(_root, "S", "c1.cbz"), "001.png", default, forReader: true))
+        {
+        }
+
+        Assert.False(worker.ReleaseOcrIfIdle());
+    }
+
+    [Fact]
+    public async Task The_scan_waits_while_upscaling_has_foreground_work()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.Replace(1, 1, "span-s", [new(new(1, slice.ArchiveVersion, 0, "span-s"), new(1, 0), slice)]);
+
+        var scan = Worker(upscaleQueue: upscaleQueue).ScanSeriesAsync(_seriesId, "en", default);
+        await Task.Delay(150);
+
+        Assert.False(scan.IsCompleted);
+        Assert.Null(await RowAsync(chapters[0]));
+
+        upscaleQueue.Cancel(1);
+        await scan.WaitAsync(TimeSpan.FromSeconds(30));
+        foreach (var chapter in chapters)
+        {
+            Assert.NotNull(await RowAsync(chapter));
+        }
+    }
+
+    [Fact]
+    public async Task The_scan_waits_while_upscaling_has_prepare_ahead_work()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var upscaleQueue = new Maki.Api.Services.Upscaling.UpscaleQueue();
+        var slice = new ReaderService.PageSlice(1, 1, "a.cbz", 1, ["001.png"], 0, 1, 1);
+        upscaleQueue.SetBackground([(new(1, slice.ArchiveVersion, 0, "span-s"), slice)]);
+
+        var scan = Worker(upscaleQueue: upscaleQueue).ScanSeriesAsync(_seriesId, "en", default);
+        await Task.Delay(150);
+
+        Assert.False(scan.IsCompleted);
+        Assert.Null(await RowAsync(chapters[0]));
+
+        upscaleQueue.Clear();
+        await scan.WaitAsync(TimeSpan.FromSeconds(30));
+        foreach (var chapter in chapters)
+        {
+            Assert.NotNull(await RowAsync(chapter));
+        }
     }
 }

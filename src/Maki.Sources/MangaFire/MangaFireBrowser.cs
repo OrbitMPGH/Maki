@@ -60,7 +60,7 @@ public sealed class MangaFireBrowser(
     /// </summary>
     public async Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
     {
-        if (_browser is null || _idle.Idle < idleFor)
+        if (_browser is null || (idleFor > TimeSpan.Zero && _idle.Idle < idleFor))
         {
             return false;
         }
@@ -75,16 +75,24 @@ public sealed class MangaFireBrowser(
 
         try
         {
-            if (_browser is null || _idle.Idle < idleFor)
+            if (_browser is null || (idleFor > TimeSpan.Zero && _idle.Idle < idleFor))
             {
                 return false;
             }
 
             var idle = _idle.Idle;
             await ShutdownAsync();
-            logger.LogInformation(
-                "Closed the MangaFire browser after {Minutes:F0} idle minute(s); it relaunches on next use",
-                idle.TotalMinutes);
+            if (idleFor > TimeSpan.Zero)
+            {
+                logger.LogInformation(
+                    "Closed the MangaFire browser after {Minutes:F0} idle minute(s); it relaunches on next use",
+                    idle.TotalMinutes);
+            }
+            else
+            {
+                logger.LogInformation("Closed the MangaFire browser; it relaunches on next use");
+            }
+
             return true;
         }
         finally

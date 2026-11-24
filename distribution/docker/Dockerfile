@@ -1,9 +1,7 @@
-# --platform=$BUILDPLATFORM pins these two build stages to the host's native architecture instead
-# of buildx's target platform(s). Both produce platform-independent output (static frontend
-# assets; framework-dependent .NET IL, no AOT/RID-specific publish), so building them per-target
-# would just run npm ci / dotnet publish twice for identical results — once natively, once again
-# under qemu emulation for the second platform. Only the final runtime stage below actually needs
-# to differ per architecture (it pulls a per-arch base image and installs native apt packages).
+# --platform=$BUILDPLATFORM pins the build stages to the host's native architecture instead of
+# buildx's target platform(s), so nothing builds under qemu emulation. Frontend produces
+# platform-independent assets once; backend cross-compiles ReadyToRun native code per TARGETARCH
+# via crossgen2 on the host architecture. Only the final runtime stage runs on TARGETPLATFORM.
 # ---- Frontend build ----
 FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 WORKDIR /src/frontend
@@ -34,7 +32,16 @@ RUN expected="$(ls -1d /src/locales/*/ | wc -l)" \
        fi
 
 # ---- Backend build ----
+# Framework-dependent ReadyToRun publish per TARGETARCH, cross-compiled natively on $BUILDPLATFORM
+# via crossgen2 (no qemu). Shipping precompiled native code inside the assemblies moves most code
+# pages from dirty anonymous JIT memory (rwxp) to clean file-backed pages that stay out of docker
+# stats and can be reclaimed by the kernel without swap. Combined with TieredCompilation=false in
+# Maki.Api.csproj, paired cold-cgroup runs measured 26 MiB less anonymous memory after a visit
+# (32 MiB at boot) and 7% less CPU, for about 60-70 MB more uncompressed assembly size.
+# A RID publish also places only the target architecture's native libraries (libvips, onnxruntime,
+# sqlite, pdfium) flat beside Maki.Api.dll instead of shipping ~225 MB of unused OS/arch folders.
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
+ARG TARGETARCH
 WORKDIR /src
 COPY Directory.Build.props ./
 COPY Maki.sln ./
@@ -47,8 +54,13 @@ COPY locales/ locales/
 
 # src/ is copied above, so this layer reruns on every code change; the mount is what makes that cheap.
 # publish needs the same mount because it reads the packages from that folder.
-RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
-    dotnet restore src/Maki.Api/Maki.Api.csproj
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages,sharing=locked \
+    case "$TARGETARCH" in \
+      amd64) rid=linux-x64 ;; \
+      arm64) rid=linux-arm64 ;; \
+      *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && dotnet restore src/Maki.Api/Maki.Api.csproj -r "$rid" /p:PublishReadyToRun=true
 
 # .dockerignore excludes .git, so the version cannot be derived from a tag in here. CI computes it
 # from the ref and passes it down. A plain `docker build` gets the -dev default from
@@ -57,8 +69,14 @@ RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
 # these as late as possible in each stage.
 ARG VERSION
 ARG SOURCE_COMMIT
-RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages \
-    dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
+RUN --mount=type=cache,id=maki-nuget,target=/root/.nuget/packages,sharing=locked \
+    case "$TARGETARCH" in \
+      amd64) rid=linux-x64 ;; \
+      arm64) rid=linux-arm64 ;; \
+      *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -r "$rid" --no-self-contained \
+      -o /app/publish /p:UseAppHost=false /p:PublishReadyToRun=true \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 # Same check for the other half of the catalogs: the EmbeddedResource item names each one
@@ -99,29 +117,6 @@ RUN if [ "$TARGETARCH" = "$BUILDARCH" ]; then \
       bash /libjxl/build.sh /out -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
         -DCMAKE_C_COMPILER=x86_64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=x86_64-linux-gnu-g++; \
     fi
-
-# ---- Trim unused native runtime assets ----
-# The backend publish above ran once on $BUILDPLATFORM with no RID, so NuGet's `runtimes/` folder
-# ships native assets for every OS/arch (ios, android, win, osx, ...) NuGet packages support, not
-# just the one linux-x64/linux-arm64 the runtime stage below actually runs on (~225 MB of dead
-# weight). A `RUN rm -rf` in the runtime stage itself would NOT shrink the image: Docker layers are
-# additive, so bytes deleted in a later layer still ship in the earlier COPY layer's blob. Instead
-# this throwaway stage does the COPY-then-delete, and the runtime stage COPYs its *resulting*
-# filesystem, which only carries the surviving files, not the deleted ones' history.
-FROM alpine:3.24 AS trimmed-publish
-ARG TARGETARCH
-COPY --from=backend /app/publish /app
-# Docnet.Core (pdfium, for reading PDFs in place) ships its x64 native library under
-# runtimes/linux/native, with no arch suffix, rather than runtimes/linux-x64 like everything
-# else, so amd64 has to keep both "linux-x64" and the suffix-less "linux" directory, or pdfium.so
-# is trimmed away and every PDF becomes unreadable on that architecture. arm64's copy is at the
-# normal runtimes/linux-arm64/native path and needs no extra keep.
-RUN case "$TARGETARCH" in \
-      amd64) keep="linux-x64 linux" ;; \
-      arm64) keep=linux-arm64 ;; \
-      *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
-    esac \
-    && find /app/runtimes -mindepth 1 -maxdepth 1 -type d $(for k in $keep; do echo "! -name $k"; done) -exec rm -rf {} +
 
 # ---- Headless browser ----
 # MangaFire's vrf request signature and TopManhua's image CDN only answer a real browser. Maki drives
@@ -187,7 +182,7 @@ RUN exe=$(find /ms-playwright -type f \( -name chrome-headless-shell -o -name he
 
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-COPY --from=trimmed-publish /app ./
+COPY --from=backend /app/publish ./
 # Flat beside Maki.Api.dll, where JpegXl looks; the libraries find each other through an $ORIGIN rpath.
 COPY --from=libjxl /out/ ./
 COPY THIRD_PARTY_NOTICES.md ./

@@ -1,10 +1,12 @@
 using Maki.Api.Services;
 using Maki.Core.Io;
 using Maki.Core.Sources;
+using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Ease;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.MangaBaka;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Quartz;
@@ -57,7 +59,10 @@ public class ArtifactIdleUnloadJob(
     SourceChapterListCache chapterLists,
     ILogger<ArtifactIdleUnloadJob> logger,
     RecommendationService? recommendations = null,
-    SimilarSeriesService? similarSeries = null) : IJob
+    SimilarSeriesService? similarSeries = null,
+    MangaBakaLocalStore? dump = null,
+    EfQueryCache? queryCache = null,
+    Action? collect = null) : IJob
 {
     public static readonly JobKey Key = new("artifact-idle-unload");
 
@@ -74,19 +79,22 @@ public class ArtifactIdleUnloadJob(
     /// <summary>Above the client's one-hour staleTime, so a Discover feed is never reset under a reader.</summary>
     private static readonly TimeSpan InteractivePoolIdleWindow = TimeSpan.FromHours(2);
 
+    /// <summary>Quiet period before dropping OS page cache accumulated on <c>mangabaka.db</c> by searches and lookups.</summary>
+    internal static readonly TimeSpan DumpPageCacheIdleWindow = TimeSpan.FromMinutes(30);
+
     public Task Execute(IJobExecutionContext context)
     {
         // Not an artifact, but the same kind of leftover: chapter lists the scout and measure
         // passes fetched, kept past their five-minute life until the cache filled up.
         chapterLists.DropExpired();
 
+        // EF Core's compiled queries left unused past their window (EfQueryCache). The background
+        // jobs query every 15 s, so this is swept on every tick rather than when the app is idle.
+        var cache = queryCache ?? EfQueryCache.Shared;
+        var queriesEvicted = cache.Sweep();
+
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
         var vectorMinutes = ResolveVector(Environment.GetEnvironmentVariable(VectorIdleMinutesVariable));
-        if (minutes <= 0 && vectorMinutes <= 0)
-        {
-            return Task.CompletedTask;
-        }
-
         var released = 0;
         if (minutes > 0)
         {
@@ -100,6 +108,11 @@ public class ArtifactIdleUnloadJob(
             var interactivePoolIdle = TimeSpan.FromMinutes(Math.Max(minutes, InteractivePoolIdleWindow.TotalMinutes));
             released += (recommendations?.ReleaseIdlePools(poolIdle, interactivePoolIdle) ?? 0) > 0 ? 1 : 0;
             released += (similarSeries?.ReleaseIdle(poolIdle) ?? 0) > 0 ? 1 : 0;
+            var dumpIdle = TimeSpan.FromMinutes(Math.Max(minutes, DumpPageCacheIdleWindow.TotalMinutes));
+            if (dump?.DropScanCacheIfIdle(dumpIdle) == true)
+            {
+                logger.LogDebug("Dropped idle MangaBaka dump page cache after {Minutes:F0} minute(s)", dumpIdle.TotalMinutes);
+            }
         }
 
         if (vectorMinutes > 0)
@@ -107,7 +120,7 @@ public class ArtifactIdleUnloadJob(
             released += vectors.ReleaseIfIdle(TimeSpan.FromMinutes(vectorMinutes)) ? 1 : 0;
         }
 
-        if (released > 0)
+        if (released > 0 || queriesEvicted >= EfQueryCache.MinEvictionsToCollect)
         {
             // Dropping the references only frees managed heap; without this the process keeps every
             // page and the number an operator actually watches does not move. Measured on a real
@@ -121,8 +134,12 @@ public class ArtifactIdleUnloadJob(
             // is not compacted by default, and these artifacts are mostly large arrays. Aggressive
             // also decommits the freed regions instead of keeping them for reuse: 127 MB less RSS
             // right after an unload than Forced, measured on WSL2, back to the fresh-start level.
-            NativeHeap.CollectAndTrim();
-            logger.LogDebug("Released {Count} idle discovery artifact(s)", released);
+            (collect ?? NativeHeap.CollectAndTrim)();
+            cache.Collected(queriesEvicted);
+            logger.LogDebug(
+                "Released {Count} idle discovery artifact(s) and {Queries} compiled EF Core quer(ies)",
+                released,
+                queriesEvicted);
         }
 
         return Task.CompletedTask;

@@ -79,10 +79,15 @@
   <!--
     TieredPGO off: the instrumented tier between tier0 and tier1 is extra JIT work and code that is
     never freed. Measured in paired runs: about 20% less CPU over cold artifact builds, recommendation
-    pools and searches, no step slower beyond noise (the vector index build within 2%), the same
-    credit scan time, and 20 to 25 MB less anonymous memory after a scan.
+    pools and searches, no step slower beyond noise, and 20 to 25 MB less anonymous memory after a scan.
+    TieredCompilation off for ReadyToRun publishes (Docker): avoids allocating duplicate Tier0/Tier1
+    copies and call-counting stubs on top of precompiled code. Measured in paired cold-cgroup Linux
+    runs on a 230-request visit: 26 MiB less anonymous memory after a visit (32 MiB at boot) with 7%
+    less total CPU and slightly faster startup. Plain IL native builds keep tiered compilation so
+    cold startup stays fast.
   -->
   <PropertyGroup>
+    <TieredCompilation Condition="'$(PublishReadyToRun)' == 'true'">false</TieredCompilation>
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
 

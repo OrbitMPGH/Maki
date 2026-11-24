@@ -396,7 +396,7 @@ public sealed class SourceComparePreviewService(
             var source = sourceRegistry.GetRequired(panel.SourceName);
 
             // Resolved here rather than at listing time: several sources hand back short-lived URLs.
-            var pages = await source.GetPagesAsync(target, ct);
+            using var pages = await source.GetPagesAsync(target, ct);
             if (pages.Pages.Count == 0)
             {
                 Fail(job, panel, "error.sourceMapping.compareNoPages");

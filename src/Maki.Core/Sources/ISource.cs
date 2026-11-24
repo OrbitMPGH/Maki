@@ -279,8 +279,18 @@ public record SourceChapter(
     bool Locked = false,
     int? PageCount = null);
 
-/// <summary>Resolved page list for a chapter.</summary>
-public record ChapterPages(IReadOnlyList<PageRequest> Pages);
+/// <summary>
+/// Resolved page list for a chapter. Dispose once the pages have been downloaded so any source that
+/// staged captured files to disk can delete them even if only a subset was read or the run cancelled.
+/// </summary>
+public sealed record ChapterPages(IReadOnlyList<PageRequest> Pages) : IDisposable
+{
+    private Action? _onDispose;
+
+    public ChapterPages(IReadOnlyList<PageRequest> Pages, Action? onDispose) : this(Pages) => _onDispose = onDispose;
+
+    public void Dispose() => Interlocked.Exchange(ref _onDispose, null)?.Invoke();
+}
 
 /// <summary>
 /// A single page image fetch. Headers carry Referer/User-Agent/cookie requirements
@@ -291,12 +301,14 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// in-page image fetch (e.g. TopManhua, blocked when re-requested by a plain client),
 /// so the bytes must be captured during that browser session, not re-fetched by URL.
 /// Fetch, when set, produces the page's bytes when the downloader writes it: for a source that has
-/// to fetch and descramble each page itself. Doing that inside GetPagesAsync held every page of the
-/// chapter in memory until the first was written.
+/// to fetch and descramble each page itself, or read a file already staged on disk. Set
+/// SkipCooldown to true when Fetch only reads local staged bytes so it does not wait on a source
+/// rate-limit cooldown.
 /// </summary>
 public record PageRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Headers = null,
     string? XorKeyHex = null,
     byte[]? Data = null,
-    Func<CancellationToken, Task<byte[]>>? Fetch = null);
+    Func<CancellationToken, Task<byte[]>>? Fetch = null,
+    bool SkipCooldown = false);

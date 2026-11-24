@@ -54,6 +54,9 @@ public sealed class ReaderCreditsCache(
     /// <summary>Searches and probes under way, including time spent waiting on the gate, reading text or saving.</summary>
     private int _active;
 
+    /// <summary>Whether any credit search or volume probe is currently running.</summary>
+    internal bool IsActive => Volatile.Read(ref _active) > 0;
+
     private void Touch() => Volatile.Write(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
 
     public bool ReleaseIfIdle(TimeSpan idleFor)
@@ -294,8 +297,6 @@ public sealed class ReaderCreditsCache(
     {
         var watch = Stopwatch.StartNew();
         var generation = notices.Generation;
-        // The models take a few hundred milliseconds to load; that happens while the edges decode.
-        _ = Task.Run(text.PrepareAsync);
         var slices = references.Prepend(chapter).ToList();
         var edges = new CreditDetector.Edges[slices.Count];
         var next = 0;

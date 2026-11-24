@@ -54,8 +54,16 @@ public sealed record PageConversionPassTotals(
 /// </summary>
 public class PageConversionWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger,
-    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null,
+    Maki.Sources.Common.HeadlessBrowserLauncher? browsers = null,
+    Maki.Api.Services.Upscaling.UpscaleQueue? upscaleQueue = null) : BackgroundService
 {
+    internal TimeSpan QuietPoll { get; set; } = TimeSpan.FromSeconds(2);
+
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
+        Maki.Api.Jobs.BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(Maki.Api.Jobs.BrowserIdleShutdownJob.IdleMinutesVariable));
+
     /// <summary>Kept free on the library volume, on top of the file being converted.</summary>
     public const long DiskReserveBytes = 1L << 30;
 
@@ -95,6 +103,28 @@ public class PageConversionWorker(
     // Bumped by every start and pause, so a run that outlives one (busy on a file while the wizard
     // pauses, saves and starts again) stops after that file instead of finishing under the old plan.
     private int _generation;
+    private TaskCompletionSource _generationChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private (int Generation, Task Changed) GenerationSnapshot()
+    {
+        lock (_sync)
+        {
+            return (_generation, _generationChanged.Task);
+        }
+    }
+
+    private void BumpGeneration()
+    {
+        TaskCompletionSource prev;
+        lock (_sync)
+        {
+            _generation++;
+            prev = _generationChanged;
+            _generationChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        prev.TrySetResult();
+    }
 
     // The file a run was busy with when it was stopped, decided by the old plan after the save's recheck ran.
     private int? _recheckFileId;
@@ -156,7 +186,7 @@ public class PageConversionWorker(
             _hold = PageConversionHold.None;
         }
 
-        Interlocked.Increment(ref _generation);
+        BumpGeneration();
         await settings.SetAsync(SettingKeys.PageConversionPass, "running", ct);
         Signal();
     }
@@ -175,7 +205,7 @@ public class PageConversionWorker(
 
     public async Task PauseAsync(CancellationToken ct)
     {
-        Interlocked.Increment(ref _generation);
+        BumpGeneration();
         if (await StateAsync(ct) == PageConversionPassState.Running)
         {
             await settings.SetAsync(SettingKeys.PageConversionPass, "paused", ct);
@@ -189,7 +219,7 @@ public class PageConversionWorker(
     /// </summary>
     public async Task PauseForSettingsAsync(PageConversionHold hold, CancellationToken ct)
     {
-        Interlocked.Increment(ref _generation);
+        BumpGeneration();
         if (await StateAsync(ct) == PageConversionPassState.Running)
         {
             await HoldAsync(hold, ct);
@@ -277,7 +307,7 @@ public class PageConversionWorker(
     /// </summary>
     internal async Task<bool> RunPassAsync(CancellationToken ct)
     {
-        var generation = Volatile.Read(ref _generation);
+        var (generation, generationChanged) = GenerationSnapshot();
         DateTime started;
         lock (_sync)
         {
@@ -358,6 +388,16 @@ public class PageConversionWorker(
                         return false;
                     }
 
+                    if (!await WaitForQuietAsync(ct, generationChanged) || Volatile.Read(ref _generation) != generation)
+                    {
+                        return true;
+                    }
+
+                    if (await StateAsync(ct) != PageConversionPassState.Running)
+                    {
+                        return false;
+                    }
+
                     lock (_sync)
                     {
                         _currentFile = file.RelativePath;
@@ -366,7 +406,6 @@ public class PageConversionWorker(
                     FileConversion result;
                     try
                     {
-                        if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                         using var fileScope = scopes.CreateScope();
                         using var converting = Converting(file.Id, file.RelativePath);
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
@@ -488,7 +527,7 @@ public class PageConversionWorker(
                 FileConversion result;
                 try
                 {
-                    if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
+                    await WaitForQuietAsync(ct);
                     using var fileScope = scopes.CreateScope();
                     using var converting = Converting(file.Id, file.RelativePath);
                     result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
@@ -511,6 +550,57 @@ public class PageConversionWorker(
                 }
             }
         }
+    }
+
+    private bool BrowserBlocking =>
+        browsers is { Running: > 0 } && ResolveBrowserIdleMinutes() > 0;
+
+    internal async Task<bool> WaitForQuietAsync(CancellationToken ct, Task? interrupt = null)
+    {
+        while (buildGate is { IsIdle: false } || BrowserBlocking ||
+               upscaleQueue is { HasForegroundWork: true } or { HasBackground: true } or { IsWorking: true })
+        {
+            if (interrupt is { IsCompleted: true })
+            {
+                return false;
+            }
+
+            if (interrupt is null)
+            {
+                if (buildGate is { IsIdle: false })
+                {
+                    await buildGate.WaitUntilIdleAsync(ct);
+                }
+                else
+                {
+                    await Task.Delay(QuietPoll, ct);
+                }
+
+                continue;
+            }
+
+            using var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var wait = buildGate is { IsIdle: false }
+                ? buildGate.WaitUntilIdleAsync(waitCts.Token)
+                : Task.Delay(QuietPoll, waitCts.Token);
+            if (await Task.WhenAny(wait, interrupt) == interrupt)
+            {
+                waitCts.Cancel();
+                try
+                {
+                    await wait;
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                }
+
+                return false;
+            }
+
+            await wait;
+        }
+
+        return interrupt is not { IsCompleted: true };
     }
 
     private Releaser Converting(int fileId, string path)

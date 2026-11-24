@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime;
 using Maki.Core.Images;
 using Maki.Core.Io;
+using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Ease;
@@ -103,6 +104,14 @@ public sealed class MemoryDiagnostics(
                 beforeTrim,
                 trims = NativeHeap.Trims,
                 vipsTrackedBytes = ImageCodecMemory.TrackedBytes
+            },
+            // EF Core's model and compiled queries (EfQueryCache). Entries are 10 each, the model 250.
+            efQueryCache = new
+            {
+                entries = EfQueryCache.Shared.Count,
+                modelEntries = EfQueryCache.Shared.Keys.Count(k => k is Microsoft.EntityFrameworkCore.Infrastructure.ModelCacheKey),
+                windowMinutes = EfQueryCache.Shared.SlidingWindow?.TotalMinutes,
+                pendingEvictions = EfQueryCache.Shared.PendingEvictions
             },
             artifacts = new object[]
             {

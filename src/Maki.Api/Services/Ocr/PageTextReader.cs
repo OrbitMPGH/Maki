@@ -76,13 +76,6 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     private const double TileWidths = 2.0;
     private const double TileStep = 1.8;
 
-    /// <summary>
-    /// Measured on 300 real regions (2026-11-13, dev machine, 4 threads): without the arena a read took
-    /// 471 ms at the median and the process held 187 MB; with it, 197 ms and 698 MB; with it and this
-    /// shrinkage, 201 ms and 182 MB.
-    /// </summary>
-    private static readonly RunOptions ShrinkAfterRun = CreateShrinkAfterRun();
-
     private static readonly float[] DetectionMean = [0.485f, 0.456f, 0.406f];
     private static readonly float[] DetectionStd = [0.229f, 0.224f, 0.225f];
 
@@ -179,14 +172,22 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
 
         try
         {
-            if (_models is null || DateTime.UtcNow - _lastUsedUtc < idleFor)
+            if (_models is null || (idleFor > TimeSpan.Zero && DateTime.UtcNow - _lastUsedUtc < idleFor))
             {
                 return false;
             }
 
             _models.Dispose();
             _models = null;
-            _logger.LogInformation("Unloaded the OCR models after {Minutes:F0} idle minute(s)", idleFor.TotalMinutes);
+            if (idleFor > TimeSpan.Zero)
+            {
+                _logger.LogInformation("Unloaded the OCR models after {Minutes:F0} idle minute(s)", idleFor.TotalMinutes);
+            }
+            else
+            {
+                _logger.LogDebug("Unloaded the OCR models");
+            }
+
             return true;
         }
         finally
@@ -200,13 +201,6 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         _models?.Dispose();
         _models = null;
         _gate.Dispose();
-    }
-
-    private static RunOptions CreateShrinkAfterRun()
-    {
-        var options = new RunOptions();
-        options.AddRunConfigEntry("memory.enable_memory_arena_shrinkage", "cpu:0");
-        return options;
     }
 
     private Models? Load()
@@ -226,10 +220,11 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         {
             // Two threads cost 20% less CPU than four for 12% longer reads (identical text); almost
             // every read is the background scan's, and a reader's cold search does at most a few.
+            // Keep the CPU arena enabled: turning it off slows reads ~2.4x (471 ms vs 197 ms). The
+            // arena memory (~56 MiB) is returned when the sessions dispose, which CreditScanWorker
+            // now does as soon as a scan pass goes idle (and ArtifactIdleUnloadJob after 1 minute).
             using var options = OnnxMemoryOptions.Create(
                 intraOpThreads: Math.Clamp(Environment.ProcessorCount / 2, 1, 2), fixedShapes: false);
-            // Unlike the embedder and the upscaler, these models run about 2.5 times faster with the
-            // arena; ShrinkAfterRun hands its memory back after every run, so nothing is held between reads.
             options.EnableCpuMemArena = true;
             det = new InferenceSession(detection, options);
             rec = new InferenceSession(recognition, options);
@@ -337,7 +332,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
 
         // The map is read where ORT wrote it, so the results stay alive to the end: a copy was 5 MB of LOH a page.
         using var results = models.Detection.Run(
-            [NamedOnnxValue.CreateFromTensor(models.DetectionInput, input)], models.Detection.OutputNames, ShrinkAfterRun);
+            [NamedOnnxValue.CreateFromTensor(models.DetectionInput, input)], models.Detection.OutputNames);
         var output = results[0].AsTensor<float>();
         var mapH = output.Dimensions[2];
         var mapW = output.Dimensions[3];
@@ -543,7 +538,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             }
 
             using var output = models.Recognition.Run(
-                [NamedOnnxValue.CreateFromTensor(models.RecognitionInput, input)], models.Recognition.OutputNames, ShrinkAfterRun);
+                [NamedOnnxValue.CreateFromTensor(models.RecognitionInput, input)], models.Recognition.OutputNames);
             var probs = output[0].AsTensor<float>();
             var steps = probs.Dimensions[1];
             var classes = probs.Dimensions[2];

@@ -3,6 +3,7 @@ using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Maki.Data;
@@ -314,9 +315,21 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     }
 
     // Here rather than at the AddDbContext call so the design-time factory and every test that
-    // builds its own options get the same connection pragmas as the app.
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+    // builds its own SQLite options get the same connection pragmas and query cache as the app.
+    // Non-SQLite providers or contexts with a custom InternalServiceProvider keep their own cache
+    // because EF's default ModelCacheKey keys only on context type and design-time flag.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
         optionsBuilder.AddInterceptors(SqlitePragmaInterceptor.Instance);
+        var core = optionsBuilder.Options.FindExtension<CoreOptionsExtension>();
+        if (core?.MemoryCache is null
+            && core?.InternalServiceProvider is null
+            && optionsBuilder.Options.Extensions.Any(e =>
+                e.Info.IsDatabaseProvider && e.GetType().Name.Contains("Sqlite", StringComparison.Ordinal)))
+        {
+            optionsBuilder.UseMemoryCache(EfQueryCache.Shared);
+        }
+    }
 
     private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
         v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,

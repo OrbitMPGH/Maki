@@ -85,7 +85,11 @@ public class PageDownloader(
         }
         else if (page.Fetch != null)
         {
-            await cooldown.WaitAsync(sourceName, ct);
+            if (!page.SkipCooldown)
+            {
+                await cooldown.WaitAsync(sourceName, ct);
+            }
+
             await File.WriteAllBytesAsync(temp, await page.Fetch(ct), ct);
         }
         else

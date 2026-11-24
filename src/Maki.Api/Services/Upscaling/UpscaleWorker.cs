@@ -1,8 +1,10 @@
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Core.Configuration;
 using Maki.Core.Images.Upscaling;
 using Maki.Core.Io;
+using Maki.Sources.Common;
 
 namespace Maki.Api.Services.Upscaling;
 
@@ -27,9 +29,17 @@ public sealed class UpscaleWorker(
     AppPaths paths,
     IAppSettings settings,
     EventBroadcaster broadcaster,
-    ILogger<UpscaleWorker> logger) : BackgroundService
+    ILogger<UpscaleWorker> logger,
+    ArtifactBuildGate? buildGate = null,
+    HeadlessBrowserLauncher? browsers = null) : BackgroundService
 {
     private static readonly TimeSpan IdleWait = TimeSpan.FromMinutes(1);
+
+    internal TimeSpan BackgroundYieldWait { get; set; } = TimeSpan.FromSeconds(2);
+
+    internal Func<int> ResolveBrowserIdleMinutes { get; set; } = static () =>
+        BrowserIdleShutdownJob.Resolve(
+            Environment.GetEnvironmentVariable(BrowserIdleShutdownJob.IdleMinutesVariable));
 
     private Task _finishing = Task.CompletedTask;
     private UpscaleWorkKey? _finishingKey;
@@ -73,7 +83,19 @@ public sealed class UpscaleWorker(
                         ReleaseMemory();
                     }
 
-                    await queue.WaitAsync(IdleWait, stoppingToken);
+                    if (queue.HasBackground)
+                    {
+                        if (!ShouldYieldBackground())
+                        {
+                            continue;
+                        }
+
+                        await queue.WaitAsync(BackgroundYieldWait, stoppingToken);
+                    }
+                    else
+                    {
+                        await queue.WaitAsync(IdleWait, stoppingToken);
+                    }
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -103,6 +125,15 @@ public sealed class UpscaleWorker(
     }
 
     /// <summary>
+    /// Prepare-ahead yields while an artifact build or headless browser is active so background
+    /// upscaling never stacks on top of them. Page conversion yields to prepare-ahead instead, so
+    /// a long conversion pass never starves whoever is reading. Foreground reader requests never yield.
+    /// </summary>
+    internal bool ShouldYieldBackground() =>
+        buildGate is { IsIdle: false } ||
+        (browsers is { Running: > 0 } && ResolveBrowserIdleMinutes() > 0);
+
+    /// <summary>
     /// Runs the next job's tiles, waits for the previous page's finish, then starts this one's in the
     /// background (<see cref="Finishing"/>). False when there was nothing to run.
     /// </summary>
@@ -115,7 +146,7 @@ public sealed class UpscaleWorker(
             return false;
         }
 
-        var job = queue.TryDequeue();
+        var job = queue.TryDequeue(allowBackground: !ShouldYieldBackground());
         if (job is null)
         {
             return false;

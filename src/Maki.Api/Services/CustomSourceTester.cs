@@ -96,29 +96,38 @@ public static class CustomSourceTester
             return new Report(false, steps);
         }
 
-        IReadOnlyList<PageRequest> pages = [];
-        steps.Add(await RunStep("pages", ct, async () =>
+        ChapterPages? chapterPages = null;
+        try
         {
-            pages = (await source.GetPagesAsync(sample, ct)).Pages;
-            return (null, new { count = pages.Count, chapter = Summary(sample), first = pages.Take(3).Select(p => p.Url).ToList() });
-        }));
-
-        if (pages.Count == 0)
-        {
-            steps.Add(new Step("image", "skipped"));
-        }
-        else
-        {
-            steps.Add(await RunStep("image", ct, async () =>
+            IReadOnlyList<PageRequest> pages = [];
+            steps.Add(await RunStep("pages", ct, async () =>
             {
-                var first = pages[0];
-                var bytes = first.Fetch is { } fetch
-                    ? await fetch(ct)
-                    : await source.FetchImageAsync(first.Url, first.Headers ?? new Dictionary<string, string>(), ct);
-                var format = Sniff(bytes);
-                var detail = new { bytes = bytes.Length, format };
-                return format is null ? ("error.customSource.test.notAnImage", detail) : (null, detail);
+                chapterPages = await source.GetPagesAsync(sample, ct);
+                pages = chapterPages.Pages;
+                return (null, new { count = pages.Count, chapter = Summary(sample), first = pages.Take(3).Select(p => p.Url).ToList() });
             }));
+
+            if (pages.Count == 0)
+            {
+                steps.Add(new Step("image", "skipped"));
+            }
+            else
+            {
+                steps.Add(await RunStep("image", ct, async () =>
+                {
+                    var first = pages[0];
+                    var bytes = first.Fetch is { } fetch
+                        ? await fetch(ct)
+                        : await source.FetchImageAsync(first.Url, first.Headers ?? new Dictionary<string, string>(), ct);
+                    var format = Sniff(bytes);
+                    var detail = new { bytes = bytes.Length, format };
+                    return format is null ? ("error.customSource.test.notAnImage", detail) : (null, detail);
+                }));
+            }
+        }
+        finally
+        {
+            chapterPages?.Dispose();
         }
 
         return new Report(steps.All(s => s.Status != "failed"), steps);

@@ -433,11 +433,48 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         }
     }
 
+    /// <summary>Whether any reader has a page queued or running right now.</summary>
+    public bool HasForegroundWork
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _lanes.Count > 0 || _jobs.Values.Any(j => j.Working && j.Waiters.Count > 0);
+            }
+        }
+    }
+
+    /// <summary>Whether any upscale job (foreground or prepare-ahead) is running right now.</summary>
+    public bool IsWorking
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _jobs.Values.Any(j => j.Working);
+            }
+        }
+    }
+
+    /// <summary>Whether prepare-ahead pages are waiting to run.</summary>
+    public bool HasBackground
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _background.Count > 0;
+            }
+        }
+    }
+
     /// <summary>
     /// The next job: one page from the next user in turn, from the lane <see cref="NextReader"/> picks
-    /// among theirs, else the next page of the prepare-ahead list. Null when nothing is waiting.
+    /// among theirs, else the next page of the prepare-ahead list when <paramref name="allowBackground"/>
+    /// is true. Null when nothing eligible is waiting.
     /// </summary>
-    public UpscaleJob? TryDequeue()
+    public UpscaleJob? TryDequeue(bool allowBackground = true)
     {
         lock (_gate)
         {
@@ -502,7 +539,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                 return picked;
             }
 
-            return NextBackground();
+            return allowBackground ? NextBackground() : null;
         }
     }
 
