@@ -193,6 +193,59 @@ export const ContinuousTapMovesAScreen: Story = {
   },
 }
 
+export const AdaptiveScrolling: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [
+      withManifest({
+        ...chapters[3040],
+        pageVersion: 'adaptive-scrolling',
+        prefs: { ...chapters[3040].prefs, fit: 'width', maxWidth: 400, adaptiveScroll: true, chapterBanner: false },
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const first = await canvas.findByRole<HTMLImageElement>('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const height = surface.clientHeight
+    await waitFor(() => expect(first.naturalHeight).toBe(3200))
+    await waitFor(() => expect(first).toHaveAttribute('data-loaded', 'true'))
+    // Let the reader's pending idle work sample the first strip before asking it to snap.
+    await new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 200 }))
+    const start = surface.scrollTop
+
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(surface.scrollTop - start).toBeGreaterThan(600))
+    await expect(surface.scrollTop - start).toBeLessThan(630)
+    await expect(surface.scrollTop - start).toBeLessThan(height * 0.85)
+    await userEvent.keyboard('{PageUp}')
+    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(start, 0))
+
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
+    surface.scrollTop = start + 1350 - height * 0.91
+    const beforeLongTurn = surface.scrollTop
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(surface.scrollTop - start).toBeGreaterThan(1350))
+    await expect(surface.scrollTop - start).toBeLessThan(1390)
+    const secondStop = surface.scrollTop
+    await expect(secondStop - beforeLongTurn).toBeGreaterThan(height * 0.85)
+
+    await userEvent.keyboard('{PageUp}')
+    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(beforeLongTurn, 0))
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(surface.scrollTop).toBeCloseTo(secondStop, 0))
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(Math.abs(surface.scrollTop - secondStop - height * 0.85)).toBeLessThan(2))
+
+    // A wheel interruption clears the previous stop. The next turn up must find its own gutter.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -1 }))
+    surface.scrollTop = start + 1280
+    await userEvent.keyboard('{PageUp}')
+    await waitFor(() => expect(surface.scrollTop + height - start).toBeLessThan(1390))
+    await expect(surface.scrollTop + height - start).toBeGreaterThan(1350)
+  },
+}
+
 const recapEndsAt = http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: 4, offset: 0.5 }))
 
 /** A chapter opening with the previous chapter's last pages offers to skip them, and scrolls past them when asked. */

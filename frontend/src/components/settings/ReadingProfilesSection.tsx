@@ -99,6 +99,7 @@ export function ReadingProfilesSection() {
     'skip-recap',
     'hide-credit-pages',
     'progress-rail',
+    'adaptive-scrolling',
     'page-backgrounds',
     'tap-zone-layouts',
     'max-page-width',
@@ -145,7 +146,7 @@ export function ReadingProfilesSection() {
         </SettingsRowsBlock>
       )}
 
-      <div {...mark}>
+      <div id="setting-adaptive-scrolling" {...mark}>
         <SettingsRows>
           <DefaultRow />
           {(profiles ?? []).map((profile) => (
@@ -625,6 +626,18 @@ function ProfileEditor({
         description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
         checked={prefs.progressRail}
         onChange={(e) => set({ progressRail: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={
+          <>
+            {t`Adaptive scrolling`}
+            <NewSettingPill id="adaptive-scrolling" />
+          </>
+        }
+        description={t`In Continuous, screen turns look for gaps between panels.`}
+        checked={prefs.adaptiveScroll ?? false}
+        onChange={(e) => set({ adaptiveScroll: e.currentTarget.checked })}
       />
       <Switch
         size="sm"

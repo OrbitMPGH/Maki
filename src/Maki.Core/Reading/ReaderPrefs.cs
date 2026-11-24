@@ -100,6 +100,7 @@ public record ReaderPrefsSpec(
     bool AutoSkipRecap = false,
     /// <summary>In continuous mode, show the chapter's progress as a rail down the screen's edge that can be dragged to seek.</summary>
     bool ProgressRail = false,
+    bool AdaptiveScroll = false,
     /// <summary>
     /// How Single and Double divide the page into tap zones: <c>sides</c>, <c>l-shape</c>,
     /// <c>kindle</c> or <c>edges</c>. Laid out for left-to-right; the reader mirrors them for right-to-left.

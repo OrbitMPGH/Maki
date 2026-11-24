@@ -945,26 +945,59 @@ export default function ReaderPage() {
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage, settling, splitting, half, wide])
 
   /** Continuous mode's page turn: about a screen down or up, or on into the next or previous chapter at either end. */
-  const stripStep = useRef<{ top: number; at: number } | null>(null)
+  const stripStep = useRef<{
+    from: number
+    top: number
+    at: number
+    max: number
+    width: number
+    height: number
+  } | null>(null)
+  const clearStripStep = useCallback(() => { stripStep.current = null }, [])
+  useEffect(() => {
+    clearStripStep()
+  }, [clearStripStep, surface, shownUrls, seekVersion, zoom, fit, lastCut, prefs.adaptiveScroll, autoScroll, atEnd])
+  useEffect(() => {
+    if (!surface) return
+    surface.addEventListener('wheel', clearStripStep, { passive: true })
+    surface.addEventListener('touchmove', clearStripStep, { passive: true })
+    return () => {
+      surface.removeEventListener('wheel', clearStripStep)
+      surface.removeEventListener('touchmove', clearStripStep)
+    }
+  }, [surface, clearStripStep])
+
   const stepStrip = useCallback(
     (direction: 1 | -1) => {
       if (!surface) return
-      const max = surface.scrollHeight - surface.clientHeight
-      const chained = stripStep.current && performance.now() - stripStep.current.at < STRIP_STEP_CHAIN_MS
-      const from = chained ? stripStep.current!.top : surface.scrollTop
+      const { clientHeight: height, clientWidth: width, scrollTop } = surface
+      const max = surface.scrollHeight - height
+      const now = performance.now()
+      const last = stripStep.current
+      const sameLayout = last && last.height === height && last.width === width && last.max === max
+      const arrived = sameLayout && Math.abs(scrollTop - last.top) <= STRIP_BOTTOM_EPSILON
+      const chained = sameLayout && now - last.at < STRIP_STEP_CHAIN_MS &&
+        scrollTop >= Math.min(last.from, last.top) - STRIP_BOTTOM_EPSILON &&
+        scrollTop <= Math.max(last.from, last.top) + STRIP_BOTTOM_EPSILON
+      const from = chained ? last.top : scrollTop
       if (direction > 0 && from >= max - STRIP_BOTTOM_EPSILON) {
+        clearStripStep()
         continuousPastEnd()
         return
       }
       if (direction < 0 && from <= 0) {
+        clearStripStep()
         if (manifest?.previousChapterId != null && !settling()) void goToChapter(manifest.previousChapterId, false, true)
         return
       }
-      const top = Math.min(max, Math.max(0, from + direction * surface.clientHeight * STRIP_STEP_SHARE))
-      stripStep.current = { top, at: performance.now() }
+      const fallback = Math.min(max, Math.max(0, from + direction * height * STRIP_STEP_SHARE))
+      const reversing = prefs.adaptiveScroll && (arrived || chained) && (last.top - last.from) * direction < 0
+      const top = reversing ? last.from
+        : (prefs.adaptiveScroll ? stripTracker.gutterTarget?.(from, direction, fallback, max) : null) ?? fallback
+      stripStep.current = { from, top, at: now, max, width, height }
       surface.scrollTo({ top, behavior: scrollBehavior() })
     },
-    [surface, continuousPastEnd, manifest, goToChapter, settling],
+    [surface, continuousPastEnd, manifest, goToChapter, settling, clearStripStep, prefs.adaptiveScroll, stripTracker],
   )
 
   const toggleAutoScroll = useCallback(() => {
@@ -1463,6 +1496,8 @@ export default function ReaderPage() {
               onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
               tracker={stripTracker}
+              adaptiveScroll={prefs.adaptiveScroll}
+              onRailSeek={clearStripStep}
               lastCut={lastCut}
               zoom={zoom}
             />

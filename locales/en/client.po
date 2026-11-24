@@ -3960,6 +3960,12 @@ msgstr "Activity log"
 msgid "Adaptation"
 msgstr "Adaptation"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
+msgid "Adaptive scrolling"
+msgstr "Adaptive scrolling"
+
 #: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -11091,6 +11097,11 @@ msgstr "In Continuous a band at the top goes back and one at the bottom goes for
 msgid "In Continuous, jumps past the part of the previous chapter that this one repeats."
 msgstr "In Continuous, jumps past the part of the previous chapter that this one repeats."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, screen turns look for gaps between panels."
+msgstr "In Continuous, screen turns look for gaps between panels."
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, the top and bottom move a screen."
 msgstr "In Continuous, the top and bottom move a screen."
@@ -16169,6 +16180,11 @@ msgstr "Page transitions"
 #: src/lib/shortcutLabels.ts
 msgid "Page Up"
 msgstr "Page Up"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page up, page down, screen turns, panels, gutters"
+msgstr "page up, page down, screen turns, panels, gutters"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts

@@ -22,6 +22,7 @@ export interface StripTracker {
   subscribe: (listener: () => void) => () => void
   /** Scrolls the strip so `progress` sits in the middle of the screen. Null while no strip is mounted. */
   seek: ((progress: number) => void) | null
+  gutterTarget: ((from: number, direction: 1 | -1, fallback: number, max: number) => number) | null
 }
 
 export function createStripTracker(): StripTracker {
@@ -46,6 +47,7 @@ export function createStripTracker(): StripTracker {
       }
     },
     seek: null,
+    gutterTarget: null,
   }
 }
 

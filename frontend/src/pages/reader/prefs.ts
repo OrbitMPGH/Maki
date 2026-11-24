@@ -69,6 +69,7 @@ export interface ReaderPrefs {
   autoSkipRecap: boolean
   /** In Continuous, show the chapter's progress as a rail down the screen's edge that can be dragged to seek. */
   progressRail: boolean
+  adaptiveScroll: boolean
   /** How the page divides into tap zones in Single and Double. */
   tapLayout: TapLayout
   /** The side zones' share of the page, in percent. */
@@ -135,6 +136,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceWholeChapter: false,
   autoSkipRecap: false,
   progressRail: false,
+  adaptiveScroll: false,
   tapLayout: 'sides',
   tapWidth: 33,
   tapInvert: false,

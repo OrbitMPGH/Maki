@@ -4883,6 +4883,12 @@ msgstr "Etkinlik günlüğü"
 msgid "Adaptation"
 msgstr "Uyarlama"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
+msgid "Adaptive scrolling"
+msgstr ""
+
 #: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -13641,6 +13647,11 @@ msgstr "Sürekli modda üstteki bir şerit geri, alttaki ileri gider. Düzenler 
 msgid "In Continuous, jumps past the part of the previous chapter that this one repeats."
 msgstr "Sürekli modda, bu bölümün tekrar ettiği önceki bölüm kısmını atlar."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, screen turns look for gaps between panels."
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "In Continuous, the top and bottom move a screen."
@@ -19887,6 +19898,11 @@ msgstr "Sayfa geçişleri"
 #, fuzzy
 msgid "Page Up"
 msgstr "Page Up"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page up, page down, screen turns, panels, gutters"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
