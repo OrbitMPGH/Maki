@@ -186,11 +186,14 @@ export function useStripGutters(
       const coverage: StripBand[] = []
       const gutters: StripBand[] = []
       let previousGutterAtEnd = false
+      let previousSampledAtEnd = false
       for (let i = 0; i < pages.length; i++) {
         const { item, tiles } = pages[i]
         const previous = pages[i - 1]?.item
         let gutterAtStart = false
         let gutterAtEnd = false
+        let sampledAtStart = false
+        let sampledAtEnd = false
         const project = (band: StripBand) => ({
           top: item.top + band.top * item.height,
           bottom: Math.min(item.bottom, item.top + band.bottom * item.height),
@@ -201,6 +204,8 @@ export function useStripGutters(
           const range = project(sample)
           if (range.bottom <= range.top) continue
           coverage.push(range)
+          sampledAtStart ||= range.top <= item.top + 1
+          sampledAtEnd ||= range.bottom >= item.bottom - 1
           for (const gutter of sample.gutters) {
             const band = project(gutter)
             if (band.bottom <= band.top) continue
@@ -209,13 +214,15 @@ export function useStripGutters(
             gutterAtEnd ||= band.bottom >= item.bottom - 1
           }
         }
-        if (previous?.index === item.index - 1 && previous.bottom < item.top) {
+        // An unsampled side of the gap may be art, so the gap only counts once both sides are known.
+        if (previous?.index === item.index - 1 && previous.bottom < item.top && previousSampledAtEnd && sampledAtStart) {
           const displayGap = { top: previous.bottom, bottom: item.top }
           coverage.push(displayGap)
           // A display gap extends a gutter when both images are blank at the join.
           if (previousGutterAtEnd && gutterAtStart) gutters.push(displayGap)
         }
         previousGutterAtEnd = gutterAtEnd
+        previousSampledAtEnd = sampledAtEnd
       }
       const first = pages[0]?.item
       const last = pages.at(-1)?.item

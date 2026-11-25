@@ -248,13 +248,23 @@ export const AdaptiveScrolling: Story = {
     await userEvent.keyboard('{PageUp}')
     await at(secondStop)
 
-    // The tall panel cannot fit. Its end is just beyond a screen turn from this position.
+    // The tall panel cannot fit. Aligning its end from here would skip art below the screen, so the turn is the plain step.
     surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
     const tallEnd = start + 4240 + adaptivePageGap * 5
-    surface.scrollTop = tallEnd - height * 2 - 40
+    const farFromEnd = tallEnd - height * 2 - 40
+    surface.scrollTop = farFromEnd
+    await warm(4, 5, 6)
+    await userEvent.keyboard('{PageDown}')
+    await at(farFromEnd + height * 0.85)
+
+    // With the end inside the next screen, the turn lines it up without passing the old bottom edge.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
+    const nearEnd = tallEnd - height * 1.6
+    surface.scrollTop = nearEnd
     await warm(4, 5, 6)
     await userEvent.keyboard('{PageDown}')
     await at(tallEnd + 7 - height)
+    await expect(surface.scrollTop).toBeLessThanOrEqual(nearEnd + height)
   },
 }
 
