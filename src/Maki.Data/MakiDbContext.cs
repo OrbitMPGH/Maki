@@ -117,6 +117,16 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
+    public IQueryable<StatsEvent> VisibleStatsEvents() =>
+        StatsEvents.Where(e => e.SeriesId == null
+            ? !e.HiddenAfterRemoval
+            : !Series.IgnoreQueryFilters().Any(s => s.Id == e.SeriesId && s.Incognito == IncognitoMode.Full));
+
+    public IQueryable<ReadingSession> VisibleReadingSessions() =>
+        ReadingSessions.Where(r => r.SeriesId == null
+            ? !r.HiddenAfterRemoval
+            : !Series.IgnoreQueryFilters().Any(s => s.Id == r.SeriesId && s.Incognito == IncognitoMode.Full));
+
     public override int SaveChanges()
     {
         StampOwner();
@@ -1111,8 +1121,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
         modelBuilder.Entity<ReadingSession>(e =>
         {
-            e.HasIndex(s => new { s.UserId, s.EndedAt });
+            e.HasIndex(s => new { s.UserId, s.SeriesId, s.EndedAt });
             e.HasIndex(s => new { s.UserId, s.StartedAt });
+            e.HasIndex(s => s.SeriesKey);
+            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });

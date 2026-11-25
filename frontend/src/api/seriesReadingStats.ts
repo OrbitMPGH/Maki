@@ -9,7 +9,7 @@ export interface SeriesReadingStats {
   chapterMedianSeconds: number | null
   /** The same median over your other series read the same way (paged or scrolling). */
   elsewhereMedianSeconds: number | null
-  /** Zero for a fully incognito series, whose time never reaches the activity log. */
+  /** Zero while a series is fully incognito. */
   sittings: number
   firstReadAt: string
   lastReadAt: string

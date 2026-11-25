@@ -23,7 +23,7 @@ public class ReadingSessionBackfillService(MakiDbContext db, ILogger<ReadingSess
             return;
         }
 
-        var userIds = await db.StatsEvents.IgnoreQueryFilters()
+        var userIds = await db.VisibleStatsEvents().IgnoreQueryFilters()
             .Where(e => e.Type == StatsEventType.ReadingTime && e.UserId != null)
             // A row for a user that no longer exists would fail the session's foreign key.
             .Where(e => db.Users.Any(u => u.Id == e.UserId))
@@ -39,7 +39,7 @@ public class ReadingSessionBackfillService(MakiDbContext db, ILogger<ReadingSess
                 continue;
             }
 
-            var events = await db.StatsEvents.IgnoreQueryFilters().AsNoTracking()
+            var events = await db.VisibleStatsEvents().IgnoreQueryFilters().AsNoTracking()
                 .Where(e => e.Type == StatsEventType.ReadingTime && e.UserId == userId && e.Value > 0)
                 .OrderBy(e => e.Timestamp)
                 .Select(e => new { e.Timestamp, e.Value })

@@ -63,7 +63,7 @@ public class StatsStandingService(
         // so both grant sets are in the key: a revoked folder must not survive in the cache.
         var callerAccess = ReadingBehaviourService.AccessKey(currentUser.AllRootFolders, currentUser.RootFolderIds);
         var targetAccess = await behaviour.AccessKeyAsync(userId, targetAllRootFolders, ct);
-        var key = $"standing:{currentUser.UserId}:{callerAccess}:{userId}:{targetAccess}";
+        var key = $"standing:{currentUser.UserId}:{callerAccess}:{userId}:{targetAccess}:{StatsEventService.VisibilityVersion}";
         if (cache.TryGetValue<StatsStandingDto>(key, out var hit) && hit is not null)
         {
             return hit;

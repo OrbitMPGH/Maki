@@ -1079,7 +1079,7 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task AFullyIncognitoSeriesLogsNoTimeAndBanksNoBacklog()
+    public async Task AFullyIncognitoSeriesStoresReadingTimeWithoutShowingIt()
     {
         var (seriesId, chapters) = SeedFromCbz("hidden.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
         using (var db = _db.NewContext())
@@ -1092,10 +1092,11 @@ public sealed class ReaderServiceTests : IDisposable
         var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
         await reader.SaveProgressAsync(slice!, 0, null, new(400, false), CancellationToken.None);
 
-        Assert.Empty(Events());
-        // Reported keeps pace with the total, so taking the series back out of incognito can't
-        // dump the hidden backlog into Rewind on the next page turn.
+        var readingTime = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ReadingTime, readingTime.Type);
+        Assert.Equal(400, readingTime.Value);
         using var db2 = _db.NewContext();
+        Assert.Empty(db2.VisibleStatsEvents());
         var row = db2.ChapterProgress.Single();
         Assert.Equal(400, row.ReadSeconds);
         Assert.Equal(400, row.ReportedSeconds);
@@ -1178,7 +1179,7 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task AFullyIncognitoSeriesOpensNoSession()
+    public async Task AFullyIncognitoSeriesStoresItsSessionAndChapterCompletion()
     {
         var (seriesId, chapters) = SeedFromCbz("hiddensit.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
         using (var db = _db.NewContext())
@@ -1191,7 +1192,14 @@ public sealed class ReaderServiceTests : IDisposable
         var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
         await reader.SaveProgressAsync(slice!, 1, null, new(120, true), CancellationToken.None);
 
-        Assert.Empty(Sessions());
+        var session = Assert.Single(Sessions());
+        Assert.Equal(seriesId, session.SeriesId);
+        Assert.Equal(120, session.ActiveSeconds);
+        Assert.Equal(1, session.ChaptersCompleted);
+        Assert.Contains(Events(), e => e.Type == StatsEventType.ChaptersRead && e.SeriesId == seriesId);
+        using var db2 = _db.NewContext();
+        Assert.Empty(db2.VisibleStatsEvents());
+        Assert.Empty(db2.VisibleReadingSessions());
     }
 
     [Fact]

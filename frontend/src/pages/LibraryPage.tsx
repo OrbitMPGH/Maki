@@ -2913,7 +2913,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   method: 'POST',
                   body: JSON.stringify({ mode }),
                 }),
-              )
+              ).then(() => {
+                if (setting === 'Incognito') {
+                  void queryClient.invalidateQueries({ queryKey: ['stats'] })
+                  void queryClient.invalidateQueries({ queryKey: ['progress'] })
+                }
+              })
             }}
           >
             <Trans>Apply</Trans>

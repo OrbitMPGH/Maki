@@ -10,15 +10,21 @@ public sealed class ReadingSessionServiceTests : IDisposable
 
     private readonly TestDb _db = new();
     private readonly int _user;
+    private readonly int _series;
 
-    public ReadingSessionServiceTests() => _user = _db.SeedUser("sitter");
+    public ReadingSessionServiceTests()
+    {
+        _user = _db.SeedUser("sitter");
+        _series = _db.SeedSeries("Reading session");
+    }
 
     public void Dispose() => _db.Dispose();
 
     private async Task Record(int userId, int seconds, DateTime now, bool completed = false, int? scopeUser = null)
     {
         await using var db = scopeUser is { } s ? _db.NewContext(s) : _db.NewContext(userId);
-        await new ReadingSessionService(db).RecordAsync(userId, seconds, completed, now, CancellationToken.None);
+        await new ReadingSessionService(db).RecordAsync(userId, db.Series.Find(_series)!, seconds, completed, now,
+            CancellationToken.None);
     }
 
     private List<ReadingSession> Sessions(int userId)

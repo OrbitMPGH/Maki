@@ -31,6 +31,7 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
         // the series had no ids yet. Both are exact matches; nothing fuzzy happens here.
         var key = SeriesIdentity.For(series);
         var titleKey = SeriesIdentity.ForTitle(series.Title);
+        var canAdoptHidden = series.Incognito == IncognitoMode.Full;
 
         // SeriesKey is rewritten to the new series' canonical key too, not just SeriesId: the
         // aggregation groups by SeriesKey first (it survives a hard delete, SeriesId doesn't), so
@@ -38,9 +39,17 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
         // from the live series' new events even after adoption.
         var events = await db.StatsEvents.IgnoreQueryFilters()
             .Where(e => e.SeriesId == null && e.SeriesKey != null &&
+                        (!e.HiddenAfterRemoval || canAdoptHidden) &&
                         (e.SeriesKey == key || e.SeriesKey == titleKey))
             .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesId, series.Id)
                                        .SetProperty(e => e.SeriesKey, key), ct);
+
+        await db.ReadingSessions.IgnoreQueryFilters()
+            .Where(r => r.SeriesId == null && r.SeriesKey != null &&
+                        (!r.HiddenAfterRemoval || canAdoptHidden) &&
+                        (r.SeriesKey == key || r.SeriesKey == titleKey))
+            .ExecuteUpdateAsync(u => u.SetProperty(r => r.SeriesId, series.Id)
+                                       .SetProperty(r => r.SeriesKey, key), ct);
 
         var readingStates = await AdoptReadingStatesAsync(series, titleKey, ct);
 
@@ -61,14 +70,20 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
     /// id, so another series that shares the old title keeps its rows, and the same narrow rule as
     /// <see cref="SeriesIdentityRepairService"/>. Run it in the transaction that saves the rename.
     /// </summary>
-    public Task<int> RekeyAsync(Series series, string oldKey, CancellationToken ct)
+    public async Task RekeyAsync(Series series, string oldKey, CancellationToken ct)
     {
         var key = SeriesIdentity.For(series);
-        return key == oldKey
-            ? Task.FromResult(0)
-            : db.StatsEvents.IgnoreQueryFilters()
-                .Where(e => e.SeriesId == series.Id && e.SeriesKey == oldKey)
-                .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesKey, key), ct);
+        if (key == oldKey)
+        {
+            return;
+        }
+
+        await db.StatsEvents.IgnoreQueryFilters()
+            .Where(e => e.SeriesId == series.Id && e.SeriesKey == oldKey)
+            .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesKey, key), ct);
+        await db.ReadingSessions.IgnoreQueryFilters()
+            .Where(r => r.SeriesId == series.Id && r.SeriesKey == oldKey)
+            .ExecuteUpdateAsync(u => u.SetProperty(r => r.SeriesKey, key), ct);
     }
 
     /// <summary>

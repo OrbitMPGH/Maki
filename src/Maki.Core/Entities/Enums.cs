@@ -84,7 +84,7 @@ public enum IncognitoMode
     /// <summary>Excluded from scrobbling only. Still counted in Rewind and read history.</summary>
     ScrobbleOnly = 1,
 
-    /// <summary>Excluded from scrobbling, Rewind stats, and reading history entirely.</summary>
+    /// <summary>Hides saved activity from Rewind and reading history and skips scrobbling.</summary>
     Full = 2
 }
 

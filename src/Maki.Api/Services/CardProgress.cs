@@ -36,7 +36,7 @@ public static class CardProgress
         MakiDbContext db, int userId, TimeZoneInfo zone, DateTime nowUtc, CancellationToken ct)
     {
         var since = nowUtc - Window;
-        var stamps = await db.StatsEvents
+        var stamps = await db.VisibleStatsEvents()
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.Type == StatsEventType.ReadingTime && e.Timestamp >= since)
             .Select(e => e.Timestamp)

@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Stitches the built-in reader's time reports into <see cref="ReadingSession"/> rows.
+/// Stitches the built-in reader's time reports into per-series <see cref="ReadingSession"/> rows.
 /// <para>
 /// This happens server-side, by gap, because the client has nothing better to offer: its reading
 /// clock resets on every chapter change and it sends no session id, so a sitting that spans ten
 /// chapters arrives as ten unrelated streams of deltas. A report landing within
-/// <see cref="Gap"/> of the user's latest sitting extends it, anything later starts a new one.
+/// <see cref="Gap"/> of the latest sitting for that series extends it. Stats joins visible
+/// sittings across series after filtering out Full incognito.
 /// </para>
 /// <para>
 /// Two tabs reporting at once can both read the same latest row and one extension overwrites the
@@ -28,10 +29,10 @@ public class ReadingSessionService(MakiDbContext db)
 
     internal const int GapMinutes = 10;
 
-    public async Task RecordAsync(int userId, int seconds, bool completedChapter, DateTime nowUtc,
+    public async Task RecordAsync(int userId, Series series, int seconds, bool completedChapter, DateTime nowUtc,
         CancellationToken ct)
     {
-        if (await StageAsync(userId, seconds, completedChapter, nowUtc, ct))
+        if (await StageAsync(userId, series, seconds, completedChapter, nowUtc, ct))
         {
             await db.SaveChangesAsync(ct);
         }
@@ -41,7 +42,7 @@ public class ReadingSessionService(MakiDbContext db)
     /// <see cref="RecordAsync"/> without the save, so the reader can commit the sitting together with
     /// the progress write. Returns whether anything was staged.
     /// </summary>
-    public async Task<bool> StageAsync(int userId, int seconds, bool completedChapter, DateTime nowUtc,
+    public async Task<bool> StageAsync(int userId, Series series, int seconds, bool completedChapter, DateTime nowUtc,
         CancellationToken ct)
     {
         if (seconds <= 0 && !completedChapter)
@@ -55,7 +56,7 @@ public class ReadingSessionService(MakiDbContext db)
         var latestStart = nowUtc + Gap;
         var latest = await db.ReadingSessions
             .IgnoreQueryFilters()
-            .Where(s => s.UserId == userId && s.StartedAt <= latestStart)
+            .Where(s => s.UserId == userId && s.SeriesId == series.Id && s.StartedAt <= latestStart)
             .OrderByDescending(s => s.EndedAt)
             .FirstOrDefaultAsync(ct);
 
@@ -67,10 +68,41 @@ public class ReadingSessionService(MakiDbContext db)
 
         if (!ReferenceEquals(landed, latest))
         {
+            landed.SeriesId = series.Id;
+            landed.SeriesKey = SeriesIdentity.For(series);
             db.ReadingSessions.Add(landed);
         }
 
         return true;
+    }
+
+    internal static IEnumerable<ReadingSession> Combine(IEnumerable<ReadingSession> ordered)
+    {
+        ReadingSession? current = null;
+        foreach (var row in ordered)
+        {
+            if (current is null || row.StartedAt > current.EndedAt + Gap)
+            {
+                if (current is not null)
+                {
+                    yield return current;
+                }
+                current = row;
+                continue;
+            }
+
+            if (row.EndedAt > current.EndedAt)
+            {
+                current.EndedAt = row.EndedAt;
+            }
+            current.ActiveSeconds += row.ActiveSeconds;
+            current.ChaptersCompleted += row.ChaptersCompleted;
+        }
+
+        if (current is not null)
+        {
+            yield return current;
+        }
     }
 
     /// <summary>

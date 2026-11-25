@@ -339,7 +339,8 @@ public class LibraryImportUndoService(
             {
                 coverService.DeleteCover(series.Id);
                 await stats.RecordAsync(StatsEventType.SeriesRemoved, null, series.Title,
-                    payloadJson: removedPayload, seriesKey: seriesKey, ct: CancellationToken.None);
+                    payloadJson: removedPayload, seriesKey: seriesKey,
+                    hiddenAfterRemoval: tracked.Incognito == IncognitoMode.Full, ct: CancellationToken.None);
             }
 
             var warnings = new List<string>();

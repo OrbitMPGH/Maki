@@ -171,10 +171,8 @@ public class Series
     public PendingImportLink PendingImportLink { get; set; }
 
     /// <summary>
-    /// <see cref="IncognitoMode.ScrobbleOnly"/> excludes this series from scrobbling. <see
-    /// cref="IncognitoMode.Full"/> also excludes it from Rewind/reading-history <c>StatsEvent</c>s.
-    /// Gated at write time (<c>StatsEventService</c>, <c>ReadingProgressService</c>,
-    /// <c>ScrobbleService</c>), not at read time, so nothing needs to filter it back out later.
+    /// Both incognito modes skip scrobbling. <see cref="IncognitoMode.Full"/> also hides
+    /// saved activity from Rewind and reading history while the mode is active.
     /// </summary>
     public IncognitoMode Incognito { get; set; } = IncognitoMode.Off;
 
