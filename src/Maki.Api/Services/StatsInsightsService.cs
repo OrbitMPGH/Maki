@@ -39,7 +39,7 @@ public class StatsInsightsService(
     public async Task<StatsInsightsDto> GetAsync(
         int userId, DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
     {
-        var key = $"insights:{currentUser.UserId}:{userId}:{from:yyyy-MM-dd}:{to:yyyy-MM-dd}:{utcOffsetMinutes}";
+        var key = $"insights:{currentUser.UserId}:{userId}:{from:yyyy-MM-dd}:{to:yyyy-MM-dd}:{utcOffsetMinutes}:{StatsEventService.VisibilityVersion}";
         if (cache.TryGetValue<StatsInsightsDto>(key, out var hit) && hit is not null)
         {
             return hit;

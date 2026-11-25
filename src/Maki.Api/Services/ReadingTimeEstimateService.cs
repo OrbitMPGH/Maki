@@ -76,7 +76,7 @@ public class ReadingTimeEstimateService(MakiDbContext db)
             // the default/unknown types are paged. A current series override still chooses which
             // cohort is used through the resolved readerMode above.
             samples = await TimedChapters()
-                .Join(db.Series,
+                .Join(db.Series.Where(s => s.Incognito != IncognitoMode.Full),
                     progress => progress.SeriesId,
                     series => series.Id,
                     (progress, series) => new { progress.ReadSeconds, progress.UpdatedAt, series.Type })

@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -64,6 +65,35 @@ public sealed class ReadingSessionBackfillTests : IDisposable
 
         var sb = Assert.Single(Sessions(b));
         Assert.Equal(60, sb.ActiveSeconds);
+    }
+
+    [Fact]
+    public async Task GivesEachSeriesItsOwnSittingsSoFullIncognitoHidesThem()
+    {
+        var a = _db.SeedUser("a");
+        var open = _db.SeedSeries("Open");
+        var hidden = _db.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
+        using (var db = _db.NewContext())
+        {
+            foreach (var (series, at) in new[] { (open, T0), (hidden, T0.AddMinutes(2)), (open, T0.AddMinutes(4)) })
+            {
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ReadingTime, UserId = a, Timestamp = at,
+                    SeriesId = series, SeriesKey = $"key-{series}", SeriesTitle = "S", Value = 60
+                });
+            }
+            db.SaveChanges();
+        }
+
+        await Run();
+
+        var sittings = Sessions(a);
+        Assert.Equal(2, sittings.Count);
+        Assert.Equal(120, Assert.Single(sittings, s => s.SeriesId == open).ActiveSeconds);
+        Assert.Equal($"key-{hidden}", Assert.Single(sittings, s => s.SeriesId == hidden).SeriesKey);
+        using var check = _db.NewContext();
+        Assert.Equal(open, Assert.Single(check.VisibleReadingSessions().Where(s => s.UserId == a)).SeriesId);
     }
 
     [Fact]

@@ -56,21 +56,13 @@ namespace Maki.Data.Migrations
                 table: "ReadingSessions",
                 columns: new[] { "UserId", "SeriesId", "EndedAt" });
 
-            // Preserve the last visibility after the foreign keys are cleared.
-            migrationBuilder.Sql("""
-                CREATE TRIGGER TR_Series_PreserveActivityPrivacy
-                BEFORE DELETE ON Series
-                BEGIN
-                    UPDATE StatsEvents SET HiddenAfterRemoval = (OLD.Incognito = 2) WHERE SeriesId = OLD.Id;
-                    UPDATE ReadingSessions SET HiddenAfterRemoval = (OLD.Incognito = 2) WHERE SeriesId = OLD.Id;
-                END;
-                """);
+            migrationBuilder.Sql(ActivityPrivacyTrigger.Create);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP TRIGGER TR_Series_PreserveActivityPrivacy;");
+            migrationBuilder.Sql(ActivityPrivacyTrigger.Drop);
 
             migrationBuilder.DropForeignKey(
                 name: "FK_ReadingSessions_Series_SeriesId",

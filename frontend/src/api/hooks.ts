@@ -3035,10 +3035,16 @@ export function useSetIncognito() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
-      void queryClient.invalidateQueries({ queryKey: ['stats'] })
-      void queryClient.invalidateQueries({ queryKey: ['progress'] })
+      invalidateActivityVisibility(queryClient)
     },
   })
+}
+
+/** Queries whose answer depends on which series are fully incognito. */
+export function invalidateActivityVisibility(queryClient: QueryClient) {
+  for (const key of ['stats', 'progress', 'reading-behaviour', 'taste-insights', 'taste-profile', 'recommendations']) {
+    void queryClient.invalidateQueries({ queryKey: [key] })
+  }
 }
 
 export interface SetSeriesNotificationsResult {

@@ -157,7 +157,8 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             .FirstOrDefaultAsync(ct);
         var key = (Kind: "seed-snapshot", scope.UserId, scope.AllRootFolders,
             Folders: string.Join(',', scope.RootFolderIds.Order()), scope.MaxContentRating,
-            versions.FeedbackRevision, versions.SignalRevision, library?.Count, library?.MaxId);
+            versions.FeedbackRevision, versions.SignalRevision, library?.Count, library?.MaxId,
+            StatsEventService.VisibilityVersion);
         if (cache.TryGetValue(key, out SeedSnapshot? hit) && hit is not null)
         {
             return hit;

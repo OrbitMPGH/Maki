@@ -55,4 +55,36 @@ public class IncognitoReadingActivityMigrationTests
         Assert.False(await db.VisibleStatsEvents().AnyAsync(e => e.Type == StatsEventType.ChaptersRead));
         Assert.Equal(1, await db.VisibleReadingSessions().CountAsync());
     }
+
+    [Fact]
+    public async Task DeletingAFullSeriesThroughTheContextKeepsItsActivityHidden()
+    {
+        using var fixture = new TestDb();
+        var user = fixture.SeedUser("reader");
+        var hidden = fixture.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
+        var open = fixture.SeedSeries("Open");
+        await using (var db = fixture.NewContext())
+        {
+            foreach (var series in new[] { hidden, open })
+            {
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ChaptersRead, UserId = user, Timestamp = DateTime.UtcNow,
+                    SeriesId = series, SeriesTitle = "S", Value = 1
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = fixture.NewContext())
+        {
+            db.Series.RemoveRange(db.Series.IgnoreQueryFilters().Where(s => s.Id == hidden || s.Id == open));
+            await db.SaveChangesAsync();
+        }
+
+        await using var check = fixture.NewContext();
+        var orphans = await check.StatsEvents.IgnoreQueryFilters().ToListAsync();
+        Assert.All(orphans, e => Assert.Null(e.SeriesId));
+        Assert.Single(await check.VisibleStatsEvents().IgnoreQueryFilters().ToListAsync());
+    }
 }

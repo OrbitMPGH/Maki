@@ -26,13 +26,14 @@ paths:
   - "src/Maki.Api/Services/RelatedWorkWatch*.cs"
   - "src/Maki.Api/Services/FollowedCreatorRelease*.cs"
   - "tests/Maki.Api.Tests/IncognitoReadingActivityMigrationTests.cs"
+  - "src/Maki.Data/ActivityPrivacyTrigger.cs"
 ---
 
 # Stats, progress, notifications, inbox
 
 - **Activity stats are an append-only event log** (`StatsEvents` + `ReadingStates`). Reads are Kavita high-water-mark deltas; first sighting of a series is a silent baseline (no event), backwards movement ignored. Never derive reads from `ScrobbleSyncState` (double-counts or records nothing depending on tracker count). Never purge `StatsEvents` in housekeeping.
 - **Progress (`/api/v1/progress`, `ProgressController`) stores only unlocks (`UserAchievement`), goals (`ReadingGoal`) and the `user.gamification` prefs blob**; everything else is recomputed from `VisibleStatsEvents()`, so Full incognito activity stays out of progression. Unlocks never revoked. `Key` is persisted: treat it like a permission bit, never rename/reuse. Never rename the persisted `user.gamification` key (`SettingKeys.UserGamification`) or the `20260807133045_Gamification` migration.
-- **Activity visibility follows the current series mode.** Use `VisibleStatsEvents()` and `VisibleReadingSessions()` for user-visible reads. Writers and identity maintenance use the underlying sets. The deletion trigger saves the final visibility to `HiddenAfterRemoval` before the series links are cleared. Hidden orphans are adopted only by a series added as Full incognito. Preserve the trigger when rebuilding `Series`, `StatsEvents`, or `ReadingSessions`.
+- **Activity visibility follows the current series mode.** Use `VisibleStatsEvents()` and `VisibleReadingSessions()` for user-visible reads. Writers and identity maintenance use the underlying sets. The deletion trigger saves the final visibility to `HiddenAfterRemoval` before the series links are cleared. Hidden orphans are adopted only by a series added as Full incognito. A migration that rebuilds `Series`, `StatsEvents`, or `ReadingSessions` runs `ActivityPrivacyTrigger.Drop` before the rebuild and `ActivityPrivacyTrigger.Create` after it. A Full series deleted and re-added as Off leaves its hidden orphans stranded on purpose.
 - **`LevelMath = 350 * (L-1)^(4/3)`** — the `L-1` matters, a plain `L^(4/3)` makes level 1→2 cost more than 2→3.
 - **`user.timezone` is its own key**, separate from the progress blob, because streaks need stable local dates across DST/travel (a per-request UTC offset can't provide that).
 - **Achievements split Reader track vs Library track** — `SeriesAdded`/`ChapterDownloaded` carry null `UserId` (facts about the instance, not whoever's signed in), so crediting them to a user would hand one person the whole back catalogue.

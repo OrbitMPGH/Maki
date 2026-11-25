@@ -44,7 +44,7 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
             .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesId, series.Id)
                                        .SetProperty(e => e.SeriesKey, key), ct);
 
-        await db.ReadingSessions.IgnoreQueryFilters()
+        var sessions = await db.ReadingSessions.IgnoreQueryFilters()
             .Where(r => r.SeriesId == null && r.SeriesKey != null &&
                         (!r.HiddenAfterRemoval || canAdoptHidden) &&
                         (r.SeriesKey == key || r.SeriesKey == titleKey))
@@ -52,6 +52,12 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
                                        .SetProperty(r => r.SeriesKey, key), ct);
 
         var readingStates = await AdoptReadingStatesAsync(series, titleKey, ct);
+
+        // Visible orphans adopted by a Full series become hidden, so cached stats must miss.
+        if (canAdoptHidden && (events > 0 || sessions > 0))
+        {
+            StatsEventService.InvalidateVisibility();
+        }
 
         if (events > 0 || readingStates > 0)
         {
