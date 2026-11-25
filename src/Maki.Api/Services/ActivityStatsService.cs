@@ -32,7 +32,7 @@ public class ActivityStatsService(
     /// </para>
     /// </summary>
     private IQueryable<StatsEvent> EventsFor(int userId) =>
-        db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
+        db.VisibleStatsEvents().AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.UserId == null || e.UserId == userId);
 
     /// <summary>
@@ -385,8 +385,7 @@ public class ActivityStatsService(
 
     /// <summary>
     /// Pages and series starts come off <c>ChapterProgress</c> rather than the event log, which has
-    /// no page numbers. Progress rows are written even for fully incognito series (only their events
-    /// are dropped), so those are excluded here by hand, along with anything outside the caller's
+    /// no page numbers. This query excludes Full incognito along with anything outside the caller's
     /// root folders. Imports (<c>PageCount == 0</c>) and watched marks are not reading.
     /// </summary>
     private async Task<(int PagesRead, int SeriesStarted)> PagesAndStartsAsync(
@@ -462,7 +461,7 @@ public class ActivityStatsService(
         var folderByKey = new Dictionary<string, int>();
         if (orphanKeys.Count > 0)
         {
-            var removals = await db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
+            var removals = await db.VisibleStatsEvents().AsNoTracking().IgnoreQueryFilters()
                 .Where(e => e.Type == StatsEventType.SeriesRemoved && e.SeriesKey != null &&
                             orphanKeys.Contains(e.SeriesKey) && e.PayloadJson != null)
                 .OrderBy(e => e.Timestamp)

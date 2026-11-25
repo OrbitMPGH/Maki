@@ -39,7 +39,7 @@ public class StatsInsightsService(
     public async Task<StatsInsightsDto> GetAsync(
         int userId, DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
     {
-        var key = $"insights:{currentUser.UserId}:{userId}:{from:yyyy-MM-dd}:{to:yyyy-MM-dd}:{utcOffsetMinutes}";
+        var key = $"insights:{currentUser.UserId}:{userId}:{from:yyyy-MM-dd}:{to:yyyy-MM-dd}:{utcOffsetMinutes}:{StatsEventService.VisibilityVersion}";
         if (cache.TryGetValue<StatsInsightsDto>(key, out var hit) && hit is not null)
         {
             return hit;
@@ -49,7 +49,7 @@ public class StatsInsightsService(
         var utcStart = ToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
         var utcEnd = ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
 
-        var events = await db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
+        var events = await db.VisibleStatsEvents().AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.UserId == userId && e.Timestamp >= utcStart && e.Timestamp < utcEnd &&
                         (e.Type == StatsEventType.ReadingTime ||
                          e.Type == StatsEventType.ChaptersRead ||
@@ -183,10 +183,16 @@ public class StatsInsightsService(
     private async Task<SittingsDto?> SittingsAsync(
         int userId, DateTime utcStart, DateTime utcEnd, int windowDays, CancellationToken ct)
     {
-        var sessions = await db.ReadingSessions.AsNoTracking().IgnoreQueryFilters()
-            .Where(s => s.UserId == userId && s.StartedAt >= utcStart && s.StartedAt < utcEnd)
-            .Select(s => new { s.StartedAt, s.ActiveSeconds, s.ChaptersCompleted })
+        // A day either side lets a sitting that crosses series and the window edge combine whole.
+        var loadFrom = utcStart.AddDays(-1);
+        var loadTo = utcEnd.AddDays(1);
+        var rows = await db.VisibleReadingSessions().AsNoTracking().IgnoreQueryFilters()
+            .Where(s => s.UserId == userId && s.StartedAt >= loadFrom && s.StartedAt < loadTo)
+            .OrderBy(s => s.StartedAt)
             .ToListAsync(ct);
+        var sessions = ReadingSessionService.Combine(rows)
+            .Where(s => s.StartedAt >= utcStart && s.StartedAt < utcEnd)
+            .ToList();
         if (sessions.Count == 0)
         {
             return null;
@@ -239,7 +245,7 @@ public class StatsInsightsService(
         var snapshots = new Dictionary<string, SeriesFacts>();
         if (removedKeys.Count > 0)
         {
-            var removals = await db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
+            var removals = await db.VisibleStatsEvents().AsNoTracking().IgnoreQueryFilters()
                 .Where(e => e.Type == StatsEventType.SeriesRemoved && e.SeriesKey != null &&
                             removedKeys.Contains(e.SeriesKey) && e.PayloadJson != null)
                 .OrderBy(e => e.Timestamp)

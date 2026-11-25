@@ -8,13 +8,15 @@ namespace Maki.Api.Services;
 /// Appends rows to the activity log. <see cref="StageAsync"/> only stages the row on the
 /// shared scoped context — use it when the caller's own SaveChanges is about to run anyway;
 /// <see cref="RecordAsync"/> saves immediately for call sites with no save of their own left.
-/// <para>
-/// Both are the gate for <see cref="IncognitoMode.Full"/>: a fully-incognito series is dropped
-/// here, silently, so every caller stays free of the check.
-/// </para>
 /// </summary>
 public class StatsEventService(MakiDbContext db)
 {
+    private static long _visibilityVersion;
+
+    internal static long VisibilityVersion => Interlocked.Read(ref _visibilityVersion);
+
+    internal static void InvalidateVisibility() => Interlocked.Increment(ref _visibilityVersion);
+
     /// <param name="seriesKey">
     /// Overrides the key looked up from <paramref name="seriesId"/>. Needed by the one caller that
     /// records an event for a series that no longer exists — <c>SeriesController.Delete</c> snapshots
@@ -23,7 +25,7 @@ public class StatsEventService(MakiDbContext db)
     /// </param>
     public async Task StageAsync(StatsEventType type, int? seriesId, string seriesTitle, int value = 1,
         int? kavitaSeriesId = null, string? payloadJson = null, string? seriesKey = null,
-        CancellationToken ct = default)
+        bool hiddenAfterRemoval = false, CancellationToken ct = default)
     {
         if (seriesId is int sid)
         {
@@ -31,14 +33,9 @@ public class StatsEventService(MakiDbContext db)
                 .Where(s => s.Id == sid)
                 .Select(s => new
                 {
-                    s.Incognito, s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId
+                    s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId
                 })
                 .FirstOrDefaultAsync(ct);
-
-            if (row?.Incognito == IncognitoMode.Full)
-            {
-                return;
-            }
 
             seriesKey ??= row is null
                 ? null
@@ -61,6 +58,7 @@ public class StatsEventService(MakiDbContext db)
             Type = type,
             Timestamp = DateTime.UtcNow,
             SeriesId = seriesId,
+            HiddenAfterRemoval = hiddenAfterRemoval,
             KavitaSeriesId = kavitaSeriesId,
             SeriesKey = seriesKey,
             SeriesTitle = seriesTitle,
@@ -71,9 +69,10 @@ public class StatsEventService(MakiDbContext db)
 
     public async Task RecordAsync(StatsEventType type, int? seriesId, string seriesTitle, int value = 1,
         int? kavitaSeriesId = null, string? payloadJson = null, string? seriesKey = null,
-        CancellationToken ct = default)
+        bool hiddenAfterRemoval = false, CancellationToken ct = default)
     {
-        await StageAsync(type, seriesId, seriesTitle, value, kavitaSeriesId, payloadJson, seriesKey, ct);
+        await StageAsync(type, seriesId, seriesTitle, value, kavitaSeriesId, payloadJson, seriesKey,
+            hiddenAfterRemoval, ct);
         await db.SaveChangesAsync(ct);
     }
 }

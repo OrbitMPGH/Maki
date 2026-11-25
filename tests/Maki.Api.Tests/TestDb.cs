@@ -32,6 +32,7 @@ internal sealed class TestDb : IDisposable
 
         using var db = NewContext();
         db.Database.EnsureCreated();
+        db.Database.ExecuteSqlRaw(ActivityPrivacyTrigger.Create);
 
         // Every per-user table has a foreign key to AspNetUsers now, so a fixture with no user at all
         // cannot store a single page of reading progress. EnsureCreated runs no migrations, so the

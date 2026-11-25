@@ -27,7 +27,7 @@ public record SeriesReadingStats(
 /// The total and the per-chapter pace come from <see cref="ChapterProgress.ReadSeconds"/>, which is
 /// current to the last report. Sittings and the timeline come from the
 /// <see cref="StatsEventType.ReadingTime"/> log, which is dated but lags by up to one unflushed chunk
-/// and is empty for a fully incognito series.
+/// and is filtered out while a series is fully incognito.
 /// </para>
 /// </summary>
 public class SeriesReadingStatsService(MakiDbContext db, IUserSettingsStore userSettings)
@@ -55,7 +55,8 @@ public class SeriesReadingStatsService(MakiDbContext db, IUserSettingsStore user
         var elsewhere = await db.ChapterProgress.AsNoTracking()
             .Where(p => p.UserId == userId && p.SeriesId != seriesId &&
                         p.Completed && !p.Watched && p.ReadSeconds > 0)
-            .Join(db.Series, p => p.SeriesId, s => s.Id, (p, s) => new { p.ReadSeconds, p.UpdatedAt, s.Type })
+            .Join(db.Series.Where(s => s.Incognito != IncognitoMode.Full), p => p.SeriesId, s => s.Id,
+                (p, s) => new { p.ReadSeconds, p.UpdatedAt, s.Type })
             .Where(x => scrolling
                 ? x.Type == SeriesTypes.Manhua || x.Type == SeriesTypes.Manhwa
                 : x.Type != SeriesTypes.Manhua && x.Type != SeriesTypes.Manhwa)
@@ -64,7 +65,7 @@ public class SeriesReadingStatsService(MakiDbContext db, IUserSettingsStore user
             .Take(100)
             .ToListAsync(ct);
 
-        var events = await db.StatsEvents.AsNoTracking()
+        var events = await db.VisibleStatsEvents().AsNoTracking()
             .Where(e => e.UserId == userId && e.SeriesId == seriesId &&
                         e.Type == StatsEventType.ReadingTime && e.Value > 0)
             .OrderBy(e => e.Timestamp)

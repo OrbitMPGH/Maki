@@ -155,7 +155,7 @@ public class ReadingBehaviourService(
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<(int UserId, string Access), (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
+    private readonly Dictionary<(int UserId, string Access, long Visibility), (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
 
     /// <summary>
     /// Which series a user can see, as a cache-key fragment. Part of the key so a changed grant misses
@@ -191,7 +191,7 @@ public class ReadingBehaviourService(
     public async Task<ReadingBehaviour> GetAsync(
         int userId, bool allRootFolders, bool refresh, CancellationToken ct = default)
     {
-        var key = (userId, await AccessKeyAsync(userId, allRootFolders, ct));
+        var key = (userId, await AccessKeyAsync(userId, allRootFolders, ct), StatsEventService.VisibilityVersion);
         await _lock.WaitAsync(ct);
         try
         {

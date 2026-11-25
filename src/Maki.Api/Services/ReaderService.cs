@@ -711,14 +711,14 @@ public class ReaderService(
     private async Task<bool> StageSessionAsync(Series series, int seconds, bool completedChapter,
         DateTime now, CancellationToken ct)
     {
-        if (series.Incognito == IncognitoMode.Full || (seconds <= 0 && !completedChapter))
+        if (seconds <= 0 && !completedChapter)
         {
             return false;
         }
 
         try
         {
-            return await sessions.StageAsync(UserId, seconds, completedChapter, now, ct);
+            return await sessions.StageAsync(UserId, series, seconds, completedChapter, now, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -759,11 +759,6 @@ public class ReaderService(
     /// <summary>
     /// Stages the chapter's unreported reading time for the stats log and marks it reported. The
     /// caller saves.
-    /// <para>
-    /// The marker advances even for a fully-incognito series, which emits nothing: leaving the
-    /// seconds unreported would bank them, and taking the series back out of incognito would then
-    /// dump the whole hidden backlog into Rewind on the next page turn.
-    /// </para>
     /// </summary>
     private void StageReadingTime(ChapterProgress row, Series series, DateTime at, int? onlySeconds = null)
     {
@@ -780,21 +775,18 @@ public class ReaderService(
 
         row.ReportedSeconds += unreported;
 
-        if (series.Incognito != IncognitoMode.Full)
+        // KavitaSeriesId stays null: this event only ever comes from the built-in reader, so
+        // the local series is always known and there is no unmatched row to aggregate under.
+        db.StatsEvents.Add(new StatsEvent
         {
-            // KavitaSeriesId stays null: this event only ever comes from the built-in reader, so
-            // the local series is always known and there is no unmatched row to aggregate under.
-            db.StatsEvents.Add(new StatsEvent
-            {
-                Type = StatsEventType.ReadingTime,
-                UserId = UserId,
-                Timestamp = at,
-                SeriesId = series.Id,
-                SeriesKey = SeriesIdentity.For(series),
-                SeriesTitle = series.Title,
-                Value = unreported
-            });
-        }
+            Type = StatsEventType.ReadingTime,
+            UserId = UserId,
+            Timestamp = at,
+            SeriesId = series.Id,
+            SeriesKey = SeriesIdentity.For(series),
+            SeriesTitle = series.Title,
+            Value = unreported
+        });
     }
 
     /// <summary>
@@ -1126,9 +1118,9 @@ public class ReaderService(
                 // second completion: CountedAt is the never-cleared token that it was counted once.
                 // See ReadingProgressService.RecordUnnumberedReadAsync for why inventing a number
                 // is wrong.
-                if (row.CountedAt is null &&
-                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct, at))
+                if (row.CountedAt is null)
                 {
+                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct, at);
                     row.CountedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
                 }

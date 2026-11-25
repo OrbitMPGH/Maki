@@ -49,6 +49,8 @@ public class StatsEvent
     public int? SeriesId { get; set; }
     public Series? Series { get; set; }
 
+    public bool HiddenAfterRemoval { get; set; }
+
     /// <summary>Set on read events so unmatched Kavita series still aggregate.</summary>
     public int? KavitaSeriesId { get; set; }
 

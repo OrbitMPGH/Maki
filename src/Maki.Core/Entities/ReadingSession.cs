@@ -11,6 +11,9 @@ public class ReadingSession : IUserOwned
 {
     public long Id { get; set; }
     public int UserId { get; set; }
+    public int? SeriesId { get; set; }
+    public string? SeriesKey { get; set; }
+    public bool HiddenAfterRemoval { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime EndedAt { get; set; }
     public int ActiveSeconds { get; set; }

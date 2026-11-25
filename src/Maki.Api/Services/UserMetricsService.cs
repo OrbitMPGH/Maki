@@ -47,13 +47,14 @@ public class UserMetricsService(
     /// <summary>A gap this long makes picking a series back up worth noticing. Matches Rewind's "dropped" rule.</summary>
     private static readonly TimeSpan AbandonedAfter = TimeSpan.FromDays(90);
 
-    private static string CacheKey(int userId) => $"metrics:{userId}";
+    private static string CacheKey(int userId) => $"metrics:{userId}:{StatsEventService.VisibilityVersion}";
 
     public void Invalidate(int userId) => cache.Remove(CacheKey(userId));
 
     public async Task<UserMetrics> GetAsync(int userId, CancellationToken ct = default)
     {
-        if (cache.TryGetValue<UserMetrics>(CacheKey(userId), out var cached) && cached is not null)
+        var key = CacheKey(userId);
+        if (cache.TryGetValue<UserMetrics>(key, out var cached) && cached is not null)
         {
             return cached;
         }
@@ -65,7 +66,7 @@ public class UserMetricsService(
         // clock-based unlocks for the whole TTL after it lands.
         if (hasZone)
         {
-            cache.Set(CacheKey(userId), metrics, CacheFor);
+            cache.Set(key, metrics, CacheFor);
         }
 
         return metrics;
@@ -89,7 +90,7 @@ public class UserMetricsService(
 
         // One row per event type. Sum and Count are both taken because they mean different things per
         // type: ChaptersRead carries a delta in Value, SeriesFinished is one row per event.
-        var totals = await db.StatsEvents.IgnoreQueryFilters()
+        var totals = await db.VisibleStatsEvents().IgnoreQueryFilters()
             .Where(e => e.UserId == userId)
             .GroupBy(e => e.Type)
             .Select(g => new { Type = g.Key, Sum = g.Sum(x => (long)x.Value), Count = (long)g.Count() })
@@ -100,7 +101,7 @@ public class UserMetricsService(
 
         // The dated scan. Only the columns the bucketing needs, ordered so the per-series gap walk
         // below is a single pass.
-        var events = await db.StatsEvents.IgnoreQueryFilters()
+        var events = await db.VisibleStatsEvents().IgnoreQueryFilters()
             .Where(e => e.UserId == userId &&
                         (e.Type == StatsEventType.ChaptersRead ||
                          e.Type == StatsEventType.VolumesRead ||
@@ -142,7 +143,7 @@ public class UserMetricsService(
             ReadOnNewYearsDay = stored is not null && days.Any(d => d.Date is { Month: 1, Day: 1 }),
 
             LibrarySeries = await db.Series.IgnoreQueryFilters().LongCountAsync(ct),
-            ChaptersDownloaded = await db.StatsEvents.IgnoreQueryFilters()
+            ChaptersDownloaded = await db.VisibleStatsEvents().IgnoreQueryFilters()
                 .Where(e => e.UserId == null && e.Type == StatsEventType.ChapterDownloaded)
                 .SumAsync(e => (long)e.Value, ct),
         };
@@ -173,7 +174,7 @@ public class UserMetricsService(
             // Not derivable from the day buckets: those carry chapters and seconds, and a finish is
             // neither.
             var fromUtc = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), tz);
-            return await db.StatsEvents.IgnoreQueryFilters()
+            return await db.VisibleStatsEvents().IgnoreQueryFilters()
                 .Where(e => e.UserId == userId && e.Type == StatsEventType.SeriesFinished && e.Timestamp >= fromUtc)
                 .LongCountAsync(ct);
         }
@@ -369,7 +370,7 @@ public class UserMetricsService(
     /// <summary>Chapter count of the longest series this user has finished.</summary>
     private async Task<long> LongestFinishedAsync(int userId, CancellationToken ct)
     {
-        var finished = await db.StatsEvents.IgnoreQueryFilters()
+        var finished = await db.VisibleStatsEvents().IgnoreQueryFilters()
             .Where(e => e.UserId == userId && e.Type == StatsEventType.SeriesFinished && e.SeriesId != null)
             .Select(e => e.SeriesId!.Value)
             .Distinct()

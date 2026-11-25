@@ -338,7 +338,7 @@ public class ReadingProgressService(
     /// would falsely mark numbered chapters read in the library's progress ring.
     /// </para>
     /// </summary>
-    public async Task<bool> RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct,
+    public async Task RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct,
         DateTime? at = null) =>
         await WithGateAsync(async () =>
         {
@@ -346,23 +346,19 @@ public class ReadingProgressService(
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
-            var emit = !await IsFullIncognitoAsync(seriesId, ct);
-            if (emit)
+            db.StatsEvents.Add(new StatsEvent
             {
-                db.StatsEvents.Add(new StatsEvent
-                {
-                    Type = StatsEventType.ChaptersRead,
-                    UserId = userId,
-                    Timestamp = now,
-                    SeriesId = seriesId,
-                    KavitaSeriesId = kavitaSeriesId,
-                    SeriesKey = await SeriesKeyAsync(seriesId, title, ct),
-                    SeriesTitle = title,
-                    Value = 1
-                });
-            }
+                Type = StatsEventType.ChaptersRead,
+                UserId = userId,
+                Timestamp = now,
+                SeriesId = seriesId,
+                KavitaSeriesId = kavitaSeriesId,
+                SeriesKey = await SeriesKeyAsync(seriesId, title, ct),
+                SeriesTitle = title,
+                Value = 1
+            });
             await db.SaveChangesAsync(ct);
-            return emit;
+            return true;
         }, ct);
 
     /// <summary>
@@ -405,43 +401,36 @@ public class ReadingProgressService(
             chapterDelta = native > 0 ? native : Math.Min(chapterDelta, 1);
         }
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
-        var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
         var seriesKey = await SeriesKeyAsync(seriesId ?? state.SeriesId, title, ct);
 
         if (chapterDelta > 0)
         {
-            if (!fullIncognito)
+            db.StatsEvents.Add(new StatsEvent
             {
-                db.StatsEvents.Add(new StatsEvent
-                {
-                    Type = StatsEventType.ChaptersRead,
-                    UserId = userId,
-                    Timestamp = now,
-                    SeriesId = seriesId ?? state.SeriesId,
-                    KavitaSeriesId = state.KavitaSeriesId,
-                    SeriesKey = seriesKey,
-                    SeriesTitle = title,
-                    Value = chapterDelta
-                });
-            }
+                Type = StatsEventType.ChaptersRead,
+                UserId = userId,
+                Timestamp = now,
+                SeriesId = seriesId ?? state.SeriesId,
+                KavitaSeriesId = state.KavitaSeriesId,
+                SeriesKey = seriesKey,
+                SeriesTitle = title,
+                Value = chapterDelta
+            });
         }
         else if (volumeDelta > 0 && Math.Floor(maxChapter) <= 0)
         {
             // Volume-only series (no chapter numbering) — count whole volumes instead.
-            if (!fullIncognito)
+            db.StatsEvents.Add(new StatsEvent
             {
-                db.StatsEvents.Add(new StatsEvent
-                {
-                    Type = StatsEventType.VolumesRead,
-                    UserId = userId,
-                    Timestamp = now,
-                    SeriesId = seriesId ?? state.SeriesId,
-                    KavitaSeriesId = state.KavitaSeriesId,
-                    SeriesKey = seriesKey,
-                    SeriesTitle = title,
-                    Value = volumeDelta
-                });
-            }
+                Type = StatsEventType.VolumesRead,
+                UserId = userId,
+                Timestamp = now,
+                SeriesId = seriesId ?? state.SeriesId,
+                KavitaSeriesId = state.KavitaSeriesId,
+                SeriesKey = seriesKey,
+                SeriesTitle = title,
+                Value = volumeDelta
+            });
         }
 
         var moved = maxChapter > state.MaxChapter;
@@ -466,26 +455,23 @@ public class ReadingProgressService(
         // A reread: Finished is sticky, so a native completion that closes a whole new pass counts
         // again. The recomputed mark, not the stored one, because the stored mark never comes back
         // down and would call the first chapter of a reread a finish.
-        var rereadFinish = !firstFinish && state.Finished && nativeCompletions is not null && !fullIncognito &&
+        var rereadFinish = !firstFinish && state.Finished && nativeCompletions is not null &&
                            state.SeriesId is int rereadId &&
                            await IsSeriesFinishedAsync(rereadId, maxChapter, ct) &&
                            await IsNewPassAsync(userId, rereadId, ct);
 
         if (firstFinish || rereadFinish)
         {
-            if (!fullIncognito)
+            db.StatsEvents.Add(new StatsEvent
             {
-                db.StatsEvents.Add(new StatsEvent
-                {
-                    Type = StatsEventType.SeriesFinished,
-                    UserId = userId,
-                    Timestamp = now,
-                    SeriesId = state.SeriesId,
-                    KavitaSeriesId = state.KavitaSeriesId,
-                    SeriesKey = seriesKey,
-                    SeriesTitle = title
-                });
-            }
+                Type = StatsEventType.SeriesFinished,
+                UserId = userId,
+                Timestamp = now,
+                SeriesId = state.SeriesId,
+                KavitaSeriesId = state.KavitaSeriesId,
+                SeriesKey = seriesKey,
+                SeriesTitle = title
+            });
         }
 
         state.Title = title;
@@ -545,7 +531,7 @@ public class ReadingProgressService(
     /// in the set, so cleaning up read files cannot shrink a pass to its last chapter. Duplicate
     /// chapters sharing a number count once, by their latest completion.
     /// <para>
-    /// A series finished without an event (an import, a first sighting, incognito) has no date to
+    /// A series finished without an event (an import, a first sighting, legacy incognito) has no date to
     /// compare against, so the pass has to be a genuine read in Maki throughout instead.
     /// </para>
     /// </summary>
@@ -573,10 +559,6 @@ public class ReadingProgressService(
             ? g.Max(r => r.CompletedAt) > last
             : g.Any(r => !r.Watched && !r.External && !r.BulkMarked && r.PageCount > 0));
     }
-
-    private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>
-        seriesId is int sid && await db.Series.AsNoTracking()
-            .Where(s => s.Id == sid).Select(s => s.Incognito).FirstOrDefaultAsync(ct) == IncognitoMode.Full;
 
     /// <summary>
     /// The durable identity to stamp on an event. Falls back to the title key for a Kavita-only

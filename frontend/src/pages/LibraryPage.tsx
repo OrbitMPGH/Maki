@@ -107,6 +107,7 @@ import {
   useSeries,
   useRateSeries,
   useTags,
+  invalidateActivityVisibility,
 } from '../api/hooks'
 import { useRatingFormat } from '../api/ratings'
 import { offersPermanentDelete } from '../api/recycleBin'
@@ -2913,7 +2914,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   method: 'POST',
                   body: JSON.stringify({ mode }),
                 }),
-              )
+              ).then(() => {
+                if (setting === 'Incognito') invalidateActivityVisibility(queryClient)
+              })
             }}
           >
             <Trans>Apply</Trans>

@@ -197,6 +197,40 @@ public sealed class StatsInsightsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task AFullIncognitoSeriesDoesNotJoinOrContributeToVisibleSittings()
+    {
+        var visible = _db.SeedSeries("Visible");
+        var hidden = _db.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
+        var first = new DateTime(2026, 3, 1, 20, 0, 0, DateTimeKind.Utc);
+        using (var db = _db.NewContext())
+        {
+            var service = new ReadingSessionService(db);
+            var publicSeries = db.Series.Single(s => s.Id == visible);
+            var privateSeries = db.Series.Single(s => s.Id == hidden);
+            await service.RecordAsync(Owner, publicSeries, 60, true, first, default);
+            await service.RecordAsync(Owner, privateSeries, 300, true, first.AddMinutes(9), default);
+            await service.RecordAsync(Owner, publicSeries, 120, true, first.AddMinutes(18), default);
+        }
+
+        var result = await Service().GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
+        Assert.NotNull(result.Sittings);
+        Assert.Equal(2, result.Sittings.Count);
+        Assert.Equal(120, result.Sittings.LongestSeconds);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == hidden).Incognito = IncognitoMode.Off;
+            db.SaveChanges();
+        }
+
+        result = await Service().GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
+        Assert.NotNull(result.Sittings);
+        Assert.Equal(1, result.Sittings.Count);
+        Assert.Equal(480, result.Sittings.LongestSeconds);
+        Assert.Equal(3, result.Sittings.ChaptersPerSittingMedian);
+    }
+
+    [Fact]
     public async Task Bookmarks_count_in_the_window()
     {
         var seriesId = _db.SeedSeries("Marked");

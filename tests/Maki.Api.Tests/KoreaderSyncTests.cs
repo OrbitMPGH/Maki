@@ -710,7 +710,7 @@ public sealed class KoreaderSyncTests : IDisposable
     }
 
     [Fact]
-    public async Task A_fully_incognito_series_records_progress_but_no_read_event()
+    public async Task A_fully_incognito_series_stores_read_events_but_hides_them_from_history()
     {
         var (path, chapters) = SeedVolume("Hidden", s => s.Incognito = IncognitoMode.Full);
         await IndexAsync();
@@ -718,7 +718,9 @@ public sealed class KoreaderSyncTests : IDisposable
         await Pushed(_token, Body(KoreaderDigest.PartialMd5(path), "6", 1));
 
         Assert.All(chapters.Values, id => Assert.True(Progress(id)!.Completed));
-        Assert.Empty(ChaptersRead());
+        Assert.NotEmpty(ChaptersRead());
+        await using var db = _db.NewContext();
+        Assert.False(await db.VisibleStatsEvents().AnyAsync(e => e.Type == StatsEventType.ChaptersRead));
     }
 
     [Fact]

@@ -261,7 +261,7 @@ public class ScrobbleServiceTests
     [Theory]
     [InlineData(IncognitoMode.ScrobbleOnly)]
     [InlineData(IncognitoMode.Full)]
-    public async Task NativePassAsync_NeverPushesAnIncognitoSeriesToMangaUpdates(IncognitoMode mode)
+    public async Task NativePassAsync_PushesSavedProgressOnceIncognitoIsOff(IncognitoMode mode)
     {
         using var db = new TestDb();
         var user = db.SeedUser("reader", MakiPermission.None);
@@ -280,6 +280,19 @@ public class ScrobbleServiceTests
             .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
 
         Assert.Empty(tracker.Pushes);
+
+        using (var context = db.NewContext())
+        {
+            context.Series.Single(s => s.Id == series).Incognito = IncognitoMode.Off;
+            context.SaveChanges();
+        }
+
+        await BuildService(db, userSettings)
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        var push = Assert.Single(tracker.Pushes);
+        Assert.Equal("pb8uwds", push.RemoteId);
+        Assert.Equal(9, push.Chapter);
     }
 
     private static void SeedReading(TestDb db, int userId, int seriesId, double maxChapter)

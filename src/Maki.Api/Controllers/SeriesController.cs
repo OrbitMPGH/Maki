@@ -1192,7 +1192,8 @@ public class SeriesController(
         }
         coverService.DeleteCover(id);
         await stats.RecordAsync(
-            StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey, ct: ct);
+            StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey,
+            hiddenAfterRemoval: series.Incognito == IncognitoMode.Full, ct: ct);
 
         // No SeriesId or link: both would point at a row that no longer exists.
         var locale = await locales.DefaultAsync(ct);
@@ -1906,10 +1907,7 @@ public class SeriesController(
     public record IncognitoRequest(string Mode);
 
     /// <summary>
-    /// Sets a series' <see cref="IncognitoMode"/>. "ScrobbleOnly" withholds tracker pushes only;
-    /// "Full" also withholds it from Rewind/reading-history stats. Both are enforced at write
-    /// time (<see cref="StatsEventService"/>, <see cref="ReadingProgressService"/>,
-    /// <see cref="ScrobbleService"/>) — nothing needs to filter it back out on read.
+    /// Sets a series' <see cref="IncognitoMode"/>. Full incognito hides saved history while active.
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/incognito")]
@@ -1926,8 +1924,13 @@ public class SeriesController(
             return NotFound();
         }
 
+        var activityVisibilityChanged = (series.Incognito == IncognitoMode.Full) != (mode == IncognitoMode.Full);
         series.Incognito = mode;
         await db.SaveChangesAsync(ct);
+        if (activityVisibilityChanged)
+        {
+            StatsEventService.InvalidateVisibility();
+        }
         return Ok(new { incognito = mode.ToString() });
     }
 

@@ -14,11 +14,8 @@ namespace Maki.Api.Tests;
 /// <summary>
 /// The metrics recompute and the achievement evaluator.
 /// <para>
-/// The load-bearing guarantee is the first test here: every counter is derived from the
-/// <c>StatsEvents</c> log, which is what makes <c>IncognitoMode.Full</c> reading invisible to
-/// progression without a second gate to keep in step. Everything else follows from that choice —
-/// idempotency, because the evaluator runs on both the completion path and every page load, and
-/// stickiness, because a derived metric can move backwards while an unlock must not.
+/// Progression uses only visible activity. The evaluator can run on a chapter completion or page
+/// load. Unlocks remain recorded even if a metric later decreases.
 /// </para>
 /// </summary>
 public sealed class ProgressTests : IDisposable
@@ -109,21 +106,25 @@ public sealed class ProgressTests : IDisposable
     // ---- The central guarantee -------------------------------------------------------------
 
     [Fact]
-    public async Task FullyIncognitoReadingNeverReachesAnyCounter()
+    public async Task FullyIncognitoReadingCountsTowardProgressionAfterItBecomesVisible()
     {
-        // StatsEventService drops a fully-incognito series before the row is written, so the log
-        // simply has no events for it. This test states the consequence the feature depends on:
-        // there is no incognito check anywhere in the metrics code, and there must not need to be.
         var incognito = _db.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
-        using var db = _db.NewContext();
-        var stats = new StatsEventService(db);
-        await stats.StageAsync(StatsEventType.ChaptersRead, incognito, "Hidden", 500);
-        await db.SaveChangesAsync();
+        SeedRead(incognito, 500, Now);
 
-        var metrics = await Metrics().GetAsync(UserId);
+        var hidden = await Metrics().GetAsync(UserId);
+        Assert.Equal(0, hidden.ChaptersRead);
+        Assert.Equal(0, hidden.DaysRead);
 
-        Assert.Equal(0, metrics.ChaptersRead);
-        Assert.Equal(0, metrics.DaysRead);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == incognito).Incognito = IncognitoMode.Off;
+            await db.SaveChangesAsync();
+        }
+        StatsEventService.InvalidateVisibility();
+
+        var visible = await Metrics().GetAsync(UserId);
+        Assert.Equal(500, visible.ChaptersRead);
+        Assert.Equal(1, visible.DaysRead);
     }
 
     private void SeedChapters(int seriesId, int onDisk, int removedRead, int removedUnread = 0)

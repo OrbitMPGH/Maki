@@ -119,11 +119,13 @@ public class SeriesReadingStatsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_fully_incognito_series_still_shows_its_total_without_a_timeline()
+    public async Task A_fully_incognito_series_shows_its_timeline_once_visible()
     {
         var user = _db.SeedUser();
-        var series = _db.SeedSeries("Private");
+        var series = _db.SeedSeries("Private", configure: s => s.Incognito = IncognitoMode.Full);
         SeedChapters(user, series, [600, 600]);
+        SeedTime(user, series, Now.AddHours(-1), 600);
+        SeedTime(user, series, Now.AddHours(-2), 600);
 
         var stats = await StatsFor(user, series);
 
@@ -131,6 +133,18 @@ public class SeriesReadingStatsServiceTests : IDisposable
         Assert.Equal(1_200, stats.Seconds);
         Assert.Equal(0, stats.Sittings);
         Assert.Empty(stats.Timeline);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == series).Incognito = IncognitoMode.Off;
+            db.SaveChanges();
+        }
+
+        stats = await StatsFor(user, series);
+        Assert.NotNull(stats);
+        Assert.Equal(1_200, stats.Seconds);
+        Assert.Equal(2, stats.Sittings);
+        Assert.Equal(1_200, stats.Timeline.Sum(bucket => bucket.Seconds));
     }
 
     private void SeedChapters(int userId, int seriesId, int[] seconds)

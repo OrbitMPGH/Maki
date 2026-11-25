@@ -6,8 +6,8 @@ namespace Maki.Core.Progress;
 /// Recomputed from the <c>StatsEvents</c> log rather than maintained incrementally, following the
 /// same discipline as the reading marks: a counter that is only ever added to has no way back once it
 /// is wrong, and needs a repair path nobody remembers to run. Deriving it also means a release that
-/// adds an achievement backfills it the first time the user loads a page, and that
-/// <c>IncognitoMode.Full</c> reading is excluded for free, since it never became an event.
+/// adds an achievement backfills it the first time the user loads a page. Events for a series in
+/// <c>IncognitoMode.Full</c> are left out through <c>VisibleStatsEvents()</c>.
 /// </para>
 /// <para>
 /// The two library fields are the instance's, not this user's: <c>SeriesAdded</c> and

@@ -681,6 +681,33 @@ public sealed class ActivityStatsTests : IDisposable
     // ---- the new headline numbers ----
 
     [Fact]
+    public async Task SwitchingOutOfFullIncognitoRevealsSavedActivityOnItsOriginalDate()
+    {
+        const string title = "Secret";
+        var secret = _db.SeedSeries(title, configure: s => s.Incognito = IncognitoMode.Full);
+        var at = new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc);
+        var day = DateOnly.FromDateTime(at);
+        AddEvent(StatsEventType.ReadingTime, at, 600, secret, title, userId: TestUser);
+        await Progress().RecordUnnumberedReadAsync(TestUser, secret, title, CancellationToken.None, at);
+
+        Assert.Empty(await Activity().YearsAsync(TestUser, 0, CancellationToken.None));
+        var hidden = await Activity().StatsAsync(TestUser, day, day, 0, CancellationToken.None);
+        Assert.Equal(0, hidden.Totals.ChaptersRead);
+        Assert.Empty(hidden.TopByTime);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == secret).Incognito = IncognitoMode.ScrobbleOnly;
+            db.SaveChanges();
+        }
+
+        Assert.Equal([2024], await Activity().YearsAsync(TestUser, 0, CancellationToken.None));
+        var visible = await Activity().StatsAsync(TestUser, day, day, 0, CancellationToken.None);
+        Assert.Equal(1, visible.Totals.ChaptersRead);
+        Assert.Equal(title, Assert.Single(visible.TopByTime).Title);
+    }
+
+    [Fact]
     public async Task DaysActiveCountsDistinctLocalDates()
     {
         // Two events on one local day, one on another, plus a UTC timestamp that crosses midnight

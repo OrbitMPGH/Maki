@@ -1880,6 +1880,15 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime>("EndedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("HiddenAfterRemoval")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SeriesKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("TEXT");
 
@@ -1888,9 +1897,13 @@ namespace Maki.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "EndedAt");
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SeriesKey");
 
                     b.HasIndex("UserId", "StartedAt");
+
+                    b.HasIndex("UserId", "SeriesId", "EndedAt");
 
                     b.ToTable("ReadingSessions");
                 });
@@ -3089,6 +3102,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HiddenAfterRemoval")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("KavitaSeriesId")
                         .HasColumnType("INTEGER");
 
@@ -4251,6 +4267,11 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Core.Entities.ReadingSession", b =>
                 {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
