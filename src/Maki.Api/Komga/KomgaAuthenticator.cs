@@ -19,8 +19,9 @@ namespace Maki.Api.Komga;
 /// <para>
 /// The cookie holds the token under data protection, so revoking or rotating the token, switching
 /// either catalogue off or disabling the owner all apply to it at once. It never authenticates a
-/// POST: that is the one unsafe method a page on the same site can send cross-origin without a
-/// preflight, and Komga clients authenticate their requests with a header anyway.
+/// POST that changes state: that is the one unsafe method a page on the same site can send
+/// cross-origin without a preflight. POSTs that only read opt in with
+/// <see cref="KomgaReadOnlyPostAttribute"/>.
 /// </para>
 /// </summary>
 public class KomgaAuthenticator(OpdsAccessService access, IDataProtectionProvider protection)
@@ -39,7 +40,7 @@ public class KomgaAuthenticator(OpdsAccessService access, IDataProtectionProvide
         var request = http.Request;
         var fromCookie = request.Cookies.TryGetValue(CookieName, out var cookie) ? Unprotect(cookie) : null;
         var presented = HeaderToken(request);
-        var token = presented ?? (HttpMethods.IsPost(request.Method) ? null : fromCookie);
+        var token = presented ?? (CookieAuthenticates(http) ? fromCookie : null);
         if (string.IsNullOrEmpty(token))
         {
             return null;
@@ -66,6 +67,10 @@ public class KomgaAuthenticator(OpdsAccessService access, IDataProtectionProvide
 
         return resolved;
     }
+
+    private static bool CookieAuthenticates(HttpContext http) =>
+        !HttpMethods.IsPost(http.Request.Method) ||
+        http.GetEndpoint()?.Metadata.GetMetadata<KomgaReadOnlyPostAttribute>() is not null;
 
     private static string? HeaderToken(HttpRequest request)
     {

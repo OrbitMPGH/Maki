@@ -118,7 +118,7 @@ public sealed class KomgaPipelineTests : IDisposable
     }
 
     [Fact]
-    public async Task The_list_api_answers_the_extensions_post_after_its_401_retry()
+    public async Task The_issued_cookie_alone_carries_the_list_apis_read_only_posts()
     {
         using var factory = new WebApplicationFactory<Program>();
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -127,33 +127,24 @@ public sealed class KomgaPipelineTests : IDisposable
         Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(
             Get("/komga/api/v1/login/set-cookie", h => h.Add(KomgaAuthenticator.ApiKeyHeader, seeded.Token)))).StatusCode);
 
-        HttpRequestMessage List(string path, bool basic)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, path + "?page=0&sort=lastModifiedDate%2Cdesc")
+        // From here the client sends nothing but the cookie, as the Mihon extension's first try does.
+        HttpRequestMessage List(string path) =>
+            new(HttpMethod.Post, path + "?page=0&sort=lastModifiedDate%2Cdesc")
             {
                 Content = new StringContent("""{"condition":{"allOf":[{"deleted":{"operator":"isFalse"}}]}}""",
                     Encoding.UTF8, "application/json")
             };
-            if (basic)
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
-                    Convert.ToBase64String(Encoding.UTF8.GetBytes("anyone:" + seeded.Token)));
-            }
 
-            return request;
-        }
-
-        // OkHttp sends the cookie first and adds Basic once that is refused, as for any other POST.
-        Assert.Equal(HttpStatusCode.Unauthorized,
-            (await client.SendAsync(List("/komga/api/v1/series/list", basic: false))).StatusCode);
-
-        var series = await client.SendAsync(List("/komga/api/v1/series/list", basic: true));
+        var series = await client.SendAsync(List("/komga/api/v1/series/list"));
         Assert.Equal(HttpStatusCode.OK, series.StatusCode);
         Assert.Contains($"\"id\":\"{seeded.SeriesId}\"", await series.Content.ReadAsStringAsync());
 
-        var books = await client.SendAsync(List("/komga/api/v1/books/list", basic: true));
+        var books = await client.SendAsync(List("/komga/api/v1/books/list"));
         Assert.Equal(HttpStatusCode.OK, books.StatusCode);
         Assert.Contains($"\"id\":\"{seeded.ChapterId}\"", await books.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.PostAsync($"/komga/api/v1/series/{seeded.SeriesId}/read-progress", null)).StatusCode);
     }
 
     [Fact]

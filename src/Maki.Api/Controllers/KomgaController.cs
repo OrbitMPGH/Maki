@@ -84,6 +84,7 @@ public class KomgaController(
 
     /// <summary>Komga 1.19's list API, which the Mihon extension browses and searches through from 1.6.76.</summary>
     [HttpPost("v1/series/list")]
+    [KomgaReadOnlyPost]
     public async Task<IActionResult> SeriesList(
         [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] KomgaSearch? search,
         [FromQuery] string[]? sort,
@@ -268,6 +269,7 @@ public class KomgaController(
             PageNumber(page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpPost("v1/books/list")]
+    [KomgaReadOnlyPost]
     public async Task<IActionResult> BooksList(
         [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] KomgaSearch? search,
         [FromQuery] string[]? sort,

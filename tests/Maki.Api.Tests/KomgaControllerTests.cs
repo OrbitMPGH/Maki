@@ -89,6 +89,21 @@ public sealed class KomgaControllerTests : IDisposable
             Request(r => { r.Method = "POST"; r.Headers.Cookie = cookie; }), default));
     }
 
+    /// <summary>
+    /// The cookie authenticates a marked POST, so a forged cross-site request reaches it. Only list
+    /// searches may carry the mark; review any action added here for side effects first.
+    /// </summary>
+    [Fact]
+    public void Only_the_list_searches_let_the_cookie_authenticate_a_post()
+    {
+        var marked = typeof(KomgaController).GetMethods()
+            .Where(m => m.GetCustomAttributes(typeof(KomgaReadOnlyPostAttribute), false).Length > 0)
+            .Select(m => m.Name)
+            .Order();
+
+        Assert.Equal(["BooksList", "SeriesList"], marked);
+    }
+
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, true)]
