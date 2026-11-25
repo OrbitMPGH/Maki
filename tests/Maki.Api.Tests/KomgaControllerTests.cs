@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Komga;
@@ -217,6 +218,41 @@ public sealed class KomgaControllerTests : IDisposable
         Assert.Empty(books.Content);
         Assert.Empty(seriesBooks.Content);
     }
+
+    [Fact]
+    public async Task The_list_api_filters_by_library_and_searches_with_escaped_terms()
+    {
+        var plain = SeedSeries("Gamma", 1m);
+        var dashed = SeedSeries("Delta-X", 1m, 2m);
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+
+        // The body the Mihon extension 1.6.76 sends: Lucene-escaped text, anyOf per field inside allOf.
+        var search = Body($$$"""
+            {"condition":{"allOf":[{"deleted":{"operator":"isFalse"}},
+              {"anyOf":[{"libraryId":{"operator":"is","value":"{{{RootFolderOf(plain.SeriesId)}}}"}},
+                        {"libraryId":{"operator":"is","value":"{{{RootFolderOf(dashed.SeriesId)}}}"}}]}]},
+             "fullTextSearch":"delta\\-x"}
+            """);
+        var found = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.SeriesList(search, ["relevance,asc"])));
+        Assert.Equal([dashed.SeriesId.ToString()], found.Content.Select(s => s.Id));
+
+        var oneLibrary = Body($$$"""
+            {"condition":{"allOf":[{"anyOf":[{"libraryId":{"operator":"is","value":"{{{RootFolderOf(plain.SeriesId)}}}"}}]}]}}
+            """);
+        var series = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.SeriesList(oneLibrary, null)));
+        Assert.Equal([plain.SeriesId.ToString()], series.Content.Select(s => s.Id));
+        var books = Assert.IsType<KomgaPage<KomgaBook>>(Ok(await controller.BooksList(oneLibrary, ["metadata.title,asc"])));
+        Assert.Equal([plain.Chapters[0].ToString()], books.Content.Select(b => b.Id));
+
+        var everything = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.SeriesList(null, ["metadata.titleSort,asc"])));
+        Assert.Equal(2, everything.TotalElements);
+        var deleted = Body("""{"condition":{"deleted":{"operator":"isTrue"}}}""");
+        Assert.Empty(Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.SeriesList(deleted, null))).Content);
+    }
+
+    private static KomgaSearch Body(string json) =>
+        JsonSerializer.Deserialize<KomgaSearch>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 
     [Fact]
     public async Task Books_come_in_reading_order_with_their_number_and_page_count()

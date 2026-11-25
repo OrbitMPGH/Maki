@@ -9,6 +9,7 @@ using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 
@@ -79,6 +80,18 @@ public class KomgaController(
         Ok(await catalog.SeriesAsync(
             new KomgaSeriesQuery(search, Ids(libraryId), Values(readStatus), Values(status), Values(genre),
                 Values(tag), Values(publisher), author, sort?.FirstOrDefault()),
+            PageNumber(page), PageSize(size, unpaged), ct));
+
+    /// <summary>Komga 1.19's list API, which the Mihon extension browses and searches through from 1.6.76.</summary>
+    [HttpPost("v1/series/list")]
+    public async Task<IActionResult> SeriesList(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] KomgaSearch? search,
+        [FromQuery] string[]? sort,
+        [FromQuery] int page = 0,
+        [FromQuery] int? size = null,
+        [FromQuery] bool unpaged = false,
+        CancellationToken ct = default) =>
+        Ok(await catalog.SeriesAsync(KomgaSearchQuery.Series(search, sort?.FirstOrDefault()),
             PageNumber(page), PageSize(size, unpaged), ct));
 
     [HttpGet("v1/series/new")]
@@ -252,6 +265,17 @@ public class KomgaController(
         CancellationToken ct = default) =>
         Ok(await catalog.BooksAsync(
             new KomgaBookQuery(search, Ids(libraryId), Values(readStatus), sort?.FirstOrDefault()),
+            PageNumber(page), PageSize(size, unpaged) ?? MaxPageSize, ct));
+
+    [HttpPost("v1/books/list")]
+    public async Task<IActionResult> BooksList(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] KomgaSearch? search,
+        [FromQuery] string[]? sort,
+        [FromQuery] int page = 0,
+        [FromQuery] int? size = null,
+        [FromQuery] bool unpaged = false,
+        CancellationToken ct = default) =>
+        Ok(await catalog.BooksAsync(KomgaSearchQuery.Books(search, sort?.FirstOrDefault()),
             PageNumber(page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpGet("v1/books/latest")]

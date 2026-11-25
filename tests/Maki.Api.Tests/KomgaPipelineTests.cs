@@ -118,6 +118,45 @@ public sealed class KomgaPipelineTests : IDisposable
     }
 
     [Fact]
+    public async Task The_list_api_answers_the_extensions_post_after_its_401_retry()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var seeded = await ReadingAppSeed.SeedAsync(factory, Path.Combine(_configDir, "library"),
+            (SettingKeys.KomgaEnabled, "true"));
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(
+            Get("/komga/api/v1/login/set-cookie", h => h.Add(KomgaAuthenticator.ApiKeyHeader, seeded.Token)))).StatusCode);
+
+        HttpRequestMessage List(string path, bool basic)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, path + "?page=0&sort=lastModifiedDate%2Cdesc")
+            {
+                Content = new StringContent("""{"condition":{"allOf":[{"deleted":{"operator":"isFalse"}}]}}""",
+                    Encoding.UTF8, "application/json")
+            };
+            if (basic)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes("anyone:" + seeded.Token)));
+            }
+
+            return request;
+        }
+
+        // OkHttp sends the cookie first and adds Basic once that is refused, as for any other POST.
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.SendAsync(List("/komga/api/v1/series/list", basic: false))).StatusCode);
+
+        var series = await client.SendAsync(List("/komga/api/v1/series/list", basic: true));
+        Assert.Equal(HttpStatusCode.OK, series.StatusCode);
+        Assert.Contains($"\"id\":\"{seeded.SeriesId}\"", await series.Content.ReadAsStringAsync());
+
+        var books = await client.SendAsync(List("/komga/api/v1/books/list", basic: true));
+        Assert.Equal(HttpStatusCode.OK, books.StatusCode);
+        Assert.Contains($"\"id\":\"{seeded.ChapterId}\"", await books.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task The_built_in_readers_offset_within_a_page_stays_out_of_komga()
     {
         using var factory = new WebApplicationFactory<Program>();

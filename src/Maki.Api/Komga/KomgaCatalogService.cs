@@ -311,7 +311,10 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
         var parts = sort.Split(',', StringSplitOptions.TrimEntries);
         var field = parts[0].StartsWith("metadata.", StringComparison.Ordinal) ? parts[0]["metadata.".Length..] : parts[0];
-        return (field, parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase));
+        // Maki's search has no ranking, so relevance is the list's own default order.
+        return field == "relevance"
+            ? (string.Empty, false)
+            : (field, parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase));
     }
 
     private static KomgaSeries ToSeries(SeriesRow s, Dictionary<int, (int Read, int InProgress)> counts)
