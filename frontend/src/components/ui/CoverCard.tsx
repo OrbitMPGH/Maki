@@ -68,7 +68,7 @@ export const CoverCard = memo(function CoverCard({
   const StatusGlyph = seriesStatusGlyph(series.status)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series.
-  const { total, nothingWanted, have, pct, complete, readPct, unread, read } = seriesProgressVisual(
+  const { total, nothingWanted, have, readable, pct, complete, readPct, unread, read } = seriesProgressVisual(
     series,
     readTracking,
   )
@@ -110,7 +110,9 @@ export const CoverCard = memo(function CoverCard({
   const showsReadRing = !readsOnBar && readPct !== null && readPct > 0
   const readThrough = showsReadRing && unread === 0
   // On the bar, reading is drawn as a share of the whole series, so it can pass what is downloaded.
-  const readOfTotal = readsOnBar ? Math.min(100, (read / total) * 100) : 0
+  // Downloaded chapters switched off and not read (specials inside a volume) are not left to read.
+  const readTotal = total - (have - readable)
+  const readOfTotal = readsOnBar && readTotal > 0 ? Math.min(100, (read / readTotal) * 100) : 0
   const readTip = readThrough ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`

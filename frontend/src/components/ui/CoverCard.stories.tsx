@@ -88,6 +88,25 @@ export const ReadingBar: Story = {
   },
 }
 
+/** Specials on disk inside a volume file but switched off: read everything wanted and the bar is full. */
+export const ReadingBarLeavesOutSwitchedOff: Story = {
+  args: {
+    series: { ...lanterns, progressTotal: 140, progressHave: 140, progressReadable: 120, progressRead: 120 },
+  },
+  beforeEach: () => {
+    setCardProgress('reading')
+    return () => setCardProgress('downloads')
+  },
+  play: async ({ canvas }) => {
+    const card = await canvas.findByRole('link')
+    await waitFor(() => {
+      const bar = card.querySelector('.cover-bar')
+      expect(bar).toHaveAttribute('data-finished')
+      expect(bar?.querySelector<HTMLElement>('.cover-bar-read')?.style.width).toBe('100%')
+    })
+  },
+}
+
 export const Completed: Story = {
   args: { series: kitchen },
 }
