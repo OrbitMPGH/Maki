@@ -8,7 +8,8 @@ import { engineReason } from '../ui/DiscoverRail'
 import { DiscoverHero, type StartPick } from './DiscoverHero'
 
 const source = { savedFrom: 'rail:hero' }
-const pick = (item: RecommendationItem): StartPick => ({ item, reason: engineReason(item), source })
+// `engineReason` translates, so the lead's reason is filled in at render, once the locale is loaded.
+const pick = (item: RecommendationItem): StartPick => ({ item, reason: null, source })
 const lead = pick(recentRail.items[0])
 const side: StartPick[] = [
   { item: recentRail.items[1], reason: { Glyph: IconUsers, text: 'Readers like you finished this' }, source },
@@ -26,6 +27,9 @@ const meta = {
     seriesIdFor: (_item: RecommendationItem): number | null => null,
   },
   parameters: { layout: 'padded', msw: discoverPage() },
+  render: (args) => (
+    <DiscoverHero {...args} lead={{ ...args.lead, reason: args.lead.reason ?? engineReason(args.lead.item) }} />
+  ),
 } satisfies Meta<typeof DiscoverHero>
 
 export default meta

@@ -26,25 +26,40 @@ import { TasteDrift } from './taste/TasteDrift'
 import { TasteReach } from './taste/TasteReach'
 import { TasteShelf } from './taste/TasteShelf'
 
+/** The portrait and the first themes while they load, on their own classes so each keeps its loaded size. */
 function TasteSkeleton() {
   return (
-    <Stack gap="md" aria-hidden inert>
-      <Panel p="xl" className="taste-portrait">
+    <Stack gap="md" className="discover-tab-body taste-tab" aria-hidden inert>
+      <Panel p={{ base: 'md', sm: 'xl' }} className="taste-portrait">
         <div className="taste-portrait-main">
-          <Skeleton h={26} w={200} />
-          <Stack gap={10} my="md">
-            <Skeleton h={44} w="70%" />
-            <Skeleton h={44} w="55%" />
-            <Skeleton h={44} w="62%" />
-          </Stack>
-          <Group gap={10}>
-            {[110, 96, 120, 88, 104].map((w) => (
-              <Skeleton key={w} h={30} w={w} radius="md" />
-            ))}
+          <Group justify="space-between" gap="sm" wrap="wrap">
+            <Skeleton h={26} w={170} radius="md" />
+            <Skeleton h={30} w={270} radius="md" />
           </Group>
-          <Group gap="sm" mt="md">
-            <Skeleton h={36} w={180} />
-            <Skeleton h={36} w={150} />
+          <div className="taste-headline" style={{ gap: '0.24em' }}>
+            {['58%', '54%', '52%'].map((w) => (
+              <Skeleton key={w} h="0.8em" w={w} />
+            ))}
+          </div>
+          <Skeleton h={14} w={320} />
+          <div className="taste-portrait-facts">
+            <div>
+              <Skeleton h={14} w={150} mb="sm" />
+              <Group gap={10}>
+                {[132, 120, 128, 140, 124].map((w) => (
+                  <Skeleton key={w} h={30} w={w} radius="md" />
+                ))}
+              </Group>
+            </div>
+          </div>
+          <div className="taste-portrait-figures">
+            {[60, 64, 110, 150].map((w) => (
+              <Skeleton key={w} h={18} w={w} />
+            ))}
+          </div>
+          <Group gap="sm">
+            <Skeleton h={36} w={210} />
+            <Skeleton h={36} w={170} />
           </Group>
         </div>
         <div className="taste-portrait-collage">
@@ -53,6 +68,35 @@ function TasteSkeleton() {
           ))}
         </div>
       </Panel>
+      <section className="taste-section">
+        <div className="section-header">
+          <Skeleton h={18} w={190} />
+        </div>
+        <div className="taste-themes">
+          <Panel p={0} className="taste-theme-list">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="taste-theme-row">
+                <Stack gap={8}>
+                  <Skeleton h={16} w="70%" />
+                  <Skeleton h={12} w="50%" />
+                </Stack>
+                <Skeleton h={4} />
+                <Skeleton h={12} />
+              </div>
+            ))}
+          </Panel>
+          <div className="taste-stage-col">
+            <Panel className="taste-stage">
+              <Skeleton h={26} w={260} mb="md" />
+              <Group gap="sm" wrap="nowrap">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} w={148} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
+                ))}
+              </Group>
+            </Panel>
+          </div>
+        </div>
+      </section>
     </Stack>
   )
 }

@@ -228,35 +228,60 @@ function PosterSkeletons({
   return <SharedPosterSkeletons density={density} viewMode={viewMode} />
 }
 
+/** Start here while it loads, on the band's own classes so it has the loaded band's size at every width. */
 function DiscoverHeroSkeleton() {
   return (
-    <div className="discover-loading-hero" aria-hidden>
-      <div className="discover-loading-feature">
-        <Skeleton className="discover-loading-poster" radius="lg" />
-        <Stack gap="sm" style={{ flex: 1 }}>
-          <Skeleton h={10} w={110} />
-          <Skeleton h={34} w="72%" />
-          <Skeleton h={14} w="45%" />
-          <Group gap="xs">
-            <Skeleton h={26} w={74} radius="xl" />
-            <Skeleton h={26} w={92} radius="xl" />
-            <Skeleton h={26} w={68} radius="xl" />
-          </Group>
-          <Skeleton h={12} w="84%" mt="xs" />
-          <Skeleton h={12} w="63%" />
-        </Stack>
+    <div aria-hidden inert>
+      <div className="section-header">
+        <Skeleton h={18} w={130} />
       </div>
-      <div className="discover-loading-picks">
-        <Skeleton h={10} w={84} mb={4} />
-        {Array.from({ length: 5 }, (_, i) => (
-          <Group key={i} gap="sm" wrap="nowrap">
-            <Skeleton h={48} w={32} radius="sm" style={{ flexShrink: 0 }} />
-            <Stack gap={6} style={{ flex: 1 }}>
-              <Skeleton h={10} w={`${72 - (i % 3) * 10}%`} />
-              <Skeleton h={8} w="44%" />
-            </Stack>
-          </Group>
-        ))}
+      <div className="series-hero discover-hero" data-compact data-side>
+        <div className="series-hero-body">
+          <div className="series-hero-content">
+            <div className="discover-hero-feature">
+              <Group align="flex-start" gap={26} wrap="nowrap" className="discover-hero-feature-row">
+                <div className="discover-hero-poster">
+                  <Skeleton className="series-hero-poster" radius="var(--radius-hero)" />
+                </div>
+                <Stack gap="sm" style={{ flex: 1, minWidth: 0 }}>
+                  <Skeleton h={12} w={220} />
+                  <Stack gap="0.3em" className="series-hero-title">
+                    <Skeleton h="0.7em" w="62%" />
+                    <Skeleton h="0.7em" w="34%" />
+                  </Stack>
+                  <Group gap="xs" mt="md">
+                    <Skeleton h={26} w={96} radius="md" />
+                    <Skeleton h={26} w={84} radius="md" />
+                    <Skeleton h={26} w={72} radius="md" />
+                  </Group>
+                  <Skeleton h={12} w="54%" mt="xs" />
+                  <Skeleton h={12} w="48%" />
+                  <Skeleton h={12} w="30%" />
+                  <Skeleton h={22} w={140} mt="xs" />
+                  <Group gap="xs" mt="xs">
+                    <Skeleton h={36} w={150} />
+                    <Skeleton h={36} w={110} />
+                  </Group>
+                </Stack>
+              </Group>
+            </div>
+            <div className="discover-hero-strip">
+              {[0, 1].map((i) => (
+                <div key={i} className="discover-start-pick">
+                  <Skeleton className="discover-start-pick-blank" radius="var(--radius-thumb)" />
+                  <Stack gap={8} className="discover-start-pick-copy">
+                    <Skeleton h={10} w="46%" />
+                    <Skeleton h={18} w={i ? '58%' : '70%'} />
+                    <Skeleton h={10} w="36%" />
+                    <Skeleton h={10} w="92%" mt={4} />
+                    <Skeleton h={10} w="86%" />
+                    <Skeleton h={10} w="60%" />
+                  </Stack>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
