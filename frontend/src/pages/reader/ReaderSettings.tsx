@@ -110,6 +110,7 @@ type Toggle =
   | 'keepAwake'
   | 'notesBeside'
   | 'progressRail'
+  | 'adaptiveScroll'
 
 function LayoutGlyph({ mode }: { mode: ReaderPrefs['mode'] }) {
   const page = { className: 'reader-settings-glyph-page', rx: 2 }
@@ -337,6 +338,11 @@ export default function ReaderSettings({
     { key: 'showPageNumber', label: t`Show page number` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
     { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous. Drag the bar on the right edge.` },
+    ...(prefs.mode === 'vertical' ? [{
+      key: 'adaptiveScroll' as const,
+      label: t`Adaptive scrolling`,
+      hint: t`In Continuous, screen turns try to keep panels and their dialogue together.`,
+    }] : []),
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
   const tapToggle: ToggleRow = {

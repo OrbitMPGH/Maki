@@ -193,7 +193,117 @@ export const ContinuousTapMovesAScreen: Story = {
   },
 }
 
+const adaptivePageGap = 36
+
+export const AdaptiveScrolling: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [
+      withManifest({
+        ...chapters[3040],
+        pageVersion: 'adaptive-scrolling',
+        prefs: {
+          ...chapters[3040].prefs, fit: 'width', maxWidth: 400, pageGap: adaptivePageGap,
+          adaptiveScroll: true, chapterBanner: false,
+        },
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const height = surface.clientHeight
+    const warm = async (...pages: number[]) => {
+      for (const page of pages) {
+        const image = await canvas.findByRole<HTMLImageElement>('img', { name: `Chapter 40 - page ${page}` })
+        await waitFor(() => expect(image).toHaveAttribute('data-loaded', 'true'))
+      }
+      for (let i = 0; i < pages.length; i++) {
+        await new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 200 }))
+      }
+    }
+    await warm(1, 2, 3)
+    const start = surface.scrollTop
+    const firstStop = start + (500 + 1245 + adaptivePageGap - height) / 2
+    const secondStop = start + (1570 + 2170 + adaptivePageGap * 3 - height) / 2
+    const at = (top: number) => waitFor(() => expect(Math.abs(surface.scrollTop - top)).toBeLessThan(6))
+
+    await userEvent.keyboard('{PageDown}')
+    await at(firstStop)
+    await userEvent.keyboard('{PageUp}')
+    await at(start)
+    await userEvent.keyboard('{PageDown}')
+    await at(firstStop)
+    await warm(2, 3)
+    await userEvent.keyboard('{PageDown}')
+    await at(secondStop)
+    await warm(4, 5)
+    await userEvent.keyboard('{PageDown}')
+    await at(secondStop + height * 0.85)
+
+    // Start inside the gutter behind the second panel so Up has to frame it independently.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: -1 }))
+    surface.scrollTop = start + 2250 + adaptivePageGap * 2
+    await warm(2, 3)
+    await userEvent.keyboard('{PageUp}')
+    await at(secondStop)
+
+    // The tall panel cannot fit. Aligning its end from here would skip art below the screen, so the turn is the plain step.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
+    const tallEnd = start + 4240 + adaptivePageGap * 5
+    const farFromEnd = tallEnd - height * 2 - 40
+    surface.scrollTop = farFromEnd
+    await warm(4, 5, 6)
+    await userEvent.keyboard('{PageDown}')
+    await at(farFromEnd + height * 0.85)
+
+    // With the end inside the next screen, the turn lines it up without passing the old bottom edge.
+    surface.dispatchEvent(new WheelEvent('wheel', { deltaY: 1 }))
+    const nearEnd = tallEnd - height * 1.6
+    surface.scrollTop = nearEnd
+    await warm(4, 5, 6)
+    await userEvent.keyboard('{PageDown}')
+    await at(tallEnd + 7 - height)
+    await expect(surface.scrollTop).toBeLessThanOrEqual(nearEnd + height)
+  },
+}
+
 const recapEndsAt = http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: 4, offset: 0.5 }))
+
+export const AdaptiveScrollingAcrossWhitespace: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [
+      withManifest({
+        ...chapters[3040],
+        pageVersion: 'adaptive-wide-gutter',
+        prefs: {
+          ...chapters[3040].prefs, fit: 'width', maxWidth: 400, pageGap: 0,
+          adaptiveScroll: true, chapterBanner: false,
+        },
+      }),
+    ],
+  },
+  beforeEach: () => {
+    const requestIdle = window.requestIdleCallback
+    window.requestIdleCallback = () => 0
+    return () => { window.requestIdleCallback = requestIdle }
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const page of [1, 2, 3]) {
+      const image = await canvas.findByRole('img', { name: `Chapter 40 - page ${page}` })
+      await waitFor(() => expect(image).toHaveAttribute('data-loaded', 'true'))
+    }
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const height = surface.clientHeight
+    const start = surface.scrollTop
+    const centered = start + (1230 + 2030 - height) / 2
+    await expect(centered - start).toBeGreaterThan(height)
+
+    await userEvent.keyboard('{PageDown}')
+    await waitFor(() => expect(Math.abs(surface.scrollTop - centered)).toBeLessThan(6))
+  },
+}
 
 /** A chapter opening with the previous chapter's last pages offers to skip them, and scrolls past them when asked. */
 export const ContinuousSkipRecap: Story = {

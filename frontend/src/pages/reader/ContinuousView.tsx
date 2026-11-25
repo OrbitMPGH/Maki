@@ -13,6 +13,7 @@ import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
 import { measureStrip, seekStrip } from './stripMeasure'
 import type { StripTracker } from './stripPosition'
+import { useStripGutters } from './useStripGutters'
 import { cutHeight } from './creditWindow'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
@@ -311,6 +312,8 @@ export default function ContinuousView({
   onStretched,
   onEnhanceRange,
   tracker,
+  adaptiveScroll = false,
+  onRailSeek,
   lastCut = 0,
   zoom = 1,
 }: {
@@ -364,6 +367,8 @@ export default function ContinuousView({
   onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
   /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
   tracker?: StripTracker
+  adaptiveScroll?: boolean
+  onRailSeek?: () => void
   /** The share of the last page, from its bottom, that is left out: a credit banner fused into it. */
   lastCut?: number
   /** The reader's pinch zoom, drawn as a scale from the strip's top-left corner (useStripZoom). */
@@ -406,6 +411,7 @@ export default function ContinuousView({
   // one of those would re-scroll to wherever the user just scrolled from.
   const pageRef = useRef(page)
   pageRef.current = page
+  useStripGutters(adaptiveScroll, tracker, container, pages, pageRef, urls)
 
   // Only the enhance range around the current page is enhanced; a page leaving it drops its canvas
   // and its cached result.
@@ -649,6 +655,7 @@ export default function ContinuousView({
       if (frame === 0) frame = requestAnimationFrame(measure)
     }
     tracker.seek = (progress) => {
+      onRailSeek?.()
       // A drag on the rail is the reader scrolling by hand: the resume landing is history.
       settling.current.clear()
       seekStrip(scroller, pages.current, urls.length, progress)
@@ -665,7 +672,7 @@ export default function ContinuousView({
       tracker.seek = null
       tracker.set(null)
     }
-  }, [tracker, urls, first])
+  }, [tracker, urls, first, onRailSeek])
   // The band tracker moves the page a moment after the scroll that moved it.
   useEffect(() => remeasure.current(), [page])
 

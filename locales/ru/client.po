@@ -4883,6 +4883,12 @@ msgstr "Журнал активности"
 msgid "Adaptation"
 msgstr "Адаптация"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
+msgid "Adaptive scrolling"
+msgstr ""
+
 #: src/components/settings/RatingCategoriesModal.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -13641,6 +13647,11 @@ msgstr "В непрерывной раскладке полоса сверху �
 msgid "In Continuous, jumps past the part of the previous chapter that this one repeats."
 msgstr "В непрерывной раскладке переход пропускает часть предыдущей главы, которая повторяется в этой."
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, screen turns try to keep panels and their dialogue together."
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "In Continuous, the top and bottom move a screen."
@@ -19887,6 +19898,11 @@ msgstr "Переходы между страницами"
 #, fuzzy
 msgid "Page Up"
 msgstr "Page Up"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page up, page down, screen turns, panels, gutters"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts

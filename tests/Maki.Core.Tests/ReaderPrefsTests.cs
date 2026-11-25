@@ -27,6 +27,14 @@ public class ReaderPrefsTests
         Assert.Equal(0, ReaderPrefsSpec.Parse("""{"mode":"vertical"}""").MaxWidth);
     }
 
+    [Fact]
+    public void Adaptive_scroll_defaults_off_and_round_trips_when_enabled()
+    {
+        Assert.False(ReaderPrefsSpec.Parse("""{"mode":"vertical"}""").AdaptiveScroll);
+        var json = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(AdaptiveScroll: true));
+        Assert.True(ReaderPrefsSpec.Parse(json).AdaptiveScroll);
+    }
+
     [Theory]
     [InlineData("none")]
     [InlineData("grayscale")]
