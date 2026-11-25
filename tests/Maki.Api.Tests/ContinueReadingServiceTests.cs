@@ -9,7 +9,8 @@ public class ContinueReadingServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private int Seed(int seriesId, decimal number, int? volume, bool downloaded = true, string language = "en")
+    private int Seed(int seriesId, decimal number, int? volume, bool downloaded = true, string language = "en",
+        bool wanted = true)
     {
         using var db = _db.NewContext();
         ChapterFile? file = null;
@@ -22,7 +23,8 @@ public class ContinueReadingServiceTests : IDisposable
 
         var chapter = new Chapter
         {
-            SeriesId = seriesId, Number = number, Volume = volume, Language = language, ChapterFileId = file?.Id
+            SeriesId = seriesId, Number = number, Volume = volume, Language = language, ChapterFileId = file?.Id,
+            Wanted = wanted,
         };
         db.Chapters.Add(chapter);
         db.SaveChanges();
@@ -239,5 +241,44 @@ public class ContinueReadingServiceTests : IDisposable
         }
 
         Assert.Equal(chapters[10], await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_special_with_wanted_off_is_never_offered_even_on_disk()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 1, 1));
+        Seed(seriesId, 1.1m, 1, wanted: false);
+        var two = Seed(seriesId, 2, 1);
+
+        var next = await new ContinueReadingService(_db.NewContext()).NextForAsync(seriesId, CancellationToken.None);
+
+        Assert.Equal(two, next?.ChapterId);
+        Assert.Equal(1, next?.UnreadChapters);
+    }
+
+    [Fact]
+    public async Task A_series_with_only_unwanted_chapters_left_has_nothing_next()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 1, 1));
+        Seed(seriesId, 1.1m, 1, wanted: false);
+
+        Assert.Null(await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_none_series_offers_chapters_whatever_their_switch()
+    {
+        var seriesId = _db.SeedSeries();
+        using (var db = _db.NewContext())
+        {
+            db.Series.Find(seriesId)!.MonitorNewItems = NewChapterMonitorMode.None;
+            db.SaveChanges();
+        }
+
+        var first = Seed(seriesId, 1, 1, wanted: false);
+
+        Assert.Equal(first, await Next(seriesId));
     }
 }

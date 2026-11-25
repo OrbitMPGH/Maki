@@ -1,3 +1,4 @@
+using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +8,9 @@ namespace Maki.Api.Services;
 /// <summary>
 /// What to read next in a series, and how much of it is left.
 /// </summary>
-/// <param name="ChapterId">The next downloaded chapter that has not been read.</param>
+/// <param name="ChapterId">The next downloaded, wanted chapter that has not been read.</param>
 /// <param name="Label">Rendered server-side — see <see cref="ChapterLabel"/> for why.</param>
-/// <param name="UnreadChapters">Downloaded chapters in the series still unread, this one included.</param>
+/// <param name="UnreadChapters">Downloaded, wanted chapters in the series still unread, this one included.</param>
 /// <param name="UnreadChapterIds">Those same chapters, by id.</param>
 public record NextChapter(int ChapterId, string Label, int UnreadChapters, IReadOnlySet<int> UnreadChapterIds);
 
@@ -52,10 +53,17 @@ public class ContinueReadingService(MakiDbContext db)
             .ToHashSet();
 
         // Every chapter, not just downloaded ones: a volume's chapter 0 sorts by where the rest of
-        // its volume sits, and those chapters may not be on disk.
+        // its volume sits, and those chapters may not be on disk. A chapter with Wanted off is never
+        // offered, though it can be on disk (specials inside a volume file); a None series has every
+        // switch off, so there they mean nothing.
         var chapters = await db.Chapters
             .Where(c => seriesIds.Contains(c.SeriesId))
-            .Select(c => new { c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, HasFile = c.ChapterFileId != null })
+            .Select(c => new
+            {
+                c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot,
+                Readable = c.ChapterFileId != null &&
+                           (c.Wanted || c.Series!.MonitorNewItems == NewChapterMonitorMode.None),
+            })
             .ToListAsync(ct);
 
         var result = new Dictionary<int, NextChapter>();
@@ -69,7 +77,7 @@ public class ContinueReadingService(MakiDbContext db)
                 completed.Contains(id) || (SlotOf(number, volume) is { } slot && readSlots.Contains(slot));
 
             var ordered = ChapterOrder.Sort(group, c => c.Number, c => c.Volume, c => c.Id);
-            var unread = ordered.Where(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume)).ToList();
+            var unread = ordered.Where(c => c.Readable && !IsRead(c.Id, c.Number, c.Volume)).ToList();
             if (unread.Count == 0)
             {
                 continue;
@@ -131,7 +139,7 @@ public class ContinueReadingService(MakiDbContext db)
 
             var furthestNumber = furthestRead < 0 ? null : ordered[furthestRead].Number;
             var next = ordered.Skip(furthestRead + 1)
-                           .FirstOrDefault(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume) && (furthestRead < 0 || c.Number != furthestNumber))
+                           .FirstOrDefault(c => c.Readable && !IsRead(c.Id, c.Number, c.Volume) && (furthestRead < 0 || c.Number != furthestNumber))
                        ?? unread[0];
 
             result[group.Key] = new NextChapter(
